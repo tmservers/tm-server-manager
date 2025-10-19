@@ -1,7 +1,6 @@
-use spacetimedb::SpacetimeType;
-
 /// Makinig the server completly stateless and only a shell for physics calculation and managing the players.
-#[derive(Debug, SpacetimeType)]
+#[derive(Debug)]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
 pub struct ServerState {
     players: Vec<String>,
     paused: bool,
@@ -15,3 +14,7 @@ impl Default for ServerState {
         }
     }
 }
+
+#[derive(Debug)]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
+struct ModeState {}

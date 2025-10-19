@@ -19,7 +19,7 @@ impl TmServerConfig {
     }
 }
 
-#[reducer]
+#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn create_server_config(ctx: &ReducerContext, id: String, config: ServerConfig) {
     ctx.db.tm_server_config().insert(TmServerConfig {
         id: 0,

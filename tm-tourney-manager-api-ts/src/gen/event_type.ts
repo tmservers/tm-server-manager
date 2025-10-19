@@ -121,8 +121,7 @@ export type Event = EventVariants.WayPoint |
   EventVariants.EndRoundEnd |
   EventVariants.PodiumStart |
   EventVariants.PodiumEnd |
-  EventVariants.Custom |
-  EventVariants.Legacy;
+  EventVariants.Custom;
 
 let _cached_Event_type_value: __AlgebraicTypeType | null = null;
 
@@ -159,7 +158,6 @@ export const Event = {
   PodiumStart: (value: Podium): EventVariants.PodiumStart => ({ tag: "PodiumStart", value }),
   PodiumEnd: (value: Podium): EventVariants.PodiumEnd => ({ tag: "PodiumEnd", value }),
   Custom: (value: Custom): EventVariants.Custom => ({ tag: "Custom", value }),
-  Legacy: (value: Custom): EventVariants.Legacy => ({ tag: "Legacy", value }),
 
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
     if (_cached_Event_type_value) return _cached_Event_type_value;
@@ -190,7 +188,6 @@ export const Event = {
       { name: "PodiumStart", algebraicType: Podium.getTypeScriptAlgebraicType() },
       { name: "PodiumEnd", algebraicType: Podium.getTypeScriptAlgebraicType() },
       { name: "Custom", algebraicType: Custom.getTypeScriptAlgebraicType() },
-      { name: "Legacy", algebraicType: Custom.getTypeScriptAlgebraicType() },
     );
     return _cached_Event_type_value;
   },

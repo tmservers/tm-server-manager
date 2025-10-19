@@ -33,7 +33,7 @@ import * as MatchStatusVariants from './match_status_variants'
 export type MatchStatus = MatchStatusVariants.Configuring |
   MatchStatusVariants.Upcoming |
   MatchStatusVariants.PreMatch |
-  MatchStatusVariants.Match |
+  MatchStatusVariants.Live |
   MatchStatusVariants.PostMatch |
   MatchStatusVariants.Ended;
 
@@ -50,7 +50,7 @@ export const MatchStatus = {
   Configuring: { tag: "Configuring" } as const,
   Upcoming: { tag: "Upcoming" } as const,
   PreMatch: { tag: "PreMatch" } as const,
-  Match: { tag: "Match" } as const,
+  Live: { tag: "Live" } as const,
   PostMatch: { tag: "PostMatch" } as const,
   Ended: { tag: "Ended" } as const,
 
@@ -61,7 +61,7 @@ export const MatchStatus = {
       { name: "Configuring", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
       { name: "Upcoming", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
       { name: "PreMatch", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-      { name: "Match", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
+      { name: "Live", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
       { name: "PostMatch", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
       { name: "Ended", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
     );

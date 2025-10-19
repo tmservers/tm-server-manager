@@ -1,4 +1,4 @@
-use spacetimedb::{ReducerContext, Table, reducer, table};
+use spacetimedb::{ReducerContext, Table, table};
 use tm_server_types::event::Event;
 
 use crate::{r#match::stage_match, server::tm_server};
@@ -15,13 +15,17 @@ pub struct TmServerEvent {
 }
 
 // TODO: remove the id argument and get it from calling entity.
-#[reducer]
+#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn post_event(ctx: &ReducerContext, id: String, event: Event) {
     if let Some(server) = ctx.db.tm_server().id().find(id)
-        && let Some(match_id) = server.active_mactch()
-        && let Some(stage_match) = ctx.db.stage_match().id().find(match_id)
-        && stage_match.is_match()
+        && let Some(match_id) = server.active_match()
+        && let Some(mut stage_match) = ctx.db.stage_match().id().find(match_id)
+        && stage_match.is_live()
     {
+        stage_match.add_server_event(&event);
+
+        ctx.db.stage_match().id().update(stage_match);
+
         ctx.db.tm_server_event().insert(TmServerEvent {
             id: 0,
             match_id,

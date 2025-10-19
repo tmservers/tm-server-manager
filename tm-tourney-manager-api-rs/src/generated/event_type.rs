@@ -79,8 +79,6 @@ pub enum Event {
     PodiumEnd(Podium),
 
     Custom(Custom),
-
-    Legacy(Custom),
 }
 
 impl __sdk::InModule for Event {

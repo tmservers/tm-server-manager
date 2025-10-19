@@ -77,12 +77,11 @@ pub enum Event {
     PodiumEnd(Podium),
 
     Custom(Custom),
-    Legacy(Custom),
 }
 
 impl Event {
-    pub fn from_modescript(name: &str, body: String) -> Self {
-        match name {
+    pub fn from_modescript(name: &str, body: String) -> Option<Self> {
+        let event = match name {
             "Trackmania.Event.WayPoint" => Event::WayPoint(json::from_str(&body).unwrap()),
             "Trackmania.Event.Respawn" => Event::Respawn(json::from_str(&body).unwrap()),
             "Trackmania.Scores" => Event::Scores(json::from_str(&body).unwrap()),
@@ -116,21 +115,22 @@ impl Event {
             "Maniaplanet.Podium_End" => Event::PodiumEnd(json::from_str(&body).unwrap()),
 
             _ => Event::Custom(Custom::new(name.to_string(), body)),
-        }
+        };
+        Some(event)
     }
 
-    pub fn from_legacy(name: &str, body: Vec<Value>) -> Self {
+    pub fn from_legacy(name: &str, body: Vec<Value>) -> Option<Self> {
         match name {
-            "ManiaPlanet.PlayerConnect" => {
-                Event::PlayerConenct(PlayerConnect::try_from_params(&body).unwrap())
-            }
-            "ManiaPlanet.PlayerDisconnect" => {
-                Event::PlayerDisconnect(PlayerDisconnect::try_from_params(&body).unwrap())
-            }
-            "ManiaPlanet.PlayerChat" => {
-                Event::PlayerChat(PlayerChat::try_from_params(&body).unwrap())
-            }
-            _ => Event::Legacy(Custom::new(name.to_string(), "stub".into())),
+            "ManiaPlanet.PlayerConnect" => Some(Event::PlayerConenct(
+                PlayerConnect::try_from_params(&body).unwrap(),
+            )),
+            "ManiaPlanet.PlayerDisconnect" => Some(Event::PlayerDisconnect(
+                PlayerDisconnect::try_from_params(&body).unwrap(),
+            )),
+            "ManiaPlanet.PlayerChat" => Some(Event::PlayerChat(
+                PlayerChat::try_from_params(&body).unwrap(),
+            )),
+            _ => None,
         }
     }
 }

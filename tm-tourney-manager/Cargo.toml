@@ -16,13 +16,14 @@ crate-type = ["cdylib"]
 
 [dependencies]
 log = "0.4"
-spacetimedb.workspace = true
-tm-server-types = { path = "../tm-server-types", features = ['spacetime'] }
+spacetimedb = { workspace = true, optional = true }
+tm-server-types = { path = "../tm-server-types" }
 gbx-header = "0"
 
 [dev-dependencies]
 testcontainers = { version = "0", features = ["blocking"] }
 
 [features]
-default = ["development"]
+default = ["development", "spacetime"]
 development = []
+spacetime = ["dep:spacetimedb", "tm-server-types/spacetime"]

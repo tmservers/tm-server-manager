@@ -33,14 +33,15 @@ pub struct TmServer {
     server_method: Option<Method>,
 }
 
-/* #[derive(Debug, SpacetimeType)]
+/* #[derive(Debug)]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
 pub enum ServerState {
     Available,
     Provisioned,
 } */
 
 impl TmServer {
-    pub fn active_mactch(&self) -> Option<u64> {
+    pub fn active_match(&self) -> Option<u64> {
         self.active_match
     }
 
@@ -64,7 +65,7 @@ impl TmServer {
 }
 
 #[cfg(feature = "development")]
-#[reducer]
+#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn add_server(ctx: &ReducerContext, id: String) {
     ctx.db.tm_server().insert(TmServer {
         online: true,
@@ -78,7 +79,7 @@ pub fn add_server(ctx: &ReducerContext, id: String) {
 }
 
 #[cfg(feature = "development")]
-#[reducer]
+#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn call_server(ctx: &ReducerContext, id: String, method: Method) {
     if let Some(server) = ctx.db.tm_server().id().find(id) {
         ctx.db.tm_server().id().update(TmServer {
@@ -88,7 +89,7 @@ pub fn call_server(ctx: &ReducerContext, id: String, method: Method) {
     }
 }
 
-#[reducer]
+#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn load_server_config(ctx: &ReducerContext, id: String, with_config: u64) {
     if let Some(mut server) = ctx.db.tm_server().id().find(id)
         && let Some(config) = ctx.db.tm_server_config().id().find(with_config)
@@ -98,7 +99,7 @@ pub fn load_server_config(ctx: &ReducerContext, id: String, with_config: u64) {
     }
 }
 
-#[reducer]
+#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn set_tm_server_state(ctx: &ReducerContext, id: String, state: ServerState) {
     if let Some(mut server) = ctx.db.tm_server().id().find(id) {
         server.set_state(state);

@@ -61,6 +61,7 @@ pub mod round_time_type;
 pub mod rounds_type;
 pub mod scores_type;
 pub mod server_config_type;
+pub mod server_options_type;
 pub mod server_state_type;
 pub mod set_tm_server_state_reducer;
 pub mod stage_match_table;
@@ -173,6 +174,7 @@ pub use round_time_type::RoundTime;
 pub use rounds_type::Rounds;
 pub use scores_type::Scores;
 pub use server_config_type::ServerConfig;
+pub use server_options_type::ServerOptions;
 pub use server_state_type::ServerState;
 pub use set_tm_server_state_reducer::{
     set_flags_for_set_tm_server_state, set_tm_server_state, SetTmServerStateCallbackId,

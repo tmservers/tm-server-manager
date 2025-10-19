@@ -28,7 +28,7 @@ impl EventStage {
 }
 
 /// Adds a new EventStage to the specified TournamentEvent.
-#[reducer]
+#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn add_stage(ctx: &ReducerContext, name: String, to: u64, with_config: Option<u64>) {
     //TODO authorization
     if let Some(mut event) = ctx.db.tournament_event().id().find(to) {

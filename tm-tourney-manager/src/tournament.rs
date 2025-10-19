@@ -30,7 +30,8 @@ impl Tournament {
     }
 }
 
-#[derive(Debug, SpacetimeType)]
+#[derive(Debug)]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
 pub enum TournamentStatus {
     // API cant query it
     Planning,
@@ -45,7 +46,7 @@ pub enum TournamentStatus {
     Ended,
 }
 
-#[reducer]
+#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 fn create_tournament(ctx: &ReducerContext, name: String) {
     //if let Some(user)=ctx.db.user().id ctx.identity()
     //ctx.

@@ -35,7 +35,8 @@ impl TournamentEvent {
     }
 }
 
-#[derive(Debug, SpacetimeType)]
+#[derive(Debug)]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
 pub enum EventPhase {
     /// If you just created the event it will be in the planning phase.
     /// Here you can set everything up as you like.
@@ -51,7 +52,8 @@ pub enum EventPhase {
     Completed,
 }
 
-#[derive(Debug, SpacetimeType)]
+#[derive(Debug)]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
 pub enum EventType {
     Matches,
     TimeAttack,
@@ -74,7 +76,7 @@ pub struct EventConfig {
 }
 
 /// Adds a new Event to the specified Tournament.
-#[reducer]
+#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn add_event(
     ctx: &ReducerContext,
     name: String,
@@ -107,5 +109,5 @@ pub fn add_event(
     }
 }
 
-#[reducer]
+#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn create_event_template(ctx: &ReducerContext, name: String /* config:  */) {}

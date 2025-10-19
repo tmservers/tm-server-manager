@@ -3,9 +3,12 @@ use tm_server_types::{config::ServerConfig, event::Event};
 
 use crate::{
     leaderboard::Leaderboard,
+    r#match::reconstruction::LiveMatch,
     server::{TmServer, tm_server},
     stage::{self, event_stage},
 };
+
+mod reconstruction;
 
 // The table name needs to be plural since match is a rust keyword
 #[table(name = stage_match, public)]
@@ -29,12 +32,49 @@ pub struct StageMatch {
 
     status: MatchStatus,
     //leaderboard: Leaderboard,
+    live: LiveMatch,
 }
 
 impl StageMatch {
     /// Evaluates is the Match is in the "Match" state of its lifecycle.
-    pub fn is_match(&self) -> bool {
-        self.status == MatchStatus::Match
+    pub fn is_live(&self) -> bool {
+        self.status == MatchStatus::Live
+    }
+
+    pub fn add_server_event(&mut self, event: &Event) {
+        // Not worth defining as an invariant for calling so need to be sure.
+        if !self.is_live() {
+            return;
+        }
+
+        match event {
+            Event::WayPoint(way_point) => todo!(),
+            Event::Respawn(respawn) => todo!(),
+            Event::StartLine(start_line) => todo!(),
+            Event::Scores(scores) => todo!(),
+            Event::GiveUp(give_up) => todo!(),
+            Event::LoadingMapStart(loading_map_start) => todo!(),
+            Event::LoadingMapEnd(loading_map_end) => todo!(),
+            Event::StartMapStart(start_map) => todo!(),
+            Event::StartMapEnd(start_map) => todo!(),
+            Event::EndMapStart(end_map_start) => todo!(),
+            Event::EndMapEnd(end_map_end) => todo!(),
+            Event::UnloadingMapStart(unloading_map_start) => todo!(),
+            Event::UnloadingMapEnd(unloading_map_end) => todo!(),
+            Event::PlayerConenct(player_connect) => todo!(),
+            Event::PlayerDisconnect(player_disconnect) => todo!(),
+            Event::PlayerChat(player_chat) => todo!(),
+            Event::StartTurnStart(start_turn) => todo!(),
+            Event::StartTurnEnd(start_turn) => todo!(),
+            Event::PlayLoopStart(play_loop_start) => todo!(),
+            Event::PlayLoopEnd(play_loop_end) => todo!(),
+            Event::EndRoundStart(end_round_start) => todo!(),
+            Event::EndRoundEnd(end_round_end) => todo!(),
+            Event::PodiumStart(podium) => todo!(),
+            Event::PodiumEnd(podium) => todo!(),
+            Event::Custom(custom) => todo!(),
+            _ => todo!(),
+        }
     }
 }
 
@@ -43,13 +83,13 @@ pub enum MatchStatus {
     Configuring,
     Upcoming,
     PreMatch,
-    Match,
+    Live,
     PostMatch,
     Ended,
 }
 
 /// Provisions a new StageMatch to the specified EventStage and a MatchTemplate.
-#[reducer]
+#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn provision_match(
     ctx: &ReducerContext,
     used_by: u64,
@@ -74,11 +114,11 @@ pub fn provision_match(
 }
 
 /// Assigns a server to the selected match.
-#[reducer]
+#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn match_assign_server(ctx: &ReducerContext, to: u64, server_id: String) {
     //TODO authorization
     if let Some(mut server) = ctx.db.tm_server().id().find(&server_id)
-        && server.active_mactch().is_none()
+        && server.active_match().is_none()
         && let Some(stage_match) = ctx.db.stage_match().id().find(to)
         && stage_match.status == MatchStatus::Configuring
     {
@@ -93,7 +133,7 @@ pub fn match_assign_server(ctx: &ReducerContext, to: u64, server_id: String) {
     }
 }
 
-#[reducer]
+#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn match_configured(ctx: &ReducerContext, id: u64) {
     //TODO authorization
     if let Some(mut stage_match) = ctx.db.stage_match().id().find(id)
@@ -104,7 +144,7 @@ pub fn match_configured(ctx: &ReducerContext, id: u64) {
     }
 }
 
-/* #[reducer]
+/* #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn update_pre_match_config(ctx: &ReducerContext, id: u64, config: ServerConfig) {
     //TODO authorization
     if let Some(mut stage_match) = ctx.db.stage_match().id().find(id) {
@@ -113,7 +153,7 @@ pub fn update_pre_match_config(ctx: &ReducerContext, id: u64, config: ServerConf
     }
 } */
 
-#[reducer]
+#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn update_match_config(ctx: &ReducerContext, id: u64, config: ServerConfig) {
     //TODO authorization
     if let Some(mut stage_match) = ctx.db.stage_match().id().find(id) {
@@ -123,7 +163,7 @@ pub fn update_match_config(ctx: &ReducerContext, id: u64, config: ServerConfig) 
 }
 
 /// If the match is fully configured and ready start.
-#[reducer]
+#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn try_start(ctx: &ReducerContext, match_id: u64) {
     //TODO authorization
     if let Some(mut stage_match) = ctx.db.stage_match().id().find(match_id)
@@ -133,7 +173,7 @@ pub fn try_start(ctx: &ReducerContext, match_id: u64) {
         && stage_match.status == MatchStatus::Upcoming
     {
         server.set_config(config.clone());
-        stage_match.status = MatchStatus::Match;
+        stage_match.status = MatchStatus::Live;
         ctx.db.stage_match().id().update(stage_match);
         ctx.db.tm_server().id().update(server);
     }

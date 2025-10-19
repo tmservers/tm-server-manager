@@ -5,11 +5,18 @@ pub use rounds::Rounds;
 mod common;
 pub use common::*;
 
+mod options;
+pub use options::ServerOptions;
+
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub struct ServerConfig {
+    // Dedicated Config TODO
+    options: ServerOptions,
+
+    // Playlist settings.
     common: Common,
     mode: ModeConfig,
     maps: MapPoolConfig,
@@ -72,7 +79,8 @@ impl Default for ServerConfig {
         Self {
             common: Common::default_rounds(),
             mode: ModeConfig::Rounds(Rounds::default()),
-            maps: MapPoolConfig::default(),
+            maps: Default::default(),
+            options: Default::default(),
         }
     }
 }

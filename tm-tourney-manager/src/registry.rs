@@ -15,7 +15,7 @@ pub struct MapRegistry {
     file: Vec<u8>,
 }
 
-#[reducer]
+#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn registry_add_map(
     ctx: &ReducerContext,
     //TODO remove

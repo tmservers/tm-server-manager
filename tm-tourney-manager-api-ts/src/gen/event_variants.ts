@@ -120,5 +120,4 @@ export type EndRoundEnd = { tag: "EndRoundEnd", value: EndRoundEndType };
 export type PodiumStart = { tag: "PodiumStart", value: PodiumType };
 export type PodiumEnd = { tag: "PodiumEnd", value: PodiumType };
 export type Custom = { tag: "Custom", value: CustomType };
-export type Legacy = { tag: "Legacy", value: CustomType };
 

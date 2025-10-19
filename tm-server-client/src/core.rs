@@ -15,9 +15,8 @@ use tm_server_types::event::Event;
 use tm_server_types::method::Method;
 use tokio::io::{self, AsyncReadExt, AsyncWriteExt, BufWriter, ReadHalf, WriteHalf};
 use tokio::net::TcpStream;
-//use tokio::sync::mpsc::Sender;
 use tokio::sync::{broadcast, oneshot};
-use tracing::{debug, error, info, warn};
+use tracing::{error, info, warn};
 
 #[derive(Debug)]
 struct GbxPacket {
@@ -249,12 +248,14 @@ impl TrackmaniaServer {
                             let params = callback.params();
                             Event::from_legacy(&callback_name, params)
                         };
-                        // Send the parsed event to all subscribed event handlers.
-                        let event = Arc::new(event);
-                        if let Err(error) = global_callback_sender.send(event.clone()) {
-                            error!("Global Events Listener failed: {:?}", error);
+                        if let Some(event) = event {
+                            // Send the parsed event to all subscribed event handlers.
+                            let event = Arc::new(event);
+                            if let Err(error) = global_callback_sender.send(event.clone()) {
+                                error!("Global Events Listener failed: {:?}", error);
+                            }
+                            registered_callbacks.send(&callback_name, event);
                         }
-                        registered_callbacks.send(&callback_name, event);
                     }
                 }
 

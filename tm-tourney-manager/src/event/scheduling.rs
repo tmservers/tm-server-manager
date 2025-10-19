@@ -18,7 +18,7 @@ struct TournamentEventSchedule {
     text: String,
 }
 
-#[reducer]
+#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 fn on_tournament_event_schedule(
     ctx: &ReducerContext,
     arg: TournamentEventSchedule,

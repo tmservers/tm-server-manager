@@ -28,10 +28,35 @@ import {
   type TableHandle as __TableHandle,
 } from "spacetimedb";
 
-export type Configuring = { tag: "Configuring" };
-export type Upcoming = { tag: "Upcoming" };
-export type PreMatch = { tag: "PreMatch" };
-export type Live = { tag: "Live" };
-export type PostMatch = { tag: "PostMatch" };
-export type Ended = { tag: "Ended" };
+export type ServerOptions = {};
+let _cached_ServerOptions_type_value: __AlgebraicTypeType | null = null;
+
+/**
+ * An object for generated helper functions.
+ */
+export const ServerOptions = {
+  /**
+  * A function which returns this type represented as an AlgebraicType.
+  * This function is derived from the AlgebraicType used to generate this type.
+  */
+  getTypeScriptAlgebraicType(): __AlgebraicTypeType {
+    if (_cached_ServerOptions_type_value) return _cached_ServerOptions_type_value;
+    _cached_ServerOptions_type_value = __AlgebraicTypeValue.Product({ elements: [] });
+    _cached_ServerOptions_type_value.value.elements.push(
+    );
+    return _cached_ServerOptions_type_value;
+  },
+
+  serialize(writer: __BinaryWriter, value: ServerOptions): void {
+    __AlgebraicTypeValue.serializeValue(writer, ServerOptions.getTypeScriptAlgebraicType(), value);
+  },
+
+  deserialize(reader: __BinaryReader): ServerOptions {
+    return __AlgebraicTypeValue.deserializeValue(reader, ServerOptions.getTypeScriptAlgebraicType());
+  },
+
+}
+
+export default ServerOptions;
+
 

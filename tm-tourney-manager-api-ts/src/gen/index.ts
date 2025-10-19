@@ -169,6 +169,8 @@ import { Scores } from "./scores_type.ts";
 export { Scores };
 import { ServerConfig } from "./server_config_type.ts";
 export { ServerConfig };
+import { ServerOptions } from "./server_options_type.ts";
+export { ServerOptions };
 import { ServerState } from "./server_state_type.ts";
 export { ServerState };
 import { StageMatch } from "./stage_match_type.ts";

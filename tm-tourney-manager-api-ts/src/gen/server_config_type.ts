@@ -27,6 +27,9 @@ import {
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
   type TableHandle as __TableHandle,
 } from "spacetimedb";
+import { ServerOptions } from "./server_options_type";
+// Mark import as potentially unused
+declare type __keep_ServerOptions = ServerOptions;
 import { Common } from "./common_type";
 // Mark import as potentially unused
 declare type __keep_Common = Common;
@@ -39,6 +42,7 @@ declare type __keep_MapPoolConfig = MapPoolConfig;
 
 
 export type ServerConfig = {
+  options: ServerOptions,
   common: Common,
   mode: ModeConfig,
   maps: MapPoolConfig,
@@ -57,6 +61,7 @@ export const ServerConfig = {
     if (_cached_ServerConfig_type_value) return _cached_ServerConfig_type_value;
     _cached_ServerConfig_type_value = __AlgebraicTypeValue.Product({ elements: [] });
     _cached_ServerConfig_type_value.value.elements.push(
+      { name: "options", algebraicType: ServerOptions.getTypeScriptAlgebraicType() },
       { name: "common", algebraicType: Common.getTypeScriptAlgebraicType() },
       { name: "mode", algebraicType: ModeConfig.getTypeScriptAlgebraicType() },
       { name: "maps", algebraicType: MapPoolConfig.getTypeScriptAlgebraicType() },

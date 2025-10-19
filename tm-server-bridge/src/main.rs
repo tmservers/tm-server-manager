@@ -38,7 +38,7 @@ fn connect_to_db() -> DbConnection {
         .on_connect_error(on_connect_error)
         .on_disconnect(on_disconnected)
         .with_module_name(
-            std::env::var("SPACETIMEDB_MODULE").unwrap_or("tourney-manager".to_string()),
+            std::env::var("SPACETIMEDB_MODULE").unwrap_or("tm-tourney-manager".to_string()),
         )
         .with_uri(std::env::var("SPACETIMEDB_URL").unwrap_or("http://localhost:1234".to_string()))
         .build()

@@ -7,10 +7,12 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 use super::common_type::Common;
 use super::map_pool_config_type::MapPoolConfig;
 use super::mode_config_type::ModeConfig;
+use super::server_options_type::ServerOptions;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct ServerConfig {
+    pub options: ServerOptions,
     pub common: Common,
     pub mode: ModeConfig,
     pub maps: MapPoolConfig,
