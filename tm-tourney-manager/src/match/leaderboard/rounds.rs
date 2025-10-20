@@ -3,7 +3,7 @@
 pub struct RoundsLeaderboard {
     restarted: u16,
     current_round: u16,
-    round: RoundsRound,
+    round: Vec<RoundsRound>,
 }
 
 #[derive(Debug)]
@@ -15,5 +15,6 @@ pub struct RoundsRound {
 #[derive(Debug)]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
 pub struct RoundsRoundPlayer {
-    
+    id: String,
+    ghost: u64,
 }

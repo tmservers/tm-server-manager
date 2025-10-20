@@ -106,24 +106,35 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
         // Emit all events
         server.event(move |event| {
-            let spacetime = SPACETIME.wait();
-            if spacetime
-                .reducers
-                .post_event(
-                    TM_SERVER_ID.into(),
-                    //SAFETY: Its the same type. Sadly Rust can not know that :< .
-                    unsafe {
-                        std::mem::transmute::<
-                            tm_server_client::types::event::Event,
-                            tm_tourney_manager_api_rs::Event,
-                        >(event.clone())
-                    },
-                )
-                .is_err()
-            {
-                println!("Event failed to publish!")
-            }
-        });
+            let event = event.clone();
+            tokio::spawn(async move {
+                let server = TRACKMANIA.wait();
+                match &event {
+                    tm_server_client::types::event::Event::EndRoundEnd(_) => {
+                        server.save_current_replay("jaa").await;
+                    }
+                    _ => (),
+                }
+
+                let spacetime = SPACETIME.wait();
+                if spacetime
+                    .reducers
+                    .post_event(
+                        TM_SERVER_ID.into(),
+                        //SAFETY: Its the same type. Sadly Rust can not know that :< .
+                        unsafe {
+                            std::mem::transmute::<
+                                tm_server_client::types::event::Event,
+                                tm_tourney_manager_api_rs::Event,
+                            >(event)
+                        },
+                    )
+                    .is_err()
+                {
+                    println!("Event failed to publish!")
+                }
+            });
+        })
     }
 
     // Connect to SpacetimeDB

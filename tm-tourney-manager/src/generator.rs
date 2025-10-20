@@ -3,4 +3,6 @@
 // The rules can be specified to capture previous events in a DAG.
 
 #[cfg_attr(feature = "spacetime", spacetimedb::table(name=generator))]
-struct Generator {}
+struct Generator {
+    
+}
