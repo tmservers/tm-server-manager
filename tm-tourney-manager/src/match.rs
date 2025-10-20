@@ -2,13 +2,12 @@ use spacetimedb::{ReducerContext, SpacetimeType, Table, reducer, table};
 use tm_server_types::{config::ServerConfig, event::Event};
 
 use crate::{
-    leaderboard::Leaderboard,
-    r#match::reconstruction::LiveMatch,
+    r#match::leaderboard::Leaderboard,
     server::{TmServer, tm_server},
     stage::{self, event_stage},
 };
 
-mod reconstruction;
+mod leaderboard;
 
 // The table name needs to be plural since match is a rust keyword
 #[table(name = stage_match, public)]
@@ -31,8 +30,7 @@ pub struct StageMatch {
     post_match_config: Option<ServerConfig>,
 
     status: MatchStatus,
-    //leaderboard: Leaderboard,
-    live: LiveMatch,
+    leaderboard: Leaderboard,
 }
 
 impl StageMatch {
@@ -106,6 +104,7 @@ pub fn provision_match(
             pre_match_config: None,
             match_config: None,
             post_match_config: None,
+            leaderboard: Leaderboard::new(),
         });
         stage.add_match(stage_match.id);
 

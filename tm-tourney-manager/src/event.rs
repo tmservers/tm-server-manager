@@ -1,6 +1,6 @@
 use spacetimedb::{ReducerContext, SpacetimeType, Table, TimeDuration, Timestamp, reducer, table};
 
-use crate::{leaderboard::Leaderboard, tournament::tournament};
+use crate::tournament::tournament;
 
 mod scheduling;
 
@@ -26,7 +26,6 @@ pub struct TournamentEvent {
     //TODO registered players
     //config: EventConfig,
     stages: Vec<u64>,
-    //leaderboard: Leaderboard,
 }
 
 impl TournamentEvent {

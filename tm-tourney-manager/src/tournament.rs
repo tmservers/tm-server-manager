@@ -1,6 +1,6 @@
 use spacetimedb::{ReducerContext, SpacetimeType, Table, reducer, table};
 
-use crate::{leaderboard::Leaderboard, tournament::registration::Registration, user::user};
+use crate::{tournament::registration::Registration, user::user};
 mod registration;
 
 #[table(name = tournament,public)]

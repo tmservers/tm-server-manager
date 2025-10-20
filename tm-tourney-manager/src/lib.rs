@@ -1,7 +1,6 @@
 use spacetimedb::{ReducerContext, reducer};
 
 pub mod event;
-pub mod leaderboard;
 pub mod r#match;
 mod registry;
 pub mod server;

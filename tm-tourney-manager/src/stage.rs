@@ -1,6 +1,6 @@
 use spacetimedb::{ReducerContext, Table, reducer, table};
 
-use crate::{event::tournament_event, leaderboard::Leaderboard};
+use crate::event::tournament_event;
 
 /// Each Event can have multiple stages association with it.
 /// These are walked through _sequentially_ as the Event progresses.
@@ -18,7 +18,6 @@ pub struct EventStage {
 
     /// Matches get executed in parallel
     matches: Vec<u64>,
-    //leaderboard: Leaderboard,
 }
 
 impl EventStage {
