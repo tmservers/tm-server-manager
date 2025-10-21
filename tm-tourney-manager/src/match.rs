@@ -10,7 +10,7 @@ use crate::{
 mod leaderboard;
 
 // The table name needs to be plural since match is a rust keyword
-#[table(name = stage_match, public)]
+#[cfg_attr(feature = "spacetime", spacetimedb::table(name = stage_match, public))]
 pub struct StageMatch {
     #[auto_inc]
     #[primary_key]
@@ -76,7 +76,8 @@ impl StageMatch {
     }
 }
 
-#[derive(Debug, SpacetimeType, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
 pub enum MatchStatus {
     Configuring,
     Upcoming,
@@ -178,7 +179,7 @@ pub fn try_start(ctx: &ReducerContext, match_id: u64) {
     }
 }
 
-#[table(name = match_template,public)]
+#[cfg_attr(feature = "spacetime", spacetimedb::table(name = match_template,public))]
 pub struct MatchTemplate {
     #[auto_inc]
     #[primary_key]

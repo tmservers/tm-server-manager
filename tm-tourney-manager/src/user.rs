@@ -1,6 +1,6 @@
 use spacetimedb::{Identity, SpacetimeType, table};
 
-#[table(name = user, public)]
+#[cfg_attr(feature = "spacetime", spacetimedb::table(name = user, public))]
 pub struct User {
     #[unique]
     identity: Identity,

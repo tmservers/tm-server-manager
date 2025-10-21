@@ -5,7 +5,7 @@ use crate::event::tournament_event;
 /// Each Event can have multiple stages association with it.
 /// These are walked through _sequentially_ as the Event progresses.
 /// This allows you to depend on the outcome of previous stages to determine players for the next stage.
-#[table(name = event_stage,public)]
+#[cfg_attr(feature = "spacetime", spacetimedb::table(name = event_stage,public))]
 pub struct EventStage {
     #[auto_inc]
     #[primary_key]

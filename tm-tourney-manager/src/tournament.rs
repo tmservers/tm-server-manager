@@ -3,7 +3,7 @@ use spacetimedb::{ReducerContext, SpacetimeType, Table, reducer, table};
 use crate::tournament::registration::Registration;
 mod registration;
 
-#[table(name = tournament,public)]
+#[cfg_attr(feature = "spacetime", spacetimedb::table(name = tournament,public))]
 pub struct Tournament {
     #[auto_inc]
     #[primary_key]

@@ -1,6 +1,6 @@
 use spacetimedb::{ReducerContext, ScheduleAt, reducer, table};
 
-#[table(name = tournament_event_schedule, scheduled(on_tournament_event_schedule))]
+#[cfg_attr(feature = "spacetime", spacetimedb::table(name = tournament_event_schedule, scheduled(on_tournament_event_schedule)))]
 struct TournamentEventSchedule {
     // Mandatory fields:
     // ============================

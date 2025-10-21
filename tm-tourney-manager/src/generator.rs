@@ -4,5 +4,18 @@
 
 #[cfg_attr(feature = "spacetime", spacetimedb::table(name=generator))]
 struct Generator {
-    
+    rules: bool,
+    mode_rules: ModeRules,
 }
+
+impl Generator {
+    pub fn execute(&self, context: &impl GeneratorContext) {}
+}
+
+pub trait GeneratorContext {
+    fn gen_level();
+}
+
+#[derive(Debug)]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
+pub enum ModeRules {}

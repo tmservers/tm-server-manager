@@ -9,8 +9,8 @@ pub mod stage;
 pub mod tournament;
 pub mod user;
 
-#[reducer(init)]
-pub fn init(_ctx: &ReducerContext) {
+#[cfg_attr(feature = "spacetime", spacetimedb::reducer(init))]
+fn init(_ctx: &ReducerContext) {
     /* let _ten_seconds = TimeDuration::from_micros(10_000_000);
     /* ctx.db.send_message_schedule().insert(SendMessageSchedule {
         scheduled_id: 0,
@@ -22,9 +22,9 @@ pub fn init(_ctx: &ReducerContext) {
     }); */ */
 }
 
-#[reducer(client_connected)]
+#[cfg_attr(feature = "spacetime", spacetimedb::reducer(client_connected))]
 // Called when a client connects to a SpacetimeDB database server
-pub fn client_connected(_ctx: &ReducerContext) {
+fn client_connected(_ctx: &ReducerContext) {
     /* if let Some(user) = ctx.db.entity().identity().find(ctx.sender) {
         // If this is a returning user, i.e. we already have a `User` with this `Identity`,
         // set `online: true`, but leave `name` and `identity` unchanged.
@@ -43,9 +43,9 @@ pub fn client_connected(_ctx: &ReducerContext) {
     } */
 }
 
-#[reducer(client_disconnected)]
+#[cfg_attr(feature = "spacetime", spacetimedb::reducer(client_disconnected))]
 // Called when a client disconnects from SpacetimeDB database server
-pub fn identity_disconnected(_ctx: &ReducerContext) {
+fn identity_disconnected(_ctx: &ReducerContext) {
     /* if let Some(user) = ctx.db.entity().identity().find(ctx.sender) {
         ctx.db.entity().identity().update(Entity {
             online: false,

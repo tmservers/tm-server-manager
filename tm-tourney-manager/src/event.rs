@@ -4,7 +4,7 @@ use crate::tournament::tournament;
 
 mod scheduling;
 
-#[table(name = tournament_event,public)]
+#[cfg_attr(feature = "spacetime",spacetimedb::table(name = tournament_event,public))]
 pub struct TournamentEvent {
     #[auto_inc]
     #[primary_key]
@@ -23,8 +23,16 @@ pub struct TournamentEvent {
     // Estimated duration how long the tourney is gonna take.
     estimate: Option<TimeDuration>,
 
-    //TODO registered players
+    // Can capture a server at the end of the registration to serve
+    // as a lobby server which automatically delegates players to their
+    // corresponding match server.
+    // lobby: Option<u64>,
+
+    //registration: Vec<Registration>,
+    //generate: Generator,
     //config: EventConfig,
+
+    // Stages get executed sequentially.
     stages: Vec<u64>,
 }
 
@@ -58,16 +66,16 @@ pub enum EventType {
     TimeAttack,
 }
 
-#[table(name = event_config,public)]
+#[cfg_attr(feature="spacetime",spacetimedb::table(name = event_config,public))]
 pub struct EventConfig {
-    #[auto_inc]
-    #[primary_key]
+    #[cfg_attr(feature = "spacetime", auto_inc)]
+    #[cfg_attr(feature = "spacetime", primary_key)]
     id: u64,
 
     owner: String,
     public: bool,
     // Global identifier for the event config.
-    #[unique]
+    #[cfg_attr(feature = "spacetime", unique)]
     name: String,
 
     ///  Determines if the

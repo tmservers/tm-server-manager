@@ -10,7 +10,7 @@ pub mod config;
 pub mod event;
 pub mod state;
 
-#[table(name=tm_server, public)]
+#[cfg_attr(feature = "spacetime", spacetimedb::table(name=tm_server, public))]
 pub struct TmServer {
     /// Trackmania provisiones a unique server_id for each server.
     //#[unique]
