@@ -104,14 +104,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             )
             .await;
 
+        warn!("{:?}", server.is_auto_save_replays_enabled().await);
+        warn!("{:?}", server.auto_save_replays(true).await);
+        warn!("{:?}", server.is_auto_save_replays_enabled().await);
+
         // Emit all events
         server.event(move |event| {
             let event = event.clone();
             tokio::spawn(async move {
                 let server = TRACKMANIA.wait();
                 match &event {
-                    tm_server_client::types::event::Event::EndRoundEnd(_) => {
-                        server.save_current_replay("jaa").await;
+                    tm_server_client::types::event::Event::EndRoundStart(info) => {
+                        let file_name = format!("{}{}", info.count, info.time);
+                        server.save_current_replay(&file_name).await;
                     }
                     _ => (),
                 }

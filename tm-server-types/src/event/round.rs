@@ -13,9 +13,9 @@ pub struct StartRound {
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub struct EndRoundStart {
-    count: u32,
-    valid: u32,
-    time: u32,
+    pub count: u32,
+    pub valid: u32,
+    pub time: u32,
 }
 
 #[derive(Debug, Clone)]
