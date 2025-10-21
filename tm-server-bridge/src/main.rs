@@ -26,8 +26,15 @@ const TM_SERVER_ID: &str = "test";
 
 /// Exposes the associated trackmania server globally.
 static TRACKMANIA: OnceLock<TrackmaniaServer> = OnceLock::new();
+
+/// Exposes the SpacetimeDB connection.
 static SPACETIME: OnceLock<DbConnection> = OnceLock::new();
+
+/// Exposes the NadeoAPI with server auth.
 static NADEO: OnceLock<Mutex<NadeoClient>> = OnceLock::new();
+
+/// Path to the Filesystem of the trackmnia server UserData.
+static TRACKMANIA_FILES: OnceLock<String> = OnceLock::new();
 
 //static STATE: OnceLock<Mutex<State>> = OnceLock::new();
 
@@ -60,6 +67,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         .expect("Environment variable: TM_MASTERSERVER_LOGIN MUST be set");
     let tm_password = std::env::var("TM_MASTERSERVER_PASSWORD")
         .expect("Environment variable: TM_MASTERSERVER_password MUST be set");
+
+    TRACKMANIA_FILES
+        .set(std::env::var("TM_FILES").unwrap_or("./UserData".into()))
+        .expect("The Path to the Trackmania Filesystem could not be established. Aborting.");
 
     {
         //Initialize the NadeoClient

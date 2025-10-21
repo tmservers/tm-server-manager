@@ -1,4 +1,5 @@
 use spacetimedb::{ReducerContext, SpacetimeType, Table, TimeDuration, Timestamp, reducer, table};
+use tm_server_types::event::Event;
 
 use crate::tournament::tournament;
 
