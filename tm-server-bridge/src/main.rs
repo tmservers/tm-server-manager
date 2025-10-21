@@ -132,10 +132,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         );
                         return;
                     };
-                    let full_path = TRACKMANIA_FILES.wait().clone() + "/" + &file_name;
+                    let full_path = TRACKMANIA_FILES.wait().clone()
+                        + "/Replays/"
+                        + &std::env::var("TM_MASTERSERVER_LOGIN").unwrap()
+                        + "/Autosaves/"
+                        + &file_name
+                        + ".Replay.Gbx";
+
                     match std::fs::read(&full_path) {
                         Ok(file) => {
-
+                            tracing::error!(
+                                "{:?} version: {}",
+                                String::from_utf8(file[0..3].to_vec()),
+                                u16::from_le_bytes(file[3..5].try_into().unwrap())
+                            )
                             //TODO parse the file and split off ghosts?
                             // Open questiones:
                             // - What about time attack?
