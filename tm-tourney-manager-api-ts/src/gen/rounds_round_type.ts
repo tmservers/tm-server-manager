@@ -27,47 +27,43 @@ import {
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
   type TableHandle as __TableHandle,
 } from "spacetimedb";
+import { RoundsRoundPlayer } from "./rounds_round_player_type";
+// Mark import as potentially unused
+declare type __keep_RoundsRoundPlayer = RoundsRoundPlayer;
 
-export type MapRegistry = {
-  id: string,
-  uploader: string,
-  author: string,
-  public: boolean,
-  file: Uint8Array,
+
+export type RoundsRound = {
+  players: RoundsRoundPlayer[],
 };
-let _cached_MapRegistry_type_value: __AlgebraicTypeType | null = null;
+let _cached_RoundsRound_type_value: __AlgebraicTypeType | null = null;
 
 /**
  * An object for generated helper functions.
  */
-export const MapRegistry = {
+export const RoundsRound = {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_MapRegistry_type_value) return _cached_MapRegistry_type_value;
-    _cached_MapRegistry_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_MapRegistry_type_value.value.elements.push(
-      { name: "id", algebraicType: __AlgebraicTypeValue.String },
-      { name: "uploader", algebraicType: __AlgebraicTypeValue.String },
-      { name: "author", algebraicType: __AlgebraicTypeValue.String },
-      { name: "public", algebraicType: __AlgebraicTypeValue.Bool },
-      { name: "file", algebraicType: __AlgebraicTypeValue.Array(__AlgebraicTypeValue.U8) },
+    if (_cached_RoundsRound_type_value) return _cached_RoundsRound_type_value;
+    _cached_RoundsRound_type_value = __AlgebraicTypeValue.Product({ elements: [] });
+    _cached_RoundsRound_type_value.value.elements.push(
+      { name: "players", algebraicType: __AlgebraicTypeValue.Array(RoundsRoundPlayer.getTypeScriptAlgebraicType()) },
     );
-    return _cached_MapRegistry_type_value;
+    return _cached_RoundsRound_type_value;
   },
 
-  serialize(writer: __BinaryWriter, value: MapRegistry): void {
-    __AlgebraicTypeValue.serializeValue(writer, MapRegistry.getTypeScriptAlgebraicType(), value);
+  serialize(writer: __BinaryWriter, value: RoundsRound): void {
+    __AlgebraicTypeValue.serializeValue(writer, RoundsRound.getTypeScriptAlgebraicType(), value);
   },
 
-  deserialize(reader: __BinaryReader): MapRegistry {
-    return __AlgebraicTypeValue.deserializeValue(reader, MapRegistry.getTypeScriptAlgebraicType());
+  deserialize(reader: __BinaryReader): RoundsRound {
+    return __AlgebraicTypeValue.deserializeValue(reader, RoundsRound.getTypeScriptAlgebraicType());
   },
 
 }
 
-export default MapRegistry;
+export default RoundsRound;
 
 

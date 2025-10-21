@@ -6,14 +6,11 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct MapRegistry {
+pub struct RoundsRoundPlayer {
     pub id: String,
-    pub uploader: String,
-    pub author: String,
-    pub public: bool,
-    pub file: Vec<u8>,
+    pub ghost: u64,
 }
 
-impl __sdk::InModule for MapRegistry {
+impl __sdk::InModule for RoundsRoundPlayer {
     type Module = super::RemoteModule;
 }

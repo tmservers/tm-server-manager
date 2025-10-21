@@ -4,6 +4,7 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
+use super::leaderboard_type::Leaderboard;
 use super::match_status_type::MatchStatus;
 use super::server_config_type::ServerConfig;
 
@@ -17,6 +18,7 @@ pub struct StageMatch {
     pub match_config: Option<ServerConfig>,
     pub post_match_config: Option<ServerConfig>,
     pub status: MatchStatus,
+    pub leaderboard: Leaderboard,
 }
 
 impl __sdk::InModule for StageMatch {

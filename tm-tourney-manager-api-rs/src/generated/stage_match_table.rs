@@ -2,6 +2,7 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN YOUR MODULE SOURCE CODE INSTEAD.
 
 #![allow(unused, clippy::all)]
+use super::leaderboard_type::Leaderboard;
 use super::match_status_type::MatchStatus;
 use super::server_config_type::ServerConfig;
 use super::stage_match_type::StageMatch;

@@ -26,14 +26,17 @@ pub mod event_phase_type;
 pub mod event_stage_table;
 pub mod event_stage_type;
 pub mod event_type;
+pub mod generator_table;
+pub mod generator_type;
+pub mod ghost_table;
+pub mod ghost_type;
 pub mod give_up_type;
 pub mod identity_disconnected_reducer;
+pub mod leaderboard_type;
 pub mod load_server_config_reducer;
 pub mod loading_map_end_type;
 pub mod loading_map_start_type;
 pub mod map_pool_config_type;
-pub mod map_registry_table;
-pub mod map_registry_type;
 pub mod map_type;
 pub mod match_assign_server_reducer;
 pub mod match_configured_reducer;
@@ -42,6 +45,8 @@ pub mod match_template_table;
 pub mod match_template_type;
 pub mod method_type;
 pub mod mode_config_type;
+pub mod mode_leaderboard_type;
+pub mod mode_rules_type;
 pub mod on_tournament_event_schedule_reducer;
 pub mod play_loop_end_type;
 pub mod play_loop_start_type;
@@ -52,12 +57,15 @@ pub mod player_registration_type;
 pub mod player_type;
 pub mod podium_type;
 pub mod post_event_reducer;
+pub mod post_ghost_reducer;
 pub mod provision_match_reducer;
 pub mod registration_type;
-pub mod registry_add_map_reducer;
 pub mod respawn_bavaviour_type;
 pub mod respawn_type;
 pub mod round_time_type;
+pub mod rounds_leaderboard_type;
+pub mod rounds_round_player_type;
+pub mod rounds_round_type;
 pub mod rounds_type;
 pub mod scores_type;
 pub mod server_config_type;
@@ -124,18 +132,21 @@ pub use event_phase_type::EventPhase;
 pub use event_stage_table::*;
 pub use event_stage_type::EventStage;
 pub use event_type::Event;
+pub use generator_table::*;
+pub use generator_type::Generator;
+pub use ghost_table::*;
+pub use ghost_type::Ghost;
 pub use give_up_type::GiveUp;
 pub use identity_disconnected_reducer::{
     identity_disconnected, set_flags_for_identity_disconnected, IdentityDisconnectedCallbackId,
 };
+pub use leaderboard_type::Leaderboard;
 pub use load_server_config_reducer::{
     load_server_config, set_flags_for_load_server_config, LoadServerConfigCallbackId,
 };
 pub use loading_map_end_type::LoadingMapEnd;
 pub use loading_map_start_type::LoadingMapStart;
 pub use map_pool_config_type::MapPoolConfig;
-pub use map_registry_table::*;
-pub use map_registry_type::MapRegistry;
 pub use map_type::Map;
 pub use match_assign_server_reducer::{
     match_assign_server, set_flags_for_match_assign_server, MatchAssignServerCallbackId,
@@ -148,6 +159,8 @@ pub use match_template_table::*;
 pub use match_template_type::MatchTemplate;
 pub use method_type::Method;
 pub use mode_config_type::ModeConfig;
+pub use mode_leaderboard_type::ModeLeaderboard;
+pub use mode_rules_type::ModeRules;
 pub use on_tournament_event_schedule_reducer::{
     on_tournament_event_schedule, set_flags_for_on_tournament_event_schedule,
     OnTournamentEventScheduleCallbackId,
@@ -161,16 +174,17 @@ pub use player_registration_type::PlayerRegistration;
 pub use player_type::Player;
 pub use podium_type::Podium;
 pub use post_event_reducer::{post_event, set_flags_for_post_event, PostEventCallbackId};
+pub use post_ghost_reducer::{post_ghost, set_flags_for_post_ghost, PostGhostCallbackId};
 pub use provision_match_reducer::{
     provision_match, set_flags_for_provision_match, ProvisionMatchCallbackId,
 };
 pub use registration_type::Registration;
-pub use registry_add_map_reducer::{
-    registry_add_map, set_flags_for_registry_add_map, RegistryAddMapCallbackId,
-};
 pub use respawn_bavaviour_type::RespawnBavaviour;
 pub use respawn_type::Respawn;
 pub use round_time_type::RoundTime;
+pub use rounds_leaderboard_type::RoundsLeaderboard;
+pub use rounds_round_player_type::RoundsRoundPlayer;
+pub use rounds_round_type::RoundsRound;
 pub use rounds_type::Rounds;
 pub use scores_type::Scores;
 pub use server_config_type::ServerConfig;
@@ -269,13 +283,13 @@ pub enum Reducer {
         id: String,
         event: Event,
     },
+    PostGhost {
+        ghost: Vec<u8>,
+    },
     ProvisionMatch {
         used_by: u64,
         with_config: Option<u64>,
         auto_provisioning_server: bool,
-    },
-    RegistryAddMap {
-        uploader: u64,
     },
     SetTmServerState {
         id: String,
@@ -311,8 +325,8 @@ impl __sdk::Reducer for Reducer {
             Reducer::MatchConfigured { .. } => "match_configured",
             Reducer::OnTournamentEventSchedule { .. } => "on_tournament_event_schedule",
             Reducer::PostEvent { .. } => "post_event",
+            Reducer::PostGhost { .. } => "post_ghost",
             Reducer::ProvisionMatch { .. } => "provision_match",
-            Reducer::RegistryAddMap { .. } => "registry_add_map",
             Reducer::SetTmServerState { .. } => "set_tm_server_state",
             Reducer::TryStart { .. } => "try_start",
             Reducer::UpdateMatchConfig { .. } => "update_match_config",
@@ -396,13 +410,16 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 )?
                 .into(),
             ),
+            "post_ghost" => Ok(
+                __sdk::parse_reducer_args::<post_ghost_reducer::PostGhostArgs>(
+                    "post_ghost",
+                    &value.args,
+                )?
+                .into(),
+            ),
             "provision_match" => Ok(__sdk::parse_reducer_args::<
                 provision_match_reducer::ProvisionMatchArgs,
             >("provision_match", &value.args)?
-            .into()),
-            "registry_add_map" => Ok(__sdk::parse_reducer_args::<
-                registry_add_map_reducer::RegistryAddMapArgs,
-            >("registry_add_map", &value.args)?
             .into()),
             "set_tm_server_state" => Ok(__sdk::parse_reducer_args::<
                 set_tm_server_state_reducer::SetTmServerStateArgs,
@@ -435,7 +452,8 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
 pub struct DbUpdate {
     event_config: __sdk::TableUpdate<EventConfig>,
     event_stage: __sdk::TableUpdate<EventStage>,
-    map_registry: __sdk::TableUpdate<MapRegistry>,
+    generator: __sdk::TableUpdate<Generator>,
+    ghost: __sdk::TableUpdate<Ghost>,
     match_template: __sdk::TableUpdate<MatchTemplate>,
     stage_match: __sdk::TableUpdate<StageMatch>,
     stage_template: __sdk::TableUpdate<StageTemplate>,
@@ -460,9 +478,12 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "event_stage" => db_update
                     .event_stage
                     .append(event_stage_table::parse_table_update(table_update)?),
-                "map_registry" => db_update
-                    .map_registry
-                    .append(map_registry_table::parse_table_update(table_update)?),
+                "generator" => db_update
+                    .generator
+                    .append(generator_table::parse_table_update(table_update)?),
+                "ghost" => db_update
+                    .ghost
+                    .append(ghost_table::parse_table_update(table_update)?),
                 "match_template" => db_update
                     .match_template
                     .append(match_template_table::parse_table_update(table_update)?),
@@ -519,15 +540,13 @@ impl __sdk::DbUpdate for DbUpdate {
     ) -> AppliedDiff<'_> {
         let mut diff = AppliedDiff::default();
 
-        diff.event_config = cache
-            .apply_diff_to_table::<EventConfig>("event_config", &self.event_config)
-            .with_updates_by_pk(|row| &row.id);
+        diff.event_config =
+            cache.apply_diff_to_table::<EventConfig>("event_config", &self.event_config);
         diff.event_stage = cache
             .apply_diff_to_table::<EventStage>("event_stage", &self.event_stage)
             .with_updates_by_pk(|row| &row.id);
-        diff.map_registry = cache
-            .apply_diff_to_table::<MapRegistry>("map_registry", &self.map_registry)
-            .with_updates_by_pk(|row| &row.id);
+        diff.generator = cache.apply_diff_to_table::<Generator>("generator", &self.generator);
+        diff.ghost = cache.apply_diff_to_table::<Ghost>("ghost", &self.ghost);
         diff.match_template = cache
             .apply_diff_to_table::<MatchTemplate>("match_template", &self.match_template)
             .with_updates_by_pk(|row| &row.id);
@@ -571,7 +590,8 @@ impl __sdk::DbUpdate for DbUpdate {
 pub struct AppliedDiff<'r> {
     event_config: __sdk::TableAppliedDiff<'r, EventConfig>,
     event_stage: __sdk::TableAppliedDiff<'r, EventStage>,
-    map_registry: __sdk::TableAppliedDiff<'r, MapRegistry>,
+    generator: __sdk::TableAppliedDiff<'r, Generator>,
+    ghost: __sdk::TableAppliedDiff<'r, Ghost>,
     match_template: __sdk::TableAppliedDiff<'r, MatchTemplate>,
     stage_match: __sdk::TableAppliedDiff<'r, StageMatch>,
     stage_template: __sdk::TableAppliedDiff<'r, StageTemplate>,
@@ -600,11 +620,8 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             event,
         );
         callbacks.invoke_table_row_callbacks::<EventStage>("event_stage", &self.event_stage, event);
-        callbacks.invoke_table_row_callbacks::<MapRegistry>(
-            "map_registry",
-            &self.map_registry,
-            event,
-        );
+        callbacks.invoke_table_row_callbacks::<Generator>("generator", &self.generator, event);
+        callbacks.invoke_table_row_callbacks::<Ghost>("ghost", &self.ghost, event);
         callbacks.invoke_table_row_callbacks::<MatchTemplate>(
             "match_template",
             &self.match_template,
@@ -1231,7 +1248,8 @@ impl __sdk::SpacetimeModule for RemoteModule {
     fn register_tables(client_cache: &mut __sdk::ClientCache<Self>) {
         event_config_table::register_table(client_cache);
         event_stage_table::register_table(client_cache);
-        map_registry_table::register_table(client_cache);
+        generator_table::register_table(client_cache);
+        ghost_table::register_table(client_cache);
         match_template_table::register_table(client_cache);
         stage_match_table::register_table(client_cache);
         stage_template_table::register_table(client_cache);

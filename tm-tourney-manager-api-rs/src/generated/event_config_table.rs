@@ -81,24 +81,6 @@ impl<'ctx> __sdk::Table for EventConfigTableHandle<'ctx> {
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
     let _table = client_cache.get_or_make_table::<EventConfig>("event_config");
-    _table.add_unique_constraint::<u64>("id", |row| &row.id);
-    _table.add_unique_constraint::<String>("name", |row| &row.name);
-}
-pub struct EventConfigUpdateCallbackId(__sdk::CallbackId);
-
-impl<'ctx> __sdk::TableWithPrimaryKey for EventConfigTableHandle<'ctx> {
-    type UpdateCallbackId = EventConfigUpdateCallbackId;
-
-    fn on_update(
-        &self,
-        callback: impl FnMut(&Self::EventContext, &Self::Row, &Self::Row) + Send + 'static,
-    ) -> EventConfigUpdateCallbackId {
-        EventConfigUpdateCallbackId(self.imp.on_update(Box::new(callback)))
-    }
-
-    fn remove_on_update(&self, callback: EventConfigUpdateCallbackId) {
-        self.imp.remove_on_update(callback.0)
-    }
 }
 
 #[doc(hidden)]
@@ -110,64 +92,4 @@ pub(super) fn parse_table_update(
             .with_cause(e)
             .into()
     })
-}
-
-/// Access to the `id` unique index on the table `event_config`,
-/// which allows point queries on the field of the same name
-/// via the [`EventConfigIdUnique::find`] method.
-///
-/// Users are encouraged not to explicitly reference this type,
-/// but to directly chain method calls,
-/// like `ctx.db.event_config().id().find(...)`.
-pub struct EventConfigIdUnique<'ctx> {
-    imp: __sdk::UniqueConstraintHandle<EventConfig, u64>,
-    phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
-}
-
-impl<'ctx> EventConfigTableHandle<'ctx> {
-    /// Get a handle on the `id` unique index on the table `event_config`.
-    pub fn id(&self) -> EventConfigIdUnique<'ctx> {
-        EventConfigIdUnique {
-            imp: self.imp.get_unique_constraint::<u64>("id"),
-            phantom: std::marker::PhantomData,
-        }
-    }
-}
-
-impl<'ctx> EventConfigIdUnique<'ctx> {
-    /// Find the subscribed row whose `id` column value is equal to `col_val`,
-    /// if such a row is present in the client cache.
-    pub fn find(&self, col_val: &u64) -> Option<EventConfig> {
-        self.imp.find(col_val)
-    }
-}
-
-/// Access to the `name` unique index on the table `event_config`,
-/// which allows point queries on the field of the same name
-/// via the [`EventConfigNameUnique::find`] method.
-///
-/// Users are encouraged not to explicitly reference this type,
-/// but to directly chain method calls,
-/// like `ctx.db.event_config().name().find(...)`.
-pub struct EventConfigNameUnique<'ctx> {
-    imp: __sdk::UniqueConstraintHandle<EventConfig, String>,
-    phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
-}
-
-impl<'ctx> EventConfigTableHandle<'ctx> {
-    /// Get a handle on the `name` unique index on the table `event_config`.
-    pub fn name(&self) -> EventConfigNameUnique<'ctx> {
-        EventConfigNameUnique {
-            imp: self.imp.get_unique_constraint::<String>("name"),
-            phantom: std::marker::PhantomData,
-        }
-    }
-}
-
-impl<'ctx> EventConfigNameUnique<'ctx> {
-    /// Find the subscribed row whose `name` column value is equal to `col_val`,
-    /// if such a row is present in the client cache.
-    pub fn find(&self, col_val: &String) -> Option<EventConfig> {
-        self.imp.find(col_val)
-    }
 }

@@ -59,10 +59,10 @@ import { OnTournamentEventSchedule } from "./on_tournament_event_schedule_reduce
 export { OnTournamentEventSchedule };
 import { PostEvent } from "./post_event_reducer.ts";
 export { PostEvent };
+import { PostGhost } from "./post_ghost_reducer.ts";
+export { PostGhost };
 import { ProvisionMatch } from "./provision_match_reducer.ts";
 export { ProvisionMatch };
-import { RegistryAddMap } from "./registry_add_map_reducer.ts";
-export { RegistryAddMap };
 import { SetTmServerState } from "./set_tm_server_state_reducer.ts";
 export { SetTmServerState };
 import { TryStart } from "./try_start_reducer.ts";
@@ -75,8 +75,10 @@ import { EventConfigTableHandle } from "./event_config_table.ts";
 export { EventConfigTableHandle };
 import { EventStageTableHandle } from "./event_stage_table.ts";
 export { EventStageTableHandle };
-import { MapRegistryTableHandle } from "./map_registry_table.ts";
-export { MapRegistryTableHandle };
+import { GeneratorTableHandle } from "./generator_table.ts";
+export { GeneratorTableHandle };
+import { GhostTableHandle } from "./ghost_table.ts";
+export { GhostTableHandle };
 import { MatchTemplateTableHandle } from "./match_template_table.ts";
 export { MatchTemplateTableHandle };
 import { StageMatchTableHandle } from "./stage_match_table.ts";
@@ -119,8 +121,14 @@ import { EventPhase } from "./event_phase_type.ts";
 export { EventPhase };
 import { EventStage } from "./event_stage_type.ts";
 export { EventStage };
+import { Generator } from "./generator_type.ts";
+export { Generator };
+import { Ghost } from "./ghost_type.ts";
+export { Ghost };
 import { GiveUp } from "./give_up_type.ts";
 export { GiveUp };
+import { Leaderboard } from "./leaderboard_type.ts";
+export { Leaderboard };
 import { LoadingMapEnd } from "./loading_map_end_type.ts";
 export { LoadingMapEnd };
 import { LoadingMapStart } from "./loading_map_start_type.ts";
@@ -129,8 +137,6 @@ import { Map } from "./map_type.ts";
 export { Map };
 import { MapPoolConfig } from "./map_pool_config_type.ts";
 export { MapPoolConfig };
-import { MapRegistry } from "./map_registry_type.ts";
-export { MapRegistry };
 import { MatchStatus } from "./match_status_type.ts";
 export { MatchStatus };
 import { MatchTemplate } from "./match_template_type.ts";
@@ -139,6 +145,10 @@ import { Method } from "./method_type.ts";
 export { Method };
 import { ModeConfig } from "./mode_config_type.ts";
 export { ModeConfig };
+import { ModeLeaderboard } from "./mode_leaderboard_type.ts";
+export { ModeLeaderboard };
+import { ModeRules } from "./mode_rules_type.ts";
+export { ModeRules };
 import { PlayLoopEnd } from "./play_loop_end_type.ts";
 export { PlayLoopEnd };
 import { PlayLoopStart } from "./play_loop_start_type.ts";
@@ -165,6 +175,12 @@ import { RoundTime } from "./round_time_type.ts";
 export { RoundTime };
 import { Rounds } from "./rounds_type.ts";
 export { Rounds };
+import { RoundsLeaderboard } from "./rounds_leaderboard_type.ts";
+export { RoundsLeaderboard };
+import { RoundsRound } from "./rounds_round_type.ts";
+export { RoundsRound };
+import { RoundsRoundPlayer } from "./rounds_round_player_type.ts";
+export { RoundsRoundPlayer };
 import { Scores } from "./scores_type.ts";
 export { Scores };
 import { ServerConfig } from "./server_config_type.ts";
@@ -219,11 +235,6 @@ const REMOTE_MODULE = {
     event_config: {
       tableName: "event_config" as const,
       rowType: EventConfig.getTypeScriptAlgebraicType(),
-      primaryKey: "id",
-      primaryKeyInfo: {
-        colName: "id",
-        colType: (EventConfig.getTypeScriptAlgebraicType() as __AlgebraicTypeVariants.Product).value.elements[0].algebraicType,
-      },
     },
     event_stage: {
       tableName: "event_stage" as const,
@@ -234,14 +245,13 @@ const REMOTE_MODULE = {
         colType: (EventStage.getTypeScriptAlgebraicType() as __AlgebraicTypeVariants.Product).value.elements[0].algebraicType,
       },
     },
-    map_registry: {
-      tableName: "map_registry" as const,
-      rowType: MapRegistry.getTypeScriptAlgebraicType(),
-      primaryKey: "id",
-      primaryKeyInfo: {
-        colName: "id",
-        colType: (MapRegistry.getTypeScriptAlgebraicType() as __AlgebraicTypeVariants.Product).value.elements[0].algebraicType,
-      },
+    generator: {
+      tableName: "generator" as const,
+      rowType: Generator.getTypeScriptAlgebraicType(),
+    },
+    ghost: {
+      tableName: "ghost" as const,
+      rowType: Ghost.getTypeScriptAlgebraicType(),
     },
     match_template: {
       tableName: "match_template" as const,
@@ -386,13 +396,13 @@ const REMOTE_MODULE = {
       reducerName: "post_event",
       argsType: PostEvent.getTypeScriptAlgebraicType(),
     },
+    post_ghost: {
+      reducerName: "post_ghost",
+      argsType: PostGhost.getTypeScriptAlgebraicType(),
+    },
     provision_match: {
       reducerName: "provision_match",
       argsType: ProvisionMatch.getTypeScriptAlgebraicType(),
-    },
-    registry_add_map: {
-      reducerName: "registry_add_map",
-      argsType: RegistryAddMap.getTypeScriptAlgebraicType(),
     },
     set_tm_server_state: {
       reducerName: "set_tm_server_state",
@@ -450,8 +460,8 @@ export type Reducer = never
 | { name: "MatchConfigured", args: MatchConfigured }
 | { name: "OnTournamentEventSchedule", args: OnTournamentEventSchedule }
 | { name: "PostEvent", args: PostEvent }
+| { name: "PostGhost", args: PostGhost }
 | { name: "ProvisionMatch", args: ProvisionMatch }
-| { name: "RegistryAddMap", args: RegistryAddMap }
 | { name: "SetTmServerState", args: SetTmServerState }
 | { name: "TryStart", args: TryStart }
 | { name: "UpdateMatchConfig", args: UpdateMatchConfig }
@@ -668,6 +678,22 @@ export class RemoteReducers {
     this.connection.offReducer("post_event", callback);
   }
 
+  postGhost(ghost: Uint8Array) {
+    const __args = { ghost };
+    let __writer = new __BinaryWriter(1024);
+    PostGhost.serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("post_ghost", __argsBuffer, this.setCallReducerFlags.postGhostFlags);
+  }
+
+  onPostGhost(callback: (ctx: ReducerEventContext, ghost: Uint8Array) => void) {
+    this.connection.onReducer("post_ghost", callback);
+  }
+
+  removeOnPostGhost(callback: (ctx: ReducerEventContext, ghost: Uint8Array) => void) {
+    this.connection.offReducer("post_ghost", callback);
+  }
+
   provisionMatch(usedBy: bigint, withConfig: bigint | undefined, autoProvisioningServer: boolean) {
     const __args = { usedBy, withConfig, autoProvisioningServer };
     let __writer = new __BinaryWriter(1024);
@@ -682,22 +708,6 @@ export class RemoteReducers {
 
   removeOnProvisionMatch(callback: (ctx: ReducerEventContext, usedBy: bigint, withConfig: bigint | undefined, autoProvisioningServer: boolean) => void) {
     this.connection.offReducer("provision_match", callback);
-  }
-
-  registryAddMap(uploader: bigint) {
-    const __args = { uploader };
-    let __writer = new __BinaryWriter(1024);
-    RegistryAddMap.serialize(__writer, __args);
-    let __argsBuffer = __writer.getBuffer();
-    this.connection.callReducer("registry_add_map", __argsBuffer, this.setCallReducerFlags.registryAddMapFlags);
-  }
-
-  onRegistryAddMap(callback: (ctx: ReducerEventContext, uploader: bigint) => void) {
-    this.connection.onReducer("registry_add_map", callback);
-  }
-
-  removeOnRegistryAddMap(callback: (ctx: ReducerEventContext, uploader: bigint) => void) {
-    this.connection.offReducer("registry_add_map", callback);
   }
 
   setTmServerState(id: string, state: ServerState) {
@@ -811,14 +821,14 @@ export class SetReducerFlags {
     this.postEventFlags = flags;
   }
 
+  postGhostFlags: __CallReducerFlags = 'FullUpdate';
+  postGhost(flags: __CallReducerFlags) {
+    this.postGhostFlags = flags;
+  }
+
   provisionMatchFlags: __CallReducerFlags = 'FullUpdate';
   provisionMatch(flags: __CallReducerFlags) {
     this.provisionMatchFlags = flags;
-  }
-
-  registryAddMapFlags: __CallReducerFlags = 'FullUpdate';
-  registryAddMap(flags: __CallReducerFlags) {
-    this.registryAddMapFlags = flags;
   }
 
   setTmServerStateFlags: __CallReducerFlags = 'FullUpdate';
@@ -851,9 +861,14 @@ export class RemoteTables {
     return new EventStageTableHandle((this.connection as unknown as { clientCache: __ClientCache }).clientCache.getOrCreateTable<EventStage>(REMOTE_MODULE.tables.event_stage));
   }
 
-  get mapRegistry(): MapRegistryTableHandle<'map_registry'> {
+  get generator(): GeneratorTableHandle<'generator'> {
     // clientCache is a private property
-    return new MapRegistryTableHandle((this.connection as unknown as { clientCache: __ClientCache }).clientCache.getOrCreateTable<MapRegistry>(REMOTE_MODULE.tables.map_registry));
+    return new GeneratorTableHandle((this.connection as unknown as { clientCache: __ClientCache }).clientCache.getOrCreateTable<Generator>(REMOTE_MODULE.tables.generator));
+  }
+
+  get ghost(): GhostTableHandle<'ghost'> {
+    // clientCache is a private property
+    return new GhostTableHandle((this.connection as unknown as { clientCache: __ClientCache }).clientCache.getOrCreateTable<Ghost>(REMOTE_MODULE.tables.ghost));
   }
 
   get matchTemplate(): MatchTemplateTableHandle<'match_template'> {

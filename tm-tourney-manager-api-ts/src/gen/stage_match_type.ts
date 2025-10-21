@@ -33,6 +33,9 @@ declare type __keep_ServerConfig = ServerConfig;
 import { MatchStatus } from "./match_status_type";
 // Mark import as potentially unused
 declare type __keep_MatchStatus = MatchStatus;
+import { Leaderboard } from "./leaderboard_type";
+// Mark import as potentially unused
+declare type __keep_Leaderboard = Leaderboard;
 
 
 export type StageMatch = {
@@ -43,6 +46,7 @@ export type StageMatch = {
   matchConfig: ServerConfig | undefined,
   postMatchConfig: ServerConfig | undefined,
   status: MatchStatus,
+  leaderboard: Leaderboard,
 };
 let _cached_StageMatch_type_value: __AlgebraicTypeType | null = null;
 
@@ -65,6 +69,7 @@ export const StageMatch = {
       { name: "matchConfig", algebraicType: __AlgebraicTypeValue.createOptionType(ServerConfig.getTypeScriptAlgebraicType()) },
       { name: "postMatchConfig", algebraicType: __AlgebraicTypeValue.createOptionType(ServerConfig.getTypeScriptAlgebraicType()) },
       { name: "status", algebraicType: MatchStatus.getTypeScriptAlgebraicType() },
+      { name: "leaderboard", algebraicType: Leaderboard.getTypeScriptAlgebraicType() },
     );
     return _cached_StageMatch_type_value;
   },

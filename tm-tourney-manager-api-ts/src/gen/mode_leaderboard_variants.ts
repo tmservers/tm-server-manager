@@ -27,38 +27,10 @@ import {
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
   type TableHandle as __TableHandle,
 } from "spacetimedb";
+import { RoundsLeaderboard as RoundsLeaderboardType } from "./rounds_leaderboard_type";
+// Mark import as potentially unused
+declare type __keep_RoundsLeaderboardType = RoundsLeaderboardType;
 
-export type RegistryAddMap = {
-  uploader: bigint,
-};
-let _cached_RegistryAddMap_type_value: __AlgebraicTypeType | null = null;
 
-/**
- * An object for generated helper functions.
- */
-export const RegistryAddMap = {
-  /**
-  * A function which returns this type represented as an AlgebraicType.
-  * This function is derived from the AlgebraicType used to generate this type.
-  */
-  getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_RegistryAddMap_type_value) return _cached_RegistryAddMap_type_value;
-    _cached_RegistryAddMap_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_RegistryAddMap_type_value.value.elements.push(
-      { name: "uploader", algebraicType: __AlgebraicTypeValue.U64 },
-    );
-    return _cached_RegistryAddMap_type_value;
-  },
-
-  serialize(writer: __BinaryWriter, value: RegistryAddMap): void {
-    __AlgebraicTypeValue.serializeValue(writer, RegistryAddMap.getTypeScriptAlgebraicType(), value);
-  },
-
-  deserialize(reader: __BinaryReader): RegistryAddMap {
-    return __AlgebraicTypeValue.deserializeValue(reader, RegistryAddMap.getTypeScriptAlgebraicType());
-  },
-
-}
-
-export default RegistryAddMap;
+export type Rounds = { tag: "Rounds", value: RoundsLeaderboardType };
 

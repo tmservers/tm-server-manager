@@ -30,7 +30,7 @@ pub struct StageMatch {
     post_match_config: Option<ServerConfig>,
 
     status: MatchStatus,
-    leaderboard: Leaderboard,
+    //leaderboard: Leaderboard,
 }
 
 impl StageMatch {
@@ -105,7 +105,7 @@ pub fn provision_match(
             pre_match_config: None,
             match_config: None,
             post_match_config: None,
-            leaderboard: Leaderboard::new(),
+            //leaderboard: Leaderboard::new(),
         });
         stage.add_match(stage_match.id);
 

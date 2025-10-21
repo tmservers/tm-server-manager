@@ -27,26 +27,26 @@ import {
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
   type TableHandle as __TableHandle,
 } from "spacetimedb";
-import { EventConfig } from "./event_config_type";
+import { Ghost } from "./ghost_type";
 import { type EventContext, type Reducer, RemoteReducers, RemoteTables } from ".";
 declare type __keep = [EventContext, Reducer, RemoteReducers, RemoteTables];
 
 /**
- * Table handle for the table `event_config`.
+ * Table handle for the table `ghost`.
  *
- * Obtain a handle from the [`eventConfig`] property on [`RemoteTables`],
- * like `ctx.db.eventConfig`.
+ * Obtain a handle from the [`ghost`] property on [`RemoteTables`],
+ * like `ctx.db.ghost`.
  *
  * Users are encouraged not to explicitly reference this type,
  * but to directly chain method calls,
- * like `ctx.db.eventConfig.on_insert(...)`.
+ * like `ctx.db.ghost.on_insert(...)`.
  */
-export class EventConfigTableHandle<TableName extends string> implements __TableHandle<TableName> {
+export class GhostTableHandle<TableName extends string> implements __TableHandle<TableName> {
   // phantom type to track the table name
   readonly tableName!: TableName;
-  tableCache: __TableCache<EventConfig>;
+  tableCache: __TableCache<Ghost>;
 
-  constructor(tableCache: __TableCache<EventConfig>) {
+  constructor(tableCache: __TableCache<Ghost>) {
     this.tableCache = tableCache;
   }
 
@@ -54,23 +54,23 @@ export class EventConfigTableHandle<TableName extends string> implements __Table
     return this.tableCache.count();
   }
 
-  iter(): Iterable<EventConfig> {
+  iter(): Iterable<Ghost> {
     return this.tableCache.iter();
   }
 
-  onInsert = (cb: (ctx: EventContext, row: EventConfig) => void) => {
+  onInsert = (cb: (ctx: EventContext, row: Ghost) => void) => {
     return this.tableCache.onInsert(cb);
   }
 
-  removeOnInsert = (cb: (ctx: EventContext, row: EventConfig) => void) => {
+  removeOnInsert = (cb: (ctx: EventContext, row: Ghost) => void) => {
     return this.tableCache.removeOnInsert(cb);
   }
 
-  onDelete = (cb: (ctx: EventContext, row: EventConfig) => void) => {
+  onDelete = (cb: (ctx: EventContext, row: Ghost) => void) => {
     return this.tableCache.onDelete(cb);
   }
 
-  removeOnDelete = (cb: (ctx: EventContext, row: EventConfig) => void) => {
+  removeOnDelete = (cb: (ctx: EventContext, row: Ghost) => void) => {
     return this.tableCache.removeOnDelete(cb);
   }
 }

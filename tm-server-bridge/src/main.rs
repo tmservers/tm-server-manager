@@ -145,7 +145,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                                 "{:?} version: {}",
                                 String::from_utf8(file[0..3].to_vec()),
                                 u16::from_le_bytes(file[3..5].try_into().unwrap())
-                            )
+                            );
+
+                            if let Err(error) = SPACETIME.wait().reducers.post_ghost(file) {
+                                tracing::error!(
+                                    "Failed to add Ghosts for current round. Reason {error}"
+                                )
+                            };
                             //TODO parse the file and split off ghosts?
                             // Open questiones:
                             // - What about time attack?
@@ -153,6 +159,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                             // - How much file size savings when extracting ghosts.
                             // - Should the transformation happen on the client or the server?
                             //   - Probably client side since we already have a sidecar anyway...
+                            // - Which metadata should be stored alongside the ghost? (can happen server side)
                         }
                         Err(error) => {
                             tracing::error!("Failed to read replay file. Reason: {error}")

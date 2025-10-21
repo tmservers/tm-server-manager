@@ -34,6 +34,9 @@ declare type __keep_ServerConfig = ServerConfig;
 import { MatchStatus } from "./match_status_type";
 // Mark import as potentially unused
 declare type __keep_MatchStatus = MatchStatus;
+import { Leaderboard } from "./leaderboard_type";
+// Mark import as potentially unused
+declare type __keep_Leaderboard = Leaderboard;
 
 import { type EventContext, type Reducer, RemoteReducers, RemoteTables } from ".";
 declare type __keep = [EventContext, Reducer, RemoteReducers, RemoteTables];
