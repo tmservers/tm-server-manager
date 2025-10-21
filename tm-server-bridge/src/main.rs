@@ -124,12 +124,31 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             let event = event.clone();
             tokio::spawn(async move {
                 let server = TRACKMANIA.wait();
-                match &event {
-                    tm_server_client::types::event::Event::EndRoundStart(info) => {
-                        let file_name = format!("{}{}", info.count, info.time);
-                        server.save_current_replay(&file_name).await;
-                    }
-                    _ => (),
+                if let tm_server_client::types::event::Event::EndRoundStart(info) = &event {
+                    let file_name = format!("{}{}", info.count, info.time);
+                    if let Err(error) = server.save_current_replay(&file_name).await {
+                        tracing::error!(
+                            "Failed to save Replay File after Round ended. Reason: {error}"
+                        );
+                        return;
+                    };
+                    let full_path = TRACKMANIA_FILES.wait().clone() + "/" + &file_name;
+                    match std::fs::read(&full_path) {
+                        Ok(file) => {
+
+                            //TODO parse the file and split off ghosts?
+                            // Open questiones:
+                            // - What about time attack?
+                            //   - No Ghost can be associated with a player but rather a Vec<Ghost> for all the runs
+                            // - How much file size savings when extracting ghosts.
+                        }
+                        Err(error) => {
+                            tracing::error!("Failed to read replay file. Reason: {error}")
+                        }
+                    };
+                    if let Err(error) = std::fs::remove_file(&full_path) {
+                        tracing::error!("Failed to delete the current replay file! Reason: {error}")
+                    };
                 }
 
                 let spacetime = SPACETIME.wait();
