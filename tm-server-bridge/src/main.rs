@@ -141,6 +141,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                             // - What about time attack?
                             //   - No Ghost can be associated with a player but rather a Vec<Ghost> for all the runs
                             // - How much file size savings when extracting ghosts.
+                            // - Should the transformation happen on the client or the server?
+                            //   - Probably client side since we already have a sidecar anyway...
                         }
                         Err(error) => {
                             tracing::error!("Failed to read replay file. Reason: {error}")

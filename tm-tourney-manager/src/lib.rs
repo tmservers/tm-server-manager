@@ -2,8 +2,8 @@ use spacetimedb::{ReducerContext, reducer};
 
 pub mod event;
 pub mod generator;
+pub mod ghosts;
 pub mod r#match;
-//mod registry;
 pub mod server;
 pub mod stage;
 pub mod tournament;
