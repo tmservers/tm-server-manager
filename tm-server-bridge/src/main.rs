@@ -6,10 +6,7 @@ use spacetimedb_sdk::{DbContext, Error, Identity, Table, TableWithPrimaryKey};
 
 use tm_tourney_manager_api_rs::*;
 
-use tm_server_client::{
-    ClientError, TrackmaniaServer,
-    types::{ModeScriptMethodsXmlRpc, XmlRpcMethods},
-};
+use tm_server_client::{ClientError, TrackmaniaServer, method::XmlRpcMethods};
 use tokio::{signal, sync::Mutex};
 use tracing::{info, instrument, warn};
 

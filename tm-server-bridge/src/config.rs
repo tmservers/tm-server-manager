@@ -1,9 +1,6 @@
 use nadeo_api::{NadeoRequest, auth::AuthType, request::Method};
 use serde::{Deserialize, Serialize};
-use tm_server_client::{
-    ClientError,
-    types::{XmlRpcMethods, config::MapPoolConfig},
-};
+use tm_server_client::{ClientError, method::XmlRpcMethods};
 use tm_tourney_manager_api_rs::TmServer;
 use tracing::info;
 

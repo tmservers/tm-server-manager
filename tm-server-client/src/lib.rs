@@ -1,4 +1,5 @@
 mod core;
+pub mod method;
 pub mod types;
 
 pub use core::ClientError;

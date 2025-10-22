@@ -1,30 +1,33 @@
 [workspace]
-resolver = "3"
 members = [
-    "tm-server-client",
     "tm-server-bridge",
+    "tm-server-client",
     "tm-server-types",
     "tm-tourney-manager",
+    "tm-tourney-manager-admin",
     "tm-tourney-manager-api-rs",
 ]
+resolver = "3"
 
-package.authors = ["kistz (Kilian Strunz)"]
-package.categories = [
+[workspace.package]
+version = "0.0.1"
+authors = ["kistz (Kilian Strunz)"]
+keywords = ["trackmania", "nadeo", "gbxremote", "gbx", "api", "xml-rpc"]
+categories = [
     "api-bindings",
     "network-programming",
     "asynchronous",
     "trackmania",
 ]
-package.keywords = ["trackmania", "nadeo", "gbxremote", "gbx", "api", "xml-rpc"]
-package.edition = "2024"
-package.license = "MIT OR Apache-2.0"
-package.version = "0.0.1"
-package.repository = "https://github.com/kistz/tm-tourney-manager"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/kistz/tm-tourney-manager"
+edition = "2024"
 
+[workspace.dependencies.spacetimedb]
+version = "1.6"
 
-[workspace.dependencies]
-spacetimedb = { version = "1.6" }
+[workspace.dependencies.spacetimedb-lib]
+version = "1.6"
 
-spacetimedb-sdk = { version = "1.6" }
-
-spacetimedb-lib = { version = "1.6" }
+[workspace.dependencies.spacetimedb-sdk]
+version = "1.6"

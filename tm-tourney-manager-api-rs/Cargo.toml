@@ -12,4 +12,3 @@ publish = true
 
 [dependencies]
 spacetimedb-sdk.workspace = true
-#hex = "0.4"
