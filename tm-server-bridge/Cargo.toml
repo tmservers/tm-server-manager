@@ -16,8 +16,8 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 tm-server-client = { path = "../tm-server-client" }
+
 spacetimedb-sdk.workspace = true
-#hex = "0.4"
 tm-tourney-manager-api-rs = { path = "../tm-tourney-manager-api-rs" }
 
 nadeo-api = "*"

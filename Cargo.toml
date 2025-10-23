@@ -10,7 +10,7 @@ members = [
 resolver = "3"
 
 [workspace.package]
-version = "0.0.1"
+version = "0.0.4-dev"
 authors = ["kistz (Kilian Strunz)"]
 keywords = ["trackmania", "nadeo", "gbxremote", "gbx", "api", "xml-rpc"]
 categories = [

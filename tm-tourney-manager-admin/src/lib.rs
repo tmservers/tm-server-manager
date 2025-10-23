@@ -4,6 +4,8 @@ use leptos_router::{components::*, path};
 
 use singlestage::*;
 
+mod generated;
+
 mod components;
 mod pages;
 

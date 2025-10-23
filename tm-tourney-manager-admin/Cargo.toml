@@ -22,9 +22,13 @@ console_error_panic_hook = "0.1"
 
 singlestage = "*"
 
-#tm-tourney-manager-api-rs = { path = "../tm-tourney-manager-api-rs" }
+#TODO move to workspace if web support gets merged
+spacetimedb-sdk = { package = "spacetimedb-sdk", git = "https://github.com/thlsrms/SpacetimeDB", branch = "rust-web-sdk", features = [
+    "web",
+] }
 
-# utils
+
+# utils#spacetimedb-sdk.workspace = true
 # strum = { version = "0.25", features = ["derive", "strum_macros"] }
 # strum_macros = "0.25"
 

@@ -11,4 +11,4 @@ repository.workspace = true
 publish = true
 
 [dependencies]
-spacetimedb-sdk.workspace = true
+spacetimedb-sdk = { workspace = true }
