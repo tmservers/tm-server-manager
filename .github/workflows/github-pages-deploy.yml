@@ -39,6 +39,7 @@ jobs:
           components: clippy, rustfmt
 
       - name: Add WASM target
+        working-directory: ./tm-tourney-manager-admin
         run: rustup target add wasm32-unknown-unknown
 
       - name: lint
@@ -76,7 +77,7 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           # Upload dist dir
-          path: './dist'
+          path: './tm-tourney-manager-admin/dist'
 
       - name: Deploy to GitHub Pages 🚀
         id: deployment
