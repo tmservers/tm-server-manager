@@ -64,21 +64,27 @@ jobs:
         working-directory: ./tm-tourney-manager-admin
         run: ./trunk build --release --public-url "${GITHUB_REPOSITORY#*/}"
 
-
+      - name: Deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy ./tm-tourney-manager-admin/dist --project-name=tm-tourney-manager-admin
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
       # Deploy with Github Static Pages
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-        with:
-          enablement: true
-          # token:
+      #- name: Setup Pages
+      #  uses: actions/configure-pages@v4
+      #  with:
+      #    enablement: true
+      #    # token:
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          # Upload dist dir
-          path: './tm-tourney-manager-admin/dist'
+      #- name: Upload artifact
+      #  uses: actions/upload-pages-artifact@v3
+      #  with:
+      #    # Upload dist dir
+      #    path: './tm-tourney-manager-admin/dist'
 
-      - name: Deploy to GitHub Pages 🚀
-        id: deployment
-        uses: actions/deploy-pages@v4
+      #- name: Deploy to GitHub Pages 🚀
+      #  id: deployment
+      #  uses: actions/deploy-pages@v4
