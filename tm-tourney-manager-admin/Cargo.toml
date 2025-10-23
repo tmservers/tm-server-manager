@@ -1,8 +1,14 @@
 [package]
 name = "tm-tourney-manager-admin"
-version = "0.1.0"
-edition = "2021"
-authors = ["kistz (Kilian Strunz) <kilianstrunz@gmx.de>"]
+publish = false
+
+version.workspace = true
+authors.workspace = true
+keywords.workspace = true
+categories.workspace = true
+license.workspace = true
+edition.workspace = true
+repository.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -13,6 +19,8 @@ leptos_router = { version = "0.8" }
 console_log = "1"
 log = "0.4"
 console_error_panic_hook = "0.1"
+
+singlestage = "*"
 
 #tm-tourney-manager-api-rs = { path = "../tm-tourney-manager-api-rs" }
 

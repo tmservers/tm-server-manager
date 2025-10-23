@@ -3,12 +3,5 @@
         "leptosfmt",
         "--stdin",
         "--rustfmt"
-    ],
-    "editor.formatOnSave": true,
-    "[rust]": {
-        "editor.defaultFormatter": "rust-lang.rust-analyzer",
-    },
-    "files.associations": {
-        "*.rs": "rust"
-    },
+    ]
 }

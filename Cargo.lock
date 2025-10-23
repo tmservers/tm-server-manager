@@ -3450,6 +3450,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "sha256"
+version = "1.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f880fc8562bdeb709793f00eb42a2ad0e672c4f883bbe59122b926eca935c8f6"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "hex",
+ "sha2",
+ "tokio",
+]
+
+[[package]]
 name = "sha3"
 version = "0.10.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3494,6 +3507,19 @@ name = "similar"
 version = "2.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbbb5d9659141646ae647b42fe094daf6c6192d1620870b449d9557f748b2daa"
+
+[[package]]
+name = "singlestage"
+version = "0.3.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "32d2084541ea2d7d477a5d2a4025d35d274f2d073ff8ad094fdbf43e777c9711"
+dependencies = [
+ "leptos",
+ "leptos_meta",
+ "reqwest",
+ "sha256",
+ "uuid",
+]
 
 [[package]]
 name = "slab"
@@ -4149,7 +4175,7 @@ dependencies = [
 
 [[package]]
 name = "tm-tourney-manager-admin"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "console_error_panic_hook",
  "console_log",
@@ -4157,6 +4183,7 @@ dependencies = [
  "leptos_meta",
  "leptos_router",
  "log",
+ "singlestage",
  "wasm-bindgen",
  "wasm-bindgen-test",
  "web-sys",
