@@ -1,8 +1,10 @@
 name: Release to Github Pages
 
 on:
-  release:
-    types: [published]
+  #release:
+  #  types: [published]
+  push:
+    branch: [main]
   workflow_dispatch:
 
 permissions:
@@ -57,8 +59,7 @@ jobs:
         # this is necessary for github pages where the site is deployed to username.github.io/repo_name and all files must be requested
         # relatively as favicon.ico. if we skip public-url option, the href paths will instead request username.github.io/favicon.ico which
         # will obviously return error 404 not found.
-        run: cd tm-tourney-manager-admin
-        run: ./trunk build --release --public-url "${GITHUB_REPOSITORY#*/}"
+        run: cd tm-tourney-manager-admin && ./trunk build --release --public-url "${GITHUB_REPOSITORY#*/}"
 
 
       # Deploy with Github Static Pages
