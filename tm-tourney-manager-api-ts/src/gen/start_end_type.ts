@@ -28,41 +28,40 @@ import {
   type TableHandle as __TableHandle,
 } from "spacetimedb";
 
-import { CompetitionSchedule } from "./competition_schedule_type";
-// Mark import as potentially unused
-declare type __keep_CompetitionSchedule = CompetitionSchedule;
-
-export type OnTournamentEventSchedule = {
-  arg: CompetitionSchedule,
+export type StartEnd = {
+  start: number,
+  end: number,
 };
-let _cached_OnTournamentEventSchedule_type_value: __AlgebraicTypeType | null = null;
+let _cached_StartEnd_type_value: __AlgebraicTypeType | null = null;
 
 /**
  * An object for generated helper functions.
  */
-export const OnTournamentEventSchedule = {
+export const StartEnd = {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_OnTournamentEventSchedule_type_value) return _cached_OnTournamentEventSchedule_type_value;
-    _cached_OnTournamentEventSchedule_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_OnTournamentEventSchedule_type_value.value.elements.push(
-      { name: "arg", algebraicType: CompetitionSchedule.getTypeScriptAlgebraicType() },
+    if (_cached_StartEnd_type_value) return _cached_StartEnd_type_value;
+    _cached_StartEnd_type_value = __AlgebraicTypeValue.Product({ elements: [] });
+    _cached_StartEnd_type_value.value.elements.push(
+      { name: "start", algebraicType: __AlgebraicTypeValue.U32 },
+      { name: "end", algebraicType: __AlgebraicTypeValue.U32 },
     );
-    return _cached_OnTournamentEventSchedule_type_value;
+    return _cached_StartEnd_type_value;
   },
 
-  serialize(writer: __BinaryWriter, value: OnTournamentEventSchedule): void {
-    __AlgebraicTypeValue.serializeValue(writer, OnTournamentEventSchedule.getTypeScriptAlgebraicType(), value);
+  serialize(writer: __BinaryWriter, value: StartEnd): void {
+    __AlgebraicTypeValue.serializeValue(writer, StartEnd.getTypeScriptAlgebraicType(), value);
   },
 
-  deserialize(reader: __BinaryReader): OnTournamentEventSchedule {
-    return __AlgebraicTypeValue.deserializeValue(reader, OnTournamentEventSchedule.getTypeScriptAlgebraicType());
+  deserialize(reader: __BinaryReader): StartEnd {
+    return __AlgebraicTypeValue.deserializeValue(reader, StartEnd.getTypeScriptAlgebraicType());
   },
 
 }
 
-export default OnTournamentEventSchedule;
+export default StartEnd;
+
 

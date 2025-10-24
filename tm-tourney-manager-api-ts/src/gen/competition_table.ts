@@ -27,36 +27,33 @@ import {
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
   type TableHandle as __TableHandle,
 } from "spacetimedb";
-import { Tournament } from "./tournament_type";
+import { Competition } from "./competition_type";
+import { EventPhase } from "./event_phase_type";
+// Mark import as potentially unused
+declare type __keep_EventPhase = EventPhase;
 import { Competitions } from "./competitions_type";
 // Mark import as potentially unused
 declare type __keep_Competitions = Competitions;
-import { TournamentStatus } from "./tournament_status_type";
-// Mark import as potentially unused
-declare type __keep_TournamentStatus = TournamentStatus;
-import { Registration } from "./registration_type";
-// Mark import as potentially unused
-declare type __keep_Registration = Registration;
 
 import { type EventContext, type Reducer, RemoteReducers, RemoteTables } from ".";
 declare type __keep = [EventContext, Reducer, RemoteReducers, RemoteTables];
 
 /**
- * Table handle for the table `tournament`.
+ * Table handle for the table `competition`.
  *
- * Obtain a handle from the [`tournament`] property on [`RemoteTables`],
- * like `ctx.db.tournament`.
+ * Obtain a handle from the [`competition`] property on [`RemoteTables`],
+ * like `ctx.db.competition`.
  *
  * Users are encouraged not to explicitly reference this type,
  * but to directly chain method calls,
- * like `ctx.db.tournament.on_insert(...)`.
+ * like `ctx.db.competition.on_insert(...)`.
  */
-export class TournamentTableHandle<TableName extends string> implements __TableHandle<TableName> {
+export class CompetitionTableHandle<TableName extends string> implements __TableHandle<TableName> {
   // phantom type to track the table name
   readonly tableName!: TableName;
-  tableCache: __TableCache<Tournament>;
+  tableCache: __TableCache<Competition>;
 
-  constructor(tableCache: __TableCache<Tournament>) {
+  constructor(tableCache: __TableCache<Competition>) {
     this.tableCache = tableCache;
   }
 
@@ -64,24 +61,24 @@ export class TournamentTableHandle<TableName extends string> implements __TableH
     return this.tableCache.count();
   }
 
-  iter(): Iterable<Tournament> {
+  iter(): Iterable<Competition> {
     return this.tableCache.iter();
   }
   /**
-   * Access to the `id` unique index on the table `tournament`,
+   * Access to the `id` unique index on the table `competition`,
    * which allows point queries on the field of the same name
-   * via the [`TournamentIdUnique.find`] method.
+   * via the [`CompetitionIdUnique.find`] method.
    *
    * Users are encouraged not to explicitly reference this type,
    * but to directly chain method calls,
-   * like `ctx.db.tournament.id().find(...)`.
+   * like `ctx.db.competition.id().find(...)`.
    *
-   * Get a handle on the `id` unique index on the table `tournament`.
+   * Get a handle on the `id` unique index on the table `competition`.
    */
   id = {
     // Find the subscribed row whose `id` column value is equal to `col_val`,
     // if such a row is present in the client cache.
-    find: (col_val: bigint): Tournament | undefined => {
+    find: (col_val: bigint): Competition | undefined => {
       for (let row of this.tableCache.iter()) {
         if (__deepEqual(row.id, col_val)) {
           return row;
@@ -89,50 +86,28 @@ export class TournamentTableHandle<TableName extends string> implements __TableH
       }
     },
   };
-  /**
-   * Access to the `name` unique index on the table `tournament`,
-   * which allows point queries on the field of the same name
-   * via the [`TournamentNameUnique.find`] method.
-   *
-   * Users are encouraged not to explicitly reference this type,
-   * but to directly chain method calls,
-   * like `ctx.db.tournament.name().find(...)`.
-   *
-   * Get a handle on the `name` unique index on the table `tournament`.
-   */
-  name = {
-    // Find the subscribed row whose `name` column value is equal to `col_val`,
-    // if such a row is present in the client cache.
-    find: (col_val: string): Tournament | undefined => {
-      for (let row of this.tableCache.iter()) {
-        if (__deepEqual(row.name, col_val)) {
-          return row;
-        }
-      }
-    },
-  };
 
-  onInsert = (cb: (ctx: EventContext, row: Tournament) => void) => {
+  onInsert = (cb: (ctx: EventContext, row: Competition) => void) => {
     return this.tableCache.onInsert(cb);
   }
 
-  removeOnInsert = (cb: (ctx: EventContext, row: Tournament) => void) => {
+  removeOnInsert = (cb: (ctx: EventContext, row: Competition) => void) => {
     return this.tableCache.removeOnInsert(cb);
   }
 
-  onDelete = (cb: (ctx: EventContext, row: Tournament) => void) => {
+  onDelete = (cb: (ctx: EventContext, row: Competition) => void) => {
     return this.tableCache.onDelete(cb);
   }
 
-  removeOnDelete = (cb: (ctx: EventContext, row: Tournament) => void) => {
+  removeOnDelete = (cb: (ctx: EventContext, row: Competition) => void) => {
     return this.tableCache.removeOnDelete(cb);
   }
 
   // Updates are only defined for tables with primary keys.
-  onUpdate = (cb: (ctx: EventContext, oldRow: Tournament, newRow: Tournament) => void) => {
+  onUpdate = (cb: (ctx: EventContext, oldRow: Competition, newRow: Competition) => void) => {
     return this.tableCache.onUpdate(cb);
   }
 
-  removeOnUpdate = (cb: (ctx: EventContext, onRow: Tournament, newRow: Tournament) => void) => {
+  removeOnUpdate = (cb: (ctx: EventContext, onRow: Competition, newRow: Competition) => void) => {
     return this.tableCache.removeOnUpdate(cb);
   }}

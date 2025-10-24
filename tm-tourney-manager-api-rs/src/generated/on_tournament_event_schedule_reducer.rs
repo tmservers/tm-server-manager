@@ -4,12 +4,12 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::tournament_event_schedule_type::TournamentEventSchedule;
+use super::competition_schedule_type::CompetitionSchedule;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct OnTournamentEventScheduleArgs {
-    pub arg: TournamentEventSchedule,
+    pub arg: CompetitionSchedule,
 }
 
 impl From<OnTournamentEventScheduleArgs> for super::Reducer {
@@ -34,7 +34,7 @@ pub trait on_tournament_event_schedule {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_on_tournament_event_schedule`] callbacks.
-    fn on_tournament_event_schedule(&self, arg: TournamentEventSchedule) -> __sdk::Result<()>;
+    fn on_tournament_event_schedule(&self, arg: CompetitionSchedule) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `on_tournament_event_schedule`.
     ///
     /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
@@ -44,7 +44,7 @@ pub trait on_tournament_event_schedule {
     /// to cancel the callback.
     fn on_on_tournament_event_schedule(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &TournamentEventSchedule) + Send + 'static,
+        callback: impl FnMut(&super::ReducerEventContext, &CompetitionSchedule) + Send + 'static,
     ) -> OnTournamentEventScheduleCallbackId;
     /// Cancel a callback previously registered by [`Self::on_on_tournament_event_schedule`],
     /// causing it not to run in the future.
@@ -52,7 +52,7 @@ pub trait on_tournament_event_schedule {
 }
 
 impl on_tournament_event_schedule for super::RemoteReducers {
-    fn on_tournament_event_schedule(&self, arg: TournamentEventSchedule) -> __sdk::Result<()> {
+    fn on_tournament_event_schedule(&self, arg: CompetitionSchedule) -> __sdk::Result<()> {
         self.imp.call_reducer(
             "on_tournament_event_schedule",
             OnTournamentEventScheduleArgs { arg },
@@ -60,7 +60,7 @@ impl on_tournament_event_schedule for super::RemoteReducers {
     }
     fn on_on_tournament_event_schedule(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &TournamentEventSchedule) + Send + 'static,
+        mut callback: impl FnMut(&super::ReducerEventContext, &CompetitionSchedule) + Send + 'static,
     ) -> OnTournamentEventScheduleCallbackId {
         OnTournamentEventScheduleCallbackId(self.imp.on_reducer(
             "on_tournament_event_schedule",

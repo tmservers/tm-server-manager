@@ -73,7 +73,6 @@ struct RegisiteredCallbacks(
         >,
     >,
 );
-//Arc<DashMap<String, Vec<Box<dyn Fn(&str) + Send + Sync>>>>
 
 impl RegisiteredCallbacks {
     fn new() -> Self {
@@ -269,10 +268,11 @@ impl TrackmaniaServer {
                     // there is, this means that the peer closed the socket while
                     // sending a frame.
                     if buffer.is_empty() {
-                        warn!("The Trackmania server ended the connection.");
-                        break;
+                        error!("The Trackmania server ended the connection.");
+                        std::process::exit(1);
                     } else {
-                        panic!("connection reset by peer");
+                        error!("connection reset by peer");
+                        std::process::exit(1);
                     }
                 }
             }
@@ -331,7 +331,7 @@ impl TrackmaniaServer {
     {
         let params = args.try_to_params()?;
         let result = self.call_inner(Cow::Borrowed(method), params).await?;
-        //info!("{method:?}");
+
         // extract return value
         Ok(R::try_from_value(&result)?)
     }
@@ -397,8 +397,8 @@ fn body_to_response(contents: &str) -> Result<MethodResponse, ClientError> {
     };
 
     // log errors if the contents could not be deserialized as either response or fault
-    println!("Failed to deserialize response as either value or fault.");
-    println!("Response failed with: {error1}; Fault failed with: {error2}");
+    error!("Failed to deserialize response as either value or fault.");
+    error!("Response failed with: {error1}; Fault failed with: {error2}");
 
     // malformed response: return DxrError::InvalidData
     Err(DxrError::invalid_data(contents.to_owned()).into())

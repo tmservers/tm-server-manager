@@ -20,10 +20,11 @@ spacetimedb = { workspace = true, optional = true }
 tm-server-types = { path = "../tm-server-types" }
 gbx-header = "0"
 
+#petgraph = { version = "*" }
+
 [dev-dependencies]
 testcontainers = { version = "0", features = ["blocking"] }
 
 [features]
-default = ["development", "spacetime"]
-development = []
+default = ["spacetime"]
 spacetime = ["dep:spacetimedb", "tm-server-types/spacetime"]

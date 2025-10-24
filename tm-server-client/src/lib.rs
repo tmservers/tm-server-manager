@@ -13,20 +13,18 @@ async fn server_connect_and_authenticate() {
         runners::AsyncRunner,
     };
 
-    /* let container = GenericImage::new("clockworklabs/spacetime", "latest")
-    .with_exposed_port(3000.tcp())
-    .with_wait_for(WaitFor::message_on_stdout(
-        "Starting SpacetimeDB listening on 0.0.0.0:3000",
-    ))
-    .start(); */
+    let tm_user = std::env::var("TM_MASTERSERVER_LOGIN")
+        .expect("Environment variable: TM_MASTERSERVER_LOGIN MUST be set");
+    let tm_password = std::env::var("TM_MASTERSERVER_PASSWORD")
+        .expect("Environment variable: TM_MASTERSERVER_password MUST be set");
 
     let container = GenericImage::new("evoesports/trackmania", "latest")
         .with_exposed_port(2350.tcp())
         .with_exposed_port(2350.udp())
         .with_exposed_port(5000.tcp())
         .with_wait_for(WaitFor::message_on_stdout("...Load succeeds"))
-        .with_env_var("TM_MASTERSERVER_LOGIN", "")
-        .with_env_var("TM_MASTERSERVER_PASSWORD", "")
+        .with_env_var("TM_MASTERSERVER_LOGIN", tm_user)
+        .with_env_var("TM_MASTERSERVER_PASSWORD", tm_password)
         .with_env_var("TM_SYSTEM_XMLRPC_ALLOWREMOTE", "True")
         .start()
         .await

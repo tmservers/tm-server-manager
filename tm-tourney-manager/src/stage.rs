@@ -1,6 +1,6 @@
 use spacetimedb::{ReducerContext, Table, reducer, table};
 
-use crate::event::tournament_event;
+use crate::competition::competition;
 
 /// Each Event can have multiple stages association with it.
 /// These are walked through _sequentially_ as the Event progresses.
@@ -30,7 +30,7 @@ impl EventStage {
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn add_stage(ctx: &ReducerContext, name: String, to: u64, with_config: Option<u64>) {
     //TODO authorization
-    if let Some(mut event) = ctx.db.tournament_event().id().find(to) {
+    if let Some(mut event) = ctx.db.competition().id().find(to) {
         let stage = ctx.db.event_stage().insert(EventStage {
             id: 0,
             event_id: to,
@@ -40,7 +40,7 @@ pub fn add_stage(ctx: &ReducerContext, name: String, to: u64, with_config: Optio
 
         event.add_stage(stage.id);
 
-        ctx.db.tournament_event().id().update(event);
+        ctx.db.competition().id().update(event);
     }
 }
 

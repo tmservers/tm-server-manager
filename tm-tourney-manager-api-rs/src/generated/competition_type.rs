@@ -5,22 +5,20 @@
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 use super::competitions_type::Competitions;
-use super::registration_type::Registration;
-use super::tournament_status_type::TournamentStatus;
+use super::event_phase_type::EventPhase;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct Tournament {
+pub struct Competition {
     pub id: u64,
-    pub creator: String,
-    pub owners: Vec<String>,
+    pub tournament: u64,
     pub name: String,
-    pub description: String,
-    pub status: TournamentStatus,
+    pub phase: EventPhase,
+    pub starting_at: __sdk::Timestamp,
+    pub estimate: Option<__sdk::TimeDuration>,
     pub competitions: Competitions,
-    pub registration: Option<Registration>,
 }
 
-impl __sdk::InModule for Tournament {
+impl __sdk::InModule for Competition {
     type Module = super::RemoteModule;
 }

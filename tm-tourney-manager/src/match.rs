@@ -1,23 +1,26 @@
-use spacetimedb::{ReducerContext, SpacetimeType, Table, reducer, table};
+use spacetimedb::{DbContext, ReducerContext, SpacetimeType, Table, reducer, table};
 use tm_server_types::{config::ServerConfig, event::Event};
 
 use crate::{
-    r#match::leaderboard::Leaderboard,
+    competition::competition,
     server::{TmServer, tm_server},
-    stage::{self, event_stage},
 };
 
 mod leaderboard;
 
 // The table name needs to be plural since match is a rust keyword
-#[cfg_attr(feature = "spacetime", spacetimedb::table(name = stage_match, public))]
-pub struct StageMatch {
+#[cfg_attr(feature = "spacetime", spacetimedb::table(name = tm_match, public))]
+pub struct TmMatch {
     #[auto_inc]
     #[primary_key]
     pub id: u64,
 
-    /// The stage this match is associated with.
-    stage_id: u64,
+    /// The tournament this match is associated with.
+    //tournament_id: u64,
+    /// TODO evaluate if this is needed?
+    /// Probably yes i guess
+    parent_id: u64,
+
     /// The assigned server that will be used by this match.
     server_id: Option<String>,
 
@@ -33,7 +36,7 @@ pub struct StageMatch {
     //leaderboard: Leaderboard,
 }
 
-impl StageMatch {
+impl TmMatch {
     /// Evaluates is the Match is in the "Match" state of its lifecycle.
     pub fn is_live(&self) -> bool {
         self.status == MatchStatus::Live
@@ -87,19 +90,19 @@ pub enum MatchStatus {
     Ended,
 }
 
-/// Provisions a new StageMatch to the specified EventStage and a MatchTemplate.
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn provision_match(
+pub fn create_match(
     ctx: &ReducerContext,
-    used_by: u64,
+    parent: u64,
     with_config: Option<u64>,
     auto_provisioning_server: bool,
 ) {
     //TODO authorization
-    if let Some(mut stage) = ctx.db.event_stage().id().find(used_by) {
-        let stage_match = ctx.db.stage_match().insert(StageMatch {
+    if let Some(mut competition) = ctx.db.competition().id().find(parent) {
+        let tm_match = ctx.db.tm_match().insert(TmMatch {
             id: 0,
-            stage_id: used_by,
+            parent_id: parent,
+            //tournament_id: competition.
             status: MatchStatus::Configuring,
             server_id: if auto_provisioning_server { None } else { None },
             pre_match_config: None,
@@ -107,9 +110,9 @@ pub fn provision_match(
             post_match_config: None,
             //leaderboard: Leaderboard::new(),
         });
-        stage.add_match(stage_match.id);
+        //competition.add_match(tm_match.id);
 
-        ctx.db.event_stage().id().update(stage);
+        ctx.db.competition().id().update(competition);
     }
 }
 
@@ -119,10 +122,10 @@ pub fn match_assign_server(ctx: &ReducerContext, to: u64, server_id: String) {
     //TODO authorization
     if let Some(mut server) = ctx.db.tm_server().id().find(&server_id)
         && server.active_match().is_none()
-        && let Some(stage_match) = ctx.db.stage_match().id().find(to)
+        && let Some(stage_match) = ctx.db.tm_match().id().find(to)
         && stage_match.status == MatchStatus::Configuring
     {
-        let stage_match = ctx.db.stage_match().id().update(StageMatch {
+        let stage_match = ctx.db.tm_match().id().update(TmMatch {
             server_id: Some(server_id),
             ..stage_match
         });
@@ -136,11 +139,11 @@ pub fn match_assign_server(ctx: &ReducerContext, to: u64, server_id: String) {
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn match_configured(ctx: &ReducerContext, id: u64) {
     //TODO authorization
-    if let Some(mut stage_match) = ctx.db.stage_match().id().find(id)
+    if let Some(mut stage_match) = ctx.db.tm_match().id().find(id)
         && stage_match.status == MatchStatus::Configuring
     {
         stage_match.status = MatchStatus::Upcoming;
-        ctx.db.stage_match().id().update(stage_match);
+        ctx.db.tm_match().id().update(stage_match);
     }
 }
 
@@ -156,9 +159,9 @@ pub fn update_pre_match_config(ctx: &ReducerContext, id: u64, config: ServerConf
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn update_match_config(ctx: &ReducerContext, id: u64, config: ServerConfig) {
     //TODO authorization
-    if let Some(mut stage_match) = ctx.db.stage_match().id().find(id) {
+    if let Some(mut stage_match) = ctx.db.tm_match().id().find(id) {
         stage_match.match_config = Some(config);
-        ctx.db.stage_match().id().update(stage_match);
+        ctx.db.tm_match().id().update(stage_match);
     }
 }
 
@@ -166,7 +169,7 @@ pub fn update_match_config(ctx: &ReducerContext, id: u64, config: ServerConfig) 
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn try_start(ctx: &ReducerContext, match_id: u64) {
     //TODO authorization
-    if let Some(mut stage_match) = ctx.db.stage_match().id().find(match_id)
+    if let Some(mut stage_match) = ctx.db.tm_match().id().find(match_id)
         && let Some(server) = &stage_match.server_id
         && let Some(mut server) = ctx.db.tm_server().id().find(server)
         && let Some(config) = &stage_match.match_config
@@ -174,7 +177,7 @@ pub fn try_start(ctx: &ReducerContext, match_id: u64) {
     {
         server.set_config(config.clone());
         stage_match.status = MatchStatus::Live;
-        ctx.db.stage_match().id().update(stage_match);
+        ctx.db.tm_match().id().update(stage_match);
         ctx.db.tm_server().id().update(server);
     }
 }

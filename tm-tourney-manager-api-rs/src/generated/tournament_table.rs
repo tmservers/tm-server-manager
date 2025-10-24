@@ -2,6 +2,7 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN YOUR MODULE SOURCE CODE INSTEAD.
 
 #![allow(unused, clippy::all)]
+use super::competitions_type::Competitions;
 use super::registration_type::Registration;
 use super::tournament_status_type::TournamentStatus;
 use super::tournament_type::Tournament;

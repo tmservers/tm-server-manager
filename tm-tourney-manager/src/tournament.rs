@@ -1,6 +1,6 @@
 use spacetimedb::{ReducerContext, SpacetimeType, Table, reducer, table};
 
-use crate::tournament::registration::Registration;
+use crate::{graph::Competitions, tournament::registration::Registration};
 mod registration;
 
 #[cfg_attr(feature = "spacetime", spacetimedb::table(name = tournament,public))]
@@ -19,14 +19,17 @@ pub struct Tournament {
 
     status: TournamentStatus,
 
-    events: Vec<u64>,
-
+    //events: Vec<u64>,
+    competitions: Competitions,
+    //TODO maybe make Registration required and add some kind of "Open" to it
+    //That would mean that everyone is free to join.
     registration: Option<Registration>,
 }
 
 impl Tournament {
-    pub fn add_event(&mut self, event: u64) {
-        self.events.push(event);
+    pub fn add_competition(&mut self, competition: u64) {
+        //TODO
+        //self.events.push(competition);
     }
 }
 
@@ -57,8 +60,9 @@ fn create_tournament(ctx: &ReducerContext, name: String) {
         id: 0,
         status: TournamentStatus::Planning,
         owners: Vec::new(),
-        events: Vec::new(),
+        //events: Vec::new(),
         registration: None,
         description: "".into(),
+        competitions: Competitions::new(),
     });
 }

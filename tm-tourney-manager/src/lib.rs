@@ -1,13 +1,15 @@
 use spacetimedb::{ReducerContext, reducer};
 
-pub mod event;
+pub mod competition;
 pub mod generator;
 pub mod ghosts;
 pub mod r#match;
 pub mod server;
-pub mod stage;
+//pub mod stage;
 pub mod tournament;
 pub mod user;
+
+pub mod graph;
 
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer(init))]
 fn init(_ctx: &ReducerContext) {

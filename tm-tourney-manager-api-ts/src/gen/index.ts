@@ -31,18 +31,18 @@ import {
 } from "spacetimedb";
 
 // Import and reexport all reducer arg types
-import { AddEvent } from "./add_event_reducer.ts";
-export { AddEvent };
 import { AddServer } from "./add_server_reducer.ts";
 export { AddServer };
-import { AddStage } from "./add_stage_reducer.ts";
-export { AddStage };
 import { CallServer } from "./call_server_reducer.ts";
 export { CallServer };
 import { ClientConnected } from "./client_connected_reducer.ts";
 export { ClientConnected };
+import { CreateCompetition } from "./create_competition_reducer.ts";
+export { CreateCompetition };
 import { CreateEventTemplate } from "./create_event_template_reducer.ts";
 export { CreateEventTemplate };
+import { CreateMatch } from "./create_match_reducer.ts";
+export { CreateMatch };
 import { CreateServerConfig } from "./create_server_config_reducer.ts";
 export { CreateServerConfig };
 import { CreateTournament } from "./create_tournament_reducer.ts";
@@ -61,8 +61,6 @@ import { PostEvent } from "./post_event_reducer.ts";
 export { PostEvent };
 import { PostGhost } from "./post_ghost_reducer.ts";
 export { PostGhost };
-import { ProvisionMatch } from "./provision_match_reducer.ts";
-export { ProvisionMatch };
 import { SetTmServerState } from "./set_tm_server_state_reducer.ts";
 export { SetTmServerState };
 import { TryStart } from "./try_start_reducer.ts";
@@ -71,20 +69,20 @@ import { UpdateMatchConfig } from "./update_match_config_reducer.ts";
 export { UpdateMatchConfig };
 
 // Import and reexport all table handle types
+import { CompetitionTableHandle } from "./competition_table.ts";
+export { CompetitionTableHandle };
+import { CompetitionScheduleTableHandle } from "./competition_schedule_table.ts";
+export { CompetitionScheduleTableHandle };
 import { EventConfigTableHandle } from "./event_config_table.ts";
 export { EventConfigTableHandle };
-import { EventStageTableHandle } from "./event_stage_table.ts";
-export { EventStageTableHandle };
 import { GeneratorTableHandle } from "./generator_table.ts";
 export { GeneratorTableHandle };
 import { GhostTableHandle } from "./ghost_table.ts";
 export { GhostTableHandle };
 import { MatchTemplateTableHandle } from "./match_template_table.ts";
 export { MatchTemplateTableHandle };
-import { StageMatchTableHandle } from "./stage_match_table.ts";
-export { StageMatchTableHandle };
-import { StageTemplateTableHandle } from "./stage_template_table.ts";
-export { StageTemplateTableHandle };
+import { TmMatchTableHandle } from "./tm_match_table.ts";
+export { TmMatchTableHandle };
 import { TmServerTableHandle } from "./tm_server_table.ts";
 export { TmServerTableHandle };
 import { TmServerConfigTableHandle } from "./tm_server_config_table.ts";
@@ -93,18 +91,24 @@ import { TmServerEventTableHandle } from "./tm_server_event_table.ts";
 export { TmServerEventTableHandle };
 import { TournamentTableHandle } from "./tournament_table.ts";
 export { TournamentTableHandle };
-import { TournamentEventTableHandle } from "./tournament_event_table.ts";
-export { TournamentEventTableHandle };
-import { TournamentEventScheduleTableHandle } from "./tournament_event_schedule_table.ts";
-export { TournamentEventScheduleTableHandle };
 import { UserTableHandle } from "./user_table.ts";
 export { UserTableHandle };
 
 // Import and reexport all types
 import { Common } from "./common_type.ts";
 export { Common };
+import { Competition } from "./competition_type.ts";
+export { Competition };
+import { CompetitionKind } from "./competition_kind_type.ts";
+export { CompetitionKind };
+import { CompetitionSchedule } from "./competition_schedule_type.ts";
+export { CompetitionSchedule };
+import { Competitions } from "./competitions_type.ts";
+export { Competitions };
 import { Custom } from "./custom_type.ts";
 export { Custom };
+import { Edge } from "./edge_type.ts";
+export { Edge };
 import { EndMapEnd } from "./end_map_end_type.ts";
 export { EndMapEnd };
 import { EndMapStart } from "./end_map_start_type.ts";
@@ -119,16 +123,12 @@ import { EventConfig } from "./event_config_type.ts";
 export { EventConfig };
 import { EventPhase } from "./event_phase_type.ts";
 export { EventPhase };
-import { EventStage } from "./event_stage_type.ts";
-export { EventStage };
 import { Generator } from "./generator_type.ts";
 export { Generator };
 import { Ghost } from "./ghost_type.ts";
 export { Ghost };
 import { GiveUp } from "./give_up_type.ts";
 export { GiveUp };
-import { Leaderboard } from "./leaderboard_type.ts";
-export { Leaderboard };
 import { LoadingMapEnd } from "./loading_map_end_type.ts";
 export { LoadingMapEnd };
 import { LoadingMapStart } from "./loading_map_start_type.ts";
@@ -145,10 +145,10 @@ import { Method } from "./method_type.ts";
 export { Method };
 import { ModeConfig } from "./mode_config_type.ts";
 export { ModeConfig };
-import { ModeLeaderboard } from "./mode_leaderboard_type.ts";
-export { ModeLeaderboard };
 import { ModeRules } from "./mode_rules_type.ts";
 export { ModeRules };
+import { Node } from "./node_type.ts";
+export { Node };
 import { PlayLoopEnd } from "./play_loop_end_type.ts";
 export { PlayLoopEnd };
 import { PlayLoopStart } from "./play_loop_start_type.ts";
@@ -175,12 +175,6 @@ import { RoundTime } from "./round_time_type.ts";
 export { RoundTime };
 import { Rounds } from "./rounds_type.ts";
 export { Rounds };
-import { RoundsLeaderboard } from "./rounds_leaderboard_type.ts";
-export { RoundsLeaderboard };
-import { RoundsRound } from "./rounds_round_type.ts";
-export { RoundsRound };
-import { RoundsRoundPlayer } from "./rounds_round_player_type.ts";
-export { RoundsRoundPlayer };
 import { Scores } from "./scores_type.ts";
 export { Scores };
 import { ServerConfig } from "./server_config_type.ts";
@@ -189,10 +183,8 @@ import { ServerOptions } from "./server_options_type.ts";
 export { ServerOptions };
 import { ServerState } from "./server_state_type.ts";
 export { ServerState };
-import { StageMatch } from "./stage_match_type.ts";
-export { StageMatch };
-import { StageTemplate } from "./stage_template_type.ts";
-export { StageTemplate };
+import { StartEnd } from "./start_end_type.ts";
+export { StartEnd };
 import { StartLine } from "./start_line_type.ts";
 export { StartLine };
 import { StartMap } from "./start_map_type.ts";
@@ -205,6 +197,8 @@ import { TeamInfo } from "./team_info_type.ts";
 export { TeamInfo };
 import { TeamRegistration } from "./team_registration_type.ts";
 export { TeamRegistration };
+import { TmMatch } from "./tm_match_type.ts";
+export { TmMatch };
 import { TmServer } from "./tm_server_type.ts";
 export { TmServer };
 import { TmServerConfig } from "./tm_server_config_type.ts";
@@ -213,10 +207,6 @@ import { TmServerEvent } from "./tm_server_event_type.ts";
 export { TmServerEvent };
 import { Tournament } from "./tournament_type.ts";
 export { Tournament };
-import { TournamentEvent } from "./tournament_event_type.ts";
-export { TournamentEvent };
-import { TournamentEventSchedule } from "./tournament_event_schedule_type.ts";
-export { TournamentEventSchedule };
 import { TournamentStatus } from "./tournament_status_type.ts";
 export { TournamentStatus };
 import { UnloadingMapEnd } from "./unloading_map_end_type.ts";
@@ -232,18 +222,27 @@ export { WayPoint };
 
 const REMOTE_MODULE = {
   tables: {
-    event_config: {
-      tableName: "event_config" as const,
-      rowType: EventConfig.getTypeScriptAlgebraicType(),
-    },
-    event_stage: {
-      tableName: "event_stage" as const,
-      rowType: EventStage.getTypeScriptAlgebraicType(),
+    competition: {
+      tableName: "competition" as const,
+      rowType: Competition.getTypeScriptAlgebraicType(),
       primaryKey: "id",
       primaryKeyInfo: {
         colName: "id",
-        colType: (EventStage.getTypeScriptAlgebraicType() as __AlgebraicTypeVariants.Product).value.elements[0].algebraicType,
+        colType: (Competition.getTypeScriptAlgebraicType() as __AlgebraicTypeVariants.Product).value.elements[0].algebraicType,
       },
+    },
+    competition_schedule: {
+      tableName: "competition_schedule" as const,
+      rowType: CompetitionSchedule.getTypeScriptAlgebraicType(),
+      primaryKey: "scheduledId",
+      primaryKeyInfo: {
+        colName: "scheduledId",
+        colType: (CompetitionSchedule.getTypeScriptAlgebraicType() as __AlgebraicTypeVariants.Product).value.elements[0].algebraicType,
+      },
+    },
+    event_config: {
+      tableName: "event_config" as const,
+      rowType: EventConfig.getTypeScriptAlgebraicType(),
     },
     generator: {
       tableName: "generator" as const,
@@ -262,18 +261,14 @@ const REMOTE_MODULE = {
         colType: (MatchTemplate.getTypeScriptAlgebraicType() as __AlgebraicTypeVariants.Product).value.elements[0].algebraicType,
       },
     },
-    stage_match: {
-      tableName: "stage_match" as const,
-      rowType: StageMatch.getTypeScriptAlgebraicType(),
+    tm_match: {
+      tableName: "tm_match" as const,
+      rowType: TmMatch.getTypeScriptAlgebraicType(),
       primaryKey: "id",
       primaryKeyInfo: {
         colName: "id",
-        colType: (StageMatch.getTypeScriptAlgebraicType() as __AlgebraicTypeVariants.Product).value.elements[0].algebraicType,
+        colType: (TmMatch.getTypeScriptAlgebraicType() as __AlgebraicTypeVariants.Product).value.elements[0].algebraicType,
       },
-    },
-    stage_template: {
-      tableName: "stage_template" as const,
-      rowType: StageTemplate.getTypeScriptAlgebraicType(),
     },
     tm_server: {
       tableName: "tm_server" as const,
@@ -311,24 +306,6 @@ const REMOTE_MODULE = {
         colType: (Tournament.getTypeScriptAlgebraicType() as __AlgebraicTypeVariants.Product).value.elements[0].algebraicType,
       },
     },
-    tournament_event: {
-      tableName: "tournament_event" as const,
-      rowType: TournamentEvent.getTypeScriptAlgebraicType(),
-      primaryKey: "id",
-      primaryKeyInfo: {
-        colName: "id",
-        colType: (TournamentEvent.getTypeScriptAlgebraicType() as __AlgebraicTypeVariants.Product).value.elements[0].algebraicType,
-      },
-    },
-    tournament_event_schedule: {
-      tableName: "tournament_event_schedule" as const,
-      rowType: TournamentEventSchedule.getTypeScriptAlgebraicType(),
-      primaryKey: "scheduledId",
-      primaryKeyInfo: {
-        colName: "scheduledId",
-        colType: (TournamentEventSchedule.getTypeScriptAlgebraicType() as __AlgebraicTypeVariants.Product).value.elements[0].algebraicType,
-      },
-    },
     user: {
       tableName: "user" as const,
       rowType: User.getTypeScriptAlgebraicType(),
@@ -340,17 +317,9 @@ const REMOTE_MODULE = {
     },
   },
   reducers: {
-    add_event: {
-      reducerName: "add_event",
-      argsType: AddEvent.getTypeScriptAlgebraicType(),
-    },
     add_server: {
       reducerName: "add_server",
       argsType: AddServer.getTypeScriptAlgebraicType(),
-    },
-    add_stage: {
-      reducerName: "add_stage",
-      argsType: AddStage.getTypeScriptAlgebraicType(),
     },
     call_server: {
       reducerName: "call_server",
@@ -360,9 +329,17 @@ const REMOTE_MODULE = {
       reducerName: "client_connected",
       argsType: ClientConnected.getTypeScriptAlgebraicType(),
     },
+    create_competition: {
+      reducerName: "create_competition",
+      argsType: CreateCompetition.getTypeScriptAlgebraicType(),
+    },
     create_event_template: {
       reducerName: "create_event_template",
       argsType: CreateEventTemplate.getTypeScriptAlgebraicType(),
+    },
+    create_match: {
+      reducerName: "create_match",
+      argsType: CreateMatch.getTypeScriptAlgebraicType(),
     },
     create_server_config: {
       reducerName: "create_server_config",
@@ -399,10 +376,6 @@ const REMOTE_MODULE = {
     post_ghost: {
       reducerName: "post_ghost",
       argsType: PostGhost.getTypeScriptAlgebraicType(),
-    },
-    provision_match: {
-      reducerName: "provision_match",
-      argsType: ProvisionMatch.getTypeScriptAlgebraicType(),
     },
     set_tm_server_state: {
       reducerName: "set_tm_server_state",
@@ -446,12 +419,12 @@ const REMOTE_MODULE = {
 
 // A type representing all the possible variants of a reducer.
 export type Reducer = never
-| { name: "AddEvent", args: AddEvent }
 | { name: "AddServer", args: AddServer }
-| { name: "AddStage", args: AddStage }
 | { name: "CallServer", args: CallServer }
 | { name: "ClientConnected", args: ClientConnected }
+| { name: "CreateCompetition", args: CreateCompetition }
 | { name: "CreateEventTemplate", args: CreateEventTemplate }
+| { name: "CreateMatch", args: CreateMatch }
 | { name: "CreateServerConfig", args: CreateServerConfig }
 | { name: "CreateTournament", args: CreateTournament }
 | { name: "IdentityDisconnected", args: IdentityDisconnected }
@@ -461,7 +434,6 @@ export type Reducer = never
 | { name: "OnTournamentEventSchedule", args: OnTournamentEventSchedule }
 | { name: "PostEvent", args: PostEvent }
 | { name: "PostGhost", args: PostGhost }
-| { name: "ProvisionMatch", args: ProvisionMatch }
 | { name: "SetTmServerState", args: SetTmServerState }
 | { name: "TryStart", args: TryStart }
 | { name: "UpdateMatchConfig", args: UpdateMatchConfig }
@@ -469,22 +441,6 @@ export type Reducer = never
 
 export class RemoteReducers {
   constructor(private connection: __DbConnectionImpl, private setCallReducerFlags: SetReducerFlags) {}
-
-  addEvent(name: string, at: __Timestamp, to: bigint, withConfig: bigint | undefined) {
-    const __args = { name, at, to, withConfig };
-    let __writer = new __BinaryWriter(1024);
-    AddEvent.serialize(__writer, __args);
-    let __argsBuffer = __writer.getBuffer();
-    this.connection.callReducer("add_event", __argsBuffer, this.setCallReducerFlags.addEventFlags);
-  }
-
-  onAddEvent(callback: (ctx: ReducerEventContext, name: string, at: __Timestamp, to: bigint, withConfig: bigint | undefined) => void) {
-    this.connection.onReducer("add_event", callback);
-  }
-
-  removeOnAddEvent(callback: (ctx: ReducerEventContext, name: string, at: __Timestamp, to: bigint, withConfig: bigint | undefined) => void) {
-    this.connection.offReducer("add_event", callback);
-  }
 
   addServer(id: string) {
     const __args = { id };
@@ -500,22 +456,6 @@ export class RemoteReducers {
 
   removeOnAddServer(callback: (ctx: ReducerEventContext, id: string) => void) {
     this.connection.offReducer("add_server", callback);
-  }
-
-  addStage(name: string, to: bigint, withConfig: bigint | undefined) {
-    const __args = { name, to, withConfig };
-    let __writer = new __BinaryWriter(1024);
-    AddStage.serialize(__writer, __args);
-    let __argsBuffer = __writer.getBuffer();
-    this.connection.callReducer("add_stage", __argsBuffer, this.setCallReducerFlags.addStageFlags);
-  }
-
-  onAddStage(callback: (ctx: ReducerEventContext, name: string, to: bigint, withConfig: bigint | undefined) => void) {
-    this.connection.onReducer("add_stage", callback);
-  }
-
-  removeOnAddStage(callback: (ctx: ReducerEventContext, name: string, to: bigint, withConfig: bigint | undefined) => void) {
-    this.connection.offReducer("add_stage", callback);
   }
 
   callServer(id: string, method: Method) {
@@ -542,6 +482,22 @@ export class RemoteReducers {
     this.connection.offReducer("client_connected", callback);
   }
 
+  createCompetition(name: string, at: __Timestamp, to: bigint, withConfig: bigint | undefined) {
+    const __args = { name, at, to, withConfig };
+    let __writer = new __BinaryWriter(1024);
+    CreateCompetition.serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("create_competition", __argsBuffer, this.setCallReducerFlags.createCompetitionFlags);
+  }
+
+  onCreateCompetition(callback: (ctx: ReducerEventContext, name: string, at: __Timestamp, to: bigint, withConfig: bigint | undefined) => void) {
+    this.connection.onReducer("create_competition", callback);
+  }
+
+  removeOnCreateCompetition(callback: (ctx: ReducerEventContext, name: string, at: __Timestamp, to: bigint, withConfig: bigint | undefined) => void) {
+    this.connection.offReducer("create_competition", callback);
+  }
+
   createEventTemplate(name: string) {
     const __args = { name };
     let __writer = new __BinaryWriter(1024);
@@ -556,6 +512,22 @@ export class RemoteReducers {
 
   removeOnCreateEventTemplate(callback: (ctx: ReducerEventContext, name: string) => void) {
     this.connection.offReducer("create_event_template", callback);
+  }
+
+  createMatch(parent: bigint, withConfig: bigint | undefined, autoProvisioningServer: boolean) {
+    const __args = { parent, withConfig, autoProvisioningServer };
+    let __writer = new __BinaryWriter(1024);
+    CreateMatch.serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("create_match", __argsBuffer, this.setCallReducerFlags.createMatchFlags);
+  }
+
+  onCreateMatch(callback: (ctx: ReducerEventContext, parent: bigint, withConfig: bigint | undefined, autoProvisioningServer: boolean) => void) {
+    this.connection.onReducer("create_match", callback);
+  }
+
+  removeOnCreateMatch(callback: (ctx: ReducerEventContext, parent: bigint, withConfig: bigint | undefined, autoProvisioningServer: boolean) => void) {
+    this.connection.offReducer("create_match", callback);
   }
 
   createServerConfig(id: string, config: ServerConfig) {
@@ -646,7 +618,7 @@ export class RemoteReducers {
     this.connection.offReducer("match_configured", callback);
   }
 
-  onTournamentEventSchedule(arg: TournamentEventSchedule) {
+  onTournamentEventSchedule(arg: CompetitionSchedule) {
     const __args = { arg };
     let __writer = new __BinaryWriter(1024);
     OnTournamentEventSchedule.serialize(__writer, __args);
@@ -654,11 +626,11 @@ export class RemoteReducers {
     this.connection.callReducer("on_tournament_event_schedule", __argsBuffer, this.setCallReducerFlags.onTournamentEventScheduleFlags);
   }
 
-  onOnTournamentEventSchedule(callback: (ctx: ReducerEventContext, arg: TournamentEventSchedule) => void) {
+  onOnTournamentEventSchedule(callback: (ctx: ReducerEventContext, arg: CompetitionSchedule) => void) {
     this.connection.onReducer("on_tournament_event_schedule", callback);
   }
 
-  removeOnOnTournamentEventSchedule(callback: (ctx: ReducerEventContext, arg: TournamentEventSchedule) => void) {
+  removeOnOnTournamentEventSchedule(callback: (ctx: ReducerEventContext, arg: CompetitionSchedule) => void) {
     this.connection.offReducer("on_tournament_event_schedule", callback);
   }
 
@@ -692,22 +664,6 @@ export class RemoteReducers {
 
   removeOnPostGhost(callback: (ctx: ReducerEventContext, ghost: Uint8Array) => void) {
     this.connection.offReducer("post_ghost", callback);
-  }
-
-  provisionMatch(usedBy: bigint, withConfig: bigint | undefined, autoProvisioningServer: boolean) {
-    const __args = { usedBy, withConfig, autoProvisioningServer };
-    let __writer = new __BinaryWriter(1024);
-    ProvisionMatch.serialize(__writer, __args);
-    let __argsBuffer = __writer.getBuffer();
-    this.connection.callReducer("provision_match", __argsBuffer, this.setCallReducerFlags.provisionMatchFlags);
-  }
-
-  onProvisionMatch(callback: (ctx: ReducerEventContext, usedBy: bigint, withConfig: bigint | undefined, autoProvisioningServer: boolean) => void) {
-    this.connection.onReducer("provision_match", callback);
-  }
-
-  removeOnProvisionMatch(callback: (ctx: ReducerEventContext, usedBy: bigint, withConfig: bigint | undefined, autoProvisioningServer: boolean) => void) {
-    this.connection.offReducer("provision_match", callback);
   }
 
   setTmServerState(id: string, state: ServerState) {
@@ -761,19 +717,9 @@ export class RemoteReducers {
 }
 
 export class SetReducerFlags {
-  addEventFlags: __CallReducerFlags = 'FullUpdate';
-  addEvent(flags: __CallReducerFlags) {
-    this.addEventFlags = flags;
-  }
-
   addServerFlags: __CallReducerFlags = 'FullUpdate';
   addServer(flags: __CallReducerFlags) {
     this.addServerFlags = flags;
-  }
-
-  addStageFlags: __CallReducerFlags = 'FullUpdate';
-  addStage(flags: __CallReducerFlags) {
-    this.addStageFlags = flags;
   }
 
   callServerFlags: __CallReducerFlags = 'FullUpdate';
@@ -781,9 +727,19 @@ export class SetReducerFlags {
     this.callServerFlags = flags;
   }
 
+  createCompetitionFlags: __CallReducerFlags = 'FullUpdate';
+  createCompetition(flags: __CallReducerFlags) {
+    this.createCompetitionFlags = flags;
+  }
+
   createEventTemplateFlags: __CallReducerFlags = 'FullUpdate';
   createEventTemplate(flags: __CallReducerFlags) {
     this.createEventTemplateFlags = flags;
+  }
+
+  createMatchFlags: __CallReducerFlags = 'FullUpdate';
+  createMatch(flags: __CallReducerFlags) {
+    this.createMatchFlags = flags;
   }
 
   createServerConfigFlags: __CallReducerFlags = 'FullUpdate';
@@ -826,11 +782,6 @@ export class SetReducerFlags {
     this.postGhostFlags = flags;
   }
 
-  provisionMatchFlags: __CallReducerFlags = 'FullUpdate';
-  provisionMatch(flags: __CallReducerFlags) {
-    this.provisionMatchFlags = flags;
-  }
-
   setTmServerStateFlags: __CallReducerFlags = 'FullUpdate';
   setTmServerState(flags: __CallReducerFlags) {
     this.setTmServerStateFlags = flags;
@@ -851,14 +802,19 @@ export class SetReducerFlags {
 export class RemoteTables {
   constructor(private connection: __DbConnectionImpl) {}
 
+  get competition(): CompetitionTableHandle<'competition'> {
+    // clientCache is a private property
+    return new CompetitionTableHandle((this.connection as unknown as { clientCache: __ClientCache }).clientCache.getOrCreateTable<Competition>(REMOTE_MODULE.tables.competition));
+  }
+
+  get competitionSchedule(): CompetitionScheduleTableHandle<'competition_schedule'> {
+    // clientCache is a private property
+    return new CompetitionScheduleTableHandle((this.connection as unknown as { clientCache: __ClientCache }).clientCache.getOrCreateTable<CompetitionSchedule>(REMOTE_MODULE.tables.competition_schedule));
+  }
+
   get eventConfig(): EventConfigTableHandle<'event_config'> {
     // clientCache is a private property
     return new EventConfigTableHandle((this.connection as unknown as { clientCache: __ClientCache }).clientCache.getOrCreateTable<EventConfig>(REMOTE_MODULE.tables.event_config));
-  }
-
-  get eventStage(): EventStageTableHandle<'event_stage'> {
-    // clientCache is a private property
-    return new EventStageTableHandle((this.connection as unknown as { clientCache: __ClientCache }).clientCache.getOrCreateTable<EventStage>(REMOTE_MODULE.tables.event_stage));
   }
 
   get generator(): GeneratorTableHandle<'generator'> {
@@ -876,14 +832,9 @@ export class RemoteTables {
     return new MatchTemplateTableHandle((this.connection as unknown as { clientCache: __ClientCache }).clientCache.getOrCreateTable<MatchTemplate>(REMOTE_MODULE.tables.match_template));
   }
 
-  get stageMatch(): StageMatchTableHandle<'stage_match'> {
+  get tmMatch(): TmMatchTableHandle<'tm_match'> {
     // clientCache is a private property
-    return new StageMatchTableHandle((this.connection as unknown as { clientCache: __ClientCache }).clientCache.getOrCreateTable<StageMatch>(REMOTE_MODULE.tables.stage_match));
-  }
-
-  get stageTemplate(): StageTemplateTableHandle<'stage_template'> {
-    // clientCache is a private property
-    return new StageTemplateTableHandle((this.connection as unknown as { clientCache: __ClientCache }).clientCache.getOrCreateTable<StageTemplate>(REMOTE_MODULE.tables.stage_template));
+    return new TmMatchTableHandle((this.connection as unknown as { clientCache: __ClientCache }).clientCache.getOrCreateTable<TmMatch>(REMOTE_MODULE.tables.tm_match));
   }
 
   get tmServer(): TmServerTableHandle<'tm_server'> {
@@ -904,16 +855,6 @@ export class RemoteTables {
   get tournament(): TournamentTableHandle<'tournament'> {
     // clientCache is a private property
     return new TournamentTableHandle((this.connection as unknown as { clientCache: __ClientCache }).clientCache.getOrCreateTable<Tournament>(REMOTE_MODULE.tables.tournament));
-  }
-
-  get tournamentEvent(): TournamentEventTableHandle<'tournament_event'> {
-    // clientCache is a private property
-    return new TournamentEventTableHandle((this.connection as unknown as { clientCache: __ClientCache }).clientCache.getOrCreateTable<TournamentEvent>(REMOTE_MODULE.tables.tournament_event));
-  }
-
-  get tournamentEventSchedule(): TournamentEventScheduleTableHandle<'tournament_event_schedule'> {
-    // clientCache is a private property
-    return new TournamentEventScheduleTableHandle((this.connection as unknown as { clientCache: __ClientCache }).clientCache.getOrCreateTable<TournamentEventSchedule>(REMOTE_MODULE.tables.tournament_event_schedule));
   }
 
   get user(): UserTableHandle<'user'> {

@@ -64,7 +64,6 @@ impl TmServer {
     } */
 }
 
-#[cfg(feature = "development")]
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn add_server(ctx: &ReducerContext, id: String) {
     ctx.db.tm_server().insert(TmServer {
@@ -78,7 +77,6 @@ pub fn add_server(ctx: &ReducerContext, id: String) {
     });
 }
 
-#[cfg(feature = "development")]
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn call_server(ctx: &ReducerContext, id: String, method: Method) {
     if let Some(server) = ctx.db.tm_server().id().find(id) {
