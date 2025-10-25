@@ -31,12 +31,12 @@ pub struct Tournament {
 impl Tournament {
     pub fn add_competition(&mut self, competition_id: u64) {
         self.competitions
-            .try_add_competition(CompetitionKind::Competition(competition_id));
+            .try_add_competition(CompetitionKind::CompetitionV1(competition_id));
     }
 
     pub fn add_match(&mut self, match_id: u64) {
         self.competitions
-            .try_add_competition(CompetitionKind::Match(match_id));
+            .try_add_competition(CompetitionKind::MatchV1(match_id));
     }
 }
 

@@ -26,6 +26,25 @@ pub struct Graph<N, E> {
     //ty: PhantomData<Ty>,
 } */
 
+pub type NodeIndex = u32;
+pub type EdgeIndex = u32;
+
+/// The error type for fallible `Graph` & `StableGraph` operations.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GraphError {
+    /// The Graph is at the maximum number of nodes for its index.
+    NodeIxLimit,
+
+    /// The Graph is at the maximum number of edges for its index.
+    EdgeIxLimit,
+
+    /// The node with the specified index is missing from the graph.
+    NodeMissed(usize),
+
+    /// Node indices out of bounds.
+    NodeOutBounds,
+}
+
 #[derive(Debug)]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
 pub struct Node {
@@ -63,7 +82,7 @@ impl Competitions {
         Self::default()
     }
 
-    pub fn try_add_competition(&mut self, kind: CompetitionKind) -> u32 {
+    pub fn try_add_competition(&mut self, kind: CompetitionKind) -> NodeIndex {
         let id = self.nodes.len() as u32;
         self.nodes.push(Node {
             weight: kind,
@@ -74,11 +93,46 @@ impl Competitions {
         });
         id
     }
+
+    pub fn try_add_dependency(
+        &mut self,
+        start: NodeIndex,
+        end: NodeIndex,
+    ) -> Result<EdgeIndex, GraphError> {
+        let edge_idx = self.edges.len() as u32;
+        /*  if !(EdgeIndex::MAX.index() == !0 || EdgeIndex::MAX != edge_idx) {
+            return Err(GraphError::EdgeIxLimit);
+        } */
+
+        let mut edge = Edge {
+            node: StartEnd { start, end },
+            next: StartEnd {
+                start: EdgeIndex::MAX,
+                end: EdgeIndex::MAX,
+            },
+        };
+        /* match index_twice(&mut self.nodes, start.index(), end.index()) {
+            Pair::None => return Err(GraphError::NodeOutBounds),
+            Pair::One(an) => {
+                edge.next = an.next;
+                an.next[0] = edge_idx;
+                an.next[1] = edge_idx;
+            }
+            Pair::Both(an, bn) => {
+                // a and b are different indices
+                edge.next = [an.next[0], bn.next[1]];
+                an.next[0] = edge_idx;
+                bn.next[1] = edge_idx;
+            }
+        } */
+        self.edges.push(edge);
+        Ok(edge_idx)
+    }
 }
 
 #[derive(Debug)]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
 pub enum CompetitionKind {
-    Match(u64),
-    Competition(u64),
+    MatchV1(u64),
+    CompetitionV1(u64),
 }
