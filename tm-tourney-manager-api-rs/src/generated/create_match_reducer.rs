@@ -7,7 +7,8 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct CreateMatchArgs {
-    pub parent: u64,
+    pub tournament_id: u64,
+    pub parent_id: u64,
     pub with_config: Option<u64>,
     pub auto_provisioning_server: bool,
 }
@@ -15,7 +16,8 @@ pub(super) struct CreateMatchArgs {
 impl From<CreateMatchArgs> for super::Reducer {
     fn from(args: CreateMatchArgs) -> Self {
         Self::CreateMatch {
-            parent: args.parent,
+            tournament_id: args.tournament_id,
+            parent_id: args.parent_id,
             with_config: args.with_config,
             auto_provisioning_server: args.auto_provisioning_server,
         }
@@ -40,7 +42,8 @@ pub trait create_match {
     ///  and its status can be observed by listening for [`Self::on_create_match`] callbacks.
     fn create_match(
         &self,
-        parent: u64,
+        tournament_id: u64,
+        parent_id: u64,
         with_config: Option<u64>,
         auto_provisioning_server: bool,
     ) -> __sdk::Result<()>;
@@ -53,7 +56,9 @@ pub trait create_match {
     /// to cancel the callback.
     fn on_create_match(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &u64, &Option<u64>, &bool) + Send + 'static,
+        callback: impl FnMut(&super::ReducerEventContext, &u64, &u64, &Option<u64>, &bool)
+            + Send
+            + 'static,
     ) -> CreateMatchCallbackId;
     /// Cancel a callback previously registered by [`Self::on_create_match`],
     /// causing it not to run in the future.
@@ -63,14 +68,16 @@ pub trait create_match {
 impl create_match for super::RemoteReducers {
     fn create_match(
         &self,
-        parent: u64,
+        tournament_id: u64,
+        parent_id: u64,
         with_config: Option<u64>,
         auto_provisioning_server: bool,
     ) -> __sdk::Result<()> {
         self.imp.call_reducer(
             "create_match",
             CreateMatchArgs {
-                parent,
+                tournament_id,
+                parent_id,
                 with_config,
                 auto_provisioning_server,
             },
@@ -78,7 +85,7 @@ impl create_match for super::RemoteReducers {
     }
     fn on_create_match(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &u64, &Option<u64>, &bool)
+        mut callback: impl FnMut(&super::ReducerEventContext, &u64, &u64, &Option<u64>, &bool)
             + Send
             + 'static,
     ) -> CreateMatchCallbackId {
@@ -90,7 +97,8 @@ impl create_match for super::RemoteReducers {
                         __sdk::ReducerEvent {
                             reducer:
                                 super::Reducer::CreateMatch {
-                                    parent,
+                                    tournament_id,
+                                    parent_id,
                                     with_config,
                                     auto_provisioning_server,
                                 },
@@ -101,7 +109,13 @@ impl create_match for super::RemoteReducers {
                 else {
                     unreachable!()
                 };
-                callback(ctx, parent, with_config, auto_provisioning_server)
+                callback(
+                    ctx,
+                    tournament_id,
+                    parent_id,
+                    with_config,
+                    auto_provisioning_server,
+                )
             }),
         ))
     }

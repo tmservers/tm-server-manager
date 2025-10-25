@@ -96,24 +96,7 @@ pub enum ModeConfig {
 impl ModeConfig {
     pub fn into_xml(&self) -> String {
         match self {
-            ModeConfig::Rounds(rounds) => format!(
-                r#"
-        <setting name="S_PointsLimit" value="{}" type="integer"/>
-        <setting name="S_RoundsPerMap" value="{}" type="integer"/>
-        <setting name="S_MapsPerMatch" value="{}" type="integer"/>
-        <setting name="S_PointsRepartition" value="{:?}" type="text"/>
-        <setting name="S_UseCustomPointsRepartition" value="{}" type="boolean"/>
-        <setting name="S_DelayBeforeNextMap" value="{}" type="integer"/>
-        <setting name="S_FinishTimeout" value="{}" type="integer"/>
-            "#,
-                rounds.points_limit,
-                rounds.rounds_per_map,
-                rounds.maps_per_match,
-                rounds.points_repartition,
-                rounds.use_custom_points_repartition,
-                rounds.delay_before_next_map,
-                rounds.finish_timeout,
-            ),
+            ModeConfig::Rounds(rounds) => rounds.into_xml(),
         }
     }
 }

@@ -11,7 +11,8 @@ use super::event_phase_type::EventPhase;
 #[sats(crate = __lib)]
 pub struct Competition {
     pub id: u64,
-    pub tournament: u64,
+    pub tournament_id: u64,
+    pub parent_id: u64,
     pub name: String,
     pub phase: EventPhase,
     pub starting_at: __sdk::Timestamp,

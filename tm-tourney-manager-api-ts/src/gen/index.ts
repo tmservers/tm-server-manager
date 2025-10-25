@@ -482,19 +482,19 @@ export class RemoteReducers {
     this.connection.offReducer("client_connected", callback);
   }
 
-  createCompetition(name: string, at: __Timestamp, to: bigint, withConfig: bigint | undefined) {
-    const __args = { name, at, to, withConfig };
+  createCompetition(name: string, at: __Timestamp, tournamentId: bigint, parentId: bigint, withConfig: bigint | undefined) {
+    const __args = { name, at, tournamentId, parentId, withConfig };
     let __writer = new __BinaryWriter(1024);
     CreateCompetition.serialize(__writer, __args);
     let __argsBuffer = __writer.getBuffer();
     this.connection.callReducer("create_competition", __argsBuffer, this.setCallReducerFlags.createCompetitionFlags);
   }
 
-  onCreateCompetition(callback: (ctx: ReducerEventContext, name: string, at: __Timestamp, to: bigint, withConfig: bigint | undefined) => void) {
+  onCreateCompetition(callback: (ctx: ReducerEventContext, name: string, at: __Timestamp, tournamentId: bigint, parentId: bigint, withConfig: bigint | undefined) => void) {
     this.connection.onReducer("create_competition", callback);
   }
 
-  removeOnCreateCompetition(callback: (ctx: ReducerEventContext, name: string, at: __Timestamp, to: bigint, withConfig: bigint | undefined) => void) {
+  removeOnCreateCompetition(callback: (ctx: ReducerEventContext, name: string, at: __Timestamp, tournamentId: bigint, parentId: bigint, withConfig: bigint | undefined) => void) {
     this.connection.offReducer("create_competition", callback);
   }
 
@@ -514,19 +514,19 @@ export class RemoteReducers {
     this.connection.offReducer("create_event_template", callback);
   }
 
-  createMatch(parent: bigint, withConfig: bigint | undefined, autoProvisioningServer: boolean) {
-    const __args = { parent, withConfig, autoProvisioningServer };
+  createMatch(tournamentId: bigint, parentId: bigint, withConfig: bigint | undefined, autoProvisioningServer: boolean) {
+    const __args = { tournamentId, parentId, withConfig, autoProvisioningServer };
     let __writer = new __BinaryWriter(1024);
     CreateMatch.serialize(__writer, __args);
     let __argsBuffer = __writer.getBuffer();
     this.connection.callReducer("create_match", __argsBuffer, this.setCallReducerFlags.createMatchFlags);
   }
 
-  onCreateMatch(callback: (ctx: ReducerEventContext, parent: bigint, withConfig: bigint | undefined, autoProvisioningServer: boolean) => void) {
+  onCreateMatch(callback: (ctx: ReducerEventContext, tournamentId: bigint, parentId: bigint, withConfig: bigint | undefined, autoProvisioningServer: boolean) => void) {
     this.connection.onReducer("create_match", callback);
   }
 
-  removeOnCreateMatch(callback: (ctx: ReducerEventContext, parent: bigint, withConfig: bigint | undefined, autoProvisioningServer: boolean) => void) {
+  removeOnCreateMatch(callback: (ctx: ReducerEventContext, tournamentId: bigint, parentId: bigint, withConfig: bigint | undefined, autoProvisioningServer: boolean) => void) {
     this.connection.offReducer("create_match", callback);
   }
 

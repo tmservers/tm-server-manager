@@ -52,7 +52,7 @@ pub struct StartEnd {
 }
 
 /// A Directed Acyclic Graph.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
 pub struct Competitions {
     nodes: Vec<Node>,
@@ -60,10 +60,19 @@ pub struct Competitions {
 }
 impl Competitions {
     pub fn new() -> Self {
-        Self {
-            nodes: Vec::new(),
-            edges: Vec::new(),
-        }
+        Self::default()
+    }
+
+    pub fn try_add_competition(&mut self, kind: CompetitionKind) -> u32 {
+        let id = self.nodes.len() as u32;
+        self.nodes.push(Node {
+            weight: kind,
+            next: StartEnd {
+                start: u32::MAX,
+                end: u32::MAX,
+            },
+        });
+        id
     }
 }
 

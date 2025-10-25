@@ -236,14 +236,16 @@ pub enum Reducer {
     CreateCompetition {
         name: String,
         at: __sdk::Timestamp,
-        to: u64,
+        tournament_id: u64,
+        parent_id: u64,
         with_config: Option<u64>,
     },
     CreateEventTemplate {
         name: String,
     },
     CreateMatch {
-        parent: u64,
+        tournament_id: u64,
+        parent_id: u64,
         with_config: Option<u64>,
         auto_provisioning_server: bool,
     },

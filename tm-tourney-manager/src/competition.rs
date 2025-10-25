@@ -1,7 +1,10 @@
 use spacetimedb::{ReducerContext, SpacetimeType, Table, TimeDuration, Timestamp, reducer, table};
 use tm_server_types::event::Event;
 
-use crate::{graph::Competitions, tournament::tournament};
+use crate::{
+    graph::{CompetitionKind, Competitions},
+    tournament::tournament,
+};
 
 mod scheduling;
 
@@ -11,7 +14,8 @@ pub struct Competition {
     #[primary_key]
     pub id: u64,
 
-    tournament: u64,
+    tournament_id: u64,
+    parent_id: u64,
 
     // Unique event name for the tournament
     name: String,
@@ -39,9 +43,17 @@ pub struct Competition {
 }
 
 impl Competition {
-    /* pub fn add_stage(&mut self, stage: u64) {
-        self.stages.push(stage);
-    } */
+    pub fn add_competition(&mut self, competition_id: u64) {
+        //TODO
+        self.competitions
+            .try_add_competition(CompetitionKind::Competition(competition_id));
+    }
+
+    pub fn add_match(&mut self, match_id: u64) {
+        //TODO
+        self.competitions
+            .try_add_competition(CompetitionKind::Match(match_id));
+    }
 }
 
 #[derive(Debug)]
@@ -90,32 +102,40 @@ pub fn create_competition(
     ctx: &ReducerContext,
     name: String,
     at: Timestamp,
-    to: u64,
+    tournament_id: u64,
+    parent_id: u64,
     with_config: Option<u64>,
 ) {
     //TODO authorization
-    if let Some(mut tournamet) = ctx.db.tournament().id().find(to) {
-        let event = ctx.db.competition().insert(Competition {
+    let new_competition = Competition {
+        id: 0,
+        tournament_id,
+        parent_id,
+        name,
+        phase: EventPhase::Planning,
+        // stages: Vec::new(),
+        starting_at: at,
+        estimate: None,
+        competitions: Competitions::new(),
+        /* config: EventConfig {
             id: 0,
-            tournament: to,
-            name,
-            phase: EventPhase::Planning,
-            // stages: Vec::new(),
-            starting_at: at,
-            estimate: None,
-            competitions: Competitions::new(),
-            /* config: EventConfig {
-                id: 0,
-                owner: (),
-                public: (),
-                name: (),
-                registration: (),
-            }, */
-        });
+            owner: (),
+            public: (),
+            name: (),
+            registration: (),
+        }, */
+    };
 
-        tournamet.add_competition(event.id);
-
-        ctx.db.tournament().id().update(tournamet);
+    if tournament_id == parent_id {
+        if let Some(mut tournament) = ctx.db.tournament().id().find(parent_id) {
+            let comp = ctx.db.competition().insert(new_competition);
+            tournament.add_match(comp.id);
+            ctx.db.tournament().id().update(tournament);
+        }
+    } else if let Some(mut competition) = ctx.db.competition().id().find(parent_id) {
+        let comp = ctx.db.competition().insert(new_competition);
+        competition.add_competition(comp.id);
+        ctx.db.competition().id().update(competition);
     }
 }
 

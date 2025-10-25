@@ -37,7 +37,8 @@ declare type __keep_Competitions = Competitions;
 
 export type Competition = {
   id: bigint,
-  tournament: bigint,
+  tournamentId: bigint,
+  parentId: bigint,
   name: string,
   phase: EventPhase,
   startingAt: __Timestamp,
@@ -59,7 +60,8 @@ export const Competition = {
     _cached_Competition_type_value = __AlgebraicTypeValue.Product({ elements: [] });
     _cached_Competition_type_value.value.elements.push(
       { name: "id", algebraicType: __AlgebraicTypeValue.U64 },
-      { name: "tournament", algebraicType: __AlgebraicTypeValue.U64 },
+      { name: "tournamentId", algebraicType: __AlgebraicTypeValue.U64 },
+      { name: "parentId", algebraicType: __AlgebraicTypeValue.U64 },
       { name: "name", algebraicType: __AlgebraicTypeValue.String },
       { name: "phase", algebraicType: EventPhase.getTypeScriptAlgebraicType() },
       { name: "startingAt", algebraicType: __AlgebraicTypeValue.createTimestampType() },

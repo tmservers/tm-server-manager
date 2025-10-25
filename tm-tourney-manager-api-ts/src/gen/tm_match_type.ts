@@ -37,6 +37,7 @@ declare type __keep_MatchStatus = MatchStatus;
 
 export type TmMatch = {
   id: bigint,
+  tournamentId: bigint,
   parentId: bigint,
   serverId: string | undefined,
   preMatchConfig: ServerConfig | undefined,
@@ -59,6 +60,7 @@ export const TmMatch = {
     _cached_TmMatch_type_value = __AlgebraicTypeValue.Product({ elements: [] });
     _cached_TmMatch_type_value.value.elements.push(
       { name: "id", algebraicType: __AlgebraicTypeValue.U64 },
+      { name: "tournamentId", algebraicType: __AlgebraicTypeValue.U64 },
       { name: "parentId", algebraicType: __AlgebraicTypeValue.U64 },
       { name: "serverId", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.String) },
       { name: "preMatchConfig", algebraicType: __AlgebraicTypeValue.createOptionType(ServerConfig.getTypeScriptAlgebraicType()) },

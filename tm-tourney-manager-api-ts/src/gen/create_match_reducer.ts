@@ -29,7 +29,8 @@ import {
 } from "spacetimedb";
 
 export type CreateMatch = {
-  parent: bigint,
+  tournamentId: bigint,
+  parentId: bigint,
   withConfig: bigint | undefined,
   autoProvisioningServer: boolean,
 };
@@ -47,7 +48,8 @@ export const CreateMatch = {
     if (_cached_CreateMatch_type_value) return _cached_CreateMatch_type_value;
     _cached_CreateMatch_type_value = __AlgebraicTypeValue.Product({ elements: [] });
     _cached_CreateMatch_type_value.value.elements.push(
-      { name: "parent", algebraicType: __AlgebraicTypeValue.U64 },
+      { name: "tournamentId", algebraicType: __AlgebraicTypeValue.U64 },
+      { name: "parentId", algebraicType: __AlgebraicTypeValue.U64 },
       { name: "withConfig", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.U64) },
       { name: "autoProvisioningServer", algebraicType: __AlgebraicTypeValue.Bool },
     );

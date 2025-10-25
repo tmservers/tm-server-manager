@@ -4,6 +4,7 @@ use tm_server_types::{config::ServerConfig, event::Event};
 use crate::{
     competition::competition,
     server::{TmServer, tm_server},
+    tournament::tournament,
 };
 
 mod leaderboard;
@@ -16,9 +17,7 @@ pub struct TmMatch {
     pub id: u64,
 
     /// The tournament this match is associated with.
-    //tournament_id: u64,
-    /// TODO evaluate if this is needed?
-    /// Probably yes i guess
+    tournament_id: u64,
     parent_id: u64,
 
     /// The assigned server that will be used by this match.
@@ -93,25 +92,35 @@ pub enum MatchStatus {
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn create_match(
     ctx: &ReducerContext,
-    parent: u64,
+    tournament_id: u64,
+    parent_id: u64,
     with_config: Option<u64>,
     auto_provisioning_server: bool,
 ) {
     //TODO authorization
-    if let Some(mut competition) = ctx.db.competition().id().find(parent) {
-        let tm_match = ctx.db.tm_match().insert(TmMatch {
-            id: 0,
-            parent_id: parent,
-            //tournament_id: competition.
-            status: MatchStatus::Configuring,
-            server_id: if auto_provisioning_server { None } else { None },
-            pre_match_config: None,
-            match_config: None,
-            post_match_config: None,
-            //leaderboard: Leaderboard::new(),
-        });
-        //competition.add_match(tm_match.id);
 
+    // Create an uncommitted match
+    let tm_match = TmMatch {
+        id: 0,
+        parent_id,
+        tournament_id,
+        status: MatchStatus::Configuring,
+        server_id: if auto_provisioning_server { None } else { None },
+        pre_match_config: None,
+        match_config: None,
+        post_match_config: None,
+        //leaderboard: Leaderboard::new(),
+    };
+
+    if tournament_id == parent_id {
+        if let Some(mut tournament) = ctx.db.tournament().id().find(parent_id) {
+            let tm_match = ctx.db.tm_match().insert(tm_match);
+            tournament.add_match(tm_match.id);
+            ctx.db.tournament().id().update(tournament);
+        }
+    } else if let Some(mut competition) = ctx.db.competition().id().find(parent_id) {
+        let tm_match = ctx.db.tm_match().insert(tm_match);
+        competition.add_match(tm_match.id);
         ctx.db.competition().id().update(competition);
     }
 }

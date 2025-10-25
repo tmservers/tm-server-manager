@@ -9,7 +9,8 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 pub(super) struct CreateCompetitionArgs {
     pub name: String,
     pub at: __sdk::Timestamp,
-    pub to: u64,
+    pub tournament_id: u64,
+    pub parent_id: u64,
     pub with_config: Option<u64>,
 }
 
@@ -18,7 +19,8 @@ impl From<CreateCompetitionArgs> for super::Reducer {
         Self::CreateCompetition {
             name: args.name,
             at: args.at,
-            to: args.to,
+            tournament_id: args.tournament_id,
+            parent_id: args.parent_id,
             with_config: args.with_config,
         }
     }
@@ -44,7 +46,8 @@ pub trait create_competition {
         &self,
         name: String,
         at: __sdk::Timestamp,
-        to: u64,
+        tournament_id: u64,
+        parent_id: u64,
         with_config: Option<u64>,
     ) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `create_competition`.
@@ -56,7 +59,7 @@ pub trait create_competition {
     /// to cancel the callback.
     fn on_create_competition(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &String, &__sdk::Timestamp, &u64, &Option<u64>)
+        callback: impl FnMut(&super::ReducerEventContext, &String, &__sdk::Timestamp, &u64, &u64, &Option<u64>)
             + Send
             + 'static,
     ) -> CreateCompetitionCallbackId;
@@ -70,7 +73,8 @@ impl create_competition for super::RemoteReducers {
         &self,
         name: String,
         at: __sdk::Timestamp,
-        to: u64,
+        tournament_id: u64,
+        parent_id: u64,
         with_config: Option<u64>,
     ) -> __sdk::Result<()> {
         self.imp.call_reducer(
@@ -78,14 +82,15 @@ impl create_competition for super::RemoteReducers {
             CreateCompetitionArgs {
                 name,
                 at,
-                to,
+                tournament_id,
+                parent_id,
                 with_config,
             },
         )
     }
     fn on_create_competition(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &String, &__sdk::Timestamp, &u64, &Option<u64>)
+        mut callback: impl FnMut(&super::ReducerEventContext, &String, &__sdk::Timestamp, &u64, &u64, &Option<u64>)
             + Send
             + 'static,
     ) -> CreateCompetitionCallbackId {
@@ -99,7 +104,8 @@ impl create_competition for super::RemoteReducers {
                                 super::Reducer::CreateCompetition {
                                     name,
                                     at,
-                                    to,
+                                    tournament_id,
+                                    parent_id,
                                     with_config,
                                 },
                             ..
@@ -109,7 +115,7 @@ impl create_competition for super::RemoteReducers {
                 else {
                     unreachable!()
                 };
-                callback(ctx, name, at, to, with_config)
+                callback(ctx, name, at, tournament_id, parent_id, with_config)
             }),
         ))
     }

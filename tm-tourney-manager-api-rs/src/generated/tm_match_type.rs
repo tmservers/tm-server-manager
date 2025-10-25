@@ -11,6 +11,7 @@ use super::server_config_type::ServerConfig;
 #[sats(crate = __lib)]
 pub struct TmMatch {
     pub id: u64,
+    pub tournament_id: u64,
     pub parent_id: u64,
     pub server_id: Option<String>,
     pub pre_match_config: Option<ServerConfig>,
