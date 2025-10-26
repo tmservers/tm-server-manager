@@ -31,8 +31,8 @@ impl ServerConfig {
 		<script_name>Trackmania/TM_Rounds_Online</script_name>
 	</gameinfos>
 
-  	<script_settings>
-    	<setting name="S_UseTieBreak" value="" type="boolean"/>
+  	<script_settings>"#.to_string()
+    	/* <setting name="S_UseTieBreak" value="" type="boolean"/>
     	<setting name="S_WarmUpNb" value="0" type="integer"/>
     	<setting name="S_WarmUpDuration" value="60" type="integer"/>
     	<setting name="S_ChatTime" value="10" type="integer"/>
@@ -46,9 +46,10 @@ impl ServerConfig {
     	<setting name="S_UseLegacyXmlRpcCallbacks" value="1" type="boolean"/>
     	<setting name="S_UseAlternateRules" value="" type="boolean"/>
     	<setting name="S_ForceLapsNb" value="-1" type="integer"/>
-    	<setting name="S_DisplayTimeDiff" value="" type="boolean"/>
-		"#
-        .to_string()
+    	<setting name="S_DisplayTimeDiff" value="" type="boolean"/> */
+		/* "#
+        .to_string() */
+        +&self.common.into_xml()
             + &self.mode.into_xml()
             + r#"
 	</script_settings>

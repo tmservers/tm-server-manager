@@ -134,12 +134,12 @@ pub fn match_assign_server(ctx: &ReducerContext, to: u64, server_id: String) {
         && let Some(stage_match) = ctx.db.tm_match().id().find(to)
         && stage_match.status == MatchStatus::Configuring
     {
-        let stage_match = ctx.db.tm_match().id().update(TmMatch {
+        let tm_match = ctx.db.tm_match().id().update(TmMatch {
             server_id: Some(server_id),
             ..stage_match
         });
 
-        server.set_active_match(stage_match.id);
+        server.set_active_match(tm_match.id);
 
         ctx.db.tm_server().id().update(server);
     }
@@ -148,11 +148,11 @@ pub fn match_assign_server(ctx: &ReducerContext, to: u64, server_id: String) {
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn match_configured(ctx: &ReducerContext, id: u64) {
     //TODO authorization
-    if let Some(mut stage_match) = ctx.db.tm_match().id().find(id)
-        && stage_match.status == MatchStatus::Configuring
+    if let Some(mut tm_match) = ctx.db.tm_match().id().find(id)
+        && tm_match.status == MatchStatus::Configuring
     {
-        stage_match.status = MatchStatus::Upcoming;
-        ctx.db.tm_match().id().update(stage_match);
+        tm_match.status = MatchStatus::Upcoming;
+        ctx.db.tm_match().id().update(tm_match);
     }
 }
 

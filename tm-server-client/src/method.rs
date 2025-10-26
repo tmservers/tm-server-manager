@@ -19,6 +19,11 @@ pub trait ModeScriptMethodsXmlRpc {
     async fn get_all_api_versions(&self, enable: bool) -> Result<bool, ClientError>;
     async fn get_player_list(&self) -> Result<Vec<PlayerInfo>, ClientError>;
     async fn ui_modules_get_properties(&self) -> Result<String, ClientError>;
+    async fn set_player_points(
+        &self,
+        login: String,
+        match_points: u32,
+    ) -> Result<bool, ClientError>;
 }
 
 impl ModeScriptMethodsXmlRpc for TrackmaniaServer {
@@ -90,6 +95,26 @@ impl ModeScriptMethodsXmlRpc for TrackmaniaServer {
         self.call(
             "TriggerModeScriptEventArray",
             ("Common.UIModules.GetProperties", ["isthisaid?"]),
+        )
+        .await
+    }
+
+    async fn set_player_points(
+        &self,
+        login: String,
+        match_points: u32,
+    ) -> Result<bool, ClientError> {
+        self.call(
+            "TriggerModeScriptEventArray",
+            (
+                "Trackmania.SetPlayerPoints",
+                [
+                    &login,                    //&lt; Login of the player to update
+                    "", //&lt; The round points, use an empty string to not update.
+                    "", //&lt; The map points, use an empty string to not update.
+                    &match_points.to_string(), //&lt; The match points, use an empty string to not update.
+                ],
+            ),
         )
         .await
     }

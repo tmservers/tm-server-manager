@@ -74,9 +74,36 @@ impl Common {
             force_laps_number: -1, // Laps from map validation
         }
     }
+
+    pub fn into_xml(&self) -> String {
+        format!(
+            r#"
+        <setting name="S_UseTieBreak" value="" type="boolean"/>
+    	<setting name="S_UseClublinks" value="" type="boolean"/>
+    	<setting name="S_UseClublinksSponsors" value="" type="boolean"/>
+    	<setting name="S_NeutralEmblemUrl" value="" type="text"/>
+    	<setting name="S_ScriptEnvironment" value="production" type="text"/>
+    	<setting name="S_IsChannelServer" value="" type="boolean"/>
+    	<setting name="S_HideOpponents" value="" type="boolean"/>
+    	<setting name="S_UseLegacyXmlRpcCallbacks" value="1" type="boolean"/>
+    	<setting name="S_UseAlternateRules" value="" type="boolean"/>
+    	<setting name="S_DisplayTimeDiff" value="" type="boolean"/>
+    	<setting name="S_ChatTime" value="{}" type="integer"/>
+    	<setting name="S_WarmUpNb" value="{}" type="integer"/>
+    	<setting name="S_WarmUpDuration" value="{}" type="integer"/>
+    	<setting name="S_RespawnBehaviour" value="{}" type="integer"/>
+    	<setting name="S_ForceLapsNb" value="{}" type="integer"/>
+        "#,
+            self.chat_time,
+            self.warmup_number,
+            Into::<i32>::into(self.warmup_duration),
+            Into::<i32>::into(self.respawn_behaviour),
+            self.force_laps_number,
+        )
+    }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
@@ -95,7 +122,20 @@ pub enum RespawnBavaviour {
     GiveUpNever = 5,
 }
 
-#[derive(Debug, Clone)]
+impl From<RespawnBavaviour> for i32 {
+    fn from(value: RespawnBavaviour) -> Self {
+        match value {
+            RespawnBavaviour::Default => 0,
+            RespawnBavaviour::TimeAttack => 1,
+            RespawnBavaviour::Ignore => 2,
+            RespawnBavaviour::GiveUpAtStart => 3,
+            RespawnBavaviour::GiveUpAlways => 4,
+            RespawnBavaviour::GiveUpNever => 5,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]

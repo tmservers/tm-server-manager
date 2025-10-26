@@ -6,7 +6,10 @@ use spacetimedb_sdk::{DbContext, Error, Identity, Table, TableWithPrimaryKey};
 
 use tm_tourney_manager_api_rs::*;
 
-use tm_server_client::{ClientError, TrackmaniaServer, method::XmlRpcMethods};
+use tm_server_client::{
+    ClientError, TrackmaniaServer,
+    method::{ModeScriptMethodsXmlRpc, XmlRpcMethods},
+};
 use tokio::{signal, sync::Mutex};
 use tracing::{info, instrument, warn};
 
@@ -112,10 +115,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             )
             .await;
 
-        warn!("{:?}", server.is_auto_save_replays_enabled().await);
-        warn!("{:?}", server.auto_save_replays(true).await);
-        warn!("{:?}", server.is_auto_save_replays_enabled().await);
-
         // Emit all events
         server.event(move |event| {
             let event = event.clone();
@@ -165,6 +164,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                     if let Err(error) = std::fs::remove_file(&full_path) {
                         tracing::error!("Failed to delete the current replay file! Reason: {error}")
                     };
+
+                    //TODO remove
+                    /* warn!(
+                        "{:?},",
+                        TRACKMANIA
+                            .wait()
+                            .set_player_points("NGcBSsHMSq6Z_mvrXsojKg".to_string(), 55)
+                            .await
+                    );
+                    warn!(
+                        "{:?},",
+                        TRACKMANIA
+                            .wait()
+                            .set_player_points("iyOlLqb7TMmlOwxGwIdo-g".to_string(), 65)
+                            .await
+                    ); */
                 }
 
                 let spacetime = SPACETIME.wait();
