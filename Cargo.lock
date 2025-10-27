@@ -1184,6 +1184,10 @@ dependencies = [
 [[package]]
 name = "gamebox"
 version = "0.0.4-dev"
+dependencies = [
+ "lzokay",
+ "thiserror 2.0.17",
+]
 
 [[package]]
 name = "gbx-header"
@@ -2087,6 +2091,15 @@ dependencies = [
  "scoped-tls",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "lzokay"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "953d350dc065718bb00b61ea2118274ffe2fdf6488f32f720422bcd1c9d6025f"
+dependencies = [
+ "zerocopy",
 ]
 
 [[package]]
@@ -4296,6 +4309,7 @@ name = "tm-server-bridge"
 version = "0.0.4-dev"
 dependencies = [
  "dotenvy",
+ "gamebox",
  "insta",
  "nadeo-api",
  "opentelemetry",

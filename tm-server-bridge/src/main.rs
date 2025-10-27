@@ -137,11 +137,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
                     match std::fs::read(&full_path) {
                         Ok(file) => {
-                            tracing::error!(
-                                "{:?} version: {}",
-                                String::from_utf8(file[0..3].to_vec()),
-                                u16::from_le_bytes(file[3..5].try_into().unwrap())
-                            );
+                            let gbx = gamebox::try_parse_buffer(file.clone());
+                            tracing::error!("{gbx:?}");
 
                             if let Err(error) = SPACETIME.wait().reducers.post_ghost(file) {
                                 tracing::error!(

@@ -14,3 +14,5 @@ repository.workspace = true
 edition.workspace = true
 
 [dependencies]
+lzokay = { version = "2", features = ["decompress", "compress"] }
+thiserror = "2"
