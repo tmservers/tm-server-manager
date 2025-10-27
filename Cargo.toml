@@ -1,5 +1,5 @@
 [workspace]
-members = [
+members = ["gamebox",
     "tm-server-bridge",
     "tm-server-client",
     "tm-server-types",
