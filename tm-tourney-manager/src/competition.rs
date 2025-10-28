@@ -2,7 +2,7 @@ use spacetimedb::{ReducerContext, SpacetimeType, Table, TimeDuration, Timestamp,
 use tm_server_types::event::Event;
 
 use crate::{
-    graph::{CompetitionKind, Competitions},
+    graph::{CompetitionKind, Competitions, NodeIndex},
     tournament::tournament,
 };
 
@@ -36,6 +36,15 @@ pub struct Competition {
     //registration: Vec<Registration>,
     //generate: Generator,
     //config: EventConfig,
+
+    //TODO something along the lines of this
+    //is necessary to delegate things in the following
+    //recursion level.
+    //This could be triggered with a schedule but an alternatie
+    // approach would be to save the affected entry points in a schedule
+    // This would be possible since they are own rows in the first place.
+    // We could also have some sort of a barrier table or smth which takes care of this.
+    entry_points: Option<Vec<NodeIndex>>,
 
     // Stages get executed sequentially.
     //stages: Vec<u64>,
