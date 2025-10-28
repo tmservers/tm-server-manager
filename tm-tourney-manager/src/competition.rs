@@ -122,17 +122,10 @@ pub fn create_competition(
         parent_id,
         name,
         phase: EventPhase::Planning,
-        // stages: Vec::new(),
         starting_at: at,
         estimate: None,
         competitions: Competitions::new(),
-        /* config: EventConfig {
-            id: 0,
-            owner: (),
-            public: (),
-            name: (),
-            registration: (),
-        }, */
+        entry_points: None,
     };
 
     if tournament_id == parent_id {
