@@ -1182,7 +1182,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "gamebox"
+name = "gamebox-files"
 version = "0.0.4-dev"
 dependencies = [
  "lzokay",
@@ -4309,7 +4309,7 @@ name = "tm-server-bridge"
 version = "0.0.4-dev"
 dependencies = [
  "dotenvy",
- "gamebox",
+ "gamebox-files",
  "insta",
  "nadeo-api",
  "opentelemetry",

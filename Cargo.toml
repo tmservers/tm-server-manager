@@ -1,5 +1,6 @@
 [workspace]
-members = ["gamebox",
+members = [
+    "gamebox-files",
     "tm-server-bridge",
     "tm-server-client",
     "tm-server-types",

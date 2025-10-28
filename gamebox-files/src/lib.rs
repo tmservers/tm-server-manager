@@ -1,4 +1,4 @@
-use std::io::Cursor;
+use std::{fmt::Debug, io::Cursor};
 
 use thiserror::Error;
 
@@ -76,6 +76,14 @@ struct HeaderEntry {
 
 #[derive(Debug)]
 struct ClassId(u32);
+
+/* impl Debug for ClassId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("ClassId")
+            .field(&self.0.to_le_bytes())
+            .finish()
+    }
+} */
 
 #[derive(Debug)]
 struct ChunkSize(u32);
