@@ -1,3 +1,8 @@
+//! # Disclaimer
+//! [gamebox-files] is mainly the result of needing access to a replay file for the tm-tourney-manager project.
+//! It is thus not feature complete to parse all flavours of .Gbx files.
+//! However the general structure of the parser should be fairly trivial to extend for new gbx classes.
+//! This can be done with a fork or as a contribution.
 use std::{fmt::Debug, io::Cursor};
 
 use thiserror::Error;
