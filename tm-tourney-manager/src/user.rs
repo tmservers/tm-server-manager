@@ -2,10 +2,10 @@ use spacetimedb::{Identity, SpacetimeType, table};
 
 #[cfg_attr(feature = "spacetime", spacetimedb::table(name = user, public))]
 pub struct User {
-    #[unique]
+    #[cfg_attr(feature = "spacetime", unique)]
     identity: Identity,
     //ubisoft if of the user
-    #[primary_key]
+    #[cfg_attr(feature = "spacetime", primary_key)]
     pub id: String,
 
     name: String,

@@ -1,5 +1,3 @@
-use spacetimedb::{SpacetimeType, Timestamp};
-
 #[derive(Debug)]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
 pub enum Registration {
@@ -26,7 +24,7 @@ pub struct TeamRegistration {
 #[derive(Debug)]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
 pub struct TeamInfo {
-    registered_at: Timestamp,
+    registered_at: spacetimedb::Timestamp,
     name: String,
     members: Vec<String>,
 }

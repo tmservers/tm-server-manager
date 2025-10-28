@@ -1,5 +1,3 @@
-use spacetimedb::{ReducerContext, SpacetimeType, Table, reducer, table};
-
 use crate::{
     graph::{CompetitionKind, Competitions},
     tournament::registration::Registration,
@@ -8,14 +6,14 @@ mod registration;
 
 #[cfg_attr(feature = "spacetime", spacetimedb::table(name = tournament,public))]
 pub struct Tournament {
-    #[auto_inc]
-    #[primary_key]
+    #[cfg_attr(feature = "spacetime", auto_inc)]
+    #[cfg_attr(feature = "spacetime", primary_key)]
     pub id: u64,
 
     creator: String,
     owners: Vec<String>,
 
-    #[unique]
+    #[cfg_attr(feature = "spacetime", unique)]
     name: String,
 
     description: String,
@@ -56,8 +54,9 @@ pub enum TournamentStatus {
     Ended,
 }
 
+#[cfg(feature = "spacetime")]
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-fn create_tournament(ctx: &ReducerContext, name: String) {
+fn create_tournament(ctx: &spacetimedb::ReducerContext, name: String) {
     //if let Some(user)=ctx.db.user().id ctx.identity()
     //ctx.
     //TODO authorization

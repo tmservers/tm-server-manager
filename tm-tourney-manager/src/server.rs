@@ -1,4 +1,3 @@
-use spacetimedb::{ReducerContext, SpacetimeType, Table, reducer, table};
 use tm_server_types::{config::ServerConfig, method::Method};
 
 use crate::server::{
@@ -14,7 +13,7 @@ pub mod state;
 pub struct TmServer {
     /// Trackmania provisiones a unique server_id for each server.
     //#[unique]
-    #[primary_key]
+    #[cfg_attr(feature = "spacetime", primary_key)]
     pub id: String,
 
     /// Each server also has a ubisoft account associated with it.
@@ -64,8 +63,10 @@ impl TmServer {
     } */
 }
 
+#[cfg(feature = "spacetime")]
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn add_server(ctx: &ReducerContext, id: String) {
+pub fn add_server(ctx: &spacetimedb::ReducerContext, id: String) {
+    use spacetimedb::Table;
     ctx.db.tm_server().insert(TmServer {
         online: true,
         id,
@@ -77,8 +78,9 @@ pub fn add_server(ctx: &ReducerContext, id: String) {
     });
 }
 
+#[cfg(feature = "spacetime")]
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn call_server(ctx: &ReducerContext, id: String, method: Method) {
+pub fn call_server(ctx: &spacetimedb::ReducerContext, id: String, method: Method) {
     if let Some(server) = ctx.db.tm_server().id().find(id) {
         ctx.db.tm_server().id().update(TmServer {
             server_method: Some(method),
@@ -87,8 +89,9 @@ pub fn call_server(ctx: &ReducerContext, id: String, method: Method) {
     }
 }
 
+#[cfg(feature = "spacetime")]
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn load_server_config(ctx: &ReducerContext, id: String, with_config: u64) {
+pub fn load_server_config(ctx: &spacetimedb::ReducerContext, id: String, with_config: u64) {
     if let Some(mut server) = ctx.db.tm_server().id().find(id)
         && let Some(config) = ctx.db.tm_server_config().id().find(with_config)
     {
@@ -97,8 +100,9 @@ pub fn load_server_config(ctx: &ReducerContext, id: String, with_config: u64) {
     }
 }
 
+#[cfg(feature = "spacetime")]
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn set_tm_server_state(ctx: &ReducerContext, id: String, state: ServerState) {
+pub fn set_tm_server_state(ctx: &spacetimedb::ReducerContext, id: String, state: ServerState) {
     if let Some(mut server) = ctx.db.tm_server().id().find(id) {
         server.set_state(state);
         ctx.db.tm_server().id().update(server);

@@ -1,5 +1,4 @@
-use spacetimedb::{ReducerContext, ScheduleAt, reducer, table};
-
+#[cfg(feature = "spacetime")]
 #[cfg_attr(feature = "spacetime", spacetimedb::table(name = competition_schedule, scheduled(on_tournament_event_schedule)))]
 struct CompetitionSchedule {
     // Mandatory fields:
@@ -10,7 +9,7 @@ struct CompetitionSchedule {
     scheduled_id: u64,
 
     /// Information about when the reducer should be called.
-    scheduled_at: ScheduleAt,
+    scheduled_at: spacetimedb::ScheduleAt,
 
     // Custom fields:
     // ============================
@@ -18,9 +17,10 @@ struct CompetitionSchedule {
     text: String,
 }
 
+#[cfg(feature = "spacetime")]
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 fn on_tournament_event_schedule(
-    ctx: &ReducerContext,
+    ctx: &spacetimedb::ReducerContext,
     arg: CompetitionSchedule,
 ) -> Result<(), String> {
     /* let message_to_send = arg.text;

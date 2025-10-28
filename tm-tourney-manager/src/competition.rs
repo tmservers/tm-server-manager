@@ -1,4 +1,3 @@
-use spacetimedb::{ReducerContext, SpacetimeType, Table, TimeDuration, Timestamp, reducer, table};
 use tm_server_types::event::Event;
 
 use crate::{
@@ -10,8 +9,8 @@ mod scheduling;
 
 #[cfg_attr(feature = "spacetime",spacetimedb::table(name = competition,public))]
 pub struct Competition {
-    #[auto_inc]
-    #[primary_key]
+    #[cfg_attr(feature = "spacetime", auto_inc)]
+    #[cfg_attr(feature = "spacetime", primary_key)]
     pub id: u64,
 
     tournament_id: u64,
@@ -24,9 +23,9 @@ pub struct Competition {
     phase: EventPhase,
     // The Timestamp at which the event starts.
     // If no starting time is selected it has to be started manually.
-    starting_at: Timestamp,
+    starting_at: spacetimedb::Timestamp,
     // Estimated duration how long the tourney is gonna take.
-    estimate: Option<TimeDuration>,
+    estimate: Option<spacetimedb::TimeDuration>,
 
     // Can capture a server at the end of the registration to serve
     // as a lobby server which automatically delegates players to their
@@ -102,19 +101,22 @@ pub struct EventConfig {
     name: String,
 
     ///  Determines if the
-    registration: Option<TimeDuration>,
+    registration: Option<spacetimedb::TimeDuration>,
 }
 
 /// Adds a new Event to the specified Tournament.
+#[cfg(feature = "spacetime")]
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn create_competition(
-    ctx: &ReducerContext,
+    ctx: &spacetimedb::ReducerContext,
     name: String,
-    at: Timestamp,
+    at: spacetimedb::Timestamp,
     tournament_id: u64,
     parent_id: u64,
     with_config: Option<u64>,
 ) {
+    use spacetimedb::Table;
+
     //TODO authorization
     let new_competition = Competition {
         id: 0,
@@ -122,17 +124,10 @@ pub fn create_competition(
         parent_id,
         name,
         phase: EventPhase::Planning,
-        // stages: Vec::new(),
         starting_at: at,
         estimate: None,
         competitions: Competitions::new(),
-        /* config: EventConfig {
-            id: 0,
-            owner: (),
-            public: (),
-            name: (),
-            registration: (),
-        }, */
+        entry_points: None,
     };
 
     if tournament_id == parent_id {
@@ -148,5 +143,6 @@ pub fn create_competition(
     }
 }
 
+#[cfg(feature = "spacetime")]
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn create_event_template(ctx: &ReducerContext, name: String /* config:  */) {}
+pub fn create_event_template(ctx: &spacetimedb::ReducerContext, name: String /* config:  */) {}

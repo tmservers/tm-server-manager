@@ -1,10 +1,9 @@
-use spacetimedb::{ReducerContext, Table, reducer, table};
 use tm_server_types::config::ServerConfig;
 
-#[table(name=tm_server_config, public)]
+#[cfg_attr(feature = "spacetime",spacetimedb::table(name=tm_server_config, public))]
 pub struct TmServerConfig {
-    #[auto_inc]
-    #[primary_key]
+    #[cfg_attr(feature = "spacetime", auto_inc)]
+    #[cfg_attr(feature = "spacetime", primary_key)]
     pub id: u64,
 
     /// Ubi id of the creator
@@ -19,8 +18,11 @@ impl TmServerConfig {
     }
 }
 
+#[cfg(feature = "spacetime")]
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn create_server_config(ctx: &ReducerContext, id: String, config: ServerConfig) {
+pub fn create_server_config(ctx: &spacetimedb::ReducerContext, id: String, config: ServerConfig) {
+    use spacetimedb::Table;
+
     ctx.db.tm_server_config().insert(TmServerConfig {
         id: 0,
         creator: id,
