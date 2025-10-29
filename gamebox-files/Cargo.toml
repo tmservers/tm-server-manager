@@ -14,5 +14,8 @@ repository.workspace = true
 edition.workspace = true
 
 [dependencies]
-lzokay = { version = "2", features = ["decompress", "compress"] }
+#lzokay = { version = "2", features = ["decompress", "compress", "std"] }
+#rust-lzo = "0"
+minilzo-rs = "0"
 thiserror = "2"
+flate2 = "1.0"

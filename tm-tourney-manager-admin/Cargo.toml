@@ -22,10 +22,7 @@ console_error_panic_hook = "0.1"
 
 singlestage = "*"
 
-#TODO move to workspace if web support gets merged
-spacetimedb-sdk = { package = "spacetimedb-sdk", git = "https://github.com/thlsrms/SpacetimeDB", branch = "rust-web-sdk", features = [
-    "web",
-] }
+spacetimedb-sdk.workspace = true
 
 
 # utils#spacetimedb-sdk.workspace = true

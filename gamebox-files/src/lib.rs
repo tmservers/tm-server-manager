@@ -7,8 +7,14 @@ use std::{fmt::Debug, io::Cursor};
 
 use thiserror::Error;
 
+use crate::classes::{ClassId, GameCtnReplayRecord};
+
+mod classes;
+
 #[derive(Debug)]
-pub enum GBX {}
+pub enum GBX {
+    GameCtnReplayRecord(GameCtnReplayRecord),
+}
 
 #[derive(Debug, Error)]
 pub enum GBXError {
@@ -16,9 +22,11 @@ pub enum GBXError {
     MissingMagic,
     #[error("the data for key `{0}` is not available")]
     UnsupportedVersion(u16),
+    #[error("The Decompression of the body failed. Reason {0}")]
+    DecompressionFailed(minilzo_rs::Error),
 }
 
-pub fn try_parse_buffer(buffer: Vec<u8>) -> Result<(), GBXError> {
+pub fn try_parse_buffer(buffer: Vec<u8>) -> Result<GBX, GBXError> {
     if &buffer[0..3] != b"GBX" {
         return Err(GBXError::MissingMagic);
     }
@@ -31,10 +39,10 @@ pub fn try_parse_buffer(buffer: Vec<u8>) -> Result<(), GBXError> {
 
     // The following 4 bytes are unused because version 6 is always compressed.
 
-    let class_id = ClassId(u32::from_le_bytes(buffer[9..13].try_into().unwrap()));
+    let class_id = ClassId::new(u32::from_le_bytes(buffer[9..13].try_into().unwrap()));
     println!("{class_id:?}");
 
-    let user_data_size = u32::from_le_bytes(buffer[13..17].try_into().unwrap());
+    let user_data_size = u32::from_le_bytes(buffer[13..17].try_into().unwrap()) as usize;
     println!("{user_data_size}");
 
     let num_header_chunks = u32::from_le_bytes(buffer[17..21].try_into().unwrap());
@@ -44,7 +52,7 @@ pub fn try_parse_buffer(buffer: Vec<u8>) -> Result<(), GBXError> {
     for num_entry in 0..num_header_chunks {
         let cur_buf_pos = (num_entry * 8 + 21) as usize;
         header_entries.push(HeaderEntry {
-            chunk_id: ClassId(u32::from_le_bytes(
+            chunk_id: ClassId::new(u32::from_le_bytes(
                 buffer[cur_buf_pos..cur_buf_pos + 4].try_into().unwrap(),
             )),
             chunk_size: ChunkSize(u32::from_le_bytes(
@@ -54,23 +62,47 @@ pub fn try_parse_buffer(buffer: Vec<u8>) -> Result<(), GBXError> {
     }
     println!("{header_entries:#?}");
 
-    for header in header_entries {}
+    for header in header_entries {
+        let header_entry = (num_header_chunks * 8 + 21) as usize;
+        //header.try_parse(buffer[])
+    }
 
     let num_nodes = u32::from_le_bytes(
-        buffer[17 + (user_data_size as usize)..21 + (user_data_size as usize)]
+        buffer[17 + user_data_size..21 + user_data_size]
             .try_into()
             .unwrap(),
     );
     println!("{num_nodes:#?}");
 
     let num_external_nodes = u32::from_le_bytes(
-        buffer[21 + (user_data_size as usize)..24 + (user_data_size as usize)]
+        buffer[21 + user_data_size..25 + user_data_size]
             .try_into()
             .unwrap(),
     );
     println!("{num_external_nodes:#?}");
 
-    Ok(())
+    let uncompressed_size = u32::from_le_bytes(
+        buffer[25 + user_data_size..29 + user_data_size]
+            .try_into()
+            .unwrap(),
+    ) as usize;
+    println!("{uncompressed_size:#?}");
+
+    let compressed_size = u32::from_le_bytes(
+        buffer[29 + user_data_size..33 + user_data_size]
+            .try_into()
+            .unwrap(),
+    ) as usize;
+    println!("{compressed_size:#?}");
+
+    let lzo = minilzo_rs::LZO::init().unwrap();
+    match lzo.decompress_safe(
+        &buffer[33 + user_data_size..33 + user_data_size + compressed_size],
+        uncompressed_size,
+    ) {
+        Ok(body) => class_id.try_parse(body),
+        Err(err) => Err(GBXError::DecompressionFailed(err)),
+    }
 }
 
 #[derive(Debug)]
@@ -79,8 +111,18 @@ struct HeaderEntry {
     chunk_size: ChunkSize,
 }
 
-#[derive(Debug)]
-struct ClassId(u32);
+impl HeaderEntry {
+    /* fn try_parse(&self, buffer: Vec<u8>) -> Result<GBX, GBXError> {
+        match self.chunk_id.0 {
+            0x03093000 => {
+                println!("CGameCtnReplayRecord");
+                //GameCtnReplayRecord::try_parse()
+            }
+            _ => println!("{}", self.chunk_id.0),
+        }
+        Err(GBXError::MissingMagic)
+    } */
+}
 
 /* impl Debug for ClassId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
