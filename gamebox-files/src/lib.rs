@@ -3,16 +3,22 @@
 //! It is thus not feature complete to parse all flavours of .Gbx files.
 //! However the general structure of the parser should be fairly trivial to extend for new gbx classes.
 //! This can be done with a fork or as a contribution.
-use std::{fmt::Debug, io::Cursor};
+use std::fmt::Debug;
 
+use bytes::{Buf, Bytes};
+use reader::GameboxReader;
 use thiserror::Error;
 
-use crate::classes::{ClassId, GameCtnReplayRecord};
+use crate::classes::{ChunkId, GameCtnReplayRecord};
 
 mod classes;
+mod reader;
+
+// TODO maybe the common header? but nah probably not
+//pub struct GbxFile {}
 
 #[derive(Debug)]
-pub enum GBX {
+pub enum GBXClass {
     GameCtnReplayRecord(GameCtnReplayRecord),
 }
 
@@ -24,13 +30,15 @@ pub enum GBXError {
     UnsupportedVersion(u16),
     #[error("The Decompression of the body failed. Reason {0}")]
     DecompressionFailed(minilzo_rs::Error),
+    #[error("The parsing for ChunkId: {0} failed. The ChunkId is unknown.")]
+    UnknownChunk(u32),
 }
 
-pub fn try_parse_buffer(buffer: Vec<u8>) -> Result<GBX, GBXError> {
+pub fn try_parse_buffer(buffer: &[u8]) -> Result<GBXClass, GBXError> {
     if &buffer[0..3] != b"GBX" {
         return Err(GBXError::MissingMagic);
     }
-    // The GBX version. This tool only supports version 6.
+    // The GBX version. This tool only supports version 6 for now.
     let version = u16::from_le_bytes(buffer[3..5].try_into().unwrap());
 
     if version != 6 {
@@ -39,7 +47,7 @@ pub fn try_parse_buffer(buffer: Vec<u8>) -> Result<GBX, GBXError> {
 
     // The following 4 bytes are unused because version 6 is always compressed.
 
-    let class_id = ClassId::new(u32::from_le_bytes(buffer[9..13].try_into().unwrap()));
+    let class_id = ChunkId::new(u32::from_le_bytes(buffer[9..13].try_into().unwrap()));
     println!("{class_id:?}");
 
     let user_data_size = u32::from_le_bytes(buffer[13..17].try_into().unwrap()) as usize;
@@ -52,7 +60,7 @@ pub fn try_parse_buffer(buffer: Vec<u8>) -> Result<GBX, GBXError> {
     for num_entry in 0..num_header_chunks {
         let cur_buf_pos = (num_entry * 8 + 21) as usize;
         header_entries.push(HeaderEntry {
-            chunk_id: ClassId::new(u32::from_le_bytes(
+            chunk_id: ChunkId::new(u32::from_le_bytes(
                 buffer[cur_buf_pos..cur_buf_pos + 4].try_into().unwrap(),
             )),
             chunk_size: ChunkSize(u32::from_le_bytes(
@@ -64,7 +72,9 @@ pub fn try_parse_buffer(buffer: Vec<u8>) -> Result<GBX, GBXError> {
 
     for header in header_entries {
         let header_entry = (num_header_chunks * 8 + 21) as usize;
-        //header.try_parse(buffer[])
+        let chunk = header
+            .chunk_id
+            .try_parse(buffer[header_entry..header_entry + header.chunk_size.0 as usize].to_vec());
     }
 
     let num_nodes = u32::from_le_bytes(
@@ -107,7 +117,7 @@ pub fn try_parse_buffer(buffer: Vec<u8>) -> Result<GBX, GBXError> {
 
 #[derive(Debug)]
 struct HeaderEntry {
-    chunk_id: ClassId,
+    chunk_id: ChunkId,
     chunk_size: ChunkSize,
 }
 

@@ -1,6 +1,6 @@
 use crate::{
     GBXError,
-    classes::{ClassId, GameCtnChallenge, Proxy},
+    classes::{ChunkId, GameCtnChallenge, Proxy},
 };
 
 #[derive(Debug)]
@@ -16,7 +16,7 @@ pub struct GameCtnReplayRecord {
 
 impl GameCtnReplayRecord {
     pub fn try_parse(buffer: Vec<u8>) -> Result<Self, GBXError> {
-        let chunk_id = ClassId::new(u32::from_le_bytes(buffer[0..4].try_into().unwrap()));
+        let chunk_id = ChunkId::new(u32::from_le_bytes(buffer[0..4].try_into().unwrap()));
         println!("ChunkId: {chunk_id:#?}");
 
         if chunk_id.0 == 0x03093002 {
@@ -40,7 +40,7 @@ impl GameCtnReplayRecord {
         println!("Length: {length:#?}");
         let map = Proxy::<GameCtnChallenge>::new(buffer[8..8 + length].into());
 
-        let chunk_id = ClassId::new(u32::from_le_bytes(
+        let chunk_id = ChunkId::new(u32::from_le_bytes(
             buffer[8 + length..12 + length].try_into().unwrap(),
         ));
         println!("ChunkId: {chunk_id:#?}");
@@ -59,7 +59,7 @@ impl GameCtnReplayRecord {
         let noderef = i32::from_le_bytes(buffer[20 + length..24 + length].try_into().unwrap());
         println!("Vesrion: {noderef:#?}");
 
-        let chunk_id = ClassId::new(u32::from_le_bytes(
+        let chunk_id = ChunkId::new(u32::from_le_bytes(
             buffer[24 + length..28 + length].try_into().unwrap(),
         ));
         println!("ChunkId: {chunk_id:#?}");
@@ -67,7 +67,7 @@ impl GameCtnReplayRecord {
             println!("yay")
         }
 
-        let chunk_id = ClassId::new(u32::from_le_bytes(
+        let chunk_id = ChunkId::new(u32::from_le_bytes(
             buffer[28 + length..32 + length].try_into().unwrap(),
         ));
         println!("ChunkId: {chunk_id:#?}");
@@ -95,24 +95,64 @@ impl GameCtnReplayRecord {
         );
         println!("{decompressed:?}");
 
-        let chunk_id = ClassId::new(u32::from_le_bytes(body[0..4].try_into().unwrap()));
+        let chunk_id = ChunkId::new(u32::from_le_bytes(body[0..4].try_into().unwrap()));
         println!("ChunkId: {chunk_id:#?}");
-        /* if chunk_id.0 & 0x1 == 0xFACADE01 {
-            println!("yay")
+        if chunk_id.0 == 0xFACADE01 {
+            println!("Invalid")
+        }
+        /* if chunk_id.0 & 0x11 == 0x10 {
+            println!("skipable")
+        } */
+        /*  if chunk_id.0 & 0x11 != 0x10 {
+            if chunk_id.0 & 0x10 == true {
+                println!("skipable")
+            }
         } */
 
-        let chunk_id = ClassId::new(u32::from_le_bytes(
-            buffer[44 + length + compressed_size..44 + length + compressed_size + 4]
+        let chunk_id = ChunkId::new(u32::from_le_bytes(
+            buffer[44 + length + compressed_size..48 + length + compressed_size]
                 .try_into()
                 .unwrap(),
         ));
+
         println!("ChunkId: {chunk_id:#?}");
         if chunk_id.0 == 0x0303F007 {
             println!("yay")
         }
 
-        let chunk_id = ClassId::new(u32::from_le_bytes(
+        /* let chunk_id = ClassId::new(u32::from_le_bytes(
             buffer[48 + length + compressed_size..52 + length + compressed_size]
+                .try_into()
+                .unwrap(),
+        ));
+        println!("ChunkId: {chunk_id:#?}"); */
+
+        let chunk_id = ChunkId::new(u32::from_le_bytes(
+            buffer[52 + length + compressed_size..56 + length + compressed_size]
+                .try_into()
+                .unwrap(),
+        ));
+        println!("ChunkId: {chunk_id:#?}");
+        if chunk_id.0 == 0x03092000 {
+            println!("yay")
+        }
+
+        let chunk_id = ChunkId::new(u32::from_le_bytes(
+            buffer[56 + length + compressed_size..60 + length + compressed_size]
+                .try_into()
+                .unwrap(),
+        ));
+        println!("ChunkId: {chunk_id:#?}");
+
+        let chunk_id = ChunkId::new(u32::from_le_bytes(
+            buffer[60 + length + compressed_size..64 + length + compressed_size]
+                .try_into()
+                .unwrap(),
+        ));
+        println!("ChunkId: {chunk_id:#?}");
+
+        let chunk_id = ChunkId::new(u32::from_le_bytes(
+            buffer[64 + length + compressed_size..68 + length + compressed_size]
                 .try_into()
                 .unwrap(),
         ));

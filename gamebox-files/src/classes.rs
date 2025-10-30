@@ -6,29 +6,34 @@ use std::marker::PhantomData;
 pub use game_ctn_challenge::GameCtnChallenge;
 pub use game_ctn_replay_record::GameCtnReplayRecord;
 
-use crate::{GBX, GBXError};
+use crate::{GBXClass, GBXError};
 
+/// This provides the main entry points for parsing classes.
+/// It is called ChunkId because the ClassId is a subset of ChunkId
+/// and can be retrieved from it.
 #[derive(Debug)]
-pub(crate) struct ClassId(u32);
-impl ClassId {
+pub(crate) struct ChunkId(u32);
+impl ChunkId {
     #[inline]
     pub fn new(id: u32) -> Self {
-        ClassId(id)
+        ChunkId(id)
     }
 
-    pub fn try_parse(&self, buffer: Vec<u8>) -> Result<GBX, GBXError> {
+    pub fn try_parse(&self, buffer: Vec<u8>) -> Result<GBXClass, GBXError> {
         match self.0 {
             // CGameCtnReplayRecord
             0x03093000 => match GameCtnReplayRecord::try_parse(buffer) {
-                Ok(class) => Ok(GBX::GameCtnReplayRecord(class)),
+                Ok(class) => Ok(GBXClass::GameCtnReplayRecord(class)),
                 Err(error) => Err(error),
             },
-            //TODO this is not the right error
-            _ => Err(GBXError::MissingMagic),
+            _ => Err(GBXError::UnknownChunk(self.0)),
         }
     }
 }
 
+/// Used to Lazily parse gamebox classes.
+/// Stores the raw byte buffer and can be converted to the
+/// underlying class if necessary.
 #[derive(Debug)]
 struct Proxy<T> {
     raw: Box<[u8]>,
