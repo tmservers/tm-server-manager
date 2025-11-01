@@ -4,7 +4,7 @@
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub struct GiveUp {
     #[cfg_attr(feature = "serde", serde(rename = "accountid"))]
-    account_id: String,
-    login: String,
-    time: u32,
+    pub account_id: String,
+    pub login: String,
+    pub time: u32,
 }

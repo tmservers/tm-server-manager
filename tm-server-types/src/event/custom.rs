@@ -3,8 +3,8 @@
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub struct Custom {
-    name: String,
-    body: String,
+    pub name: String,
+    pub body: String,
 }
 
 impl Custom {

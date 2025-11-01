@@ -9,18 +9,18 @@ use crate::{
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub struct Scores {
     #[cfg_attr(feature = "serde", serde(rename = "responseid"))]
-    response_id: String,
-    section: String,
+    pub response_id: String,
+    pub section: String,
     #[cfg_attr(feature = "serde", serde(rename = "useteams"))]
-    use_teams: bool,
+    pub use_teams: bool,
 
     #[cfg_attr(feature = "serde", serde(rename = "winnerteam"))]
-    winner_team: i32,
+    pub winner_team: i32,
     #[cfg_attr(feature = "serde", serde(rename = "winnerplayer"))]
-    winner_player: String,
+    pub winner_player: String,
 
-    teams: Vec<Team>,
-    players: Vec<Player>,
+    pub teams: Vec<Team>,
+    pub players: Vec<Player>,
 }
 
 impl<'a> From<&'a Event> for &'a Scores {

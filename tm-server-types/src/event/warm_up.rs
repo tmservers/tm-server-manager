@@ -3,8 +3,8 @@
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub struct WarmUpStartRound {
-    current: u32,
-    total: u32,
+    pub current: u32,
+    pub total: u32,
 }
 
 #[derive(Debug, Clone)]
@@ -12,6 +12,6 @@ pub struct WarmUpStartRound {
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub struct WarmUpEndRound {
-    current: u32,
-    total: u32,
+    pub current: u32,
+    pub total: u32,
 }

@@ -5,8 +5,8 @@ use crate::base::Map;
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub struct LoadingMapStart {
-    restarted: bool,
-    time: u32,
+    pub restarted: bool,
+    pub time: u32,
 }
 
 #[derive(Debug, Clone)]
@@ -14,9 +14,9 @@ pub struct LoadingMapStart {
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub struct LoadingMapEnd {
-    restarted: bool,
-    time: u32,
-    map: Map,
+    pub restarted: bool,
+    pub time: u32,
+    pub map: Map,
 }
 
 #[derive(Debug, Clone)]
@@ -24,11 +24,11 @@ pub struct LoadingMapEnd {
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub struct StartMap {
-    count: u32,
-    valid: u32,
-    restarted: bool,
-    time: u32,
-    map: Map,
+    pub count: u32,
+    pub valid: u32,
+    pub restarted: bool,
+    pub time: u32,
+    pub map: Map,
 }
 
 #[derive(Debug, Clone)]
@@ -36,10 +36,10 @@ pub struct StartMap {
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub struct EndMapStart {
-    count: u32,
-    valid: u32,
+    pub count: u32,
+    pub valid: u32,
 
-    map: Map,
+    pub map: Map,
 }
 
 #[derive(Debug, Clone)]
@@ -47,13 +47,13 @@ pub struct EndMapStart {
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub struct EndMapEnd {
-    count: u32,
-    valid: u32,
+    pub count: u32,
+    pub valid: u32,
     #[cfg_attr(feature = "serde", serde(rename = "isvalid"))]
-    is_valid: bool,
-    time: u32,
+    pub is_valid: bool,
+    pub time: u32,
 
-    map: Map,
+    pub map: Map,
 }
 
 #[derive(Debug, Clone)]
@@ -61,8 +61,8 @@ pub struct EndMapEnd {
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub struct UnloadingMapStart {
-    time: u32,
-    map: Map,
+    pub time: u32,
+    pub map: Map,
 }
 
 #[derive(Debug, Clone)]
@@ -70,5 +70,5 @@ pub struct UnloadingMapStart {
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub struct UnloadingMapEnd {
-    time: u32,
+    pub time: u32,
 }
