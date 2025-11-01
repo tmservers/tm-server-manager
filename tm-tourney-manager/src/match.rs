@@ -3,10 +3,12 @@ use tm_server_types::{config::ServerConfig, event::Event};
 
 use crate::{
     competition::competition,
+    r#match::{ephemeral_state::EphemeralState, leaderboard::MatchLeaderboardRules},
     server::{TmServer, tm_server},
     tournament::tournament,
 };
 
+pub mod ephemeral_state;
 mod leaderboard;
 
 // The table name needs to be plural since match is a rust keyword
@@ -50,13 +52,22 @@ pub struct TmMatch {
     post_match_config: Option<ServerConfig>,
 
     status: MatchStatus,
-    //leaderboard: Leaderboard,
+    leaderboard: MatchLeaderboardRules,
+    ephemeral_state: EphemeralState,
 }
 
 impl TmMatch {
     /// Evaluates is the Match is in the "Match" state of its lifecycle.
     pub fn is_live(&self) -> bool {
         self.status == MatchStatus::Live
+    }
+
+    pub fn get_tournament(&self) -> u64 {
+        self.tournament_id
+    }
+
+    pub fn get_ephemeral_state(&self) -> EphemeralState {
+        self.ephemeral_state
     }
 
     pub fn add_server_event(&mut self, event: &Event) {
@@ -129,7 +140,8 @@ pub fn create_match(
         pre_match_config: None,
         match_config: None,
         post_match_config: None,
-        //leaderboard: Leaderboard::new(),
+        leaderboard: MatchLeaderboardRules::new(),
+        ephemeral_state: EphemeralState::new(),
     };
 
     if tournament_id == parent_id {

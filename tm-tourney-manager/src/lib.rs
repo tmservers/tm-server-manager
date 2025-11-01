@@ -1,6 +1,7 @@
 use spacetimedb::{ReducerContext, reducer};
 
 pub mod competition;
+pub mod emulator;
 pub mod generator;
 pub mod ghosts;
 pub mod r#match;
