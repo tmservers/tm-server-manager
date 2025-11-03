@@ -14,9 +14,6 @@ use crate::classes::{ChunkId, GameCtnReplayRecord};
 mod classes;
 mod reader;
 
-// TODO maybe the common header? but nah probably not
-//pub struct GbxFile {}
-
 #[derive(Debug)]
 pub enum GBXClass {
     GameCtnReplayRecord(GameCtnReplayRecord),
@@ -72,9 +69,9 @@ pub fn try_parse_buffer(buffer: &[u8]) -> Result<GBXClass, GBXError> {
 
     for header in header_entries {
         let header_entry = (num_header_chunks * 8 + 21) as usize;
-        let chunk = header
-            .chunk_id
-            .try_parse(buffer[header_entry..header_entry + header.chunk_size.0 as usize].to_vec());
+        /* let chunk = header
+        .chunk_id
+        .try_parse(buffer[header_entry..header_entry + header.chunk_size.0 as usize].to_vec()); */
     }
 
     let num_nodes = u32::from_le_bytes(

@@ -17,7 +17,7 @@ pub struct GameCtnReplayRecord {
 impl GameCtnReplayRecord {
     pub fn try_parse(buffer: Vec<u8>) -> Result<Self, GBXError> {
         let chunk_id = ChunkId::new(u32::from_le_bytes(buffer[0..4].try_into().unwrap()));
-        println!("ChunkId: {chunk_id:#?}");
+        println!("ChunkId Replay: {chunk_id:#?}");
 
         if chunk_id.0 == 0x03093002 {
             println!("yay")
