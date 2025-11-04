@@ -25,7 +25,6 @@ import {
   type EventContextInterface as __EventContextInterface,
   type ReducerEventContextInterface as __ReducerEventContextInterface,
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
 } from "spacetimedb";
 import * as EventPhaseVariants from './event_phase_variants'
 
@@ -34,8 +33,6 @@ export type EventPhase = EventPhaseVariants.Planning |
   EventPhaseVariants.Preparation |
   EventPhaseVariants.Ongoing |
   EventPhaseVariants.Completed;
-
-let _cached_EventPhase_type_value: __AlgebraicTypeType | null = null;
 
 // A value with helper functions to construct the type.
 export const EventPhase = {
@@ -51,15 +48,14 @@ export const EventPhase = {
   Completed: { tag: "Completed" } as const,
 
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_EventPhase_type_value) return _cached_EventPhase_type_value;
-    _cached_EventPhase_type_value = __AlgebraicTypeValue.Sum({ variants: [] });
-    _cached_EventPhase_type_value.value.variants.push(
-      { name: "Planning", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-      { name: "Preparation", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-      { name: "Ongoing", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-      { name: "Completed", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-    );
-    return _cached_EventPhase_type_value;
+    return __AlgebraicTypeValue.Sum({
+      variants: [
+        { name: "Planning", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
+        { name: "Preparation", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
+        { name: "Ongoing", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
+        { name: "Completed", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
+      ]
+    });
   },
 
   serialize(writer: __BinaryWriter, value: EventPhase): void {

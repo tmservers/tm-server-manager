@@ -25,7 +25,6 @@ import {
   type EventContextInterface as __EventContextInterface,
   type ReducerEventContextInterface as __ReducerEventContextInterface,
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
 } from "spacetimedb";
 import { Generator } from "./generator_type";
 import { ModeRules } from "./mode_rules_type";
@@ -45,9 +44,7 @@ declare type __keep = [EventContext, Reducer, RemoteReducers, RemoteTables];
  * but to directly chain method calls,
  * like `ctx.db.generator.on_insert(...)`.
  */
-export class GeneratorTableHandle<TableName extends string> implements __TableHandle<TableName> {
-  // phantom type to track the table name
-  readonly tableName!: TableName;
+export class GeneratorTableHandle {
   tableCache: __TableCache<Generator>;
 
   constructor(tableCache: __TableCache<Generator>) {

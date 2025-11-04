@@ -25,7 +25,6 @@ import {
   type EventContextInterface as __EventContextInterface,
   type ReducerEventContextInterface as __ReducerEventContextInterface,
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
 } from "spacetimedb";
 import { RoundTime } from "./round_time_type";
 // Mark import as potentially unused
@@ -48,8 +47,6 @@ export type Player = {
   previousRacetime: RoundTime,
   previousRaceCheckpoints: number[],
 };
-let _cached_Player_type_value: __AlgebraicTypeType | null = null;
-
 /**
  * An object for generated helper functions.
  */
@@ -59,25 +56,24 @@ export const Player = {
   * This function is derived from the AlgebraicType used to generate this type.
   */
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_Player_type_value) return _cached_Player_type_value;
-    _cached_Player_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_Player_type_value.value.elements.push(
-      { name: "login", algebraicType: __AlgebraicTypeValue.String },
-      { name: "accountId", algebraicType: __AlgebraicTypeValue.String },
-      { name: "name", algebraicType: __AlgebraicTypeValue.String },
-      { name: "team", algebraicType: __AlgebraicTypeValue.I32 },
-      { name: "rank", algebraicType: __AlgebraicTypeValue.U32 },
-      { name: "roundPoints", algebraicType: __AlgebraicTypeValue.U32 },
-      { name: "mapPoints", algebraicType: __AlgebraicTypeValue.U32 },
-      { name: "matchPoints", algebraicType: __AlgebraicTypeValue.U32 },
-      { name: "bestRacetime", algebraicType: RoundTime.getTypeScriptAlgebraicType() },
-      { name: "bestRaceCheckpoints", algebraicType: __AlgebraicTypeValue.Array(__AlgebraicTypeValue.U32) },
-      { name: "bestLaptime", algebraicType: RoundTime.getTypeScriptAlgebraicType() },
-      { name: "bestLapCheckpoints", algebraicType: __AlgebraicTypeValue.Array(__AlgebraicTypeValue.U32) },
-      { name: "previousRacetime", algebraicType: RoundTime.getTypeScriptAlgebraicType() },
-      { name: "previousRaceCheckpoints", algebraicType: __AlgebraicTypeValue.Array(__AlgebraicTypeValue.U32) },
-    );
-    return _cached_Player_type_value;
+    return __AlgebraicTypeValue.Product({
+      elements: [
+        { name: "login", algebraicType: __AlgebraicTypeValue.String},
+        { name: "accountId", algebraicType: __AlgebraicTypeValue.String},
+        { name: "name", algebraicType: __AlgebraicTypeValue.String},
+        { name: "team", algebraicType: __AlgebraicTypeValue.I32},
+        { name: "rank", algebraicType: __AlgebraicTypeValue.U32},
+        { name: "roundPoints", algebraicType: __AlgebraicTypeValue.U32},
+        { name: "mapPoints", algebraicType: __AlgebraicTypeValue.U32},
+        { name: "matchPoints", algebraicType: __AlgebraicTypeValue.U32},
+        { name: "bestRacetime", algebraicType: RoundTime.getTypeScriptAlgebraicType()},
+        { name: "bestRaceCheckpoints", algebraicType: __AlgebraicTypeValue.Array(__AlgebraicTypeValue.U32)},
+        { name: "bestLaptime", algebraicType: RoundTime.getTypeScriptAlgebraicType()},
+        { name: "bestLapCheckpoints", algebraicType: __AlgebraicTypeValue.Array(__AlgebraicTypeValue.U32)},
+        { name: "previousRacetime", algebraicType: RoundTime.getTypeScriptAlgebraicType()},
+        { name: "previousRaceCheckpoints", algebraicType: __AlgebraicTypeValue.Array(__AlgebraicTypeValue.U32)},
+      ]
+    });
   },
 
   serialize(writer: __BinaryWriter, value: Player): void {

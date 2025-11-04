@@ -25,14 +25,11 @@ import {
   type EventContextInterface as __EventContextInterface,
   type ReducerEventContextInterface as __ReducerEventContextInterface,
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
 } from "spacetimedb";
 
 export type Podium = {
   time: number,
 };
-let _cached_Podium_type_value: __AlgebraicTypeType | null = null;
-
 /**
  * An object for generated helper functions.
  */
@@ -42,12 +39,11 @@ export const Podium = {
   * This function is derived from the AlgebraicType used to generate this type.
   */
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_Podium_type_value) return _cached_Podium_type_value;
-    _cached_Podium_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_Podium_type_value.value.elements.push(
-      { name: "time", algebraicType: __AlgebraicTypeValue.U32 },
-    );
-    return _cached_Podium_type_value;
+    return __AlgebraicTypeValue.Product({
+      elements: [
+        { name: "time", algebraicType: __AlgebraicTypeValue.U32},
+      ]
+    });
   },
 
   serialize(writer: __BinaryWriter, value: Podium): void {

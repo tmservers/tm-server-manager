@@ -25,14 +25,11 @@ import {
   type EventContextInterface as __EventContextInterface,
   type ReducerEventContextInterface as __ReducerEventContextInterface,
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
 } from "spacetimedb";
 import * as ModeRulesVariants from './mode_rules_variants'
 
 // The tagged union or sum type for the algebraic type `ModeRules`.
-export type ModeRules = never;
-
-let _cached_ModeRules_type_value: __AlgebraicTypeType | null = null;
+export type ModeRules = any;
 
 // A value with helper functions to construct the type.
 export const ModeRules = {
@@ -44,11 +41,10 @@ export const ModeRules = {
   // ```
 
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_ModeRules_type_value) return _cached_ModeRules_type_value;
-    _cached_ModeRules_type_value = __AlgebraicTypeValue.Sum({ variants: [] });
-    _cached_ModeRules_type_value.value.variants.push(
-    );
-    return _cached_ModeRules_type_value;
+    return __AlgebraicTypeValue.Sum({
+      variants: [
+      ]
+    });
   },
 
   serialize(writer: __BinaryWriter, value: ModeRules): void {

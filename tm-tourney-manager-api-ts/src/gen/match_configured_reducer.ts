@@ -25,14 +25,11 @@ import {
   type EventContextInterface as __EventContextInterface,
   type ReducerEventContextInterface as __ReducerEventContextInterface,
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
 } from "spacetimedb";
 
 export type MatchConfigured = {
   id: bigint,
 };
-let _cached_MatchConfigured_type_value: __AlgebraicTypeType | null = null;
-
 /**
  * An object for generated helper functions.
  */
@@ -42,12 +39,11 @@ export const MatchConfigured = {
   * This function is derived from the AlgebraicType used to generate this type.
   */
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_MatchConfigured_type_value) return _cached_MatchConfigured_type_value;
-    _cached_MatchConfigured_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_MatchConfigured_type_value.value.elements.push(
-      { name: "id", algebraicType: __AlgebraicTypeValue.U64 },
-    );
-    return _cached_MatchConfigured_type_value;
+    return __AlgebraicTypeValue.Product({
+      elements: [
+        { name: "id", algebraicType: __AlgebraicTypeValue.U64},
+      ]
+    });
   },
 
   serialize(writer: __BinaryWriter, value: MatchConfigured): void {

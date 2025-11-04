@@ -25,15 +25,12 @@ import {
   type EventContextInterface as __EventContextInterface,
   type ReducerEventContextInterface as __ReducerEventContextInterface,
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
 } from "spacetimedb";
 import * as MethodVariants from './method_variants'
 
 // The tagged union or sum type for the algebraic type `Method`.
 export type Method = MethodVariants.ListMethods |
   MethodVariants.GetMethodsList;
-
-let _cached_Method_type_value: __AlgebraicTypeType | null = null;
 
 // A value with helper functions to construct the type.
 export const Method = {
@@ -47,13 +44,12 @@ export const Method = {
   GetMethodsList: { tag: "GetMethodsList" } as const,
 
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_Method_type_value) return _cached_Method_type_value;
-    _cached_Method_type_value = __AlgebraicTypeValue.Sum({ variants: [] });
-    _cached_Method_type_value.value.variants.push(
-      { name: "ListMethods", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-      { name: "GetMethodsList", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-    );
-    return _cached_Method_type_value;
+    return __AlgebraicTypeValue.Sum({
+      variants: [
+        { name: "ListMethods", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
+        { name: "GetMethodsList", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
+      ]
+    });
   },
 
   serialize(writer: __BinaryWriter, value: Method): void {

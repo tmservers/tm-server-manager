@@ -25,7 +25,6 @@ import {
   type EventContextInterface as __EventContextInterface,
   type ReducerEventContextInterface as __ReducerEventContextInterface,
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
 } from "spacetimedb";
 import * as TournamentStatusVariants from './tournament_status_variants'
 
@@ -35,8 +34,6 @@ export type TournamentStatus = TournamentStatusVariants.Planning |
   TournamentStatusVariants.Registration |
   TournamentStatusVariants.Ongoing |
   TournamentStatusVariants.Ended;
-
-let _cached_TournamentStatus_type_value: __AlgebraicTypeType | null = null;
 
 // A value with helper functions to construct the type.
 export const TournamentStatus = {
@@ -53,16 +50,15 @@ export const TournamentStatus = {
   Ended: { tag: "Ended" } as const,
 
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_TournamentStatus_type_value) return _cached_TournamentStatus_type_value;
-    _cached_TournamentStatus_type_value = __AlgebraicTypeValue.Sum({ variants: [] });
-    _cached_TournamentStatus_type_value.value.variants.push(
-      { name: "Planning", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-      { name: "Announced", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-      { name: "Registration", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-      { name: "Ongoing", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-      { name: "Ended", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-    );
-    return _cached_TournamentStatus_type_value;
+    return __AlgebraicTypeValue.Sum({
+      variants: [
+        { name: "Planning", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
+        { name: "Announced", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
+        { name: "Registration", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
+        { name: "Ongoing", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
+        { name: "Ended", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
+      ]
+    });
   },
 
   serialize(writer: __BinaryWriter, value: TournamentStatus): void {

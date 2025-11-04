@@ -25,7 +25,6 @@ import {
   type EventContextInterface as __EventContextInterface,
   type ReducerEventContextInterface as __ReducerEventContextInterface,
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
 } from "spacetimedb";
 import { PlayerRegistration } from "./player_registration_type";
 // Mark import as potentially unused
@@ -40,8 +39,6 @@ import * as RegistrationVariants from './registration_variants'
 export type Registration = RegistrationVariants.Players |
   RegistrationVariants.Team;
 
-let _cached_Registration_type_value: __AlgebraicTypeType | null = null;
-
 // A value with helper functions to construct the type.
 export const Registration = {
   // Helper functions for constructing each variant of the tagged union.
@@ -50,17 +47,16 @@ export const Registration = {
   // assert!(foo.tag === "A");
   // assert!(foo.value === 42);
   // ```
-  Players: (value: PlayerRegistration): RegistrationVariants.Players => ({ tag: "Players", value }),
-  Team: (value: TeamRegistration): RegistrationVariants.Team => ({ tag: "Team", value }),
+  Players: (value: PlayerRegistration): Registration => ({ tag: "Players", value }),
+  Team: (value: TeamRegistration): Registration => ({ tag: "Team", value }),
 
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_Registration_type_value) return _cached_Registration_type_value;
-    _cached_Registration_type_value = __AlgebraicTypeValue.Sum({ variants: [] });
-    _cached_Registration_type_value.value.variants.push(
-      { name: "Players", algebraicType: PlayerRegistration.getTypeScriptAlgebraicType() },
-      { name: "Team", algebraicType: TeamRegistration.getTypeScriptAlgebraicType() },
-    );
-    return _cached_Registration_type_value;
+    return __AlgebraicTypeValue.Sum({
+      variants: [
+        { name: "Players", algebraicType: PlayerRegistration.getTypeScriptAlgebraicType() },
+        { name: "Team", algebraicType: TeamRegistration.getTypeScriptAlgebraicType() },
+      ]
+    });
   },
 
   serialize(writer: __BinaryWriter, value: Registration): void {

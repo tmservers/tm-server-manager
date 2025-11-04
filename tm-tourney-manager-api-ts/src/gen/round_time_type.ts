@@ -25,15 +25,12 @@ import {
   type EventContextInterface as __EventContextInterface,
   type ReducerEventContextInterface as __ReducerEventContextInterface,
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
 } from "spacetimedb";
 import * as RoundTimeVariants from './round_time_variants'
 
 // The tagged union or sum type for the algebraic type `RoundTime`.
 export type RoundTime = RoundTimeVariants.None |
   RoundTimeVariants.Time;
-
-let _cached_RoundTime_type_value: __AlgebraicTypeType | null = null;
 
 // A value with helper functions to construct the type.
 export const RoundTime = {
@@ -44,16 +41,15 @@ export const RoundTime = {
   // assert!(foo.value === 42);
   // ```
   None: { tag: "None" } as const,
-  Time: (value: number): RoundTimeVariants.Time => ({ tag: "Time", value }),
+  Time: (value: number): RoundTime => ({ tag: "Time", value }),
 
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_RoundTime_type_value) return _cached_RoundTime_type_value;
-    _cached_RoundTime_type_value = __AlgebraicTypeValue.Sum({ variants: [] });
-    _cached_RoundTime_type_value.value.variants.push(
-      { name: "None", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-      { name: "Time", algebraicType: __AlgebraicTypeValue.U32 },
-    );
-    return _cached_RoundTime_type_value;
+    return __AlgebraicTypeValue.Sum({
+      variants: [
+        { name: "None", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
+        { name: "Time", algebraicType: __AlgebraicTypeValue.U32 },
+      ]
+    });
   },
 
   serialize(writer: __BinaryWriter, value: RoundTime): void {

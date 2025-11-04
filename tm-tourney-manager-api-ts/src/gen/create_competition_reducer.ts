@@ -25,7 +25,6 @@ import {
   type EventContextInterface as __EventContextInterface,
   type ReducerEventContextInterface as __ReducerEventContextInterface,
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
 } from "spacetimedb";
 
 export type CreateCompetition = {
@@ -35,8 +34,6 @@ export type CreateCompetition = {
   parentId: bigint,
   withConfig: bigint | undefined,
 };
-let _cached_CreateCompetition_type_value: __AlgebraicTypeType | null = null;
-
 /**
  * An object for generated helper functions.
  */
@@ -46,16 +43,15 @@ export const CreateCompetition = {
   * This function is derived from the AlgebraicType used to generate this type.
   */
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_CreateCompetition_type_value) return _cached_CreateCompetition_type_value;
-    _cached_CreateCompetition_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_CreateCompetition_type_value.value.elements.push(
-      { name: "name", algebraicType: __AlgebraicTypeValue.String },
-      { name: "at", algebraicType: __AlgebraicTypeValue.createTimestampType() },
-      { name: "tournamentId", algebraicType: __AlgebraicTypeValue.U64 },
-      { name: "parentId", algebraicType: __AlgebraicTypeValue.U64 },
-      { name: "withConfig", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.U64) },
-    );
-    return _cached_CreateCompetition_type_value;
+    return __AlgebraicTypeValue.Product({
+      elements: [
+        { name: "name", algebraicType: __AlgebraicTypeValue.String},
+        { name: "at", algebraicType: __AlgebraicTypeValue.createTimestampType()},
+        { name: "tournamentId", algebraicType: __AlgebraicTypeValue.U64},
+        { name: "parentId", algebraicType: __AlgebraicTypeValue.U64},
+        { name: "withConfig", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.U64)},
+      ]
+    });
   },
 
   serialize(writer: __BinaryWriter, value: CreateCompetition): void {

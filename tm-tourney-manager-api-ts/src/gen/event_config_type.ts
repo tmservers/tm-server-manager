@@ -25,7 +25,6 @@ import {
   type EventContextInterface as __EventContextInterface,
   type ReducerEventContextInterface as __ReducerEventContextInterface,
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
 } from "spacetimedb";
 
 export type EventConfig = {
@@ -35,8 +34,6 @@ export type EventConfig = {
   name: string,
   registration: __TimeDuration | undefined,
 };
-let _cached_EventConfig_type_value: __AlgebraicTypeType | null = null;
-
 /**
  * An object for generated helper functions.
  */
@@ -46,16 +43,15 @@ export const EventConfig = {
   * This function is derived from the AlgebraicType used to generate this type.
   */
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_EventConfig_type_value) return _cached_EventConfig_type_value;
-    _cached_EventConfig_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_EventConfig_type_value.value.elements.push(
-      { name: "id", algebraicType: __AlgebraicTypeValue.U64 },
-      { name: "owner", algebraicType: __AlgebraicTypeValue.String },
-      { name: "public", algebraicType: __AlgebraicTypeValue.Bool },
-      { name: "name", algebraicType: __AlgebraicTypeValue.String },
-      { name: "registration", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.createTimeDurationType()) },
-    );
-    return _cached_EventConfig_type_value;
+    return __AlgebraicTypeValue.Product({
+      elements: [
+        { name: "id", algebraicType: __AlgebraicTypeValue.U64},
+        { name: "owner", algebraicType: __AlgebraicTypeValue.String},
+        { name: "public", algebraicType: __AlgebraicTypeValue.Bool},
+        { name: "name", algebraicType: __AlgebraicTypeValue.String},
+        { name: "registration", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.createTimeDurationType())},
+      ]
+    });
   },
 
   serialize(writer: __BinaryWriter, value: EventConfig): void {

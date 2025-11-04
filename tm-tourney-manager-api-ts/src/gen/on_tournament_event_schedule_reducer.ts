@@ -25,7 +25,6 @@ import {
   type EventContextInterface as __EventContextInterface,
   type ReducerEventContextInterface as __ReducerEventContextInterface,
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
 } from "spacetimedb";
 
 import { CompetitionSchedule } from "./competition_schedule_type";
@@ -35,8 +34,6 @@ declare type __keep_CompetitionSchedule = CompetitionSchedule;
 export type OnTournamentEventSchedule = {
   arg: CompetitionSchedule,
 };
-let _cached_OnTournamentEventSchedule_type_value: __AlgebraicTypeType | null = null;
-
 /**
  * An object for generated helper functions.
  */
@@ -46,12 +43,11 @@ export const OnTournamentEventSchedule = {
   * This function is derived from the AlgebraicType used to generate this type.
   */
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_OnTournamentEventSchedule_type_value) return _cached_OnTournamentEventSchedule_type_value;
-    _cached_OnTournamentEventSchedule_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_OnTournamentEventSchedule_type_value.value.elements.push(
-      { name: "arg", algebraicType: CompetitionSchedule.getTypeScriptAlgebraicType() },
-    );
-    return _cached_OnTournamentEventSchedule_type_value;
+    return __AlgebraicTypeValue.Product({
+      elements: [
+        { name: "arg", algebraicType: CompetitionSchedule.getTypeScriptAlgebraicType()},
+      ]
+    });
   },
 
   serialize(writer: __BinaryWriter, value: OnTournamentEventSchedule): void {

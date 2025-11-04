@@ -25,7 +25,6 @@ import {
   type EventContextInterface as __EventContextInterface,
   type ReducerEventContextInterface as __ReducerEventContextInterface,
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
 } from "spacetimedb";
 import { ServerConfig } from "./server_config_type";
 // Mark import as potentially unused
@@ -45,8 +44,6 @@ export type TmMatch = {
   postMatchConfig: ServerConfig | undefined,
   status: MatchStatus,
 };
-let _cached_TmMatch_type_value: __AlgebraicTypeType | null = null;
-
 /**
  * An object for generated helper functions.
  */
@@ -56,19 +53,18 @@ export const TmMatch = {
   * This function is derived from the AlgebraicType used to generate this type.
   */
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_TmMatch_type_value) return _cached_TmMatch_type_value;
-    _cached_TmMatch_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_TmMatch_type_value.value.elements.push(
-      { name: "id", algebraicType: __AlgebraicTypeValue.U64 },
-      { name: "tournamentId", algebraicType: __AlgebraicTypeValue.U64 },
-      { name: "parentId", algebraicType: __AlgebraicTypeValue.U64 },
-      { name: "serverId", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.String) },
-      { name: "preMatchConfig", algebraicType: __AlgebraicTypeValue.createOptionType(ServerConfig.getTypeScriptAlgebraicType()) },
-      { name: "matchConfig", algebraicType: __AlgebraicTypeValue.createOptionType(ServerConfig.getTypeScriptAlgebraicType()) },
-      { name: "postMatchConfig", algebraicType: __AlgebraicTypeValue.createOptionType(ServerConfig.getTypeScriptAlgebraicType()) },
-      { name: "status", algebraicType: MatchStatus.getTypeScriptAlgebraicType() },
-    );
-    return _cached_TmMatch_type_value;
+    return __AlgebraicTypeValue.Product({
+      elements: [
+        { name: "id", algebraicType: __AlgebraicTypeValue.U64},
+        { name: "tournamentId", algebraicType: __AlgebraicTypeValue.U64},
+        { name: "parentId", algebraicType: __AlgebraicTypeValue.U64},
+        { name: "serverId", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.String)},
+        { name: "preMatchConfig", algebraicType: __AlgebraicTypeValue.createOptionType(ServerConfig.getTypeScriptAlgebraicType())},
+        { name: "matchConfig", algebraicType: __AlgebraicTypeValue.createOptionType(ServerConfig.getTypeScriptAlgebraicType())},
+        { name: "postMatchConfig", algebraicType: __AlgebraicTypeValue.createOptionType(ServerConfig.getTypeScriptAlgebraicType())},
+        { name: "status", algebraicType: MatchStatus.getTypeScriptAlgebraicType()},
+      ]
+    });
   },
 
   serialize(writer: __BinaryWriter, value: TmMatch): void {

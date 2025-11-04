@@ -25,7 +25,6 @@ import {
   type EventContextInterface as __EventContextInterface,
   type ReducerEventContextInterface as __ReducerEventContextInterface,
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
 } from "spacetimedb";
 
 export type PlayerChat = {
@@ -34,8 +33,6 @@ export type PlayerChat = {
   isRegisteredCmd: boolean,
   options: number,
 };
-let _cached_PlayerChat_type_value: __AlgebraicTypeType | null = null;
-
 /**
  * An object for generated helper functions.
  */
@@ -45,15 +42,14 @@ export const PlayerChat = {
   * This function is derived from the AlgebraicType used to generate this type.
   */
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_PlayerChat_type_value) return _cached_PlayerChat_type_value;
-    _cached_PlayerChat_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_PlayerChat_type_value.value.elements.push(
-      { name: "login", algebraicType: __AlgebraicTypeValue.String },
-      { name: "text", algebraicType: __AlgebraicTypeValue.String },
-      { name: "isRegisteredCmd", algebraicType: __AlgebraicTypeValue.Bool },
-      { name: "options", algebraicType: __AlgebraicTypeValue.I32 },
-    );
-    return _cached_PlayerChat_type_value;
+    return __AlgebraicTypeValue.Product({
+      elements: [
+        { name: "login", algebraicType: __AlgebraicTypeValue.String},
+        { name: "text", algebraicType: __AlgebraicTypeValue.String},
+        { name: "isRegisteredCmd", algebraicType: __AlgebraicTypeValue.Bool},
+        { name: "options", algebraicType: __AlgebraicTypeValue.I32},
+      ]
+    });
   },
 
   serialize(writer: __BinaryWriter, value: PlayerChat): void {

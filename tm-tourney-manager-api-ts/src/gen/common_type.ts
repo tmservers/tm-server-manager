@@ -25,7 +25,6 @@ import {
   type EventContextInterface as __EventContextInterface,
   type ReducerEventContextInterface as __ReducerEventContextInterface,
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
 } from "spacetimedb";
 import { RespawnBavaviour } from "./respawn_bavaviour_type";
 // Mark import as potentially unused
@@ -52,8 +51,6 @@ export type Common = {
   decoImageUrlWhoAmI: string,
   forceLapsNumber: number,
 };
-let _cached_Common_type_value: __AlgebraicTypeType | null = null;
-
 /**
  * An object for generated helper functions.
  */
@@ -63,26 +60,25 @@ export const Common = {
   * This function is derived from the AlgebraicType used to generate this type.
   */
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_Common_type_value) return _cached_Common_type_value;
-    _cached_Common_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_Common_type_value.value.elements.push(
-      { name: "chatTime", algebraicType: __AlgebraicTypeValue.U32 },
-      { name: "respawnBehaviour", algebraicType: RespawnBavaviour.getTypeScriptAlgebraicType() },
-      { name: "synchronizePlayersAtMapStart", algebraicType: __AlgebraicTypeValue.Bool },
-      { name: "synchronizePlayersAtRoundStart", algebraicType: __AlgebraicTypeValue.Bool },
-      { name: "trustClientSimulation", algebraicType: __AlgebraicTypeValue.Bool },
-      { name: "useCrudeExtrapolation", algebraicType: __AlgebraicTypeValue.Bool },
-      { name: "warmupDuration", algebraicType: WarmupDuration.getTypeScriptAlgebraicType() },
-      { name: "warmupNumber", algebraicType: __AlgebraicTypeValue.U32 },
-      { name: "decoImageUrlCheckpoint", algebraicType: __AlgebraicTypeValue.String },
-      { name: "decoImageUrlDecalSponsor4X1", algebraicType: __AlgebraicTypeValue.String },
-      { name: "decoImageUrlScreen16X1", algebraicType: __AlgebraicTypeValue.String },
-      { name: "decoImageUrlScreen19X9", algebraicType: __AlgebraicTypeValue.String },
-      { name: "decoImageUrlScreen8X1", algebraicType: __AlgebraicTypeValue.String },
-      { name: "decoImageUrlWhoAmI", algebraicType: __AlgebraicTypeValue.String },
-      { name: "forceLapsNumber", algebraicType: __AlgebraicTypeValue.I32 },
-    );
-    return _cached_Common_type_value;
+    return __AlgebraicTypeValue.Product({
+      elements: [
+        { name: "chatTime", algebraicType: __AlgebraicTypeValue.U32},
+        { name: "respawnBehaviour", algebraicType: RespawnBavaviour.getTypeScriptAlgebraicType()},
+        { name: "synchronizePlayersAtMapStart", algebraicType: __AlgebraicTypeValue.Bool},
+        { name: "synchronizePlayersAtRoundStart", algebraicType: __AlgebraicTypeValue.Bool},
+        { name: "trustClientSimulation", algebraicType: __AlgebraicTypeValue.Bool},
+        { name: "useCrudeExtrapolation", algebraicType: __AlgebraicTypeValue.Bool},
+        { name: "warmupDuration", algebraicType: WarmupDuration.getTypeScriptAlgebraicType()},
+        { name: "warmupNumber", algebraicType: __AlgebraicTypeValue.U32},
+        { name: "decoImageUrlCheckpoint", algebraicType: __AlgebraicTypeValue.String},
+        { name: "decoImageUrlDecalSponsor4X1", algebraicType: __AlgebraicTypeValue.String},
+        { name: "decoImageUrlScreen16X1", algebraicType: __AlgebraicTypeValue.String},
+        { name: "decoImageUrlScreen19X9", algebraicType: __AlgebraicTypeValue.String},
+        { name: "decoImageUrlScreen8X1", algebraicType: __AlgebraicTypeValue.String},
+        { name: "decoImageUrlWhoAmI", algebraicType: __AlgebraicTypeValue.String},
+        { name: "forceLapsNumber", algebraicType: __AlgebraicTypeValue.I32},
+      ]
+    });
   },
 
   serialize(writer: __BinaryWriter, value: Common): void {

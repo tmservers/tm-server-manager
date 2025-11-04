@@ -25,9 +25,8 @@ import {
   type EventContextInterface as __EventContextInterface,
   type ReducerEventContextInterface as __ReducerEventContextInterface,
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
 } from "spacetimedb";
 
-export type Match = { tag: "Match", value: bigint };
-export type Competition = { tag: "Competition", value: bigint };
+export type MatchV1 = { tag: "MatchV1", value: bigint };
+export type CompetitionV1 = { tag: "CompetitionV1", value: bigint };
 

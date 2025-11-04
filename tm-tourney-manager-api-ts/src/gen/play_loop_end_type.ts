@@ -25,7 +25,6 @@ import {
   type EventContextInterface as __EventContextInterface,
   type ReducerEventContextInterface as __ReducerEventContextInterface,
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
 } from "spacetimedb";
 
 export type PlayLoopEnd = {
@@ -34,8 +33,6 @@ export type PlayLoopEnd = {
   time: number,
   isValid: boolean,
 };
-let _cached_PlayLoopEnd_type_value: __AlgebraicTypeType | null = null;
-
 /**
  * An object for generated helper functions.
  */
@@ -45,15 +42,14 @@ export const PlayLoopEnd = {
   * This function is derived from the AlgebraicType used to generate this type.
   */
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_PlayLoopEnd_type_value) return _cached_PlayLoopEnd_type_value;
-    _cached_PlayLoopEnd_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_PlayLoopEnd_type_value.value.elements.push(
-      { name: "count", algebraicType: __AlgebraicTypeValue.U32 },
-      { name: "valid", algebraicType: __AlgebraicTypeValue.U32 },
-      { name: "time", algebraicType: __AlgebraicTypeValue.U32 },
-      { name: "isValid", algebraicType: __AlgebraicTypeValue.Bool },
-    );
-    return _cached_PlayLoopEnd_type_value;
+    return __AlgebraicTypeValue.Product({
+      elements: [
+        { name: "count", algebraicType: __AlgebraicTypeValue.U32},
+        { name: "valid", algebraicType: __AlgebraicTypeValue.U32},
+        { name: "time", algebraicType: __AlgebraicTypeValue.U32},
+        { name: "isValid", algebraicType: __AlgebraicTypeValue.Bool},
+      ]
+    });
   },
 
   serialize(writer: __BinaryWriter, value: PlayLoopEnd): void {

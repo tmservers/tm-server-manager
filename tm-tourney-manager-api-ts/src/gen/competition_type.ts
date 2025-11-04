@@ -25,7 +25,6 @@ import {
   type EventContextInterface as __EventContextInterface,
   type ReducerEventContextInterface as __ReducerEventContextInterface,
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
 } from "spacetimedb";
 import { EventPhase } from "./event_phase_type";
 // Mark import as potentially unused
@@ -45,8 +44,6 @@ export type Competition = {
   estimate: __TimeDuration | undefined,
   competitions: Competitions,
 };
-let _cached_Competition_type_value: __AlgebraicTypeType | null = null;
-
 /**
  * An object for generated helper functions.
  */
@@ -56,19 +53,18 @@ export const Competition = {
   * This function is derived from the AlgebraicType used to generate this type.
   */
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_Competition_type_value) return _cached_Competition_type_value;
-    _cached_Competition_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_Competition_type_value.value.elements.push(
-      { name: "id", algebraicType: __AlgebraicTypeValue.U64 },
-      { name: "tournamentId", algebraicType: __AlgebraicTypeValue.U64 },
-      { name: "parentId", algebraicType: __AlgebraicTypeValue.U64 },
-      { name: "name", algebraicType: __AlgebraicTypeValue.String },
-      { name: "phase", algebraicType: EventPhase.getTypeScriptAlgebraicType() },
-      { name: "startingAt", algebraicType: __AlgebraicTypeValue.createTimestampType() },
-      { name: "estimate", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.createTimeDurationType()) },
-      { name: "competitions", algebraicType: Competitions.getTypeScriptAlgebraicType() },
-    );
-    return _cached_Competition_type_value;
+    return __AlgebraicTypeValue.Product({
+      elements: [
+        { name: "id", algebraicType: __AlgebraicTypeValue.U64},
+        { name: "tournamentId", algebraicType: __AlgebraicTypeValue.U64},
+        { name: "parentId", algebraicType: __AlgebraicTypeValue.U64},
+        { name: "name", algebraicType: __AlgebraicTypeValue.String},
+        { name: "phase", algebraicType: EventPhase.getTypeScriptAlgebraicType()},
+        { name: "startingAt", algebraicType: __AlgebraicTypeValue.createTimestampType()},
+        { name: "estimate", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.createTimeDurationType())},
+        { name: "competitions", algebraicType: Competitions.getTypeScriptAlgebraicType()},
+      ]
+    });
   },
 
   serialize(writer: __BinaryWriter, value: Competition): void {

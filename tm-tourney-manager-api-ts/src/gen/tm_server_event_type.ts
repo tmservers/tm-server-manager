@@ -25,7 +25,6 @@ import {
   type EventContextInterface as __EventContextInterface,
   type ReducerEventContextInterface as __ReducerEventContextInterface,
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
 } from "spacetimedb";
 import { Event } from "./event_type";
 // Mark import as potentially unused
@@ -37,8 +36,6 @@ export type TmServerEvent = {
   matchId: bigint,
   event: Event,
 };
-let _cached_TmServerEvent_type_value: __AlgebraicTypeType | null = null;
-
 /**
  * An object for generated helper functions.
  */
@@ -48,14 +45,13 @@ export const TmServerEvent = {
   * This function is derived from the AlgebraicType used to generate this type.
   */
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_TmServerEvent_type_value) return _cached_TmServerEvent_type_value;
-    _cached_TmServerEvent_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_TmServerEvent_type_value.value.elements.push(
-      { name: "id", algebraicType: __AlgebraicTypeValue.U64 },
-      { name: "matchId", algebraicType: __AlgebraicTypeValue.U64 },
-      { name: "event", algebraicType: Event.getTypeScriptAlgebraicType() },
-    );
-    return _cached_TmServerEvent_type_value;
+    return __AlgebraicTypeValue.Product({
+      elements: [
+        { name: "id", algebraicType: __AlgebraicTypeValue.U64},
+        { name: "matchId", algebraicType: __AlgebraicTypeValue.U64},
+        { name: "event", algebraicType: Event.getTypeScriptAlgebraicType()},
+      ]
+    });
   },
 
   serialize(writer: __BinaryWriter, value: TmServerEvent): void {

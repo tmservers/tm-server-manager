@@ -25,7 +25,6 @@ import {
   type EventContextInterface as __EventContextInterface,
   type ReducerEventContextInterface as __ReducerEventContextInterface,
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
 } from "spacetimedb";
 import { Node } from "./node_type";
 // Mark import as potentially unused
@@ -39,8 +38,6 @@ export type Competitions = {
   nodes: Node[],
   edges: Edge[],
 };
-let _cached_Competitions_type_value: __AlgebraicTypeType | null = null;
-
 /**
  * An object for generated helper functions.
  */
@@ -50,13 +47,12 @@ export const Competitions = {
   * This function is derived from the AlgebraicType used to generate this type.
   */
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_Competitions_type_value) return _cached_Competitions_type_value;
-    _cached_Competitions_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_Competitions_type_value.value.elements.push(
-      { name: "nodes", algebraicType: __AlgebraicTypeValue.Array(Node.getTypeScriptAlgebraicType()) },
-      { name: "edges", algebraicType: __AlgebraicTypeValue.Array(Edge.getTypeScriptAlgebraicType()) },
-    );
-    return _cached_Competitions_type_value;
+    return __AlgebraicTypeValue.Product({
+      elements: [
+        { name: "nodes", algebraicType: __AlgebraicTypeValue.Array(Node.getTypeScriptAlgebraicType())},
+        { name: "edges", algebraicType: __AlgebraicTypeValue.Array(Edge.getTypeScriptAlgebraicType())},
+      ]
+    });
   },
 
   serialize(writer: __BinaryWriter, value: Competitions): void {

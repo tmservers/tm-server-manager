@@ -25,7 +25,6 @@ import {
   type EventContextInterface as __EventContextInterface,
   type ReducerEventContextInterface as __ReducerEventContextInterface,
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
 } from "spacetimedb";
 import { WayPoint } from "./way_point_type";
 // Mark import as potentially unused
@@ -123,8 +122,6 @@ export type Event = EventVariants.WayPoint |
   EventVariants.PodiumEnd |
   EventVariants.Custom;
 
-let _cached_Event_type_value: __AlgebraicTypeType | null = null;
-
 // A value with helper functions to construct the type.
 export const Event = {
   // Helper functions for constructing each variant of the tagged union.
@@ -133,63 +130,62 @@ export const Event = {
   // assert!(foo.tag === "A");
   // assert!(foo.value === 42);
   // ```
-  WayPoint: (value: WayPoint): EventVariants.WayPoint => ({ tag: "WayPoint", value }),
-  Respawn: (value: Respawn): EventVariants.Respawn => ({ tag: "Respawn", value }),
-  StartLine: (value: StartLine): EventVariants.StartLine => ({ tag: "StartLine", value }),
-  Scores: (value: Scores): EventVariants.Scores => ({ tag: "Scores", value }),
-  GiveUp: (value: GiveUp): EventVariants.GiveUp => ({ tag: "GiveUp", value }),
-  LoadingMapStart: (value: LoadingMapStart): EventVariants.LoadingMapStart => ({ tag: "LoadingMapStart", value }),
-  LoadingMapEnd: (value: LoadingMapEnd): EventVariants.LoadingMapEnd => ({ tag: "LoadingMapEnd", value }),
-  StartMapStart: (value: StartMap): EventVariants.StartMapStart => ({ tag: "StartMapStart", value }),
-  StartMapEnd: (value: StartMap): EventVariants.StartMapEnd => ({ tag: "StartMapEnd", value }),
-  EndMapStart: (value: EndMapStart): EventVariants.EndMapStart => ({ tag: "EndMapStart", value }),
-  EndMapEnd: (value: EndMapEnd): EventVariants.EndMapEnd => ({ tag: "EndMapEnd", value }),
-  UnloadingMapStart: (value: UnloadingMapStart): EventVariants.UnloadingMapStart => ({ tag: "UnloadingMapStart", value }),
-  UnloadingMapEnd: (value: UnloadingMapEnd): EventVariants.UnloadingMapEnd => ({ tag: "UnloadingMapEnd", value }),
-  PlayerConenct: (value: PlayerConnect): EventVariants.PlayerConenct => ({ tag: "PlayerConenct", value }),
-  PlayerDisconnect: (value: PlayerDisconnect): EventVariants.PlayerDisconnect => ({ tag: "PlayerDisconnect", value }),
-  PlayerChat: (value: PlayerChat): EventVariants.PlayerChat => ({ tag: "PlayerChat", value }),
-  StartTurnStart: (value: StartTurn): EventVariants.StartTurnStart => ({ tag: "StartTurnStart", value }),
-  StartTurnEnd: (value: StartTurn): EventVariants.StartTurnEnd => ({ tag: "StartTurnEnd", value }),
-  PlayLoopStart: (value: PlayLoopStart): EventVariants.PlayLoopStart => ({ tag: "PlayLoopStart", value }),
-  PlayLoopEnd: (value: PlayLoopEnd): EventVariants.PlayLoopEnd => ({ tag: "PlayLoopEnd", value }),
-  EndRoundStart: (value: EndRoundStart): EventVariants.EndRoundStart => ({ tag: "EndRoundStart", value }),
-  EndRoundEnd: (value: EndRoundEnd): EventVariants.EndRoundEnd => ({ tag: "EndRoundEnd", value }),
-  PodiumStart: (value: Podium): EventVariants.PodiumStart => ({ tag: "PodiumStart", value }),
-  PodiumEnd: (value: Podium): EventVariants.PodiumEnd => ({ tag: "PodiumEnd", value }),
-  Custom: (value: Custom): EventVariants.Custom => ({ tag: "Custom", value }),
+  WayPoint: (value: WayPoint): Event => ({ tag: "WayPoint", value }),
+  Respawn: (value: Respawn): Event => ({ tag: "Respawn", value }),
+  StartLine: (value: StartLine): Event => ({ tag: "StartLine", value }),
+  Scores: (value: Scores): Event => ({ tag: "Scores", value }),
+  GiveUp: (value: GiveUp): Event => ({ tag: "GiveUp", value }),
+  LoadingMapStart: (value: LoadingMapStart): Event => ({ tag: "LoadingMapStart", value }),
+  LoadingMapEnd: (value: LoadingMapEnd): Event => ({ tag: "LoadingMapEnd", value }),
+  StartMapStart: (value: StartMap): Event => ({ tag: "StartMapStart", value }),
+  StartMapEnd: (value: StartMap): Event => ({ tag: "StartMapEnd", value }),
+  EndMapStart: (value: EndMapStart): Event => ({ tag: "EndMapStart", value }),
+  EndMapEnd: (value: EndMapEnd): Event => ({ tag: "EndMapEnd", value }),
+  UnloadingMapStart: (value: UnloadingMapStart): Event => ({ tag: "UnloadingMapStart", value }),
+  UnloadingMapEnd: (value: UnloadingMapEnd): Event => ({ tag: "UnloadingMapEnd", value }),
+  PlayerConenct: (value: PlayerConnect): Event => ({ tag: "PlayerConenct", value }),
+  PlayerDisconnect: (value: PlayerDisconnect): Event => ({ tag: "PlayerDisconnect", value }),
+  PlayerChat: (value: PlayerChat): Event => ({ tag: "PlayerChat", value }),
+  StartTurnStart: (value: StartTurn): Event => ({ tag: "StartTurnStart", value }),
+  StartTurnEnd: (value: StartTurn): Event => ({ tag: "StartTurnEnd", value }),
+  PlayLoopStart: (value: PlayLoopStart): Event => ({ tag: "PlayLoopStart", value }),
+  PlayLoopEnd: (value: PlayLoopEnd): Event => ({ tag: "PlayLoopEnd", value }),
+  EndRoundStart: (value: EndRoundStart): Event => ({ tag: "EndRoundStart", value }),
+  EndRoundEnd: (value: EndRoundEnd): Event => ({ tag: "EndRoundEnd", value }),
+  PodiumStart: (value: Podium): Event => ({ tag: "PodiumStart", value }),
+  PodiumEnd: (value: Podium): Event => ({ tag: "PodiumEnd", value }),
+  Custom: (value: Custom): Event => ({ tag: "Custom", value }),
 
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_Event_type_value) return _cached_Event_type_value;
-    _cached_Event_type_value = __AlgebraicTypeValue.Sum({ variants: [] });
-    _cached_Event_type_value.value.variants.push(
-      { name: "WayPoint", algebraicType: WayPoint.getTypeScriptAlgebraicType() },
-      { name: "Respawn", algebraicType: Respawn.getTypeScriptAlgebraicType() },
-      { name: "StartLine", algebraicType: StartLine.getTypeScriptAlgebraicType() },
-      { name: "Scores", algebraicType: Scores.getTypeScriptAlgebraicType() },
-      { name: "GiveUp", algebraicType: GiveUp.getTypeScriptAlgebraicType() },
-      { name: "LoadingMapStart", algebraicType: LoadingMapStart.getTypeScriptAlgebraicType() },
-      { name: "LoadingMapEnd", algebraicType: LoadingMapEnd.getTypeScriptAlgebraicType() },
-      { name: "StartMapStart", algebraicType: StartMap.getTypeScriptAlgebraicType() },
-      { name: "StartMapEnd", algebraicType: StartMap.getTypeScriptAlgebraicType() },
-      { name: "EndMapStart", algebraicType: EndMapStart.getTypeScriptAlgebraicType() },
-      { name: "EndMapEnd", algebraicType: EndMapEnd.getTypeScriptAlgebraicType() },
-      { name: "UnloadingMapStart", algebraicType: UnloadingMapStart.getTypeScriptAlgebraicType() },
-      { name: "UnloadingMapEnd", algebraicType: UnloadingMapEnd.getTypeScriptAlgebraicType() },
-      { name: "PlayerConenct", algebraicType: PlayerConnect.getTypeScriptAlgebraicType() },
-      { name: "PlayerDisconnect", algebraicType: PlayerDisconnect.getTypeScriptAlgebraicType() },
-      { name: "PlayerChat", algebraicType: PlayerChat.getTypeScriptAlgebraicType() },
-      { name: "StartTurnStart", algebraicType: StartTurn.getTypeScriptAlgebraicType() },
-      { name: "StartTurnEnd", algebraicType: StartTurn.getTypeScriptAlgebraicType() },
-      { name: "PlayLoopStart", algebraicType: PlayLoopStart.getTypeScriptAlgebraicType() },
-      { name: "PlayLoopEnd", algebraicType: PlayLoopEnd.getTypeScriptAlgebraicType() },
-      { name: "EndRoundStart", algebraicType: EndRoundStart.getTypeScriptAlgebraicType() },
-      { name: "EndRoundEnd", algebraicType: EndRoundEnd.getTypeScriptAlgebraicType() },
-      { name: "PodiumStart", algebraicType: Podium.getTypeScriptAlgebraicType() },
-      { name: "PodiumEnd", algebraicType: Podium.getTypeScriptAlgebraicType() },
-      { name: "Custom", algebraicType: Custom.getTypeScriptAlgebraicType() },
-    );
-    return _cached_Event_type_value;
+    return __AlgebraicTypeValue.Sum({
+      variants: [
+        { name: "WayPoint", algebraicType: WayPoint.getTypeScriptAlgebraicType() },
+        { name: "Respawn", algebraicType: Respawn.getTypeScriptAlgebraicType() },
+        { name: "StartLine", algebraicType: StartLine.getTypeScriptAlgebraicType() },
+        { name: "Scores", algebraicType: Scores.getTypeScriptAlgebraicType() },
+        { name: "GiveUp", algebraicType: GiveUp.getTypeScriptAlgebraicType() },
+        { name: "LoadingMapStart", algebraicType: LoadingMapStart.getTypeScriptAlgebraicType() },
+        { name: "LoadingMapEnd", algebraicType: LoadingMapEnd.getTypeScriptAlgebraicType() },
+        { name: "StartMapStart", algebraicType: StartMap.getTypeScriptAlgebraicType() },
+        { name: "StartMapEnd", algebraicType: StartMap.getTypeScriptAlgebraicType() },
+        { name: "EndMapStart", algebraicType: EndMapStart.getTypeScriptAlgebraicType() },
+        { name: "EndMapEnd", algebraicType: EndMapEnd.getTypeScriptAlgebraicType() },
+        { name: "UnloadingMapStart", algebraicType: UnloadingMapStart.getTypeScriptAlgebraicType() },
+        { name: "UnloadingMapEnd", algebraicType: UnloadingMapEnd.getTypeScriptAlgebraicType() },
+        { name: "PlayerConenct", algebraicType: PlayerConnect.getTypeScriptAlgebraicType() },
+        { name: "PlayerDisconnect", algebraicType: PlayerDisconnect.getTypeScriptAlgebraicType() },
+        { name: "PlayerChat", algebraicType: PlayerChat.getTypeScriptAlgebraicType() },
+        { name: "StartTurnStart", algebraicType: StartTurn.getTypeScriptAlgebraicType() },
+        { name: "StartTurnEnd", algebraicType: StartTurn.getTypeScriptAlgebraicType() },
+        { name: "PlayLoopStart", algebraicType: PlayLoopStart.getTypeScriptAlgebraicType() },
+        { name: "PlayLoopEnd", algebraicType: PlayLoopEnd.getTypeScriptAlgebraicType() },
+        { name: "EndRoundStart", algebraicType: EndRoundStart.getTypeScriptAlgebraicType() },
+        { name: "EndRoundEnd", algebraicType: EndRoundEnd.getTypeScriptAlgebraicType() },
+        { name: "PodiumStart", algebraicType: Podium.getTypeScriptAlgebraicType() },
+        { name: "PodiumEnd", algebraicType: Podium.getTypeScriptAlgebraicType() },
+        { name: "Custom", algebraicType: Custom.getTypeScriptAlgebraicType() },
+      ]
+    });
   },
 
   serialize(writer: __BinaryWriter, value: Event): void {

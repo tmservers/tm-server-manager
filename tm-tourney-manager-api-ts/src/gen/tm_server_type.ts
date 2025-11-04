@@ -25,7 +25,6 @@ import {
   type EventContextInterface as __EventContextInterface,
   type ReducerEventContextInterface as __ReducerEventContextInterface,
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
 } from "spacetimedb";
 import { Method } from "./method_type";
 // Mark import as potentially unused
@@ -47,8 +46,6 @@ export type TmServer = {
   activeMatch: bigint | undefined,
   serverMethod: Method | undefined,
 };
-let _cached_TmServer_type_value: __AlgebraicTypeType | null = null;
-
 /**
  * An object for generated helper functions.
  */
@@ -58,18 +55,17 @@ export const TmServer = {
   * This function is derived from the AlgebraicType used to generate this type.
   */
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_TmServer_type_value) return _cached_TmServer_type_value;
-    _cached_TmServer_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_TmServer_type_value.value.elements.push(
-      { name: "id", algebraicType: __AlgebraicTypeValue.String },
-      { name: "ownerId", algebraicType: __AlgebraicTypeValue.String },
-      { name: "online", algebraicType: __AlgebraicTypeValue.Bool },
-      { name: "config", algebraicType: ServerConfig.getTypeScriptAlgebraicType() },
-      { name: "state", algebraicType: ServerState.getTypeScriptAlgebraicType() },
-      { name: "activeMatch", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.U64) },
-      { name: "serverMethod", algebraicType: __AlgebraicTypeValue.createOptionType(Method.getTypeScriptAlgebraicType()) },
-    );
-    return _cached_TmServer_type_value;
+    return __AlgebraicTypeValue.Product({
+      elements: [
+        { name: "id", algebraicType: __AlgebraicTypeValue.String},
+        { name: "ownerId", algebraicType: __AlgebraicTypeValue.String},
+        { name: "online", algebraicType: __AlgebraicTypeValue.Bool},
+        { name: "config", algebraicType: ServerConfig.getTypeScriptAlgebraicType()},
+        { name: "state", algebraicType: ServerState.getTypeScriptAlgebraicType()},
+        { name: "activeMatch", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.U64)},
+        { name: "serverMethod", algebraicType: __AlgebraicTypeValue.createOptionType(Method.getTypeScriptAlgebraicType())},
+      ]
+    });
   },
 
   serialize(writer: __BinaryWriter, value: TmServer): void {

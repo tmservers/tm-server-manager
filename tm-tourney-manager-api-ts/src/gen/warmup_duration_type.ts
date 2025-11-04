@@ -25,7 +25,6 @@ import {
   type EventContextInterface as __EventContextInterface,
   type ReducerEventContextInterface as __ReducerEventContextInterface,
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
 } from "spacetimedb";
 import * as WarmupDurationVariants from './warmup_duration_variants'
 
@@ -33,8 +32,6 @@ import * as WarmupDurationVariants from './warmup_duration_variants'
 export type WarmupDuration = WarmupDurationVariants.OneTry |
   WarmupDurationVariants.BasedOnMedal |
   WarmupDurationVariants.Seconds;
-
-let _cached_WarmupDuration_type_value: __AlgebraicTypeType | null = null;
 
 // A value with helper functions to construct the type.
 export const WarmupDuration = {
@@ -46,17 +43,16 @@ export const WarmupDuration = {
   // ```
   OneTry: { tag: "OneTry" } as const,
   BasedOnMedal: { tag: "BasedOnMedal" } as const,
-  Seconds: (value: number): WarmupDurationVariants.Seconds => ({ tag: "Seconds", value }),
+  Seconds: (value: number): WarmupDuration => ({ tag: "Seconds", value }),
 
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_WarmupDuration_type_value) return _cached_WarmupDuration_type_value;
-    _cached_WarmupDuration_type_value = __AlgebraicTypeValue.Sum({ variants: [] });
-    _cached_WarmupDuration_type_value.value.variants.push(
-      { name: "OneTry", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-      { name: "BasedOnMedal", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-      { name: "Seconds", algebraicType: __AlgebraicTypeValue.U32 },
-    );
-    return _cached_WarmupDuration_type_value;
+    return __AlgebraicTypeValue.Sum({
+      variants: [
+        { name: "OneTry", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
+        { name: "BasedOnMedal", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
+        { name: "Seconds", algebraicType: __AlgebraicTypeValue.U32 },
+      ]
+    });
   },
 
   serialize(writer: __BinaryWriter, value: WarmupDuration): void {

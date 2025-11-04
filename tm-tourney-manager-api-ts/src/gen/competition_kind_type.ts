@@ -25,15 +25,12 @@ import {
   type EventContextInterface as __EventContextInterface,
   type ReducerEventContextInterface as __ReducerEventContextInterface,
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
 } from "spacetimedb";
 import * as CompetitionKindVariants from './competition_kind_variants'
 
 // The tagged union or sum type for the algebraic type `CompetitionKind`.
-export type CompetitionKind = CompetitionKindVariants.Match |
-  CompetitionKindVariants.Competition;
-
-let _cached_CompetitionKind_type_value: __AlgebraicTypeType | null = null;
+export type CompetitionKind = CompetitionKindVariants.MatchV1 |
+  CompetitionKindVariants.CompetitionV1;
 
 // A value with helper functions to construct the type.
 export const CompetitionKind = {
@@ -43,17 +40,16 @@ export const CompetitionKind = {
   // assert!(foo.tag === "A");
   // assert!(foo.value === 42);
   // ```
-  Match: (value: bigint): CompetitionKindVariants.Match => ({ tag: "Match", value }),
-  Competition: (value: bigint): CompetitionKindVariants.Competition => ({ tag: "Competition", value }),
+  MatchV1: (value: bigint): CompetitionKind => ({ tag: "MatchV1", value }),
+  CompetitionV1: (value: bigint): CompetitionKind => ({ tag: "CompetitionV1", value }),
 
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_CompetitionKind_type_value) return _cached_CompetitionKind_type_value;
-    _cached_CompetitionKind_type_value = __AlgebraicTypeValue.Sum({ variants: [] });
-    _cached_CompetitionKind_type_value.value.variants.push(
-      { name: "Match", algebraicType: __AlgebraicTypeValue.U64 },
-      { name: "Competition", algebraicType: __AlgebraicTypeValue.U64 },
-    );
-    return _cached_CompetitionKind_type_value;
+    return __AlgebraicTypeValue.Sum({
+      variants: [
+        { name: "MatchV1", algebraicType: __AlgebraicTypeValue.U64 },
+        { name: "CompetitionV1", algebraicType: __AlgebraicTypeValue.U64 },
+      ]
+    });
   },
 
   serialize(writer: __BinaryWriter, value: CompetitionKind): void {

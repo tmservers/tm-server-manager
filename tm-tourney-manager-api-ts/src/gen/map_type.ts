@@ -25,7 +25,6 @@ import {
   type EventContextInterface as __EventContextInterface,
   type ReducerEventContextInterface as __ReducerEventContextInterface,
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
 } from "spacetimedb";
 
 export type Map = {
@@ -46,8 +45,6 @@ export type Map = {
   mapType: string,
   mapStyle: string,
 };
-let _cached_Map_type_value: __AlgebraicTypeType | null = null;
-
 /**
  * An object for generated helper functions.
  */
@@ -57,27 +54,26 @@ export const Map = {
   * This function is derived from the AlgebraicType used to generate this type.
   */
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_Map_type_value) return _cached_Map_type_value;
-    _cached_Map_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_Map_type_value.value.elements.push(
-      { name: "uid", algebraicType: __AlgebraicTypeValue.String },
-      { name: "name", algebraicType: __AlgebraicTypeValue.String },
-      { name: "filename", algebraicType: __AlgebraicTypeValue.String },
-      { name: "author", algebraicType: __AlgebraicTypeValue.String },
-      { name: "authorNickname", algebraicType: __AlgebraicTypeValue.String },
-      { name: "environment", algebraicType: __AlgebraicTypeValue.String },
-      { name: "mood", algebraicType: __AlgebraicTypeValue.String },
-      { name: "bronzeTime", algebraicType: __AlgebraicTypeValue.U32 },
-      { name: "silverTime", algebraicType: __AlgebraicTypeValue.U32 },
-      { name: "goldTime", algebraicType: __AlgebraicTypeValue.U32 },
-      { name: "authorTime", algebraicType: __AlgebraicTypeValue.U32 },
-      { name: "copperprice", algebraicType: __AlgebraicTypeValue.U32 },
-      { name: "lapRace", algebraicType: __AlgebraicTypeValue.Bool },
-      { name: "numberLaps", algebraicType: __AlgebraicTypeValue.U32 },
-      { name: "mapType", algebraicType: __AlgebraicTypeValue.String },
-      { name: "mapStyle", algebraicType: __AlgebraicTypeValue.String },
-    );
-    return _cached_Map_type_value;
+    return __AlgebraicTypeValue.Product({
+      elements: [
+        { name: "uid", algebraicType: __AlgebraicTypeValue.String},
+        { name: "name", algebraicType: __AlgebraicTypeValue.String},
+        { name: "filename", algebraicType: __AlgebraicTypeValue.String},
+        { name: "author", algebraicType: __AlgebraicTypeValue.String},
+        { name: "authorNickname", algebraicType: __AlgebraicTypeValue.String},
+        { name: "environment", algebraicType: __AlgebraicTypeValue.String},
+        { name: "mood", algebraicType: __AlgebraicTypeValue.String},
+        { name: "bronzeTime", algebraicType: __AlgebraicTypeValue.U32},
+        { name: "silverTime", algebraicType: __AlgebraicTypeValue.U32},
+        { name: "goldTime", algebraicType: __AlgebraicTypeValue.U32},
+        { name: "authorTime", algebraicType: __AlgebraicTypeValue.U32},
+        { name: "copperprice", algebraicType: __AlgebraicTypeValue.U32},
+        { name: "lapRace", algebraicType: __AlgebraicTypeValue.Bool},
+        { name: "numberLaps", algebraicType: __AlgebraicTypeValue.U32},
+        { name: "mapType", algebraicType: __AlgebraicTypeValue.String},
+        { name: "mapStyle", algebraicType: __AlgebraicTypeValue.String},
+      ]
+    });
   },
 
   serialize(writer: __BinaryWriter, value: Map): void {

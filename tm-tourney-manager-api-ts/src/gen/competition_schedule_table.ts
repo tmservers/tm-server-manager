@@ -25,7 +25,6 @@ import {
   type EventContextInterface as __EventContextInterface,
   type ReducerEventContextInterface as __ReducerEventContextInterface,
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
 } from "spacetimedb";
 import { CompetitionSchedule } from "./competition_schedule_type";
 import { type EventContext, type Reducer, RemoteReducers, RemoteTables } from ".";
@@ -41,9 +40,7 @@ declare type __keep = [EventContext, Reducer, RemoteReducers, RemoteTables];
  * but to directly chain method calls,
  * like `ctx.db.competitionSchedule.on_insert(...)`.
  */
-export class CompetitionScheduleTableHandle<TableName extends string> implements __TableHandle<TableName> {
-  // phantom type to track the table name
-  readonly tableName!: TableName;
+export class CompetitionScheduleTableHandle {
   tableCache: __TableCache<CompetitionSchedule>;
 
   constructor(tableCache: __TableCache<CompetitionSchedule>) {
