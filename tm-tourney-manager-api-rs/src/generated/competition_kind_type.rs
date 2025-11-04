@@ -7,9 +7,9 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub enum CompetitionKind {
-    MatchV1(u64),
+    Match(u64),
 
-    CompetitionV1(u64),
+    Competition(u64),
 }
 
 impl __sdk::InModule for CompetitionKind {
