@@ -35,8 +35,12 @@ pub fn try_parse_buffer(buffer: &[u8]) -> Result<GBXClass, GBXError> {
     if &buffer[0..3] != b"GBX" {
         return Err(GBXError::MissingMagic);
     }
+
+    // A cursor with helper functions.
+    let mut reader = GameboxReader::new(&buffer[3..]);
+
     // The GBX version. This tool only supports version 6 for now.
-    let version = u16::from_le_bytes(buffer[3..5].try_into().unwrap());
+    let version = reader.parse_u16();
 
     if version != 6 {
         return Err(GBXError::UnsupportedVersion(version));
@@ -44,13 +48,13 @@ pub fn try_parse_buffer(buffer: &[u8]) -> Result<GBXClass, GBXError> {
 
     // The following 4 bytes are unused because version 6 is always compressed.
 
-    let class_id = ChunkId::new(u32::from_le_bytes(buffer[9..13].try_into().unwrap()));
+    let class_id = reader.parse_chunk_id();
     println!("{class_id:?}");
 
-    let user_data_size = u32::from_le_bytes(buffer[13..17].try_into().unwrap()) as usize;
+    let user_data_size = reader.parse_u32() as usize;
     println!("{user_data_size}");
 
-    let num_header_chunks = u32::from_le_bytes(buffer[17..21].try_into().unwrap());
+    let num_header_chunks = reader.parse_u32();
     println!("{num_header_chunks}");
 
     let mut header_entries = Vec::with_capacity(num_header_chunks as usize);
