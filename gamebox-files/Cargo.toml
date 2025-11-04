@@ -1,5 +1,5 @@
 [package]
-name = "gamebox"
+name = "gamebox-files"
 description = "Parse .GBX files for Trackmania and perform read/write operations."
 readme = "README.md"
 publish = true
@@ -14,3 +14,7 @@ repository.workspace = true
 edition.workspace = true
 
 [dependencies]
+minilzo-rs = "0"
+thiserror = "2"
+flate2 = "1.0"
+bytes = "1"

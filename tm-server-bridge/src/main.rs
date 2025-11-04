@@ -137,11 +137,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
                     match std::fs::read(&full_path) {
                         Ok(file) => {
-                            tracing::error!(
-                                "{:?} version: {}",
-                                String::from_utf8(file[0..3].to_vec()),
-                                u16::from_le_bytes(file[3..5].try_into().unwrap())
-                            );
+                            let gbx = gamebox_files::try_parse_buffer(&file);
+                            tracing::error!("{gbx:?}");
 
                             if let Err(error) = SPACETIME.wait().reducers.post_ghost(file) {
                                 tracing::error!(
@@ -152,6 +149,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                             // Open questiones:
                             // - What about time attack?
                             //   - No Ghost can be associated with a player but rather a Vec<Ghost> for all the runs
+                            //  -> Since we only offer round based ghosts it could just display the whole ghost
                             // - How much file size savings when extracting ghosts.
                             // - Should the transformation happen on the client or the server?
                             //   - Probably client side since we already have a sidecar anyway...

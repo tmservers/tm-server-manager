@@ -1,7 +1,10 @@
 use spacetimedb::{ReducerContext, Table, table};
 use tm_server_types::event::Event;
 
-use crate::{r#match::tm_match, server::tm_server};
+use crate::{
+    r#match::{ephemeral_state::EphemeralState, tm_match},
+    server::tm_server,
+};
 
 #[table(name = tm_server_event,public)]
 pub struct TmServerEvent {
@@ -9,7 +12,10 @@ pub struct TmServerEvent {
     #[primary_key]
     id: u64,
 
+    tournament_id: u64,
     match_id: u64,
+
+    state: EphemeralState,
 
     event: Event,
 }
@@ -19,17 +25,20 @@ pub struct TmServerEvent {
 pub fn post_event(ctx: &ReducerContext, id: String, event: Event) {
     if let Some(server) = ctx.db.tm_server().id().find(id)
         && let Some(match_id) = server.active_match()
-        && let Some(mut stage_match) = ctx.db.tm_match().id().find(match_id)
-        && stage_match.is_live()
+        && let Some(mut tm_match) = ctx.db.tm_match().id().find(match_id)
+        && tm_match.is_live()
     {
-        stage_match.add_server_event(&event);
+        tm_match.add_server_event(&event);
 
-        ctx.db.tm_match().id().update(stage_match);
+        let tournament_id = tm_match.get_tournament();
 
         ctx.db.tm_server_event().insert(TmServerEvent {
             id: 0,
+            tournament_id,
             match_id,
             event,
+            state: tm_match.get_ephemeral_state( ),
         });
+        ctx.db.tm_match().id().update(tm_match);
     }
 }

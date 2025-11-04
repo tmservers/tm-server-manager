@@ -3,18 +3,38 @@ use tm_server_types::{config::ServerConfig, event::Event};
 
 use crate::{
     competition::competition,
+    r#match::{ephemeral_state::EphemeralState, leaderboard::MatchLeaderboardRules},
     server::{TmServer, tm_server},
     tournament::tournament,
 };
 
+pub mod ephemeral_state;
 mod leaderboard;
 
 // The table name needs to be plural since match is a rust keyword
+/// # Match
+/// Fullfills the role of providing configuration to the associated server and
+/// executes the match on a Trackmania Server.
+/// Also holds the Rules to reconstruct a Leaderboard for the match.
+///
+/// ## Lifecycle
+/// Is represented and can be queried via the [MatchStatus]
+/// and consists of:
+/// - *Created.* In order to advance to the next stage a valid configuration for
+/// pre_match and match fields need to be present. Advances to [MatchStatus::Configuring].
+/// - *Configured.* Advances to [MatchStatus::Upcoming].
+/// - *Captured Server.* Capturing describes the process of assigning a
+/// Server from the pool to the Match. The server is locked till the match
+/// releases it again. Advances to [MatchStatus::PreMatch]
+/// - *Start.* Can be called manually, with a schedule or with rules.  
+/// If the ephemeral state matches the desired state. Advances to [MatchStatus::Live].
+/// - *End.* The match has concluded. Loads the post_match_config if it is present. Releases
+/// the captured server. Advances to [MatchStatus::Ended].
 #[cfg_attr(feature = "spacetime", spacetimedb::table(name = tm_match, public))]
 pub struct TmMatch {
     #[auto_inc]
     #[primary_key]
-    pub id: u64,
+    pub(crate) id: u64,
 
     /// The tournament this match is associated with.
     tournament_id: u64,
@@ -32,13 +52,22 @@ pub struct TmMatch {
     post_match_config: Option<ServerConfig>,
 
     status: MatchStatus,
-    //leaderboard: Leaderboard,
+    leaderboard: MatchLeaderboardRules,
+    ephemeral_state: EphemeralState,
 }
 
 impl TmMatch {
     /// Evaluates is the Match is in the "Match" state of its lifecycle.
     pub fn is_live(&self) -> bool {
         self.status == MatchStatus::Live
+    }
+
+    pub fn get_tournament(&self) -> u64 {
+        self.tournament_id
+    }
+
+    pub fn get_ephemeral_state(&self) -> EphemeralState {
+        self.ephemeral_state
     }
 
     pub fn add_server_event(&mut self, event: &Event) {
@@ -81,11 +110,13 @@ impl TmMatch {
 #[derive(Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
 pub enum MatchStatus {
+    /// Allows to change all associated configurations of the Match.
     Configuring,
+    /// No changes to the configuration can be made anymore.
     Upcoming,
     PreMatch,
     Live,
-    PostMatch,
+    /// Match is immutable and achived.
     Ended,
 }
 
@@ -109,7 +140,8 @@ pub fn create_match(
         pre_match_config: None,
         match_config: None,
         post_match_config: None,
-        //leaderboard: Leaderboard::new(),
+        leaderboard: MatchLeaderboardRules::new(),
+        ephemeral_state: EphemeralState::new(),
     };
 
     if tournament_id == parent_id {

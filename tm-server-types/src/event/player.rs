@@ -1,7 +1,5 @@
 use dxr::{TryFromParams, TryFromValue};
 
-use crate::base::UbisoftId;
-
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
@@ -11,13 +9,13 @@ pub struct PlayerChat {
     /*  #[cfg_attr(feature = "serde", serde(rename = "Login", deserialize_with = ""))]
     account_id: UbisoftId, */
     #[cfg_attr(feature = "serde", serde(rename = "Login"))]
-    login: String,
+    pub login: String,
     #[cfg_attr(feature = "serde", serde(rename = "Text"))]
-    text: String,
+    pub text: String,
     #[cfg_attr(feature = "serde", serde(rename = "IsRegisteredCmd"))]
-    is_registered_cmd: bool,
+    pub is_registered_cmd: bool,
     #[cfg_attr(feature = "serde", serde(rename = "Options"))]
-    options: i32,
+    pub options: i32,
 }
 
 impl TryFromParams for PlayerChat {
@@ -40,9 +38,9 @@ pub struct PlayerConnect {
     /*  #[cfg_attr(feature = "serde", serde(rename = "Login", deserialize_with = ""))]
     account_id: UbisoftId, */
     #[cfg_attr(feature = "serde", serde(rename = "Login"))]
-    login: String,
+    pub login: String,
     #[cfg_attr(feature = "serde", serde(rename = "IsSpectator"))]
-    is_spectator: bool,
+    pub is_spectator: bool,
 }
 
 impl TryFromParams for PlayerConnect {
@@ -63,9 +61,9 @@ pub struct PlayerDisconnect {
     /*  #[cfg_attr(feature = "serde", serde(rename = "Login", deserialize_with = ""))]
     account_id: UbisoftId, */
     #[cfg_attr(feature = "serde", serde(rename = "Login"))]
-    login: String,
+    pub login: String,
     #[cfg_attr(feature = "serde", serde(rename = "DisconnectReason"))]
-    disconnect_reason: String,
+    pub disconnect_reason: String,
 }
 
 impl TryFromParams for PlayerDisconnect {

@@ -5,6 +5,12 @@ pub struct Ghost {
     #[cfg_attr(feature = "spacetime", auto_inc)]
     id: u64,
 
+    //TODO
+    //tournament
+    //match
+    //map_uid
+    //player_uid
+    //link to CF R2 most likely (object id)
     data: Vec<u8>,
 }
 
