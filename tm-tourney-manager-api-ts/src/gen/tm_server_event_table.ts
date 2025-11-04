@@ -30,6 +30,9 @@ import { TmServerEvent } from "./tm_server_event_type";
 import { Event } from "./event_type";
 // Mark import as potentially unused
 declare type __keep_Event = Event;
+import { EphemeralState } from "./ephemeral_state_type";
+// Mark import as potentially unused
+declare type __keep_EphemeralState = EphemeralState;
 
 import { type EventContext, type Reducer, RemoteReducers, RemoteTables } from ".";
 declare type __keep = [EventContext, Reducer, RemoteReducers, RemoteTables];

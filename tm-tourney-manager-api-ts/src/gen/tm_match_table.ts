@@ -33,6 +33,12 @@ declare type __keep_ServerConfig = ServerConfig;
 import { MatchStatus } from "./match_status_type";
 // Mark import as potentially unused
 declare type __keep_MatchStatus = MatchStatus;
+import { MatchLeaderboardRules } from "./match_leaderboard_rules_type";
+// Mark import as potentially unused
+declare type __keep_MatchLeaderboardRules = MatchLeaderboardRules;
+import { EphemeralState } from "./ephemeral_state_type";
+// Mark import as potentially unused
+declare type __keep_EphemeralState = EphemeralState;
 
 import { type EventContext, type Reducer, RemoteReducers, RemoteTables } from ".";
 declare type __keep = [EventContext, Reducer, RemoteReducers, RemoteTables];

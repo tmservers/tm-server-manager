@@ -26,37 +26,10 @@ import {
   type ReducerEventContextInterface as __ReducerEventContextInterface,
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
 } from "spacetimedb";
-import * as ModeRulesVariants from './mode_rules_variants'
+import { RoundsLeaderboard as RoundsLeaderboardType } from "./rounds_leaderboard_type";
+// Mark import as potentially unused
+declare type __keep_RoundsLeaderboardType = RoundsLeaderboardType;
 
-// The tagged union or sum type for the algebraic type `ModeRules`.
-export type ModeRules = never;
 
-// A value with helper functions to construct the type.
-export const ModeRules = {
-  // Helper functions for constructing each variant of the tagged union.
-  // ```
-  // const foo = Foo.A(42);
-  // assert!(foo.tag === "A");
-  // assert!(foo.value === 42);
-  // ```
-
-  getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    return __AlgebraicTypeValue.Sum({
-      variants: [
-      ]
-    });
-  },
-
-  serialize(writer: __BinaryWriter, value: ModeRules): void {
-      __AlgebraicTypeValue.serializeValue(writer, ModeRules.getTypeScriptAlgebraicType(), value);
-  },
-
-  deserialize(reader: __BinaryReader): ModeRules {
-      return __AlgebraicTypeValue.deserializeValue(reader, ModeRules.getTypeScriptAlgebraicType());
-  },
-
-}
-
-export default ModeRules;
-
+export type Rounds = { tag: "Rounds", value: RoundsLeaderboardType };
 

@@ -31,6 +31,5 @@ export type Configuring = { tag: "Configuring" };
 export type Upcoming = { tag: "Upcoming" };
 export type PreMatch = { tag: "PreMatch" };
 export type Live = { tag: "Live" };
-export type PostMatch = { tag: "PostMatch" };
 export type Ended = { tag: "Ended" };
 

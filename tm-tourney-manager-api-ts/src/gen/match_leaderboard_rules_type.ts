@@ -26,37 +26,43 @@ import {
   type ReducerEventContextInterface as __ReducerEventContextInterface,
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
 } from "spacetimedb";
-import * as ModeRulesVariants from './mode_rules_variants'
+import { RoundsLeaderboard } from "./rounds_leaderboard_type";
+// Mark import as potentially unused
+declare type __keep_RoundsLeaderboard = RoundsLeaderboard;
 
-// The tagged union or sum type for the algebraic type `ModeRules`.
-export type ModeRules = never;
+import * as MatchLeaderboardRulesVariants from './match_leaderboard_rules_variants'
+
+// The tagged union or sum type for the algebraic type `MatchLeaderboardRules`.
+export type MatchLeaderboardRules = MatchLeaderboardRulesVariants.Rounds;
 
 // A value with helper functions to construct the type.
-export const ModeRules = {
+export const MatchLeaderboardRules = {
   // Helper functions for constructing each variant of the tagged union.
   // ```
   // const foo = Foo.A(42);
   // assert!(foo.tag === "A");
   // assert!(foo.value === 42);
   // ```
+  Rounds: (value: RoundsLeaderboard): MatchLeaderboardRules => ({ tag: "Rounds", value }),
 
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
     return __AlgebraicTypeValue.Sum({
       variants: [
+        { name: "Rounds", algebraicType: RoundsLeaderboard.getTypeScriptAlgebraicType() },
       ]
     });
   },
 
-  serialize(writer: __BinaryWriter, value: ModeRules): void {
-      __AlgebraicTypeValue.serializeValue(writer, ModeRules.getTypeScriptAlgebraicType(), value);
+  serialize(writer: __BinaryWriter, value: MatchLeaderboardRules): void {
+      __AlgebraicTypeValue.serializeValue(writer, MatchLeaderboardRules.getTypeScriptAlgebraicType(), value);
   },
 
-  deserialize(reader: __BinaryReader): ModeRules {
-      return __AlgebraicTypeValue.deserializeValue(reader, ModeRules.getTypeScriptAlgebraicType());
+  deserialize(reader: __BinaryReader): MatchLeaderboardRules {
+      return __AlgebraicTypeValue.deserializeValue(reader, MatchLeaderboardRules.getTypeScriptAlgebraicType());
   },
 
 }
 
-export default ModeRules;
+export default MatchLeaderboardRules;
 
 

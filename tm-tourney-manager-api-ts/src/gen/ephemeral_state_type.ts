@@ -26,25 +26,15 @@ import {
   type ReducerEventContextInterface as __ReducerEventContextInterface,
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
 } from "spacetimedb";
-import { Event } from "./event_type";
-// Mark import as potentially unused
-declare type __keep_Event = Event;
-import { EphemeralState } from "./ephemeral_state_type";
-// Mark import as potentially unused
-declare type __keep_EphemeralState = EphemeralState;
 
-
-export type TmServerEvent = {
-  id: bigint,
-  tournamentId: bigint,
-  matchId: bigint,
-  state: EphemeralState,
-  event: Event,
+export type EphemeralState = {
+  restarted: number,
+  warmup: boolean,
 };
 /**
  * An object for generated helper functions.
  */
-export const TmServerEvent = {
+export const EphemeralState = {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
@@ -52,25 +42,22 @@ export const TmServerEvent = {
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
     return __AlgebraicTypeValue.Product({
       elements: [
-        { name: "id", algebraicType: __AlgebraicTypeValue.U64},
-        { name: "tournamentId", algebraicType: __AlgebraicTypeValue.U64},
-        { name: "matchId", algebraicType: __AlgebraicTypeValue.U64},
-        { name: "state", algebraicType: EphemeralState.getTypeScriptAlgebraicType()},
-        { name: "event", algebraicType: Event.getTypeScriptAlgebraicType()},
+        { name: "restarted", algebraicType: __AlgebraicTypeValue.U16},
+        { name: "warmup", algebraicType: __AlgebraicTypeValue.Bool},
       ]
     });
   },
 
-  serialize(writer: __BinaryWriter, value: TmServerEvent): void {
-    __AlgebraicTypeValue.serializeValue(writer, TmServerEvent.getTypeScriptAlgebraicType(), value);
+  serialize(writer: __BinaryWriter, value: EphemeralState): void {
+    __AlgebraicTypeValue.serializeValue(writer, EphemeralState.getTypeScriptAlgebraicType(), value);
   },
 
-  deserialize(reader: __BinaryReader): TmServerEvent {
-    return __AlgebraicTypeValue.deserializeValue(reader, TmServerEvent.getTypeScriptAlgebraicType());
+  deserialize(reader: __BinaryReader): EphemeralState {
+    return __AlgebraicTypeValue.deserializeValue(reader, EphemeralState.getTypeScriptAlgebraicType());
   },
 
 }
 
-export default TmServerEvent;
+export default EphemeralState;
 
 
