@@ -27,45 +27,46 @@ import {
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
   type TableHandle as __TableHandle,
 } from "spacetimedb";
-import * as CompetitionKindVariants from './competition_kind_variants'
+import { RoundsLeaderboard } from "./rounds_leaderboard_type";
+// Mark import as potentially unused
+declare type __keep_RoundsLeaderboard = RoundsLeaderboard;
 
-// The tagged union or sum type for the algebraic type `CompetitionKind`.
-export type CompetitionKind = CompetitionKindVariants.MatchV1 |
-  CompetitionKindVariants.CompetitionV1;
+import * as MatchLeaderboardRulesVariants from './match_leaderboard_rules_variants'
 
-let _cached_CompetitionKind_type_value: __AlgebraicTypeType | null = null;
+// The tagged union or sum type for the algebraic type `MatchLeaderboardRules`.
+export type MatchLeaderboardRules = MatchLeaderboardRulesVariants.Rounds;
+
+let _cached_MatchLeaderboardRules_type_value: __AlgebraicTypeType | null = null;
 
 // A value with helper functions to construct the type.
-export const CompetitionKind = {
+export const MatchLeaderboardRules = {
   // Helper functions for constructing each variant of the tagged union.
   // ```
   // const foo = Foo.A(42);
   // assert!(foo.tag === "A");
   // assert!(foo.value === 42);
   // ```
-  MatchV1: (value: bigint): CompetitionKindVariants.MatchV1 => ({ tag: "MatchV1", value }),
-  CompetitionV1: (value: bigint): CompetitionKindVariants.CompetitionV1 => ({ tag: "CompetitionV1", value }),
+  Rounds: (value: RoundsLeaderboard): MatchLeaderboardRulesVariants.Rounds => ({ tag: "Rounds", value }),
 
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_CompetitionKind_type_value) return _cached_CompetitionKind_type_value;
-    _cached_CompetitionKind_type_value = __AlgebraicTypeValue.Sum({ variants: [] });
-    _cached_CompetitionKind_type_value.value.variants.push(
-      { name: "MatchV1", algebraicType: __AlgebraicTypeValue.U64 },
-      { name: "CompetitionV1", algebraicType: __AlgebraicTypeValue.U64 },
+    if (_cached_MatchLeaderboardRules_type_value) return _cached_MatchLeaderboardRules_type_value;
+    _cached_MatchLeaderboardRules_type_value = __AlgebraicTypeValue.Sum({ variants: [] });
+    _cached_MatchLeaderboardRules_type_value.value.variants.push(
+      { name: "Rounds", algebraicType: RoundsLeaderboard.getTypeScriptAlgebraicType() },
     );
-    return _cached_CompetitionKind_type_value;
+    return _cached_MatchLeaderboardRules_type_value;
   },
 
-  serialize(writer: __BinaryWriter, value: CompetitionKind): void {
-      __AlgebraicTypeValue.serializeValue(writer, CompetitionKind.getTypeScriptAlgebraicType(), value);
+  serialize(writer: __BinaryWriter, value: MatchLeaderboardRules): void {
+      __AlgebraicTypeValue.serializeValue(writer, MatchLeaderboardRules.getTypeScriptAlgebraicType(), value);
   },
 
-  deserialize(reader: __BinaryReader): CompetitionKind {
-      return __AlgebraicTypeValue.deserializeValue(reader, CompetitionKind.getTypeScriptAlgebraicType());
+  deserialize(reader: __BinaryReader): MatchLeaderboardRules {
+      return __AlgebraicTypeValue.deserializeValue(reader, MatchLeaderboardRules.getTypeScriptAlgebraicType());
   },
 
 }
 
-export default CompetitionKind;
+export default MatchLeaderboardRules;
 
 

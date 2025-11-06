@@ -4,13 +4,16 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
+use super::ephemeral_state_type::EphemeralState;
 use super::event_type::Event;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct TmServerEvent {
     pub id: u64,
+    pub tournament_id: u64,
     pub match_id: u64,
+    pub state: EphemeralState,
     pub event: Event,
 }
 

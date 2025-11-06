@@ -2,6 +2,8 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN YOUR MODULE SOURCE CODE INSTEAD.
 
 #![allow(unused, clippy::all)]
+use super::ephemeral_state_type::EphemeralState;
+use super::match_leaderboard_rules_type::MatchLeaderboardRules;
 use super::match_status_type::MatchStatus;
 use super::server_config_type::ServerConfig;
 use super::tm_match_type::TmMatch;

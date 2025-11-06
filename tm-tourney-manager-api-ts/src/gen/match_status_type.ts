@@ -34,7 +34,6 @@ export type MatchStatus = MatchStatusVariants.Configuring |
   MatchStatusVariants.Upcoming |
   MatchStatusVariants.PreMatch |
   MatchStatusVariants.Live |
-  MatchStatusVariants.PostMatch |
   MatchStatusVariants.Ended;
 
 let _cached_MatchStatus_type_value: __AlgebraicTypeType | null = null;
@@ -51,7 +50,6 @@ export const MatchStatus = {
   Upcoming: { tag: "Upcoming" } as const,
   PreMatch: { tag: "PreMatch" } as const,
   Live: { tag: "Live" } as const,
-  PostMatch: { tag: "PostMatch" } as const,
   Ended: { tag: "Ended" } as const,
 
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
@@ -62,7 +60,6 @@ export const MatchStatus = {
       { name: "Upcoming", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
       { name: "PreMatch", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
       { name: "Live", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-      { name: "PostMatch", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
       { name: "Ended", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
     );
     return _cached_MatchStatus_type_value;

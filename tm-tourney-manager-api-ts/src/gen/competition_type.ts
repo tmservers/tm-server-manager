@@ -43,6 +43,7 @@ export type Competition = {
   phase: EventPhase,
   startingAt: __Timestamp,
   estimate: __TimeDuration | undefined,
+  entryPoints: number[] | undefined,
   competitions: Competitions,
 };
 let _cached_Competition_type_value: __AlgebraicTypeType | null = null;
@@ -66,6 +67,7 @@ export const Competition = {
       { name: "phase", algebraicType: EventPhase.getTypeScriptAlgebraicType() },
       { name: "startingAt", algebraicType: __AlgebraicTypeValue.createTimestampType() },
       { name: "estimate", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.createTimeDurationType()) },
+      { name: "entryPoints", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.Array(__AlgebraicTypeValue.U32)) },
       { name: "competitions", algebraicType: Competitions.getTypeScriptAlgebraicType() },
     );
     return _cached_Competition_type_value;

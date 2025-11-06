@@ -3623,9 +3623,9 @@ dependencies = [
 
 [[package]]
 name = "spacetimedb"
-version = "1.6.0"
+version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8679cf54a7a653e6bc612bef28c219f98b9274308d8aae1e86046ed685db48b1"
+checksum = "f1adc734a7fe7af5eb312c7ecab06b86853744a584bcb04f01cf90a4b5a93a9f"
 dependencies = [
  "bytemuck",
  "derive_more 0.99.20",
@@ -3633,6 +3633,7 @@ dependencies = [
  "log",
  "rand 0.8.5",
  "scoped-tls",
+ "serde_json",
  "spacetimedb-bindings-macro",
  "spacetimedb-bindings-sys",
  "spacetimedb-lib",
@@ -3641,9 +3642,9 @@ dependencies = [
 
 [[package]]
 name = "spacetimedb-bindings-macro"
-version = "1.6.0"
+version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a930242493f5c875ab96903eb40fb6a90c4d3ae99597fd51da569ff22769a03"
+checksum = "bc3401b34447ea1ebed7289710fca3fb0510eca21fdca0568b483ccdab43716f"
 dependencies = [
  "heck 0.4.1",
  "humantime",
@@ -3655,18 +3656,18 @@ dependencies = [
 
 [[package]]
 name = "spacetimedb-bindings-sys"
-version = "1.6.0"
+version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e565dfcdd2dc3f58e0178052ec1c8ce710b013482d4fa50b511ba786a2c3bc68"
+checksum = "55f0444b30253a89032e52482a257a16b5c6240edb20cb07ccbb8f61ee393325"
 dependencies = [
  "spacetimedb-primitives",
 ]
 
 [[package]]
 name = "spacetimedb-client-api-messages"
-version = "1.6.0"
+version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "41ce7caea86beadc2c6b53a535d5b5faea8e89e433dac0f26421a4413509f54a"
+checksum = "1628651cc003bfa367b461f3e3edc9b3f47d24387bc98cf978bb62ac39c6b7ae"
 dependencies = [
  "bytes",
  "bytestring",
@@ -3686,9 +3687,9 @@ dependencies = [
 
 [[package]]
 name = "spacetimedb-data-structures"
-version = "1.6.0"
+version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "70800a808e519ca85e2fa96d58df95a4af8c7b270fe55733b7cf16a436cecd89"
+checksum = "868b353a8d72866bfbe6890cd9e48a79019a1f9ad6bb1723a7d74a1e9aa26dd5"
 dependencies = [
  "ahash",
  "crossbeam-queue",
@@ -3700,9 +3701,9 @@ dependencies = [
 
 [[package]]
 name = "spacetimedb-lib"
-version = "1.6.0"
+version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ba57c8f1983bb144ee7e1ff28aa5882ca437f67c14a14daad4bf61d31f7040d"
+checksum = "4a92d293f0949006422dd3db7513883fd37b39fb44e9eea0f2654638cf996db3"
 dependencies = [
  "anyhow",
  "bitflags 2.10.0",
@@ -3722,9 +3723,9 @@ dependencies = [
 
 [[package]]
 name = "spacetimedb-metrics"
-version = "1.6.0"
+version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dfb2beb9b955f55c8562ed4378fae1a4d6412c2e27108d262fd9dd90615b5f0c"
+checksum = "984770501ae14c5e45549b9c3d9528e685cd2a3d8e69e69cd1042631a3b2b670"
 dependencies = [
  "arrayvec",
  "itertools 0.12.1",
@@ -3734,9 +3735,9 @@ dependencies = [
 
 [[package]]
 name = "spacetimedb-primitives"
-version = "1.6.0"
+version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1dcd64c6970ca59e7b71e51952cf1a71bae2652b1eb736c19a7e528f3874894a"
+checksum = "4f50d1579e9ad93ab9da8f12f355b98fee6a389badea2f6a6b1f6a963d4d49b1"
 dependencies = [
  "bitflags 2.10.0",
  "either",
@@ -3746,9 +3747,9 @@ dependencies = [
 
 [[package]]
 name = "spacetimedb-sats"
-version = "1.6.0"
+version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eae61d8f88bda21f56c143bc9b4ddc20100ff08ae4fed0b9444509f7c3ca4339"
+checksum = "834ad502a46ebcb5f2411bb877e8565e2dabfdf941a57271a3659e7ea70e937f"
 dependencies = [
  "anyhow",
  "arrayvec",
@@ -3775,9 +3776,9 @@ dependencies = [
 
 [[package]]
 name = "spacetimedb-sdk"
-version = "1.6.0"
+version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6db1bf188942ee2ad04ca9780fc8d38226ff972a45ee2f7bde9c25388ac2191f"
+checksum = "28322a2a00c3a53fc863154917fbc18009e87d367bbdac9d07e98c06b58901c8"
 dependencies = [
  "anymap",
  "base64 0.21.7",

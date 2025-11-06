@@ -2,6 +2,7 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN YOUR MODULE SOURCE CODE INSTEAD.
 
 #![allow(unused, clippy::all)]
+use super::ephemeral_state_type::EphemeralState;
 use super::event_type::Event;
 use super::tm_server_event_type::TmServerEvent;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};

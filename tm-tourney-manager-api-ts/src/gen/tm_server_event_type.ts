@@ -30,11 +30,16 @@ import {
 import { Event } from "./event_type";
 // Mark import as potentially unused
 declare type __keep_Event = Event;
+import { EphemeralState } from "./ephemeral_state_type";
+// Mark import as potentially unused
+declare type __keep_EphemeralState = EphemeralState;
 
 
 export type TmServerEvent = {
   id: bigint,
+  tournamentId: bigint,
   matchId: bigint,
+  state: EphemeralState,
   event: Event,
 };
 let _cached_TmServerEvent_type_value: __AlgebraicTypeType | null = null;
@@ -52,7 +57,9 @@ export const TmServerEvent = {
     _cached_TmServerEvent_type_value = __AlgebraicTypeValue.Product({ elements: [] });
     _cached_TmServerEvent_type_value.value.elements.push(
       { name: "id", algebraicType: __AlgebraicTypeValue.U64 },
+      { name: "tournamentId", algebraicType: __AlgebraicTypeValue.U64 },
       { name: "matchId", algebraicType: __AlgebraicTypeValue.U64 },
+      { name: "state", algebraicType: EphemeralState.getTypeScriptAlgebraicType() },
       { name: "event", algebraicType: Event.getTypeScriptAlgebraicType() },
     );
     return _cached_TmServerEvent_type_value;

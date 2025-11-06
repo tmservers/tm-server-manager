@@ -17,6 +17,7 @@ pub struct Competition {
     pub phase: EventPhase,
     pub starting_at: __sdk::Timestamp,
     pub estimate: Option<__sdk::TimeDuration>,
+    pub entry_points: Option<Vec<u32>>,
     pub competitions: Competitions,
 }
 

@@ -25,10 +25,10 @@ repository = "https://github.com/kistz/tm-tourney-manager"
 edition = "2024"
 
 [workspace.dependencies.spacetimedb]
-version = "1.6"
+version = "1.7"
 
 [workspace.dependencies.spacetimedb-lib]
-version = "1.6"
+version = "1.7"
 
 [workspace.dependencies.spacetimedb-sdk]
-version = "1.6"
+version = "1.7"

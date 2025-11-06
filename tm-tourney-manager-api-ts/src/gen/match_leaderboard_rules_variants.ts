@@ -27,10 +27,10 @@ import {
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
   type TableHandle as __TableHandle,
 } from "spacetimedb";
+import { RoundsLeaderboard as RoundsLeaderboardType } from "./rounds_leaderboard_type";
+// Mark import as potentially unused
+declare type __keep_RoundsLeaderboardType = RoundsLeaderboardType;
 
-export type Configuring = { tag: "Configuring" };
-export type Upcoming = { tag: "Upcoming" };
-export type PreMatch = { tag: "PreMatch" };
-export type Live = { tag: "Live" };
-export type Ended = { tag: "Ended" };
+
+export type Rounds = { tag: "Rounds", value: RoundsLeaderboardType };
 

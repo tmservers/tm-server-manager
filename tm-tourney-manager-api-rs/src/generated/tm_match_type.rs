@@ -4,6 +4,8 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
+use super::ephemeral_state_type::EphemeralState;
+use super::match_leaderboard_rules_type::MatchLeaderboardRules;
 use super::match_status_type::MatchStatus;
 use super::server_config_type::ServerConfig;
 
@@ -18,6 +20,8 @@ pub struct TmMatch {
     pub match_config: Option<ServerConfig>,
     pub post_match_config: Option<ServerConfig>,
     pub status: MatchStatus,
+    pub leaderboard: MatchLeaderboardRules,
+    pub ephemeral_state: EphemeralState,
 }
 
 impl __sdk::InModule for TmMatch {
