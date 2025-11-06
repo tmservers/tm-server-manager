@@ -1,5 +1,6 @@
 mod way_point;
-use dxr::{TryFromParams, Value};
+use dxr::{DxrError, TryFromParams, Value};
+use json::Error;
 pub use way_point::WayPoint;
 
 mod start_line;
@@ -96,71 +97,63 @@ pub enum Event {
 }
 
 impl Event {
-    pub fn from_modescript(name: &str, body: String) -> Option<Self> {
+    pub fn from_modescript(name: &str, body: String) -> Result<Option<Self>, Error> {
         let event = match name {
-            "Trackmania.Event.WayPoint" => Event::WayPoint(json::from_str(&body).unwrap()),
-            "Trackmania.Event.Respawn" => Event::Respawn(json::from_str(&body).unwrap()),
-            "Trackmania.Scores" => Event::Scores(json::from_str(&body).unwrap()),
-            "Trackmania.Event.StartLine" => Event::StartLine(json::from_str(&body).unwrap()),
+            "Trackmania.Event.WayPoint" => Event::WayPoint(json::from_str(&body)?),
+            "Trackmania.Event.Respawn" => Event::Respawn(json::from_str(&body)?),
+            "Trackmania.Scores" => Event::Scores(json::from_str(&body)?),
+            "Trackmania.Event.StartLine" => Event::StartLine(json::from_str(&body)?),
 
-            "Maniaplanet.LoadingMap_Start" => {
-                Event::LoadingMapStart(json::from_str(&body).unwrap())
-            }
-            "Maniaplanet.LoadingMap_End" => Event::LoadingMapEnd(json::from_str(&body).unwrap()),
-            "Maniaplanet.StartMap_Start" => Event::StartMapStart(json::from_str(&body).unwrap()),
-            "Maniaplanet.StartMap_End" => Event::StartMapEnd(json::from_str(&body).unwrap()),
-            "Maniaplanet.EndMap_Start" => Event::EndMapStart(json::from_str(&body).unwrap()),
-            "Maniaplanet.EndMap_End" => Event::EndMapEnd(json::from_str(&body).unwrap()),
-            "Maniaplanet.UnloadingMap_Start" => {
-                Event::UnloadingMapStart(json::from_str(&body).unwrap())
-            }
-            "Maniaplanet.UnloadingMap_End" => {
-                Event::UnloadingMapEnd(json::from_str(&body).unwrap())
-            }
+            "Maniaplanet.LoadingMap_Start" => Event::LoadingMapStart(json::from_str(&body)?),
+            "Maniaplanet.LoadingMap_End" => Event::LoadingMapEnd(json::from_str(&body)?),
+            "Maniaplanet.StartMap_Start" => Event::StartMapStart(json::from_str(&body)?),
+            "Maniaplanet.StartMap_End" => Event::StartMapEnd(json::from_str(&body)?),
+            "Maniaplanet.EndMap_Start" => Event::EndMapStart(json::from_str(&body)?),
+            "Maniaplanet.EndMap_End" => Event::EndMapEnd(json::from_str(&body)?),
+            "Maniaplanet.UnloadingMap_Start" => Event::UnloadingMapStart(json::from_str(&body)?),
+            "Maniaplanet.UnloadingMap_End" => Event::UnloadingMapEnd(json::from_str(&body)?),
 
-            "Maniaplanet.StartTurn_Start" => Event::StartTurnStart(json::from_str(&body).unwrap()),
-            "Maniaplanet.StartTurn_End" => Event::StartTurnEnd(json::from_str(&body).unwrap()),
+            "Maniaplanet.StartTurn_Start" => Event::StartTurnStart(json::from_str(&body)?),
+            "Maniaplanet.StartTurn_End" => Event::StartTurnEnd(json::from_str(&body)?),
 
-            "Maniaplanet.StartPlayLoop" => Event::PlayLoopStart(json::from_str(&body).unwrap()),
-            "Maniaplanet.EndPlayLoop" => Event::PlayLoopEnd(json::from_str(&body).unwrap()),
+            "Maniaplanet.StartPlayLoop" => Event::PlayLoopStart(json::from_str(&body)?),
+            "Maniaplanet.EndPlayLoop" => Event::PlayLoopEnd(json::from_str(&body)?),
 
-            "Maniaplanet.EndRound_Start" => Event::EndRoundStart(json::from_str(&body).unwrap()),
-            "Maniaplanet.EndRound_End" => Event::EndRoundEnd(json::from_str(&body).unwrap()),
+            "Maniaplanet.EndRound_Start" => Event::EndRoundStart(json::from_str(&body)?),
+            "Maniaplanet.EndRound_End" => Event::EndRoundEnd(json::from_str(&body)?),
 
-            "Maniaplanet.Podium_Start" => Event::PodiumStart(json::from_str(&body).unwrap()),
-            "Maniaplanet.Podium_End" => Event::PodiumEnd(json::from_str(&body).unwrap()),
+            "Maniaplanet.Podium_Start" => Event::PodiumStart(json::from_str(&body)?),
+            "Maniaplanet.Podium_End" => Event::PodiumEnd(json::from_str(&body)?),
 
-            "Maniaplanet.StartMatch_Start" => {
-                Event::StartMatchStart(json::from_str(&body).unwrap())
-            }
-            "Maniaplanet.StartMatch_End" => Event::StartMatchEnd(json::from_str(&body).unwrap()),
-            "Maniaplanet.EndMatch_Start" => Event::EndMatchStart(json::from_str(&body).unwrap()),
-            "Maniaplanet.EndMatch_End" => Event::EndMatchEnd(json::from_str(&body).unwrap()),
+            "Maniaplanet.StartMatch_Start" => Event::StartMatchStart(json::from_str(&body)?),
+            "Maniaplanet.StartMatch_End" => Event::StartMatchEnd(json::from_str(&body)?),
+            "Maniaplanet.EndMatch_Start" => Event::EndMatchStart(json::from_str(&body)?),
+            "Maniaplanet.EndMatch_End" => Event::EndMatchEnd(json::from_str(&body)?),
 
-            "Maniaplanet.StartServer_Start" => {
-                Event::StartServerStart(json::from_str(&body).unwrap())
-            }
-            "Maniaplanet.StartServer_End" => Event::StartServerEnd(json::from_str(&body).unwrap()),
-            "Maniaplanet.EndServer_Start" => Event::EndServerStart(json::from_str(&body).unwrap()),
-            "Maniaplanet.EndServer_End" => Event::EndServerEnd(json::from_str(&body).unwrap()),
+            "Maniaplanet.StartServer_Start" => Event::StartServerStart(json::from_str(&body)?),
+            "Maniaplanet.StartServer_End" => Event::StartServerEnd(json::from_str(&body)?),
+            "Maniaplanet.EndServer_Start" => Event::EndServerStart(json::from_str(&body)?),
+            "Maniaplanet.EndServer_End" => Event::EndServerEnd(json::from_str(&body)?),
 
             _ => Event::Custom(Custom::new(name.to_string(), body)),
         };
-        Some(event)
+        Ok(Some(event))
     }
 
-    pub fn from_legacy(name: &str, body: Vec<Value>) -> Option<Self> {
-        match name {
-            "ManiaPlanet.PlayerConnect" => Some(Event::PlayerConenct(
-                PlayerConnect::try_from_params(&body).unwrap(),
-            )),
+    pub fn from_legacy(name: &str, body: Vec<Value>) -> Result<Option<Self>, DxrError> {
+        let event = match name {
+            "ManiaPlanet.PlayerConnect" => {
+                Some(Event::PlayerConenct(PlayerConnect::try_from_params(&body)?))
+            }
             "ManiaPlanet.PlayerDisconnect" => Some(Event::PlayerDisconnect(
-                PlayerDisconnect::try_from_params(&body).unwrap(),
+                PlayerDisconnect::try_from_params(&body)?,
             )),
-            "ManiaPlanet.PlayerChat" => Some(Event::PlayerChat(
-                PlayerChat::try_from_params(&body).unwrap(),
-            )),
+            "ManiaPlanet.PlayerChat" => {
+                Some(Event::PlayerChat(PlayerChat::try_from_params(&body)?))
+            }
             _ => None,
-        }
+        };
+
+        Ok(event)
     }
 }

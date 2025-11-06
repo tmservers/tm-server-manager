@@ -11,7 +11,7 @@ use dxr::{
 
 use tachyonix::Sender;
 use thiserror::Error;
-use tm_server_types::event::Event;
+use tm_server_types::event::{self, Event};
 use tm_server_types::method::Method;
 use tokio::io::{self, AsyncReadExt, AsyncWriteExt, BufWriter, ReadHalf, WriteHalf};
 use tokio::net::TcpStream;
@@ -241,11 +241,23 @@ impl TrackmaniaServer {
                             info!("Name: {callback_name}, JSON: {modescript_callback_body:?}");
 
                             // Parse the event to make it fully typed.
-                            Event::from_modescript(&callback_name, modescript_callback_body)
+                            match Event::from_modescript(&callback_name, modescript_callback_body) {
+                                Ok(event) => event,
+                                Err(error) => {
+                                    error!("Couldnt deserialize ModeScript event: {error:?}");
+                                    None
+                                }
+                            }
                         } else {
                             println!("Old callback: {:?}", callback);
                             let params = callback.params();
-                            Event::from_legacy(&callback_name, params)
+                            match Event::from_legacy(&callback_name, params) {
+                                Ok(event) => event,
+                                Err(error) => {
+                                    error!("Couldnt deserialize Legacy event: {error:?}");
+                                    None
+                                }
+                            }
                         };
                         if let Some(event) = event {
                             // Send the parsed event to all subscribed event handlers.
