@@ -146,17 +146,17 @@ pub fn create_match(
         ephemeral_state: EphemeralState::new(),
     };
 
-    if tournament_id == parent_id {
-        if let Some(mut tournament) = ctx.db.tournament().id().find(parent_id) {
-            let tm_match = ctx.db.tm_match().insert(tm_match);
-            tournament.add_match(tm_match.id);
-            ctx.db.tournament().id().update(tournament);
-        }
-    } else if let Some(mut competition) = ctx.db.competition().id().find(parent_id) {
-        let tm_match = ctx.db.tm_match().insert(tm_match);
-        competition.add_match(tm_match.id);
-        ctx.db.competition().id().update(competition);
-    }
+    if ctx.db.tournament().id().find(parent_id).is_none() {
+        return Err("Invalid tournament".into());
+    };
+
+    let Some(mut parent_competition) = ctx.db.competition().id().find(parent_id) else {
+        return Err("Invalid competition".into());
+    };
+
+    let tm_match = ctx.db.tm_match().try_insert(tm_match)?;
+    parent_competition.add_match(tm_match.id);
+    ctx.db.competition().id().update(parent_competition);
 
     Ok(())
 }

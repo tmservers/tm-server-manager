@@ -124,32 +124,31 @@ pub fn create_competition(
     ctx: &ReducerContext,
     name: String,
     tournament_id: u64,
-    parent_id: Option<u64>,
+    parent_id: u64,
     with_config: Option<u64>,
 ) -> Result<(), String> {
     let user = ctx.auth()?;
 
-    //SAFETY: The competition gets commnited afterwards.
-    let new_competition = unsafe {Competition::new(name, parent_id, tournament_id)
+    // Tournament and parent ids need to be valid.
+    if ctx.db.tournament().id().find(tournament_id).is_none() {
+        return Err("Invalid tournament_id".into());
+    };
+    let Some(mut parent_competition) = ctx.db.competition().id().find(parent_id) else {
+        return Err("Invalid parent_id".into());
     };
 
-    if let Some(parent) = parent_id {
-        let comp = ctx.db.competition().insert(new_competition);
-        competition.add_competition(comp.id);
-        ctx.db.competition().id().update(competition);
-    }
-} else if let Some(mut competition) = ctx.db.competition().id().find(parent_id) {
-        if let Some(mut tournament) = ctx.db.tournament().id().find(parent_id) {
-    
-            
-            let comp = ctx.db.competition().insert(new_competition);
-            tournament.add_match(comp.id);
-            ctx.db.tournament().id().update(tournament);
+    //SAFETY: The competition gets commnited afterwards.
+    let new_competition = unsafe { Competition::new(name, Some(parent_id), tournament_id) };
+    match ctx.db.competition().try_insert(new_competition) {
+        // If the insertion of the new competition succeeds we need to update the parent
+        // to include it in the graph.
+        Ok(competition) => {
+            parent_competition.add_competition(competition.id);
+            ctx.db.competition().id().update(parent_competition);
+            Ok(())
         }
+        Err(err) => Err(err.to_string()),
     }
-
-
-    Ok(())
 }
 
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]

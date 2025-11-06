@@ -2,7 +2,7 @@ use spacetimedb::{ReducerContext, SpacetimeType, Table, reducer, table};
 
 use crate::{
     auth::Authorization,
-    competition::Competition,
+    competition::{Competition, competition},
     graph::{CompetitionKind, Competitions},
     tournament::registration::Registration,
 };
@@ -66,7 +66,7 @@ fn create_tournament(ctx: &ReducerContext, name: String) -> Result<(), String> {
         .tournament()
         .try_insert(Tournament {
             id: 0,
-            name,
+            name: name.clone(),
             creator: user,
             status: TournamentStatus::Planning,
             owners: Vec::new(),
@@ -76,7 +76,9 @@ fn create_tournament(ctx: &ReducerContext, name: String) -> Result<(), String> {
         })
         .unwrap();
 
-    let competition = Competition::new();
+    //SAFETY: Comitted afterwards
+    let competition = unsafe { Competition::new(name, None, tournament.id) };
+    let competition = ctx.db.competition().try_insert(competition)?;
 
     Ok(())
 }
