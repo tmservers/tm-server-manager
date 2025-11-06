@@ -77,40 +77,20 @@ impl TmMatch {
         self.ephemeral_state
     }
 
-    pub fn add_server_event(&mut self, event: &Event) {
+    pub fn add_server_event(&mut self, event: &Event) -> bool {
         // Not worth defining as an invariant for calling so need to be sure.
         if !self.is_live() {
-            return;
+            return false;
         }
 
-        match event {
-            Event::WayPoint(way_point) => todo!(),
-            Event::Respawn(respawn) => todo!(),
-            Event::StartLine(start_line) => todo!(),
-            Event::Scores(scores) => todo!(),
-            Event::GiveUp(give_up) => todo!(),
-            Event::LoadingMapStart(loading_map_start) => todo!(),
-            Event::LoadingMapEnd(loading_map_end) => todo!(),
-            Event::StartMapStart(start_map) => todo!(),
-            Event::StartMapEnd(start_map) => todo!(),
-            Event::EndMapStart(end_map_start) => todo!(),
-            Event::EndMapEnd(end_map_end) => todo!(),
-            Event::UnloadingMapStart(unloading_map_start) => todo!(),
-            Event::UnloadingMapEnd(unloading_map_end) => todo!(),
-            Event::PlayerConenct(player_connect) => todo!(),
-            Event::PlayerDisconnect(player_disconnect) => todo!(),
-            Event::PlayerChat(player_chat) => todo!(),
-            Event::StartTurnStart(start_turn) => todo!(),
-            Event::StartTurnEnd(start_turn) => todo!(),
-            Event::PlayLoopStart(play_loop_start) => todo!(),
-            Event::PlayLoopEnd(play_loop_end) => todo!(),
-            Event::EndRoundStart(end_round_start) => todo!(),
-            Event::EndRoundEnd(end_round_end) => todo!(),
-            Event::PodiumStart(podium) => todo!(),
-            Event::PodiumEnd(podium) => todo!(),
-            Event::Custom(custom) => todo!(),
-            _ => todo!(),
-        }
+        if let Event::EndMatchEnd(_) = event {
+            log::error!("MATCH ENDED");
+
+            self.status = MatchStatus::Ended;
+
+            return true;
+        };
+        false
     }
 }
 

@@ -28,7 +28,7 @@ pub fn post_event(ctx: &ReducerContext, id: String, event: Event) {
         && let Some(mut tm_match) = ctx.db.tm_match().id().find(match_id)
         && tm_match.is_live()
     {
-        tm_match.add_server_event(&event);
+        let changed = tm_match.add_server_event(&event);
 
         let tournament_id = tm_match.get_tournament();
 
@@ -37,8 +37,10 @@ pub fn post_event(ctx: &ReducerContext, id: String, event: Event) {
             tournament_id,
             match_id,
             event,
-            state: tm_match.get_ephemeral_state( ),
+            state: tm_match.get_ephemeral_state(),
         });
-        ctx.db.tm_match().id().update(tm_match);
+        if changed {
+            ctx.db.tm_match().id().update(tm_match);
+        }
     }
 }
