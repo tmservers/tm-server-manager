@@ -1,6 +1,8 @@
 use spacetimedb::{ReducerContext, SpacetimeType, Table, reducer, table};
 
 use crate::{
+    auth::Authorization,
+    competition::Competition,
     graph::{CompetitionKind, Competitions},
     tournament::registration::Registration,
 };
@@ -22,14 +24,14 @@ pub struct Tournament {
 
     status: TournamentStatus,
 
-    competitions: Competitions,
+    competition: u64,
     //TODO maybe make Registration required and add some kind of "Open" to it
     //That would mean that everyone is free to join.
     registration: Option<Registration>,
 }
 
 impl Tournament {
-    pub fn add_competition(&mut self, competition_id: u64) {
+    /* pub fn add_competition(&mut self, competition_id: u64) {
         self.competitions
             .try_add_competition(CompetitionKind::CompetitionV1(competition_id));
     }
@@ -37,7 +39,7 @@ impl Tournament {
     pub fn add_match(&mut self, match_id: u64) {
         self.competitions
             .try_add_competition(CompetitionKind::MatchV1(match_id));
-    }
+    } */
 }
 
 #[derive(Debug)]
@@ -57,19 +59,24 @@ pub enum TournamentStatus {
 }
 
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-fn create_tournament(ctx: &ReducerContext, name: String) {
-    //if let Some(user)=ctx.db.user().id ctx.identity()
-    //ctx.
-    //TODO authorization
-    ctx.db.tournament().insert(Tournament {
-        name,
-        creator: "yomama".into(),
-        id: 0,
-        status: TournamentStatus::Planning,
-        owners: Vec::new(),
-        //events: Vec::new(),
-        registration: None,
-        description: "".into(),
-        competitions: Competitions::new(),
-    });
+fn create_tournament(ctx: &ReducerContext, name: String) -> Result<(), String> {
+    let user = ctx.auth()?;
+    let tournament = ctx
+        .db
+        .tournament()
+        .try_insert(Tournament {
+            id: 0,
+            name,
+            creator: user,
+            status: TournamentStatus::Planning,
+            owners: Vec::new(),
+            registration: None,
+            description: "".into(),
+            competition: 0,
+        })
+        .unwrap();
+
+    let competition = Competition::new();
+
+    Ok(())
 }

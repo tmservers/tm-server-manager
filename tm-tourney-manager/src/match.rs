@@ -130,7 +130,7 @@ pub fn create_match(
     auto_provisioning_server: bool,
 ) -> Result<(), String> {
     //TODO authorization
-    ctx.is_authorized()?;
+    ctx.auth()?;
 
     // Create an uncommitted match
     let tm_match = TmMatch {

@@ -2,6 +2,7 @@ use spacetimedb::{ReducerContext, SpacetimeType, Table, TimeDuration, Timestamp,
 use tm_server_types::event::Event;
 
 use crate::{
+    auth::Authorization,
     graph::{CompetitionKind, Competitions, NodeIndex},
     tournament::tournament,
 };
@@ -15,16 +16,15 @@ pub struct Competition {
     pub id: u64,
 
     tournament_id: u64,
-    parent_id: u64,
+    parent_id: Option<u64>,
 
-    // Unique event name for the tournament
     name: String,
     // This could allow eventually to distinguish between monitoring leaderboards and matches or smth.
     //event_type: EventType,
     phase: EventPhase,
     // The Timestamp at which the event starts.
     // If no starting time is selected it has to be started manually.
-    starting_at: Timestamp,
+    //starting_at: Timestamp,
     // Estimated duration how long the tourney is gonna take.
     estimate: Option<TimeDuration>,
 
@@ -62,6 +62,19 @@ impl Competition {
         //TODO
         self.competitions
             .try_add_competition(CompetitionKind::MatchV1(match_id));
+    }
+
+    pub unsafe fn new(name: String, parent_id: Option<u64>, tournament_id: u64) -> Self {
+        Self {
+            id: 0,
+            tournament_id,
+            parent_id,
+            name,
+            phase: EventPhase::Planning,
+            estimate: None,
+            competitions: Competitions::new(),
+            entry_points: None,
+        }
     }
 }
 
@@ -110,35 +123,33 @@ pub struct EventConfig {
 pub fn create_competition(
     ctx: &ReducerContext,
     name: String,
-    at: Timestamp,
     tournament_id: u64,
-    parent_id: u64,
+    parent_id: Option<u64>,
     with_config: Option<u64>,
-) {
-    //TODO authorization
-    let new_competition = Competition {
-        id: 0,
-        tournament_id,
-        parent_id,
-        name,
-        phase: EventPhase::Planning,
-        starting_at: at,
-        estimate: None,
-        competitions: Competitions::new(),
-        entry_points: None,
+) -> Result<(), String> {
+    let user = ctx.auth()?;
+
+    //SAFETY: The competition gets commnited afterwards.
+    let new_competition = unsafe {Competition::new(name, parent_id, tournament_id)
     };
 
-    if tournament_id == parent_id {
-        if let Some(mut tournament) = ctx.db.tournament().id().find(parent_id) {
-            let comp = ctx.db.competition().insert(new_competition);
-            tournament.add_match(comp.id);
-            ctx.db.tournament().id().update(tournament);
-        }
-    } else if let Some(mut competition) = ctx.db.competition().id().find(parent_id) {
+    if let Some(parent) = parent_id {
         let comp = ctx.db.competition().insert(new_competition);
         competition.add_competition(comp.id);
         ctx.db.competition().id().update(competition);
     }
+} else if let Some(mut competition) = ctx.db.competition().id().find(parent_id) {
+        if let Some(mut tournament) = ctx.db.tournament().id().find(parent_id) {
+    
+            
+            let comp = ctx.db.competition().insert(new_competition);
+            tournament.add_match(comp.id);
+            ctx.db.tournament().id().update(tournament);
+        }
+    }
+
+
+    Ok(())
 }
 
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
