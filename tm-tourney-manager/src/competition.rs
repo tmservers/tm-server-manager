@@ -1,9 +1,12 @@
-use spacetimedb::{ReducerContext, SpacetimeType, Table, TimeDuration, Timestamp, reducer, table};
+use spacetimedb::{
+    ReducerContext, ReducerResult, SpacetimeType, Table, TimeDuration, Timestamp, reducer, table,
+};
 use tm_server_types::event::Event;
 
 use crate::{
     auth::Authorization,
     graph::{CompetitionKind, Competitions, NodeIndex},
+    scheduling::Scheduling,
     tournament::tournament,
 };
 
@@ -19,21 +22,21 @@ pub struct Competition {
     parent_id: Option<u64>,
 
     name: String,
-    // This could allow eventually to distinguish between monitoring leaderboards and matches or smth.
     //event_type: EventType,
-    phase: EventPhase,
+    status: CompetitionStatus,
     // The Timestamp at which the event starts.
     // If no starting time is selected it has to be started manually.
     //starting_at: Timestamp,
-    // Estimated duration how long the tourney is gonna take.
+    // Estimated duration how long the competition is gonna take.
     estimate: Option<TimeDuration>,
+
+    scheduling: Scheduling,
 
     // Can capture a server at the end of the registration to serve
     // as a lobby server which automatically delegates players to their
     // corresponding match server.
-    // lobby: Option<u64>,
-
-    //registration: Vec<Registration>,
+    //lobby: Option<u64>,
+    //registration: Registration,
     //generate: Generator,
     //config: EventConfig,
 
@@ -46,8 +49,6 @@ pub struct Competition {
     // We could also have some sort of a barrier table or smth which takes care of this.
     entry_points: Option<Vec<NodeIndex>>,
 
-    // Stages get executed sequentially.
-    //stages: Vec<u64>,
     competitions: Competitions,
 }
 
@@ -64,23 +65,27 @@ impl Competition {
             .try_add_competition(CompetitionKind::MatchV1(match_id));
     }
 
+    /// # Safety
+    /// The new competition has to be commited to spacetime db through the `create_competition` reducer.
+    /// Otherwise the id is invalid.
     pub unsafe fn new(name: String, parent_id: Option<u64>, tournament_id: u64) -> Self {
         Self {
             id: 0,
             tournament_id,
             parent_id,
             name,
-            phase: EventPhase::Planning,
+            status: CompetitionStatus::Planning,
             estimate: None,
             competitions: Competitions::new(),
             entry_points: None,
+            scheduling: Scheduling::Manual,
         }
     }
 }
 
 #[derive(Debug)]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
-pub enum EventPhase {
+pub enum CompetitionStatus {
     /// If you just created the event it will be in the planning phase.
     /// Here you can set everything up as you like.
     /// The event is not visible to the public.
@@ -149,6 +154,13 @@ pub fn create_competition(
         }
         Err(err) => Err(err.to_string()),
     }
+}
+
+#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
+pub fn add_dependency(ctx: &ReducerContext, from_id: u64, to_id: u64) -> Result<(), String> {
+    ctx.auth()?;
+
+    Ok(())
 }
 
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]

@@ -5,6 +5,7 @@ use crate::{
     auth::Authorization,
     competition::competition,
     r#match::{ephemeral_state::EphemeralState, leaderboard::MatchLeaderboardRules},
+    scheduling::Scheduling,
     server::{TmServer, tm_server},
     tournament::tournament,
 };
@@ -40,6 +41,8 @@ pub struct TmMatch {
     /// The tournament this match is associated with.
     tournament_id: u64,
     parent_id: u64,
+
+    scheduling: Scheduling,
 
     /// The assigned server that will be used by this match.
     server_id: Option<String>,
@@ -144,6 +147,7 @@ pub fn create_match(
         post_match_config: None,
         leaderboard: MatchLeaderboardRules::new(),
         ephemeral_state: EphemeralState::new(),
+        scheduling: Scheduling::Manual,
     };
 
     if ctx.db.tournament().id().find(parent_id).is_none() {

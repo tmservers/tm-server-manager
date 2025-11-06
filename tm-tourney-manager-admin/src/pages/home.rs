@@ -3,8 +3,6 @@ use std::rc::Rc;
 use leptos::prelude::*;
 use singlestage::{Button, card::*};
 
-use crate::generated::DbConnection;
-
 const MODULE_NAME: &str = "tm-tourney-manager";
 const HOST: &str = "localhost:1324";
 

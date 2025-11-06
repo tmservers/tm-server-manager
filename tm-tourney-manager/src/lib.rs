@@ -1,12 +1,13 @@
 use spacetimedb::{ReducerContext, reducer};
 
+pub mod auth;
 pub mod competition;
 pub mod emulator;
 pub mod generator;
 pub mod ghosts;
 pub mod r#match;
+pub mod scheduling;
 pub mod server;
-pub mod auth;
 pub mod tournament;
 pub mod user;
 
