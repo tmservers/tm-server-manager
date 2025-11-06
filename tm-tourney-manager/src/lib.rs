@@ -6,6 +6,7 @@ pub mod generator;
 pub mod ghosts;
 pub mod r#match;
 pub mod server;
+pub mod auth;
 pub mod tournament;
 pub mod user;
 

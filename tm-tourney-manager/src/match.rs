@@ -2,6 +2,7 @@ use spacetimedb::{DbContext, ReducerContext, SpacetimeType, Table, reducer, tabl
 use tm_server_types::{config::ServerConfig, event::Event};
 
 use crate::{
+    auth::Authorization,
     competition::competition,
     r#match::{ephemeral_state::EphemeralState, leaderboard::MatchLeaderboardRules},
     server::{TmServer, tm_server},
@@ -127,8 +128,9 @@ pub fn create_match(
     parent_id: u64,
     with_config: Option<u64>,
     auto_provisioning_server: bool,
-) {
+) -> Result<(), String> {
     //TODO authorization
+    ctx.is_authorized()?;
 
     // Create an uncommitted match
     let tm_match = TmMatch {
@@ -155,6 +157,8 @@ pub fn create_match(
         competition.add_match(tm_match.id);
         ctx.db.competition().id().update(competition);
     }
+
+    Ok(())
 }
 
 /// Assigns a server to the selected match.
