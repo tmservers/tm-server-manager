@@ -6,6 +6,7 @@ pub mod emulator;
 pub mod generator;
 pub mod ghosts;
 pub mod r#match;
+pub mod registration;
 pub mod scheduling;
 pub mod server;
 pub mod tournament;

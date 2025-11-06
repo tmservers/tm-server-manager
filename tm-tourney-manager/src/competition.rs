@@ -6,6 +6,7 @@ use tm_server_types::event::Event;
 use crate::{
     auth::Authorization,
     graph::{CompetitionKind, Competitions, NodeIndex},
+    registration::Registration,
     scheduling::Scheduling,
     tournament::tournament,
 };
@@ -22,7 +23,6 @@ pub struct Competition {
     parent_id: Option<u64>,
 
     name: String,
-    //event_type: EventType,
     status: CompetitionStatus,
     // The Timestamp at which the event starts.
     // If no starting time is selected it has to be started manually.
@@ -31,6 +31,8 @@ pub struct Competition {
     estimate: Option<TimeDuration>,
 
     scheduling: Scheduling,
+
+    registration: Registration,
 
     // Can capture a server at the end of the registration to serve
     // as a lobby server which automatically delegates players to their
@@ -79,6 +81,7 @@ impl Competition {
             competitions: Competitions::new(),
             entry_points: None,
             scheduling: Scheduling::Manual,
+            registration: Registration::Open,
         }
     }
 }
@@ -96,15 +99,8 @@ pub enum CompetitionStatus {
     /// Once the event is ongoing the configuration is immutable.
     /// That means it will play through the configured stages and advancing logic.
     Ongoing,
-    /// The whole tournament is now immutable.
+    /// The whole competition is now immutable.
     Completed,
-}
-
-#[derive(Debug)]
-#[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
-pub enum EventType {
-    Matches,
-    TimeAttack,
 }
 
 #[cfg_attr(feature="spacetime",spacetimedb::table(name = event_config,public))]
@@ -157,8 +153,22 @@ pub fn create_competition(
 }
 
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn add_dependency(ctx: &ReducerContext, from_id: u64, to_id: u64) -> Result<(), String> {
+pub fn add_dependency(
+    ctx: &ReducerContext,
+    comp_id: u64,
+    from_node: u32,
+    to_node: u32,
+) -> Result<(), String> {
     ctx.auth()?;
+
+    /*   let Some(from_id) = ctx.db.competition().id().find(from_id) else {
+        return Err(format!("Competition with id {from_id} not found."));
+    };
+    let Some(to_id) = ctx.db.competition().id().find(to_id) else {
+        return Err(format!("Competition with id {to_id} not found."));
+    };
+
+    if from_id.parent_id != to_id.parent_id || from_id.tournament_id != to_id.tournament_id {} */
 
     Ok(())
 }

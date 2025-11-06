@@ -47,6 +47,7 @@ pub fn try_parse_buffer(buffer: &[u8]) -> Result<GBXClass, GBXError> {
     }
 
     // The following 4 bytes are unused because version 6 is always compressed.
+    reader.skip(4);
 
     let class_id = reader.parse_chunk_id();
     println!("{class_id:?}");

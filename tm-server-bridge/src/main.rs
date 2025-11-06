@@ -58,7 +58,8 @@ fn connect_to_db() -> DbConnection {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    dotenvy::from_path(env!("CARGO_MANIFEST_DIR").to_string() + "/.env").unwrap();
+    dotenvy::from_path(env!("CARGO_MANIFEST_DIR").to_string() + "/.env")
+        .expect("Es konnte kein .env file gefunden werden!");
 
     // Tracing Guard.
     let _ = init_tracing_subscriber();

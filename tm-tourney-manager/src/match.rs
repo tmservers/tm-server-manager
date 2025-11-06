@@ -5,6 +5,7 @@ use crate::{
     auth::Authorization,
     competition::competition,
     r#match::{ephemeral_state::EphemeralState, leaderboard::MatchLeaderboardRules},
+    registration::Registration,
     scheduling::Scheduling,
     server::{TmServer, tm_server},
     tournament::tournament,
@@ -44,10 +45,12 @@ pub struct TmMatch {
 
     scheduling: Scheduling,
 
+    registration: Registration,
+
     /// The assigned server that will be used by this match.
     server_id: Option<String>,
 
-    /// The moment the server is assigned to the match the pre_match_config gets loaded in.
+    /// The moment the server is captured by the match the pre_match_config gets loaded in.
     /// Only if it is defined. Useful for hiding tournament maps till the actual start.
     pre_match_config: Option<ServerConfig>,
     /// If the match is started this config gets loaded.
@@ -148,6 +151,7 @@ pub fn create_match(
         leaderboard: MatchLeaderboardRules::new(),
         ephemeral_state: EphemeralState::new(),
         scheduling: Scheduling::Manual,
+        registration: Registration::Open,
     };
 
     if ctx.db.tournament().id().find(parent_id).is_none() {
@@ -215,6 +219,7 @@ pub fn update_match_config(ctx: &ReducerContext, id: u64, config: ServerConfig) 
 }
 
 /// If the match is fully configured and ready start.
+/// This can also serve as a manual override for scheduled matches.
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn try_start(ctx: &ReducerContext, match_id: u64) {
     //TODO authorization

@@ -38,6 +38,12 @@ pub use play_loop::*;
 mod player;
 pub use player::*;
 
+mod r#match;
+pub use r#match::*;
+
+mod server;
+pub use server::*;
+
 /// Can hold every Event trasmitted trough the ModeScript or vanilla events.
 #[derive(Debug, Clone)]
 #[non_exhaustive]
@@ -76,6 +82,16 @@ pub enum Event {
     PodiumStart(Podium),
     PodiumEnd(Podium),
 
+    StartMatchStart(StartMatch),
+    StartMatchEnd(StartMatch),
+    EndMatchStart(EndMatch),
+    EndMatchEnd(EndMatch),
+
+    StartServerStart(StartServer),
+    StartServerEnd(StartServer),
+    EndServerStart(EndServer),
+    EndServerEnd(EndServer),
+
     Custom(Custom),
 }
 
@@ -113,6 +129,20 @@ impl Event {
 
             "Maniaplanet.Podium_Start" => Event::PodiumStart(json::from_str(&body).unwrap()),
             "Maniaplanet.Podium_End" => Event::PodiumEnd(json::from_str(&body).unwrap()),
+
+            "Maniaplanet.StartMatch_Start" => {
+                Event::StartMatchStart(json::from_str(&body).unwrap())
+            }
+            "Maniaplanet.StartMatch_End" => Event::StartMatchEnd(json::from_str(&body).unwrap()),
+            "Maniaplanet.EndMatch_Start" => Event::EndMatchStart(json::from_str(&body).unwrap()),
+            "Maniaplanet.EndMatch_End" => Event::EndMatchEnd(json::from_str(&body).unwrap()),
+
+            "Maniaplanet.StartServer_Start" => {
+                Event::StartServerStart(json::from_str(&body).unwrap())
+            }
+            "Maniaplanet.StartServer_End" => Event::StartServerEnd(json::from_str(&body).unwrap()),
+            "Maniaplanet.EndServer_Start" => Event::EndServerStart(json::from_str(&body).unwrap()),
+            "Maniaplanet.EndServer_End" => Event::EndServerEnd(json::from_str(&body).unwrap()),
 
             _ => Event::Custom(Custom::new(name.to_string(), body)),
         };

@@ -4,9 +4,7 @@ use crate::{
     auth::Authorization,
     competition::{Competition, competition},
     graph::{CompetitionKind, Competitions},
-    tournament::registration::Registration,
 };
-mod registration;
 
 #[cfg_attr(feature = "spacetime", spacetimedb::table(name = tournament,public))]
 pub struct Tournament {
@@ -25,9 +23,6 @@ pub struct Tournament {
     status: TournamentStatus,
 
     competition: u64,
-    //TODO maybe make Registration required and add some kind of "Open" to it
-    //That would mean that everyone is free to join.
-    registration: Option<Registration>,
 }
 
 impl Tournament {
@@ -45,14 +40,11 @@ impl Tournament {
 #[derive(Debug)]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
 pub enum TournamentStatus {
-    // API cant query it
+    // public API cant query it
     Planning,
     // API is public
     Announced,
-    //Optional stage entered after Announced.
-    //TODO maybe this should be called registration closed and be scheduled
-    Registration,
-    // Events have started
+    // Competitions have started
     Ongoing,
     // Whole Tournament finshed
     Ended,
@@ -70,7 +62,6 @@ fn create_tournament(ctx: &ReducerContext, name: String) -> Result<(), String> {
             creator: user,
             status: TournamentStatus::Planning,
             owners: Vec::new(),
-            registration: None,
             description: "".into(),
             competition: 0,
         })
