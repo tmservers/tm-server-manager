@@ -1,5 +1,7 @@
 use spacetimedb::{ReducerContext, reducer};
 
+use crate::server::tm_server;
+
 pub mod auth;
 pub mod competition;
 pub mod emulator;
@@ -29,23 +31,21 @@ fn init(_ctx: &ReducerContext) {
 
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer(client_connected))]
 // Called when a client connects to a SpacetimeDB database server
-fn client_connected(_ctx: &ReducerContext) {
-    /* if let Some(user) = ctx.db.entity().identity().find(ctx.sender) {
-        // If this is a returning user, i.e. we already have a `User` with this `Identity`,
-        // set `online: true`, but leave `name` and `identity` unchanged.
-        ctx.db.entity().identity().update(Entity {
-            online: true,
-            ..user
-        });
+fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
+    // Execute if one tries to connect authenticated.
+    if let Some(jwt) = ctx.sender_auth().jwt() {
+        Ok(())
     } else {
-        // If this is a new user, create a `User` row for the `Identity`,
-        // which is online, but hasn't set a name.
-        /* ctx.db.user().insert(Entity {
-            name: None,
-            identity: ctx.sender,
-            online: true,
-        }); */
-    } */
+        // The server comes back online.
+        if let Some(mut server) = ctx.db.tm_server().identity().find(ctx.sender) {
+            server.set_online();
+            ctx.db.tm_server().id().update(server);
+            Ok(())
+        } else {
+            // Client connects annonymously.
+            Ok(())
+        }
+    }
 }
 
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer(client_disconnected))]

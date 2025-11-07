@@ -23,6 +23,9 @@ fn on_tournament_event_schedule(
     ctx: &ReducerContext,
     arg: CompetitionSchedule,
 ) -> Result<(), String> {
+    if !ctx.sender_auth().is_internal() {
+        return Err("Only the Databse is permitted to call this reducer.".into());
+    }
     /* let message_to_send = arg.text;
 
     _ = send_message(ctx, message_to_send); */

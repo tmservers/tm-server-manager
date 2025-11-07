@@ -1,4 +1,4 @@
-use spacetimedb::{ReducerContext, SpacetimeType, Table, reducer, table};
+use spacetimedb::{Identity, ReducerContext, SpacetimeType, Table, reducer, table};
 use tm_server_types::{config::ServerConfig, method::Method};
 
 use crate::server::{
@@ -13,15 +13,16 @@ pub mod state;
 #[cfg_attr(feature = "spacetime", spacetimedb::table(name=tm_server, public))]
 pub struct TmServer {
     /// Trackmania provisiones a unique server_id for each server.
-    //#[unique]
     #[primary_key]
     pub id: String,
+    #[unique]
+    pub identity: Identity,
 
     /// Each server also has a ubisoft account associated with it.
     owner_id: String,
 
     online: bool,
-
+    // verified: bool,
     config: ServerConfig,
 
     state: ServerState,
@@ -59,25 +60,55 @@ impl TmServer {
         self.state = state
     }
 
+    pub fn set_online(&mut self) {
+        self.online = true;
+    }
+    pub fn set_offline(&mut self) {
+        self.online = false;
+    }
+
+    pub fn set_identity(&mut self, identity: Identity) {
+        self.identity = identity;
+    }
+
     /* pub fn set_command(&mut self, command: Method) {
         self.server_method = command
     } */
 }
 
+/// Elevates an annonymous user to a trackmania server.
+/// password of the server doesn't get saved but only verified for validity.
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn add_server(ctx: &ReducerContext, id: String) {
-    ctx.db.tm_server().insert(TmServer {
-        online: true,
-        id,
-        active_match: None,
-        owner_id: "test_user".into(),
-        server_method: None,
-        config: ServerConfig::default(),
-        state: ServerState::default(),
-    });
+pub fn verify_server(ctx: &ReducerContext, login: String, password: String) -> Result<(), String> {
+    if ctx.db.tm_server().identity().find(ctx.sender).is_some() {
+        // Server identity is already verified.
+        return Ok(());
+    }
+    if let Some(mut server) = ctx.db.tm_server().id().find(&login) {
+        // The new identity is assigned to the server.
+        server.set_identity(ctx.identity());
+        ctx.db.tm_server().id().update(server);
+        Ok(())
+    } else {
+        //TODO make HTTP call when its available and verify that credentials are correct.
+
+        // Server has never been seen before so create a new one.
+        ctx.db.tm_server().insert(TmServer {
+            online: true,
+            id: login,
+            active_match: None,
+            //TODO obtain userid from HTTP request
+            owner_id: "test_user".into(),
+            server_method: None,
+            config: ServerConfig::default(),
+            state: ServerState::default(),
+            identity: ctx.identity(),
+        });
+        Ok(())
+    }
 }
 
-#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
+/* #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn call_server(ctx: &ReducerContext, id: String, method: Method) {
     if let Some(server) = ctx.db.tm_server().id().find(id) {
         ctx.db.tm_server().id().update(TmServer {
@@ -85,7 +116,7 @@ pub fn call_server(ctx: &ReducerContext, id: String, method: Method) {
             ..server
         });
     }
-}
+} */
 
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn load_server_config(ctx: &ReducerContext, id: String, with_config: u64) {
