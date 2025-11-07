@@ -50,18 +50,9 @@ fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
 
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer(client_disconnected))]
 // Called when a client disconnects from SpacetimeDB database server
-fn identity_disconnected(_ctx: &ReducerContext) {
-    /* if let Some(user) = ctx.db.entity().identity().find(ctx.sender) {
-        ctx.db.entity().identity().update(Entity {
-            online: false,
-            ..user
-        });
-    } else {
-        // This branch should be unreachable,
-        // as it doesn't make sense for a client to disconnect without connecting first.
-        log::warn!(
-            "Disconnect event for unknown user with identity {:?}",
-            ctx.sender
-        );
-    } */
+fn identity_disconnected(ctx: &ReducerContext) {
+    if let Some(mut server) = ctx.db.tm_server().identity().find(ctx.sender) {
+        server.set_offline();
+        ctx.db.tm_server().id().update(server);
+    }
 }

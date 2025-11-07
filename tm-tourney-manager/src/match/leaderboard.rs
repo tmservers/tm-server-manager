@@ -12,5 +12,3 @@ impl MatchLeaderboardRules {
         Self::Rounds(RoundsLeaderboard::default())
     }
 }
-
-struct DesiredState {}
