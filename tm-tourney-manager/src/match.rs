@@ -177,6 +177,8 @@ pub fn match_configured(ctx: &ReducerContext, id: u64) {
     //TODO authorization
     if let Some(mut tm_match) = ctx.db.tm_match().id().find(id)
         && tm_match.status == MatchStatus::Configuring
+        && tm_match.server_id.is_some()
+        && tm_match.match_config.is_some()
     {
         tm_match.status = MatchStatus::Upcoming;
         ctx.db.tm_match().id().update(tm_match);
