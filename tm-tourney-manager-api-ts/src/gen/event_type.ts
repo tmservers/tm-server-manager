@@ -81,6 +81,9 @@ declare type __keep_PlayLoopStart = PlayLoopStart;
 import { PlayLoopEnd } from "./play_loop_end_type";
 // Mark import as potentially unused
 declare type __keep_PlayLoopEnd = PlayLoopEnd;
+import { StartRound } from "./start_round_type";
+// Mark import as potentially unused
+declare type __keep_StartRound = StartRound;
 import { EndRoundStart } from "./end_round_start_type";
 // Mark import as potentially unused
 declare type __keep_EndRoundStart = EndRoundStart;
@@ -90,6 +93,21 @@ declare type __keep_EndRoundEnd = EndRoundEnd;
 import { Podium } from "./podium_type";
 // Mark import as potentially unused
 declare type __keep_Podium = Podium;
+import { StartMatch } from "./start_match_type";
+// Mark import as potentially unused
+declare type __keep_StartMatch = StartMatch;
+import { EndMatch } from "./end_match_type";
+// Mark import as potentially unused
+declare type __keep_EndMatch = EndMatch;
+import { StartServer } from "./start_server_type";
+// Mark import as potentially unused
+declare type __keep_StartServer = StartServer;
+import { EndServer } from "./end_server_type";
+// Mark import as potentially unused
+declare type __keep_EndServer = EndServer;
+import { WarmupRound } from "./warmup_round_type";
+// Mark import as potentially unused
+declare type __keep_WarmupRound = WarmupRound;
 import { Custom } from "./custom_type";
 // Mark import as potentially unused
 declare type __keep_Custom = Custom;
@@ -117,10 +135,24 @@ export type Event = EventVariants.WayPoint |
   EventVariants.StartTurnEnd |
   EventVariants.PlayLoopStart |
   EventVariants.PlayLoopEnd |
+  EventVariants.StartRoundStart |
+  EventVariants.StartRoundEnd |
   EventVariants.EndRoundStart |
   EventVariants.EndRoundEnd |
   EventVariants.PodiumStart |
   EventVariants.PodiumEnd |
+  EventVariants.StartMatchStart |
+  EventVariants.StartMatchEnd |
+  EventVariants.EndMatchStart |
+  EventVariants.EndMatchEnd |
+  EventVariants.StartServerStart |
+  EventVariants.StartServerEnd |
+  EventVariants.EndServerStart |
+  EventVariants.EndServerEnd |
+  EventVariants.StartWarmup |
+  EventVariants.EndWarmup |
+  EventVariants.StartWarmupRound |
+  EventVariants.EndWarmupRound |
   EventVariants.Custom;
 
 let _cached_Event_type_value: __AlgebraicTypeType | null = null;
@@ -153,10 +185,24 @@ export const Event = {
   StartTurnEnd: (value: StartTurn): EventVariants.StartTurnEnd => ({ tag: "StartTurnEnd", value }),
   PlayLoopStart: (value: PlayLoopStart): EventVariants.PlayLoopStart => ({ tag: "PlayLoopStart", value }),
   PlayLoopEnd: (value: PlayLoopEnd): EventVariants.PlayLoopEnd => ({ tag: "PlayLoopEnd", value }),
+  StartRoundStart: (value: StartRound): EventVariants.StartRoundStart => ({ tag: "StartRoundStart", value }),
+  StartRoundEnd: (value: StartRound): EventVariants.StartRoundEnd => ({ tag: "StartRoundEnd", value }),
   EndRoundStart: (value: EndRoundStart): EventVariants.EndRoundStart => ({ tag: "EndRoundStart", value }),
   EndRoundEnd: (value: EndRoundEnd): EventVariants.EndRoundEnd => ({ tag: "EndRoundEnd", value }),
   PodiumStart: (value: Podium): EventVariants.PodiumStart => ({ tag: "PodiumStart", value }),
   PodiumEnd: (value: Podium): EventVariants.PodiumEnd => ({ tag: "PodiumEnd", value }),
+  StartMatchStart: (value: StartMatch): EventVariants.StartMatchStart => ({ tag: "StartMatchStart", value }),
+  StartMatchEnd: (value: StartMatch): EventVariants.StartMatchEnd => ({ tag: "StartMatchEnd", value }),
+  EndMatchStart: (value: EndMatch): EventVariants.EndMatchStart => ({ tag: "EndMatchStart", value }),
+  EndMatchEnd: (value: EndMatch): EventVariants.EndMatchEnd => ({ tag: "EndMatchEnd", value }),
+  StartServerStart: (value: StartServer): EventVariants.StartServerStart => ({ tag: "StartServerStart", value }),
+  StartServerEnd: (value: StartServer): EventVariants.StartServerEnd => ({ tag: "StartServerEnd", value }),
+  EndServerStart: (value: EndServer): EventVariants.EndServerStart => ({ tag: "EndServerStart", value }),
+  EndServerEnd: (value: EndServer): EventVariants.EndServerEnd => ({ tag: "EndServerEnd", value }),
+  StartWarmup: { tag: "StartWarmup" } as const,
+  EndWarmup: { tag: "EndWarmup" } as const,
+  StartWarmupRound: (value: WarmupRound): EventVariants.StartWarmupRound => ({ tag: "StartWarmupRound", value }),
+  EndWarmupRound: (value: WarmupRound): EventVariants.EndWarmupRound => ({ tag: "EndWarmupRound", value }),
   Custom: (value: Custom): EventVariants.Custom => ({ tag: "Custom", value }),
 
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
@@ -183,10 +229,24 @@ export const Event = {
       { name: "StartTurnEnd", algebraicType: StartTurn.getTypeScriptAlgebraicType() },
       { name: "PlayLoopStart", algebraicType: PlayLoopStart.getTypeScriptAlgebraicType() },
       { name: "PlayLoopEnd", algebraicType: PlayLoopEnd.getTypeScriptAlgebraicType() },
+      { name: "StartRoundStart", algebraicType: StartRound.getTypeScriptAlgebraicType() },
+      { name: "StartRoundEnd", algebraicType: StartRound.getTypeScriptAlgebraicType() },
       { name: "EndRoundStart", algebraicType: EndRoundStart.getTypeScriptAlgebraicType() },
       { name: "EndRoundEnd", algebraicType: EndRoundEnd.getTypeScriptAlgebraicType() },
       { name: "PodiumStart", algebraicType: Podium.getTypeScriptAlgebraicType() },
       { name: "PodiumEnd", algebraicType: Podium.getTypeScriptAlgebraicType() },
+      { name: "StartMatchStart", algebraicType: StartMatch.getTypeScriptAlgebraicType() },
+      { name: "StartMatchEnd", algebraicType: StartMatch.getTypeScriptAlgebraicType() },
+      { name: "EndMatchStart", algebraicType: EndMatch.getTypeScriptAlgebraicType() },
+      { name: "EndMatchEnd", algebraicType: EndMatch.getTypeScriptAlgebraicType() },
+      { name: "StartServerStart", algebraicType: StartServer.getTypeScriptAlgebraicType() },
+      { name: "StartServerEnd", algebraicType: StartServer.getTypeScriptAlgebraicType() },
+      { name: "EndServerStart", algebraicType: EndServer.getTypeScriptAlgebraicType() },
+      { name: "EndServerEnd", algebraicType: EndServer.getTypeScriptAlgebraicType() },
+      { name: "StartWarmup", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
+      { name: "EndWarmup", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
+      { name: "StartWarmupRound", algebraicType: WarmupRound.getTypeScriptAlgebraicType() },
+      { name: "EndWarmupRound", algebraicType: WarmupRound.getTypeScriptAlgebraicType() },
       { name: "Custom", algebraicType: Custom.getTypeScriptAlgebraicType() },
     );
     return _cached_Event_type_value;

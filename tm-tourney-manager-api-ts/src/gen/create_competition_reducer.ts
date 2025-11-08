@@ -30,10 +30,9 @@ import {
 
 export type CreateCompetition = {
   name: string,
-  at: __Timestamp,
   tournamentId: bigint,
   parentId: bigint,
-  withConfig: bigint | undefined,
+  withTemplate: bigint | undefined,
 };
 let _cached_CreateCompetition_type_value: __AlgebraicTypeType | null = null;
 
@@ -50,10 +49,9 @@ export const CreateCompetition = {
     _cached_CreateCompetition_type_value = __AlgebraicTypeValue.Product({ elements: [] });
     _cached_CreateCompetition_type_value.value.elements.push(
       { name: "name", algebraicType: __AlgebraicTypeValue.String },
-      { name: "at", algebraicType: __AlgebraicTypeValue.createTimestampType() },
       { name: "tournamentId", algebraicType: __AlgebraicTypeValue.U64 },
       { name: "parentId", algebraicType: __AlgebraicTypeValue.U64 },
-      { name: "withConfig", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.U64) },
+      { name: "withTemplate", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.U64) },
     );
     return _cached_CreateCompetition_type_value;
   },

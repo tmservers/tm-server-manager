@@ -37,4 +37,5 @@ declare type __keep_TeamRegistrationType = TeamRegistrationType;
 
 export type Players = { tag: "Players", value: PlayerRegistrationType };
 export type Team = { tag: "Team", value: TeamRegistrationType };
+export type Open = { tag: "Open" };
 

@@ -28,15 +28,15 @@ import {
   type TableHandle as __TableHandle,
 } from "spacetimedb";
 import { TmServer } from "./tm_server_type";
-import { Method } from "./method_type";
-// Mark import as potentially unused
-declare type __keep_Method = Method;
 import { ServerConfig } from "./server_config_type";
 // Mark import as potentially unused
 declare type __keep_ServerConfig = ServerConfig;
 import { ServerState } from "./server_state_type";
 // Mark import as potentially unused
 declare type __keep_ServerState = ServerState;
+import { Method } from "./method_type";
+// Mark import as potentially unused
+declare type __keep_Method = Method;
 
 import { type EventContext, type Reducer, RemoteReducers, RemoteTables } from ".";
 declare type __keep = [EventContext, Reducer, RemoteReducers, RemoteTables];
@@ -84,6 +84,28 @@ export class TmServerTableHandle<TableName extends string> implements __TableHan
     find: (col_val: string): TmServer | undefined => {
       for (let row of this.tableCache.iter()) {
         if (__deepEqual(row.id, col_val)) {
+          return row;
+        }
+      }
+    },
+  };
+  /**
+   * Access to the `identity` unique index on the table `tm_server`,
+   * which allows point queries on the field of the same name
+   * via the [`TmServerIdentityUnique.find`] method.
+   *
+   * Users are encouraged not to explicitly reference this type,
+   * but to directly chain method calls,
+   * like `ctx.db.tmServer.identity().find(...)`.
+   *
+   * Get a handle on the `identity` unique index on the table `tm_server`.
+   */
+  identity = {
+    // Find the subscribed row whose `identity` column value is equal to `col_val`,
+    // if such a row is present in the client cache.
+    find: (col_val: __Identity): TmServer | undefined => {
+      for (let row of this.tableCache.iter()) {
+        if (__deepEqual(row.identity, col_val)) {
           return row;
         }
       }

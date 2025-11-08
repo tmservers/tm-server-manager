@@ -6,11 +6,11 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct Ghost {
-    pub id: u64,
-    pub data: Vec<u8>,
+pub struct WarmupRound {
+    pub current: u32,
+    pub total: u32,
 }
 
-impl __sdk::InModule for Ghost {
+impl __sdk::InModule for WarmupRound {
     type Module = super::RemoteModule;
 }

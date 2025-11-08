@@ -27,18 +27,18 @@ import {
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
   type TableHandle as __TableHandle,
 } from "spacetimedb";
-import * as EventPhaseVariants from './event_phase_variants'
+import * as CompetitionStatusVariants from './competition_status_variants'
 
-// The tagged union or sum type for the algebraic type `EventPhase`.
-export type EventPhase = EventPhaseVariants.Planning |
-  EventPhaseVariants.Preparation |
-  EventPhaseVariants.Ongoing |
-  EventPhaseVariants.Completed;
+// The tagged union or sum type for the algebraic type `CompetitionStatus`.
+export type CompetitionStatus = CompetitionStatusVariants.Planning |
+  CompetitionStatusVariants.Preparation |
+  CompetitionStatusVariants.Ongoing |
+  CompetitionStatusVariants.Completed;
 
-let _cached_EventPhase_type_value: __AlgebraicTypeType | null = null;
+let _cached_CompetitionStatus_type_value: __AlgebraicTypeType | null = null;
 
 // A value with helper functions to construct the type.
-export const EventPhase = {
+export const CompetitionStatus = {
   // Helper functions for constructing each variant of the tagged union.
   // ```
   // const foo = Foo.A(42);
@@ -51,27 +51,27 @@ export const EventPhase = {
   Completed: { tag: "Completed" } as const,
 
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_EventPhase_type_value) return _cached_EventPhase_type_value;
-    _cached_EventPhase_type_value = __AlgebraicTypeValue.Sum({ variants: [] });
-    _cached_EventPhase_type_value.value.variants.push(
+    if (_cached_CompetitionStatus_type_value) return _cached_CompetitionStatus_type_value;
+    _cached_CompetitionStatus_type_value = __AlgebraicTypeValue.Sum({ variants: [] });
+    _cached_CompetitionStatus_type_value.value.variants.push(
       { name: "Planning", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
       { name: "Preparation", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
       { name: "Ongoing", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
       { name: "Completed", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
     );
-    return _cached_EventPhase_type_value;
+    return _cached_CompetitionStatus_type_value;
   },
 
-  serialize(writer: __BinaryWriter, value: EventPhase): void {
-      __AlgebraicTypeValue.serializeValue(writer, EventPhase.getTypeScriptAlgebraicType(), value);
+  serialize(writer: __BinaryWriter, value: CompetitionStatus): void {
+      __AlgebraicTypeValue.serializeValue(writer, CompetitionStatus.getTypeScriptAlgebraicType(), value);
   },
 
-  deserialize(reader: __BinaryReader): EventPhase {
-      return __AlgebraicTypeValue.deserializeValue(reader, EventPhase.getTypeScriptAlgebraicType());
+  deserialize(reader: __BinaryReader): CompetitionStatus {
+      return __AlgebraicTypeValue.deserializeValue(reader, CompetitionStatus.getTypeScriptAlgebraicType());
   },
 
 }
 
-export default EventPhase;
+export default CompetitionStatus;
 
 

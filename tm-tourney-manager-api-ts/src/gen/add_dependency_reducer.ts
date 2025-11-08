@@ -28,37 +28,41 @@ import {
   type TableHandle as __TableHandle,
 } from "spacetimedb";
 
-export type AddServer = {
-  id: string,
+export type AddDependency = {
+  compId: bigint,
+  fromNode: number,
+  toNode: number,
 };
-let _cached_AddServer_type_value: __AlgebraicTypeType | null = null;
+let _cached_AddDependency_type_value: __AlgebraicTypeType | null = null;
 
 /**
  * An object for generated helper functions.
  */
-export const AddServer = {
+export const AddDependency = {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_AddServer_type_value) return _cached_AddServer_type_value;
-    _cached_AddServer_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_AddServer_type_value.value.elements.push(
-      { name: "id", algebraicType: __AlgebraicTypeValue.String },
+    if (_cached_AddDependency_type_value) return _cached_AddDependency_type_value;
+    _cached_AddDependency_type_value = __AlgebraicTypeValue.Product({ elements: [] });
+    _cached_AddDependency_type_value.value.elements.push(
+      { name: "compId", algebraicType: __AlgebraicTypeValue.U64 },
+      { name: "fromNode", algebraicType: __AlgebraicTypeValue.U32 },
+      { name: "toNode", algebraicType: __AlgebraicTypeValue.U32 },
     );
-    return _cached_AddServer_type_value;
+    return _cached_AddDependency_type_value;
   },
 
-  serialize(writer: __BinaryWriter, value: AddServer): void {
-    __AlgebraicTypeValue.serializeValue(writer, AddServer.getTypeScriptAlgebraicType(), value);
+  serialize(writer: __BinaryWriter, value: AddDependency): void {
+    __AlgebraicTypeValue.serializeValue(writer, AddDependency.getTypeScriptAlgebraicType(), value);
   },
 
-  deserialize(reader: __BinaryReader): AddServer {
-    return __AlgebraicTypeValue.deserializeValue(reader, AddServer.getTypeScriptAlgebraicType());
+  deserialize(reader: __BinaryReader): AddDependency {
+    return __AlgebraicTypeValue.deserializeValue(reader, AddDependency.getTypeScriptAlgebraicType());
   },
 
 }
 
-export default AddServer;
+export default AddDependency;
 

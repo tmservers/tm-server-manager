@@ -2,6 +2,7 @@ use spacetimedb::{ReducerContext, Table, table};
 use tm_server_types::event::Event;
 
 use crate::{
+    auth::Authorization,
     r#match::{ephemeral_state::EphemeralState, tm_match},
     server::tm_server,
 };
@@ -20,10 +21,11 @@ pub struct TmServerEvent {
     event: Event,
 }
 
-// TODO: remove the id argument and get it from calling entity.
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn post_event(ctx: &ReducerContext, id: String, event: Event) {
-    if let Some(server) = ctx.db.tm_server().id().find(id)
+pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
+    let login = ctx.auth_server()?;
+
+    if let Some(server) = ctx.db.tm_server().id().find(login)
         && let Some(match_id) = server.active_match()
         && let Some(mut tm_match) = ctx.db.tm_match().id().find(match_id)
         && tm_match.is_live()
@@ -43,4 +45,5 @@ pub fn post_event(ctx: &ReducerContext, id: String, event: Event) {
             ctx.db.tm_match().id().update(tm_match);
         }
     }
+    Ok(())
 }

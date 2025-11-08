@@ -9,7 +9,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 pub(super) struct CreateMatchArgs {
     pub tournament_id: u64,
     pub parent_id: u64,
-    pub with_config: Option<u64>,
+    pub with_template: Option<u64>,
     pub auto_provisioning_server: bool,
 }
 
@@ -18,7 +18,7 @@ impl From<CreateMatchArgs> for super::Reducer {
         Self::CreateMatch {
             tournament_id: args.tournament_id,
             parent_id: args.parent_id,
-            with_config: args.with_config,
+            with_template: args.with_template,
             auto_provisioning_server: args.auto_provisioning_server,
         }
     }
@@ -44,7 +44,7 @@ pub trait create_match {
         &self,
         tournament_id: u64,
         parent_id: u64,
-        with_config: Option<u64>,
+        with_template: Option<u64>,
         auto_provisioning_server: bool,
     ) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `create_match`.
@@ -70,7 +70,7 @@ impl create_match for super::RemoteReducers {
         &self,
         tournament_id: u64,
         parent_id: u64,
-        with_config: Option<u64>,
+        with_template: Option<u64>,
         auto_provisioning_server: bool,
     ) -> __sdk::Result<()> {
         self.imp.call_reducer(
@@ -78,7 +78,7 @@ impl create_match for super::RemoteReducers {
             CreateMatchArgs {
                 tournament_id,
                 parent_id,
-                with_config,
+                with_template,
                 auto_provisioning_server,
             },
         )
@@ -99,7 +99,7 @@ impl create_match for super::RemoteReducers {
                                 super::Reducer::CreateMatch {
                                     tournament_id,
                                     parent_id,
-                                    with_config,
+                                    with_template,
                                     auto_provisioning_server,
                                 },
                             ..
@@ -113,7 +113,7 @@ impl create_match for super::RemoteReducers {
                     ctx,
                     tournament_id,
                     parent_id,
-                    with_config,
+                    with_template,
                     auto_provisioning_server,
                 )
             }),

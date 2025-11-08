@@ -21,9 +21,6 @@ mod telemetry;
 #[cfg(test)]
 mod test;
 
-//TODO remove once authorization is there
-const TM_SERVER_ID: &str = "test";
-
 /// Exposes the associated trackmania server globally.
 static TRACKMANIA: OnceLock<TrackmaniaServer> = OnceLock::new();
 
@@ -64,9 +61,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // Tracing Guard.
     let _ = init_tracing_subscriber();
 
-    let tm_user = std::env::var("TM_MASTERSERVER_LOGIN")
+    let tm_server_login = std::env::var("TM_MASTERSERVER_LOGIN")
         .expect("Environment variable: TM_MASTERSERVER_LOGIN MUST be set");
-    let tm_password = std::env::var("TM_MASTERSERVER_PASSWORD")
+    let tm_server_password = std::env::var("TM_MASTERSERVER_PASSWORD")
         .expect("Environment variable: TM_MASTERSERVER_password MUST be set");
 
     TRACKMANIA_FILES
@@ -76,7 +73,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     {
         //Initialize the NadeoClient
         let nadeo = NadeoClient::builder()
-            .with_server_auth(&tm_user, &tm_password)
+            .with_server_auth(&tm_server_login, &tm_server_password)
             .user_agent("tm-server-bridge")
             .build()
             .await
@@ -185,7 +182,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 if spacetime
                     .reducers
                     .post_event(
-                        TM_SERVER_ID.into(),
                         //SAFETY: Its the same type. Sadly Rust can not know that :< .
                         unsafe {
                             std::mem::transmute::<
@@ -217,10 +213,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             .on_applied(|_| tracing::debug!("Subscription successfully applied!"))
             .on_error(|_, mhm| tracing::error!("Subscription failed: {mhm:?}"))
             .subscribe(format!(
-                "SELECT * FROM tm_server WHERE id = '{TM_SERVER_ID}'"
+                "SELECT * FROM tm_server WHERE id = '{tm_server_login}'"
             ));
 
-        _ = spacetime.reducers.add_server(TM_SERVER_ID.into());
+        spacetime
+            .reducers
+            .register_server(tm_server_login, tm_server_password)?;
 
         spacetime.db.tm_server().on_insert(server_bootstrap);
         spacetime.db.tm_server().on_update(server_update);

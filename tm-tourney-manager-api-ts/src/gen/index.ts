@@ -31,10 +31,8 @@ import {
 } from "spacetimedb";
 
 // Import and reexport all reducer arg types
-import { AddServer } from "./add_server_reducer.ts";
-export { AddServer };
-import { CallServer } from "./call_server_reducer.ts";
-export { CallServer };
+import { AddDependency } from "./add_dependency_reducer.ts";
+export { AddDependency };
 import { ClientConnected } from "./client_connected_reducer.ts";
 export { ClientConnected };
 import { CreateCompetition } from "./create_competition_reducer.ts";
@@ -61,6 +59,8 @@ import { PostEvent } from "./post_event_reducer.ts";
 export { PostEvent };
 import { PostGhost } from "./post_ghost_reducer.ts";
 export { PostGhost };
+import { RegisterServer } from "./register_server_reducer.ts";
+export { RegisterServer };
 import { SetTmServerState } from "./set_tm_server_state_reducer.ts";
 export { SetTmServerState };
 import { TryStart } from "./try_start_reducer.ts";
@@ -77,8 +77,8 @@ import { EventConfigTableHandle } from "./event_config_table.ts";
 export { EventConfigTableHandle };
 import { GeneratorTableHandle } from "./generator_table.ts";
 export { GeneratorTableHandle };
-import { GhostTableHandle } from "./ghost_table.ts";
-export { GhostTableHandle };
+import { MatchGhostTableHandle } from "./match_ghost_table.ts";
+export { MatchGhostTableHandle };
 import { MatchTemplateTableHandle } from "./match_template_table.ts";
 export { MatchTemplateTableHandle };
 import { TmMatchTableHandle } from "./tm_match_table.ts";
@@ -103,6 +103,8 @@ import { CompetitionKind } from "./competition_kind_type.ts";
 export { CompetitionKind };
 import { CompetitionSchedule } from "./competition_schedule_type.ts";
 export { CompetitionSchedule };
+import { CompetitionStatus } from "./competition_status_type.ts";
+export { CompetitionStatus };
 import { Competitions } from "./competitions_type.ts";
 export { Competitions };
 import { Custom } from "./custom_type.ts";
@@ -113,22 +115,22 @@ import { EndMapEnd } from "./end_map_end_type.ts";
 export { EndMapEnd };
 import { EndMapStart } from "./end_map_start_type.ts";
 export { EndMapStart };
+import { EndMatch } from "./end_match_type.ts";
+export { EndMatch };
 import { EndRoundEnd } from "./end_round_end_type.ts";
 export { EndRoundEnd };
 import { EndRoundStart } from "./end_round_start_type.ts";
 export { EndRoundStart };
+import { EndServer } from "./end_server_type.ts";
+export { EndServer };
 import { EphemeralState } from "./ephemeral_state_type.ts";
 export { EphemeralState };
 import { Event } from "./event_type.ts";
 export { Event };
 import { EventConfig } from "./event_config_type.ts";
 export { EventConfig };
-import { EventPhase } from "./event_phase_type.ts";
-export { EventPhase };
 import { Generator } from "./generator_type.ts";
 export { Generator };
-import { Ghost } from "./ghost_type.ts";
-export { Ghost };
 import { GiveUp } from "./give_up_type.ts";
 export { GiveUp };
 import { LoadingMapEnd } from "./loading_map_end_type.ts";
@@ -139,6 +141,8 @@ import { Map } from "./map_type.ts";
 export { Map };
 import { MapPoolConfig } from "./map_pool_config_type.ts";
 export { MapPoolConfig };
+import { MatchGhost } from "./match_ghost_type.ts";
+export { MatchGhost };
 import { MatchLeaderboardRules } from "./match_leaderboard_rules_type.ts";
 export { MatchLeaderboardRules };
 import { MatchStatus } from "./match_status_type.ts";
@@ -181,6 +185,8 @@ import { Rounds } from "./rounds_type.ts";
 export { Rounds };
 import { RoundsLeaderboard } from "./rounds_leaderboard_type.ts";
 export { RoundsLeaderboard };
+import { Scheduling } from "./scheduling_type.ts";
+export { Scheduling };
 import { Scores } from "./scores_type.ts";
 export { Scores };
 import { ServerConfig } from "./server_config_type.ts";
@@ -195,6 +201,12 @@ import { StartLine } from "./start_line_type.ts";
 export { StartLine };
 import { StartMap } from "./start_map_type.ts";
 export { StartMap };
+import { StartMatch } from "./start_match_type.ts";
+export { StartMatch };
+import { StartRound } from "./start_round_type.ts";
+export { StartRound };
+import { StartServer } from "./start_server_type.ts";
+export { StartServer };
 import { StartTurn } from "./start_turn_type.ts";
 export { StartTurn };
 import { Team } from "./team_type.ts";
@@ -223,6 +235,8 @@ import { User } from "./user_type.ts";
 export { User };
 import { WarmupDuration } from "./warmup_duration_type.ts";
 export { WarmupDuration };
+import { WarmupRound } from "./warmup_round_type.ts";
+export { WarmupRound };
 import { WayPoint } from "./way_point_type.ts";
 export { WayPoint };
 
@@ -254,9 +268,9 @@ const REMOTE_MODULE = {
       tableName: "generator" as const,
       rowType: Generator.getTypeScriptAlgebraicType(),
     },
-    ghost: {
-      tableName: "ghost" as const,
-      rowType: Ghost.getTypeScriptAlgebraicType(),
+    match_ghost: {
+      tableName: "match_ghost" as const,
+      rowType: MatchGhost.getTypeScriptAlgebraicType(),
     },
     match_template: {
       tableName: "match_template" as const,
@@ -323,13 +337,9 @@ const REMOTE_MODULE = {
     },
   },
   reducers: {
-    add_server: {
-      reducerName: "add_server",
-      argsType: AddServer.getTypeScriptAlgebraicType(),
-    },
-    call_server: {
-      reducerName: "call_server",
-      argsType: CallServer.getTypeScriptAlgebraicType(),
+    add_dependency: {
+      reducerName: "add_dependency",
+      argsType: AddDependency.getTypeScriptAlgebraicType(),
     },
     client_connected: {
       reducerName: "client_connected",
@@ -383,6 +393,10 @@ const REMOTE_MODULE = {
       reducerName: "post_ghost",
       argsType: PostGhost.getTypeScriptAlgebraicType(),
     },
+    register_server: {
+      reducerName: "register_server",
+      argsType: RegisterServer.getTypeScriptAlgebraicType(),
+    },
     set_tm_server_state: {
       reducerName: "set_tm_server_state",
       argsType: SetTmServerState.getTypeScriptAlgebraicType(),
@@ -425,8 +439,7 @@ const REMOTE_MODULE = {
 
 // A type representing all the possible variants of a reducer.
 export type Reducer = never
-| { name: "AddServer", args: AddServer }
-| { name: "CallServer", args: CallServer }
+| { name: "AddDependency", args: AddDependency }
 | { name: "ClientConnected", args: ClientConnected }
 | { name: "CreateCompetition", args: CreateCompetition }
 | { name: "CreateEventTemplate", args: CreateEventTemplate }
@@ -440,6 +453,7 @@ export type Reducer = never
 | { name: "OnTournamentEventSchedule", args: OnTournamentEventSchedule }
 | { name: "PostEvent", args: PostEvent }
 | { name: "PostGhost", args: PostGhost }
+| { name: "RegisterServer", args: RegisterServer }
 | { name: "SetTmServerState", args: SetTmServerState }
 | { name: "TryStart", args: TryStart }
 | { name: "UpdateMatchConfig", args: UpdateMatchConfig }
@@ -448,36 +462,20 @@ export type Reducer = never
 export class RemoteReducers {
   constructor(private connection: __DbConnectionImpl, private setCallReducerFlags: SetReducerFlags) {}
 
-  addServer(id: string) {
-    const __args = { id };
+  addDependency(compId: bigint, fromNode: number, toNode: number) {
+    const __args = { compId, fromNode, toNode };
     let __writer = new __BinaryWriter(1024);
-    AddServer.serialize(__writer, __args);
+    AddDependency.serialize(__writer, __args);
     let __argsBuffer = __writer.getBuffer();
-    this.connection.callReducer("add_server", __argsBuffer, this.setCallReducerFlags.addServerFlags);
+    this.connection.callReducer("add_dependency", __argsBuffer, this.setCallReducerFlags.addDependencyFlags);
   }
 
-  onAddServer(callback: (ctx: ReducerEventContext, id: string) => void) {
-    this.connection.onReducer("add_server", callback);
+  onAddDependency(callback: (ctx: ReducerEventContext, compId: bigint, fromNode: number, toNode: number) => void) {
+    this.connection.onReducer("add_dependency", callback);
   }
 
-  removeOnAddServer(callback: (ctx: ReducerEventContext, id: string) => void) {
-    this.connection.offReducer("add_server", callback);
-  }
-
-  callServer(id: string, method: Method) {
-    const __args = { id, method };
-    let __writer = new __BinaryWriter(1024);
-    CallServer.serialize(__writer, __args);
-    let __argsBuffer = __writer.getBuffer();
-    this.connection.callReducer("call_server", __argsBuffer, this.setCallReducerFlags.callServerFlags);
-  }
-
-  onCallServer(callback: (ctx: ReducerEventContext, id: string, method: Method) => void) {
-    this.connection.onReducer("call_server", callback);
-  }
-
-  removeOnCallServer(callback: (ctx: ReducerEventContext, id: string, method: Method) => void) {
-    this.connection.offReducer("call_server", callback);
+  removeOnAddDependency(callback: (ctx: ReducerEventContext, compId: bigint, fromNode: number, toNode: number) => void) {
+    this.connection.offReducer("add_dependency", callback);
   }
 
   onClientConnected(callback: (ctx: ReducerEventContext) => void) {
@@ -488,19 +486,19 @@ export class RemoteReducers {
     this.connection.offReducer("client_connected", callback);
   }
 
-  createCompetition(name: string, at: __Timestamp, tournamentId: bigint, parentId: bigint, withConfig: bigint | undefined) {
-    const __args = { name, at, tournamentId, parentId, withConfig };
+  createCompetition(name: string, tournamentId: bigint, parentId: bigint, withTemplate: bigint | undefined) {
+    const __args = { name, tournamentId, parentId, withTemplate };
     let __writer = new __BinaryWriter(1024);
     CreateCompetition.serialize(__writer, __args);
     let __argsBuffer = __writer.getBuffer();
     this.connection.callReducer("create_competition", __argsBuffer, this.setCallReducerFlags.createCompetitionFlags);
   }
 
-  onCreateCompetition(callback: (ctx: ReducerEventContext, name: string, at: __Timestamp, tournamentId: bigint, parentId: bigint, withConfig: bigint | undefined) => void) {
+  onCreateCompetition(callback: (ctx: ReducerEventContext, name: string, tournamentId: bigint, parentId: bigint, withTemplate: bigint | undefined) => void) {
     this.connection.onReducer("create_competition", callback);
   }
 
-  removeOnCreateCompetition(callback: (ctx: ReducerEventContext, name: string, at: __Timestamp, tournamentId: bigint, parentId: bigint, withConfig: bigint | undefined) => void) {
+  removeOnCreateCompetition(callback: (ctx: ReducerEventContext, name: string, tournamentId: bigint, parentId: bigint, withTemplate: bigint | undefined) => void) {
     this.connection.offReducer("create_competition", callback);
   }
 
@@ -520,19 +518,19 @@ export class RemoteReducers {
     this.connection.offReducer("create_event_template", callback);
   }
 
-  createMatch(tournamentId: bigint, parentId: bigint, withConfig: bigint | undefined, autoProvisioningServer: boolean) {
-    const __args = { tournamentId, parentId, withConfig, autoProvisioningServer };
+  createMatch(tournamentId: bigint, parentId: bigint, withTemplate: bigint | undefined, autoProvisioningServer: boolean) {
+    const __args = { tournamentId, parentId, withTemplate, autoProvisioningServer };
     let __writer = new __BinaryWriter(1024);
     CreateMatch.serialize(__writer, __args);
     let __argsBuffer = __writer.getBuffer();
     this.connection.callReducer("create_match", __argsBuffer, this.setCallReducerFlags.createMatchFlags);
   }
 
-  onCreateMatch(callback: (ctx: ReducerEventContext, tournamentId: bigint, parentId: bigint, withConfig: bigint | undefined, autoProvisioningServer: boolean) => void) {
+  onCreateMatch(callback: (ctx: ReducerEventContext, tournamentId: bigint, parentId: bigint, withTemplate: bigint | undefined, autoProvisioningServer: boolean) => void) {
     this.connection.onReducer("create_match", callback);
   }
 
-  removeOnCreateMatch(callback: (ctx: ReducerEventContext, tournamentId: bigint, parentId: bigint, withConfig: bigint | undefined, autoProvisioningServer: boolean) => void) {
+  removeOnCreateMatch(callback: (ctx: ReducerEventContext, tournamentId: bigint, parentId: bigint, withTemplate: bigint | undefined, autoProvisioningServer: boolean) => void) {
     this.connection.offReducer("create_match", callback);
   }
 
@@ -640,19 +638,19 @@ export class RemoteReducers {
     this.connection.offReducer("on_tournament_event_schedule", callback);
   }
 
-  postEvent(id: string, event: Event) {
-    const __args = { id, event };
+  postEvent(event: Event) {
+    const __args = { event };
     let __writer = new __BinaryWriter(1024);
     PostEvent.serialize(__writer, __args);
     let __argsBuffer = __writer.getBuffer();
     this.connection.callReducer("post_event", __argsBuffer, this.setCallReducerFlags.postEventFlags);
   }
 
-  onPostEvent(callback: (ctx: ReducerEventContext, id: string, event: Event) => void) {
+  onPostEvent(callback: (ctx: ReducerEventContext, event: Event) => void) {
     this.connection.onReducer("post_event", callback);
   }
 
-  removeOnPostEvent(callback: (ctx: ReducerEventContext, id: string, event: Event) => void) {
+  removeOnPostEvent(callback: (ctx: ReducerEventContext, event: Event) => void) {
     this.connection.offReducer("post_event", callback);
   }
 
@@ -670,6 +668,22 @@ export class RemoteReducers {
 
   removeOnPostGhost(callback: (ctx: ReducerEventContext, ghost: Uint8Array) => void) {
     this.connection.offReducer("post_ghost", callback);
+  }
+
+  registerServer(login: string, password: string) {
+    const __args = { login, password };
+    let __writer = new __BinaryWriter(1024);
+    RegisterServer.serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("register_server", __argsBuffer, this.setCallReducerFlags.registerServerFlags);
+  }
+
+  onRegisterServer(callback: (ctx: ReducerEventContext, login: string, password: string) => void) {
+    this.connection.onReducer("register_server", callback);
+  }
+
+  removeOnRegisterServer(callback: (ctx: ReducerEventContext, login: string, password: string) => void) {
+    this.connection.offReducer("register_server", callback);
   }
 
   setTmServerState(id: string, state: ServerState) {
@@ -723,14 +737,9 @@ export class RemoteReducers {
 }
 
 export class SetReducerFlags {
-  addServerFlags: __CallReducerFlags = 'FullUpdate';
-  addServer(flags: __CallReducerFlags) {
-    this.addServerFlags = flags;
-  }
-
-  callServerFlags: __CallReducerFlags = 'FullUpdate';
-  callServer(flags: __CallReducerFlags) {
-    this.callServerFlags = flags;
+  addDependencyFlags: __CallReducerFlags = 'FullUpdate';
+  addDependency(flags: __CallReducerFlags) {
+    this.addDependencyFlags = flags;
   }
 
   createCompetitionFlags: __CallReducerFlags = 'FullUpdate';
@@ -788,6 +797,11 @@ export class SetReducerFlags {
     this.postGhostFlags = flags;
   }
 
+  registerServerFlags: __CallReducerFlags = 'FullUpdate';
+  registerServer(flags: __CallReducerFlags) {
+    this.registerServerFlags = flags;
+  }
+
   setTmServerStateFlags: __CallReducerFlags = 'FullUpdate';
   setTmServerState(flags: __CallReducerFlags) {
     this.setTmServerStateFlags = flags;
@@ -828,9 +842,9 @@ export class RemoteTables {
     return new GeneratorTableHandle((this.connection as unknown as { clientCache: __ClientCache }).clientCache.getOrCreateTable<Generator>(REMOTE_MODULE.tables.generator));
   }
 
-  get ghost(): GhostTableHandle<'ghost'> {
+  get matchGhost(): MatchGhostTableHandle<'match_ghost'> {
     // clientCache is a private property
-    return new GhostTableHandle((this.connection as unknown as { clientCache: __ClientCache }).clientCache.getOrCreateTable<Ghost>(REMOTE_MODULE.tables.ghost));
+    return new MatchGhostTableHandle((this.connection as unknown as { clientCache: __ClientCache }).clientCache.getOrCreateTable<MatchGhost>(REMOTE_MODULE.tables.match_ghost));
   }
 
   get matchTemplate(): MatchTemplateTableHandle<'match_template'> {

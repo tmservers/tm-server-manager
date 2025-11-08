@@ -27,26 +27,26 @@ import {
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
   type TableHandle as __TableHandle,
 } from "spacetimedb";
-import { Ghost } from "./ghost_type";
+import { MatchGhost } from "./match_ghost_type";
 import { type EventContext, type Reducer, RemoteReducers, RemoteTables } from ".";
 declare type __keep = [EventContext, Reducer, RemoteReducers, RemoteTables];
 
 /**
- * Table handle for the table `ghost`.
+ * Table handle for the table `match_ghost`.
  *
- * Obtain a handle from the [`ghost`] property on [`RemoteTables`],
- * like `ctx.db.ghost`.
+ * Obtain a handle from the [`matchGhost`] property on [`RemoteTables`],
+ * like `ctx.db.matchGhost`.
  *
  * Users are encouraged not to explicitly reference this type,
  * but to directly chain method calls,
- * like `ctx.db.ghost.on_insert(...)`.
+ * like `ctx.db.matchGhost.on_insert(...)`.
  */
-export class GhostTableHandle<TableName extends string> implements __TableHandle<TableName> {
+export class MatchGhostTableHandle<TableName extends string> implements __TableHandle<TableName> {
   // phantom type to track the table name
   readonly tableName!: TableName;
-  tableCache: __TableCache<Ghost>;
+  tableCache: __TableCache<MatchGhost>;
 
-  constructor(tableCache: __TableCache<Ghost>) {
+  constructor(tableCache: __TableCache<MatchGhost>) {
     this.tableCache = tableCache;
   }
 
@@ -54,23 +54,23 @@ export class GhostTableHandle<TableName extends string> implements __TableHandle
     return this.tableCache.count();
   }
 
-  iter(): Iterable<Ghost> {
+  iter(): Iterable<MatchGhost> {
     return this.tableCache.iter();
   }
 
-  onInsert = (cb: (ctx: EventContext, row: Ghost) => void) => {
+  onInsert = (cb: (ctx: EventContext, row: MatchGhost) => void) => {
     return this.tableCache.onInsert(cb);
   }
 
-  removeOnInsert = (cb: (ctx: EventContext, row: Ghost) => void) => {
+  removeOnInsert = (cb: (ctx: EventContext, row: MatchGhost) => void) => {
     return this.tableCache.removeOnInsert(cb);
   }
 
-  onDelete = (cb: (ctx: EventContext, row: Ghost) => void) => {
+  onDelete = (cb: (ctx: EventContext, row: MatchGhost) => void) => {
     return this.tableCache.onDelete(cb);
   }
 
-  removeOnDelete = (cb: (ctx: EventContext, row: Ghost) => void) => {
+  removeOnDelete = (cb: (ctx: EventContext, row: MatchGhost) => void) => {
     return this.tableCache.removeOnDelete(cb);
   }
 }

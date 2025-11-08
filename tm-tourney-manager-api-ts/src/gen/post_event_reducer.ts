@@ -33,7 +33,6 @@ import { Event } from "./event_type";
 declare type __keep_Event = Event;
 
 export type PostEvent = {
-  id: string,
   event: Event,
 };
 let _cached_PostEvent_type_value: __AlgebraicTypeType | null = null;
@@ -50,7 +49,6 @@ export const PostEvent = {
     if (_cached_PostEvent_type_value) return _cached_PostEvent_type_value;
     _cached_PostEvent_type_value = __AlgebraicTypeValue.Product({ elements: [] });
     _cached_PostEvent_type_value.value.elements.push(
-      { name: "id", algebraicType: __AlgebraicTypeValue.String },
       { name: "event", algebraicType: Event.getTypeScriptAlgebraicType() },
     );
     return _cached_PostEvent_type_value;

@@ -20,7 +20,7 @@ pub fn post_ghost(ctx: &ReducerContext, ghost: Vec<u8>) -> Result<(), String> {
 
     use crate::auth::Authorization;
 
-    ctx.auth()?;
+    ctx.auth_user()?;
 
     //TODO make http call to save in object storage.
     // AHHH HOW TO ENSURE THAT the next round doesnt start before all ghosts are uploaded?

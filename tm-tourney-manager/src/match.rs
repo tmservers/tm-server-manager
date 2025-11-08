@@ -83,14 +83,17 @@ impl TmMatch {
             return false;
         }
 
-        if let Event::EndMatchEnd(_) = event {
-            log::error!("MATCH ENDED");
+        match event {
+            Event::EndMatchEnd(_) => {
+                log::error!("MATCH ENDED");
 
-            self.status = MatchStatus::Ended;
-
-            return true;
-        };
-        false
+                self.status = MatchStatus::Ended;
+            }
+            Event::StartWarmup => log::warn!("WarmupStarted"),
+            Event::StartRoundStart(round) => log::warn!("{}", round.count),
+            _ => return false,
+        }
+        true
     }
 }
 
@@ -112,11 +115,11 @@ pub fn create_match(
     ctx: &ReducerContext,
     tournament_id: u64,
     parent_id: u64,
-    with_config: Option<u64>,
+    with_template: Option<u64>,
     auto_provisioning_server: bool,
 ) -> Result<(), String> {
     //TODO authorization
-    ctx.auth()?;
+    ctx.auth_user()?;
 
     // Create an uncommitted match
     let tm_match = TmMatch {

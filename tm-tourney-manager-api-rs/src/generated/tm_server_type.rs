@@ -12,6 +12,7 @@ use super::server_state_type::ServerState;
 #[sats(crate = __lib)]
 pub struct TmServer {
     pub id: String,
+    pub identity: __sdk::Identity,
     pub owner_id: String,
     pub online: bool,
     pub config: ServerConfig,

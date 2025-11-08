@@ -4,7 +4,6 @@
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub struct StartRound {
     pub count: u32,
-    pub valid: bool,
     pub time: u32,
 }
 

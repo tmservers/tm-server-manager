@@ -27,15 +27,9 @@ import {
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
   type TableHandle as __TableHandle,
 } from "spacetimedb";
-import { Competitions } from "./competitions_type";
-// Mark import as potentially unused
-declare type __keep_Competitions = Competitions;
 import { TournamentStatus } from "./tournament_status_type";
 // Mark import as potentially unused
 declare type __keep_TournamentStatus = TournamentStatus;
-import { Registration } from "./registration_type";
-// Mark import as potentially unused
-declare type __keep_Registration = Registration;
 
 
 export type Tournament = {
@@ -45,8 +39,7 @@ export type Tournament = {
   name: string,
   description: string,
   status: TournamentStatus,
-  competitions: Competitions,
-  registration: Registration | undefined,
+  competition: bigint,
 };
 let _cached_Tournament_type_value: __AlgebraicTypeType | null = null;
 
@@ -68,8 +61,7 @@ export const Tournament = {
       { name: "name", algebraicType: __AlgebraicTypeValue.String },
       { name: "description", algebraicType: __AlgebraicTypeValue.String },
       { name: "status", algebraicType: TournamentStatus.getTypeScriptAlgebraicType() },
-      { name: "competitions", algebraicType: Competitions.getTypeScriptAlgebraicType() },
-      { name: "registration", algebraicType: __AlgebraicTypeValue.createOptionType(Registration.getTypeScriptAlgebraicType()) },
+      { name: "competition", algebraicType: __AlgebraicTypeValue.U64 },
     );
     return _cached_Tournament_type_value;
   },

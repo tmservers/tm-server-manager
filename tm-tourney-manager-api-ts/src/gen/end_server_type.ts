@@ -28,40 +28,38 @@ import {
   type TableHandle as __TableHandle,
 } from "spacetimedb";
 
-export type Ghost = {
-  id: bigint,
-  data: Uint8Array,
+export type EndServer = {
+  time: number,
 };
-let _cached_Ghost_type_value: __AlgebraicTypeType | null = null;
+let _cached_EndServer_type_value: __AlgebraicTypeType | null = null;
 
 /**
  * An object for generated helper functions.
  */
-export const Ghost = {
+export const EndServer = {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_Ghost_type_value) return _cached_Ghost_type_value;
-    _cached_Ghost_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_Ghost_type_value.value.elements.push(
-      { name: "id", algebraicType: __AlgebraicTypeValue.U64 },
-      { name: "data", algebraicType: __AlgebraicTypeValue.Array(__AlgebraicTypeValue.U8) },
+    if (_cached_EndServer_type_value) return _cached_EndServer_type_value;
+    _cached_EndServer_type_value = __AlgebraicTypeValue.Product({ elements: [] });
+    _cached_EndServer_type_value.value.elements.push(
+      { name: "time", algebraicType: __AlgebraicTypeValue.U32 },
     );
-    return _cached_Ghost_type_value;
+    return _cached_EndServer_type_value;
   },
 
-  serialize(writer: __BinaryWriter, value: Ghost): void {
-    __AlgebraicTypeValue.serializeValue(writer, Ghost.getTypeScriptAlgebraicType(), value);
+  serialize(writer: __BinaryWriter, value: EndServer): void {
+    __AlgebraicTypeValue.serializeValue(writer, EndServer.getTypeScriptAlgebraicType(), value);
   },
 
-  deserialize(reader: __BinaryReader): Ghost {
-    return __AlgebraicTypeValue.deserializeValue(reader, Ghost.getTypeScriptAlgebraicType());
+  deserialize(reader: __BinaryReader): EndServer {
+    return __AlgebraicTypeValue.deserializeValue(reader, EndServer.getTypeScriptAlgebraicType());
   },
 
 }
 
-export default Ghost;
+export default EndServer;
 
 

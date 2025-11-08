@@ -13,6 +13,8 @@ pub enum Registration {
     Players(PlayerRegistration),
 
     Team(TeamRegistration),
+
+    Open,
 }
 
 impl __sdk::InModule for Registration {

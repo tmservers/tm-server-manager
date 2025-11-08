@@ -28,9 +28,15 @@ import {
   type TableHandle as __TableHandle,
 } from "spacetimedb";
 import { Competition } from "./competition_type";
-import { EventPhase } from "./event_phase_type";
+import { CompetitionStatus } from "./competition_status_type";
 // Mark import as potentially unused
-declare type __keep_EventPhase = EventPhase;
+declare type __keep_CompetitionStatus = CompetitionStatus;
+import { Scheduling } from "./scheduling_type";
+// Mark import as potentially unused
+declare type __keep_Scheduling = Scheduling;
+import { Registration } from "./registration_type";
+// Mark import as potentially unused
+declare type __keep_Registration = Registration;
 import { Competitions } from "./competitions_type";
 // Mark import as potentially unused
 declare type __keep_Competitions = Competitions;

@@ -27,19 +27,20 @@ import {
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
   type TableHandle as __TableHandle,
 } from "spacetimedb";
-import { Method } from "./method_type";
-// Mark import as potentially unused
-declare type __keep_Method = Method;
 import { ServerConfig } from "./server_config_type";
 // Mark import as potentially unused
 declare type __keep_ServerConfig = ServerConfig;
 import { ServerState } from "./server_state_type";
 // Mark import as potentially unused
 declare type __keep_ServerState = ServerState;
+import { Method } from "./method_type";
+// Mark import as potentially unused
+declare type __keep_Method = Method;
 
 
 export type TmServer = {
   id: string,
+  identity: __Identity,
   ownerId: string,
   online: boolean,
   config: ServerConfig,
@@ -62,6 +63,7 @@ export const TmServer = {
     _cached_TmServer_type_value = __AlgebraicTypeValue.Product({ elements: [] });
     _cached_TmServer_type_value.value.elements.push(
       { name: "id", algebraicType: __AlgebraicTypeValue.String },
+      { name: "identity", algebraicType: __AlgebraicTypeValue.createIdentityType() },
       { name: "ownerId", algebraicType: __AlgebraicTypeValue.String },
       { name: "online", algebraicType: __AlgebraicTypeValue.Bool },
       { name: "config", algebraicType: ServerConfig.getTypeScriptAlgebraicType() },

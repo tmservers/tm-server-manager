@@ -28,15 +28,9 @@ import {
   type TableHandle as __TableHandle,
 } from "spacetimedb";
 import { Tournament } from "./tournament_type";
-import { Competitions } from "./competitions_type";
-// Mark import as potentially unused
-declare type __keep_Competitions = Competitions;
 import { TournamentStatus } from "./tournament_status_type";
 // Mark import as potentially unused
 declare type __keep_TournamentStatus = TournamentStatus;
-import { Registration } from "./registration_type";
-// Mark import as potentially unused
-declare type __keep_Registration = Registration;
 
 import { type EventContext, type Reducer, RemoteReducers, RemoteTables } from ".";
 declare type __keep = [EventContext, Reducer, RemoteReducers, RemoteTables];

@@ -77,6 +77,8 @@ pub enum Event {
     PlayLoopStart(PlayLoopStart),
     PlayLoopEnd(PlayLoopEnd),
 
+    StartRoundStart(StartRound),
+    StartRoundEnd(StartRound),
     EndRoundStart(EndRoundStart),
     EndRoundEnd(EndRoundEnd),
 
@@ -92,6 +94,11 @@ pub enum Event {
     StartServerEnd(StartServer),
     EndServerStart(EndServer),
     EndServerEnd(EndServer),
+
+    StartWarmup,
+    EndWarmup,
+    StartWarmupRound(WarmupRound),
+    EndWarmupRound(WarmupRound),
 
     Custom(Custom),
 }
@@ -119,6 +126,8 @@ impl Event {
             "Maniaplanet.StartPlayLoop" => Event::PlayLoopStart(json::from_str(&body)?),
             "Maniaplanet.EndPlayLoop" => Event::PlayLoopEnd(json::from_str(&body)?),
 
+            "Maniaplanet.StartRound_Start" => Event::StartRoundStart(json::from_str(&body)?),
+            "Maniaplanet.StartRound_End" => Event::StartRoundEnd(json::from_str(&body)?),
             "Maniaplanet.EndRound_Start" => Event::EndRoundStart(json::from_str(&body)?),
             "Maniaplanet.EndRound_End" => Event::EndRoundEnd(json::from_str(&body)?),
 
@@ -134,6 +143,11 @@ impl Event {
             "Maniaplanet.StartServer_End" => Event::StartServerEnd(json::from_str(&body)?),
             "Maniaplanet.EndServer_Start" => Event::EndServerStart(json::from_str(&body)?),
             "Maniaplanet.EndServer_End" => Event::EndServerEnd(json::from_str(&body)?),
+
+            "Trackmania.WarmUp.Start" => Event::StartWarmup,
+            "Trackmania.WarmUp.End" => Event::EndWarmup,
+            "Trackmania.WarmUp.StartRound" => Event::StartWarmupRound(json::from_str(&body)?),
+            "Trackmania.WarmUp.EndRound" => Event::EndWarmupRound(json::from_str(&body)?),
 
             _ => Event::Custom(Custom::new(name.to_string(), body)),
         };

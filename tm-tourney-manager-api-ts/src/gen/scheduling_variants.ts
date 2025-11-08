@@ -28,8 +28,7 @@ import {
   type TableHandle as __TableHandle,
 } from "spacetimedb";
 
-export type Planning = { tag: "Planning" };
-export type Announced = { tag: "Announced" };
-export type Ongoing = { tag: "Ongoing" };
-export type Ended = { tag: "Ended" };
+export type Manual = { tag: "Manual" };
+export type Independant = { tag: "Independant" };
+export type Inherited = { tag: "Inherited", value: bigint };
 

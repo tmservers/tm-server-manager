@@ -85,6 +85,7 @@ impl<'ctx> __sdk::Table for TmServerTableHandle<'ctx> {
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
     let _table = client_cache.get_or_make_table::<TmServer>("tm_server");
     _table.add_unique_constraint::<String>("id", |row| &row.id);
+    _table.add_unique_constraint::<__sdk::Identity>("identity", |row| &row.identity);
 }
 pub struct TmServerUpdateCallbackId(__sdk::CallbackId);
 
@@ -140,6 +141,38 @@ impl<'ctx> TmServerIdUnique<'ctx> {
     /// Find the subscribed row whose `id` column value is equal to `col_val`,
     /// if such a row is present in the client cache.
     pub fn find(&self, col_val: &String) -> Option<TmServer> {
+        self.imp.find(col_val)
+    }
+}
+
+/// Access to the `identity` unique index on the table `tm_server`,
+/// which allows point queries on the field of the same name
+/// via the [`TmServerIdentityUnique::find`] method.
+///
+/// Users are encouraged not to explicitly reference this type,
+/// but to directly chain method calls,
+/// like `ctx.db.tm_server().identity().find(...)`.
+pub struct TmServerIdentityUnique<'ctx> {
+    imp: __sdk::UniqueConstraintHandle<TmServer, __sdk::Identity>,
+    phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
+}
+
+impl<'ctx> TmServerTableHandle<'ctx> {
+    /// Get a handle on the `identity` unique index on the table `tm_server`.
+    pub fn identity(&self) -> TmServerIdentityUnique<'ctx> {
+        TmServerIdentityUnique {
+            imp: self
+                .imp
+                .get_unique_constraint::<__sdk::Identity>("identity"),
+            phantom: std::marker::PhantomData,
+        }
+    }
+}
+
+impl<'ctx> TmServerIdentityUnique<'ctx> {
+    /// Find the subscribed row whose `identity` column value is equal to `col_val`,
+    /// if such a row is present in the client cache.
+    pub fn find(&self, col_val: &__sdk::Identity) -> Option<TmServer> {
         self.imp.find(col_val)
     }
 }

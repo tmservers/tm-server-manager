@@ -27,9 +27,15 @@ import {
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
   type TableHandle as __TableHandle,
 } from "spacetimedb";
-import { EventPhase } from "./event_phase_type";
+import { CompetitionStatus } from "./competition_status_type";
 // Mark import as potentially unused
-declare type __keep_EventPhase = EventPhase;
+declare type __keep_CompetitionStatus = CompetitionStatus;
+import { Scheduling } from "./scheduling_type";
+// Mark import as potentially unused
+declare type __keep_Scheduling = Scheduling;
+import { Registration } from "./registration_type";
+// Mark import as potentially unused
+declare type __keep_Registration = Registration;
 import { Competitions } from "./competitions_type";
 // Mark import as potentially unused
 declare type __keep_Competitions = Competitions;
@@ -38,11 +44,12 @@ declare type __keep_Competitions = Competitions;
 export type Competition = {
   id: bigint,
   tournamentId: bigint,
-  parentId: bigint,
+  parentId: bigint | undefined,
   name: string,
-  phase: EventPhase,
-  startingAt: __Timestamp,
+  status: CompetitionStatus,
   estimate: __TimeDuration | undefined,
+  scheduling: Scheduling,
+  registration: Registration,
   entryPoints: number[] | undefined,
   competitions: Competitions,
 };
@@ -62,11 +69,12 @@ export const Competition = {
     _cached_Competition_type_value.value.elements.push(
       { name: "id", algebraicType: __AlgebraicTypeValue.U64 },
       { name: "tournamentId", algebraicType: __AlgebraicTypeValue.U64 },
-      { name: "parentId", algebraicType: __AlgebraicTypeValue.U64 },
+      { name: "parentId", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.U64) },
       { name: "name", algebraicType: __AlgebraicTypeValue.String },
-      { name: "phase", algebraicType: EventPhase.getTypeScriptAlgebraicType() },
-      { name: "startingAt", algebraicType: __AlgebraicTypeValue.createTimestampType() },
+      { name: "status", algebraicType: CompetitionStatus.getTypeScriptAlgebraicType() },
       { name: "estimate", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.createTimeDurationType()) },
+      { name: "scheduling", algebraicType: Scheduling.getTypeScriptAlgebraicType() },
+      { name: "registration", algebraicType: Registration.getTypeScriptAlgebraicType() },
       { name: "entryPoints", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.Array(__AlgebraicTypeValue.U32)) },
       { name: "competitions", algebraicType: Competitions.getTypeScriptAlgebraicType() },
     );

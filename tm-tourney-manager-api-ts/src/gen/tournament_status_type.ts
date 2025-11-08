@@ -32,7 +32,6 @@ import * as TournamentStatusVariants from './tournament_status_variants'
 // The tagged union or sum type for the algebraic type `TournamentStatus`.
 export type TournamentStatus = TournamentStatusVariants.Planning |
   TournamentStatusVariants.Announced |
-  TournamentStatusVariants.Registration |
   TournamentStatusVariants.Ongoing |
   TournamentStatusVariants.Ended;
 
@@ -48,7 +47,6 @@ export const TournamentStatus = {
   // ```
   Planning: { tag: "Planning" } as const,
   Announced: { tag: "Announced" } as const,
-  Registration: { tag: "Registration" } as const,
   Ongoing: { tag: "Ongoing" } as const,
   Ended: { tag: "Ended" } as const,
 
@@ -58,7 +56,6 @@ export const TournamentStatus = {
     _cached_TournamentStatus_type_value.value.variants.push(
       { name: "Planning", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
       { name: "Announced", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-      { name: "Registration", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
       { name: "Ongoing", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
       { name: "Ended", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
     );

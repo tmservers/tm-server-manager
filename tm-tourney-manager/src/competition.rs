@@ -1,7 +1,4 @@
-use spacetimedb::{
-    ReducerContext, ReducerResult, SpacetimeType, Table, TimeDuration, Timestamp, reducer, table,
-};
-use tm_server_types::event::Event;
+use spacetimedb::{ReducerContext, Table, TimeDuration};
 
 use crate::{
     auth::Authorization,
@@ -126,9 +123,9 @@ pub fn create_competition(
     name: String,
     tournament_id: u64,
     parent_id: u64,
-    with_config: Option<u64>,
+    with_template: Option<u64>,
 ) -> Result<(), String> {
-    let user = ctx.auth()?;
+    let user = ctx.auth_user()?;
 
     // Tournament and parent ids need to be valid.
     if ctx.db.tournament().id().find(tournament_id).is_none() {
@@ -159,7 +156,7 @@ pub fn add_dependency(
     from_node: u32,
     to_node: u32,
 ) -> Result<(), String> {
-    ctx.auth()?;
+    ctx.auth_user()?;
 
     /*   let Some(from_id) = ctx.db.competition().id().find(from_id) else {
         return Err(format!("Competition with id {from_id} not found."));

@@ -28,6 +28,12 @@ import {
   type TableHandle as __TableHandle,
 } from "spacetimedb";
 import { TmMatch } from "./tm_match_type";
+import { Scheduling } from "./scheduling_type";
+// Mark import as potentially unused
+declare type __keep_Scheduling = Scheduling;
+import { Registration } from "./registration_type";
+// Mark import as potentially unused
+declare type __keep_Registration = Registration;
 import { ServerConfig } from "./server_config_type";
 // Mark import as potentially unused
 declare type __keep_ServerConfig = ServerConfig;

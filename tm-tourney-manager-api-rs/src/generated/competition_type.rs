@@ -4,19 +4,22 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
+use super::competition_status_type::CompetitionStatus;
 use super::competitions_type::Competitions;
-use super::event_phase_type::EventPhase;
+use super::registration_type::Registration;
+use super::scheduling_type::Scheduling;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct Competition {
     pub id: u64,
     pub tournament_id: u64,
-    pub parent_id: u64,
+    pub parent_id: Option<u64>,
     pub name: String,
-    pub phase: EventPhase,
-    pub starting_at: __sdk::Timestamp,
+    pub status: CompetitionStatus,
     pub estimate: Option<__sdk::TimeDuration>,
+    pub scheduling: Scheduling,
+    pub registration: Registration,
     pub entry_points: Option<Vec<u32>>,
     pub competitions: Competitions,
 }

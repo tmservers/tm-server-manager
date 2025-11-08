@@ -27,6 +27,12 @@ import {
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
   type TableHandle as __TableHandle,
 } from "spacetimedb";
+import { Scheduling } from "./scheduling_type";
+// Mark import as potentially unused
+declare type __keep_Scheduling = Scheduling;
+import { Registration } from "./registration_type";
+// Mark import as potentially unused
+declare type __keep_Registration = Registration;
 import { ServerConfig } from "./server_config_type";
 // Mark import as potentially unused
 declare type __keep_ServerConfig = ServerConfig;
@@ -45,6 +51,8 @@ export type TmMatch = {
   id: bigint,
   tournamentId: bigint,
   parentId: bigint,
+  scheduling: Scheduling,
+  registration: Registration,
   serverId: string | undefined,
   preMatchConfig: ServerConfig | undefined,
   matchConfig: ServerConfig | undefined,
@@ -70,6 +78,8 @@ export const TmMatch = {
       { name: "id", algebraicType: __AlgebraicTypeValue.U64 },
       { name: "tournamentId", algebraicType: __AlgebraicTypeValue.U64 },
       { name: "parentId", algebraicType: __AlgebraicTypeValue.U64 },
+      { name: "scheduling", algebraicType: Scheduling.getTypeScriptAlgebraicType() },
+      { name: "registration", algebraicType: Registration.getTypeScriptAlgebraicType() },
       { name: "serverId", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.String) },
       { name: "preMatchConfig", algebraicType: __AlgebraicTypeValue.createOptionType(ServerConfig.getTypeScriptAlgebraicType()) },
       { name: "matchConfig", algebraicType: __AlgebraicTypeValue.createOptionType(ServerConfig.getTypeScriptAlgebraicType()) },

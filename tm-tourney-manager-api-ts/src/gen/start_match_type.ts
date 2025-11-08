@@ -28,43 +28,40 @@ import {
   type TableHandle as __TableHandle,
 } from "spacetimedb";
 
-import { Method } from "./method_type";
-// Mark import as potentially unused
-declare type __keep_Method = Method;
-
-export type CallServer = {
-  id: string,
-  method: Method,
+export type StartMatch = {
+  count: number,
+  time: number,
 };
-let _cached_CallServer_type_value: __AlgebraicTypeType | null = null;
+let _cached_StartMatch_type_value: __AlgebraicTypeType | null = null;
 
 /**
  * An object for generated helper functions.
  */
-export const CallServer = {
+export const StartMatch = {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_CallServer_type_value) return _cached_CallServer_type_value;
-    _cached_CallServer_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_CallServer_type_value.value.elements.push(
-      { name: "id", algebraicType: __AlgebraicTypeValue.String },
-      { name: "method", algebraicType: Method.getTypeScriptAlgebraicType() },
+    if (_cached_StartMatch_type_value) return _cached_StartMatch_type_value;
+    _cached_StartMatch_type_value = __AlgebraicTypeValue.Product({ elements: [] });
+    _cached_StartMatch_type_value.value.elements.push(
+      { name: "count", algebraicType: __AlgebraicTypeValue.U32 },
+      { name: "time", algebraicType: __AlgebraicTypeValue.U32 },
     );
-    return _cached_CallServer_type_value;
+    return _cached_StartMatch_type_value;
   },
 
-  serialize(writer: __BinaryWriter, value: CallServer): void {
-    __AlgebraicTypeValue.serializeValue(writer, CallServer.getTypeScriptAlgebraicType(), value);
+  serialize(writer: __BinaryWriter, value: StartMatch): void {
+    __AlgebraicTypeValue.serializeValue(writer, StartMatch.getTypeScriptAlgebraicType(), value);
   },
 
-  deserialize(reader: __BinaryReader): CallServer {
-    return __AlgebraicTypeValue.deserializeValue(reader, CallServer.getTypeScriptAlgebraicType());
+  deserialize(reader: __BinaryReader): StartMatch {
+    return __AlgebraicTypeValue.deserializeValue(reader, StartMatch.getTypeScriptAlgebraicType());
   },
 
 }
 
-export default CallServer;
+export default StartMatch;
+
 

@@ -38,7 +38,8 @@ import * as RegistrationVariants from './registration_variants'
 
 // The tagged union or sum type for the algebraic type `Registration`.
 export type Registration = RegistrationVariants.Players |
-  RegistrationVariants.Team;
+  RegistrationVariants.Team |
+  RegistrationVariants.Open;
 
 let _cached_Registration_type_value: __AlgebraicTypeType | null = null;
 
@@ -52,6 +53,7 @@ export const Registration = {
   // ```
   Players: (value: PlayerRegistration): RegistrationVariants.Players => ({ tag: "Players", value }),
   Team: (value: TeamRegistration): RegistrationVariants.Team => ({ tag: "Team", value }),
+  Open: { tag: "Open" } as const,
 
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
     if (_cached_Registration_type_value) return _cached_Registration_type_value;
@@ -59,6 +61,7 @@ export const Registration = {
     _cached_Registration_type_value.value.variants.push(
       { name: "Players", algebraicType: PlayerRegistration.getTypeScriptAlgebraicType() },
       { name: "Team", algebraicType: TeamRegistration.getTypeScriptAlgebraicType() },
+      { name: "Open", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
     );
     return _cached_Registration_type_value;
   },

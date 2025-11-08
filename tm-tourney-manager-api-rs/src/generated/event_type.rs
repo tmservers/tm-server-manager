@@ -7,8 +7,10 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 use super::custom_type::Custom;
 use super::end_map_end_type::EndMapEnd;
 use super::end_map_start_type::EndMapStart;
+use super::end_match_type::EndMatch;
 use super::end_round_end_type::EndRoundEnd;
 use super::end_round_start_type::EndRoundStart;
+use super::end_server_type::EndServer;
 use super::give_up_type::GiveUp;
 use super::loading_map_end_type::LoadingMapEnd;
 use super::loading_map_start_type::LoadingMapStart;
@@ -22,9 +24,13 @@ use super::respawn_type::Respawn;
 use super::scores_type::Scores;
 use super::start_line_type::StartLine;
 use super::start_map_type::StartMap;
+use super::start_match_type::StartMatch;
+use super::start_round_type::StartRound;
+use super::start_server_type::StartServer;
 use super::start_turn_type::StartTurn;
 use super::unloading_map_end_type::UnloadingMapEnd;
 use super::unloading_map_start_type::UnloadingMapStart;
+use super::warmup_round_type::WarmupRound;
 use super::way_point_type::WayPoint;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
@@ -70,6 +76,10 @@ pub enum Event {
 
     PlayLoopEnd(PlayLoopEnd),
 
+    StartRoundStart(StartRound),
+
+    StartRoundEnd(StartRound),
+
     EndRoundStart(EndRoundStart),
 
     EndRoundEnd(EndRoundEnd),
@@ -77,6 +87,30 @@ pub enum Event {
     PodiumStart(Podium),
 
     PodiumEnd(Podium),
+
+    StartMatchStart(StartMatch),
+
+    StartMatchEnd(StartMatch),
+
+    EndMatchStart(EndMatch),
+
+    EndMatchEnd(EndMatch),
+
+    StartServerStart(StartServer),
+
+    StartServerEnd(StartServer),
+
+    EndServerStart(EndServer),
+
+    EndServerEnd(EndServer),
+
+    StartWarmup,
+
+    EndWarmup,
+
+    StartWarmupRound(WarmupRound),
+
+    EndWarmupRound(WarmupRound),
 
     Custom(Custom),
 }

@@ -28,43 +28,40 @@ import {
   type TableHandle as __TableHandle,
 } from "spacetimedb";
 
-export type CreateMatch = {
-  tournamentId: bigint,
-  parentId: bigint,
-  withTemplate: bigint | undefined,
-  autoProvisioningServer: boolean,
+export type StartServer = {
+  restarted: boolean,
+  time: number,
 };
-let _cached_CreateMatch_type_value: __AlgebraicTypeType | null = null;
+let _cached_StartServer_type_value: __AlgebraicTypeType | null = null;
 
 /**
  * An object for generated helper functions.
  */
-export const CreateMatch = {
+export const StartServer = {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_CreateMatch_type_value) return _cached_CreateMatch_type_value;
-    _cached_CreateMatch_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_CreateMatch_type_value.value.elements.push(
-      { name: "tournamentId", algebraicType: __AlgebraicTypeValue.U64 },
-      { name: "parentId", algebraicType: __AlgebraicTypeValue.U64 },
-      { name: "withTemplate", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.U64) },
-      { name: "autoProvisioningServer", algebraicType: __AlgebraicTypeValue.Bool },
+    if (_cached_StartServer_type_value) return _cached_StartServer_type_value;
+    _cached_StartServer_type_value = __AlgebraicTypeValue.Product({ elements: [] });
+    _cached_StartServer_type_value.value.elements.push(
+      { name: "restarted", algebraicType: __AlgebraicTypeValue.Bool },
+      { name: "time", algebraicType: __AlgebraicTypeValue.U32 },
     );
-    return _cached_CreateMatch_type_value;
+    return _cached_StartServer_type_value;
   },
 
-  serialize(writer: __BinaryWriter, value: CreateMatch): void {
-    __AlgebraicTypeValue.serializeValue(writer, CreateMatch.getTypeScriptAlgebraicType(), value);
+  serialize(writer: __BinaryWriter, value: StartServer): void {
+    __AlgebraicTypeValue.serializeValue(writer, StartServer.getTypeScriptAlgebraicType(), value);
   },
 
-  deserialize(reader: __BinaryReader): CreateMatch {
-    return __AlgebraicTypeValue.deserializeValue(reader, CreateMatch.getTypeScriptAlgebraicType());
+  deserialize(reader: __BinaryReader): StartServer {
+    return __AlgebraicTypeValue.deserializeValue(reader, StartServer.getTypeScriptAlgebraicType());
   },
 
 }
 
-export default CreateMatch;
+export default StartServer;
+
 

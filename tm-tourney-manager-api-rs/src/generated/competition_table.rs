@@ -2,9 +2,11 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN YOUR MODULE SOURCE CODE INSTEAD.
 
 #![allow(unused, clippy::all)]
+use super::competition_status_type::CompetitionStatus;
 use super::competition_type::Competition;
 use super::competitions_type::Competitions;
-use super::event_phase_type::EventPhase;
+use super::registration_type::Registration;
+use super::scheduling_type::Scheduling;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 /// Table handle for the table `competition`.

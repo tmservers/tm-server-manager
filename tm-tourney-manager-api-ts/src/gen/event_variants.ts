@@ -81,6 +81,9 @@ declare type __keep_PlayLoopStartType = PlayLoopStartType;
 import { PlayLoopEnd as PlayLoopEndType } from "./play_loop_end_type";
 // Mark import as potentially unused
 declare type __keep_PlayLoopEndType = PlayLoopEndType;
+import { StartRound as StartRoundType } from "./start_round_type";
+// Mark import as potentially unused
+declare type __keep_StartRoundType = StartRoundType;
 import { EndRoundStart as EndRoundStartType } from "./end_round_start_type";
 // Mark import as potentially unused
 declare type __keep_EndRoundStartType = EndRoundStartType;
@@ -90,6 +93,21 @@ declare type __keep_EndRoundEndType = EndRoundEndType;
 import { Podium as PodiumType } from "./podium_type";
 // Mark import as potentially unused
 declare type __keep_PodiumType = PodiumType;
+import { StartMatch as StartMatchType } from "./start_match_type";
+// Mark import as potentially unused
+declare type __keep_StartMatchType = StartMatchType;
+import { EndMatch as EndMatchType } from "./end_match_type";
+// Mark import as potentially unused
+declare type __keep_EndMatchType = EndMatchType;
+import { StartServer as StartServerType } from "./start_server_type";
+// Mark import as potentially unused
+declare type __keep_StartServerType = StartServerType;
+import { EndServer as EndServerType } from "./end_server_type";
+// Mark import as potentially unused
+declare type __keep_EndServerType = EndServerType;
+import { WarmupRound as WarmupRoundType } from "./warmup_round_type";
+// Mark import as potentially unused
+declare type __keep_WarmupRoundType = WarmupRoundType;
 import { Custom as CustomType } from "./custom_type";
 // Mark import as potentially unused
 declare type __keep_CustomType = CustomType;
@@ -115,9 +133,23 @@ export type StartTurnStart = { tag: "StartTurnStart", value: StartTurnType };
 export type StartTurnEnd = { tag: "StartTurnEnd", value: StartTurnType };
 export type PlayLoopStart = { tag: "PlayLoopStart", value: PlayLoopStartType };
 export type PlayLoopEnd = { tag: "PlayLoopEnd", value: PlayLoopEndType };
+export type StartRoundStart = { tag: "StartRoundStart", value: StartRoundType };
+export type StartRoundEnd = { tag: "StartRoundEnd", value: StartRoundType };
 export type EndRoundStart = { tag: "EndRoundStart", value: EndRoundStartType };
 export type EndRoundEnd = { tag: "EndRoundEnd", value: EndRoundEndType };
 export type PodiumStart = { tag: "PodiumStart", value: PodiumType };
 export type PodiumEnd = { tag: "PodiumEnd", value: PodiumType };
+export type StartMatchStart = { tag: "StartMatchStart", value: StartMatchType };
+export type StartMatchEnd = { tag: "StartMatchEnd", value: StartMatchType };
+export type EndMatchStart = { tag: "EndMatchStart", value: EndMatchType };
+export type EndMatchEnd = { tag: "EndMatchEnd", value: EndMatchType };
+export type StartServerStart = { tag: "StartServerStart", value: StartServerType };
+export type StartServerEnd = { tag: "StartServerEnd", value: StartServerType };
+export type EndServerStart = { tag: "EndServerStart", value: EndServerType };
+export type EndServerEnd = { tag: "EndServerEnd", value: EndServerType };
+export type StartWarmup = { tag: "StartWarmup" };
+export type EndWarmup = { tag: "EndWarmup" };
+export type StartWarmupRound = { tag: "StartWarmupRound", value: WarmupRoundType };
+export type EndWarmupRound = { tag: "EndWarmupRound", value: WarmupRoundType };
 export type Custom = { tag: "Custom", value: CustomType };
 

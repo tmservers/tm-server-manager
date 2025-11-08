@@ -26,15 +26,9 @@ pub struct Tournament {
 }
 
 impl Tournament {
-    /* pub fn add_competition(&mut self, competition_id: u64) {
-        self.competitions
-            .try_add_competition(CompetitionKind::CompetitionV1(competition_id));
+    pub(crate) fn set_competition(&mut self, comp_id: u64) {
+        self.competition = comp_id
     }
-
-    pub fn add_match(&mut self, match_id: u64) {
-        self.competitions
-            .try_add_competition(CompetitionKind::MatchV1(match_id));
-    } */
 }
 
 #[derive(Debug)]
@@ -52,8 +46,8 @@ pub enum TournamentStatus {
 
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 fn create_tournament(ctx: &ReducerContext, name: String) -> Result<(), String> {
-    let user = ctx.auth()?;
-    let tournament = ctx
+    let user = ctx.auth_user()?;
+    let mut tournament = ctx
         .db
         .tournament()
         .try_insert(Tournament {
@@ -70,6 +64,9 @@ fn create_tournament(ctx: &ReducerContext, name: String) -> Result<(), String> {
     //SAFETY: Comitted afterwards
     let competition = unsafe { Competition::new(name, None, tournament.id) };
     let competition = ctx.db.competition().try_insert(competition)?;
+
+    tournament.set_competition(competition.id);
+    ctx.db.tournament().id().update(tournament);
 
     Ok(())
 }

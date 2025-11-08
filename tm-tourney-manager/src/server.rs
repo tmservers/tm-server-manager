@@ -77,9 +77,13 @@ impl TmServer {
 }
 
 /// Elevates an annonymous user to a trackmania server.
-/// password of the server doesn't get saved but only verified for validity.
+/// password of the server doesn't get saved but rather verified for validity.
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn verify_server(ctx: &ReducerContext, login: String, password: String) -> Result<(), String> {
+pub fn register_server(
+    ctx: &ReducerContext,
+    login: String,
+    password: String,
+) -> Result<(), String> {
     if ctx.db.tm_server().identity().find(ctx.sender).is_some() {
         // Server identity is already verified.
         return Ok(());
