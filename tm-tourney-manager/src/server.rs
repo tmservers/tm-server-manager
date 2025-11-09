@@ -1,5 +1,5 @@
 use spacetimedb::{Identity, ReducerContext, SpacetimeType, Table, reducer, table};
-use tm_server_types::{config::ServerConfig, method::Method};
+use tm_server_types::{config::ServerConfig, event::Event, method::Method};
 
 use crate::server::{
     config::{TmServerConfig, tm_server_config},
@@ -12,7 +12,7 @@ pub mod state;
 
 #[cfg_attr(feature = "spacetime", spacetimedb::table(name=tm_server, public))]
 pub struct TmServer {
-    /// Trackmania provisiones a unique server_id for each server.
+    /// Trackmania server logins are unique.
     #[primary_key]
     pub id: String,
     #[unique]
@@ -21,11 +21,16 @@ pub struct TmServer {
     /// Each server also has a ubisoft account associated with it.
     owner_id: String,
 
+    // Whether the server can be reached and has a bridge active.
     online: bool,
-    // verified: bool,
+
     config: ServerConfig,
 
+    // Mutable state which the server reacts to.
     state: ServerState,
+
+    // Can the server be provisioned or is it a fixed server?
+    capturable: bool,
 
     active_match: Option<u64>,
 
@@ -71,6 +76,15 @@ impl TmServer {
         self.identity = identity;
     }
 
+    pub(crate) fn add_server_event(&mut self, event: &Event) -> bool {
+        match event {
+            Event::PlayerConenct(player) => log::error!("Player connected: {}", player.login),
+            _ => return false,
+        }
+        log::warn!("{:#?}", self.state);
+        true
+    }
+
     /* pub fn set_command(&mut self, command: Method) {
         self.server_method = command
     } */
@@ -107,6 +121,7 @@ pub fn register_server(
             config: ServerConfig::default(),
             state: ServerState::default(),
             identity: ctx.identity(),
+            capturable: true,
         });
         Ok(())
     }

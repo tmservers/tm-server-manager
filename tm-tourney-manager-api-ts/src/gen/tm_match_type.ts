@@ -42,9 +42,9 @@ declare type __keep_MatchStatus = MatchStatus;
 import { MatchLeaderboardRules } from "./match_leaderboard_rules_type";
 // Mark import as potentially unused
 declare type __keep_MatchLeaderboardRules = MatchLeaderboardRules;
-import { EphemeralState } from "./ephemeral_state_type";
+import { MatchState } from "./match_state_type";
 // Mark import as potentially unused
-declare type __keep_EphemeralState = EphemeralState;
+declare type __keep_MatchState = MatchState;
 
 
 export type TmMatch = {
@@ -59,7 +59,7 @@ export type TmMatch = {
   postMatchConfig: ServerConfig | undefined,
   status: MatchStatus,
   leaderboard: MatchLeaderboardRules,
-  ephemeralState: EphemeralState,
+  state: MatchState,
 };
 let _cached_TmMatch_type_value: __AlgebraicTypeType | null = null;
 
@@ -86,7 +86,7 @@ export const TmMatch = {
       { name: "postMatchConfig", algebraicType: __AlgebraicTypeValue.createOptionType(ServerConfig.getTypeScriptAlgebraicType()) },
       { name: "status", algebraicType: MatchStatus.getTypeScriptAlgebraicType() },
       { name: "leaderboard", algebraicType: MatchLeaderboardRules.getTypeScriptAlgebraicType() },
-      { name: "ephemeralState", algebraicType: EphemeralState.getTypeScriptAlgebraicType() },
+      { name: "state", algebraicType: MatchState.getTypeScriptAlgebraicType() },
     );
     return _cached_TmMatch_type_value;
   },

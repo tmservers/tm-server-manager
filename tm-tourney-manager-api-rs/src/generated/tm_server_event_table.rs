@@ -2,8 +2,8 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN YOUR MODULE SOURCE CODE INSTEAD.
 
 #![allow(unused, clippy::all)]
-use super::ephemeral_state_type::EphemeralState;
 use super::event_type::Event;
+use super::match_state_type::MatchState;
 use super::tm_server_event_type::TmServerEvent;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
@@ -83,23 +83,6 @@ impl<'ctx> __sdk::Table for TmServerEventTableHandle<'ctx> {
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
     let _table = client_cache.get_or_make_table::<TmServerEvent>("tm_server_event");
-    _table.add_unique_constraint::<u64>("id", |row| &row.id);
-}
-pub struct TmServerEventUpdateCallbackId(__sdk::CallbackId);
-
-impl<'ctx> __sdk::TableWithPrimaryKey for TmServerEventTableHandle<'ctx> {
-    type UpdateCallbackId = TmServerEventUpdateCallbackId;
-
-    fn on_update(
-        &self,
-        callback: impl FnMut(&Self::EventContext, &Self::Row, &Self::Row) + Send + 'static,
-    ) -> TmServerEventUpdateCallbackId {
-        TmServerEventUpdateCallbackId(self.imp.on_update(Box::new(callback)))
-    }
-
-    fn remove_on_update(&self, callback: TmServerEventUpdateCallbackId) {
-        self.imp.remove_on_update(callback.0)
-    }
 }
 
 #[doc(hidden)]
@@ -111,34 +94,4 @@ pub(super) fn parse_table_update(
             .with_cause(e)
             .into()
     })
-}
-
-/// Access to the `id` unique index on the table `tm_server_event`,
-/// which allows point queries on the field of the same name
-/// via the [`TmServerEventIdUnique::find`] method.
-///
-/// Users are encouraged not to explicitly reference this type,
-/// but to directly chain method calls,
-/// like `ctx.db.tm_server_event().id().find(...)`.
-pub struct TmServerEventIdUnique<'ctx> {
-    imp: __sdk::UniqueConstraintHandle<TmServerEvent, u64>,
-    phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
-}
-
-impl<'ctx> TmServerEventTableHandle<'ctx> {
-    /// Get a handle on the `id` unique index on the table `tm_server_event`.
-    pub fn id(&self) -> TmServerEventIdUnique<'ctx> {
-        TmServerEventIdUnique {
-            imp: self.imp.get_unique_constraint::<u64>("id"),
-            phantom: std::marker::PhantomData,
-        }
-    }
-}
-
-impl<'ctx> TmServerEventIdUnique<'ctx> {
-    /// Find the subscribed row whose `id` column value is equal to `col_val`,
-    /// if such a row is present in the client cache.
-    pub fn find(&self, col_val: &u64) -> Option<TmServerEvent> {
-        self.imp.find(col_val)
-    }
 }

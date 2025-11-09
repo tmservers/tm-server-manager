@@ -27,52 +27,45 @@ import {
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
   type TableHandle as __TableHandle,
 } from "spacetimedb";
-import { Event } from "./event_type";
-// Mark import as potentially unused
-declare type __keep_Event = Event;
-import { MatchState } from "./match_state_type";
-// Mark import as potentially unused
-declare type __keep_MatchState = MatchState;
 
-
-export type TmServerEvent = {
-  tournamentId: bigint,
-  matchId: bigint,
-  state: MatchState,
-  event: Event,
+export type EndTurnEnd = {
+  count: number,
+  valid: number,
+  time: number,
+  isValid: boolean,
 };
-let _cached_TmServerEvent_type_value: __AlgebraicTypeType | null = null;
+let _cached_EndTurnEnd_type_value: __AlgebraicTypeType | null = null;
 
 /**
  * An object for generated helper functions.
  */
-export const TmServerEvent = {
+export const EndTurnEnd = {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_TmServerEvent_type_value) return _cached_TmServerEvent_type_value;
-    _cached_TmServerEvent_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_TmServerEvent_type_value.value.elements.push(
-      { name: "tournamentId", algebraicType: __AlgebraicTypeValue.U64 },
-      { name: "matchId", algebraicType: __AlgebraicTypeValue.U64 },
-      { name: "state", algebraicType: MatchState.getTypeScriptAlgebraicType() },
-      { name: "event", algebraicType: Event.getTypeScriptAlgebraicType() },
+    if (_cached_EndTurnEnd_type_value) return _cached_EndTurnEnd_type_value;
+    _cached_EndTurnEnd_type_value = __AlgebraicTypeValue.Product({ elements: [] });
+    _cached_EndTurnEnd_type_value.value.elements.push(
+      { name: "count", algebraicType: __AlgebraicTypeValue.U32 },
+      { name: "valid", algebraicType: __AlgebraicTypeValue.U32 },
+      { name: "time", algebraicType: __AlgebraicTypeValue.U32 },
+      { name: "isValid", algebraicType: __AlgebraicTypeValue.Bool },
     );
-    return _cached_TmServerEvent_type_value;
+    return _cached_EndTurnEnd_type_value;
   },
 
-  serialize(writer: __BinaryWriter, value: TmServerEvent): void {
-    __AlgebraicTypeValue.serializeValue(writer, TmServerEvent.getTypeScriptAlgebraicType(), value);
+  serialize(writer: __BinaryWriter, value: EndTurnEnd): void {
+    __AlgebraicTypeValue.serializeValue(writer, EndTurnEnd.getTypeScriptAlgebraicType(), value);
   },
 
-  deserialize(reader: __BinaryReader): TmServerEvent {
-    return __AlgebraicTypeValue.deserializeValue(reader, TmServerEvent.getTypeScriptAlgebraicType());
+  deserialize(reader: __BinaryReader): EndTurnEnd {
+    return __AlgebraicTypeValue.deserializeValue(reader, EndTurnEnd.getTypeScriptAlgebraicType());
   },
 
 }
 
-export default TmServerEvent;
+export default EndTurnEnd;
 
 

@@ -29,7 +29,8 @@ pub mod end_match_type;
 pub mod end_round_end_type;
 pub mod end_round_start_type;
 pub mod end_server_type;
-pub mod ephemeral_state_type;
+pub mod end_turn_end_type;
+pub mod end_turn_start_type;
 pub mod event_config_table;
 pub mod event_config_type;
 pub mod event_type;
@@ -47,6 +48,7 @@ pub mod match_configured_reducer;
 pub mod match_ghost_table;
 pub mod match_ghost_type;
 pub mod match_leaderboard_rules_type;
+pub mod match_state_type;
 pub mod match_status_type;
 pub mod match_template_table;
 pub mod match_template_type;
@@ -144,7 +146,8 @@ pub use end_match_type::EndMatch;
 pub use end_round_end_type::EndRoundEnd;
 pub use end_round_start_type::EndRoundStart;
 pub use end_server_type::EndServer;
-pub use ephemeral_state_type::EphemeralState;
+pub use end_turn_end_type::EndTurnEnd;
+pub use end_turn_start_type::EndTurnStart;
 pub use event_config_table::*;
 pub use event_config_type::EventConfig;
 pub use event_type::Event;
@@ -170,6 +173,7 @@ pub use match_configured_reducer::{
 pub use match_ghost_table::*;
 pub use match_ghost_type::MatchGhost;
 pub use match_leaderboard_rules_type::MatchLeaderboardRules;
+pub use match_state_type::MatchState;
 pub use match_status_type::MatchStatus;
 pub use match_template_table::*;
 pub use match_template_type::MatchTemplate;
@@ -555,9 +559,8 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.tm_server_config = cache
             .apply_diff_to_table::<TmServerConfig>("tm_server_config", &self.tm_server_config)
             .with_updates_by_pk(|row| &row.id);
-        diff.tm_server_event = cache
-            .apply_diff_to_table::<TmServerEvent>("tm_server_event", &self.tm_server_event)
-            .with_updates_by_pk(|row| &row.id);
+        diff.tm_server_event =
+            cache.apply_diff_to_table::<TmServerEvent>("tm_server_event", &self.tm_server_event);
         diff.tournament = cache
             .apply_diff_to_table::<Tournament>("tournament", &self.tournament)
             .with_updates_by_pk(|row| &row.id);

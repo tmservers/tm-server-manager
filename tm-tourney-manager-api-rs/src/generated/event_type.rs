@@ -11,6 +11,8 @@ use super::end_match_type::EndMatch;
 use super::end_round_end_type::EndRoundEnd;
 use super::end_round_start_type::EndRoundStart;
 use super::end_server_type::EndServer;
+use super::end_turn_end_type::EndTurnEnd;
+use super::end_turn_start_type::EndTurnStart;
 use super::give_up_type::GiveUp;
 use super::loading_map_end_type::LoadingMapEnd;
 use super::loading_map_start_type::LoadingMapStart;
@@ -72,6 +74,10 @@ pub enum Event {
 
     StartTurnEnd(StartTurn),
 
+    EndTurnStart(EndTurnStart),
+
+    EndTurnEnd(EndTurnEnd),
+
     PlayLoopStart(PlayLoopStart),
 
     PlayLoopEnd(PlayLoopEnd),
@@ -104,13 +110,13 @@ pub enum Event {
 
     EndServerEnd(EndServer),
 
-    StartWarmup,
+    WarmupStart,
 
-    EndWarmup,
+    WarmupEnd,
 
-    StartWarmupRound(WarmupRound),
+    WarmupStartRound(WarmupRound),
 
-    EndWarmupRound(WarmupRound),
+    WarmupEndRound(WarmupRound),
 
     Custom(Custom),
 }

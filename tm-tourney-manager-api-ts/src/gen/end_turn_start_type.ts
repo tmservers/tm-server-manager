@@ -28,40 +28,42 @@ import {
   type TableHandle as __TableHandle,
 } from "spacetimedb";
 
-export type EphemeralState = {
-  restarted: number,
-  warmup: boolean,
+export type EndTurnStart = {
+  count: number,
+  valid: number,
+  time: number,
 };
-let _cached_EphemeralState_type_value: __AlgebraicTypeType | null = null;
+let _cached_EndTurnStart_type_value: __AlgebraicTypeType | null = null;
 
 /**
  * An object for generated helper functions.
  */
-export const EphemeralState = {
+export const EndTurnStart = {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_EphemeralState_type_value) return _cached_EphemeralState_type_value;
-    _cached_EphemeralState_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_EphemeralState_type_value.value.elements.push(
-      { name: "restarted", algebraicType: __AlgebraicTypeValue.U16 },
-      { name: "warmup", algebraicType: __AlgebraicTypeValue.Bool },
+    if (_cached_EndTurnStart_type_value) return _cached_EndTurnStart_type_value;
+    _cached_EndTurnStart_type_value = __AlgebraicTypeValue.Product({ elements: [] });
+    _cached_EndTurnStart_type_value.value.elements.push(
+      { name: "count", algebraicType: __AlgebraicTypeValue.U32 },
+      { name: "valid", algebraicType: __AlgebraicTypeValue.U32 },
+      { name: "time", algebraicType: __AlgebraicTypeValue.U32 },
     );
-    return _cached_EphemeralState_type_value;
+    return _cached_EndTurnStart_type_value;
   },
 
-  serialize(writer: __BinaryWriter, value: EphemeralState): void {
-    __AlgebraicTypeValue.serializeValue(writer, EphemeralState.getTypeScriptAlgebraicType(), value);
+  serialize(writer: __BinaryWriter, value: EndTurnStart): void {
+    __AlgebraicTypeValue.serializeValue(writer, EndTurnStart.getTypeScriptAlgebraicType(), value);
   },
 
-  deserialize(reader: __BinaryReader): EphemeralState {
-    return __AlgebraicTypeValue.deserializeValue(reader, EphemeralState.getTypeScriptAlgebraicType());
+  deserialize(reader: __BinaryReader): EndTurnStart {
+    return __AlgebraicTypeValue.deserializeValue(reader, EndTurnStart.getTypeScriptAlgebraicType());
   },
 
 }
 
-export default EphemeralState;
+export default EndTurnStart;
 
 

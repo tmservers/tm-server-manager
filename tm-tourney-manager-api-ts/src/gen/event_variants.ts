@@ -75,6 +75,12 @@ declare type __keep_PlayerChatType = PlayerChatType;
 import { StartTurn as StartTurnType } from "./start_turn_type";
 // Mark import as potentially unused
 declare type __keep_StartTurnType = StartTurnType;
+import { EndTurnStart as EndTurnStartType } from "./end_turn_start_type";
+// Mark import as potentially unused
+declare type __keep_EndTurnStartType = EndTurnStartType;
+import { EndTurnEnd as EndTurnEndType } from "./end_turn_end_type";
+// Mark import as potentially unused
+declare type __keep_EndTurnEndType = EndTurnEndType;
 import { PlayLoopStart as PlayLoopStartType } from "./play_loop_start_type";
 // Mark import as potentially unused
 declare type __keep_PlayLoopStartType = PlayLoopStartType;
@@ -131,6 +137,8 @@ export type PlayerDisconnect = { tag: "PlayerDisconnect", value: PlayerDisconnec
 export type PlayerChat = { tag: "PlayerChat", value: PlayerChatType };
 export type StartTurnStart = { tag: "StartTurnStart", value: StartTurnType };
 export type StartTurnEnd = { tag: "StartTurnEnd", value: StartTurnType };
+export type EndTurnStart = { tag: "EndTurnStart", value: EndTurnStartType };
+export type EndTurnEnd = { tag: "EndTurnEnd", value: EndTurnEndType };
 export type PlayLoopStart = { tag: "PlayLoopStart", value: PlayLoopStartType };
 export type PlayLoopEnd = { tag: "PlayLoopEnd", value: PlayLoopEndType };
 export type StartRoundStart = { tag: "StartRoundStart", value: StartRoundType };
@@ -147,9 +155,9 @@ export type StartServerStart = { tag: "StartServerStart", value: StartServerType
 export type StartServerEnd = { tag: "StartServerEnd", value: StartServerType };
 export type EndServerStart = { tag: "EndServerStart", value: EndServerType };
 export type EndServerEnd = { tag: "EndServerEnd", value: EndServerType };
-export type StartWarmup = { tag: "StartWarmup" };
-export type EndWarmup = { tag: "EndWarmup" };
-export type StartWarmupRound = { tag: "StartWarmupRound", value: WarmupRoundType };
-export type EndWarmupRound = { tag: "EndWarmupRound", value: WarmupRoundType };
+export type WarmupStart = { tag: "WarmupStart" };
+export type WarmupEnd = { tag: "WarmupEnd" };
+export type WarmupStartRound = { tag: "WarmupStartRound", value: WarmupRoundType };
+export type WarmupEndRound = { tag: "WarmupEndRound", value: WarmupRoundType };
 export type Custom = { tag: "Custom", value: CustomType };
 

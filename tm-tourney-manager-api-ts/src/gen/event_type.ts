@@ -75,6 +75,12 @@ declare type __keep_PlayerChat = PlayerChat;
 import { StartTurn } from "./start_turn_type";
 // Mark import as potentially unused
 declare type __keep_StartTurn = StartTurn;
+import { EndTurnStart } from "./end_turn_start_type";
+// Mark import as potentially unused
+declare type __keep_EndTurnStart = EndTurnStart;
+import { EndTurnEnd } from "./end_turn_end_type";
+// Mark import as potentially unused
+declare type __keep_EndTurnEnd = EndTurnEnd;
 import { PlayLoopStart } from "./play_loop_start_type";
 // Mark import as potentially unused
 declare type __keep_PlayLoopStart = PlayLoopStart;
@@ -133,6 +139,8 @@ export type Event = EventVariants.WayPoint |
   EventVariants.PlayerChat |
   EventVariants.StartTurnStart |
   EventVariants.StartTurnEnd |
+  EventVariants.EndTurnStart |
+  EventVariants.EndTurnEnd |
   EventVariants.PlayLoopStart |
   EventVariants.PlayLoopEnd |
   EventVariants.StartRoundStart |
@@ -149,10 +157,10 @@ export type Event = EventVariants.WayPoint |
   EventVariants.StartServerEnd |
   EventVariants.EndServerStart |
   EventVariants.EndServerEnd |
-  EventVariants.StartWarmup |
-  EventVariants.EndWarmup |
-  EventVariants.StartWarmupRound |
-  EventVariants.EndWarmupRound |
+  EventVariants.WarmupStart |
+  EventVariants.WarmupEnd |
+  EventVariants.WarmupStartRound |
+  EventVariants.WarmupEndRound |
   EventVariants.Custom;
 
 let _cached_Event_type_value: __AlgebraicTypeType | null = null;
@@ -183,6 +191,8 @@ export const Event = {
   PlayerChat: (value: PlayerChat): EventVariants.PlayerChat => ({ tag: "PlayerChat", value }),
   StartTurnStart: (value: StartTurn): EventVariants.StartTurnStart => ({ tag: "StartTurnStart", value }),
   StartTurnEnd: (value: StartTurn): EventVariants.StartTurnEnd => ({ tag: "StartTurnEnd", value }),
+  EndTurnStart: (value: EndTurnStart): EventVariants.EndTurnStart => ({ tag: "EndTurnStart", value }),
+  EndTurnEnd: (value: EndTurnEnd): EventVariants.EndTurnEnd => ({ tag: "EndTurnEnd", value }),
   PlayLoopStart: (value: PlayLoopStart): EventVariants.PlayLoopStart => ({ tag: "PlayLoopStart", value }),
   PlayLoopEnd: (value: PlayLoopEnd): EventVariants.PlayLoopEnd => ({ tag: "PlayLoopEnd", value }),
   StartRoundStart: (value: StartRound): EventVariants.StartRoundStart => ({ tag: "StartRoundStart", value }),
@@ -199,10 +209,10 @@ export const Event = {
   StartServerEnd: (value: StartServer): EventVariants.StartServerEnd => ({ tag: "StartServerEnd", value }),
   EndServerStart: (value: EndServer): EventVariants.EndServerStart => ({ tag: "EndServerStart", value }),
   EndServerEnd: (value: EndServer): EventVariants.EndServerEnd => ({ tag: "EndServerEnd", value }),
-  StartWarmup: { tag: "StartWarmup" } as const,
-  EndWarmup: { tag: "EndWarmup" } as const,
-  StartWarmupRound: (value: WarmupRound): EventVariants.StartWarmupRound => ({ tag: "StartWarmupRound", value }),
-  EndWarmupRound: (value: WarmupRound): EventVariants.EndWarmupRound => ({ tag: "EndWarmupRound", value }),
+  WarmupStart: { tag: "WarmupStart" } as const,
+  WarmupEnd: { tag: "WarmupEnd" } as const,
+  WarmupStartRound: (value: WarmupRound): EventVariants.WarmupStartRound => ({ tag: "WarmupStartRound", value }),
+  WarmupEndRound: (value: WarmupRound): EventVariants.WarmupEndRound => ({ tag: "WarmupEndRound", value }),
   Custom: (value: Custom): EventVariants.Custom => ({ tag: "Custom", value }),
 
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
@@ -227,6 +237,8 @@ export const Event = {
       { name: "PlayerChat", algebraicType: PlayerChat.getTypeScriptAlgebraicType() },
       { name: "StartTurnStart", algebraicType: StartTurn.getTypeScriptAlgebraicType() },
       { name: "StartTurnEnd", algebraicType: StartTurn.getTypeScriptAlgebraicType() },
+      { name: "EndTurnStart", algebraicType: EndTurnStart.getTypeScriptAlgebraicType() },
+      { name: "EndTurnEnd", algebraicType: EndTurnEnd.getTypeScriptAlgebraicType() },
       { name: "PlayLoopStart", algebraicType: PlayLoopStart.getTypeScriptAlgebraicType() },
       { name: "PlayLoopEnd", algebraicType: PlayLoopEnd.getTypeScriptAlgebraicType() },
       { name: "StartRoundStart", algebraicType: StartRound.getTypeScriptAlgebraicType() },
@@ -243,10 +255,10 @@ export const Event = {
       { name: "StartServerEnd", algebraicType: StartServer.getTypeScriptAlgebraicType() },
       { name: "EndServerStart", algebraicType: EndServer.getTypeScriptAlgebraicType() },
       { name: "EndServerEnd", algebraicType: EndServer.getTypeScriptAlgebraicType() },
-      { name: "StartWarmup", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-      { name: "EndWarmup", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-      { name: "StartWarmupRound", algebraicType: WarmupRound.getTypeScriptAlgebraicType() },
-      { name: "EndWarmupRound", algebraicType: WarmupRound.getTypeScriptAlgebraicType() },
+      { name: "WarmupStart", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
+      { name: "WarmupEnd", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
+      { name: "WarmupStartRound", algebraicType: WarmupRound.getTypeScriptAlgebraicType() },
+      { name: "WarmupEndRound", algebraicType: WarmupRound.getTypeScriptAlgebraicType() },
       { name: "Custom", algebraicType: Custom.getTypeScriptAlgebraicType() },
     );
     return _cached_Event_type_value;

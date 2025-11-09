@@ -20,6 +20,8 @@ pub struct Competition {
     parent_id: Option<u64>,
 
     name: String,
+
+    // Necessary to hide and mark as immutable
     status: CompetitionStatus,
     // The Timestamp at which the event starts.
     // If no starting time is selected it has to be started manually.
@@ -31,13 +33,13 @@ pub struct Competition {
 
     registration: Registration,
 
-    // Can capture a server at the end of the registration to serve
+    // TODO Can capture a server at the end of the registration to serve
     // as a lobby server which automatically delegates players to their
-    // corresponding match server.
+    // corresponding desination server based on active matches.
     //lobby: Option<u64>,
-    //registration: Registration,
-    //generate: Generator,
-    //config: EventConfig,
+
+    //TODO the configured generator can spit out nodes for the competition.
+    //generator: Generator,
 
     //TODO something along the lines of this
     //is necessary to delegate things in the following

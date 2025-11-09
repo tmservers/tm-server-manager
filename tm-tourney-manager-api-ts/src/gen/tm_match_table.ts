@@ -43,9 +43,9 @@ declare type __keep_MatchStatus = MatchStatus;
 import { MatchLeaderboardRules } from "./match_leaderboard_rules_type";
 // Mark import as potentially unused
 declare type __keep_MatchLeaderboardRules = MatchLeaderboardRules;
-import { EphemeralState } from "./ephemeral_state_type";
+import { MatchState } from "./match_state_type";
 // Mark import as potentially unused
-declare type __keep_EphemeralState = EphemeralState;
+declare type __keep_MatchState = MatchState;
 
 import { type EventContext, type Reducer, RemoteReducers, RemoteTables } from ".";
 declare type __keep = [EventContext, Reducer, RemoteReducers, RemoteTables];

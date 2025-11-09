@@ -73,6 +73,8 @@ pub enum Event {
 
     StartTurnStart(StartTurn),
     StartTurnEnd(StartTurn),
+    EndTurnStart(EndTurnStart),
+    EndTurnEnd(EndTurnEnd),
 
     PlayLoopStart(PlayLoopStart),
     PlayLoopEnd(PlayLoopEnd),
@@ -95,10 +97,10 @@ pub enum Event {
     EndServerStart(EndServer),
     EndServerEnd(EndServer),
 
-    StartWarmup,
-    EndWarmup,
-    StartWarmupRound(WarmupRound),
-    EndWarmupRound(WarmupRound),
+    WarmupStart,
+    WarmupEnd,
+    WarmupStartRound(WarmupRound),
+    WarmupEndRound(WarmupRound),
 
     Custom(Custom),
 }
@@ -108,20 +110,24 @@ impl Event {
         let event = match name {
             "Trackmania.Event.WayPoint" => Event::WayPoint(json::from_str(&body)?),
             "Trackmania.Event.Respawn" => Event::Respawn(json::from_str(&body)?),
+            "Trackmania.Event.GiveUp" => Event::GiveUp(json::from_str(&body)?),
             "Trackmania.Scores" => Event::Scores(json::from_str(&body)?),
             "Trackmania.Event.StartLine" => Event::StartLine(json::from_str(&body)?),
 
             "Maniaplanet.LoadingMap_Start" => Event::LoadingMapStart(json::from_str(&body)?),
             "Maniaplanet.LoadingMap_End" => Event::LoadingMapEnd(json::from_str(&body)?),
+            "Maniaplanet.UnloadingMap_Start" => Event::UnloadingMapStart(json::from_str(&body)?),
+            "Maniaplanet.UnloadingMap_End" => Event::UnloadingMapEnd(json::from_str(&body)?),
+
             "Maniaplanet.StartMap_Start" => Event::StartMapStart(json::from_str(&body)?),
             "Maniaplanet.StartMap_End" => Event::StartMapEnd(json::from_str(&body)?),
             "Maniaplanet.EndMap_Start" => Event::EndMapStart(json::from_str(&body)?),
             "Maniaplanet.EndMap_End" => Event::EndMapEnd(json::from_str(&body)?),
-            "Maniaplanet.UnloadingMap_Start" => Event::UnloadingMapStart(json::from_str(&body)?),
-            "Maniaplanet.UnloadingMap_End" => Event::UnloadingMapEnd(json::from_str(&body)?),
 
             "Maniaplanet.StartTurn_Start" => Event::StartTurnStart(json::from_str(&body)?),
             "Maniaplanet.StartTurn_End" => Event::StartTurnEnd(json::from_str(&body)?),
+            "Maniaplanet.EndTurn_Start" => Event::EndTurnStart(json::from_str(&body)?),
+            "Maniaplanet.EndTurn_End" => Event::EndTurnEnd(json::from_str(&body)?),
 
             "Maniaplanet.StartPlayLoop" => Event::PlayLoopStart(json::from_str(&body)?),
             "Maniaplanet.EndPlayLoop" => Event::PlayLoopEnd(json::from_str(&body)?),
@@ -144,10 +150,10 @@ impl Event {
             "Maniaplanet.EndServer_Start" => Event::EndServerStart(json::from_str(&body)?),
             "Maniaplanet.EndServer_End" => Event::EndServerEnd(json::from_str(&body)?),
 
-            "Trackmania.WarmUp.Start" => Event::StartWarmup,
-            "Trackmania.WarmUp.End" => Event::EndWarmup,
-            "Trackmania.WarmUp.StartRound" => Event::StartWarmupRound(json::from_str(&body)?),
-            "Trackmania.WarmUp.EndRound" => Event::EndWarmupRound(json::from_str(&body)?),
+            "Trackmania.WarmUp.Start" => Event::WarmupStart,
+            "Trackmania.WarmUp.End" => Event::WarmupEnd,
+            "Trackmania.WarmUp.StartRound" => Event::WarmupStartRound(json::from_str(&body)?),
+            "Trackmania.WarmUp.EndRound" => Event::WarmupEndRound(json::from_str(&body)?),
 
             _ => Event::Custom(Custom::new(name.to_string(), body)),
         };

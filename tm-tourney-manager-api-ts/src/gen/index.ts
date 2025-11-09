@@ -123,8 +123,10 @@ import { EndRoundStart } from "./end_round_start_type.ts";
 export { EndRoundStart };
 import { EndServer } from "./end_server_type.ts";
 export { EndServer };
-import { EphemeralState } from "./ephemeral_state_type.ts";
-export { EphemeralState };
+import { EndTurnEnd } from "./end_turn_end_type.ts";
+export { EndTurnEnd };
+import { EndTurnStart } from "./end_turn_start_type.ts";
+export { EndTurnStart };
 import { Event } from "./event_type.ts";
 export { Event };
 import { EventConfig } from "./event_config_type.ts";
@@ -145,6 +147,8 @@ import { MatchGhost } from "./match_ghost_type.ts";
 export { MatchGhost };
 import { MatchLeaderboardRules } from "./match_leaderboard_rules_type.ts";
 export { MatchLeaderboardRules };
+import { MatchState } from "./match_state_type.ts";
+export { MatchState };
 import { MatchStatus } from "./match_status_type.ts";
 export { MatchStatus };
 import { MatchTemplate } from "./match_template_type.ts";
@@ -311,11 +315,6 @@ const REMOTE_MODULE = {
     tm_server_event: {
       tableName: "tm_server_event" as const,
       rowType: TmServerEvent.getTypeScriptAlgebraicType(),
-      primaryKey: "id",
-      primaryKeyInfo: {
-        colName: "id",
-        colType: (TmServerEvent.getTypeScriptAlgebraicType() as __AlgebraicTypeVariants.Product).value.elements[0].algebraicType,
-      },
     },
     tournament: {
       tableName: "tournament" as const,

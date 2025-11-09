@@ -4,15 +4,15 @@ use tm_server_types::{config::ServerConfig, event::Event};
 use crate::{
     auth::Authorization,
     competition::competition,
-    r#match::{ephemeral_state::EphemeralState, leaderboard::MatchLeaderboardRules},
+    r#match::{leaderboard::MatchLeaderboardRules, match_state::MatchState},
     registration::Registration,
     scheduling::Scheduling,
     server::{TmServer, tm_server},
     tournament::tournament,
 };
 
-pub mod ephemeral_state;
 mod leaderboard;
+pub mod match_state;
 
 // The table name needs to be plural since match is a rust keyword
 /// # Match
@@ -60,7 +60,7 @@ pub struct TmMatch {
 
     status: MatchStatus,
     leaderboard: MatchLeaderboardRules,
-    ephemeral_state: EphemeralState,
+    state: MatchState,
 }
 
 impl TmMatch {
@@ -73,8 +73,8 @@ impl TmMatch {
         self.tournament_id
     }
 
-    pub fn get_ephemeral_state(&self) -> EphemeralState {
-        self.ephemeral_state
+    pub fn get_ephemeral_state(&self) -> MatchState {
+        self.state
     }
 
     pub fn add_server_event(&mut self, event: &Event) -> bool {
@@ -89,10 +89,13 @@ impl TmMatch {
 
                 self.status = MatchStatus::Ended;
             }
-            Event::StartWarmup => log::warn!("WarmupStarted"),
-            Event::StartRoundStart(round) => log::warn!("{}", round.count),
+            Event::WarmupStart => self.state.enable_wu(),
+            Event::WarmupEnd => self.state.disable_wu(),
+            Event::WarmupStartRound(_) => self.state.new_wu_round(),
+            Event::StartRoundStart(_) => self.state.new_round(),
             _ => return false,
         }
+        log::warn!("{:#?}", self.state);
         true
     }
 }
@@ -132,7 +135,7 @@ pub fn create_match(
         match_config: None,
         post_match_config: None,
         leaderboard: MatchLeaderboardRules::new(),
-        ephemeral_state: EphemeralState::new(),
+        state: MatchState::new(),
         scheduling: Scheduling::Manual,
         registration: Registration::Open,
     };
@@ -154,8 +157,8 @@ pub fn create_match(
 
 /// Assigns a server to the selected match.
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn match_assign_server(ctx: &ReducerContext, to: u64, server_id: String) {
-    //TODO authorization
+pub fn match_assign_server(ctx: &ReducerContext, to: u64, server_id: String) -> Result<(), String> {
+    ctx.auth_user()?;
     if let Some(mut server) = ctx.db.tm_server().id().find(&server_id)
         && server.active_match().is_none()
         && let Some(stage_match) = ctx.db.tm_match().id().find(to)
@@ -170,11 +173,12 @@ pub fn match_assign_server(ctx: &ReducerContext, to: u64, server_id: String) {
 
         ctx.db.tm_server().id().update(server);
     }
+    Ok(())
 }
 
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn match_configured(ctx: &ReducerContext, id: u64) {
-    //TODO authorization
+pub fn match_configured(ctx: &ReducerContext, id: u64) -> Result<(), String> {
+    ctx.auth_user()?;
     if let Some(mut tm_match) = ctx.db.tm_match().id().find(id)
         && tm_match.status == MatchStatus::Configuring
         && tm_match.server_id.is_some()
@@ -183,6 +187,7 @@ pub fn match_configured(ctx: &ReducerContext, id: u64) {
         tm_match.status = MatchStatus::Upcoming;
         ctx.db.tm_match().id().update(tm_match);
     }
+    Ok(())
 }
 
 /* #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]

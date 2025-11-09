@@ -27,52 +27,47 @@ import {
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
   type TableHandle as __TableHandle,
 } from "spacetimedb";
-import { Event } from "./event_type";
-// Mark import as potentially unused
-declare type __keep_Event = Event;
-import { MatchState } from "./match_state_type";
-// Mark import as potentially unused
-declare type __keep_MatchState = MatchState;
 
-
-export type TmServerEvent = {
-  tournamentId: bigint,
-  matchId: bigint,
-  state: MatchState,
-  event: Event,
+export type MatchState = {
+  restarted: number,
+  round: number,
+  warmup: number,
+  isWarmup: boolean,
+  paused: boolean,
 };
-let _cached_TmServerEvent_type_value: __AlgebraicTypeType | null = null;
+let _cached_MatchState_type_value: __AlgebraicTypeType | null = null;
 
 /**
  * An object for generated helper functions.
  */
-export const TmServerEvent = {
+export const MatchState = {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_TmServerEvent_type_value) return _cached_TmServerEvent_type_value;
-    _cached_TmServerEvent_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_TmServerEvent_type_value.value.elements.push(
-      { name: "tournamentId", algebraicType: __AlgebraicTypeValue.U64 },
-      { name: "matchId", algebraicType: __AlgebraicTypeValue.U64 },
-      { name: "state", algebraicType: MatchState.getTypeScriptAlgebraicType() },
-      { name: "event", algebraicType: Event.getTypeScriptAlgebraicType() },
+    if (_cached_MatchState_type_value) return _cached_MatchState_type_value;
+    _cached_MatchState_type_value = __AlgebraicTypeValue.Product({ elements: [] });
+    _cached_MatchState_type_value.value.elements.push(
+      { name: "restarted", algebraicType: __AlgebraicTypeValue.U16 },
+      { name: "round", algebraicType: __AlgebraicTypeValue.U16 },
+      { name: "warmup", algebraicType: __AlgebraicTypeValue.U16 },
+      { name: "isWarmup", algebraicType: __AlgebraicTypeValue.Bool },
+      { name: "paused", algebraicType: __AlgebraicTypeValue.Bool },
     );
-    return _cached_TmServerEvent_type_value;
+    return _cached_MatchState_type_value;
   },
 
-  serialize(writer: __BinaryWriter, value: TmServerEvent): void {
-    __AlgebraicTypeValue.serializeValue(writer, TmServerEvent.getTypeScriptAlgebraicType(), value);
+  serialize(writer: __BinaryWriter, value: MatchState): void {
+    __AlgebraicTypeValue.serializeValue(writer, MatchState.getTypeScriptAlgebraicType(), value);
   },
 
-  deserialize(reader: __BinaryReader): TmServerEvent {
-    return __AlgebraicTypeValue.deserializeValue(reader, TmServerEvent.getTypeScriptAlgebraicType());
+  deserialize(reader: __BinaryReader): MatchState {
+    return __AlgebraicTypeValue.deserializeValue(reader, MatchState.getTypeScriptAlgebraicType());
   },
 
 }
 
-export default TmServerEvent;
+export default MatchState;
 
 
