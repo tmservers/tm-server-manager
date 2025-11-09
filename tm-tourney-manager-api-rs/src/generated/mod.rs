@@ -90,6 +90,8 @@ pub mod start_turn_type;
 pub mod team_info_type;
 pub mod team_registration_type;
 pub mod team_type;
+pub mod tm_map_record_table;
+pub mod tm_map_record_type;
 pub mod tm_match_table;
 pub mod tm_match_type;
 pub mod tm_server_config_table;
@@ -222,6 +224,8 @@ pub use start_turn_type::StartTurn;
 pub use team_info_type::TeamInfo;
 pub use team_registration_type::TeamRegistration;
 pub use team_type::Team;
+pub use tm_map_record_table::*;
+pub use tm_map_record_type::TmMapRecord;
 pub use tm_match_table::*;
 pub use tm_match_type::TmMatch;
 pub use tm_server_config_table::*;
@@ -457,6 +461,7 @@ pub struct DbUpdate {
     generator: __sdk::TableUpdate<Generator>,
     match_ghost: __sdk::TableUpdate<MatchGhost>,
     match_template: __sdk::TableUpdate<MatchTemplate>,
+    tm_map_record: __sdk::TableUpdate<TmMapRecord>,
     tm_match: __sdk::TableUpdate<TmMatch>,
     tm_server: __sdk::TableUpdate<TmServer>,
     tm_server_config: __sdk::TableUpdate<TmServerConfig>,
@@ -489,6 +494,9 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "match_template" => db_update
                     .match_template
                     .append(match_template_table::parse_table_update(table_update)?),
+                "tm_map_record" => db_update
+                    .tm_map_record
+                    .append(tm_map_record_table::parse_table_update(table_update)?),
                 "tm_match" => db_update
                     .tm_match
                     .append(tm_match_table::parse_table_update(table_update)?),
@@ -550,6 +558,8 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.match_template = cache
             .apply_diff_to_table::<MatchTemplate>("match_template", &self.match_template)
             .with_updates_by_pk(|row| &row.id);
+        diff.tm_map_record =
+            cache.apply_diff_to_table::<TmMapRecord>("tm_map_record", &self.tm_map_record);
         diff.tm_match = cache
             .apply_diff_to_table::<TmMatch>("tm_match", &self.tm_match)
             .with_updates_by_pk(|row| &row.id);
@@ -582,6 +592,7 @@ pub struct AppliedDiff<'r> {
     generator: __sdk::TableAppliedDiff<'r, Generator>,
     match_ghost: __sdk::TableAppliedDiff<'r, MatchGhost>,
     match_template: __sdk::TableAppliedDiff<'r, MatchTemplate>,
+    tm_map_record: __sdk::TableAppliedDiff<'r, TmMapRecord>,
     tm_match: __sdk::TableAppliedDiff<'r, TmMatch>,
     tm_server: __sdk::TableAppliedDiff<'r, TmServer>,
     tm_server_config: __sdk::TableAppliedDiff<'r, TmServerConfig>,
@@ -620,6 +631,11 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
         callbacks.invoke_table_row_callbacks::<MatchTemplate>(
             "match_template",
             &self.match_template,
+            event,
+        );
+        callbacks.invoke_table_row_callbacks::<TmMapRecord>(
+            "tm_map_record",
+            &self.tm_map_record,
             event,
         );
         callbacks.invoke_table_row_callbacks::<TmMatch>("tm_match", &self.tm_match, event);
@@ -1232,6 +1248,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
         generator_table::register_table(client_cache);
         match_ghost_table::register_table(client_cache);
         match_template_table::register_table(client_cache);
+        tm_map_record_table::register_table(client_cache);
         tm_match_table::register_table(client_cache);
         tm_server_table::register_table(client_cache);
         tm_server_config_table::register_table(client_cache);

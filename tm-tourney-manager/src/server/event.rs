@@ -35,18 +35,28 @@ pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
         let match_changed = tm_match.add_server_event(&event);
         let server_changed = tm_server.add_server_event(&event);
 
-        let tournament_id = tm_match.get_tournament();
+        let match_ended = if let Event::EndMatchEnd(_) = &event {
+            log::error!("MATCH ENDED");
 
+            tm_match.end_match();
+            tm_server.release();
+            true
+        } else {
+            false
+        };
+
+        let tournament_id = tm_match.get_tournament();
         ctx.db.tm_server_event().insert(TmServerEvent {
             tournament_id,
             match_id,
             event,
-            state: tm_match.get_ephemeral_state(),
+            state: tm_match.get_match_state(),
         });
-        if match_changed {
+
+        if match_changed || match_ended {
             ctx.db.tm_match().id().update(tm_match);
         }
-        if server_changed {
+        if server_changed || match_ended {
             ctx.db.tm_server().id().update(tm_server);
         }
     }

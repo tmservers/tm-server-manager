@@ -65,6 +65,10 @@ impl TmServer {
         self.state = state
     }
 
+    pub(crate) fn release(&mut self) {
+        self.active_match = None;
+    }
+
     pub fn set_online(&mut self) {
         self.online = true;
     }

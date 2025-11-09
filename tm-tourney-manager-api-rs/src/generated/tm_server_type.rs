@@ -17,6 +17,7 @@ pub struct TmServer {
     pub online: bool,
     pub config: ServerConfig,
     pub state: ServerState,
+    pub capturable: bool,
     pub active_match: Option<u64>,
     pub server_method: Option<Method>,
 }

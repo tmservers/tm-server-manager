@@ -73,8 +73,12 @@ impl TmMatch {
         self.tournament_id
     }
 
-    pub fn get_ephemeral_state(&self) -> MatchState {
+    pub fn get_match_state(&self) -> MatchState {
         self.state
+    }
+
+    pub(crate) fn end_match(&mut self) {
+        self.status = MatchStatus::Ended;
     }
 
     pub fn add_server_event(&mut self, event: &Event) -> bool {
@@ -84,11 +88,6 @@ impl TmMatch {
         }
 
         match event {
-            Event::EndMatchEnd(_) => {
-                log::error!("MATCH ENDED");
-
-                self.status = MatchStatus::Ended;
-            }
             Event::WarmupStart => self.state.enable_wu(),
             Event::WarmupEnd => self.state.disable_wu(),
             Event::WarmupStartRound(_) => self.state.new_wu_round(),

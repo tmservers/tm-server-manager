@@ -81,6 +81,8 @@ import { MatchGhostTableHandle } from "./match_ghost_table.ts";
 export { MatchGhostTableHandle };
 import { MatchTemplateTableHandle } from "./match_template_table.ts";
 export { MatchTemplateTableHandle };
+import { TmMapRecordTableHandle } from "./tm_map_record_table.ts";
+export { TmMapRecordTableHandle };
 import { TmMatchTableHandle } from "./tm_match_table.ts";
 export { TmMatchTableHandle };
 import { TmServerTableHandle } from "./tm_server_table.ts";
@@ -219,6 +221,8 @@ import { TeamInfo } from "./team_info_type.ts";
 export { TeamInfo };
 import { TeamRegistration } from "./team_registration_type.ts";
 export { TeamRegistration };
+import { TmMapRecord } from "./tm_map_record_type.ts";
+export { TmMapRecord };
 import { TmMatch } from "./tm_match_type.ts";
 export { TmMatch };
 import { TmServer } from "./tm_server_type.ts";
@@ -284,6 +288,10 @@ const REMOTE_MODULE = {
         colName: "id",
         colType: (MatchTemplate.getTypeScriptAlgebraicType() as __AlgebraicTypeVariants.Product).value.elements[0].algebraicType,
       },
+    },
+    tm_map_record: {
+      tableName: "tm_map_record" as const,
+      rowType: TmMapRecord.getTypeScriptAlgebraicType(),
     },
     tm_match: {
       tableName: "tm_match" as const,
@@ -849,6 +857,11 @@ export class RemoteTables {
   get matchTemplate(): MatchTemplateTableHandle<'match_template'> {
     // clientCache is a private property
     return new MatchTemplateTableHandle((this.connection as unknown as { clientCache: __ClientCache }).clientCache.getOrCreateTable<MatchTemplate>(REMOTE_MODULE.tables.match_template));
+  }
+
+  get tmMapRecord(): TmMapRecordTableHandle<'tm_map_record'> {
+    // clientCache is a private property
+    return new TmMapRecordTableHandle((this.connection as unknown as { clientCache: __ClientCache }).clientCache.getOrCreateTable<TmMapRecord>(REMOTE_MODULE.tables.tm_map_record));
   }
 
   get tmMatch(): TmMatchTableHandle<'tm_match'> {

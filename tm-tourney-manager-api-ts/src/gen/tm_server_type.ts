@@ -45,6 +45,7 @@ export type TmServer = {
   online: boolean,
   config: ServerConfig,
   state: ServerState,
+  capturable: boolean,
   activeMatch: bigint | undefined,
   serverMethod: Method | undefined,
 };
@@ -68,6 +69,7 @@ export const TmServer = {
       { name: "online", algebraicType: __AlgebraicTypeValue.Bool },
       { name: "config", algebraicType: ServerConfig.getTypeScriptAlgebraicType() },
       { name: "state", algebraicType: ServerState.getTypeScriptAlgebraicType() },
+      { name: "capturable", algebraicType: __AlgebraicTypeValue.Bool },
       { name: "activeMatch", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.U64) },
       { name: "serverMethod", algebraicType: __AlgebraicTypeValue.createOptionType(Method.getTypeScriptAlgebraicType()) },
     );
