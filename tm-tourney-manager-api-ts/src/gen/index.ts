@@ -333,6 +333,11 @@ const REMOTE_MODULE = {
     tm_server_method: {
       tableName: "tm_server_method" as const,
       rowType: TmServerMethod.getTypeScriptAlgebraicType(),
+      primaryKey: "id",
+      primaryKeyInfo: {
+        colName: "id",
+        colType: (TmServerMethod.getTypeScriptAlgebraicType() as __AlgebraicTypeVariants.Product).value.elements[0].algebraicType,
+      },
     },
     tournament: {
       tableName: "tournament" as const,

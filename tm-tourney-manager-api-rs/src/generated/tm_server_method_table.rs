@@ -82,6 +82,23 @@ impl<'ctx> __sdk::Table for TmServerMethodTableHandle<'ctx> {
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
     let _table = client_cache.get_or_make_table::<TmServerMethod>("tm_server_method");
+    _table.add_unique_constraint::<u64>("id", |row| &row.id);
+}
+pub struct TmServerMethodUpdateCallbackId(__sdk::CallbackId);
+
+impl<'ctx> __sdk::TableWithPrimaryKey for TmServerMethodTableHandle<'ctx> {
+    type UpdateCallbackId = TmServerMethodUpdateCallbackId;
+
+    fn on_update(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row, &Self::Row) + Send + 'static,
+    ) -> TmServerMethodUpdateCallbackId {
+        TmServerMethodUpdateCallbackId(self.imp.on_update(Box::new(callback)))
+    }
+
+    fn remove_on_update(&self, callback: TmServerMethodUpdateCallbackId) {
+        self.imp.remove_on_update(callback.0)
+    }
 }
 
 #[doc(hidden)]
@@ -93,4 +110,34 @@ pub(super) fn parse_table_update(
             .with_cause(e)
             .into()
     })
+}
+
+/// Access to the `id` unique index on the table `tm_server_method`,
+/// which allows point queries on the field of the same name
+/// via the [`TmServerMethodIdUnique::find`] method.
+///
+/// Users are encouraged not to explicitly reference this type,
+/// but to directly chain method calls,
+/// like `ctx.db.tm_server_method().id().find(...)`.
+pub struct TmServerMethodIdUnique<'ctx> {
+    imp: __sdk::UniqueConstraintHandle<TmServerMethod, u64>,
+    phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
+}
+
+impl<'ctx> TmServerMethodTableHandle<'ctx> {
+    /// Get a handle on the `id` unique index on the table `tm_server_method`.
+    pub fn id(&self) -> TmServerMethodIdUnique<'ctx> {
+        TmServerMethodIdUnique {
+            imp: self.imp.get_unique_constraint::<u64>("id"),
+            phantom: std::marker::PhantomData,
+        }
+    }
+}
+
+impl<'ctx> TmServerMethodIdUnique<'ctx> {
+    /// Find the subscribed row whose `id` column value is equal to `col_val`,
+    /// if such a row is present in the client cache.
+    pub fn find(&self, col_val: &u64) -> Option<TmServerMethod> {
+        self.imp.find(col_val)
+    }
 }

@@ -24,6 +24,8 @@ pub trait ModeScriptMethodsXmlRpc {
         login: String,
         match_points: u32,
     ) -> Result<bool, ClientError>;
+
+    async fn pause_set_active(&self, active: bool) -> Result<bool, ClientError>;
 }
 
 impl ModeScriptMethodsXmlRpc for TrackmaniaServer {
@@ -114,6 +116,17 @@ impl ModeScriptMethodsXmlRpc for TrackmaniaServer {
                     "", //&lt; The map points, use an empty string to not update.
                     &match_points.to_string(), //&lt; The match points, use an empty string to not update.
                 ],
+            ),
+        )
+        .await
+    }
+
+    async fn pause_set_active(&self, active: bool) -> Result<bool, ClientError> {
+        self.call(
+            "TriggerModeScriptEventArray",
+            (
+                "Maniaplanet.Pause.SetActive",
+                [if active { "ture" } else { "false" }, "TODO Fix this"],
             ),
         )
         .await

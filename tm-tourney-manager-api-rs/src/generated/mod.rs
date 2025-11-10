@@ -592,8 +592,9 @@ impl __sdk::DbUpdate for DbUpdate {
             .with_updates_by_pk(|row| &row.id);
         diff.tm_server_event =
             cache.apply_diff_to_table::<TmServerEvent>("tm_server_event", &self.tm_server_event);
-        diff.tm_server_method =
-            cache.apply_diff_to_table::<TmServerMethod>("tm_server_method", &self.tm_server_method);
+        diff.tm_server_method = cache
+            .apply_diff_to_table::<TmServerMethod>("tm_server_method", &self.tm_server_method)
+            .with_updates_by_pk(|row| &row.id);
         diff.tournament = cache
             .apply_diff_to_table::<Tournament>("tournament", &self.tournament)
             .with_updates_by_pk(|row| &row.id);

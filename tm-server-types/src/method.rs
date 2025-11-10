@@ -1,3 +1,4 @@
+// TODO: Probably rename to MethodCall
 #[derive(Debug, Clone)]
 #[non_exhaustive]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -17,4 +18,6 @@ pub enum Method {
     /// ===============
     ///
     GetMethodsList,
+
+    PauseSetActive(bool),
 }

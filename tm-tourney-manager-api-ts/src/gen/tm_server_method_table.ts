@@ -61,6 +61,28 @@ export class TmServerMethodTableHandle<TableName extends string> implements __Ta
   iter(): Iterable<TmServerMethod> {
     return this.tableCache.iter();
   }
+  /**
+   * Access to the `id` unique index on the table `tm_server_method`,
+   * which allows point queries on the field of the same name
+   * via the [`TmServerMethodIdUnique.find`] method.
+   *
+   * Users are encouraged not to explicitly reference this type,
+   * but to directly chain method calls,
+   * like `ctx.db.tmServerMethod.id().find(...)`.
+   *
+   * Get a handle on the `id` unique index on the table `tm_server_method`.
+   */
+  id = {
+    // Find the subscribed row whose `id` column value is equal to `col_val`,
+    // if such a row is present in the client cache.
+    find: (col_val: bigint): TmServerMethod | undefined => {
+      for (let row of this.tableCache.iter()) {
+        if (__deepEqual(row.id, col_val)) {
+          return row;
+        }
+      }
+    },
+  };
 
   onInsert = (cb: (ctx: EventContext, row: TmServerMethod) => void) => {
     return this.tableCache.onInsert(cb);
@@ -77,4 +99,12 @@ export class TmServerMethodTableHandle<TableName extends string> implements __Ta
   removeOnDelete = (cb: (ctx: EventContext, row: TmServerMethod) => void) => {
     return this.tableCache.removeOnDelete(cb);
   }
-}
+
+  // Updates are only defined for tables with primary keys.
+  onUpdate = (cb: (ctx: EventContext, oldRow: TmServerMethod, newRow: TmServerMethod) => void) => {
+    return this.tableCache.onUpdate(cb);
+  }
+
+  removeOnUpdate = (cb: (ctx: EventContext, onRow: TmServerMethod, newRow: TmServerMethod) => void) => {
+    return this.tableCache.removeOnUpdate(cb);
+  }}

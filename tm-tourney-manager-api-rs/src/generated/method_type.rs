@@ -12,6 +12,8 @@ pub enum Method {
     ChatSendServerMessage(String),
 
     GetMethodsList,
+
+    PauseSetActive(bool),
 }
 
 impl __sdk::InModule for Method {

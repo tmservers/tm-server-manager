@@ -33,7 +33,9 @@ declare type __keep_Method = Method;
 
 
 export type TmServerMethod = {
+  id: bigint,
   serverId: string,
+  userId: string,
   method: Method,
 };
 let _cached_TmServerMethod_type_value: __AlgebraicTypeType | null = null;
@@ -50,7 +52,9 @@ export const TmServerMethod = {
     if (_cached_TmServerMethod_type_value) return _cached_TmServerMethod_type_value;
     _cached_TmServerMethod_type_value = __AlgebraicTypeValue.Product({ elements: [] });
     _cached_TmServerMethod_type_value.value.elements.push(
+      { name: "id", algebraicType: __AlgebraicTypeValue.U64 },
       { name: "serverId", algebraicType: __AlgebraicTypeValue.String },
+      { name: "userId", algebraicType: __AlgebraicTypeValue.String },
       { name: "method", algebraicType: Method.getTypeScriptAlgebraicType() },
     );
     return _cached_TmServerMethod_type_value;

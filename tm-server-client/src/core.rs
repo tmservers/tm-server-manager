@@ -18,6 +18,8 @@ use tokio::net::TcpStream;
 use tokio::sync::{broadcast, oneshot};
 use tracing::{error, info, warn};
 
+use crate::method::{ModeScriptMethodsXmlRpc, XmlRpcMethods};
+
 #[derive(Debug)]
 struct GbxPacket {
     handler: u32,
@@ -323,16 +325,21 @@ impl TrackmaniaServer {
         });
     }
 
-    /*  /// Allows to call a method on the server through the Method enum.
+    /// Allows to call a method on the server through the Method enum.
     /// Needs to be awaited in order to be executed and receive the response.
-    pub async fn method(&self, method: &Method) /* -> Result<R, ClientError>  */
+    pub async fn method(&self, method: Method) /* -> Result<R, ClientError> */
     {
-        let params = args.try_to_params()?;
-        let result = self.call_inner(Cow::Borrowed(method), params).await?;
+        match method {
+            Method::ListMethods => todo!(),
+            Method::ChatSendServerMessage(msg) => self.chat_send_server_massage(&msg).await,
+            Method::GetMethodsList => todo!(),
+            Method::PauseSetActive(bool) => self.pause_set_active(true).await,
+            _ => todo!(),
+        };
 
         // extract return value
-        Ok(R::try_from_value(&result)?)
-    } */
+        //Ok(R::try_from_value(&result)?)
+    }
 
     /// Allows to call a method on the server.
     /// Needs to be awaited in order to be executed and receive the response.

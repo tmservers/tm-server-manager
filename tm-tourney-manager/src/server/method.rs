@@ -5,7 +5,13 @@ use crate::server::tm_server;
 
 #[cfg_attr(feature = "spacetime", spacetimedb::table(name=tm_server_method, public))]
 pub struct TmServerMethod {
+    #[primary_key]
+    #[auto_inc]
+    id: u64,
+
     server_id: String,
+    //Audit Log?
+    user_id: String,
 
     method: Method,
 }
@@ -27,9 +33,13 @@ pub fn server_method_call(
         return Err(format!("Server with id {server_id} is not online."));
     }
 
-    ctx.db
-        .tm_server_method()
-        .try_insert(TmServerMethod { server_id, method })?;
+    ctx.db.tm_server_method().try_insert(TmServerMethod {
+        id: 0,
+        //TODO get from user auth token
+        user_id: "test_user".into(),
+        server_id,
+        method,
+    })?;
 
     Ok(())
 }

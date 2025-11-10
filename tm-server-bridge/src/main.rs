@@ -13,7 +13,10 @@ use tm_server_client::{
 use tokio::{signal, sync::Mutex};
 use tracing::{info, instrument, warn};
 
-use crate::{config::configure, methods::method_call_received, state::sync, telemetry::init_tracing_subscriber};
+use crate::{
+    config::configure, methods::method_call_received, state::sync,
+    telemetry::init_tracing_subscriber,
+};
 
 mod config;
 mod methods;
@@ -266,8 +269,6 @@ fn on_disconnected(_ctx: &ErrorContext, err: Option<Error>) {
 }
 
 fn server_update(_: &EventContext, old: &TmServer, new: &TmServer) {
-    let local_server = TRACKMANIA.wait();
-
     let new = new.clone();
     let old = old.clone();
 

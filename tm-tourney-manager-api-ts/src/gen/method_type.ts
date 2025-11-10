@@ -32,7 +32,8 @@ import * as MethodVariants from './method_variants'
 // The tagged union or sum type for the algebraic type `Method`.
 export type Method = MethodVariants.ListMethods |
   MethodVariants.ChatSendServerMessage |
-  MethodVariants.GetMethodsList;
+  MethodVariants.GetMethodsList |
+  MethodVariants.PauseSetActive;
 
 let _cached_Method_type_value: __AlgebraicTypeType | null = null;
 
@@ -47,6 +48,7 @@ export const Method = {
   ListMethods: { tag: "ListMethods" } as const,
   ChatSendServerMessage: (value: string): MethodVariants.ChatSendServerMessage => ({ tag: "ChatSendServerMessage", value }),
   GetMethodsList: { tag: "GetMethodsList" } as const,
+  PauseSetActive: (value: boolean): MethodVariants.PauseSetActive => ({ tag: "PauseSetActive", value }),
 
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
     if (_cached_Method_type_value) return _cached_Method_type_value;
@@ -55,6 +57,7 @@ export const Method = {
       { name: "ListMethods", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
       { name: "ChatSendServerMessage", algebraicType: __AlgebraicTypeValue.String },
       { name: "GetMethodsList", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
+      { name: "PauseSetActive", algebraicType: __AlgebraicTypeValue.Bool },
     );
     return _cached_Method_type_value;
   },
