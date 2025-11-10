@@ -31,6 +31,7 @@ import * as MethodVariants from './method_variants'
 
 // The tagged union or sum type for the algebraic type `Method`.
 export type Method = MethodVariants.ListMethods |
+  MethodVariants.ChatSendServerMessage |
   MethodVariants.GetMethodsList;
 
 let _cached_Method_type_value: __AlgebraicTypeType | null = null;
@@ -44,6 +45,7 @@ export const Method = {
   // assert!(foo.value === 42);
   // ```
   ListMethods: { tag: "ListMethods" } as const,
+  ChatSendServerMessage: (value: string): MethodVariants.ChatSendServerMessage => ({ tag: "ChatSendServerMessage", value }),
   GetMethodsList: { tag: "GetMethodsList" } as const,
 
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
@@ -51,6 +53,7 @@ export const Method = {
     _cached_Method_type_value = __AlgebraicTypeValue.Sum({ variants: [] });
     _cached_Method_type_value.value.variants.push(
       { name: "ListMethods", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
+      { name: "ChatSendServerMessage", algebraicType: __AlgebraicTypeValue.String },
       { name: "GetMethodsList", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
     );
     return _cached_Method_type_value;

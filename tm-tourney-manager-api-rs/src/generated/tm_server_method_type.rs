@@ -4,16 +4,15 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
+use super::method_type::Method;
+
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub enum Method {
-    ListMethods,
-
-    ChatSendServerMessage(String),
-
-    GetMethodsList,
+pub struct TmServerMethod {
+    pub server_id: String,
+    pub method: Method,
 }
 
-impl __sdk::InModule for Method {
+impl __sdk::InModule for TmServerMethod {
     type Module = super::RemoteModule;
 }

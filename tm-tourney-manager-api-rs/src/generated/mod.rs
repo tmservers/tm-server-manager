@@ -77,6 +77,7 @@ pub mod rounds_type;
 pub mod scheduling_type;
 pub mod scores_type;
 pub mod server_config_type;
+pub mod server_method_call_reducer;
 pub mod server_options_type;
 pub mod server_state_type;
 pub mod set_tm_server_state_reducer;
@@ -98,6 +99,8 @@ pub mod tm_server_config_table;
 pub mod tm_server_config_type;
 pub mod tm_server_event_table;
 pub mod tm_server_event_type;
+pub mod tm_server_method_table;
+pub mod tm_server_method_type;
 pub mod tm_server_table;
 pub mod tm_server_type;
 pub mod tournament_status_type;
@@ -209,6 +212,9 @@ pub use rounds_type::Rounds;
 pub use scheduling_type::Scheduling;
 pub use scores_type::Scores;
 pub use server_config_type::ServerConfig;
+pub use server_method_call_reducer::{
+    server_method_call, set_flags_for_server_method_call, ServerMethodCallCallbackId,
+};
 pub use server_options_type::ServerOptions;
 pub use server_state_type::ServerState;
 pub use set_tm_server_state_reducer::{
@@ -232,6 +238,8 @@ pub use tm_server_config_table::*;
 pub use tm_server_config_type::TmServerConfig;
 pub use tm_server_event_table::*;
 pub use tm_server_event_type::TmServerEvent;
+pub use tm_server_method_table::*;
+pub use tm_server_method_type::TmServerMethod;
 pub use tm_server_table::*;
 pub use tm_server_type::TmServer;
 pub use tournament_status_type::TournamentStatus;
@@ -310,6 +318,10 @@ pub enum Reducer {
         login: String,
         password: String,
     },
+    ServerMethodCall {
+        server_id: String,
+        method: Method,
+    },
     SetTmServerState {
         id: String,
         state: ServerState,
@@ -345,6 +357,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::PostEvent { .. } => "post_event",
             Reducer::PostGhost { .. } => "post_ghost",
             Reducer::RegisterServer { .. } => "register_server",
+            Reducer::ServerMethodCall { .. } => "server_method_call",
             Reducer::SetTmServerState { .. } => "set_tm_server_state",
             Reducer::TryStart { .. } => "try_start",
             Reducer::UpdateMatchConfig { .. } => "update_match_config",
@@ -426,6 +439,10 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 register_server_reducer::RegisterServerArgs,
             >("register_server", &value.args)?
             .into()),
+            "server_method_call" => Ok(__sdk::parse_reducer_args::<
+                server_method_call_reducer::ServerMethodCallArgs,
+            >("server_method_call", &value.args)?
+            .into()),
             "set_tm_server_state" => Ok(__sdk::parse_reducer_args::<
                 set_tm_server_state_reducer::SetTmServerStateArgs,
             >("set_tm_server_state", &value.args)?
@@ -466,6 +483,7 @@ pub struct DbUpdate {
     tm_server: __sdk::TableUpdate<TmServer>,
     tm_server_config: __sdk::TableUpdate<TmServerConfig>,
     tm_server_event: __sdk::TableUpdate<TmServerEvent>,
+    tm_server_method: __sdk::TableUpdate<TmServerMethod>,
     tournament: __sdk::TableUpdate<Tournament>,
     user: __sdk::TableUpdate<User>,
 }
@@ -509,6 +527,9 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "tm_server_event" => db_update
                     .tm_server_event
                     .append(tm_server_event_table::parse_table_update(table_update)?),
+                "tm_server_method" => db_update
+                    .tm_server_method
+                    .append(tm_server_method_table::parse_table_update(table_update)?),
                 "tournament" => db_update
                     .tournament
                     .append(tournament_table::parse_table_update(table_update)?),
@@ -571,6 +592,8 @@ impl __sdk::DbUpdate for DbUpdate {
             .with_updates_by_pk(|row| &row.id);
         diff.tm_server_event =
             cache.apply_diff_to_table::<TmServerEvent>("tm_server_event", &self.tm_server_event);
+        diff.tm_server_method =
+            cache.apply_diff_to_table::<TmServerMethod>("tm_server_method", &self.tm_server_method);
         diff.tournament = cache
             .apply_diff_to_table::<Tournament>("tournament", &self.tournament)
             .with_updates_by_pk(|row| &row.id);
@@ -597,6 +620,7 @@ pub struct AppliedDiff<'r> {
     tm_server: __sdk::TableAppliedDiff<'r, TmServer>,
     tm_server_config: __sdk::TableAppliedDiff<'r, TmServerConfig>,
     tm_server_event: __sdk::TableAppliedDiff<'r, TmServerEvent>,
+    tm_server_method: __sdk::TableAppliedDiff<'r, TmServerMethod>,
     tournament: __sdk::TableAppliedDiff<'r, Tournament>,
     user: __sdk::TableAppliedDiff<'r, User>,
 }
@@ -648,6 +672,11 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
         callbacks.invoke_table_row_callbacks::<TmServerEvent>(
             "tm_server_event",
             &self.tm_server_event,
+            event,
+        );
+        callbacks.invoke_table_row_callbacks::<TmServerMethod>(
+            "tm_server_method",
+            &self.tm_server_method,
             event,
         );
         callbacks.invoke_table_row_callbacks::<Tournament>("tournament", &self.tournament, event);
@@ -1253,6 +1282,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
         tm_server_table::register_table(client_cache);
         tm_server_config_table::register_table(client_cache);
         tm_server_event_table::register_table(client_cache);
+        tm_server_method_table::register_table(client_cache);
         tournament_table::register_table(client_cache);
         user_table::register_table(client_cache);
     }

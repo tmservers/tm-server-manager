@@ -10,6 +10,8 @@ pub enum Method {
     ///
     ListMethods,
 
+    ChatSendServerMessage(String),
+
     /// ===============
     /// ModeScript Methods
     /// ===============

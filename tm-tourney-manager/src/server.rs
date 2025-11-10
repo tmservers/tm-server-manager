@@ -8,6 +8,7 @@ use crate::server::{
 
 pub mod config;
 pub mod event;
+pub mod method;
 pub mod state;
 
 #[cfg_attr(feature = "spacetime", spacetimedb::table(name=tm_server, public))]
@@ -33,10 +34,9 @@ pub struct TmServer {
     capturable: bool,
 
     active_match: Option<u64>,
-
     // TODO: Properly enfoce the protocol.
-    /// On every update call this MUST be set to None EXCEPT you want to call a method.
-    server_method: Option<Method>,
+    // On every update call this MUST be set to None EXCEPT you want to call a method.
+    //server_method: Option<Method>,
 }
 
 /* #[derive(Debug)]
@@ -121,7 +121,7 @@ pub fn register_server(
             active_match: None,
             //TODO obtain userid from HTTP request
             owner_id: "test_user".into(),
-            server_method: None,
+            // server_method: None,
             config: ServerConfig::default(),
             state: ServerState::default(),
             identity: ctx.identity(),

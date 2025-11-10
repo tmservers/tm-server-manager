@@ -2,7 +2,6 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN YOUR MODULE SOURCE CODE INSTEAD.
 
 #![allow(unused, clippy::all)]
-use super::method_type::Method;
 use super::server_config_type::ServerConfig;
 use super::server_state_type::ServerState;
 use super::tm_server_type::TmServer;

@@ -61,6 +61,8 @@ import { PostGhost } from "./post_ghost_reducer.ts";
 export { PostGhost };
 import { RegisterServer } from "./register_server_reducer.ts";
 export { RegisterServer };
+import { ServerMethodCall } from "./server_method_call_reducer.ts";
+export { ServerMethodCall };
 import { SetTmServerState } from "./set_tm_server_state_reducer.ts";
 export { SetTmServerState };
 import { TryStart } from "./try_start_reducer.ts";
@@ -91,6 +93,8 @@ import { TmServerConfigTableHandle } from "./tm_server_config_table.ts";
 export { TmServerConfigTableHandle };
 import { TmServerEventTableHandle } from "./tm_server_event_table.ts";
 export { TmServerEventTableHandle };
+import { TmServerMethodTableHandle } from "./tm_server_method_table.ts";
+export { TmServerMethodTableHandle };
 import { TournamentTableHandle } from "./tournament_table.ts";
 export { TournamentTableHandle };
 import { UserTableHandle } from "./user_table.ts";
@@ -231,6 +235,8 @@ import { TmServerConfig } from "./tm_server_config_type.ts";
 export { TmServerConfig };
 import { TmServerEvent } from "./tm_server_event_type.ts";
 export { TmServerEvent };
+import { TmServerMethod } from "./tm_server_method_type.ts";
+export { TmServerMethod };
 import { Tournament } from "./tournament_type.ts";
 export { Tournament };
 import { TournamentStatus } from "./tournament_status_type.ts";
@@ -324,6 +330,10 @@ const REMOTE_MODULE = {
       tableName: "tm_server_event" as const,
       rowType: TmServerEvent.getTypeScriptAlgebraicType(),
     },
+    tm_server_method: {
+      tableName: "tm_server_method" as const,
+      rowType: TmServerMethod.getTypeScriptAlgebraicType(),
+    },
     tournament: {
       tableName: "tournament" as const,
       rowType: Tournament.getTypeScriptAlgebraicType(),
@@ -404,6 +414,10 @@ const REMOTE_MODULE = {
       reducerName: "register_server",
       argsType: RegisterServer.getTypeScriptAlgebraicType(),
     },
+    server_method_call: {
+      reducerName: "server_method_call",
+      argsType: ServerMethodCall.getTypeScriptAlgebraicType(),
+    },
     set_tm_server_state: {
       reducerName: "set_tm_server_state",
       argsType: SetTmServerState.getTypeScriptAlgebraicType(),
@@ -461,6 +475,7 @@ export type Reducer = never
 | { name: "PostEvent", args: PostEvent }
 | { name: "PostGhost", args: PostGhost }
 | { name: "RegisterServer", args: RegisterServer }
+| { name: "ServerMethodCall", args: ServerMethodCall }
 | { name: "SetTmServerState", args: SetTmServerState }
 | { name: "TryStart", args: TryStart }
 | { name: "UpdateMatchConfig", args: UpdateMatchConfig }
@@ -693,6 +708,22 @@ export class RemoteReducers {
     this.connection.offReducer("register_server", callback);
   }
 
+  serverMethodCall(serverId: string, method: Method) {
+    const __args = { serverId, method };
+    let __writer = new __BinaryWriter(1024);
+    ServerMethodCall.serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("server_method_call", __argsBuffer, this.setCallReducerFlags.serverMethodCallFlags);
+  }
+
+  onServerMethodCall(callback: (ctx: ReducerEventContext, serverId: string, method: Method) => void) {
+    this.connection.onReducer("server_method_call", callback);
+  }
+
+  removeOnServerMethodCall(callback: (ctx: ReducerEventContext, serverId: string, method: Method) => void) {
+    this.connection.offReducer("server_method_call", callback);
+  }
+
   setTmServerState(id: string, state: ServerState) {
     const __args = { id, state };
     let __writer = new __BinaryWriter(1024);
@@ -809,6 +840,11 @@ export class SetReducerFlags {
     this.registerServerFlags = flags;
   }
 
+  serverMethodCallFlags: __CallReducerFlags = 'FullUpdate';
+  serverMethodCall(flags: __CallReducerFlags) {
+    this.serverMethodCallFlags = flags;
+  }
+
   setTmServerStateFlags: __CallReducerFlags = 'FullUpdate';
   setTmServerState(flags: __CallReducerFlags) {
     this.setTmServerStateFlags = flags;
@@ -882,6 +918,11 @@ export class RemoteTables {
   get tmServerEvent(): TmServerEventTableHandle<'tm_server_event'> {
     // clientCache is a private property
     return new TmServerEventTableHandle((this.connection as unknown as { clientCache: __ClientCache }).clientCache.getOrCreateTable<TmServerEvent>(REMOTE_MODULE.tables.tm_server_event));
+  }
+
+  get tmServerMethod(): TmServerMethodTableHandle<'tm_server_method'> {
+    // clientCache is a private property
+    return new TmServerMethodTableHandle((this.connection as unknown as { clientCache: __ClientCache }).clientCache.getOrCreateTable<TmServerMethod>(REMOTE_MODULE.tables.tm_server_method));
   }
 
   get tournament(): TournamentTableHandle<'tournament'> {

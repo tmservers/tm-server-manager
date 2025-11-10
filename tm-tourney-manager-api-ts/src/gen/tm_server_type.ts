@@ -33,9 +33,6 @@ declare type __keep_ServerConfig = ServerConfig;
 import { ServerState } from "./server_state_type";
 // Mark import as potentially unused
 declare type __keep_ServerState = ServerState;
-import { Method } from "./method_type";
-// Mark import as potentially unused
-declare type __keep_Method = Method;
 
 
 export type TmServer = {
@@ -47,7 +44,6 @@ export type TmServer = {
   state: ServerState,
   capturable: boolean,
   activeMatch: bigint | undefined,
-  serverMethod: Method | undefined,
 };
 let _cached_TmServer_type_value: __AlgebraicTypeType | null = null;
 
@@ -71,7 +67,6 @@ export const TmServer = {
       { name: "state", algebraicType: ServerState.getTypeScriptAlgebraicType() },
       { name: "capturable", algebraicType: __AlgebraicTypeValue.Bool },
       { name: "activeMatch", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.U64) },
-      { name: "serverMethod", algebraicType: __AlgebraicTypeValue.createOptionType(Method.getTypeScriptAlgebraicType()) },
     );
     return _cached_TmServer_type_value;
   },

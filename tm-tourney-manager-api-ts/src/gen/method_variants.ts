@@ -29,5 +29,6 @@ import {
 } from "spacetimedb";
 
 export type ListMethods = { tag: "ListMethods" };
+export type ChatSendServerMessage = { tag: "ChatSendServerMessage", value: string };
 export type GetMethodsList = { tag: "GetMethodsList" };
 

@@ -13,9 +13,10 @@ use tm_server_client::{
 use tokio::{signal, sync::Mutex};
 use tracing::{info, instrument, warn};
 
-use crate::{config::configure, state::sync, telemetry::init_tracing_subscriber};
+use crate::{config::configure, methods::method_call_received, state::sync, telemetry::init_tracing_subscriber};
 
 mod config;
+mod methods;
 mod state;
 mod telemetry;
 #[cfg(test)]
@@ -212,9 +213,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             .subscription_builder()
             .on_applied(|_| tracing::debug!("Subscription successfully applied!"))
             .on_error(|_, mhm| tracing::error!("Subscription failed: {mhm:?}"))
-            .subscribe(format!(
-                "SELECT * FROM tm_server WHERE id = '{tm_server_login}'"
-            ));
+            .subscribe([
+                format!("SELECT * FROM tm_server WHERE id = '{tm_server_login}'"),
+                "SELECT * FROM tm_server_method".into(), //TODO this should be possible with views since you should only be able to query the server as a server.
+            ]);
 
         spacetime
             .reducers
@@ -222,6 +224,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
         spacetime.db.tm_server().on_insert(server_bootstrap);
         spacetime.db.tm_server().on_update(server_update);
+
+        spacetime
+            .db
+            .tm_server_method()
+            .on_insert(method_call_received);
     }
 
     tokio::spawn(async move {
@@ -265,25 +272,10 @@ fn server_update(_: &EventContext, old: &TmServer, new: &TmServer) {
     let old = old.clone();
 
     tokio::spawn(async move {
-        if let Some(method) = new.server_method {
-            let _: Result<bool, ClientError> = local_server
-                .call("ChatSendServerMessage", "Method called")
-                .await;
-        }
+        //TODO this needs to be cleaner
         if old.config != new.config {
             configure(new).await;
         }
-
-        //server.method(method)
-        /* let _: Result<bool, ClientError> = server
-        .call(
-            "TriggerModeScriptEventArray",
-            (
-                "Maniaplanet.Pause.SetActive",
-                [if paused { "true" } else { "false" }],
-            ),
-        )
-        .await; */
     });
 }
 
