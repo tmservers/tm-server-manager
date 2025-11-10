@@ -333,7 +333,7 @@ impl TrackmaniaServer {
             Method::ListMethods => todo!(),
             Method::ChatSendServerMessage(msg) => self.chat_send_server_massage(&msg).await,
             Method::GetMethodsList => todo!(),
-            Method::PauseSetActive(bool) => self.pause_set_active(true).await,
+            Method::PauseSetActive(active) => self.pause_set_active(active).await,
             _ => todo!(),
         };
 
