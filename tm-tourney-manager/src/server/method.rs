@@ -1,5 +1,5 @@
 use spacetimedb::{ReducerContext, ReducerResult, Table, reducer, sats::algebraic_value::ser};
-use tm_server_types::method::Method;
+use tm_server_types::method::MethodCall;
 
 use crate::server::tm_server;
 
@@ -13,14 +13,14 @@ pub struct TmServerMethod {
     //Audit Log?
     user_id: String,
 
-    method: Method,
+    method: MethodCall,
 }
 
 #[reducer]
 pub fn server_method_call(
     ctx: &ReducerContext,
     server_id: String,
-    method: Method,
+    method: MethodCall,
 ) -> Result<(), String> {
     //TODO do the proper auth
     // the challenge is who is able to access the server? not only owner i guess

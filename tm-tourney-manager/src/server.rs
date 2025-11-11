@@ -1,5 +1,5 @@
 use spacetimedb::{Identity, ReducerContext, SpacetimeType, Table, reducer, table};
-use tm_server_types::{config::ServerConfig, event::Event, method::Method};
+use tm_server_types::{config::ServerConfig, event::Event, method::MethodCall};
 
 use crate::server::{
     config::{TmServerConfig, tm_server_config},

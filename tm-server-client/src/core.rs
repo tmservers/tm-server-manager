@@ -12,7 +12,7 @@ use dxr::{
 use tachyonix::Sender;
 use thiserror::Error;
 use tm_server_types::event::{self, Event};
-use tm_server_types::method::Method;
+use tm_server_types::method::MethodCall;
 use tokio::io::{self, AsyncReadExt, AsyncWriteExt, BufWriter, ReadHalf, WriteHalf};
 use tokio::net::TcpStream;
 use tokio::sync::{broadcast, oneshot};
@@ -327,13 +327,13 @@ impl TrackmaniaServer {
 
     /// Allows to call a method on the server through the Method enum.
     /// Needs to be awaited in order to be executed and receive the response.
-    pub async fn method(&self, method: Method) /* -> Result<R, ClientError> */
+    pub async fn method(&self, method: MethodCall) /* -> Result<R, ClientError> */
     {
         match method {
-            Method::ListMethods => todo!(),
-            Method::ChatSendServerMessage(msg) => self.chat_send_server_massage(&msg).await,
-            Method::GetMethodsList => todo!(),
-            Method::PauseSetActive(active) => self.pause_set_active(active).await,
+            MethodCall::ListMethods => todo!(),
+            MethodCall::ChatSendServerMessage(msg) => self.chat_send_server_massage(&msg).await,
+            MethodCall::GetMethodsList => todo!(),
+            MethodCall::PauseSetActive(active) => self.pause_set_active(active).await,
             _ => todo!(),
         };
 
