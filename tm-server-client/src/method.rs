@@ -2,7 +2,6 @@ use tm_server_types::{base::PlayerInfo, method::MethodCall};
 
 use crate::{ClientError, TrackmaniaServer};
 
-#[allow(async_fn_in_trait)]
 pub trait ModeScriptMethodsXmlRpc {
     async fn enable_callbacks(&self, enable: bool) -> Result<bool, ClientError>;
     async fn get_callbacks_list(&self, enable: bool) -> Result<bool, ClientError>;
@@ -133,7 +132,6 @@ impl ModeScriptMethodsXmlRpc for TrackmaniaServer {
     }
 }
 
-#[allow(async_fn_in_trait)]
 pub trait XmlRpcMethods {
     async fn kick(&self, player: String, message: Option<String>) -> Result<bool, ClientError>;
 
