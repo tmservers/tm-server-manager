@@ -28,40 +28,43 @@ import {
   type TableHandle as __TableHandle,
 } from "spacetimedb";
 
-export type KickArgs = {
-  ubiId: string,
-  message: string | undefined,
+import { MethodResponse } from "./method_response_type";
+// Mark import as potentially unused
+declare type __keep_MethodResponse = MethodResponse;
+
+export type ServerMethodResponse = {
+  callId: bigint,
+  response: MethodResponse,
 };
-let _cached_KickArgs_type_value: __AlgebraicTypeType | null = null;
+let _cached_ServerMethodResponse_type_value: __AlgebraicTypeType | null = null;
 
 /**
  * An object for generated helper functions.
  */
-export const KickArgs = {
+export const ServerMethodResponse = {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_KickArgs_type_value) return _cached_KickArgs_type_value;
-    _cached_KickArgs_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_KickArgs_type_value.value.elements.push(
-      { name: "ubiId", algebraicType: __AlgebraicTypeValue.String },
-      { name: "message", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.String) },
+    if (_cached_ServerMethodResponse_type_value) return _cached_ServerMethodResponse_type_value;
+    _cached_ServerMethodResponse_type_value = __AlgebraicTypeValue.Product({ elements: [] });
+    _cached_ServerMethodResponse_type_value.value.elements.push(
+      { name: "callId", algebraicType: __AlgebraicTypeValue.U64 },
+      { name: "response", algebraicType: MethodResponse.getTypeScriptAlgebraicType() },
     );
-    return _cached_KickArgs_type_value;
+    return _cached_ServerMethodResponse_type_value;
   },
 
-  serialize(writer: __BinaryWriter, value: KickArgs): void {
-    __AlgebraicTypeValue.serializeValue(writer, KickArgs.getTypeScriptAlgebraicType(), value);
+  serialize(writer: __BinaryWriter, value: ServerMethodResponse): void {
+    __AlgebraicTypeValue.serializeValue(writer, ServerMethodResponse.getTypeScriptAlgebraicType(), value);
   },
 
-  deserialize(reader: __BinaryReader): KickArgs {
-    return __AlgebraicTypeValue.deserializeValue(reader, KickArgs.getTypeScriptAlgebraicType());
+  deserialize(reader: __BinaryReader): ServerMethodResponse {
+    return __AlgebraicTypeValue.deserializeValue(reader, ServerMethodResponse.getTypeScriptAlgebraicType());
   },
 
 }
 
-export default KickArgs;
-
+export default ServerMethodResponse;
 

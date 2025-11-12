@@ -1,4 +1,5 @@
-use spacetimedb::{Identity, ReducerContext, SpacetimeType, Table, reducer, table};
+use spacetimedb::view;
+use spacetimedb::{Identity, ReducerContext, SpacetimeType, Table, ViewContext, reducer, table};
 use tm_server_types::{config::ServerConfig, event::Event, method::MethodCall};
 
 use crate::server::{
@@ -37,6 +38,11 @@ pub struct TmServer {
     // TODO: Properly enfoce the protocol.
     // On every update call this MUST be set to None EXCEPT you want to call a method.
     //server_method: Option<Method>,
+}
+
+#[view(name = this_tm_server, public)]
+fn this_tm_server(ctx: &ViewContext) -> Option<TmServer> {
+    ctx.db.tm_server().identity().find(ctx.sender)
 }
 
 /* #[derive(Debug)]

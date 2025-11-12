@@ -29,8 +29,8 @@ import {
 } from "spacetimedb";
 
 export type BanArgs = {
-  login: string,
-  message: string,
+  ubiId: string,
+  message: string | undefined,
 };
 let _cached_BanArgs_type_value: __AlgebraicTypeType | null = null;
 
@@ -46,8 +46,8 @@ export const BanArgs = {
     if (_cached_BanArgs_type_value) return _cached_BanArgs_type_value;
     _cached_BanArgs_type_value = __AlgebraicTypeValue.Product({ elements: [] });
     _cached_BanArgs_type_value.value.elements.push(
-      { name: "login", algebraicType: __AlgebraicTypeValue.String },
-      { name: "message", algebraicType: __AlgebraicTypeValue.String },
+      { name: "ubiId", algebraicType: __AlgebraicTypeValue.String },
+      { name: "message", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.String) },
     );
     return _cached_BanArgs_type_value;
   },

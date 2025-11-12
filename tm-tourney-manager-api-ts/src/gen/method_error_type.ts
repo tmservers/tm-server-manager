@@ -28,40 +28,40 @@ import {
   type TableHandle as __TableHandle,
 } from "spacetimedb";
 
-export type KickArgs = {
-  ubiId: string,
-  message: string | undefined,
+export type MethodError = {
+  code: number,
+  message: string,
 };
-let _cached_KickArgs_type_value: __AlgebraicTypeType | null = null;
+let _cached_MethodError_type_value: __AlgebraicTypeType | null = null;
 
 /**
  * An object for generated helper functions.
  */
-export const KickArgs = {
+export const MethodError = {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_KickArgs_type_value) return _cached_KickArgs_type_value;
-    _cached_KickArgs_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_KickArgs_type_value.value.elements.push(
-      { name: "ubiId", algebraicType: __AlgebraicTypeValue.String },
-      { name: "message", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.String) },
+    if (_cached_MethodError_type_value) return _cached_MethodError_type_value;
+    _cached_MethodError_type_value = __AlgebraicTypeValue.Product({ elements: [] });
+    _cached_MethodError_type_value.value.elements.push(
+      { name: "code", algebraicType: __AlgebraicTypeValue.I32 },
+      { name: "message", algebraicType: __AlgebraicTypeValue.String },
     );
-    return _cached_KickArgs_type_value;
+    return _cached_MethodError_type_value;
   },
 
-  serialize(writer: __BinaryWriter, value: KickArgs): void {
-    __AlgebraicTypeValue.serializeValue(writer, KickArgs.getTypeScriptAlgebraicType(), value);
+  serialize(writer: __BinaryWriter, value: MethodError): void {
+    __AlgebraicTypeValue.serializeValue(writer, MethodError.getTypeScriptAlgebraicType(), value);
   },
 
-  deserialize(reader: __BinaryReader): KickArgs {
-    return __AlgebraicTypeValue.deserializeValue(reader, KickArgs.getTypeScriptAlgebraicType());
+  deserialize(reader: __BinaryReader): MethodError {
+    return __AlgebraicTypeValue.deserializeValue(reader, MethodError.getTypeScriptAlgebraicType());
   },
 
 }
 
-export default KickArgs;
+export default MethodError;
 
 

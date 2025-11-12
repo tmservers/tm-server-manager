@@ -7,8 +7,8 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct BanArgs {
-    pub login: String,
-    pub message: String,
+    pub ubi_id: String,
+    pub message: Option<String>,
 }
 
 impl __sdk::InModule for BanArgs {

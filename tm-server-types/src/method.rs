@@ -52,14 +52,14 @@ pub enum MethodResponse {
     /// All methods whic return a bool are covered with this.
     Success,
     Error(MethodError),
+    RpcError(String),
 }
 
 #[derive(Debug, Clone)]
-#[non_exhaustive]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub struct MethodError {
-    code: i32,
-    message: String,
+    pub code: i32,
+    pub message: String,
 }

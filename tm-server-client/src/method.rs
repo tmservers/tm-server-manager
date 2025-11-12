@@ -1,4 +1,7 @@
-use tm_server_types::{base::PlayerInfo, method::MethodCall};
+use tm_server_types::{
+    base::PlayerInfo,
+    method::{MethodCall, MethodError, MethodResponse},
+};
 
 use crate::{ClientError, TrackmaniaServer};
 
@@ -223,20 +226,29 @@ impl XmlRpcMethods for TrackmaniaServer {
 }
 
 pub(crate) trait TypeMethodCall {
-    async fn call_with_server(self, server: &TrackmaniaServer);
+    async fn call_with_server(self, server: &TrackmaniaServer) -> MethodResponse;
 }
 
 impl TypeMethodCall for MethodCall {
-    async fn call_with_server(self, server: &TrackmaniaServer) {
+    async fn call_with_server(self, server: &TrackmaniaServer) -> MethodResponse {
         match self {
             MethodCall::ListMethods => todo!(),
             MethodCall::MethodSignature(_) => todo!(),
             MethodCall::MethodHelp(_) => todo!(),
-            MethodCall::ChatSendServerMessage(msg) => server.chat_send_server_massage(&msg).await,
+            MethodCall::ChatSendServerMessage(msg) => {
+                match server.chat_send_server_massage(&msg).await {
+                    Ok(_) => MethodResponse::Success,
+                    Err(err) => err.into(),
+                }
+            }
             MethodCall::ChatSendServerMessageToUser(chat_send_server_message_to_user_args) => {
                 todo!()
             }
-            MethodCall::ChatSend(_) => todo!(),
+            MethodCall::ChatSend(msg) =>
+            /*  server.chat_send(msg).await */
+            {
+                todo!()
+            }
             MethodCall::ChatSendToUser(chat_send_to_user_args) => todo!(),
             MethodCall::Kick(kick_args) => todo!(),
             MethodCall::Ban(ban_args) => todo!(),
@@ -248,8 +260,24 @@ impl TypeMethodCall for MethodCall {
             MethodCall::SendToServerAfterMatchEnd(_) => todo!(),
             MethodCall::GetMethodsList => todo!(),
 
-            MethodCall::PauseSetActive(active) => server.pause_set_active(active).await,
+            MethodCall::PauseSetActive(active) => match server.pause_set_active(active).await {
+                Ok(_) => MethodResponse::Success,
+                Err(err) => err.into(),
+            },
             _ => unimplemented!(),
-        };
+        }
+    }
+}
+
+impl Into<MethodResponse> for ClientError {
+    fn into(self) -> MethodResponse {
+        match self {
+            ClientError::Fault { fault } => MethodResponse::Error(MethodError {
+                code: fault.code(),
+                message: fault.string().into(),
+            }),
+            ClientError::RPC { error } => MethodResponse::RpcError(error.to_string()),
+            ClientError::Incomplete => MethodResponse::RpcError("Incomplete".into()),
+        }
     }
 }

@@ -1,13 +1,13 @@
-use tm_server_client::types::method::MethodCall;
-use tm_tourney_manager_api_rs::{EventContext, TmServerMethodCall};
+use tm_server_client::types::method::{MethodCall, MethodResponse};
+use tm_tourney_manager_api_rs::{EventContext, TmServerMethodCall, server_method_response};
 
-use crate::TRACKMANIA;
+use crate::{SPACETIME, TRACKMANIA};
 
 pub fn method_call_received(_: &EventContext, method: &TmServerMethodCall) {
     tracing::error!("{method:#?}");
     let new = method.clone();
     tokio::spawn(async move {
-        TRACKMANIA
+        let response = TRACKMANIA
             .wait()
             .method(
                 //SAFETY: Its the same type but rust cant know that.
@@ -18,5 +18,14 @@ pub fn method_call_received(_: &EventContext, method: &TmServerMethodCall) {
                 },
             )
             .await;
+
+        SPACETIME.wait().reducers.server_method_response(
+            new.id, //SAFETY: Its the same type but rust cant know that.
+            unsafe {
+                std::mem::transmute::<MethodResponse, tm_tourney_manager_api_rs::MethodResponse>(
+                    response,
+                )
+            },
+        )
     });
 }

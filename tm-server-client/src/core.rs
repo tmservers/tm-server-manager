@@ -326,9 +326,10 @@ impl TrackmaniaServer {
 
     /// Allows to call a method on the server through the Method enum.
     /// Needs to be awaited in order to be executed and receive the response.
-    pub async fn method(&self, method: tm_server_types::method::MethodCall)
-    /* -> Result<R, ClientError> */
-    {
+    pub async fn method(
+        &self,
+        method: tm_server_types::method::MethodCall,
+    ) -> tm_server_types::method::MethodResponse {
         method.call_with_server(self).await
 
         // extract return value

@@ -3,9 +3,8 @@
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub struct KickArgs {
-    //TODO: corerct args
-    login: String,
-    message: String,
+    ubi_id: String,
+    message: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -14,6 +13,6 @@ pub struct KickArgs {
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub struct BanArgs {
     //TODO: corerct args
-    login: String,
-    message: String,
+    ubi_id: String,
+    message: Option<String>,
 }
