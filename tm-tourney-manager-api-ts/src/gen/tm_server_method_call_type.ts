@@ -27,44 +27,49 @@ import {
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
   type TableHandle as __TableHandle,
 } from "spacetimedb";
-
 import { MethodCall } from "./method_call_type";
 // Mark import as potentially unused
 declare type __keep_MethodCall = MethodCall;
 
-export type ServerMethodCall = {
+
+export type TmServerMethodCall = {
+  id: bigint,
   serverId: string,
+  userId: string,
   method: MethodCall,
 };
-let _cached_ServerMethodCall_type_value: __AlgebraicTypeType | null = null;
+let _cached_TmServerMethodCall_type_value: __AlgebraicTypeType | null = null;
 
 /**
  * An object for generated helper functions.
  */
-export const ServerMethodCall = {
+export const TmServerMethodCall = {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_ServerMethodCall_type_value) return _cached_ServerMethodCall_type_value;
-    _cached_ServerMethodCall_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_ServerMethodCall_type_value.value.elements.push(
+    if (_cached_TmServerMethodCall_type_value) return _cached_TmServerMethodCall_type_value;
+    _cached_TmServerMethodCall_type_value = __AlgebraicTypeValue.Product({ elements: [] });
+    _cached_TmServerMethodCall_type_value.value.elements.push(
+      { name: "id", algebraicType: __AlgebraicTypeValue.U64 },
       { name: "serverId", algebraicType: __AlgebraicTypeValue.String },
+      { name: "userId", algebraicType: __AlgebraicTypeValue.String },
       { name: "method", algebraicType: MethodCall.getTypeScriptAlgebraicType() },
     );
-    return _cached_ServerMethodCall_type_value;
+    return _cached_TmServerMethodCall_type_value;
   },
 
-  serialize(writer: __BinaryWriter, value: ServerMethodCall): void {
-    __AlgebraicTypeValue.serializeValue(writer, ServerMethodCall.getTypeScriptAlgebraicType(), value);
+  serialize(writer: __BinaryWriter, value: TmServerMethodCall): void {
+    __AlgebraicTypeValue.serializeValue(writer, TmServerMethodCall.getTypeScriptAlgebraicType(), value);
   },
 
-  deserialize(reader: __BinaryReader): ServerMethodCall {
-    return __AlgebraicTypeValue.deserializeValue(reader, ServerMethodCall.getTypeScriptAlgebraicType());
+  deserialize(reader: __BinaryReader): TmServerMethodCall {
+    return __AlgebraicTypeValue.deserializeValue(reader, TmServerMethodCall.getTypeScriptAlgebraicType());
   },
 
 }
 
-export default ServerMethodCall;
+export default TmServerMethodCall;
+
 

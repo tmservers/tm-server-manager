@@ -1,6 +1,9 @@
 mod chat;
 pub use chat::*;
 
+mod player;
+pub use player::*;
+
 // TODO: Probably rename to MethodCall
 #[derive(Debug, Clone)]
 #[non_exhaustive]
@@ -23,7 +26,6 @@ pub enum MethodCall {
     Kick(KickArgs),
     Ban(BanArgs),
     UnBan(String),
-
     Ignore(String),
     UnIgnore(String),
 

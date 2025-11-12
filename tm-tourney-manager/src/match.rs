@@ -210,19 +210,22 @@ pub fn update_match_config(ctx: &ReducerContext, id: u64, config: ServerConfig) 
 /// If the match is fully configured and ready start.
 /// This can also serve as a manual override for scheduled matches.
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn try_start(ctx: &ReducerContext, match_id: u64) {
-    //TODO authorization
-    if let Some(mut stage_match) = ctx.db.tm_match().id().find(match_id)
-        && let Some(server) = &stage_match.server_id
+pub fn try_start(ctx: &ReducerContext, match_id: u64) -> Result<(), String> {
+    ctx.auth_user()?;
+    if let Some(mut tm_match) = ctx.db.tm_match().id().find(match_id)
+        // Match needs an assigned server
+        && let Some(server) = &tm_match.server_id
+        //The assigned server needs to be valid
         && let Some(mut server) = ctx.db.tm_server().id().find(server)
-        && let Some(config) = &stage_match.match_config
-        && stage_match.status == MatchStatus::Upcoming
+        && let Some(config) = &tm_match.match_config
+        && tm_match.status == MatchStatus::Upcoming
     {
         server.set_config(config.clone());
-        stage_match.status = MatchStatus::Live;
-        ctx.db.tm_match().id().update(stage_match);
+        tm_match.status = MatchStatus::Live;
+        ctx.db.tm_match().id().update(tm_match);
         ctx.db.tm_server().id().update(server);
     }
+    Ok(())
 }
 
 #[cfg_attr(feature = "spacetime", spacetimedb::table(name = match_template,public))]

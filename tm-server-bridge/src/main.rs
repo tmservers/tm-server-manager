@@ -218,7 +218,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             .on_error(|_, mhm| tracing::error!("Subscription failed: {mhm:?}"))
             .subscribe([
                 format!("SELECT * FROM tm_server WHERE id = '{tm_server_login}'"),
-                "SELECT * FROM tm_server_method".into(), //TODO this should be possible with views since you should only be able to query the server as a server.
+                "SELECT * FROM tm_server_method_call".into(), //TODO this should be possible with views since you should only be able to query the server as a server.
             ]);
 
         spacetime
@@ -230,7 +230,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
         spacetime
             .db
-            .tm_server_method()
+            .tm_server_method_call()
             .on_insert(method_call_received);
     }
 

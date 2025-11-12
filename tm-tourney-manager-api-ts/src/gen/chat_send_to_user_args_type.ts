@@ -27,49 +27,41 @@ import {
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
   type TableHandle as __TableHandle,
 } from "spacetimedb";
-import { Method } from "./method_type";
-// Mark import as potentially unused
-declare type __keep_Method = Method;
 
-
-export type TmServerMethod = {
-  id: bigint,
-  serverId: string,
-  userId: string,
-  method: Method,
+export type ChatSendToUserArgs = {
+  login: string,
+  message: string,
 };
-let _cached_TmServerMethod_type_value: __AlgebraicTypeType | null = null;
+let _cached_ChatSendToUserArgs_type_value: __AlgebraicTypeType | null = null;
 
 /**
  * An object for generated helper functions.
  */
-export const TmServerMethod = {
+export const ChatSendToUserArgs = {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_TmServerMethod_type_value) return _cached_TmServerMethod_type_value;
-    _cached_TmServerMethod_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_TmServerMethod_type_value.value.elements.push(
-      { name: "id", algebraicType: __AlgebraicTypeValue.U64 },
-      { name: "serverId", algebraicType: __AlgebraicTypeValue.String },
-      { name: "userId", algebraicType: __AlgebraicTypeValue.String },
-      { name: "method", algebraicType: Method.getTypeScriptAlgebraicType() },
+    if (_cached_ChatSendToUserArgs_type_value) return _cached_ChatSendToUserArgs_type_value;
+    _cached_ChatSendToUserArgs_type_value = __AlgebraicTypeValue.Product({ elements: [] });
+    _cached_ChatSendToUserArgs_type_value.value.elements.push(
+      { name: "login", algebraicType: __AlgebraicTypeValue.String },
+      { name: "message", algebraicType: __AlgebraicTypeValue.String },
     );
-    return _cached_TmServerMethod_type_value;
+    return _cached_ChatSendToUserArgs_type_value;
   },
 
-  serialize(writer: __BinaryWriter, value: TmServerMethod): void {
-    __AlgebraicTypeValue.serializeValue(writer, TmServerMethod.getTypeScriptAlgebraicType(), value);
+  serialize(writer: __BinaryWriter, value: ChatSendToUserArgs): void {
+    __AlgebraicTypeValue.serializeValue(writer, ChatSendToUserArgs.getTypeScriptAlgebraicType(), value);
   },
 
-  deserialize(reader: __BinaryReader): TmServerMethod {
-    return __AlgebraicTypeValue.deserializeValue(reader, TmServerMethod.getTypeScriptAlgebraicType());
+  deserialize(reader: __BinaryReader): ChatSendToUserArgs {
+    return __AlgebraicTypeValue.deserializeValue(reader, ChatSendToUserArgs.getTypeScriptAlgebraicType());
   },
 
 }
 
-export default TmServerMethod;
+export default ChatSendToUserArgs;
 
 

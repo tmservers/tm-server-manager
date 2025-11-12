@@ -93,14 +93,20 @@ import { TmServerConfigTableHandle } from "./tm_server_config_table.ts";
 export { TmServerConfigTableHandle };
 import { TmServerEventTableHandle } from "./tm_server_event_table.ts";
 export { TmServerEventTableHandle };
-import { TmServerMethodTableHandle } from "./tm_server_method_table.ts";
-export { TmServerMethodTableHandle };
+import { TmServerMethodCallTableHandle } from "./tm_server_method_call_table.ts";
+export { TmServerMethodCallTableHandle };
 import { TournamentTableHandle } from "./tournament_table.ts";
 export { TournamentTableHandle };
 import { UserTableHandle } from "./user_table.ts";
 export { UserTableHandle };
 
 // Import and reexport all types
+import { BanArgs } from "./ban_args_type.ts";
+export { BanArgs };
+import { ChatSendServerMessageToUserArgs } from "./chat_send_server_message_to_user_args_type.ts";
+export { ChatSendServerMessageToUserArgs };
+import { ChatSendToUserArgs } from "./chat_send_to_user_args_type.ts";
+export { ChatSendToUserArgs };
 import { Common } from "./common_type.ts";
 export { Common };
 import { Competition } from "./competition_type.ts";
@@ -141,6 +147,8 @@ import { Generator } from "./generator_type.ts";
 export { Generator };
 import { GiveUp } from "./give_up_type.ts";
 export { GiveUp };
+import { KickArgs } from "./kick_args_type.ts";
+export { KickArgs };
 import { LoadingMapEnd } from "./loading_map_end_type.ts";
 export { LoadingMapEnd };
 import { LoadingMapStart } from "./loading_map_start_type.ts";
@@ -159,8 +167,8 @@ import { MatchStatus } from "./match_status_type.ts";
 export { MatchStatus };
 import { MatchTemplate } from "./match_template_type.ts";
 export { MatchTemplate };
-import { Method } from "./method_type.ts";
-export { Method };
+import { MethodCall } from "./method_call_type.ts";
+export { MethodCall };
 import { ModeConfig } from "./mode_config_type.ts";
 export { ModeConfig };
 import { ModeRules } from "./mode_rules_type.ts";
@@ -235,8 +243,8 @@ import { TmServerConfig } from "./tm_server_config_type.ts";
 export { TmServerConfig };
 import { TmServerEvent } from "./tm_server_event_type.ts";
 export { TmServerEvent };
-import { TmServerMethod } from "./tm_server_method_type.ts";
-export { TmServerMethod };
+import { TmServerMethodCall } from "./tm_server_method_call_type.ts";
+export { TmServerMethodCall };
 import { Tournament } from "./tournament_type.ts";
 export { Tournament };
 import { TournamentStatus } from "./tournament_status_type.ts";
@@ -330,13 +338,13 @@ const REMOTE_MODULE = {
       tableName: "tm_server_event" as const,
       rowType: TmServerEvent.getTypeScriptAlgebraicType(),
     },
-    tm_server_method: {
-      tableName: "tm_server_method" as const,
-      rowType: TmServerMethod.getTypeScriptAlgebraicType(),
+    tm_server_method_call: {
+      tableName: "tm_server_method_call" as const,
+      rowType: TmServerMethodCall.getTypeScriptAlgebraicType(),
       primaryKey: "id",
       primaryKeyInfo: {
         colName: "id",
-        colType: (TmServerMethod.getTypeScriptAlgebraicType() as __AlgebraicTypeVariants.Product).value.elements[0].algebraicType,
+        colType: (TmServerMethodCall.getTypeScriptAlgebraicType() as __AlgebraicTypeVariants.Product).value.elements[0].algebraicType,
       },
     },
     tournament: {
@@ -713,7 +721,7 @@ export class RemoteReducers {
     this.connection.offReducer("register_server", callback);
   }
 
-  serverMethodCall(serverId: string, method: Method) {
+  serverMethodCall(serverId: string, method: MethodCall) {
     const __args = { serverId, method };
     let __writer = new __BinaryWriter(1024);
     ServerMethodCall.serialize(__writer, __args);
@@ -721,11 +729,11 @@ export class RemoteReducers {
     this.connection.callReducer("server_method_call", __argsBuffer, this.setCallReducerFlags.serverMethodCallFlags);
   }
 
-  onServerMethodCall(callback: (ctx: ReducerEventContext, serverId: string, method: Method) => void) {
+  onServerMethodCall(callback: (ctx: ReducerEventContext, serverId: string, method: MethodCall) => void) {
     this.connection.onReducer("server_method_call", callback);
   }
 
-  removeOnServerMethodCall(callback: (ctx: ReducerEventContext, serverId: string, method: Method) => void) {
+  removeOnServerMethodCall(callback: (ctx: ReducerEventContext, serverId: string, method: MethodCall) => void) {
     this.connection.offReducer("server_method_call", callback);
   }
 
@@ -925,9 +933,9 @@ export class RemoteTables {
     return new TmServerEventTableHandle((this.connection as unknown as { clientCache: __ClientCache }).clientCache.getOrCreateTable<TmServerEvent>(REMOTE_MODULE.tables.tm_server_event));
   }
 
-  get tmServerMethod(): TmServerMethodTableHandle<'tm_server_method'> {
+  get tmServerMethodCall(): TmServerMethodCallTableHandle<'tm_server_method_call'> {
     // clientCache is a private property
-    return new TmServerMethodTableHandle((this.connection as unknown as { clientCache: __ClientCache }).clientCache.getOrCreateTable<TmServerMethod>(REMOTE_MODULE.tables.tm_server_method));
+    return new TmServerMethodCallTableHandle((this.connection as unknown as { clientCache: __ClientCache }).clientCache.getOrCreateTable<TmServerMethodCall>(REMOTE_MODULE.tables.tm_server_method_call));
   }
 
   get tournament(): TournamentTableHandle<'tournament'> {

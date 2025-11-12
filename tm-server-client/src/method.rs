@@ -1,4 +1,4 @@
-use tm_server_types::base::PlayerInfo;
+use tm_server_types::{base::PlayerInfo, method::MethodCall};
 
 use crate::{ClientError, TrackmaniaServer};
 
@@ -221,5 +221,37 @@ impl XmlRpcMethods for TrackmaniaServer {
             (content, timeout, hide_on_click),
         )
         .await
+    }
+}
+
+pub(crate) trait TypeMethodCall {
+    async fn call_with_server(self, server: &TrackmaniaServer);
+}
+
+impl TypeMethodCall for MethodCall {
+    async fn call_with_server(self, server: &TrackmaniaServer) {
+        match self {
+            MethodCall::ListMethods => todo!(),
+            MethodCall::MethodSignature(_) => todo!(),
+            MethodCall::MethodHelp(_) => todo!(),
+            MethodCall::ChatSendServerMessage(msg) => server.chat_send_server_massage(&msg).await,
+            MethodCall::ChatSendServerMessageToUser(chat_send_server_message_to_user_args) => {
+                todo!()
+            }
+            MethodCall::ChatSend(_) => todo!(),
+            MethodCall::ChatSendToUser(chat_send_to_user_args) => todo!(),
+            MethodCall::Kick(kick_args) => todo!(),
+            MethodCall::Ban(ban_args) => todo!(),
+            MethodCall::UnBan(_) => todo!(),
+            MethodCall::Ignore(_) => todo!(),
+            MethodCall::UnIgnore(_) => todo!(),
+            MethodCall::SetPlayerPassword(_) => todo!(),
+            MethodCall::SetSpectatorPassword(_) => todo!(),
+            MethodCall::SendToServerAfterMatchEnd(_) => todo!(),
+            MethodCall::GetMethodsList => todo!(),
+
+            MethodCall::PauseSetActive(active) => server.pause_set_active(active).await,
+            _ => unimplemented!(),
+        };
     }
 }

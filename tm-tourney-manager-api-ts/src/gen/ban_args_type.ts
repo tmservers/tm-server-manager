@@ -28,8 +28,40 @@ import {
   type TableHandle as __TableHandle,
 } from "spacetimedb";
 
-export type ListMethods = { tag: "ListMethods" };
-export type ChatSendServerMessage = { tag: "ChatSendServerMessage", value: string };
-export type GetMethodsList = { tag: "GetMethodsList" };
-export type PauseSetActive = { tag: "PauseSetActive", value: boolean };
+export type BanArgs = {
+  login: string,
+  message: string,
+};
+let _cached_BanArgs_type_value: __AlgebraicTypeType | null = null;
+
+/**
+ * An object for generated helper functions.
+ */
+export const BanArgs = {
+  /**
+  * A function which returns this type represented as an AlgebraicType.
+  * This function is derived from the AlgebraicType used to generate this type.
+  */
+  getTypeScriptAlgebraicType(): __AlgebraicTypeType {
+    if (_cached_BanArgs_type_value) return _cached_BanArgs_type_value;
+    _cached_BanArgs_type_value = __AlgebraicTypeValue.Product({ elements: [] });
+    _cached_BanArgs_type_value.value.elements.push(
+      { name: "login", algebraicType: __AlgebraicTypeValue.String },
+      { name: "message", algebraicType: __AlgebraicTypeValue.String },
+    );
+    return _cached_BanArgs_type_value;
+  },
+
+  serialize(writer: __BinaryWriter, value: BanArgs): void {
+    __AlgebraicTypeValue.serializeValue(writer, BanArgs.getTypeScriptAlgebraicType(), value);
+  },
+
+  deserialize(reader: __BinaryReader): BanArgs {
+    return __AlgebraicTypeValue.deserializeValue(reader, BanArgs.getTypeScriptAlgebraicType());
+  },
+
+}
+
+export default BanArgs;
+
 

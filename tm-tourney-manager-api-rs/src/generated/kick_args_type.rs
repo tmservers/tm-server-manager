@@ -6,16 +6,11 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub enum Method {
-    ListMethods,
-
-    ChatSendServerMessage(String),
-
-    GetMethodsList,
-
-    PauseSetActive(bool),
+pub struct KickArgs {
+    pub login: String,
+    pub message: String,
 }
 
-impl __sdk::InModule for Method {
+impl __sdk::InModule for KickArgs {
     type Module = super::RemoteModule;
 }

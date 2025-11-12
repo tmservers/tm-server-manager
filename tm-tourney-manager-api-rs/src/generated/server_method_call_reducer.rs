@@ -4,13 +4,13 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::method_type::Method;
+use super::method_call_type::MethodCall;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct ServerMethodCallArgs {
     pub server_id: String,
-    pub method: Method,
+    pub method: MethodCall,
 }
 
 impl From<ServerMethodCallArgs> for super::Reducer {
@@ -38,7 +38,7 @@ pub trait server_method_call {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_server_method_call`] callbacks.
-    fn server_method_call(&self, server_id: String, method: Method) -> __sdk::Result<()>;
+    fn server_method_call(&self, server_id: String, method: MethodCall) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `server_method_call`.
     ///
     /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
@@ -48,7 +48,7 @@ pub trait server_method_call {
     /// to cancel the callback.
     fn on_server_method_call(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &String, &Method) + Send + 'static,
+        callback: impl FnMut(&super::ReducerEventContext, &String, &MethodCall) + Send + 'static,
     ) -> ServerMethodCallCallbackId;
     /// Cancel a callback previously registered by [`Self::on_server_method_call`],
     /// causing it not to run in the future.
@@ -56,7 +56,7 @@ pub trait server_method_call {
 }
 
 impl server_method_call for super::RemoteReducers {
-    fn server_method_call(&self, server_id: String, method: Method) -> __sdk::Result<()> {
+    fn server_method_call(&self, server_id: String, method: MethodCall) -> __sdk::Result<()> {
         self.imp.call_reducer(
             "server_method_call",
             ServerMethodCallArgs { server_id, method },
@@ -64,7 +64,7 @@ impl server_method_call for super::RemoteReducers {
     }
     fn on_server_method_call(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &String, &Method) + Send + 'static,
+        mut callback: impl FnMut(&super::ReducerEventContext, &String, &MethodCall) + Send + 'static,
     ) -> ServerMethodCallCallbackId {
         ServerMethodCallCallbackId(self.imp.on_reducer(
             "server_method_call",

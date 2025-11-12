@@ -27,30 +27,30 @@ import {
   type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
   type TableHandle as __TableHandle,
 } from "spacetimedb";
-import { TmServerMethod } from "./tm_server_method_type";
-import { Method } from "./method_type";
+import { TmServerMethodCall } from "./tm_server_method_call_type";
+import { MethodCall } from "./method_call_type";
 // Mark import as potentially unused
-declare type __keep_Method = Method;
+declare type __keep_MethodCall = MethodCall;
 
 import { type EventContext, type Reducer, RemoteReducers, RemoteTables } from ".";
 declare type __keep = [EventContext, Reducer, RemoteReducers, RemoteTables];
 
 /**
- * Table handle for the table `tm_server_method`.
+ * Table handle for the table `tm_server_method_call`.
  *
- * Obtain a handle from the [`tmServerMethod`] property on [`RemoteTables`],
- * like `ctx.db.tmServerMethod`.
+ * Obtain a handle from the [`tmServerMethodCall`] property on [`RemoteTables`],
+ * like `ctx.db.tmServerMethodCall`.
  *
  * Users are encouraged not to explicitly reference this type,
  * but to directly chain method calls,
- * like `ctx.db.tmServerMethod.on_insert(...)`.
+ * like `ctx.db.tmServerMethodCall.on_insert(...)`.
  */
-export class TmServerMethodTableHandle<TableName extends string> implements __TableHandle<TableName> {
+export class TmServerMethodCallTableHandle<TableName extends string> implements __TableHandle<TableName> {
   // phantom type to track the table name
   readonly tableName!: TableName;
-  tableCache: __TableCache<TmServerMethod>;
+  tableCache: __TableCache<TmServerMethodCall>;
 
-  constructor(tableCache: __TableCache<TmServerMethod>) {
+  constructor(tableCache: __TableCache<TmServerMethodCall>) {
     this.tableCache = tableCache;
   }
 
@@ -58,24 +58,24 @@ export class TmServerMethodTableHandle<TableName extends string> implements __Ta
     return this.tableCache.count();
   }
 
-  iter(): Iterable<TmServerMethod> {
+  iter(): Iterable<TmServerMethodCall> {
     return this.tableCache.iter();
   }
   /**
-   * Access to the `id` unique index on the table `tm_server_method`,
+   * Access to the `id` unique index on the table `tm_server_method_call`,
    * which allows point queries on the field of the same name
-   * via the [`TmServerMethodIdUnique.find`] method.
+   * via the [`TmServerMethodCallIdUnique.find`] method.
    *
    * Users are encouraged not to explicitly reference this type,
    * but to directly chain method calls,
-   * like `ctx.db.tmServerMethod.id().find(...)`.
+   * like `ctx.db.tmServerMethodCall.id().find(...)`.
    *
-   * Get a handle on the `id` unique index on the table `tm_server_method`.
+   * Get a handle on the `id` unique index on the table `tm_server_method_call`.
    */
   id = {
     // Find the subscribed row whose `id` column value is equal to `col_val`,
     // if such a row is present in the client cache.
-    find: (col_val: bigint): TmServerMethod | undefined => {
+    find: (col_val: bigint): TmServerMethodCall | undefined => {
       for (let row of this.tableCache.iter()) {
         if (__deepEqual(row.id, col_val)) {
           return row;
@@ -84,27 +84,27 @@ export class TmServerMethodTableHandle<TableName extends string> implements __Ta
     },
   };
 
-  onInsert = (cb: (ctx: EventContext, row: TmServerMethod) => void) => {
+  onInsert = (cb: (ctx: EventContext, row: TmServerMethodCall) => void) => {
     return this.tableCache.onInsert(cb);
   }
 
-  removeOnInsert = (cb: (ctx: EventContext, row: TmServerMethod) => void) => {
+  removeOnInsert = (cb: (ctx: EventContext, row: TmServerMethodCall) => void) => {
     return this.tableCache.removeOnInsert(cb);
   }
 
-  onDelete = (cb: (ctx: EventContext, row: TmServerMethod) => void) => {
+  onDelete = (cb: (ctx: EventContext, row: TmServerMethodCall) => void) => {
     return this.tableCache.onDelete(cb);
   }
 
-  removeOnDelete = (cb: (ctx: EventContext, row: TmServerMethod) => void) => {
+  removeOnDelete = (cb: (ctx: EventContext, row: TmServerMethodCall) => void) => {
     return this.tableCache.removeOnDelete(cb);
   }
 
   // Updates are only defined for tables with primary keys.
-  onUpdate = (cb: (ctx: EventContext, oldRow: TmServerMethod, newRow: TmServerMethod) => void) => {
+  onUpdate = (cb: (ctx: EventContext, oldRow: TmServerMethodCall, newRow: TmServerMethodCall) => void) => {
     return this.tableCache.onUpdate(cb);
   }
 
-  removeOnUpdate = (cb: (ctx: EventContext, onRow: TmServerMethod, newRow: TmServerMethod) => void) => {
+  removeOnUpdate = (cb: (ctx: EventContext, onRow: TmServerMethodCall, newRow: TmServerMethodCall) => void) => {
     return this.tableCache.removeOnUpdate(cb);
   }}

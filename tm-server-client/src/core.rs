@@ -11,14 +11,13 @@ use dxr::{
 
 use tachyonix::Sender;
 use thiserror::Error;
-use tm_server_types::event::{self, Event};
-use tm_server_types::method::MethodCall;
+use tm_server_types::event::Event;
 use tokio::io::{self, AsyncReadExt, AsyncWriteExt, BufWriter, ReadHalf, WriteHalf};
 use tokio::net::TcpStream;
 use tokio::sync::{broadcast, oneshot};
-use tracing::{error, info, warn};
+use tracing::{error, info};
 
-use crate::method::{ModeScriptMethodsXmlRpc, XmlRpcMethods};
+use crate::method::TypeMethodCall;
 
 #[derive(Debug)]
 struct GbxPacket {
@@ -327,15 +326,10 @@ impl TrackmaniaServer {
 
     /// Allows to call a method on the server through the Method enum.
     /// Needs to be awaited in order to be executed and receive the response.
-    pub async fn method(&self, method: MethodCall) /* -> Result<R, ClientError> */
+    pub async fn method(&self, method: tm_server_types::method::MethodCall)
+    /* -> Result<R, ClientError> */
     {
-        match method {
-            MethodCall::ListMethods => todo!(),
-            MethodCall::ChatSendServerMessage(msg) => self.chat_send_server_massage(&msg).await,
-            MethodCall::GetMethodsList => todo!(),
-            MethodCall::PauseSetActive(active) => self.pause_set_active(active).await,
-            _ => todo!(),
-        };
+        method.call_with_server(self).await
 
         // extract return value
         //Ok(R::try_from_value(&result)?)
@@ -375,18 +369,22 @@ impl TrackmaniaServer {
         let response = tokio::spawn(async move {
             // Responsible to notify us when the method response is there.
             let (send_me_response, waiting) = oneshot::channel();
-            message_sender
+            if let Err(err) = message_sender
                 .send(GbxMethodCall::MethodCall {
                     message: body,
                     responder: send_me_response,
                 })
                 .await
-                .unwrap();
+            {
+                error!("Failed to send GbxMethodCall over sender. {err}")
+            };
 
             // Wait till we receive the response for the method call.
-            waiting.await.unwrap()
+            waiting.await
         })
         .await
+        //TODO: this should be handled better :(
+        .unwrap()
         .unwrap();
 
         Ok(response.inner())
