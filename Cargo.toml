@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "gamebox-files",
+    "tm-leaderboard-polling",
     "tm-server-bridge",
     "tm-server-client",
     "tm-server-types",
@@ -32,3 +33,7 @@ version = "1.8"
 
 [workspace.dependencies.spacetimedb-sdk]
 version = "1.8"
+
+[workspace.dependencies.tokio]
+features = ["full"]
+version = "1"

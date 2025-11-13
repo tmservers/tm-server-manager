@@ -9,6 +9,7 @@ pub mod generator;
 pub mod ghosts;
 pub mod map_record;
 pub mod r#match;
+pub mod record;
 pub mod registration;
 pub mod scheduling;
 pub mod server;
@@ -16,19 +17,6 @@ pub mod tournament;
 pub mod user;
 
 pub mod graph;
-
-/* #[cfg_attr(feature = "spacetime", spacetimedb::reducer(init))]
-fn init(_ctx: &ReducerContext) {
-    /* let _ten_seconds = TimeDuration::from_micros(10_000_000);
-    /* ctx.db.send_message_schedule().insert(SendMessageSchedule {
-        scheduled_id: 0,
-        text: "I'm a bot sending a message every 10 seconds".to_string(),
-
-        // Creating a `ScheduleAt` from a `Duration` results in the reducer
-        // being called in a loop, once every `loop_duration`.
-        scheduled_at: ten_seconds.into(),
-    }); */ */
-} */
 
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer(client_connected))]
 fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
