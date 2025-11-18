@@ -1,6 +1,6 @@
-use spacetimedb::{Timestamp, table};
+use spacetimedb::{AnonymousViewContext, Timestamp, table, view};
 
-use crate::{record::TmRecord, user::User};
+use crate::{record::TmRecord, user::{User, user__view}};
 
 #[table(
     name = tm_map_record,
@@ -35,4 +35,18 @@ impl TmMapRecord {
     pub(crate) fn player(&self) -> &String {
         &self.player_uid
     }
+}
+
+//TODO we need a map_uid arg or so
+#[view(name= map_record,public)]
+pub fn map_record(ctx: &AnonymousViewContext) -> Vec<TmRecord> {
+    ctx.db
+        .tm_map_record()
+        .record_id()
+        .filter(("huh", "huh"))
+        .map(|r| {
+            let player = ctx.db.user().id().find(r.player()).unwrap();
+            r.with_player_info(player)
+        })
+        .collect()
 }
