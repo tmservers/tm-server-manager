@@ -1,4 +1,4 @@
-use spacetimedb::{ReducerContext, reducer};
+use spacetimedb::ReducerContext;
 
 use crate::server::tm_server;
 

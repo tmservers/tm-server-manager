@@ -1,4 +1,4 @@
-use spacetimedb::{SpacetimeType, Timestamp};
+use spacetimedb::Timestamp;
 
 #[derive(Debug)]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]

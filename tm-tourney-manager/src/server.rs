@@ -1,11 +1,8 @@
 use spacetimedb::view;
-use spacetimedb::{Identity, ReducerContext, SpacetimeType, Table, ViewContext, reducer, table};
-use tm_server_types::{config::ServerConfig, event::Event, method::MethodCall};
+use spacetimedb::{Identity, ReducerContext, Table, ViewContext};
+use tm_server_types::{config::ServerConfig, event::Event};
 
-use crate::server::{
-    config::{TmServerConfig, tm_server_config},
-    state::ServerState,
-};
+use crate::server::{config::tm_server_config, state::ServerState};
 
 pub mod config;
 pub mod event;
@@ -35,22 +32,12 @@ pub struct TmServer {
     capturable: bool,
 
     active_match: Option<u64>,
-    // TODO: Properly enfoce the protocol.
-    // On every update call this MUST be set to None EXCEPT you want to call a method.
-    //server_method: Option<Method>,
 }
 
 #[view(name = this_tm_server, public)]
 fn this_tm_server(ctx: &ViewContext) -> Option<TmServer> {
     ctx.db.tm_server().identity().find(ctx.sender)
 }
-
-/* #[derive(Debug)]
-#[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
-pub enum ServerState {
-    Available,
-    Provisioned,
-} */
 
 impl TmServer {
     pub fn active_match(&self) -> Option<u64> {
@@ -136,16 +123,6 @@ pub fn register_server(
         Ok(())
     }
 }
-
-/* #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn call_server(ctx: &ReducerContext, id: String, method: Method) {
-    if let Some(server) = ctx.db.tm_server().id().find(id) {
-        ctx.db.tm_server().id().update(TmServer {
-            server_method: Some(method),
-            ..server
-        });
-    }
-} */
 
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn load_server_config(ctx: &ReducerContext, id: String, with_config: u64) {

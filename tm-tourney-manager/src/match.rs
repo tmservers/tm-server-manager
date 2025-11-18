@@ -1,4 +1,4 @@
-use spacetimedb::{DbContext, ReducerContext, SpacetimeType, Table, reducer, table};
+use spacetimedb::{ReducerContext, Table};
 use tm_server_types::{config::ServerConfig, event::Event};
 
 use crate::{
@@ -7,7 +7,7 @@ use crate::{
     r#match::{leaderboard::MatchLeaderboardRules, match_state::MatchState},
     registration::Registration,
     scheduling::Scheduling,
-    server::{TmServer, tm_server},
+    server::tm_server,
     tournament::tournament,
 };
 

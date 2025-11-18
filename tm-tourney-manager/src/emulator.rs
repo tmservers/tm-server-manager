@@ -1,5 +1,6 @@
 use tm_server_types::event::Event;
 
+//TODO probably factor out in own crate for proper support in client applications.
 pub struct LeaderboardEmulator {
     current_round: u16,
     warm_up: u16,
