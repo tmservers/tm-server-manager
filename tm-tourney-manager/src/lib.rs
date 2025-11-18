@@ -7,7 +7,6 @@ pub mod competition;
 pub mod emulator;
 pub mod generator;
 pub mod ghosts;
-pub mod map_record;
 pub mod r#match;
 pub mod record;
 pub mod registration;

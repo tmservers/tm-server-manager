@@ -15,9 +15,6 @@ pub struct TmMapRecord {
     timestamp: Timestamp,
 
     time: u32,
-    // TODO
-    // maybe compressed zone id?
-    //maybe player name?
 }
 
 impl TmMapRecord {

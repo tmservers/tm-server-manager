@@ -20,6 +20,7 @@ pub struct TmServerEvent {
 
     state: MatchState,
 
+    #[index(btree)]
     event: Event,
 }
 

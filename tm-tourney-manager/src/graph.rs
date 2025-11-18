@@ -136,3 +136,5 @@ pub enum CompetitionKind {
     MatchV1(u64),
     CompetitionV1(u64),
 }
+
+// How to handle the recursion when scheduling??
