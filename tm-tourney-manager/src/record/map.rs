@@ -1,6 +1,10 @@
-use spacetimedb::{AnonymousViewContext, Timestamp, table, view};
+use spacetimedb::{AnonymousViewContext, ReducerContext, Table, Timestamp, reducer, table, view};
 
-use crate::{record::TmRecord, user::{User, user__view}};
+use crate::{
+    auth::Authorization,
+    record::TmRecord,
+    user::{User, user__view},
+};
 
 #[table(
     name = tm_map_record,
@@ -43,10 +47,40 @@ pub fn map_record(ctx: &AnonymousViewContext) -> Vec<TmRecord> {
     ctx.db
         .tm_map_record()
         .record_id()
-        .filter(("huh", "huh"))
+        .filter("vjyNNUu997cC5PW8e3x7Y9RsAF0")
         .map(|r| {
             let player = ctx.db.user().id().find(r.player()).unwrap();
             r.with_player_info(player)
         })
         .collect()
+}
+
+#[reducer]
+pub fn post_record(
+    ctx: &ReducerContext,
+    map_uid: String,
+    player_uid: String,
+    time: u32,
+) -> Result<(), String> {
+    ctx.auth_server()?;
+
+    for record in ctx
+        .db
+        .tm_map_record()
+        .record_id()
+        .filter((&map_uid, &player_uid))
+    {
+        if record.time > time {
+            /* TODO update */
+            return Ok(());
+        }
+    }
+    ctx.db.tm_map_record().insert(TmMapRecord {
+        map_uid,
+        player_uid,
+        timestamp: ctx.timestamp,
+        time,
+    });
+
+    Ok(())
 }

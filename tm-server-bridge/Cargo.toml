@@ -18,7 +18,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tm-server-client = { path = "../tm-server-client" }
 
 spacetimedb-sdk.workspace = true
-tm-tourney-manager-api-rs = { path = "../tm-tourney-manager-api-rs" }
+tm-tourney-manager-api-rs.workspace = true
 
 gamebox-files = { path = "../gamebox-files" }
 

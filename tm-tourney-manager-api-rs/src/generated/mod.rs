@@ -73,6 +73,7 @@ pub mod player_type;
 pub mod podium_type;
 pub mod post_event_reducer;
 pub mod post_ghost_reducer;
+pub mod post_record_reducer;
 pub mod register_server_reducer;
 pub mod registration_type;
 pub mod respawn_bavaviour_type;
@@ -98,10 +99,13 @@ pub mod start_turn_type;
 pub mod team_info_type;
 pub mod team_registration_type;
 pub mod team_type;
+pub mod tm_comp_record_type;
 pub mod tm_map_record_table;
 pub mod tm_map_record_type;
+pub mod tm_match_record_table;
 pub mod tm_match_table;
 pub mod tm_match_type;
+pub mod tm_record_type;
 pub mod tm_server_config_table;
 pub mod tm_server_config_type;
 pub mod tm_server_event_table;
@@ -215,6 +219,7 @@ pub use player_type::Player;
 pub use podium_type::Podium;
 pub use post_event_reducer::{post_event, set_flags_for_post_event, PostEventCallbackId};
 pub use post_ghost_reducer::{post_ghost, set_flags_for_post_ghost, PostGhostCallbackId};
+pub use post_record_reducer::{post_record, set_flags_for_post_record, PostRecordCallbackId};
 pub use register_server_reducer::{
     register_server, set_flags_for_register_server, RegisterServerCallbackId,
 };
@@ -248,10 +253,13 @@ pub use start_turn_type::StartTurn;
 pub use team_info_type::TeamInfo;
 pub use team_registration_type::TeamRegistration;
 pub use team_type::Team;
+pub use tm_comp_record_type::TmCompRecord;
 pub use tm_map_record_table::*;
 pub use tm_map_record_type::TmMapRecord;
+pub use tm_match_record_table::*;
 pub use tm_match_table::*;
 pub use tm_match_type::TmMatch;
+pub use tm_record_type::TmRecord;
 pub use tm_server_config_table::*;
 pub use tm_server_config_type::TmServerConfig;
 pub use tm_server_event_table::*;
@@ -334,6 +342,11 @@ pub enum Reducer {
     PostGhost {
         ghost: Vec<u8>,
     },
+    PostRecord {
+        map_uid: String,
+        player_uid: String,
+        time: u32,
+    },
     RegisterServer {
         login: String,
         password: String,
@@ -380,6 +393,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::OnTournamentEventSchedule { .. } => "on_tournament_event_schedule",
             Reducer::PostEvent { .. } => "post_event",
             Reducer::PostGhost { .. } => "post_ghost",
+            Reducer::PostRecord { .. } => "post_record",
             Reducer::RegisterServer { .. } => "register_server",
             Reducer::ServerMethodCall { .. } => "server_method_call",
             Reducer::ServerMethodResponse { .. } => "server_method_response",
@@ -461,6 +475,13 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 )?
                 .into(),
             ),
+            "post_record" => Ok(
+                __sdk::parse_reducer_args::<post_record_reducer::PostRecordArgs>(
+                    "post_record",
+                    &value.args,
+                )?
+                .into(),
+            ),
             "register_server" => Ok(__sdk::parse_reducer_args::<
                 register_server_reducer::RegisterServerArgs,
             >("register_server", &value.args)?
@@ -510,6 +531,7 @@ pub struct DbUpdate {
     match_template: __sdk::TableUpdate<MatchTemplate>,
     tm_map_record: __sdk::TableUpdate<TmMapRecord>,
     tm_match: __sdk::TableUpdate<TmMatch>,
+    tm_match_record: __sdk::TableUpdate<TmCompRecord>,
     tm_server: __sdk::TableUpdate<TmServer>,
     tm_server_config: __sdk::TableUpdate<TmServerConfig>,
     tm_server_event: __sdk::TableUpdate<TmServerEvent>,
@@ -549,6 +571,9 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "tm_match" => db_update
                     .tm_match
                     .append(tm_match_table::parse_table_update(table_update)?),
+                "tm_match_record" => db_update
+                    .tm_match_record
+                    .append(tm_match_record_table::parse_table_update(table_update)?),
                 "tm_server" => db_update
                     .tm_server
                     .append(tm_server_table::parse_table_update(table_update)?),
@@ -618,6 +643,8 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.tm_match = cache
             .apply_diff_to_table::<TmMatch>("tm_match", &self.tm_match)
             .with_updates_by_pk(|row| &row.id);
+        diff.tm_match_record =
+            cache.apply_diff_to_table::<TmCompRecord>("tm_match_record", &self.tm_match_record);
         diff.tm_server = cache
             .apply_diff_to_table::<TmServer>("tm_server", &self.tm_server)
             .with_updates_by_pk(|row| &row.id);
@@ -661,6 +688,7 @@ pub struct AppliedDiff<'r> {
     match_template: __sdk::TableAppliedDiff<'r, MatchTemplate>,
     tm_map_record: __sdk::TableAppliedDiff<'r, TmMapRecord>,
     tm_match: __sdk::TableAppliedDiff<'r, TmMatch>,
+    tm_match_record: __sdk::TableAppliedDiff<'r, TmCompRecord>,
     tm_server: __sdk::TableAppliedDiff<'r, TmServer>,
     tm_server_config: __sdk::TableAppliedDiff<'r, TmServerConfig>,
     tm_server_event: __sdk::TableAppliedDiff<'r, TmServerEvent>,
@@ -709,6 +737,11 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             event,
         );
         callbacks.invoke_table_row_callbacks::<TmMatch>("tm_match", &self.tm_match, event);
+        callbacks.invoke_table_row_callbacks::<TmCompRecord>(
+            "tm_match_record",
+            &self.tm_match_record,
+            event,
+        );
         callbacks.invoke_table_row_callbacks::<TmServer>("tm_server", &self.tm_server, event);
         callbacks.invoke_table_row_callbacks::<TmServerConfig>(
             "tm_server_config",
@@ -1459,6 +1492,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
         match_template_table::register_table(client_cache);
         tm_map_record_table::register_table(client_cache);
         tm_match_table::register_table(client_cache);
+        tm_match_record_table::register_table(client_cache);
         tm_server_table::register_table(client_cache);
         tm_server_config_table::register_table(client_cache);
         tm_server_event_table::register_table(client_cache);

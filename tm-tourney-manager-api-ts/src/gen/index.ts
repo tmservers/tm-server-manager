@@ -59,6 +59,8 @@ import { PostEvent } from "./post_event_reducer.ts";
 export { PostEvent };
 import { PostGhost } from "./post_ghost_reducer.ts";
 export { PostGhost };
+import { PostRecord } from "./post_record_reducer.ts";
+export { PostRecord };
 import { RegisterServer } from "./register_server_reducer.ts";
 export { RegisterServer };
 import { ServerMethodCall } from "./server_method_call_reducer.ts";
@@ -89,6 +91,8 @@ import { TmMapRecordTableHandle } from "./tm_map_record_table.ts";
 export { TmMapRecordTableHandle };
 import { TmMatchTableHandle } from "./tm_match_table.ts";
 export { TmMatchTableHandle };
+import { TmMatchRecordTableHandle } from "./tm_match_record_table.ts";
+export { TmMatchRecordTableHandle };
 import { TmServerTableHandle } from "./tm_server_table.ts";
 export { TmServerTableHandle };
 import { TmServerConfigTableHandle } from "./tm_server_config_table.ts";
@@ -241,10 +245,14 @@ import { TeamInfo } from "./team_info_type.ts";
 export { TeamInfo };
 import { TeamRegistration } from "./team_registration_type.ts";
 export { TeamRegistration };
+import { TmCompRecord } from "./tm_comp_record_type.ts";
+export { TmCompRecord };
 import { TmMapRecord } from "./tm_map_record_type.ts";
 export { TmMapRecord };
 import { TmMatch } from "./tm_match_type.ts";
 export { TmMatch };
+import { TmRecord } from "./tm_record_type.ts";
+export { TmRecord };
 import { TmServer } from "./tm_server_type.ts";
 export { TmServer };
 import { TmServerConfig } from "./tm_server_config_type.ts";
@@ -325,6 +333,10 @@ const REMOTE_MODULE = {
         colName: "id",
         colType: (TmMatch.getTypeScriptAlgebraicType() as __AlgebraicTypeVariants.Product).value.elements[0].algebraicType,
       },
+    },
+    tm_match_record: {
+      tableName: "tm_match_record" as const,
+      rowType: TmCompRecord.getTypeScriptAlgebraicType(),
     },
     tm_server: {
       tableName: "tm_server" as const,
@@ -442,6 +454,10 @@ const REMOTE_MODULE = {
       reducerName: "post_ghost",
       argsType: PostGhost.getTypeScriptAlgebraicType(),
     },
+    post_record: {
+      reducerName: "post_record",
+      argsType: PostRecord.getTypeScriptAlgebraicType(),
+    },
     register_server: {
       reducerName: "register_server",
       argsType: RegisterServer.getTypeScriptAlgebraicType(),
@@ -510,6 +526,7 @@ export type Reducer = never
 | { name: "OnTournamentEventSchedule", args: OnTournamentEventSchedule }
 | { name: "PostEvent", args: PostEvent }
 | { name: "PostGhost", args: PostGhost }
+| { name: "PostRecord", args: PostRecord }
 | { name: "RegisterServer", args: RegisterServer }
 | { name: "ServerMethodCall", args: ServerMethodCall }
 | { name: "ServerMethodResponse", args: ServerMethodResponse }
@@ -729,6 +746,22 @@ export class RemoteReducers {
     this.connection.offReducer("post_ghost", callback);
   }
 
+  postRecord(mapUid: string, playerUid: string, time: number) {
+    const __args = { mapUid, playerUid, time };
+    let __writer = new __BinaryWriter(1024);
+    PostRecord.serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("post_record", __argsBuffer, this.setCallReducerFlags.postRecordFlags);
+  }
+
+  onPostRecord(callback: (ctx: ReducerEventContext, mapUid: string, playerUid: string, time: number) => void) {
+    this.connection.onReducer("post_record", callback);
+  }
+
+  removeOnPostRecord(callback: (ctx: ReducerEventContext, mapUid: string, playerUid: string, time: number) => void) {
+    this.connection.offReducer("post_record", callback);
+  }
+
   registerServer(login: string, password: string) {
     const __args = { login, password };
     let __writer = new __BinaryWriter(1024);
@@ -888,6 +921,11 @@ export class SetReducerFlags {
     this.postGhostFlags = flags;
   }
 
+  postRecordFlags: __CallReducerFlags = 'FullUpdate';
+  postRecord(flags: __CallReducerFlags) {
+    this.postRecordFlags = flags;
+  }
+
   registerServerFlags: __CallReducerFlags = 'FullUpdate';
   registerServer(flags: __CallReducerFlags) {
     this.registerServerFlags = flags;
@@ -961,6 +999,11 @@ export class RemoteTables {
   get tmMatch(): TmMatchTableHandle<'tm_match'> {
     // clientCache is a private property
     return new TmMatchTableHandle((this.connection as unknown as { clientCache: __ClientCache }).clientCache.getOrCreateTable<TmMatch>(REMOTE_MODULE.tables.tm_match));
+  }
+
+  get tmMatchRecord(): TmMatchRecordTableHandle<'tm_match_record'> {
+    // clientCache is a private property
+    return new TmMatchRecordTableHandle((this.connection as unknown as { clientCache: __ClientCache }).clientCache.getOrCreateTable<TmCompRecord>(REMOTE_MODULE.tables.tm_match_record));
   }
 
   get tmServer(): TmServerTableHandle<'tm_server'> {
