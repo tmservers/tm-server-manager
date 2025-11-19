@@ -5,6 +5,7 @@ use spacetimedb::Timestamp;
 pub enum Registration {
     Players(PlayerRegistration),
     Team(TeamRegistration),
+    Inherit,
     Open,
 }
 

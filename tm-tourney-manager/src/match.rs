@@ -24,7 +24,8 @@ pub mod match_state;
 /// Is represented and can be queried via the [MatchStatus]
 /// and consists of:
 /// - *Created.* In order to advance to the next stage a valid configuration for
-/// pre_match and match fields need to be present. Advances to [MatchStatus::Configuring].
+///  match_config need to be present. Tthe same config will be used for pre_match if not overridden.
+///  Advances to [MatchStatus::Configuring].
 /// - *Configured.* Advances to [MatchStatus::Upcoming].
 /// - *Captured Server.* Capturing describes the process of assigning a
 /// Server from the pool to the Match. The server is locked till the match
@@ -41,7 +42,7 @@ pub struct TmMatch {
 
     /// The tournament this match is associated with.
     tournament_id: u32,
-    parent_id: u32,
+    competition_id: u32,
 
     scheduling: Scheduling,
 
@@ -104,11 +105,12 @@ impl TmMatch {
 pub enum MatchStatus {
     /// Allows to change all associated configurations of the Match.
     Configuring,
-    /// No changes to the configuration can be made anymore.
+    /// No changes to the pre_match configuration can be made anymore.
     Upcoming,
-    PreMatch,
+    /// No changes to the match configuration can be made anymore.
     Live,
     /// Match is immutable and achived.
+    /// Loads the post match config if present.
     Ended,
 }
 
@@ -116,17 +118,16 @@ pub enum MatchStatus {
 pub fn create_match(
     ctx: &ReducerContext,
     tournament_id: u32,
-    parent_id: u32,
+    competition_id: u32,
     with_template: Option<u32>,
     auto_provisioning_server: bool,
 ) -> Result<(), String> {
-    //TODO authorization
     ctx.auth_user()?;
 
     // Create an uncommitted match
     let tm_match = TmMatch {
         id: 0,
-        parent_id,
+        competition_id,
         tournament_id,
         status: MatchStatus::Configuring,
         server_id: if auto_provisioning_server { None } else { None },
@@ -139,11 +140,11 @@ pub fn create_match(
         registration: Registration::Open,
     };
 
-    if ctx.db.tournament().id().find(parent_id).is_none() {
+    if ctx.db.tournament().id().find(competition_id).is_none() {
         return Err("Invalid tournament".into());
     };
 
-    let Some(mut parent_competition) = ctx.db.competition().id().find(parent_id) else {
+    let Some(mut parent_competition) = ctx.db.competition().id().find(competition_id) else {
         return Err("Invalid competition".into());
     };
 
@@ -199,11 +200,18 @@ pub fn update_pre_match_config(ctx: &ReducerContext, id: u32, config: ServerConf
 } */
 
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn update_match_config(ctx: &ReducerContext, id: u32, config: ServerConfig) {
-    //TODO authorization
+pub fn update_match_config(
+    ctx: &ReducerContext,
+    id: u32,
+    config: ServerConfig,
+) -> Result<(), String> {
+    ctx.auth_user()?;
     if let Some(mut stage_match) = ctx.db.tm_match().id().find(id) {
         stage_match.match_config = Some(config);
         ctx.db.tm_match().id().update(stage_match);
+        Ok(())
+    } else {
+        Err(format!("Match with id: {id} not found."))
     }
 }
 

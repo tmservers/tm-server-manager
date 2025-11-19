@@ -3,9 +3,10 @@ use spacetimedb::{ReducerContext, SpacetimeType, Table, reducer, table};
 use crate::{
     auth::Authorization,
     competition::{Competition, competition},
-    graph::{CompetitionKind, Competitions},
 };
 
+/// A tournament is a logical grouping of competitions and also the only way to obtain a competition in the first place.
+/// It does not provide functionality in of itself but is responsible for all the metadata.
 #[cfg_attr(feature = "spacetime", spacetimedb::table(name = tournament,public))]
 pub struct Tournament {
     #[auto_inc]
@@ -44,22 +45,21 @@ pub enum TournamentStatus {
     Ended,
 }
 
+/// The only thing necessary for a creation of a tounrnant is a unique name.
+/// The rest of the setup can must be made in subsequent calls.
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 fn create_tournament(ctx: &ReducerContext, name: String) -> Result<(), String> {
     let user = ctx.auth_user()?;
-    let mut tournament = ctx
-        .db
-        .tournament()
-        .try_insert(Tournament {
-            id: 0,
-            name: name.clone(),
-            creator: user,
-            status: TournamentStatus::Planning,
-            owners: Vec::new(),
-            description: "".into(),
-            competition: 0,
-        })
-        .unwrap();
+
+    let mut tournament = ctx.db.tournament().try_insert(Tournament {
+        id: 0,
+        name: name.clone(),
+        creator: user,
+        status: TournamentStatus::Planning,
+        owners: Vec::new(),
+        description: "".into(),
+        competition: 0,
+    })?;
 
     //SAFETY: Comitted afterwards
     let competition = unsafe { Competition::new(name, None, tournament.id) };

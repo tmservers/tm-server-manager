@@ -1,6 +1,6 @@
 use spacetimedb::{Identity, SpacetimeType, table};
 
-#[cfg_attr(feature = "spacetime", spacetimedb::table(name = user, public))]
+#[cfg_attr(feature = "spacetime", spacetimedb::table(name = user))]
 pub struct User {
     #[unique]
     identity: Identity,
@@ -14,9 +14,3 @@ pub struct User {
     club_tag: String,
     online: bool,
 }
-
-/* #[derive(Debug, Clone, Copy, SpacetimeType)]
-pub enum Roles {
-    User,
-    TrackmaniaServer,
-} */

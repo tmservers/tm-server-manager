@@ -124,7 +124,7 @@ pub fn register_server(
     }
 }
 
-#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
+/* #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn load_server_config(ctx: &ReducerContext, id: String, with_config: u32) {
     if let Some(mut server) = ctx.db.tm_server().id().find(id)
         && let Some(config) = ctx.db.tm_server_config().id().find(with_config)
@@ -141,3 +141,4 @@ pub fn set_tm_server_state(ctx: &ReducerContext, id: String, state: ServerState)
         ctx.db.tm_server().id().update(server);
     }
 }
+ */

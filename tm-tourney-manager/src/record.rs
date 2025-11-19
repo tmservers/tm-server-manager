@@ -4,7 +4,8 @@ mod competition;
 mod map;
 mod r#match;
 
-/// General purpose Record Type used to query all sorts of leaderboards.
+/// General purpose Record Type returned by query all sorts of leaderboards in the project.
+/// All entries to a leaderboard should have a ghost associated with it.
 #[derive(Debug, SpacetimeType)]
 pub struct TmRecord {
     pub map_uid: String,

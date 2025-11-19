@@ -10,7 +10,7 @@ pub struct MatchGhost {
     //match
     //map_uid
     //player_uid
-    link: String,
+    uid: String,
 }
 
 #[cfg(feature = "spacetime")]
@@ -20,15 +20,17 @@ pub fn post_ghost(ctx: &ReducerContext, ghost: Vec<u8>) -> Result<(), String> {
 
     use crate::auth::Authorization;
 
-    ctx.auth_user()?;
+    let server = ctx.auth_server()?;
+    //TODO get all the information from the server -> match and stuff.
 
     //TODO make http call to save in object storage.
     // AHHH HOW TO ENSURE THAT the next round doesnt start before all ghosts are uploaded?
     //maybe dump the replay file and parse server side.
+    // or a second arg with the round must be provided to the reducer.
 
     ctx.db.match_ghost().insert(MatchGhost {
         id: 0,
-        link: "TODO".into(),
+        uid: "TODO".into(),
     });
 
     Ok(())
