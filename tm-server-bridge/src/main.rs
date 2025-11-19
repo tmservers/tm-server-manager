@@ -4,6 +4,13 @@ use nadeo_api::NadeoClient;
 
 use spacetimedb_sdk::{DbContext, Error, Identity, Table, TableWithPrimaryKey};
 
+use takumi::{
+    layout::{
+        Viewport,
+        node::{ContainerNode, NodeKind, TextNode},
+    },
+    rendering::RenderOptionsBuilder,
+};
 use tm_tourney_manager_api_rs::*;
 
 use tm_server_client::{
@@ -301,7 +308,35 @@ fn server_bootstrap(ctx: &EventContext, new: &TmServer) {
             )
             .await;
 
-        /* local_server
+        test_takumi_render_ui().await;
+
+        //local_server.ui_modules_get_properties().await
+    });
+}
+
+async fn test_takumi_render_ui() {
+    /*  let node: NodeKind = NodeKind::Text(TextNode {
+        style: None,
+        text: "huh".into(),
+        tw: None,
+    });
+
+    let render_context = takumi::GlobalContext::default();
+    // Create a viewport
+    let viewport = Viewport::new(Some(1200), Some(630));
+
+    // Create render options
+    let options = RenderOptionsBuilder::default()
+        .viewport(viewport)
+        .node(node)
+        .global(&render_context)
+        .build()
+        .unwrap();
+
+    // Render the layout to an `RgbaImage`
+    let image = takumi::rendering::render(options).unwrap();
+
+    TRACKMANIA.wait()
            .send_display_manialink_page(
                r#"<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <manialink version="3">
@@ -311,8 +346,5 @@ fn server_bootstrap(ctx: &EventContext, new: &TmServer) {
                20000,
                false,
            )
-           .await;
-        */
-        //local_server.ui_modules_get_properties().await
-    });
+           .await; */
 }

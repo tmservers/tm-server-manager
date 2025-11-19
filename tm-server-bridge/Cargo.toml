@@ -22,10 +22,11 @@ tm-tourney-manager-api-rs.workspace = true
 
 gamebox-files = { path = "../gamebox-files" }
 
+takumi.workspace = true
 
 nadeo-api = "*"
 
-dotenvy = "*"
+dotenvy.workspace = true
 
 serde = { version = "*", features = ['derive'] }
 

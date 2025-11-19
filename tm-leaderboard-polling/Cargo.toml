@@ -13,7 +13,7 @@ edition.workspace = true
 [dependencies]
 tokio.workspace = true
 
-dotenvy = "*"
+dotenvy.workspace = true
 nadeo-api-rs = "*"
 spacetimedb-sdk.workspace = true
 tm-tourney-manager-api-rs.workspace = true

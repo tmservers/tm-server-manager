@@ -25,19 +25,17 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/kistz/tm-tourney-manager"
 edition = "2024"
 
-[workspace.dependencies.spacetimedb]
-version = "1.8"
-
-[workspace.dependencies.spacetimedb-lib]
-version = "1.8"
-
-[workspace.dependencies.spacetimedb-sdk]
-version = "1.8"
 
 [workspace.dependencies.tokio]
 features = ["full"]
 version = "1"
 
-
 [workspace.dependencies.tm-tourney-manager-api-rs]
 path = "./tm-tourney-manager-api-rs"
+
+[workspace.dependencies]
+takumi = "0"
+dotenvy = "0.15"
+spacetimedb = "1.8"
+spacetimedb-lib = "1.8"
+spacetimedb-sdk = "1.8"
