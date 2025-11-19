@@ -1,5 +1,5 @@
 [package]
-name = "tm-leaderboard-polling"
+name = "tm-leaderboard-worker"
 publish = false
 
 version.workspace = true

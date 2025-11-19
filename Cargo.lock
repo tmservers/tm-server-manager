@@ -5301,7 +5301,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "tm-leaderboard-polling"
+name = "tm-leaderboard-worker"
 version = "0.0.4-dev"
 dependencies = [
  "dotenvy",

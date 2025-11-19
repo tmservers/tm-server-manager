@@ -1,7 +1,7 @@
 [workspace]
 members = [
     "gamebox-files",
-    "tm-leaderboard-polling",
+    "tm-leaderboard-worker",
     "tm-server-bridge",
     "tm-server-client",
     "tm-server-types",

@@ -51,7 +51,9 @@ pub enum MethodResponse {
     /// Sucessfully executed the method call.
     /// All methods whic return a bool are covered with this.
     Success,
+    /// The method failed :( why?
     Error(MethodError),
+    /// Something is wrong with the RPC call.
     RpcError(String),
 }
 
