@@ -43,7 +43,7 @@ export type TmServer = {
   config: ServerConfig,
   state: ServerState,
   capturable: boolean,
-  activeMatch: bigint | undefined,
+  activeMatch: number | undefined,
 };
 let _cached_TmServer_type_value: __AlgebraicTypeType | null = null;
 
@@ -66,7 +66,7 @@ export const TmServer = {
       { name: "config", algebraicType: ServerConfig.getTypeScriptAlgebraicType() },
       { name: "state", algebraicType: ServerState.getTypeScriptAlgebraicType() },
       { name: "capturable", algebraicType: __AlgebraicTypeValue.Bool },
-      { name: "activeMatch", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.U64) },
+      { name: "activeMatch", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.U32) },
     );
     return _cached_TmServer_type_value;
   },

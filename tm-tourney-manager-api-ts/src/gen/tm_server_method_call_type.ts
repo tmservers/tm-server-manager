@@ -33,7 +33,7 @@ declare type __keep_MethodCall = MethodCall;
 
 
 export type TmServerMethodCall = {
-  id: bigint,
+  id: number,
   serverId: string,
   userId: string,
   method: MethodCall,
@@ -52,7 +52,7 @@ export const TmServerMethodCall = {
     if (_cached_TmServerMethodCall_type_value) return _cached_TmServerMethodCall_type_value;
     _cached_TmServerMethodCall_type_value = __AlgebraicTypeValue.Product({ elements: [] });
     _cached_TmServerMethodCall_type_value.value.elements.push(
-      { name: "id", algebraicType: __AlgebraicTypeValue.U64 },
+      { name: "id", algebraicType: __AlgebraicTypeValue.U32 },
       { name: "serverId", algebraicType: __AlgebraicTypeValue.String },
       { name: "userId", algebraicType: __AlgebraicTypeValue.String },
       { name: "method", algebraicType: MethodCall.getTypeScriptAlgebraicType() },

@@ -30,5 +30,5 @@ import {
 
 export type Manual = { tag: "Manual" };
 export type Independant = { tag: "Independant" };
-export type Inherited = { tag: "Inherited", value: bigint };
+export type Inherited = { tag: "Inherited", value: number };
 

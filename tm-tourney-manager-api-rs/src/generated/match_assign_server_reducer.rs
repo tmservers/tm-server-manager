@@ -7,7 +7,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct MatchAssignServerArgs {
-    pub to: u64,
+    pub to: u32,
     pub server_id: String,
 }
 
@@ -36,7 +36,7 @@ pub trait match_assign_server {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_match_assign_server`] callbacks.
-    fn match_assign_server(&self, to: u64, server_id: String) -> __sdk::Result<()>;
+    fn match_assign_server(&self, to: u32, server_id: String) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `match_assign_server`.
     ///
     /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
@@ -46,7 +46,7 @@ pub trait match_assign_server {
     /// to cancel the callback.
     fn on_match_assign_server(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &u64, &String) + Send + 'static,
+        callback: impl FnMut(&super::ReducerEventContext, &u32, &String) + Send + 'static,
     ) -> MatchAssignServerCallbackId;
     /// Cancel a callback previously registered by [`Self::on_match_assign_server`],
     /// causing it not to run in the future.
@@ -54,7 +54,7 @@ pub trait match_assign_server {
 }
 
 impl match_assign_server for super::RemoteReducers {
-    fn match_assign_server(&self, to: u64, server_id: String) -> __sdk::Result<()> {
+    fn match_assign_server(&self, to: u32, server_id: String) -> __sdk::Result<()> {
         self.imp.call_reducer(
             "match_assign_server",
             MatchAssignServerArgs { to, server_id },
@@ -62,7 +62,7 @@ impl match_assign_server for super::RemoteReducers {
     }
     fn on_match_assign_server(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &u64, &String) + Send + 'static,
+        mut callback: impl FnMut(&super::ReducerEventContext, &u32, &String) + Send + 'static,
     ) -> MatchAssignServerCallbackId {
         MatchAssignServerCallbackId(self.imp.on_reducer(
             "match_assign_server",

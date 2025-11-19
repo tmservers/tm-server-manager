@@ -7,9 +7,9 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct CreateMatchArgs {
-    pub tournament_id: u64,
-    pub parent_id: u64,
-    pub with_template: Option<u64>,
+    pub tournament_id: u32,
+    pub parent_id: u32,
+    pub with_template: Option<u32>,
     pub auto_provisioning_server: bool,
 }
 
@@ -42,9 +42,9 @@ pub trait create_match {
     ///  and its status can be observed by listening for [`Self::on_create_match`] callbacks.
     fn create_match(
         &self,
-        tournament_id: u64,
-        parent_id: u64,
-        with_template: Option<u64>,
+        tournament_id: u32,
+        parent_id: u32,
+        with_template: Option<u32>,
         auto_provisioning_server: bool,
     ) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `create_match`.
@@ -56,7 +56,7 @@ pub trait create_match {
     /// to cancel the callback.
     fn on_create_match(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &u64, &u64, &Option<u64>, &bool)
+        callback: impl FnMut(&super::ReducerEventContext, &u32, &u32, &Option<u32>, &bool)
             + Send
             + 'static,
     ) -> CreateMatchCallbackId;
@@ -68,9 +68,9 @@ pub trait create_match {
 impl create_match for super::RemoteReducers {
     fn create_match(
         &self,
-        tournament_id: u64,
-        parent_id: u64,
-        with_template: Option<u64>,
+        tournament_id: u32,
+        parent_id: u32,
+        with_template: Option<u32>,
         auto_provisioning_server: bool,
     ) -> __sdk::Result<()> {
         self.imp.call_reducer(
@@ -85,7 +85,7 @@ impl create_match for super::RemoteReducers {
     }
     fn on_create_match(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &u64, &u64, &Option<u64>, &bool)
+        mut callback: impl FnMut(&super::ReducerEventContext, &u32, &u32, &Option<u32>, &bool)
             + Send
             + 'static,
     ) -> CreateMatchCallbackId {

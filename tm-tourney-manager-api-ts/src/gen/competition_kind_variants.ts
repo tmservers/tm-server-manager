@@ -28,6 +28,6 @@ import {
   type TableHandle as __TableHandle,
 } from "spacetimedb";
 
-export type MatchV1 = { tag: "MatchV1", value: bigint };
-export type CompetitionV1 = { tag: "CompetitionV1", value: bigint };
+export type MatchV1 = { tag: "MatchV1", value: number };
+export type CompetitionV1 = { tag: "CompetitionV1", value: number };
 

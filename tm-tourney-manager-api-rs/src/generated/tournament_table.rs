@@ -82,7 +82,7 @@ impl<'ctx> __sdk::Table for TournamentTableHandle<'ctx> {
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
     let _table = client_cache.get_or_make_table::<Tournament>("tournament");
-    _table.add_unique_constraint::<u64>("id", |row| &row.id);
+    _table.add_unique_constraint::<u32>("id", |row| &row.id);
     _table.add_unique_constraint::<String>("name", |row| &row.name);
 }
 pub struct TournamentUpdateCallbackId(__sdk::CallbackId);
@@ -121,7 +121,7 @@ pub(super) fn parse_table_update(
 /// but to directly chain method calls,
 /// like `ctx.db.tournament().id().find(...)`.
 pub struct TournamentIdUnique<'ctx> {
-    imp: __sdk::UniqueConstraintHandle<Tournament, u64>,
+    imp: __sdk::UniqueConstraintHandle<Tournament, u32>,
     phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -129,7 +129,7 @@ impl<'ctx> TournamentTableHandle<'ctx> {
     /// Get a handle on the `id` unique index on the table `tournament`.
     pub fn id(&self) -> TournamentIdUnique<'ctx> {
         TournamentIdUnique {
-            imp: self.imp.get_unique_constraint::<u64>("id"),
+            imp: self.imp.get_unique_constraint::<u32>("id"),
             phantom: std::marker::PhantomData,
         }
     }
@@ -138,7 +138,7 @@ impl<'ctx> TournamentTableHandle<'ctx> {
 impl<'ctx> TournamentIdUnique<'ctx> {
     /// Find the subscribed row whose `id` column value is equal to `col_val`,
     /// if such a row is present in the client cache.
-    pub fn find(&self, col_val: &u64) -> Option<Tournament> {
+    pub fn find(&self, col_val: &u32) -> Option<Tournament> {
         self.imp.find(col_val)
     }
 }

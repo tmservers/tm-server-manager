@@ -9,7 +9,7 @@ use super::method_call_type::MethodCall;
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct TmServerMethodCall {
-    pub id: u64,
+    pub id: u32,
     pub server_id: String,
     pub user_id: String,
     pub method: MethodCall,

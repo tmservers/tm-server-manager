@@ -33,7 +33,7 @@ import { ServerConfig } from "./server_config_type";
 declare type __keep_ServerConfig = ServerConfig;
 
 export type UpdateMatchConfig = {
-  id: bigint,
+  id: number,
   config: ServerConfig,
 };
 let _cached_UpdateMatchConfig_type_value: __AlgebraicTypeType | null = null;
@@ -50,7 +50,7 @@ export const UpdateMatchConfig = {
     if (_cached_UpdateMatchConfig_type_value) return _cached_UpdateMatchConfig_type_value;
     _cached_UpdateMatchConfig_type_value = __AlgebraicTypeValue.Product({ elements: [] });
     _cached_UpdateMatchConfig_type_value.value.elements.push(
-      { name: "id", algebraicType: __AlgebraicTypeValue.U64 },
+      { name: "id", algebraicType: __AlgebraicTypeValue.U32 },
       { name: "config", algebraicType: ServerConfig.getTypeScriptAlgebraicType() },
     );
     return _cached_UpdateMatchConfig_type_value;

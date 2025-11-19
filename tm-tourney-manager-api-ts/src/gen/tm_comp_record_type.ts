@@ -29,7 +29,7 @@ import {
 } from "spacetimedb";
 
 export type TmCompRecord = {
-  matchId: bigint,
+  matchId: number,
   mapUid: string,
   playerUid: string,
   timestamp: __Timestamp,
@@ -49,7 +49,7 @@ export const TmCompRecord = {
     if (_cached_TmCompRecord_type_value) return _cached_TmCompRecord_type_value;
     _cached_TmCompRecord_type_value = __AlgebraicTypeValue.Product({ elements: [] });
     _cached_TmCompRecord_type_value.value.elements.push(
-      { name: "matchId", algebraicType: __AlgebraicTypeValue.U64 },
+      { name: "matchId", algebraicType: __AlgebraicTypeValue.U32 },
       { name: "mapUid", algebraicType: __AlgebraicTypeValue.String },
       { name: "playerUid", algebraicType: __AlgebraicTypeValue.String },
       { name: "timestamp", algebraicType: __AlgebraicTypeValue.createTimestampType() },

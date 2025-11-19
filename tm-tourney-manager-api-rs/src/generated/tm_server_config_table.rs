@@ -82,7 +82,7 @@ impl<'ctx> __sdk::Table for TmServerConfigTableHandle<'ctx> {
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
     let _table = client_cache.get_or_make_table::<TmServerConfig>("tm_server_config");
-    _table.add_unique_constraint::<u64>("id", |row| &row.id);
+    _table.add_unique_constraint::<u32>("id", |row| &row.id);
 }
 pub struct TmServerConfigUpdateCallbackId(__sdk::CallbackId);
 
@@ -120,7 +120,7 @@ pub(super) fn parse_table_update(
 /// but to directly chain method calls,
 /// like `ctx.db.tm_server_config().id().find(...)`.
 pub struct TmServerConfigIdUnique<'ctx> {
-    imp: __sdk::UniqueConstraintHandle<TmServerConfig, u64>,
+    imp: __sdk::UniqueConstraintHandle<TmServerConfig, u32>,
     phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -128,7 +128,7 @@ impl<'ctx> TmServerConfigTableHandle<'ctx> {
     /// Get a handle on the `id` unique index on the table `tm_server_config`.
     pub fn id(&self) -> TmServerConfigIdUnique<'ctx> {
         TmServerConfigIdUnique {
-            imp: self.imp.get_unique_constraint::<u64>("id"),
+            imp: self.imp.get_unique_constraint::<u32>("id"),
             phantom: std::marker::PhantomData,
         }
     }
@@ -137,7 +137,7 @@ impl<'ctx> TmServerConfigTableHandle<'ctx> {
 impl<'ctx> TmServerConfigIdUnique<'ctx> {
     /// Find the subscribed row whose `id` column value is equal to `col_val`,
     /// if such a row is present in the client cache.
-    pub fn find(&self, col_val: &u64) -> Option<TmServerConfig> {
+    pub fn find(&self, col_val: &u32) -> Option<TmServerConfig> {
         self.imp.find(col_val)
     }
 }

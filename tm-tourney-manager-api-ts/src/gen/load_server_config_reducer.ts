@@ -30,7 +30,7 @@ import {
 
 export type LoadServerConfig = {
   id: string,
-  withConfig: bigint,
+  withConfig: number,
 };
 let _cached_LoadServerConfig_type_value: __AlgebraicTypeType | null = null;
 
@@ -47,7 +47,7 @@ export const LoadServerConfig = {
     _cached_LoadServerConfig_type_value = __AlgebraicTypeValue.Product({ elements: [] });
     _cached_LoadServerConfig_type_value.value.elements.push(
       { name: "id", algebraicType: __AlgebraicTypeValue.String },
-      { name: "withConfig", algebraicType: __AlgebraicTypeValue.U64 },
+      { name: "withConfig", algebraicType: __AlgebraicTypeValue.U32 },
     );
     return _cached_LoadServerConfig_type_value;
   },

@@ -33,7 +33,7 @@ import { MethodResponse } from "./method_response_type";
 declare type __keep_MethodResponse = MethodResponse;
 
 export type ServerMethodResponse = {
-  callId: bigint,
+  callId: number,
   response: MethodResponse,
 };
 let _cached_ServerMethodResponse_type_value: __AlgebraicTypeType | null = null;
@@ -50,7 +50,7 @@ export const ServerMethodResponse = {
     if (_cached_ServerMethodResponse_type_value) return _cached_ServerMethodResponse_type_value;
     _cached_ServerMethodResponse_type_value = __AlgebraicTypeValue.Product({ elements: [] });
     _cached_ServerMethodResponse_type_value.value.elements.push(
-      { name: "callId", algebraicType: __AlgebraicTypeValue.U64 },
+      { name: "callId", algebraicType: __AlgebraicTypeValue.U32 },
       { name: "response", algebraicType: MethodResponse.getTypeScriptAlgebraicType() },
     );
     return _cached_ServerMethodResponse_type_value;

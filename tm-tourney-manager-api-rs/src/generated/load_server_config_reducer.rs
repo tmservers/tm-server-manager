@@ -8,7 +8,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[sats(crate = __lib)]
 pub(super) struct LoadServerConfigArgs {
     pub id: String,
-    pub with_config: u64,
+    pub with_config: u32,
 }
 
 impl From<LoadServerConfigArgs> for super::Reducer {
@@ -36,7 +36,7 @@ pub trait load_server_config {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_load_server_config`] callbacks.
-    fn load_server_config(&self, id: String, with_config: u64) -> __sdk::Result<()>;
+    fn load_server_config(&self, id: String, with_config: u32) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `load_server_config`.
     ///
     /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
@@ -46,7 +46,7 @@ pub trait load_server_config {
     /// to cancel the callback.
     fn on_load_server_config(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &String, &u64) + Send + 'static,
+        callback: impl FnMut(&super::ReducerEventContext, &String, &u32) + Send + 'static,
     ) -> LoadServerConfigCallbackId;
     /// Cancel a callback previously registered by [`Self::on_load_server_config`],
     /// causing it not to run in the future.
@@ -54,7 +54,7 @@ pub trait load_server_config {
 }
 
 impl load_server_config for super::RemoteReducers {
-    fn load_server_config(&self, id: String, with_config: u64) -> __sdk::Result<()> {
+    fn load_server_config(&self, id: String, with_config: u32) -> __sdk::Result<()> {
         self.imp.call_reducer(
             "load_server_config",
             LoadServerConfigArgs { id, with_config },
@@ -62,7 +62,7 @@ impl load_server_config for super::RemoteReducers {
     }
     fn on_load_server_config(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &String, &u64) + Send + 'static,
+        mut callback: impl FnMut(&super::ReducerEventContext, &String, &u32) + Send + 'static,
     ) -> LoadServerConfigCallbackId {
         LoadServerConfigCallbackId(self.imp.on_reducer(
             "load_server_config",

@@ -12,9 +12,9 @@ use super::scheduling_type::Scheduling;
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct Competition {
-    pub id: u64,
-    pub tournament_id: u64,
-    pub parent_id: Option<u64>,
+    pub id: u32,
+    pub tournament_id: u32,
+    pub parent_id: Option<u32>,
     pub name: String,
     pub status: CompetitionStatus,
     pub estimate: Option<__sdk::TimeDuration>,

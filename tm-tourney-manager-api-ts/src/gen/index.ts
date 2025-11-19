@@ -538,7 +538,7 @@ export type Reducer = never
 export class RemoteReducers {
   constructor(private connection: __DbConnectionImpl, private setCallReducerFlags: SetReducerFlags) {}
 
-  addDependency(compId: bigint, fromNode: number, toNode: number) {
+  addDependency(compId: number, fromNode: number, toNode: number) {
     const __args = { compId, fromNode, toNode };
     let __writer = new __BinaryWriter(1024);
     AddDependency.serialize(__writer, __args);
@@ -546,11 +546,11 @@ export class RemoteReducers {
     this.connection.callReducer("add_dependency", __argsBuffer, this.setCallReducerFlags.addDependencyFlags);
   }
 
-  onAddDependency(callback: (ctx: ReducerEventContext, compId: bigint, fromNode: number, toNode: number) => void) {
+  onAddDependency(callback: (ctx: ReducerEventContext, compId: number, fromNode: number, toNode: number) => void) {
     this.connection.onReducer("add_dependency", callback);
   }
 
-  removeOnAddDependency(callback: (ctx: ReducerEventContext, compId: bigint, fromNode: number, toNode: number) => void) {
+  removeOnAddDependency(callback: (ctx: ReducerEventContext, compId: number, fromNode: number, toNode: number) => void) {
     this.connection.offReducer("add_dependency", callback);
   }
 
@@ -562,7 +562,7 @@ export class RemoteReducers {
     this.connection.offReducer("client_connected", callback);
   }
 
-  createCompetition(name: string, tournamentId: bigint, parentId: bigint, withTemplate: bigint | undefined) {
+  createCompetition(name: string, tournamentId: number, parentId: number, withTemplate: number | undefined) {
     const __args = { name, tournamentId, parentId, withTemplate };
     let __writer = new __BinaryWriter(1024);
     CreateCompetition.serialize(__writer, __args);
@@ -570,11 +570,11 @@ export class RemoteReducers {
     this.connection.callReducer("create_competition", __argsBuffer, this.setCallReducerFlags.createCompetitionFlags);
   }
 
-  onCreateCompetition(callback: (ctx: ReducerEventContext, name: string, tournamentId: bigint, parentId: bigint, withTemplate: bigint | undefined) => void) {
+  onCreateCompetition(callback: (ctx: ReducerEventContext, name: string, tournamentId: number, parentId: number, withTemplate: number | undefined) => void) {
     this.connection.onReducer("create_competition", callback);
   }
 
-  removeOnCreateCompetition(callback: (ctx: ReducerEventContext, name: string, tournamentId: bigint, parentId: bigint, withTemplate: bigint | undefined) => void) {
+  removeOnCreateCompetition(callback: (ctx: ReducerEventContext, name: string, tournamentId: number, parentId: number, withTemplate: number | undefined) => void) {
     this.connection.offReducer("create_competition", callback);
   }
 
@@ -594,7 +594,7 @@ export class RemoteReducers {
     this.connection.offReducer("create_event_template", callback);
   }
 
-  createMatch(tournamentId: bigint, parentId: bigint, withTemplate: bigint | undefined, autoProvisioningServer: boolean) {
+  createMatch(tournamentId: number, parentId: number, withTemplate: number | undefined, autoProvisioningServer: boolean) {
     const __args = { tournamentId, parentId, withTemplate, autoProvisioningServer };
     let __writer = new __BinaryWriter(1024);
     CreateMatch.serialize(__writer, __args);
@@ -602,11 +602,11 @@ export class RemoteReducers {
     this.connection.callReducer("create_match", __argsBuffer, this.setCallReducerFlags.createMatchFlags);
   }
 
-  onCreateMatch(callback: (ctx: ReducerEventContext, tournamentId: bigint, parentId: bigint, withTemplate: bigint | undefined, autoProvisioningServer: boolean) => void) {
+  onCreateMatch(callback: (ctx: ReducerEventContext, tournamentId: number, parentId: number, withTemplate: number | undefined, autoProvisioningServer: boolean) => void) {
     this.connection.onReducer("create_match", callback);
   }
 
-  removeOnCreateMatch(callback: (ctx: ReducerEventContext, tournamentId: bigint, parentId: bigint, withTemplate: bigint | undefined, autoProvisioningServer: boolean) => void) {
+  removeOnCreateMatch(callback: (ctx: ReducerEventContext, tournamentId: number, parentId: number, withTemplate: number | undefined, autoProvisioningServer: boolean) => void) {
     this.connection.offReducer("create_match", callback);
   }
 
@@ -650,7 +650,7 @@ export class RemoteReducers {
     this.connection.offReducer("identity_disconnected", callback);
   }
 
-  loadServerConfig(id: string, withConfig: bigint) {
+  loadServerConfig(id: string, withConfig: number) {
     const __args = { id, withConfig };
     let __writer = new __BinaryWriter(1024);
     LoadServerConfig.serialize(__writer, __args);
@@ -658,15 +658,15 @@ export class RemoteReducers {
     this.connection.callReducer("load_server_config", __argsBuffer, this.setCallReducerFlags.loadServerConfigFlags);
   }
 
-  onLoadServerConfig(callback: (ctx: ReducerEventContext, id: string, withConfig: bigint) => void) {
+  onLoadServerConfig(callback: (ctx: ReducerEventContext, id: string, withConfig: number) => void) {
     this.connection.onReducer("load_server_config", callback);
   }
 
-  removeOnLoadServerConfig(callback: (ctx: ReducerEventContext, id: string, withConfig: bigint) => void) {
+  removeOnLoadServerConfig(callback: (ctx: ReducerEventContext, id: string, withConfig: number) => void) {
     this.connection.offReducer("load_server_config", callback);
   }
 
-  matchAssignServer(to: bigint, serverId: string) {
+  matchAssignServer(to: number, serverId: string) {
     const __args = { to, serverId };
     let __writer = new __BinaryWriter(1024);
     MatchAssignServer.serialize(__writer, __args);
@@ -674,15 +674,15 @@ export class RemoteReducers {
     this.connection.callReducer("match_assign_server", __argsBuffer, this.setCallReducerFlags.matchAssignServerFlags);
   }
 
-  onMatchAssignServer(callback: (ctx: ReducerEventContext, to: bigint, serverId: string) => void) {
+  onMatchAssignServer(callback: (ctx: ReducerEventContext, to: number, serverId: string) => void) {
     this.connection.onReducer("match_assign_server", callback);
   }
 
-  removeOnMatchAssignServer(callback: (ctx: ReducerEventContext, to: bigint, serverId: string) => void) {
+  removeOnMatchAssignServer(callback: (ctx: ReducerEventContext, to: number, serverId: string) => void) {
     this.connection.offReducer("match_assign_server", callback);
   }
 
-  matchConfigured(id: bigint) {
+  matchConfigured(id: number) {
     const __args = { id };
     let __writer = new __BinaryWriter(1024);
     MatchConfigured.serialize(__writer, __args);
@@ -690,11 +690,11 @@ export class RemoteReducers {
     this.connection.callReducer("match_configured", __argsBuffer, this.setCallReducerFlags.matchConfiguredFlags);
   }
 
-  onMatchConfigured(callback: (ctx: ReducerEventContext, id: bigint) => void) {
+  onMatchConfigured(callback: (ctx: ReducerEventContext, id: number) => void) {
     this.connection.onReducer("match_configured", callback);
   }
 
-  removeOnMatchConfigured(callback: (ctx: ReducerEventContext, id: bigint) => void) {
+  removeOnMatchConfigured(callback: (ctx: ReducerEventContext, id: number) => void) {
     this.connection.offReducer("match_configured", callback);
   }
 
@@ -794,7 +794,7 @@ export class RemoteReducers {
     this.connection.offReducer("server_method_call", callback);
   }
 
-  serverMethodResponse(callId: bigint, response: MethodResponse) {
+  serverMethodResponse(callId: number, response: MethodResponse) {
     const __args = { callId, response };
     let __writer = new __BinaryWriter(1024);
     ServerMethodResponse.serialize(__writer, __args);
@@ -802,11 +802,11 @@ export class RemoteReducers {
     this.connection.callReducer("server_method_response", __argsBuffer, this.setCallReducerFlags.serverMethodResponseFlags);
   }
 
-  onServerMethodResponse(callback: (ctx: ReducerEventContext, callId: bigint, response: MethodResponse) => void) {
+  onServerMethodResponse(callback: (ctx: ReducerEventContext, callId: number, response: MethodResponse) => void) {
     this.connection.onReducer("server_method_response", callback);
   }
 
-  removeOnServerMethodResponse(callback: (ctx: ReducerEventContext, callId: bigint, response: MethodResponse) => void) {
+  removeOnServerMethodResponse(callback: (ctx: ReducerEventContext, callId: number, response: MethodResponse) => void) {
     this.connection.offReducer("server_method_response", callback);
   }
 
@@ -826,7 +826,7 @@ export class RemoteReducers {
     this.connection.offReducer("set_tm_server_state", callback);
   }
 
-  tryStart(matchId: bigint) {
+  tryStart(matchId: number) {
     const __args = { matchId };
     let __writer = new __BinaryWriter(1024);
     TryStart.serialize(__writer, __args);
@@ -834,15 +834,15 @@ export class RemoteReducers {
     this.connection.callReducer("try_start", __argsBuffer, this.setCallReducerFlags.tryStartFlags);
   }
 
-  onTryStart(callback: (ctx: ReducerEventContext, matchId: bigint) => void) {
+  onTryStart(callback: (ctx: ReducerEventContext, matchId: number) => void) {
     this.connection.onReducer("try_start", callback);
   }
 
-  removeOnTryStart(callback: (ctx: ReducerEventContext, matchId: bigint) => void) {
+  removeOnTryStart(callback: (ctx: ReducerEventContext, matchId: number) => void) {
     this.connection.offReducer("try_start", callback);
   }
 
-  updateMatchConfig(id: bigint, config: ServerConfig) {
+  updateMatchConfig(id: number, config: ServerConfig) {
     const __args = { id, config };
     let __writer = new __BinaryWriter(1024);
     UpdateMatchConfig.serialize(__writer, __args);
@@ -850,11 +850,11 @@ export class RemoteReducers {
     this.connection.callReducer("update_match_config", __argsBuffer, this.setCallReducerFlags.updateMatchConfigFlags);
   }
 
-  onUpdateMatchConfig(callback: (ctx: ReducerEventContext, id: bigint, config: ServerConfig) => void) {
+  onUpdateMatchConfig(callback: (ctx: ReducerEventContext, id: number, config: ServerConfig) => void) {
     this.connection.onReducer("update_match_config", callback);
   }
 
-  removeOnUpdateMatchConfig(callback: (ctx: ReducerEventContext, id: bigint, config: ServerConfig) => void) {
+  removeOnUpdateMatchConfig(callback: (ctx: ReducerEventContext, id: number, config: ServerConfig) => void) {
     this.connection.offReducer("update_match_config", callback);
   }
 

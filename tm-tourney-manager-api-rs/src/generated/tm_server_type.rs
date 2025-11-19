@@ -17,7 +17,7 @@ pub struct TmServer {
     pub config: ServerConfig,
     pub state: ServerState,
     pub capturable: bool,
-    pub active_match: Option<u64>,
+    pub active_match: Option<u32>,
 }
 
 impl __sdk::InModule for TmServer {

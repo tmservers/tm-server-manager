@@ -33,7 +33,7 @@ declare type __keep_ServerConfig = ServerConfig;
 
 
 export type TmServerConfig = {
-  id: bigint,
+  id: number,
   creator: string,
   config: ServerConfig,
 };
@@ -51,7 +51,7 @@ export const TmServerConfig = {
     if (_cached_TmServerConfig_type_value) return _cached_TmServerConfig_type_value;
     _cached_TmServerConfig_type_value = __AlgebraicTypeValue.Product({ elements: [] });
     _cached_TmServerConfig_type_value.value.elements.push(
-      { name: "id", algebraicType: __AlgebraicTypeValue.U64 },
+      { name: "id", algebraicType: __AlgebraicTypeValue.U32 },
       { name: "creator", algebraicType: __AlgebraicTypeValue.String },
       { name: "config", algebraicType: ServerConfig.getTypeScriptAlgebraicType() },
     );

@@ -11,7 +11,7 @@ pub enum Scheduling {
 
     Independant,
 
-    Inherited(u64),
+    Inherited(u32),
 }
 
 impl __sdk::InModule for Scheduling {

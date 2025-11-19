@@ -294,24 +294,24 @@ pub use way_point_type::WayPoint;
 
 pub enum Reducer {
     AddDependency {
-        comp_id: u64,
+        comp_id: u32,
         from_node: u32,
         to_node: u32,
     },
     ClientConnected,
     CreateCompetition {
         name: String,
-        tournament_id: u64,
-        parent_id: u64,
-        with_template: Option<u64>,
+        tournament_id: u32,
+        parent_id: u32,
+        with_template: Option<u32>,
     },
     CreateEventTemplate {
         name: String,
     },
     CreateMatch {
-        tournament_id: u64,
-        parent_id: u64,
-        with_template: Option<u64>,
+        tournament_id: u32,
+        parent_id: u32,
+        with_template: Option<u32>,
         auto_provisioning_server: bool,
     },
     CreateServerConfig {
@@ -324,14 +324,14 @@ pub enum Reducer {
     IdentityDisconnected,
     LoadServerConfig {
         id: String,
-        with_config: u64,
+        with_config: u32,
     },
     MatchAssignServer {
-        to: u64,
+        to: u32,
         server_id: String,
     },
     MatchConfigured {
-        id: u64,
+        id: u32,
     },
     OnTournamentEventSchedule {
         arg: CompetitionSchedule,
@@ -356,7 +356,7 @@ pub enum Reducer {
         method: MethodCall,
     },
     ServerMethodResponse {
-        call_id: u64,
+        call_id: u32,
         response: MethodResponse,
     },
     SetTmServerState {
@@ -364,10 +364,10 @@ pub enum Reducer {
         state: ServerState,
     },
     TryStart {
-        match_id: u64,
+        match_id: u32,
     },
     UpdateMatchConfig {
-        id: u64,
+        id: u32,
         config: ServerConfig,
     },
 }

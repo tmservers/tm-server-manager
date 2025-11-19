@@ -75,7 +75,7 @@ export class TmServerConfigTableHandle<TableName extends string> implements __Ta
   id = {
     // Find the subscribed row whose `id` column value is equal to `col_val`,
     // if such a row is present in the client cache.
-    find: (col_val: bigint): TmServerConfig | undefined => {
+    find: (col_val: number): TmServerConfig | undefined => {
       for (let row of this.tableCache.iter()) {
         if (__deepEqual(row.id, col_val)) {
           return row;

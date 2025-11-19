@@ -29,7 +29,7 @@ import {
 } from "spacetimedb";
 
 export type TryStart = {
-  matchId: bigint,
+  matchId: number,
 };
 let _cached_TryStart_type_value: __AlgebraicTypeType | null = null;
 
@@ -45,7 +45,7 @@ export const TryStart = {
     if (_cached_TryStart_type_value) return _cached_TryStart_type_value;
     _cached_TryStart_type_value = __AlgebraicTypeValue.Product({ elements: [] });
     _cached_TryStart_type_value.value.elements.push(
-      { name: "matchId", algebraicType: __AlgebraicTypeValue.U64 },
+      { name: "matchId", algebraicType: __AlgebraicTypeValue.U32 },
     );
     return _cached_TryStart_type_value;
   },

@@ -36,8 +36,8 @@ declare type __keep_MatchState = MatchState;
 
 
 export type TmServerEvent = {
-  tournamentId: bigint,
-  matchId: bigint,
+  tournamentId: number,
+  matchId: number,
   state: MatchState,
   event: Event,
 };
@@ -55,8 +55,8 @@ export const TmServerEvent = {
     if (_cached_TmServerEvent_type_value) return _cached_TmServerEvent_type_value;
     _cached_TmServerEvent_type_value = __AlgebraicTypeValue.Product({ elements: [] });
     _cached_TmServerEvent_type_value.value.elements.push(
-      { name: "tournamentId", algebraicType: __AlgebraicTypeValue.U64 },
-      { name: "matchId", algebraicType: __AlgebraicTypeValue.U64 },
+      { name: "tournamentId", algebraicType: __AlgebraicTypeValue.U32 },
+      { name: "matchId", algebraicType: __AlgebraicTypeValue.U32 },
       { name: "state", algebraicType: MatchState.getTypeScriptAlgebraicType() },
       { name: "event", algebraicType: Event.getTypeScriptAlgebraicType() },
     );

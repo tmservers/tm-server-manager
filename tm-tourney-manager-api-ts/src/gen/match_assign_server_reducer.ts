@@ -29,7 +29,7 @@ import {
 } from "spacetimedb";
 
 export type MatchAssignServer = {
-  to: bigint,
+  to: number,
   serverId: string,
 };
 let _cached_MatchAssignServer_type_value: __AlgebraicTypeType | null = null;
@@ -46,7 +46,7 @@ export const MatchAssignServer = {
     if (_cached_MatchAssignServer_type_value) return _cached_MatchAssignServer_type_value;
     _cached_MatchAssignServer_type_value = __AlgebraicTypeValue.Product({ elements: [] });
     _cached_MatchAssignServer_type_value.value.elements.push(
-      { name: "to", algebraicType: __AlgebraicTypeValue.U64 },
+      { name: "to", algebraicType: __AlgebraicTypeValue.U32 },
       { name: "serverId", algebraicType: __AlgebraicTypeValue.String },
     );
     return _cached_MatchAssignServer_type_value;

@@ -9,7 +9,7 @@ use super::method_response_type::MethodResponse;
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct TmServerMethodResponse {
-    pub id: u64,
+    pub id: u32,
     pub response: MethodResponse,
 }
 

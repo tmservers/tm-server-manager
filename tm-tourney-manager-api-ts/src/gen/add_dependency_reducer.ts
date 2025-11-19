@@ -29,7 +29,7 @@ import {
 } from "spacetimedb";
 
 export type AddDependency = {
-  compId: bigint,
+  compId: number,
   fromNode: number,
   toNode: number,
 };
@@ -47,7 +47,7 @@ export const AddDependency = {
     if (_cached_AddDependency_type_value) return _cached_AddDependency_type_value;
     _cached_AddDependency_type_value = __AlgebraicTypeValue.Product({ elements: [] });
     _cached_AddDependency_type_value.value.elements.push(
-      { name: "compId", algebraicType: __AlgebraicTypeValue.U64 },
+      { name: "compId", algebraicType: __AlgebraicTypeValue.U32 },
       { name: "fromNode", algebraicType: __AlgebraicTypeValue.U32 },
       { name: "toNode", algebraicType: __AlgebraicTypeValue.U32 },
     );

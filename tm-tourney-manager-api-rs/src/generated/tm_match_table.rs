@@ -87,7 +87,7 @@ impl<'ctx> __sdk::Table for TmMatchTableHandle<'ctx> {
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
     let _table = client_cache.get_or_make_table::<TmMatch>("tm_match");
-    _table.add_unique_constraint::<u64>("id", |row| &row.id);
+    _table.add_unique_constraint::<u32>("id", |row| &row.id);
 }
 pub struct TmMatchUpdateCallbackId(__sdk::CallbackId);
 
@@ -125,7 +125,7 @@ pub(super) fn parse_table_update(
 /// but to directly chain method calls,
 /// like `ctx.db.tm_match().id().find(...)`.
 pub struct TmMatchIdUnique<'ctx> {
-    imp: __sdk::UniqueConstraintHandle<TmMatch, u64>,
+    imp: __sdk::UniqueConstraintHandle<TmMatch, u32>,
     phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -133,7 +133,7 @@ impl<'ctx> TmMatchTableHandle<'ctx> {
     /// Get a handle on the `id` unique index on the table `tm_match`.
     pub fn id(&self) -> TmMatchIdUnique<'ctx> {
         TmMatchIdUnique {
-            imp: self.imp.get_unique_constraint::<u64>("id"),
+            imp: self.imp.get_unique_constraint::<u32>("id"),
             phantom: std::marker::PhantomData,
         }
     }
@@ -142,7 +142,7 @@ impl<'ctx> TmMatchTableHandle<'ctx> {
 impl<'ctx> TmMatchIdUnique<'ctx> {
     /// Find the subscribed row whose `id` column value is equal to `col_val`,
     /// if such a row is present in the client cache.
-    pub fn find(&self, col_val: &u64) -> Option<TmMatch> {
+    pub fn find(&self, col_val: &u32) -> Option<TmMatch> {
         self.imp.find(col_val)
     }
 }

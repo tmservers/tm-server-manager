@@ -9,7 +9,7 @@ use super::method_response_type::MethodResponse;
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct ServerMethodResponseArgs {
-    pub call_id: u64,
+    pub call_id: u32,
     pub response: MethodResponse,
 }
 
@@ -38,7 +38,7 @@ pub trait server_method_response {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_server_method_response`] callbacks.
-    fn server_method_response(&self, call_id: u64, response: MethodResponse) -> __sdk::Result<()>;
+    fn server_method_response(&self, call_id: u32, response: MethodResponse) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `server_method_response`.
     ///
     /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
@@ -48,7 +48,7 @@ pub trait server_method_response {
     /// to cancel the callback.
     fn on_server_method_response(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &u64, &MethodResponse) + Send + 'static,
+        callback: impl FnMut(&super::ReducerEventContext, &u32, &MethodResponse) + Send + 'static,
     ) -> ServerMethodResponseCallbackId;
     /// Cancel a callback previously registered by [`Self::on_server_method_response`],
     /// causing it not to run in the future.
@@ -56,7 +56,7 @@ pub trait server_method_response {
 }
 
 impl server_method_response for super::RemoteReducers {
-    fn server_method_response(&self, call_id: u64, response: MethodResponse) -> __sdk::Result<()> {
+    fn server_method_response(&self, call_id: u32, response: MethodResponse) -> __sdk::Result<()> {
         self.imp.call_reducer(
             "server_method_response",
             ServerMethodResponseArgs { call_id, response },
@@ -64,7 +64,7 @@ impl server_method_response for super::RemoteReducers {
     }
     fn on_server_method_response(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &u64, &MethodResponse) + Send + 'static,
+        mut callback: impl FnMut(&super::ReducerEventContext, &u32, &MethodResponse) + Send + 'static,
     ) -> ServerMethodResponseCallbackId {
         ServerMethodResponseCallbackId(self.imp.on_reducer(
             "server_method_response",

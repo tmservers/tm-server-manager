@@ -14,9 +14,9 @@ use super::server_config_type::ServerConfig;
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct TmMatch {
-    pub id: u64,
-    pub tournament_id: u64,
-    pub parent_id: u64,
+    pub id: u32,
+    pub tournament_id: u32,
+    pub parent_id: u32,
     pub scheduling: Scheduling,
     pub registration: Registration,
     pub server_id: Option<String>,

@@ -29,7 +29,7 @@ import {
 } from "spacetimedb";
 
 export type EventConfig = {
-  id: bigint,
+  id: number,
   owner: string,
   public: boolean,
   name: string,
@@ -49,7 +49,7 @@ export const EventConfig = {
     if (_cached_EventConfig_type_value) return _cached_EventConfig_type_value;
     _cached_EventConfig_type_value = __AlgebraicTypeValue.Product({ elements: [] });
     _cached_EventConfig_type_value.value.elements.push(
-      { name: "id", algebraicType: __AlgebraicTypeValue.U64 },
+      { name: "id", algebraicType: __AlgebraicTypeValue.U32 },
       { name: "owner", algebraicType: __AlgebraicTypeValue.String },
       { name: "public", algebraicType: __AlgebraicTypeValue.Bool },
       { name: "name", algebraicType: __AlgebraicTypeValue.String },

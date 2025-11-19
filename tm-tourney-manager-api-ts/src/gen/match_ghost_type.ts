@@ -29,7 +29,7 @@ import {
 } from "spacetimedb";
 
 export type MatchGhost = {
-  id: bigint,
+  id: number,
   link: string,
 };
 let _cached_MatchGhost_type_value: __AlgebraicTypeType | null = null;
@@ -46,7 +46,7 @@ export const MatchGhost = {
     if (_cached_MatchGhost_type_value) return _cached_MatchGhost_type_value;
     _cached_MatchGhost_type_value = __AlgebraicTypeValue.Product({ elements: [] });
     _cached_MatchGhost_type_value.value.elements.push(
-      { name: "id", algebraicType: __AlgebraicTypeValue.U64 },
+      { name: "id", algebraicType: __AlgebraicTypeValue.U32 },
       { name: "link", algebraicType: __AlgebraicTypeValue.String },
     );
     return _cached_MatchGhost_type_value;

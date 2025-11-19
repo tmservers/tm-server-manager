@@ -33,13 +33,13 @@ declare type __keep_TournamentStatus = TournamentStatus;
 
 
 export type Tournament = {
-  id: bigint,
+  id: number,
   creator: string,
   owners: string[],
   name: string,
   description: string,
   status: TournamentStatus,
-  competition: bigint,
+  competition: number,
 };
 let _cached_Tournament_type_value: __AlgebraicTypeType | null = null;
 
@@ -55,13 +55,13 @@ export const Tournament = {
     if (_cached_Tournament_type_value) return _cached_Tournament_type_value;
     _cached_Tournament_type_value = __AlgebraicTypeValue.Product({ elements: [] });
     _cached_Tournament_type_value.value.elements.push(
-      { name: "id", algebraicType: __AlgebraicTypeValue.U64 },
+      { name: "id", algebraicType: __AlgebraicTypeValue.U32 },
       { name: "creator", algebraicType: __AlgebraicTypeValue.String },
       { name: "owners", algebraicType: __AlgebraicTypeValue.Array(__AlgebraicTypeValue.String) },
       { name: "name", algebraicType: __AlgebraicTypeValue.String },
       { name: "description", algebraicType: __AlgebraicTypeValue.String },
       { name: "status", algebraicType: TournamentStatus.getTypeScriptAlgebraicType() },
-      { name: "competition", algebraicType: __AlgebraicTypeValue.U64 },
+      { name: "competition", algebraicType: __AlgebraicTypeValue.U32 },
     );
     return _cached_Tournament_type_value;
   },

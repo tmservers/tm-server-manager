@@ -7,7 +7,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct TryStartArgs {
-    pub match_id: u64,
+    pub match_id: u32,
 }
 
 impl From<TryStartArgs> for super::Reducer {
@@ -34,7 +34,7 @@ pub trait try_start {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_try_start`] callbacks.
-    fn try_start(&self, match_id: u64) -> __sdk::Result<()>;
+    fn try_start(&self, match_id: u32) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `try_start`.
     ///
     /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
@@ -44,7 +44,7 @@ pub trait try_start {
     /// to cancel the callback.
     fn on_try_start(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &u64) + Send + 'static,
+        callback: impl FnMut(&super::ReducerEventContext, &u32) + Send + 'static,
     ) -> TryStartCallbackId;
     /// Cancel a callback previously registered by [`Self::on_try_start`],
     /// causing it not to run in the future.
@@ -52,13 +52,13 @@ pub trait try_start {
 }
 
 impl try_start for super::RemoteReducers {
-    fn try_start(&self, match_id: u64) -> __sdk::Result<()> {
+    fn try_start(&self, match_id: u32) -> __sdk::Result<()> {
         self.imp
             .call_reducer("try_start", TryStartArgs { match_id })
     }
     fn on_try_start(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &u64) + Send + 'static,
+        mut callback: impl FnMut(&super::ReducerEventContext, &u32) + Send + 'static,
     ) -> TryStartCallbackId {
         TryStartCallbackId(self.imp.on_reducer(
             "try_start",

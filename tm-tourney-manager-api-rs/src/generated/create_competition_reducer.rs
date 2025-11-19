@@ -8,9 +8,9 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[sats(crate = __lib)]
 pub(super) struct CreateCompetitionArgs {
     pub name: String,
-    pub tournament_id: u64,
-    pub parent_id: u64,
-    pub with_template: Option<u64>,
+    pub tournament_id: u32,
+    pub parent_id: u32,
+    pub with_template: Option<u32>,
 }
 
 impl From<CreateCompetitionArgs> for super::Reducer {
@@ -43,9 +43,9 @@ pub trait create_competition {
     fn create_competition(
         &self,
         name: String,
-        tournament_id: u64,
-        parent_id: u64,
-        with_template: Option<u64>,
+        tournament_id: u32,
+        parent_id: u32,
+        with_template: Option<u32>,
     ) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `create_competition`.
     ///
@@ -56,7 +56,7 @@ pub trait create_competition {
     /// to cancel the callback.
     fn on_create_competition(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &String, &u64, &u64, &Option<u64>)
+        callback: impl FnMut(&super::ReducerEventContext, &String, &u32, &u32, &Option<u32>)
             + Send
             + 'static,
     ) -> CreateCompetitionCallbackId;
@@ -69,9 +69,9 @@ impl create_competition for super::RemoteReducers {
     fn create_competition(
         &self,
         name: String,
-        tournament_id: u64,
-        parent_id: u64,
-        with_template: Option<u64>,
+        tournament_id: u32,
+        parent_id: u32,
+        with_template: Option<u32>,
     ) -> __sdk::Result<()> {
         self.imp.call_reducer(
             "create_competition",
@@ -85,7 +85,7 @@ impl create_competition for super::RemoteReducers {
     }
     fn on_create_competition(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &String, &u64, &u64, &Option<u64>)
+        mut callback: impl FnMut(&super::ReducerEventContext, &String, &u32, &u32, &Option<u32>)
             + Send
             + 'static,
     ) -> CreateCompetitionCallbackId {

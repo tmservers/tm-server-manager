@@ -29,7 +29,7 @@ import {
 } from "spacetimedb";
 
 export type MatchTemplate = {
-  id: bigint,
+  id: number,
   creator: string,
 };
 let _cached_MatchTemplate_type_value: __AlgebraicTypeType | null = null;
@@ -46,7 +46,7 @@ export const MatchTemplate = {
     if (_cached_MatchTemplate_type_value) return _cached_MatchTemplate_type_value;
     _cached_MatchTemplate_type_value = __AlgebraicTypeValue.Product({ elements: [] });
     _cached_MatchTemplate_type_value.value.elements.push(
-      { name: "id", algebraicType: __AlgebraicTypeValue.U64 },
+      { name: "id", algebraicType: __AlgebraicTypeValue.U32 },
       { name: "creator", algebraicType: __AlgebraicTypeValue.String },
     );
     return _cached_MatchTemplate_type_value;

@@ -7,7 +7,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct AddDependencyArgs {
-    pub comp_id: u64,
+    pub comp_id: u32,
     pub from_node: u32,
     pub to_node: u32,
 }
@@ -38,7 +38,7 @@ pub trait add_dependency {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_add_dependency`] callbacks.
-    fn add_dependency(&self, comp_id: u64, from_node: u32, to_node: u32) -> __sdk::Result<()>;
+    fn add_dependency(&self, comp_id: u32, from_node: u32, to_node: u32) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `add_dependency`.
     ///
     /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
@@ -48,7 +48,7 @@ pub trait add_dependency {
     /// to cancel the callback.
     fn on_add_dependency(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &u64, &u32, &u32) + Send + 'static,
+        callback: impl FnMut(&super::ReducerEventContext, &u32, &u32, &u32) + Send + 'static,
     ) -> AddDependencyCallbackId;
     /// Cancel a callback previously registered by [`Self::on_add_dependency`],
     /// causing it not to run in the future.
@@ -56,7 +56,7 @@ pub trait add_dependency {
 }
 
 impl add_dependency for super::RemoteReducers {
-    fn add_dependency(&self, comp_id: u64, from_node: u32, to_node: u32) -> __sdk::Result<()> {
+    fn add_dependency(&self, comp_id: u32, from_node: u32, to_node: u32) -> __sdk::Result<()> {
         self.imp.call_reducer(
             "add_dependency",
             AddDependencyArgs {
@@ -68,7 +68,7 @@ impl add_dependency for super::RemoteReducers {
     }
     fn on_add_dependency(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &u64, &u32, &u32) + Send + 'static,
+        mut callback: impl FnMut(&super::ReducerEventContext, &u32, &u32, &u32) + Send + 'static,
     ) -> AddDependencyCallbackId {
         AddDependencyCallbackId(self.imp.on_reducer(
             "add_dependency",

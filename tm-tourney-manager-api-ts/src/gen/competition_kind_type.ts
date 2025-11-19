@@ -43,15 +43,15 @@ export const CompetitionKind = {
   // assert!(foo.tag === "A");
   // assert!(foo.value === 42);
   // ```
-  MatchV1: (value: bigint): CompetitionKindVariants.MatchV1 => ({ tag: "MatchV1", value }),
-  CompetitionV1: (value: bigint): CompetitionKindVariants.CompetitionV1 => ({ tag: "CompetitionV1", value }),
+  MatchV1: (value: number): CompetitionKindVariants.MatchV1 => ({ tag: "MatchV1", value }),
+  CompetitionV1: (value: number): CompetitionKindVariants.CompetitionV1 => ({ tag: "CompetitionV1", value }),
 
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
     if (_cached_CompetitionKind_type_value) return _cached_CompetitionKind_type_value;
     _cached_CompetitionKind_type_value = __AlgebraicTypeValue.Sum({ variants: [] });
     _cached_CompetitionKind_type_value.value.variants.push(
-      { name: "MatchV1", algebraicType: __AlgebraicTypeValue.U64 },
-      { name: "CompetitionV1", algebraicType: __AlgebraicTypeValue.U64 },
+      { name: "MatchV1", algebraicType: __AlgebraicTypeValue.U32 },
+      { name: "CompetitionV1", algebraicType: __AlgebraicTypeValue.U32 },
     );
     return _cached_CompetitionKind_type_value;
   },

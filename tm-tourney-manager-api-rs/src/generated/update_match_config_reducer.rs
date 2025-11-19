@@ -9,7 +9,7 @@ use super::server_config_type::ServerConfig;
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct UpdateMatchConfigArgs {
-    pub id: u64,
+    pub id: u32,
     pub config: ServerConfig,
 }
 
@@ -38,7 +38,7 @@ pub trait update_match_config {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_update_match_config`] callbacks.
-    fn update_match_config(&self, id: u64, config: ServerConfig) -> __sdk::Result<()>;
+    fn update_match_config(&self, id: u32, config: ServerConfig) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `update_match_config`.
     ///
     /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
@@ -48,7 +48,7 @@ pub trait update_match_config {
     /// to cancel the callback.
     fn on_update_match_config(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &u64, &ServerConfig) + Send + 'static,
+        callback: impl FnMut(&super::ReducerEventContext, &u32, &ServerConfig) + Send + 'static,
     ) -> UpdateMatchConfigCallbackId;
     /// Cancel a callback previously registered by [`Self::on_update_match_config`],
     /// causing it not to run in the future.
@@ -56,13 +56,13 @@ pub trait update_match_config {
 }
 
 impl update_match_config for super::RemoteReducers {
-    fn update_match_config(&self, id: u64, config: ServerConfig) -> __sdk::Result<()> {
+    fn update_match_config(&self, id: u32, config: ServerConfig) -> __sdk::Result<()> {
         self.imp
             .call_reducer("update_match_config", UpdateMatchConfigArgs { id, config })
     }
     fn on_update_match_config(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &u64, &ServerConfig) + Send + 'static,
+        mut callback: impl FnMut(&super::ReducerEventContext, &u32, &ServerConfig) + Send + 'static,
     ) -> UpdateMatchConfigCallbackId {
         UpdateMatchConfigCallbackId(self.imp.on_reducer(
             "update_match_config",

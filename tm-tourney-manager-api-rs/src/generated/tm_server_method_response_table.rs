@@ -85,7 +85,7 @@ impl<'ctx> __sdk::Table for TmServerMethodResponseTableHandle<'ctx> {
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
     let _table =
         client_cache.get_or_make_table::<TmServerMethodResponse>("tm_server_method_response");
-    _table.add_unique_constraint::<u64>("id", |row| &row.id);
+    _table.add_unique_constraint::<u32>("id", |row| &row.id);
 }
 pub struct TmServerMethodResponseUpdateCallbackId(__sdk::CallbackId);
 
@@ -123,7 +123,7 @@ pub(super) fn parse_table_update(
 /// but to directly chain method calls,
 /// like `ctx.db.tm_server_method_response().id().find(...)`.
 pub struct TmServerMethodResponseIdUnique<'ctx> {
-    imp: __sdk::UniqueConstraintHandle<TmServerMethodResponse, u64>,
+    imp: __sdk::UniqueConstraintHandle<TmServerMethodResponse, u32>,
     phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -131,7 +131,7 @@ impl<'ctx> TmServerMethodResponseTableHandle<'ctx> {
     /// Get a handle on the `id` unique index on the table `tm_server_method_response`.
     pub fn id(&self) -> TmServerMethodResponseIdUnique<'ctx> {
         TmServerMethodResponseIdUnique {
-            imp: self.imp.get_unique_constraint::<u64>("id"),
+            imp: self.imp.get_unique_constraint::<u32>("id"),
             phantom: std::marker::PhantomData,
         }
     }
@@ -140,7 +140,7 @@ impl<'ctx> TmServerMethodResponseTableHandle<'ctx> {
 impl<'ctx> TmServerMethodResponseIdUnique<'ctx> {
     /// Find the subscribed row whose `id` column value is equal to `col_val`,
     /// if such a row is present in the client cache.
-    pub fn find(&self, col_val: &u64) -> Option<TmServerMethodResponse> {
+    pub fn find(&self, col_val: &u32) -> Option<TmServerMethodResponse> {
         self.imp.find(col_val)
     }
 }

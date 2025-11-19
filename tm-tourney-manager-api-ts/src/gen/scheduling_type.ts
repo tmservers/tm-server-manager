@@ -46,7 +46,7 @@ export const Scheduling = {
   // ```
   Manual: { tag: "Manual" } as const,
   Independant: { tag: "Independant" } as const,
-  Inherited: (value: bigint): SchedulingVariants.Inherited => ({ tag: "Inherited", value }),
+  Inherited: (value: number): SchedulingVariants.Inherited => ({ tag: "Inherited", value }),
 
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
     if (_cached_Scheduling_type_value) return _cached_Scheduling_type_value;
@@ -54,7 +54,7 @@ export const Scheduling = {
     _cached_Scheduling_type_value.value.variants.push(
       { name: "Manual", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
       { name: "Independant", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-      { name: "Inherited", algebraicType: __AlgebraicTypeValue.U64 },
+      { name: "Inherited", algebraicType: __AlgebraicTypeValue.U32 },
     );
     return _cached_Scheduling_type_value;
   },

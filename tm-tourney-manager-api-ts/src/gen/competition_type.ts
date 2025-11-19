@@ -42,9 +42,9 @@ declare type __keep_Competitions = Competitions;
 
 
 export type Competition = {
-  id: bigint,
-  tournamentId: bigint,
-  parentId: bigint | undefined,
+  id: number,
+  tournamentId: number,
+  parentId: number | undefined,
   name: string,
   status: CompetitionStatus,
   estimate: __TimeDuration | undefined,
@@ -67,9 +67,9 @@ export const Competition = {
     if (_cached_Competition_type_value) return _cached_Competition_type_value;
     _cached_Competition_type_value = __AlgebraicTypeValue.Product({ elements: [] });
     _cached_Competition_type_value.value.elements.push(
-      { name: "id", algebraicType: __AlgebraicTypeValue.U64 },
-      { name: "tournamentId", algebraicType: __AlgebraicTypeValue.U64 },
-      { name: "parentId", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.U64) },
+      { name: "id", algebraicType: __AlgebraicTypeValue.U32 },
+      { name: "tournamentId", algebraicType: __AlgebraicTypeValue.U32 },
+      { name: "parentId", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.U32) },
       { name: "name", algebraicType: __AlgebraicTypeValue.String },
       { name: "status", algebraicType: CompetitionStatus.getTypeScriptAlgebraicType() },
       { name: "estimate", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.createTimeDurationType()) },

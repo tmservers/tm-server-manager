@@ -9,7 +9,7 @@ use super::server_config_type::ServerConfig;
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct TmServerConfig {
-    pub id: u64,
+    pub id: u32,
     pub creator: String,
     pub config: ServerConfig,
 }

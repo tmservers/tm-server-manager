@@ -10,8 +10,8 @@ use super::match_state_type::MatchState;
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct TmServerEvent {
-    pub tournament_id: u64,
-    pub match_id: u64,
+    pub tournament_id: u32,
+    pub match_id: u32,
     pub state: MatchState,
     pub event: Event,
 }
