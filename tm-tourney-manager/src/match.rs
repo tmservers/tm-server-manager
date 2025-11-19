@@ -37,11 +37,11 @@ pub mod match_state;
 pub struct TmMatch {
     #[auto_inc]
     #[primary_key]
-    pub(crate) id: u64,
+    pub(crate) id: u32,
 
     /// The tournament this match is associated with.
-    tournament_id: u64,
-    parent_id: u64,
+    tournament_id: u32,
+    parent_id: u32,
 
     scheduling: Scheduling,
 
@@ -69,7 +69,7 @@ impl TmMatch {
         self.status == MatchStatus::Live
     }
 
-    pub fn get_tournament(&self) -> u64 {
+    pub fn get_tournament(&self) -> u32 {
         self.tournament_id
     }
 
@@ -115,9 +115,9 @@ pub enum MatchStatus {
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn create_match(
     ctx: &ReducerContext,
-    tournament_id: u64,
-    parent_id: u64,
-    with_template: Option<u64>,
+    tournament_id: u32,
+    parent_id: u32,
+    with_template: Option<u32>,
     auto_provisioning_server: bool,
 ) -> Result<(), String> {
     //TODO authorization
@@ -156,7 +156,7 @@ pub fn create_match(
 
 /// Assigns a server to the selected match.
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn match_assign_server(ctx: &ReducerContext, to: u64, server_id: String) -> Result<(), String> {
+pub fn match_assign_server(ctx: &ReducerContext, to: u32, server_id: String) -> Result<(), String> {
     ctx.auth_user()?;
     if let Some(mut server) = ctx.db.tm_server().id().find(&server_id)
         && server.active_match().is_none()
@@ -176,7 +176,7 @@ pub fn match_assign_server(ctx: &ReducerContext, to: u64, server_id: String) -> 
 }
 
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn match_configured(ctx: &ReducerContext, id: u64) -> Result<(), String> {
+pub fn match_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> {
     ctx.auth_user()?;
     if let Some(mut tm_match) = ctx.db.tm_match().id().find(id)
         && tm_match.status == MatchStatus::Configuring
@@ -190,7 +190,7 @@ pub fn match_configured(ctx: &ReducerContext, id: u64) -> Result<(), String> {
 }
 
 /* #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn update_pre_match_config(ctx: &ReducerContext, id: u64, config: ServerConfig) {
+pub fn update_pre_match_config(ctx: &ReducerContext, id: u32, config: ServerConfig) {
     //TODO authorization
     if let Some(mut stage_match) = ctx.db.stage_match().id().find(id) {
         stage_match.match_config = Some(config);
@@ -199,7 +199,7 @@ pub fn update_pre_match_config(ctx: &ReducerContext, id: u64, config: ServerConf
 } */
 
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn update_match_config(ctx: &ReducerContext, id: u64, config: ServerConfig) {
+pub fn update_match_config(ctx: &ReducerContext, id: u32, config: ServerConfig) {
     //TODO authorization
     if let Some(mut stage_match) = ctx.db.tm_match().id().find(id) {
         stage_match.match_config = Some(config);
@@ -210,7 +210,7 @@ pub fn update_match_config(ctx: &ReducerContext, id: u64, config: ServerConfig) 
 /// If the match is fully configured and ready start.
 /// This can also serve as a manual override for scheduled matches.
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn try_start(ctx: &ReducerContext, match_id: u64) -> Result<(), String> {
+pub fn try_start(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
     ctx.auth_user()?;
     if let Some(mut tm_match) = ctx.db.tm_match().id().find(match_id)
         // Match needs an assigned server
@@ -232,7 +232,7 @@ pub fn try_start(ctx: &ReducerContext, match_id: u64) -> Result<(), String> {
 pub struct MatchTemplate {
     #[auto_inc]
     #[primary_key]
-    id: u64,
+    id: u32,
 
     creator: String,
 }

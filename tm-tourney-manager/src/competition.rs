@@ -14,10 +14,10 @@ mod scheduling;
 pub struct Competition {
     #[auto_inc]
     #[primary_key]
-    pub id: u64,
+    pub id: u32,
 
-    tournament_id: u64,
-    parent_id: Option<u64>,
+    tournament_id: u32,
+    parent_id: Option<u32>,
 
     name: String,
 
@@ -36,7 +36,7 @@ pub struct Competition {
     // TODO Can capture a server at the end of the registration to serve
     // as a lobby server which automatically delegates players to their
     // corresponding desination server based on active matches.
-    //lobby: Option<u64>,
+    //lobby: Option<u32>,
 
     //TODO the configured generator can spit out nodes for the competition.
     //generator: Generator,
@@ -54,13 +54,13 @@ pub struct Competition {
 }
 
 impl Competition {
-    pub fn add_competition(&mut self, competition_id: u64) {
+    pub fn add_competition(&mut self, competition_id: u32) {
         //TODO
         self.competitions
             .try_add_competition(CompetitionKind::CompetitionV1(competition_id));
     }
 
-    pub fn add_match(&mut self, match_id: u64) {
+    pub fn add_match(&mut self, match_id: u32) {
         //TODO
         self.competitions
             .try_add_competition(CompetitionKind::MatchV1(match_id));
@@ -69,7 +69,7 @@ impl Competition {
     /// # Safety
     /// The new competition has to be commited to spacetime db through the `create_competition` reducer.
     /// Otherwise the id is invalid.
-    pub unsafe fn new(name: String, parent_id: Option<u64>, tournament_id: u64) -> Self {
+    pub unsafe fn new(name: String, parent_id: Option<u32>, tournament_id: u32) -> Self {
         Self {
             id: 0,
             tournament_id,
@@ -106,7 +106,7 @@ pub enum CompetitionStatus {
 pub struct EventConfig {
     #[cfg_attr(feature = "spacetime", auto_inc)]
     #[cfg_attr(feature = "spacetime", primary_key)]
-    id: u64,
+    id: u32,
 
     owner: String,
     public: bool,
@@ -123,9 +123,9 @@ pub struct EventConfig {
 pub fn create_competition(
     ctx: &ReducerContext,
     name: String,
-    tournament_id: u64,
-    parent_id: u64,
-    with_template: Option<u64>,
+    tournament_id: u32,
+    parent_id: u32,
+    with_template: Option<u32>,
 ) -> Result<(), String> {
     let user = ctx.auth_user()?;
 
@@ -154,7 +154,7 @@ pub fn create_competition(
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn add_dependency(
     ctx: &ReducerContext,
-    comp_id: u64,
+    comp_id: u32,
     from_node: u32,
     to_node: u32,
 ) -> Result<(), String> {

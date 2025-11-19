@@ -60,5 +60,5 @@ pub struct RoundsRound {
 #[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
 pub struct RoundsRoundPlayer {
     id: String,
-    ghost: u64,
+    ghost: u32,
 }

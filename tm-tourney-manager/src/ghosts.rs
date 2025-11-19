@@ -3,7 +3,7 @@ use spacetimedb::ReducerContext;
 #[cfg_attr(feature="spacetime",spacetimedb::table(name = match_ghost,public))]
 pub struct MatchGhost {
     #[cfg_attr(feature = "spacetime", auto_inc)]
-    id: u64,
+    id: u32,
 
     //TODO
     //tournament

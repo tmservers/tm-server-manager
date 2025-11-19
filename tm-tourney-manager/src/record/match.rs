@@ -9,7 +9,7 @@ use crate::record::TmRecord;
         btree(columns = [match_id,map_uid, player_uid]))
     )]
 pub struct TmCompRecord {
-    match_id: u64,
+    match_id: u32,
     map_uid: String,
     player_uid: String,
 

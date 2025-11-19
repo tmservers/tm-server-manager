@@ -7,7 +7,7 @@ use crate::server::tm_server;
 pub struct TmServerMethodCall {
     #[primary_key]
     #[auto_inc]
-    pub id: u64,
+    pub id: u32,
 
     server_id: String,
     //Audit Log?

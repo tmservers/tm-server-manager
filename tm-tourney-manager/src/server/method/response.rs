@@ -6,7 +6,7 @@ use crate::{auth::Authorization, server::method::call::tm_server_method_call};
 #[cfg_attr(feature = "spacetime", spacetimedb::table(name=tm_server_method_response, public))]
 pub struct TmServerMethodResponse {
     #[primary_key]
-    pub id: u64,
+    pub id: u32,
 
     response: MethodResponse,
 }
@@ -14,7 +14,7 @@ pub struct TmServerMethodResponse {
 #[reducer]
 pub fn server_method_response(
     ctx: &ReducerContext,
-    call_id: u64,
+    call_id: u32,
     response: MethodResponse,
 ) -> Result<(), String> {
     //TODO do the proper auth

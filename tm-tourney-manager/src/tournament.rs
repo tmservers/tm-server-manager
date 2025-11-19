@@ -10,7 +10,7 @@ use crate::{
 pub struct Tournament {
     #[auto_inc]
     #[primary_key]
-    pub id: u64,
+    pub id: u32,
 
     creator: String,
     owners: Vec<String>,
@@ -22,11 +22,11 @@ pub struct Tournament {
 
     status: TournamentStatus,
 
-    competition: u64,
+    competition: u32,
 }
 
 impl Tournament {
-    pub(crate) fn set_competition(&mut self, comp_id: u64) {
+    pub(crate) fn set_competition(&mut self, comp_id: u32) {
         self.competition = comp_id
     }
 }

@@ -11,12 +11,12 @@ use crate::{
     name = tm_server_event,
     public,
     index(
-        name = event_id,
+        name = event_filtering,
         btree(columns = [tournament_id, match_id]))
     )]
 pub struct TmServerEvent {
-    tournament_id: u64,
-    match_id: u64,
+    tournament_id: u32,
+    match_id: u32,
 
     state: MatchState,
 

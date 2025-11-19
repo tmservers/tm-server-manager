@@ -5,6 +5,7 @@ use tm_server_types::{
 
 use crate::{ClientError, TrackmaniaServer};
 
+#[allow(async_fn_in_trait)]
 pub trait ModeScriptMethodsXmlRpc {
     async fn enable_callbacks(&self, enable: bool) -> Result<bool, ClientError>;
     async fn get_callbacks_list(&self, enable: bool) -> Result<bool, ClientError>;
@@ -105,7 +106,7 @@ impl ModeScriptMethodsXmlRpc for TrackmaniaServer {
 
     async fn set_player_points(
         &self,
-        login: String,
+        player: String,
         match_points: u32,
     ) -> Result<bool, ClientError> {
         self.call(
@@ -113,7 +114,7 @@ impl ModeScriptMethodsXmlRpc for TrackmaniaServer {
             (
                 "Trackmania.SetPlayerPoints",
                 [
-                    &login,                    //&lt; Login of the player to update
+                    &player,                   //&lt; Login of the player to update
                     "", //&lt; The round points, use an empty string to not update.
                     "", //&lt; The map points, use an empty string to not update.
                     &match_points.to_string(), //&lt; The match points, use an empty string to not update.
@@ -135,6 +136,7 @@ impl ModeScriptMethodsXmlRpc for TrackmaniaServer {
     }
 }
 
+#[allow(async_fn_in_trait)]
 pub trait XmlRpcMethods {
     async fn kick(&self, player: String, message: Option<String>) -> Result<bool, ClientError>;
 

@@ -5,7 +5,7 @@ use tm_server_types::config::ServerConfig;
 pub struct TmServerConfig {
     #[auto_inc]
     #[primary_key]
-    pub id: u64,
+    pub id: u32,
 
     /// Ubi id of the creator
     creator: String,

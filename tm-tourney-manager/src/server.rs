@@ -31,7 +31,7 @@ pub struct TmServer {
     // Can the server be provisioned or is it a fixed server?
     capturable: bool,
 
-    active_match: Option<u64>,
+    active_match: Option<u32>,
 }
 
 #[view(name = this_tm_server, public)]
@@ -40,11 +40,11 @@ fn this_tm_server(ctx: &ViewContext) -> Option<TmServer> {
 }
 
 impl TmServer {
-    pub fn active_match(&self) -> Option<u64> {
+    pub fn active_match(&self) -> Option<u32> {
         self.active_match
     }
 
-    pub fn set_active_match(&mut self, match_id: u64) {
+    pub fn set_active_match(&mut self, match_id: u32) {
         if self.active_match.is_none() {
             self.active_match = Some(match_id)
         }
@@ -125,7 +125,7 @@ pub fn register_server(
 }
 
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn load_server_config(ctx: &ReducerContext, id: String, with_config: u64) {
+pub fn load_server_config(ctx: &ReducerContext, id: String, with_config: u32) {
     if let Some(mut server) = ctx.db.tm_server().id().find(id)
         && let Some(config) = ctx.db.tm_server_config().id().find(with_config)
     {

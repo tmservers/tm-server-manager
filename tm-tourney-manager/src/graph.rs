@@ -1,8 +1,8 @@
 /* #[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
 pub struct StableGraph<N, E, Ix = DefaultIx> {
     g: Graph<Option<N>, Option<E>, Ix>,
-    node_count: u64,
-    edge_count: u64,
+    node_count: u32,
+    edge_count: u32,
 
     // node and edge free lists (both work the same way)
     //
@@ -133,8 +133,8 @@ impl Competitions {
 #[derive(Debug)]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
 pub enum CompetitionKind {
-    MatchV1(u64),
-    CompetitionV1(u64),
+    MatchV1(u32),
+    CompetitionV1(u32),
 }
 
 // How to handle the recursion when scheduling??
