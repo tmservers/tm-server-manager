@@ -12,8 +12,6 @@ pub enum MatchStatus {
 
     Upcoming,
 
-    PreMatch,
-
     Live,
 
     Ended,

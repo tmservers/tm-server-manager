@@ -4,62 +4,14 @@
 /* eslint-disable */
 /* tslint:disable */
 import {
-  AlgebraicType as __AlgebraicTypeValue,
-  BinaryReader as __BinaryReader,
-  BinaryWriter as __BinaryWriter,
-  ClientCache as __ClientCache,
-  ConnectionId as __ConnectionId,
-  DbConnectionBuilder as __DbConnectionBuilder,
-  DbConnectionImpl as __DbConnectionImpl,
-  Identity as __Identity,
-  SubscriptionBuilderImpl as __SubscriptionBuilderImpl,
-  TableCache as __TableCache,
-  TimeDuration as __TimeDuration,
-  Timestamp as __Timestamp,
-  deepEqual as __deepEqual,
-  type AlgebraicType as __AlgebraicTypeType,
-  type AlgebraicTypeVariants as __AlgebraicTypeVariants,
-  type CallReducerFlags as __CallReducerFlags,
-  type ErrorContextInterface as __ErrorContextInterface,
-  type Event as __Event,
-  type EventContextInterface as __EventContextInterface,
-  type ReducerEventContextInterface as __ReducerEventContextInterface,
-  type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
+  TypeBuilder as __TypeBuilder,
+  t as __t,
+  type AlgebraicTypeType as __AlgebraicTypeType,
+  type Infer as __Infer,
 } from "spacetimedb";
 
-export type EndServer = {
-  time: number,
-};
-let _cached_EndServer_type_value: __AlgebraicTypeType | null = null;
-
-/**
- * An object for generated helper functions.
- */
-export const EndServer = {
-  /**
-  * A function which returns this type represented as an AlgebraicType.
-  * This function is derived from the AlgebraicType used to generate this type.
-  */
-  getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_EndServer_type_value) return _cached_EndServer_type_value;
-    _cached_EndServer_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_EndServer_type_value.value.elements.push(
-      { name: "time", algebraicType: __AlgebraicTypeValue.U32 },
-    );
-    return _cached_EndServer_type_value;
-  },
-
-  serialize(writer: __BinaryWriter, value: EndServer): void {
-    __AlgebraicTypeValue.serializeValue(writer, EndServer.getTypeScriptAlgebraicType(), value);
-  },
-
-  deserialize(reader: __BinaryReader): EndServer {
-    return __AlgebraicTypeValue.deserializeValue(reader, EndServer.getTypeScriptAlgebraicType());
-  },
-
-}
-
-export default EndServer;
+export default __t.object("EndServer", {
+  time: __t.u32(),
+});
 
 

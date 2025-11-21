@@ -4,93 +4,36 @@
 /* eslint-disable */
 /* tslint:disable */
 import {
-  AlgebraicType as __AlgebraicTypeValue,
-  BinaryReader as __BinaryReader,
-  BinaryWriter as __BinaryWriter,
-  ClientCache as __ClientCache,
-  ConnectionId as __ConnectionId,
-  DbConnectionBuilder as __DbConnectionBuilder,
-  DbConnectionImpl as __DbConnectionImpl,
-  Identity as __Identity,
-  SubscriptionBuilderImpl as __SubscriptionBuilderImpl,
-  TableCache as __TableCache,
-  TimeDuration as __TimeDuration,
-  Timestamp as __Timestamp,
-  deepEqual as __deepEqual,
-  type AlgebraicType as __AlgebraicTypeType,
-  type AlgebraicTypeVariants as __AlgebraicTypeVariants,
-  type CallReducerFlags as __CallReducerFlags,
-  type ErrorContextInterface as __ErrorContextInterface,
-  type Event as __Event,
-  type EventContextInterface as __EventContextInterface,
-  type ReducerEventContextInterface as __ReducerEventContextInterface,
-  type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
+  TypeBuilder as __TypeBuilder,
+  t as __t,
+  type AlgebraicTypeType as __AlgebraicTypeType,
+  type Infer as __Infer,
 } from "spacetimedb";
-import { CompetitionStatus } from "./competition_status_type";
-// Mark import as potentially unused
-declare type __keep_CompetitionStatus = CompetitionStatus;
-import { Scheduling } from "./scheduling_type";
-// Mark import as potentially unused
-declare type __keep_Scheduling = Scheduling;
-import { Registration } from "./registration_type";
-// Mark import as potentially unused
-declare type __keep_Registration = Registration;
-import { Competitions } from "./competitions_type";
-// Mark import as potentially unused
-declare type __keep_Competitions = Competitions;
+import CompetitionStatus from "./competition_status_type";
+import Scheduling from "./scheduling_type";
+import Registration from "./registration_type";
+import Competitions from "./competitions_type";
 
 
-export type Competition = {
-  id: number,
-  tournamentId: number,
-  parentId: number | undefined,
-  name: string,
-  status: CompetitionStatus,
-  estimate: __TimeDuration | undefined,
-  scheduling: Scheduling,
-  registration: Registration,
-  entryPoints: number[] | undefined,
-  competitions: Competitions,
-};
-let _cached_Competition_type_value: __AlgebraicTypeType | null = null;
-
-/**
- * An object for generated helper functions.
- */
-export const Competition = {
-  /**
-  * A function which returns this type represented as an AlgebraicType.
-  * This function is derived from the AlgebraicType used to generate this type.
-  */
-  getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_Competition_type_value) return _cached_Competition_type_value;
-    _cached_Competition_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_Competition_type_value.value.elements.push(
-      { name: "id", algebraicType: __AlgebraicTypeValue.U32 },
-      { name: "tournamentId", algebraicType: __AlgebraicTypeValue.U32 },
-      { name: "parentId", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.U32) },
-      { name: "name", algebraicType: __AlgebraicTypeValue.String },
-      { name: "status", algebraicType: CompetitionStatus.getTypeScriptAlgebraicType() },
-      { name: "estimate", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.createTimeDurationType()) },
-      { name: "scheduling", algebraicType: Scheduling.getTypeScriptAlgebraicType() },
-      { name: "registration", algebraicType: Registration.getTypeScriptAlgebraicType() },
-      { name: "entryPoints", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.Array(__AlgebraicTypeValue.U32)) },
-      { name: "competitions", algebraicType: Competitions.getTypeScriptAlgebraicType() },
-    );
-    return _cached_Competition_type_value;
+export default __t.object("Competition", {
+  id: __t.u32(),
+  tournamentId: __t.u32(),
+  parentId: __t.option(__t.u32()),
+  name: __t.string(),
+  get status() {
+    return CompetitionStatus;
   },
-
-  serialize(writer: __BinaryWriter, value: Competition): void {
-    __AlgebraicTypeValue.serializeValue(writer, Competition.getTypeScriptAlgebraicType(), value);
+  estimate: __t.option(__t.timeDuration()),
+  get scheduling() {
+    return Scheduling;
   },
-
-  deserialize(reader: __BinaryReader): Competition {
-    return __AlgebraicTypeValue.deserializeValue(reader, Competition.getTypeScriptAlgebraicType());
+  get registration() {
+    return Registration;
   },
-
-}
-
-export default Competition;
+  entryPoints: __t.option(__t.array(__t.u32())),
+  get competitions() {
+    return Competitions;
+  },
+});
 
 

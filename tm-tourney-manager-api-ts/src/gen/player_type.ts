@@ -4,92 +4,35 @@
 /* eslint-disable */
 /* tslint:disable */
 import {
-  AlgebraicType as __AlgebraicTypeValue,
-  BinaryReader as __BinaryReader,
-  BinaryWriter as __BinaryWriter,
-  ClientCache as __ClientCache,
-  ConnectionId as __ConnectionId,
-  DbConnectionBuilder as __DbConnectionBuilder,
-  DbConnectionImpl as __DbConnectionImpl,
-  Identity as __Identity,
-  SubscriptionBuilderImpl as __SubscriptionBuilderImpl,
-  TableCache as __TableCache,
-  TimeDuration as __TimeDuration,
-  Timestamp as __Timestamp,
-  deepEqual as __deepEqual,
-  type AlgebraicType as __AlgebraicTypeType,
-  type AlgebraicTypeVariants as __AlgebraicTypeVariants,
-  type CallReducerFlags as __CallReducerFlags,
-  type ErrorContextInterface as __ErrorContextInterface,
-  type Event as __Event,
-  type EventContextInterface as __EventContextInterface,
-  type ReducerEventContextInterface as __ReducerEventContextInterface,
-  type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
+  TypeBuilder as __TypeBuilder,
+  t as __t,
+  type AlgebraicTypeType as __AlgebraicTypeType,
+  type Infer as __Infer,
 } from "spacetimedb";
-import { RoundTime } from "./round_time_type";
-// Mark import as potentially unused
-declare type __keep_RoundTime = RoundTime;
+import RoundTime from "./round_time_type";
 
 
-export type Player = {
-  login: string,
-  accountId: string,
-  name: string,
-  team: number,
-  rank: number,
-  roundPoints: number,
-  mapPoints: number,
-  matchPoints: number,
-  bestRacetime: RoundTime,
-  bestRaceCheckpoints: number[],
-  bestLaptime: RoundTime,
-  bestLapCheckpoints: number[],
-  previousRacetime: RoundTime,
-  previousRaceCheckpoints: number[],
-};
-let _cached_Player_type_value: __AlgebraicTypeType | null = null;
-
-/**
- * An object for generated helper functions.
- */
-export const Player = {
-  /**
-  * A function which returns this type represented as an AlgebraicType.
-  * This function is derived from the AlgebraicType used to generate this type.
-  */
-  getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_Player_type_value) return _cached_Player_type_value;
-    _cached_Player_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_Player_type_value.value.elements.push(
-      { name: "login", algebraicType: __AlgebraicTypeValue.String },
-      { name: "accountId", algebraicType: __AlgebraicTypeValue.String },
-      { name: "name", algebraicType: __AlgebraicTypeValue.String },
-      { name: "team", algebraicType: __AlgebraicTypeValue.I32 },
-      { name: "rank", algebraicType: __AlgebraicTypeValue.U32 },
-      { name: "roundPoints", algebraicType: __AlgebraicTypeValue.U32 },
-      { name: "mapPoints", algebraicType: __AlgebraicTypeValue.U32 },
-      { name: "matchPoints", algebraicType: __AlgebraicTypeValue.U32 },
-      { name: "bestRacetime", algebraicType: RoundTime.getTypeScriptAlgebraicType() },
-      { name: "bestRaceCheckpoints", algebraicType: __AlgebraicTypeValue.Array(__AlgebraicTypeValue.U32) },
-      { name: "bestLaptime", algebraicType: RoundTime.getTypeScriptAlgebraicType() },
-      { name: "bestLapCheckpoints", algebraicType: __AlgebraicTypeValue.Array(__AlgebraicTypeValue.U32) },
-      { name: "previousRacetime", algebraicType: RoundTime.getTypeScriptAlgebraicType() },
-      { name: "previousRaceCheckpoints", algebraicType: __AlgebraicTypeValue.Array(__AlgebraicTypeValue.U32) },
-    );
-    return _cached_Player_type_value;
+export default __t.object("Player", {
+  login: __t.string(),
+  accountId: __t.string(),
+  name: __t.string(),
+  team: __t.i32(),
+  rank: __t.u32(),
+  roundPoints: __t.u32(),
+  mapPoints: __t.u32(),
+  matchPoints: __t.u32(),
+  get bestRacetime() {
+    return RoundTime;
   },
-
-  serialize(writer: __BinaryWriter, value: Player): void {
-    __AlgebraicTypeValue.serializeValue(writer, Player.getTypeScriptAlgebraicType(), value);
+  bestRaceCheckpoints: __t.array(__t.u32()),
+  get bestLaptime() {
+    return RoundTime;
   },
-
-  deserialize(reader: __BinaryReader): Player {
-    return __AlgebraicTypeValue.deserializeValue(reader, Player.getTypeScriptAlgebraicType());
+  bestLapCheckpoints: __t.array(__t.u32()),
+  get previousRacetime() {
+    return RoundTime;
   },
-
-}
-
-export default Player;
+  previousRaceCheckpoints: __t.array(__t.u32()),
+});
 
 

@@ -4,77 +4,25 @@
 /* eslint-disable */
 /* tslint:disable */
 import {
-  AlgebraicType as __AlgebraicTypeValue,
-  BinaryReader as __BinaryReader,
-  BinaryWriter as __BinaryWriter,
-  ClientCache as __ClientCache,
-  ConnectionId as __ConnectionId,
-  DbConnectionBuilder as __DbConnectionBuilder,
-  DbConnectionImpl as __DbConnectionImpl,
-  Identity as __Identity,
-  SubscriptionBuilderImpl as __SubscriptionBuilderImpl,
-  TableCache as __TableCache,
-  TimeDuration as __TimeDuration,
-  Timestamp as __Timestamp,
-  deepEqual as __deepEqual,
-  type AlgebraicType as __AlgebraicTypeType,
-  type AlgebraicTypeVariants as __AlgebraicTypeVariants,
-  type CallReducerFlags as __CallReducerFlags,
-  type ErrorContextInterface as __ErrorContextInterface,
-  type Event as __Event,
-  type EventContextInterface as __EventContextInterface,
-  type ReducerEventContextInterface as __ReducerEventContextInterface,
-  type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
+  TypeBuilder as __TypeBuilder,
+  t as __t,
+  type AlgebraicTypeType as __AlgebraicTypeType,
+  type Infer as __Infer,
 } from "spacetimedb";
-import { PlayerRegistration } from "./player_registration_type";
-// Mark import as potentially unused
-declare type __keep_PlayerRegistration = PlayerRegistration;
-import { TeamRegistration } from "./team_registration_type";
-// Mark import as potentially unused
-declare type __keep_TeamRegistration = TeamRegistration;
+import PlayerRegistration from "./player_registration_type";
+import TeamRegistration from "./team_registration_type";
 
-import * as RegistrationVariants from './registration_variants'
 
 // The tagged union or sum type for the algebraic type `Registration`.
-export type Registration = RegistrationVariants.Players |
-  RegistrationVariants.Team |
-  RegistrationVariants.Open;
-
-let _cached_Registration_type_value: __AlgebraicTypeType | null = null;
-
-// A value with helper functions to construct the type.
-export const Registration = {
-  // Helper functions for constructing each variant of the tagged union.
-  // ```
-  // const foo = Foo.A(42);
-  // assert!(foo.tag === "A");
-  // assert!(foo.value === 42);
-  // ```
-  Players: (value: PlayerRegistration): RegistrationVariants.Players => ({ tag: "Players", value }),
-  Team: (value: TeamRegistration): RegistrationVariants.Team => ({ tag: "Team", value }),
-  Open: { tag: "Open" } as const,
-
-  getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_Registration_type_value) return _cached_Registration_type_value;
-    _cached_Registration_type_value = __AlgebraicTypeValue.Sum({ variants: [] });
-    _cached_Registration_type_value.value.variants.push(
-      { name: "Players", algebraicType: PlayerRegistration.getTypeScriptAlgebraicType() },
-      { name: "Team", algebraicType: TeamRegistration.getTypeScriptAlgebraicType() },
-      { name: "Open", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-    );
-    return _cached_Registration_type_value;
+const Registration = __t.enum("Registration", {get Players() {
+    return PlayerRegistration;
   },
-
-  serialize(writer: __BinaryWriter, value: Registration): void {
-      __AlgebraicTypeValue.serializeValue(writer, Registration.getTypeScriptAlgebraicType(), value);
+  get Team() {
+    return TeamRegistration;
   },
-
-  deserialize(reader: __BinaryReader): Registration {
-      return __AlgebraicTypeValue.deserializeValue(reader, Registration.getTypeScriptAlgebraicType());
-  },
-
-}
+  Inherit: __t.unit(),
+  Open: __t.unit(),
+});
 
 export default Registration;
 

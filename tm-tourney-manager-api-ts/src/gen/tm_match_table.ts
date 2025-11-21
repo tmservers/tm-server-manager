@@ -4,122 +4,46 @@
 /* eslint-disable */
 /* tslint:disable */
 import {
-  AlgebraicType as __AlgebraicTypeValue,
-  BinaryReader as __BinaryReader,
-  BinaryWriter as __BinaryWriter,
-  ClientCache as __ClientCache,
-  ConnectionId as __ConnectionId,
-  DbConnectionBuilder as __DbConnectionBuilder,
-  DbConnectionImpl as __DbConnectionImpl,
-  Identity as __Identity,
-  SubscriptionBuilderImpl as __SubscriptionBuilderImpl,
-  TableCache as __TableCache,
-  TimeDuration as __TimeDuration,
-  Timestamp as __Timestamp,
-  deepEqual as __deepEqual,
-  type AlgebraicType as __AlgebraicTypeType,
-  type AlgebraicTypeVariants as __AlgebraicTypeVariants,
-  type CallReducerFlags as __CallReducerFlags,
-  type ErrorContextInterface as __ErrorContextInterface,
-  type Event as __Event,
-  type EventContextInterface as __EventContextInterface,
-  type ReducerEventContextInterface as __ReducerEventContextInterface,
-  type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
+  TypeBuilder as __TypeBuilder,
+  t as __t,
+  type AlgebraicTypeType as __AlgebraicTypeType,
+  type Infer as __Infer,
 } from "spacetimedb";
-import { TmMatch } from "./tm_match_type";
-import { Scheduling } from "./scheduling_type";
-// Mark import as potentially unused
-declare type __keep_Scheduling = Scheduling;
-import { Registration } from "./registration_type";
-// Mark import as potentially unused
-declare type __keep_Registration = Registration;
-import { ServerConfig } from "./server_config_type";
-// Mark import as potentially unused
-declare type __keep_ServerConfig = ServerConfig;
-import { MatchStatus } from "./match_status_type";
-// Mark import as potentially unused
-declare type __keep_MatchStatus = MatchStatus;
-import { MatchLeaderboardRules } from "./match_leaderboard_rules_type";
-// Mark import as potentially unused
-declare type __keep_MatchLeaderboardRules = MatchLeaderboardRules;
-import { MatchState } from "./match_state_type";
-// Mark import as potentially unused
-declare type __keep_MatchState = MatchState;
+import Scheduling from "./scheduling_type";
+import Registration from "./registration_type";
+import ServerConfig from "./server_config_type";
+import MatchStatus from "./match_status_type";
+import MatchLeaderboardRules from "./match_leaderboard_rules_type";
+import MatchState from "./match_state_type";
 
-import { type EventContext, type Reducer, RemoteReducers, RemoteTables } from ".";
-declare type __keep = [EventContext, Reducer, RemoteReducers, RemoteTables];
 
-/**
- * Table handle for the table `tm_match`.
- *
- * Obtain a handle from the [`tmMatch`] property on [`RemoteTables`],
- * like `ctx.db.tmMatch`.
- *
- * Users are encouraged not to explicitly reference this type,
- * but to directly chain method calls,
- * like `ctx.db.tmMatch.on_insert(...)`.
- */
-export class TmMatchTableHandle<TableName extends string> implements __TableHandle<TableName> {
-  // phantom type to track the table name
-  readonly tableName!: TableName;
-  tableCache: __TableCache<TmMatch>;
-
-  constructor(tableCache: __TableCache<TmMatch>) {
-    this.tableCache = tableCache;
-  }
-
-  count(): number {
-    return this.tableCache.count();
-  }
-
-  iter(): Iterable<TmMatch> {
-    return this.tableCache.iter();
-  }
-  /**
-   * Access to the `id` unique index on the table `tm_match`,
-   * which allows point queries on the field of the same name
-   * via the [`TmMatchIdUnique.find`] method.
-   *
-   * Users are encouraged not to explicitly reference this type,
-   * but to directly chain method calls,
-   * like `ctx.db.tmMatch.id().find(...)`.
-   *
-   * Get a handle on the `id` unique index on the table `tm_match`.
-   */
-  id = {
-    // Find the subscribed row whose `id` column value is equal to `col_val`,
-    // if such a row is present in the client cache.
-    find: (col_val: number): TmMatch | undefined => {
-      for (let row of this.tableCache.iter()) {
-        if (__deepEqual(row.id, col_val)) {
-          return row;
-        }
-      }
-    },
-  };
-
-  onInsert = (cb: (ctx: EventContext, row: TmMatch) => void) => {
-    return this.tableCache.onInsert(cb);
-  }
-
-  removeOnInsert = (cb: (ctx: EventContext, row: TmMatch) => void) => {
-    return this.tableCache.removeOnInsert(cb);
-  }
-
-  onDelete = (cb: (ctx: EventContext, row: TmMatch) => void) => {
-    return this.tableCache.onDelete(cb);
-  }
-
-  removeOnDelete = (cb: (ctx: EventContext, row: TmMatch) => void) => {
-    return this.tableCache.removeOnDelete(cb);
-  }
-
-  // Updates are only defined for tables with primary keys.
-  onUpdate = (cb: (ctx: EventContext, oldRow: TmMatch, newRow: TmMatch) => void) => {
-    return this.tableCache.onUpdate(cb);
-  }
-
-  removeOnUpdate = (cb: (ctx: EventContext, onRow: TmMatch, newRow: TmMatch) => void) => {
-    return this.tableCache.removeOnUpdate(cb);
-  }}
+export default __t.row({
+  id: __t.u32().primaryKey(),
+  tournamentId: __t.u32(),
+  competitionId: __t.u32(),
+  get scheduling() {
+    return Scheduling;
+  },
+  get registration() {
+    return Registration;
+  },
+  serverId: __t.option(__t.string()),
+  get preMatchConfig() {
+    return __t.option(ServerConfig);
+  },
+  get matchConfig() {
+    return __t.option(ServerConfig);
+  },
+  get postMatchConfig() {
+    return __t.option(ServerConfig);
+  },
+  get status() {
+    return MatchStatus;
+  },
+  get leaderboard() {
+    return MatchLeaderboardRules;
+  },
+  get state() {
+    return MatchState;
+  },
+});

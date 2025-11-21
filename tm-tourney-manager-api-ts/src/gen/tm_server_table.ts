@@ -4,132 +4,26 @@
 /* eslint-disable */
 /* tslint:disable */
 import {
-  AlgebraicType as __AlgebraicTypeValue,
-  BinaryReader as __BinaryReader,
-  BinaryWriter as __BinaryWriter,
-  ClientCache as __ClientCache,
-  ConnectionId as __ConnectionId,
-  DbConnectionBuilder as __DbConnectionBuilder,
-  DbConnectionImpl as __DbConnectionImpl,
-  Identity as __Identity,
-  SubscriptionBuilderImpl as __SubscriptionBuilderImpl,
-  TableCache as __TableCache,
-  TimeDuration as __TimeDuration,
-  Timestamp as __Timestamp,
-  deepEqual as __deepEqual,
-  type AlgebraicType as __AlgebraicTypeType,
-  type AlgebraicTypeVariants as __AlgebraicTypeVariants,
-  type CallReducerFlags as __CallReducerFlags,
-  type ErrorContextInterface as __ErrorContextInterface,
-  type Event as __Event,
-  type EventContextInterface as __EventContextInterface,
-  type ReducerEventContextInterface as __ReducerEventContextInterface,
-  type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
+  TypeBuilder as __TypeBuilder,
+  t as __t,
+  type AlgebraicTypeType as __AlgebraicTypeType,
+  type Infer as __Infer,
 } from "spacetimedb";
-import { TmServer } from "./tm_server_type";
-import { ServerConfig } from "./server_config_type";
-// Mark import as potentially unused
-declare type __keep_ServerConfig = ServerConfig;
-import { ServerState } from "./server_state_type";
-// Mark import as potentially unused
-declare type __keep_ServerState = ServerState;
+import ServerConfig from "./server_config_type";
+import ServerState from "./server_state_type";
 
-import { type EventContext, type Reducer, RemoteReducers, RemoteTables } from ".";
-declare type __keep = [EventContext, Reducer, RemoteReducers, RemoteTables];
 
-/**
- * Table handle for the table `tm_server`.
- *
- * Obtain a handle from the [`tmServer`] property on [`RemoteTables`],
- * like `ctx.db.tmServer`.
- *
- * Users are encouraged not to explicitly reference this type,
- * but to directly chain method calls,
- * like `ctx.db.tmServer.on_insert(...)`.
- */
-export class TmServerTableHandle<TableName extends string> implements __TableHandle<TableName> {
-  // phantom type to track the table name
-  readonly tableName!: TableName;
-  tableCache: __TableCache<TmServer>;
-
-  constructor(tableCache: __TableCache<TmServer>) {
-    this.tableCache = tableCache;
-  }
-
-  count(): number {
-    return this.tableCache.count();
-  }
-
-  iter(): Iterable<TmServer> {
-    return this.tableCache.iter();
-  }
-  /**
-   * Access to the `id` unique index on the table `tm_server`,
-   * which allows point queries on the field of the same name
-   * via the [`TmServerIdUnique.find`] method.
-   *
-   * Users are encouraged not to explicitly reference this type,
-   * but to directly chain method calls,
-   * like `ctx.db.tmServer.id().find(...)`.
-   *
-   * Get a handle on the `id` unique index on the table `tm_server`.
-   */
-  id = {
-    // Find the subscribed row whose `id` column value is equal to `col_val`,
-    // if such a row is present in the client cache.
-    find: (col_val: string): TmServer | undefined => {
-      for (let row of this.tableCache.iter()) {
-        if (__deepEqual(row.id, col_val)) {
-          return row;
-        }
-      }
-    },
-  };
-  /**
-   * Access to the `identity` unique index on the table `tm_server`,
-   * which allows point queries on the field of the same name
-   * via the [`TmServerIdentityUnique.find`] method.
-   *
-   * Users are encouraged not to explicitly reference this type,
-   * but to directly chain method calls,
-   * like `ctx.db.tmServer.identity().find(...)`.
-   *
-   * Get a handle on the `identity` unique index on the table `tm_server`.
-   */
-  identity = {
-    // Find the subscribed row whose `identity` column value is equal to `col_val`,
-    // if such a row is present in the client cache.
-    find: (col_val: __Identity): TmServer | undefined => {
-      for (let row of this.tableCache.iter()) {
-        if (__deepEqual(row.identity, col_val)) {
-          return row;
-        }
-      }
-    },
-  };
-
-  onInsert = (cb: (ctx: EventContext, row: TmServer) => void) => {
-    return this.tableCache.onInsert(cb);
-  }
-
-  removeOnInsert = (cb: (ctx: EventContext, row: TmServer) => void) => {
-    return this.tableCache.removeOnInsert(cb);
-  }
-
-  onDelete = (cb: (ctx: EventContext, row: TmServer) => void) => {
-    return this.tableCache.onDelete(cb);
-  }
-
-  removeOnDelete = (cb: (ctx: EventContext, row: TmServer) => void) => {
-    return this.tableCache.removeOnDelete(cb);
-  }
-
-  // Updates are only defined for tables with primary keys.
-  onUpdate = (cb: (ctx: EventContext, oldRow: TmServer, newRow: TmServer) => void) => {
-    return this.tableCache.onUpdate(cb);
-  }
-
-  removeOnUpdate = (cb: (ctx: EventContext, onRow: TmServer, newRow: TmServer) => void) => {
-    return this.tableCache.removeOnUpdate(cb);
-  }}
+export default __t.row({
+  id: __t.string().primaryKey(),
+  identity: __t.identity(),
+  ownerId: __t.string(),
+  online: __t.bool(),
+  get config() {
+    return ServerConfig;
+  },
+  get state() {
+    return ServerState;
+  },
+  capturable: __t.bool(),
+  activeMatch: __t.option(__t.u32()),
+});

@@ -10,9 +10,6 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-export default __t.object("ChatSendToUserArgs", {
-  login: __t.string(),
-  message: __t.string(),
-});
-
-
+export default {
+  compeitionId: __t.u32(),
+};

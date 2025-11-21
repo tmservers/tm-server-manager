@@ -14,6 +14,8 @@ pub enum Registration {
 
     Team(TeamRegistration),
 
+    Inherit,
+
     Open,
 }
 

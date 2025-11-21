@@ -4,275 +4,164 @@
 /* eslint-disable */
 /* tslint:disable */
 import {
-  AlgebraicType as __AlgebraicTypeValue,
-  BinaryReader as __BinaryReader,
-  BinaryWriter as __BinaryWriter,
-  ClientCache as __ClientCache,
-  ConnectionId as __ConnectionId,
-  DbConnectionBuilder as __DbConnectionBuilder,
-  DbConnectionImpl as __DbConnectionImpl,
-  Identity as __Identity,
-  SubscriptionBuilderImpl as __SubscriptionBuilderImpl,
-  TableCache as __TableCache,
-  TimeDuration as __TimeDuration,
-  Timestamp as __Timestamp,
-  deepEqual as __deepEqual,
-  type AlgebraicType as __AlgebraicTypeType,
-  type AlgebraicTypeVariants as __AlgebraicTypeVariants,
-  type CallReducerFlags as __CallReducerFlags,
-  type ErrorContextInterface as __ErrorContextInterface,
-  type Event as __Event,
-  type EventContextInterface as __EventContextInterface,
-  type ReducerEventContextInterface as __ReducerEventContextInterface,
-  type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
+  TypeBuilder as __TypeBuilder,
+  t as __t,
+  type AlgebraicTypeType as __AlgebraicTypeType,
+  type Infer as __Infer,
 } from "spacetimedb";
-import { WayPoint } from "./way_point_type";
-// Mark import as potentially unused
-declare type __keep_WayPoint = WayPoint;
-import { Respawn } from "./respawn_type";
-// Mark import as potentially unused
-declare type __keep_Respawn = Respawn;
-import { StartLine } from "./start_line_type";
-// Mark import as potentially unused
-declare type __keep_StartLine = StartLine;
-import { Scores } from "./scores_type";
-// Mark import as potentially unused
-declare type __keep_Scores = Scores;
-import { GiveUp } from "./give_up_type";
-// Mark import as potentially unused
-declare type __keep_GiveUp = GiveUp;
-import { LoadingMapStart } from "./loading_map_start_type";
-// Mark import as potentially unused
-declare type __keep_LoadingMapStart = LoadingMapStart;
-import { LoadingMapEnd } from "./loading_map_end_type";
-// Mark import as potentially unused
-declare type __keep_LoadingMapEnd = LoadingMapEnd;
-import { StartMap } from "./start_map_type";
-// Mark import as potentially unused
-declare type __keep_StartMap = StartMap;
-import { EndMapStart } from "./end_map_start_type";
-// Mark import as potentially unused
-declare type __keep_EndMapStart = EndMapStart;
-import { EndMapEnd } from "./end_map_end_type";
-// Mark import as potentially unused
-declare type __keep_EndMapEnd = EndMapEnd;
-import { UnloadingMapStart } from "./unloading_map_start_type";
-// Mark import as potentially unused
-declare type __keep_UnloadingMapStart = UnloadingMapStart;
-import { UnloadingMapEnd } from "./unloading_map_end_type";
-// Mark import as potentially unused
-declare type __keep_UnloadingMapEnd = UnloadingMapEnd;
-import { PlayerConnect } from "./player_connect_type";
-// Mark import as potentially unused
-declare type __keep_PlayerConnect = PlayerConnect;
-import { PlayerDisconnect } from "./player_disconnect_type";
-// Mark import as potentially unused
-declare type __keep_PlayerDisconnect = PlayerDisconnect;
-import { PlayerChat } from "./player_chat_type";
-// Mark import as potentially unused
-declare type __keep_PlayerChat = PlayerChat;
-import { StartTurn } from "./start_turn_type";
-// Mark import as potentially unused
-declare type __keep_StartTurn = StartTurn;
-import { EndTurnStart } from "./end_turn_start_type";
-// Mark import as potentially unused
-declare type __keep_EndTurnStart = EndTurnStart;
-import { EndTurnEnd } from "./end_turn_end_type";
-// Mark import as potentially unused
-declare type __keep_EndTurnEnd = EndTurnEnd;
-import { PlayLoopStart } from "./play_loop_start_type";
-// Mark import as potentially unused
-declare type __keep_PlayLoopStart = PlayLoopStart;
-import { PlayLoopEnd } from "./play_loop_end_type";
-// Mark import as potentially unused
-declare type __keep_PlayLoopEnd = PlayLoopEnd;
-import { StartRound } from "./start_round_type";
-// Mark import as potentially unused
-declare type __keep_StartRound = StartRound;
-import { EndRoundStart } from "./end_round_start_type";
-// Mark import as potentially unused
-declare type __keep_EndRoundStart = EndRoundStart;
-import { EndRoundEnd } from "./end_round_end_type";
-// Mark import as potentially unused
-declare type __keep_EndRoundEnd = EndRoundEnd;
-import { Podium } from "./podium_type";
-// Mark import as potentially unused
-declare type __keep_Podium = Podium;
-import { StartMatch } from "./start_match_type";
-// Mark import as potentially unused
-declare type __keep_StartMatch = StartMatch;
-import { EndMatch } from "./end_match_type";
-// Mark import as potentially unused
-declare type __keep_EndMatch = EndMatch;
-import { StartServer } from "./start_server_type";
-// Mark import as potentially unused
-declare type __keep_StartServer = StartServer;
-import { EndServer } from "./end_server_type";
-// Mark import as potentially unused
-declare type __keep_EndServer = EndServer;
-import { WarmupRound } from "./warmup_round_type";
-// Mark import as potentially unused
-declare type __keep_WarmupRound = WarmupRound;
-import { Custom } from "./custom_type";
-// Mark import as potentially unused
-declare type __keep_Custom = Custom;
+import WayPoint from "./way_point_type";
+import Respawn from "./respawn_type";
+import StartLine from "./start_line_type";
+import Scores from "./scores_type";
+import GiveUp from "./give_up_type";
+import LoadingMapStart from "./loading_map_start_type";
+import LoadingMapEnd from "./loading_map_end_type";
+import StartMap from "./start_map_type";
+import EndMapStart from "./end_map_start_type";
+import EndMapEnd from "./end_map_end_type";
+import UnloadingMapStart from "./unloading_map_start_type";
+import UnloadingMapEnd from "./unloading_map_end_type";
+import PlayerConnect from "./player_connect_type";
+import PlayerDisconnect from "./player_disconnect_type";
+import PlayerChat from "./player_chat_type";
+import StartTurn from "./start_turn_type";
+import EndTurnStart from "./end_turn_start_type";
+import EndTurnEnd from "./end_turn_end_type";
+import PlayLoopStart from "./play_loop_start_type";
+import PlayLoopEnd from "./play_loop_end_type";
+import StartRound from "./start_round_type";
+import EndRoundStart from "./end_round_start_type";
+import EndRoundEnd from "./end_round_end_type";
+import Podium from "./podium_type";
+import StartMatch from "./start_match_type";
+import EndMatch from "./end_match_type";
+import StartServer from "./start_server_type";
+import EndServer from "./end_server_type";
+import WarmupRound from "./warmup_round_type";
+import Custom from "./custom_type";
 
-import * as EventVariants from './event_variants'
 
 // The tagged union or sum type for the algebraic type `Event`.
-export type Event = EventVariants.WayPoint |
-  EventVariants.Respawn |
-  EventVariants.StartLine |
-  EventVariants.Scores |
-  EventVariants.GiveUp |
-  EventVariants.LoadingMapStart |
-  EventVariants.LoadingMapEnd |
-  EventVariants.StartMapStart |
-  EventVariants.StartMapEnd |
-  EventVariants.EndMapStart |
-  EventVariants.EndMapEnd |
-  EventVariants.UnloadingMapStart |
-  EventVariants.UnloadingMapEnd |
-  EventVariants.PlayerConenct |
-  EventVariants.PlayerDisconnect |
-  EventVariants.PlayerChat |
-  EventVariants.StartTurnStart |
-  EventVariants.StartTurnEnd |
-  EventVariants.EndTurnStart |
-  EventVariants.EndTurnEnd |
-  EventVariants.PlayLoopStart |
-  EventVariants.PlayLoopEnd |
-  EventVariants.StartRoundStart |
-  EventVariants.StartRoundEnd |
-  EventVariants.EndRoundStart |
-  EventVariants.EndRoundEnd |
-  EventVariants.PodiumStart |
-  EventVariants.PodiumEnd |
-  EventVariants.StartMatchStart |
-  EventVariants.StartMatchEnd |
-  EventVariants.EndMatchStart |
-  EventVariants.EndMatchEnd |
-  EventVariants.StartServerStart |
-  EventVariants.StartServerEnd |
-  EventVariants.EndServerStart |
-  EventVariants.EndServerEnd |
-  EventVariants.WarmupStart |
-  EventVariants.WarmupEnd |
-  EventVariants.WarmupStartRound |
-  EventVariants.WarmupEndRound |
-  EventVariants.Custom;
-
-let _cached_Event_type_value: __AlgebraicTypeType | null = null;
-
-// A value with helper functions to construct the type.
-export const Event = {
-  // Helper functions for constructing each variant of the tagged union.
-  // ```
-  // const foo = Foo.A(42);
-  // assert!(foo.tag === "A");
-  // assert!(foo.value === 42);
-  // ```
-  WayPoint: (value: WayPoint): EventVariants.WayPoint => ({ tag: "WayPoint", value }),
-  Respawn: (value: Respawn): EventVariants.Respawn => ({ tag: "Respawn", value }),
-  StartLine: (value: StartLine): EventVariants.StartLine => ({ tag: "StartLine", value }),
-  Scores: (value: Scores): EventVariants.Scores => ({ tag: "Scores", value }),
-  GiveUp: (value: GiveUp): EventVariants.GiveUp => ({ tag: "GiveUp", value }),
-  LoadingMapStart: (value: LoadingMapStart): EventVariants.LoadingMapStart => ({ tag: "LoadingMapStart", value }),
-  LoadingMapEnd: (value: LoadingMapEnd): EventVariants.LoadingMapEnd => ({ tag: "LoadingMapEnd", value }),
-  StartMapStart: (value: StartMap): EventVariants.StartMapStart => ({ tag: "StartMapStart", value }),
-  StartMapEnd: (value: StartMap): EventVariants.StartMapEnd => ({ tag: "StartMapEnd", value }),
-  EndMapStart: (value: EndMapStart): EventVariants.EndMapStart => ({ tag: "EndMapStart", value }),
-  EndMapEnd: (value: EndMapEnd): EventVariants.EndMapEnd => ({ tag: "EndMapEnd", value }),
-  UnloadingMapStart: (value: UnloadingMapStart): EventVariants.UnloadingMapStart => ({ tag: "UnloadingMapStart", value }),
-  UnloadingMapEnd: (value: UnloadingMapEnd): EventVariants.UnloadingMapEnd => ({ tag: "UnloadingMapEnd", value }),
-  PlayerConenct: (value: PlayerConnect): EventVariants.PlayerConenct => ({ tag: "PlayerConenct", value }),
-  PlayerDisconnect: (value: PlayerDisconnect): EventVariants.PlayerDisconnect => ({ tag: "PlayerDisconnect", value }),
-  PlayerChat: (value: PlayerChat): EventVariants.PlayerChat => ({ tag: "PlayerChat", value }),
-  StartTurnStart: (value: StartTurn): EventVariants.StartTurnStart => ({ tag: "StartTurnStart", value }),
-  StartTurnEnd: (value: StartTurn): EventVariants.StartTurnEnd => ({ tag: "StartTurnEnd", value }),
-  EndTurnStart: (value: EndTurnStart): EventVariants.EndTurnStart => ({ tag: "EndTurnStart", value }),
-  EndTurnEnd: (value: EndTurnEnd): EventVariants.EndTurnEnd => ({ tag: "EndTurnEnd", value }),
-  PlayLoopStart: (value: PlayLoopStart): EventVariants.PlayLoopStart => ({ tag: "PlayLoopStart", value }),
-  PlayLoopEnd: (value: PlayLoopEnd): EventVariants.PlayLoopEnd => ({ tag: "PlayLoopEnd", value }),
-  StartRoundStart: (value: StartRound): EventVariants.StartRoundStart => ({ tag: "StartRoundStart", value }),
-  StartRoundEnd: (value: StartRound): EventVariants.StartRoundEnd => ({ tag: "StartRoundEnd", value }),
-  EndRoundStart: (value: EndRoundStart): EventVariants.EndRoundStart => ({ tag: "EndRoundStart", value }),
-  EndRoundEnd: (value: EndRoundEnd): EventVariants.EndRoundEnd => ({ tag: "EndRoundEnd", value }),
-  PodiumStart: (value: Podium): EventVariants.PodiumStart => ({ tag: "PodiumStart", value }),
-  PodiumEnd: (value: Podium): EventVariants.PodiumEnd => ({ tag: "PodiumEnd", value }),
-  StartMatchStart: (value: StartMatch): EventVariants.StartMatchStart => ({ tag: "StartMatchStart", value }),
-  StartMatchEnd: (value: StartMatch): EventVariants.StartMatchEnd => ({ tag: "StartMatchEnd", value }),
-  EndMatchStart: (value: EndMatch): EventVariants.EndMatchStart => ({ tag: "EndMatchStart", value }),
-  EndMatchEnd: (value: EndMatch): EventVariants.EndMatchEnd => ({ tag: "EndMatchEnd", value }),
-  StartServerStart: (value: StartServer): EventVariants.StartServerStart => ({ tag: "StartServerStart", value }),
-  StartServerEnd: (value: StartServer): EventVariants.StartServerEnd => ({ tag: "StartServerEnd", value }),
-  EndServerStart: (value: EndServer): EventVariants.EndServerStart => ({ tag: "EndServerStart", value }),
-  EndServerEnd: (value: EndServer): EventVariants.EndServerEnd => ({ tag: "EndServerEnd", value }),
-  WarmupStart: { tag: "WarmupStart" } as const,
-  WarmupEnd: { tag: "WarmupEnd" } as const,
-  WarmupStartRound: (value: WarmupRound): EventVariants.WarmupStartRound => ({ tag: "WarmupStartRound", value }),
-  WarmupEndRound: (value: WarmupRound): EventVariants.WarmupEndRound => ({ tag: "WarmupEndRound", value }),
-  Custom: (value: Custom): EventVariants.Custom => ({ tag: "Custom", value }),
-
-  getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_Event_type_value) return _cached_Event_type_value;
-    _cached_Event_type_value = __AlgebraicTypeValue.Sum({ variants: [] });
-    _cached_Event_type_value.value.variants.push(
-      { name: "WayPoint", algebraicType: WayPoint.getTypeScriptAlgebraicType() },
-      { name: "Respawn", algebraicType: Respawn.getTypeScriptAlgebraicType() },
-      { name: "StartLine", algebraicType: StartLine.getTypeScriptAlgebraicType() },
-      { name: "Scores", algebraicType: Scores.getTypeScriptAlgebraicType() },
-      { name: "GiveUp", algebraicType: GiveUp.getTypeScriptAlgebraicType() },
-      { name: "LoadingMapStart", algebraicType: LoadingMapStart.getTypeScriptAlgebraicType() },
-      { name: "LoadingMapEnd", algebraicType: LoadingMapEnd.getTypeScriptAlgebraicType() },
-      { name: "StartMapStart", algebraicType: StartMap.getTypeScriptAlgebraicType() },
-      { name: "StartMapEnd", algebraicType: StartMap.getTypeScriptAlgebraicType() },
-      { name: "EndMapStart", algebraicType: EndMapStart.getTypeScriptAlgebraicType() },
-      { name: "EndMapEnd", algebraicType: EndMapEnd.getTypeScriptAlgebraicType() },
-      { name: "UnloadingMapStart", algebraicType: UnloadingMapStart.getTypeScriptAlgebraicType() },
-      { name: "UnloadingMapEnd", algebraicType: UnloadingMapEnd.getTypeScriptAlgebraicType() },
-      { name: "PlayerConenct", algebraicType: PlayerConnect.getTypeScriptAlgebraicType() },
-      { name: "PlayerDisconnect", algebraicType: PlayerDisconnect.getTypeScriptAlgebraicType() },
-      { name: "PlayerChat", algebraicType: PlayerChat.getTypeScriptAlgebraicType() },
-      { name: "StartTurnStart", algebraicType: StartTurn.getTypeScriptAlgebraicType() },
-      { name: "StartTurnEnd", algebraicType: StartTurn.getTypeScriptAlgebraicType() },
-      { name: "EndTurnStart", algebraicType: EndTurnStart.getTypeScriptAlgebraicType() },
-      { name: "EndTurnEnd", algebraicType: EndTurnEnd.getTypeScriptAlgebraicType() },
-      { name: "PlayLoopStart", algebraicType: PlayLoopStart.getTypeScriptAlgebraicType() },
-      { name: "PlayLoopEnd", algebraicType: PlayLoopEnd.getTypeScriptAlgebraicType() },
-      { name: "StartRoundStart", algebraicType: StartRound.getTypeScriptAlgebraicType() },
-      { name: "StartRoundEnd", algebraicType: StartRound.getTypeScriptAlgebraicType() },
-      { name: "EndRoundStart", algebraicType: EndRoundStart.getTypeScriptAlgebraicType() },
-      { name: "EndRoundEnd", algebraicType: EndRoundEnd.getTypeScriptAlgebraicType() },
-      { name: "PodiumStart", algebraicType: Podium.getTypeScriptAlgebraicType() },
-      { name: "PodiumEnd", algebraicType: Podium.getTypeScriptAlgebraicType() },
-      { name: "StartMatchStart", algebraicType: StartMatch.getTypeScriptAlgebraicType() },
-      { name: "StartMatchEnd", algebraicType: StartMatch.getTypeScriptAlgebraicType() },
-      { name: "EndMatchStart", algebraicType: EndMatch.getTypeScriptAlgebraicType() },
-      { name: "EndMatchEnd", algebraicType: EndMatch.getTypeScriptAlgebraicType() },
-      { name: "StartServerStart", algebraicType: StartServer.getTypeScriptAlgebraicType() },
-      { name: "StartServerEnd", algebraicType: StartServer.getTypeScriptAlgebraicType() },
-      { name: "EndServerStart", algebraicType: EndServer.getTypeScriptAlgebraicType() },
-      { name: "EndServerEnd", algebraicType: EndServer.getTypeScriptAlgebraicType() },
-      { name: "WarmupStart", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-      { name: "WarmupEnd", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-      { name: "WarmupStartRound", algebraicType: WarmupRound.getTypeScriptAlgebraicType() },
-      { name: "WarmupEndRound", algebraicType: WarmupRound.getTypeScriptAlgebraicType() },
-      { name: "Custom", algebraicType: Custom.getTypeScriptAlgebraicType() },
-    );
-    return _cached_Event_type_value;
+const Event = __t.enum("Event", {get WayPoint() {
+    return WayPoint;
   },
-
-  serialize(writer: __BinaryWriter, value: Event): void {
-      __AlgebraicTypeValue.serializeValue(writer, Event.getTypeScriptAlgebraicType(), value);
+  get Respawn() {
+    return Respawn;
   },
-
-  deserialize(reader: __BinaryReader): Event {
-      return __AlgebraicTypeValue.deserializeValue(reader, Event.getTypeScriptAlgebraicType());
+  get StartLine() {
+    return StartLine;
   },
-
-}
+  get Scores() {
+    return Scores;
+  },
+  get GiveUp() {
+    return GiveUp;
+  },
+  get LoadingMapStart() {
+    return LoadingMapStart;
+  },
+  get LoadingMapEnd() {
+    return LoadingMapEnd;
+  },
+  get StartMapStart() {
+    return StartMap;
+  },
+  get StartMapEnd() {
+    return StartMap;
+  },
+  get EndMapStart() {
+    return EndMapStart;
+  },
+  get EndMapEnd() {
+    return EndMapEnd;
+  },
+  get UnloadingMapStart() {
+    return UnloadingMapStart;
+  },
+  get UnloadingMapEnd() {
+    return UnloadingMapEnd;
+  },
+  get PlayerConenct() {
+    return PlayerConnect;
+  },
+  get PlayerDisconnect() {
+    return PlayerDisconnect;
+  },
+  get PlayerChat() {
+    return PlayerChat;
+  },
+  get StartTurnStart() {
+    return StartTurn;
+  },
+  get StartTurnEnd() {
+    return StartTurn;
+  },
+  get EndTurnStart() {
+    return EndTurnStart;
+  },
+  get EndTurnEnd() {
+    return EndTurnEnd;
+  },
+  get PlayLoopStart() {
+    return PlayLoopStart;
+  },
+  get PlayLoopEnd() {
+    return PlayLoopEnd;
+  },
+  get StartRoundStart() {
+    return StartRound;
+  },
+  get StartRoundEnd() {
+    return StartRound;
+  },
+  get EndRoundStart() {
+    return EndRoundStart;
+  },
+  get EndRoundEnd() {
+    return EndRoundEnd;
+  },
+  get PodiumStart() {
+    return Podium;
+  },
+  get PodiumEnd() {
+    return Podium;
+  },
+  get StartMatchStart() {
+    return StartMatch;
+  },
+  get StartMatchEnd() {
+    return StartMatch;
+  },
+  get EndMatchStart() {
+    return EndMatch;
+  },
+  get EndMatchEnd() {
+    return EndMatch;
+  },
+  get StartServerStart() {
+    return StartServer;
+  },
+  get StartServerEnd() {
+    return StartServer;
+  },
+  get EndServerStart() {
+    return EndServer;
+  },
+  get EndServerEnd() {
+    return EndServer;
+  },
+  WarmupStart: __t.unit(),
+  WarmupEnd: __t.unit(),
+  get WarmupStartRound() {
+    return WarmupRound;
+  },
+  get WarmupEndRound() {
+    return WarmupRound;
+  },
+  get Custom() {
+    return Custom;
+  },
+});
 
 export default Event;
 

@@ -4,76 +4,18 @@
 /* eslint-disable */
 /* tslint:disable */
 import {
-  AlgebraicType as __AlgebraicTypeValue,
-  BinaryReader as __BinaryReader,
-  BinaryWriter as __BinaryWriter,
-  ClientCache as __ClientCache,
-  ConnectionId as __ConnectionId,
-  DbConnectionBuilder as __DbConnectionBuilder,
-  DbConnectionImpl as __DbConnectionImpl,
-  Identity as __Identity,
-  SubscriptionBuilderImpl as __SubscriptionBuilderImpl,
-  TableCache as __TableCache,
-  TimeDuration as __TimeDuration,
-  Timestamp as __Timestamp,
-  deepEqual as __deepEqual,
-  type AlgebraicType as __AlgebraicTypeType,
-  type AlgebraicTypeVariants as __AlgebraicTypeVariants,
-  type CallReducerFlags as __CallReducerFlags,
-  type ErrorContextInterface as __ErrorContextInterface,
-  type Event as __Event,
-  type EventContextInterface as __EventContextInterface,
-  type ReducerEventContextInterface as __ReducerEventContextInterface,
-  type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
+  TypeBuilder as __TypeBuilder,
+  t as __t,
+  type AlgebraicTypeType as __AlgebraicTypeType,
+  type Infer as __Infer,
 } from "spacetimedb";
-import * as MatchStatusVariants from './match_status_variants'
 
 // The tagged union or sum type for the algebraic type `MatchStatus`.
-export type MatchStatus = MatchStatusVariants.Configuring |
-  MatchStatusVariants.Upcoming |
-  MatchStatusVariants.PreMatch |
-  MatchStatusVariants.Live |
-  MatchStatusVariants.Ended;
-
-let _cached_MatchStatus_type_value: __AlgebraicTypeType | null = null;
-
-// A value with helper functions to construct the type.
-export const MatchStatus = {
-  // Helper functions for constructing each variant of the tagged union.
-  // ```
-  // const foo = Foo.A(42);
-  // assert!(foo.tag === "A");
-  // assert!(foo.value === 42);
-  // ```
-  Configuring: { tag: "Configuring" } as const,
-  Upcoming: { tag: "Upcoming" } as const,
-  PreMatch: { tag: "PreMatch" } as const,
-  Live: { tag: "Live" } as const,
-  Ended: { tag: "Ended" } as const,
-
-  getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_MatchStatus_type_value) return _cached_MatchStatus_type_value;
-    _cached_MatchStatus_type_value = __AlgebraicTypeValue.Sum({ variants: [] });
-    _cached_MatchStatus_type_value.value.variants.push(
-      { name: "Configuring", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-      { name: "Upcoming", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-      { name: "PreMatch", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-      { name: "Live", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-      { name: "Ended", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-    );
-    return _cached_MatchStatus_type_value;
-  },
-
-  serialize(writer: __BinaryWriter, value: MatchStatus): void {
-      __AlgebraicTypeValue.serializeValue(writer, MatchStatus.getTypeScriptAlgebraicType(), value);
-  },
-
-  deserialize(reader: __BinaryReader): MatchStatus {
-      return __AlgebraicTypeValue.deserializeValue(reader, MatchStatus.getTypeScriptAlgebraicType());
-  },
-
-}
+const MatchStatus = __t.enum("MatchStatus", {Configuring: __t.unit(),
+  Upcoming: __t.unit(),
+  Live: __t.unit(),
+  Ended: __t.unit(),
+});
 
 export default MatchStatus;
 

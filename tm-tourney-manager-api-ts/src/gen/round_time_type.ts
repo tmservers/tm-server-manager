@@ -4,67 +4,16 @@
 /* eslint-disable */
 /* tslint:disable */
 import {
-  AlgebraicType as __AlgebraicTypeValue,
-  BinaryReader as __BinaryReader,
-  BinaryWriter as __BinaryWriter,
-  ClientCache as __ClientCache,
-  ConnectionId as __ConnectionId,
-  DbConnectionBuilder as __DbConnectionBuilder,
-  DbConnectionImpl as __DbConnectionImpl,
-  Identity as __Identity,
-  SubscriptionBuilderImpl as __SubscriptionBuilderImpl,
-  TableCache as __TableCache,
-  TimeDuration as __TimeDuration,
-  Timestamp as __Timestamp,
-  deepEqual as __deepEqual,
-  type AlgebraicType as __AlgebraicTypeType,
-  type AlgebraicTypeVariants as __AlgebraicTypeVariants,
-  type CallReducerFlags as __CallReducerFlags,
-  type ErrorContextInterface as __ErrorContextInterface,
-  type Event as __Event,
-  type EventContextInterface as __EventContextInterface,
-  type ReducerEventContextInterface as __ReducerEventContextInterface,
-  type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
+  TypeBuilder as __TypeBuilder,
+  t as __t,
+  type AlgebraicTypeType as __AlgebraicTypeType,
+  type Infer as __Infer,
 } from "spacetimedb";
-import * as RoundTimeVariants from './round_time_variants'
 
 // The tagged union or sum type for the algebraic type `RoundTime`.
-export type RoundTime = RoundTimeVariants.None |
-  RoundTimeVariants.Time;
-
-let _cached_RoundTime_type_value: __AlgebraicTypeType | null = null;
-
-// A value with helper functions to construct the type.
-export const RoundTime = {
-  // Helper functions for constructing each variant of the tagged union.
-  // ```
-  // const foo = Foo.A(42);
-  // assert!(foo.tag === "A");
-  // assert!(foo.value === 42);
-  // ```
-  None: { tag: "None" } as const,
-  Time: (value: number): RoundTimeVariants.Time => ({ tag: "Time", value }),
-
-  getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_RoundTime_type_value) return _cached_RoundTime_type_value;
-    _cached_RoundTime_type_value = __AlgebraicTypeValue.Sum({ variants: [] });
-    _cached_RoundTime_type_value.value.variants.push(
-      { name: "None", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-      { name: "Time", algebraicType: __AlgebraicTypeValue.U32 },
-    );
-    return _cached_RoundTime_type_value;
-  },
-
-  serialize(writer: __BinaryWriter, value: RoundTime): void {
-      __AlgebraicTypeValue.serializeValue(writer, RoundTime.getTypeScriptAlgebraicType(), value);
-  },
-
-  deserialize(reader: __BinaryReader): RoundTime {
-      return __AlgebraicTypeValue.deserializeValue(reader, RoundTime.getTypeScriptAlgebraicType());
-  },
-
-}
+const RoundTime = __t.enum("RoundTime", {None: __t.unit(),
+  Time: __t.u32(),
+});
 
 export default RoundTime;
 

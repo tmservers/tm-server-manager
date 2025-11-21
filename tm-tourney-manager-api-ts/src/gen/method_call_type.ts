@@ -4,125 +4,44 @@
 /* eslint-disable */
 /* tslint:disable */
 import {
-  AlgebraicType as __AlgebraicTypeValue,
-  BinaryReader as __BinaryReader,
-  BinaryWriter as __BinaryWriter,
-  ClientCache as __ClientCache,
-  ConnectionId as __ConnectionId,
-  DbConnectionBuilder as __DbConnectionBuilder,
-  DbConnectionImpl as __DbConnectionImpl,
-  Identity as __Identity,
-  SubscriptionBuilderImpl as __SubscriptionBuilderImpl,
-  TableCache as __TableCache,
-  TimeDuration as __TimeDuration,
-  Timestamp as __Timestamp,
-  deepEqual as __deepEqual,
-  type AlgebraicType as __AlgebraicTypeType,
-  type AlgebraicTypeVariants as __AlgebraicTypeVariants,
-  type CallReducerFlags as __CallReducerFlags,
-  type ErrorContextInterface as __ErrorContextInterface,
-  type Event as __Event,
-  type EventContextInterface as __EventContextInterface,
-  type ReducerEventContextInterface as __ReducerEventContextInterface,
-  type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
+  TypeBuilder as __TypeBuilder,
+  t as __t,
+  type AlgebraicTypeType as __AlgebraicTypeType,
+  type Infer as __Infer,
 } from "spacetimedb";
-import { ChatSendServerMessageToUserArgs } from "./chat_send_server_message_to_user_args_type";
-// Mark import as potentially unused
-declare type __keep_ChatSendServerMessageToUserArgs = ChatSendServerMessageToUserArgs;
-import { ChatSendToUserArgs } from "./chat_send_to_user_args_type";
-// Mark import as potentially unused
-declare type __keep_ChatSendToUserArgs = ChatSendToUserArgs;
-import { KickArgs } from "./kick_args_type";
-// Mark import as potentially unused
-declare type __keep_KickArgs = KickArgs;
-import { BanArgs } from "./ban_args_type";
-// Mark import as potentially unused
-declare type __keep_BanArgs = BanArgs;
+import ChatSendServerMessageToUserArgs from "./chat_send_server_message_to_user_args_type";
+import ChatSendToUserArgs from "./chat_send_to_user_args_type";
+import KickArgs from "./kick_args_type";
+import BanArgs from "./ban_args_type";
 
-import * as MethodCallVariants from './method_call_variants'
 
 // The tagged union or sum type for the algebraic type `MethodCall`.
-export type MethodCall = MethodCallVariants.ListMethods |
-  MethodCallVariants.MethodSignature |
-  MethodCallVariants.MethodHelp |
-  MethodCallVariants.ChatSendServerMessage |
-  MethodCallVariants.ChatSendServerMessageToUser |
-  MethodCallVariants.ChatSend |
-  MethodCallVariants.ChatSendToUser |
-  MethodCallVariants.Kick |
-  MethodCallVariants.Ban |
-  MethodCallVariants.UnBan |
-  MethodCallVariants.Ignore |
-  MethodCallVariants.UnIgnore |
-  MethodCallVariants.SetPlayerPassword |
-  MethodCallVariants.SetSpectatorPassword |
-  MethodCallVariants.SendToServerAfterMatchEnd |
-  MethodCallVariants.GetMethodsList |
-  MethodCallVariants.PauseSetActive;
-
-let _cached_MethodCall_type_value: __AlgebraicTypeType | null = null;
-
-// A value with helper functions to construct the type.
-export const MethodCall = {
-  // Helper functions for constructing each variant of the tagged union.
-  // ```
-  // const foo = Foo.A(42);
-  // assert!(foo.tag === "A");
-  // assert!(foo.value === 42);
-  // ```
-  ListMethods: { tag: "ListMethods" } as const,
-  MethodSignature: (value: string): MethodCallVariants.MethodSignature => ({ tag: "MethodSignature", value }),
-  MethodHelp: (value: string): MethodCallVariants.MethodHelp => ({ tag: "MethodHelp", value }),
-  ChatSendServerMessage: (value: string): MethodCallVariants.ChatSendServerMessage => ({ tag: "ChatSendServerMessage", value }),
-  ChatSendServerMessageToUser: (value: ChatSendServerMessageToUserArgs): MethodCallVariants.ChatSendServerMessageToUser => ({ tag: "ChatSendServerMessageToUser", value }),
-  ChatSend: (value: string): MethodCallVariants.ChatSend => ({ tag: "ChatSend", value }),
-  ChatSendToUser: (value: ChatSendToUserArgs): MethodCallVariants.ChatSendToUser => ({ tag: "ChatSendToUser", value }),
-  Kick: (value: KickArgs): MethodCallVariants.Kick => ({ tag: "Kick", value }),
-  Ban: (value: BanArgs): MethodCallVariants.Ban => ({ tag: "Ban", value }),
-  UnBan: (value: string): MethodCallVariants.UnBan => ({ tag: "UnBan", value }),
-  Ignore: (value: string): MethodCallVariants.Ignore => ({ tag: "Ignore", value }),
-  UnIgnore: (value: string): MethodCallVariants.UnIgnore => ({ tag: "UnIgnore", value }),
-  SetPlayerPassword: (value: string): MethodCallVariants.SetPlayerPassword => ({ tag: "SetPlayerPassword", value }),
-  SetSpectatorPassword: (value: string): MethodCallVariants.SetSpectatorPassword => ({ tag: "SetSpectatorPassword", value }),
-  SendToServerAfterMatchEnd: (value: string): MethodCallVariants.SendToServerAfterMatchEnd => ({ tag: "SendToServerAfterMatchEnd", value }),
-  GetMethodsList: { tag: "GetMethodsList" } as const,
-  PauseSetActive: (value: boolean): MethodCallVariants.PauseSetActive => ({ tag: "PauseSetActive", value }),
-
-  getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_MethodCall_type_value) return _cached_MethodCall_type_value;
-    _cached_MethodCall_type_value = __AlgebraicTypeValue.Sum({ variants: [] });
-    _cached_MethodCall_type_value.value.variants.push(
-      { name: "ListMethods", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-      { name: "MethodSignature", algebraicType: __AlgebraicTypeValue.String },
-      { name: "MethodHelp", algebraicType: __AlgebraicTypeValue.String },
-      { name: "ChatSendServerMessage", algebraicType: __AlgebraicTypeValue.String },
-      { name: "ChatSendServerMessageToUser", algebraicType: ChatSendServerMessageToUserArgs.getTypeScriptAlgebraicType() },
-      { name: "ChatSend", algebraicType: __AlgebraicTypeValue.String },
-      { name: "ChatSendToUser", algebraicType: ChatSendToUserArgs.getTypeScriptAlgebraicType() },
-      { name: "Kick", algebraicType: KickArgs.getTypeScriptAlgebraicType() },
-      { name: "Ban", algebraicType: BanArgs.getTypeScriptAlgebraicType() },
-      { name: "UnBan", algebraicType: __AlgebraicTypeValue.String },
-      { name: "Ignore", algebraicType: __AlgebraicTypeValue.String },
-      { name: "UnIgnore", algebraicType: __AlgebraicTypeValue.String },
-      { name: "SetPlayerPassword", algebraicType: __AlgebraicTypeValue.String },
-      { name: "SetSpectatorPassword", algebraicType: __AlgebraicTypeValue.String },
-      { name: "SendToServerAfterMatchEnd", algebraicType: __AlgebraicTypeValue.String },
-      { name: "GetMethodsList", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-      { name: "PauseSetActive", algebraicType: __AlgebraicTypeValue.Bool },
-    );
-    return _cached_MethodCall_type_value;
+const MethodCall = __t.enum("MethodCall", {ListMethods: __t.unit(),
+  MethodSignature: __t.string(),
+  MethodHelp: __t.string(),
+  ChatSendServerMessage: __t.string(),
+  get ChatSendServerMessageToUser() {
+    return ChatSendServerMessageToUserArgs;
   },
-
-  serialize(writer: __BinaryWriter, value: MethodCall): void {
-      __AlgebraicTypeValue.serializeValue(writer, MethodCall.getTypeScriptAlgebraicType(), value);
+  ChatSend: __t.string(),
+  get ChatSendToUser() {
+    return ChatSendToUserArgs;
   },
-
-  deserialize(reader: __BinaryReader): MethodCall {
-      return __AlgebraicTypeValue.deserializeValue(reader, MethodCall.getTypeScriptAlgebraicType());
+  get Kick() {
+    return KickArgs;
   },
-
-}
+  get Ban() {
+    return BanArgs;
+  },
+  UnBan: __t.string(),
+  Ignore: __t.string(),
+  UnIgnore: __t.string(),
+  SetPlayerPassword: __t.string(),
+  SetSpectatorPassword: __t.string(),
+  SendToServerAfterMatchEnd: __t.string(),
+  GetMethodsList: __t.unit(),
+  PauseSetActive: __t.bool(),
+});
 
 export default MethodCall;
 

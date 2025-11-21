@@ -4,92 +4,29 @@
 /* eslint-disable */
 /* tslint:disable */
 import {
-  AlgebraicType as __AlgebraicTypeValue,
-  BinaryReader as __BinaryReader,
-  BinaryWriter as __BinaryWriter,
-  ClientCache as __ClientCache,
-  ConnectionId as __ConnectionId,
-  DbConnectionBuilder as __DbConnectionBuilder,
-  DbConnectionImpl as __DbConnectionImpl,
-  Identity as __Identity,
-  SubscriptionBuilderImpl as __SubscriptionBuilderImpl,
-  TableCache as __TableCache,
-  TimeDuration as __TimeDuration,
-  Timestamp as __Timestamp,
-  deepEqual as __deepEqual,
-  type AlgebraicType as __AlgebraicTypeType,
-  type AlgebraicTypeVariants as __AlgebraicTypeVariants,
-  type CallReducerFlags as __CallReducerFlags,
-  type ErrorContextInterface as __ErrorContextInterface,
-  type Event as __Event,
-  type EventContextInterface as __EventContextInterface,
-  type ReducerEventContextInterface as __ReducerEventContextInterface,
-  type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
+  TypeBuilder as __TypeBuilder,
+  t as __t,
+  type AlgebraicTypeType as __AlgebraicTypeType,
+  type Infer as __Infer,
 } from "spacetimedb";
 
-export type Map = {
-  uid: string,
-  name: string,
-  filename: string,
-  author: string,
-  authorNickname: string,
-  environment: string,
-  mood: string,
-  bronzeTime: number,
-  silverTime: number,
-  goldTime: number,
-  authorTime: number,
-  copperprice: number,
-  lapRace: boolean,
-  numberLaps: number,
-  mapType: string,
-  mapStyle: string,
-};
-let _cached_Map_type_value: __AlgebraicTypeType | null = null;
-
-/**
- * An object for generated helper functions.
- */
-export const Map = {
-  /**
-  * A function which returns this type represented as an AlgebraicType.
-  * This function is derived from the AlgebraicType used to generate this type.
-  */
-  getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_Map_type_value) return _cached_Map_type_value;
-    _cached_Map_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_Map_type_value.value.elements.push(
-      { name: "uid", algebraicType: __AlgebraicTypeValue.String },
-      { name: "name", algebraicType: __AlgebraicTypeValue.String },
-      { name: "filename", algebraicType: __AlgebraicTypeValue.String },
-      { name: "author", algebraicType: __AlgebraicTypeValue.String },
-      { name: "authorNickname", algebraicType: __AlgebraicTypeValue.String },
-      { name: "environment", algebraicType: __AlgebraicTypeValue.String },
-      { name: "mood", algebraicType: __AlgebraicTypeValue.String },
-      { name: "bronzeTime", algebraicType: __AlgebraicTypeValue.U32 },
-      { name: "silverTime", algebraicType: __AlgebraicTypeValue.U32 },
-      { name: "goldTime", algebraicType: __AlgebraicTypeValue.U32 },
-      { name: "authorTime", algebraicType: __AlgebraicTypeValue.U32 },
-      { name: "copperprice", algebraicType: __AlgebraicTypeValue.U32 },
-      { name: "lapRace", algebraicType: __AlgebraicTypeValue.Bool },
-      { name: "numberLaps", algebraicType: __AlgebraicTypeValue.U32 },
-      { name: "mapType", algebraicType: __AlgebraicTypeValue.String },
-      { name: "mapStyle", algebraicType: __AlgebraicTypeValue.String },
-    );
-    return _cached_Map_type_value;
-  },
-
-  serialize(writer: __BinaryWriter, value: Map): void {
-    __AlgebraicTypeValue.serializeValue(writer, Map.getTypeScriptAlgebraicType(), value);
-  },
-
-  deserialize(reader: __BinaryReader): Map {
-    return __AlgebraicTypeValue.deserializeValue(reader, Map.getTypeScriptAlgebraicType());
-  },
-
-}
-
-export default Map;
+export default __t.object("Map", {
+  uid: __t.string(),
+  name: __t.string(),
+  filename: __t.string(),
+  author: __t.string(),
+  authorNickname: __t.string(),
+  environment: __t.string(),
+  mood: __t.string(),
+  bronzeTime: __t.u32(),
+  silverTime: __t.u32(),
+  goldTime: __t.u32(),
+  authorTime: __t.u32(),
+  copperprice: __t.u32(),
+  lapRace: __t.bool(),
+  numberLaps: __t.u32(),
+  mapType: __t.string(),
+  mapStyle: __t.string(),
+});
 
 

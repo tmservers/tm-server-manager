@@ -4,97 +4,35 @@
 /* eslint-disable */
 /* tslint:disable */
 import {
-  AlgebraicType as __AlgebraicTypeValue,
-  BinaryReader as __BinaryReader,
-  BinaryWriter as __BinaryWriter,
-  ClientCache as __ClientCache,
-  ConnectionId as __ConnectionId,
-  DbConnectionBuilder as __DbConnectionBuilder,
-  DbConnectionImpl as __DbConnectionImpl,
-  Identity as __Identity,
-  SubscriptionBuilderImpl as __SubscriptionBuilderImpl,
-  TableCache as __TableCache,
-  TimeDuration as __TimeDuration,
-  Timestamp as __Timestamp,
-  deepEqual as __deepEqual,
-  type AlgebraicType as __AlgebraicTypeType,
-  type AlgebraicTypeVariants as __AlgebraicTypeVariants,
-  type CallReducerFlags as __CallReducerFlags,
-  type ErrorContextInterface as __ErrorContextInterface,
-  type Event as __Event,
-  type EventContextInterface as __EventContextInterface,
-  type ReducerEventContextInterface as __ReducerEventContextInterface,
-  type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
+  TypeBuilder as __TypeBuilder,
+  t as __t,
+  type AlgebraicTypeType as __AlgebraicTypeType,
+  type Infer as __Infer,
 } from "spacetimedb";
-import { RespawnBavaviour } from "./respawn_bavaviour_type";
-// Mark import as potentially unused
-declare type __keep_RespawnBavaviour = RespawnBavaviour;
-import { WarmupDuration } from "./warmup_duration_type";
-// Mark import as potentially unused
-declare type __keep_WarmupDuration = WarmupDuration;
+import RespawnBavaviour from "./respawn_bavaviour_type";
+import WarmupDuration from "./warmup_duration_type";
 
 
-export type Common = {
-  chatTime: number,
-  respawnBehaviour: RespawnBavaviour,
-  synchronizePlayersAtMapStart: boolean,
-  synchronizePlayersAtRoundStart: boolean,
-  trustClientSimulation: boolean,
-  useCrudeExtrapolation: boolean,
-  warmupDuration: WarmupDuration,
-  warmupNumber: number,
-  decoImageUrlCheckpoint: string,
-  decoImageUrlDecalSponsor4X1: string,
-  decoImageUrlScreen16X1: string,
-  decoImageUrlScreen19X9: string,
-  decoImageUrlScreen8X1: string,
-  decoImageUrlWhoAmI: string,
-  forceLapsNumber: number,
-};
-let _cached_Common_type_value: __AlgebraicTypeType | null = null;
-
-/**
- * An object for generated helper functions.
- */
-export const Common = {
-  /**
-  * A function which returns this type represented as an AlgebraicType.
-  * This function is derived from the AlgebraicType used to generate this type.
-  */
-  getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_Common_type_value) return _cached_Common_type_value;
-    _cached_Common_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_Common_type_value.value.elements.push(
-      { name: "chatTime", algebraicType: __AlgebraicTypeValue.U32 },
-      { name: "respawnBehaviour", algebraicType: RespawnBavaviour.getTypeScriptAlgebraicType() },
-      { name: "synchronizePlayersAtMapStart", algebraicType: __AlgebraicTypeValue.Bool },
-      { name: "synchronizePlayersAtRoundStart", algebraicType: __AlgebraicTypeValue.Bool },
-      { name: "trustClientSimulation", algebraicType: __AlgebraicTypeValue.Bool },
-      { name: "useCrudeExtrapolation", algebraicType: __AlgebraicTypeValue.Bool },
-      { name: "warmupDuration", algebraicType: WarmupDuration.getTypeScriptAlgebraicType() },
-      { name: "warmupNumber", algebraicType: __AlgebraicTypeValue.U32 },
-      { name: "decoImageUrlCheckpoint", algebraicType: __AlgebraicTypeValue.String },
-      { name: "decoImageUrlDecalSponsor4X1", algebraicType: __AlgebraicTypeValue.String },
-      { name: "decoImageUrlScreen16X1", algebraicType: __AlgebraicTypeValue.String },
-      { name: "decoImageUrlScreen19X9", algebraicType: __AlgebraicTypeValue.String },
-      { name: "decoImageUrlScreen8X1", algebraicType: __AlgebraicTypeValue.String },
-      { name: "decoImageUrlWhoAmI", algebraicType: __AlgebraicTypeValue.String },
-      { name: "forceLapsNumber", algebraicType: __AlgebraicTypeValue.I32 },
-    );
-    return _cached_Common_type_value;
+export default __t.object("Common", {
+  chatTime: __t.u32(),
+  get respawnBehaviour() {
+    return RespawnBavaviour;
   },
-
-  serialize(writer: __BinaryWriter, value: Common): void {
-    __AlgebraicTypeValue.serializeValue(writer, Common.getTypeScriptAlgebraicType(), value);
+  synchronizePlayersAtMapStart: __t.bool(),
+  synchronizePlayersAtRoundStart: __t.bool(),
+  trustClientSimulation: __t.bool(),
+  useCrudeExtrapolation: __t.bool(),
+  get warmupDuration() {
+    return WarmupDuration;
   },
-
-  deserialize(reader: __BinaryReader): Common {
-    return __AlgebraicTypeValue.deserializeValue(reader, Common.getTypeScriptAlgebraicType());
-  },
-
-}
-
-export default Common;
+  warmupNumber: __t.u32(),
+  decoImageUrlCheckpoint: __t.string(),
+  decoImageUrlDecalSponsor4X1: __t.string(),
+  decoImageUrlScreen16X1: __t.string(),
+  decoImageUrlScreen19X9: __t.string(),
+  decoImageUrlScreen8X1: __t.string(),
+  decoImageUrlWhoAmI: __t.string(),
+  forceLapsNumber: __t.i32(),
+});
 
 

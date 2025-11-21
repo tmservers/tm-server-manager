@@ -4,73 +4,18 @@
 /* eslint-disable */
 /* tslint:disable */
 import {
-  AlgebraicType as __AlgebraicTypeValue,
-  BinaryReader as __BinaryReader,
-  BinaryWriter as __BinaryWriter,
-  ClientCache as __ClientCache,
-  ConnectionId as __ConnectionId,
-  DbConnectionBuilder as __DbConnectionBuilder,
-  DbConnectionImpl as __DbConnectionImpl,
-  Identity as __Identity,
-  SubscriptionBuilderImpl as __SubscriptionBuilderImpl,
-  TableCache as __TableCache,
-  TimeDuration as __TimeDuration,
-  Timestamp as __Timestamp,
-  deepEqual as __deepEqual,
-  type AlgebraicType as __AlgebraicTypeType,
-  type AlgebraicTypeVariants as __AlgebraicTypeVariants,
-  type CallReducerFlags as __CallReducerFlags,
-  type ErrorContextInterface as __ErrorContextInterface,
-  type Event as __Event,
-  type EventContextInterface as __EventContextInterface,
-  type ReducerEventContextInterface as __ReducerEventContextInterface,
-  type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
+  TypeBuilder as __TypeBuilder,
+  t as __t,
+  type AlgebraicTypeType as __AlgebraicTypeType,
+  type Infer as __Infer,
 } from "spacetimedb";
-import * as CompetitionStatusVariants from './competition_status_variants'
 
 // The tagged union or sum type for the algebraic type `CompetitionStatus`.
-export type CompetitionStatus = CompetitionStatusVariants.Planning |
-  CompetitionStatusVariants.Preparation |
-  CompetitionStatusVariants.Ongoing |
-  CompetitionStatusVariants.Completed;
-
-let _cached_CompetitionStatus_type_value: __AlgebraicTypeType | null = null;
-
-// A value with helper functions to construct the type.
-export const CompetitionStatus = {
-  // Helper functions for constructing each variant of the tagged union.
-  // ```
-  // const foo = Foo.A(42);
-  // assert!(foo.tag === "A");
-  // assert!(foo.value === 42);
-  // ```
-  Planning: { tag: "Planning" } as const,
-  Preparation: { tag: "Preparation" } as const,
-  Ongoing: { tag: "Ongoing" } as const,
-  Completed: { tag: "Completed" } as const,
-
-  getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_CompetitionStatus_type_value) return _cached_CompetitionStatus_type_value;
-    _cached_CompetitionStatus_type_value = __AlgebraicTypeValue.Sum({ variants: [] });
-    _cached_CompetitionStatus_type_value.value.variants.push(
-      { name: "Planning", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-      { name: "Preparation", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-      { name: "Ongoing", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-      { name: "Completed", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-    );
-    return _cached_CompetitionStatus_type_value;
-  },
-
-  serialize(writer: __BinaryWriter, value: CompetitionStatus): void {
-      __AlgebraicTypeValue.serializeValue(writer, CompetitionStatus.getTypeScriptAlgebraicType(), value);
-  },
-
-  deserialize(reader: __BinaryReader): CompetitionStatus {
-      return __AlgebraicTypeValue.deserializeValue(reader, CompetitionStatus.getTypeScriptAlgebraicType());
-  },
-
-}
+const CompetitionStatus = __t.enum("CompetitionStatus", {Planning: __t.unit(),
+  Preparation: __t.unit(),
+  Ongoing: __t.unit(),
+  Completed: __t.unit(),
+});
 
 export default CompetitionStatus;
 

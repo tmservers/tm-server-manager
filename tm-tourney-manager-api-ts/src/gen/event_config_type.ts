@@ -4,70 +4,18 @@
 /* eslint-disable */
 /* tslint:disable */
 import {
-  AlgebraicType as __AlgebraicTypeValue,
-  BinaryReader as __BinaryReader,
-  BinaryWriter as __BinaryWriter,
-  ClientCache as __ClientCache,
-  ConnectionId as __ConnectionId,
-  DbConnectionBuilder as __DbConnectionBuilder,
-  DbConnectionImpl as __DbConnectionImpl,
-  Identity as __Identity,
-  SubscriptionBuilderImpl as __SubscriptionBuilderImpl,
-  TableCache as __TableCache,
-  TimeDuration as __TimeDuration,
-  Timestamp as __Timestamp,
-  deepEqual as __deepEqual,
-  type AlgebraicType as __AlgebraicTypeType,
-  type AlgebraicTypeVariants as __AlgebraicTypeVariants,
-  type CallReducerFlags as __CallReducerFlags,
-  type ErrorContextInterface as __ErrorContextInterface,
-  type Event as __Event,
-  type EventContextInterface as __EventContextInterface,
-  type ReducerEventContextInterface as __ReducerEventContextInterface,
-  type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
+  TypeBuilder as __TypeBuilder,
+  t as __t,
+  type AlgebraicTypeType as __AlgebraicTypeType,
+  type Infer as __Infer,
 } from "spacetimedb";
 
-export type EventConfig = {
-  id: number,
-  owner: string,
-  public: boolean,
-  name: string,
-  registration: __TimeDuration | undefined,
-};
-let _cached_EventConfig_type_value: __AlgebraicTypeType | null = null;
-
-/**
- * An object for generated helper functions.
- */
-export const EventConfig = {
-  /**
-  * A function which returns this type represented as an AlgebraicType.
-  * This function is derived from the AlgebraicType used to generate this type.
-  */
-  getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_EventConfig_type_value) return _cached_EventConfig_type_value;
-    _cached_EventConfig_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_EventConfig_type_value.value.elements.push(
-      { name: "id", algebraicType: __AlgebraicTypeValue.U32 },
-      { name: "owner", algebraicType: __AlgebraicTypeValue.String },
-      { name: "public", algebraicType: __AlgebraicTypeValue.Bool },
-      { name: "name", algebraicType: __AlgebraicTypeValue.String },
-      { name: "registration", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.createTimeDurationType()) },
-    );
-    return _cached_EventConfig_type_value;
-  },
-
-  serialize(writer: __BinaryWriter, value: EventConfig): void {
-    __AlgebraicTypeValue.serializeValue(writer, EventConfig.getTypeScriptAlgebraicType(), value);
-  },
-
-  deserialize(reader: __BinaryReader): EventConfig {
-    return __AlgebraicTypeValue.deserializeValue(reader, EventConfig.getTypeScriptAlgebraicType());
-  },
-
-}
-
-export default EventConfig;
+export default __t.object("EventConfig", {
+  id: __t.u32(),
+  owner: __t.string(),
+  public: __t.bool(),
+  name: __t.string(),
+  registration: __t.option(__t.timeDuration()),
+});
 
 

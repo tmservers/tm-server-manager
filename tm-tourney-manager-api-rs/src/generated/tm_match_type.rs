@@ -16,7 +16,7 @@ use super::server_config_type::ServerConfig;
 pub struct TmMatch {
     pub id: u32,
     pub tournament_id: u32,
-    pub parent_id: u32,
+    pub competition_id: u32,
     pub scheduling: Scheduling,
     pub registration: Registration,
     pub server_id: Option<String>,

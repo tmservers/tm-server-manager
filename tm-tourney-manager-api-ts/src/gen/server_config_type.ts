@@ -4,81 +4,30 @@
 /* eslint-disable */
 /* tslint:disable */
 import {
-  AlgebraicType as __AlgebraicTypeValue,
-  BinaryReader as __BinaryReader,
-  BinaryWriter as __BinaryWriter,
-  ClientCache as __ClientCache,
-  ConnectionId as __ConnectionId,
-  DbConnectionBuilder as __DbConnectionBuilder,
-  DbConnectionImpl as __DbConnectionImpl,
-  Identity as __Identity,
-  SubscriptionBuilderImpl as __SubscriptionBuilderImpl,
-  TableCache as __TableCache,
-  TimeDuration as __TimeDuration,
-  Timestamp as __Timestamp,
-  deepEqual as __deepEqual,
-  type AlgebraicType as __AlgebraicTypeType,
-  type AlgebraicTypeVariants as __AlgebraicTypeVariants,
-  type CallReducerFlags as __CallReducerFlags,
-  type ErrorContextInterface as __ErrorContextInterface,
-  type Event as __Event,
-  type EventContextInterface as __EventContextInterface,
-  type ReducerEventContextInterface as __ReducerEventContextInterface,
-  type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
+  TypeBuilder as __TypeBuilder,
+  t as __t,
+  type AlgebraicTypeType as __AlgebraicTypeType,
+  type Infer as __Infer,
 } from "spacetimedb";
-import { ServerOptions } from "./server_options_type";
-// Mark import as potentially unused
-declare type __keep_ServerOptions = ServerOptions;
-import { Common } from "./common_type";
-// Mark import as potentially unused
-declare type __keep_Common = Common;
-import { ModeConfig } from "./mode_config_type";
-// Mark import as potentially unused
-declare type __keep_ModeConfig = ModeConfig;
-import { MapPoolConfig } from "./map_pool_config_type";
-// Mark import as potentially unused
-declare type __keep_MapPoolConfig = MapPoolConfig;
+import ServerOptions from "./server_options_type";
+import Common from "./common_type";
+import ModeConfig from "./mode_config_type";
+import MapPoolConfig from "./map_pool_config_type";
 
 
-export type ServerConfig = {
-  options: ServerOptions,
-  common: Common,
-  mode: ModeConfig,
-  maps: MapPoolConfig,
-};
-let _cached_ServerConfig_type_value: __AlgebraicTypeType | null = null;
-
-/**
- * An object for generated helper functions.
- */
-export const ServerConfig = {
-  /**
-  * A function which returns this type represented as an AlgebraicType.
-  * This function is derived from the AlgebraicType used to generate this type.
-  */
-  getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_ServerConfig_type_value) return _cached_ServerConfig_type_value;
-    _cached_ServerConfig_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_ServerConfig_type_value.value.elements.push(
-      { name: "options", algebraicType: ServerOptions.getTypeScriptAlgebraicType() },
-      { name: "common", algebraicType: Common.getTypeScriptAlgebraicType() },
-      { name: "mode", algebraicType: ModeConfig.getTypeScriptAlgebraicType() },
-      { name: "maps", algebraicType: MapPoolConfig.getTypeScriptAlgebraicType() },
-    );
-    return _cached_ServerConfig_type_value;
+export default __t.object("ServerConfig", {
+  get options() {
+    return ServerOptions;
   },
-
-  serialize(writer: __BinaryWriter, value: ServerConfig): void {
-    __AlgebraicTypeValue.serializeValue(writer, ServerConfig.getTypeScriptAlgebraicType(), value);
+  get common() {
+    return Common;
   },
-
-  deserialize(reader: __BinaryReader): ServerConfig {
-    return __AlgebraicTypeValue.deserializeValue(reader, ServerConfig.getTypeScriptAlgebraicType());
+  get mode() {
+    return ModeConfig;
   },
-
-}
-
-export default ServerConfig;
+  get maps() {
+    return MapPoolConfig;
+  },
+});
 
 

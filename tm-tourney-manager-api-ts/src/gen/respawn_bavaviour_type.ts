@@ -4,79 +4,20 @@
 /* eslint-disable */
 /* tslint:disable */
 import {
-  AlgebraicType as __AlgebraicTypeValue,
-  BinaryReader as __BinaryReader,
-  BinaryWriter as __BinaryWriter,
-  ClientCache as __ClientCache,
-  ConnectionId as __ConnectionId,
-  DbConnectionBuilder as __DbConnectionBuilder,
-  DbConnectionImpl as __DbConnectionImpl,
-  Identity as __Identity,
-  SubscriptionBuilderImpl as __SubscriptionBuilderImpl,
-  TableCache as __TableCache,
-  TimeDuration as __TimeDuration,
-  Timestamp as __Timestamp,
-  deepEqual as __deepEqual,
-  type AlgebraicType as __AlgebraicTypeType,
-  type AlgebraicTypeVariants as __AlgebraicTypeVariants,
-  type CallReducerFlags as __CallReducerFlags,
-  type ErrorContextInterface as __ErrorContextInterface,
-  type Event as __Event,
-  type EventContextInterface as __EventContextInterface,
-  type ReducerEventContextInterface as __ReducerEventContextInterface,
-  type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
+  TypeBuilder as __TypeBuilder,
+  t as __t,
+  type AlgebraicTypeType as __AlgebraicTypeType,
+  type Infer as __Infer,
 } from "spacetimedb";
-import * as RespawnBavaviourVariants from './respawn_bavaviour_variants'
 
 // The tagged union or sum type for the algebraic type `RespawnBavaviour`.
-export type RespawnBavaviour = RespawnBavaviourVariants.Default |
-  RespawnBavaviourVariants.TimeAttack |
-  RespawnBavaviourVariants.Ignore |
-  RespawnBavaviourVariants.GiveUpAtStart |
-  RespawnBavaviourVariants.GiveUpAlways |
-  RespawnBavaviourVariants.GiveUpNever;
-
-let _cached_RespawnBavaviour_type_value: __AlgebraicTypeType | null = null;
-
-// A value with helper functions to construct the type.
-export const RespawnBavaviour = {
-  // Helper functions for constructing each variant of the tagged union.
-  // ```
-  // const foo = Foo.A(42);
-  // assert!(foo.tag === "A");
-  // assert!(foo.value === 42);
-  // ```
-  Default: { tag: "Default" } as const,
-  TimeAttack: { tag: "TimeAttack" } as const,
-  Ignore: { tag: "Ignore" } as const,
-  GiveUpAtStart: { tag: "GiveUpAtStart" } as const,
-  GiveUpAlways: { tag: "GiveUpAlways" } as const,
-  GiveUpNever: { tag: "GiveUpNever" } as const,
-
-  getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_RespawnBavaviour_type_value) return _cached_RespawnBavaviour_type_value;
-    _cached_RespawnBavaviour_type_value = __AlgebraicTypeValue.Sum({ variants: [] });
-    _cached_RespawnBavaviour_type_value.value.variants.push(
-      { name: "Default", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-      { name: "TimeAttack", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-      { name: "Ignore", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-      { name: "GiveUpAtStart", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-      { name: "GiveUpAlways", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-      { name: "GiveUpNever", algebraicType: __AlgebraicTypeValue.Product({ elements: [] }) },
-    );
-    return _cached_RespawnBavaviour_type_value;
-  },
-
-  serialize(writer: __BinaryWriter, value: RespawnBavaviour): void {
-      __AlgebraicTypeValue.serializeValue(writer, RespawnBavaviour.getTypeScriptAlgebraicType(), value);
-  },
-
-  deserialize(reader: __BinaryReader): RespawnBavaviour {
-      return __AlgebraicTypeValue.deserializeValue(reader, RespawnBavaviour.getTypeScriptAlgebraicType());
-  },
-
-}
+const RespawnBavaviour = __t.enum("RespawnBavaviour", {Default: __t.unit(),
+  TimeAttack: __t.unit(),
+  Ignore: __t.unit(),
+  GiveUpAtStart: __t.unit(),
+  GiveUpAlways: __t.unit(),
+  GiveUpNever: __t.unit(),
+});
 
 export default RespawnBavaviour;
 
