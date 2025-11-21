@@ -1,0 +1,11 @@
+[package]
+name = "tm-tourney-manager-test"
+version.workspace = true
+authors.workspace = true
+keywords.workspace = true
+categories.workspace = true
+license.workspace = true
+repository.workspace = true
+edition.workspace = true
+
+[dependencies]

@@ -5404,6 +5404,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "tm-tourney-manager-test"
+version = "0.0.4-dev"
+
+[[package]]
 name = "tokio"
 version = "1.48.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

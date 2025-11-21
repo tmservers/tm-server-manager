@@ -1,4 +1,6 @@
-use spacetimedb::Timestamp;
+use spacetimedb::{ReducerContext, Timestamp, reducer};
+
+use crate::competition::competition;
 
 #[derive(Debug)]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
@@ -31,4 +33,26 @@ pub struct TeamInfo {
     registered_at: Timestamp,
     name: String,
     members: Vec<String>,
+}
+
+#[reducer]
+pub fn competition_register(ctx: &ReducerContext, compeition_id: u32) -> Result<(), String> {
+    let Some(comp) = ctx.db.competition().id().find(compeition_id) else {
+        return Err(format!(
+            "Competition with id {compeition_id} was not found."
+        ));
+    };
+
+    Ok(())
+}
+
+#[reducer]
+pub fn competition_unregister(ctx: &ReducerContext, compeition_id: u32) -> Result<(), String> {
+    let Some(comp) = ctx.db.competition().id().find(compeition_id) else {
+        return Err(format!(
+            "Competition with id {compeition_id} was not found."
+        ));
+    };
+
+    Ok(())
 }

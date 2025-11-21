@@ -7,7 +7,7 @@ members = [
     "tm-server-types",
     "tm-tourney-manager",
     "tm-tourney-manager-admin",
-    "tm-tourney-manager-api-rs",
+    "tm-tourney-manager-api-rs", "tm-tourney-manager-test",
 ]
 resolver = "3"
 
