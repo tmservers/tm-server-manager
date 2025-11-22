@@ -1,6 +1,6 @@
 use tm_tourney_manager_api_rs::DbConnection;
 
-pub(crate) fn test() -> DatabaseInterface {
+pub(crate) fn test() -> DatabaseRunner {
     use testcontainers::{
         GenericImage, ImageExt,
         core::{IntoContainerPort, WaitFor},
@@ -63,22 +63,21 @@ pub(crate) fn test() -> DatabaseInterface {
         .build()
         .expect("Failed to connect to SpacetimeDB. Aborting.");
 
-    DatabaseInterface {
+    DatabaseRunner {
         _spacetime_container,
         spacetime,
         messages: std::cell::RefCell::new(0),
     }
 }
 
-pub(crate) struct DatabaseInterface {
+pub(crate) struct DatabaseRunner {
     _spacetime_container: testcontainers::Container<testcontainers::GenericImage>,
     spacetime: DbConnection,
     messages: std::cell::RefCell<u32>,
 }
 
-impl DatabaseInterface {
-    pub(crate) fn run(&self) {
-        println!("{}", *self.messages.borrow());
+impl DatabaseRunner {
+    pub(crate) fn exec(&self) {
         let mut msg = 0;
         while msg < *self.messages.borrow() {
             self.spacetime.advance_one_message_blocking().unwrap();
@@ -87,7 +86,7 @@ impl DatabaseInterface {
     }
 }
 
-impl std::ops::Deref for DatabaseInterface {
+impl std::ops::Deref for DatabaseRunner {
     type Target = DbConnection;
 
     fn deref(&self) -> &Self::Target {

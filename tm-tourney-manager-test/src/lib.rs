@@ -26,5 +26,5 @@ fn enforce_unique_tournament_name() {
         .reducers
         .create_tournament("there shouldn't be duplicate names".into());
 
-    db.run();
+    db.exec();
 }
