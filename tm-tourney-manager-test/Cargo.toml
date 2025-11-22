@@ -12,6 +12,5 @@ edition.workspace = true
 
 [dependencies]
 testcontainers.workspace = true
-tokio = { version = "1", features = ["full", "rt"] }
 spacetimedb-sdk.workspace = true
 tm-tourney-manager-api-rs.workspace = true

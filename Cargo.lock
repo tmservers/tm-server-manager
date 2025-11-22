@@ -5409,7 +5409,6 @@ dependencies = [
  "spacetimedb-sdk",
  "testcontainers",
  "tm-tourney-manager-api-rs",
- "tokio",
 ]
 
 [[package]]
