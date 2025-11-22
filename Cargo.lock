@@ -5375,7 +5375,6 @@ dependencies = [
  "gbx-header",
  "log",
  "spacetimedb",
- "testcontainers",
  "tm-server-types",
 ]
 
@@ -5406,6 +5405,12 @@ dependencies = [
 [[package]]
 name = "tm-tourney-manager-test"
 version = "0.0.4-dev"
+dependencies = [
+ "spacetimedb-sdk",
+ "testcontainers",
+ "tm-tourney-manager-api-rs",
+ "tokio",
+]
 
 [[package]]
 name = "tokio"

@@ -22,8 +22,6 @@ gbx-header = "0"
 
 #petgraph = { version = "*" }
 
-[dev-dependencies]
-testcontainers = { version = "0", features = ["blocking"] }
 
 [features]
 default = ["spacetime"]

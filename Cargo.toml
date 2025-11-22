@@ -40,3 +40,7 @@ dotenvy = "0.15"
 spacetimedb = "1.9"
 spacetimedb-lib = "1.9"
 spacetimedb-sdk = "1.9"
+
+testcontainers = { version = "0", default-features = false, features = [
+    "blocking",
+] }
