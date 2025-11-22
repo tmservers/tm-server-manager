@@ -14,3 +14,4 @@ edition.workspace = true
 testcontainers.workspace = true
 spacetimedb-sdk.workspace = true
 tm-tourney-manager-api-rs.workspace = true
+insta.workspace = true

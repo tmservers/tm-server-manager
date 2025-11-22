@@ -53,7 +53,7 @@ opentelemetry-jaeger-propagator = "0.31"
 
 [dev-dependencies]
 testcontainers = { version = "*", features = ["blocking"] }
-insta = { version = "*" }
+#insta = { version = "*" }
 
 [features]
 tracing = []

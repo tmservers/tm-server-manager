@@ -5317,7 +5317,6 @@ version = "0.0.4-dev"
 dependencies = [
  "dotenvy",
  "gamebox-files",
- "insta",
  "nadeo-api",
  "opentelemetry",
  "opentelemetry-jaeger-propagator",
@@ -5406,6 +5405,7 @@ dependencies = [
 name = "tm-tourney-manager-test"
 version = "0.0.4-dev"
 dependencies = [
+ "insta",
  "spacetimedb-sdk",
  "testcontainers",
  "tm-tourney-manager-api-rs",

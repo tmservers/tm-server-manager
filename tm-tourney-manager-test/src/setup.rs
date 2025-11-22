@@ -38,7 +38,7 @@ pub(crate) fn test() -> DatabaseRunner {
         _spacetime_container.get_host_port_ipv4(3000).unwrap()
     );
 
-    let published_module_name: String = "howdoideterminethisname".into();
+    let published_module_name: String = "testingthething".into();
 
     let published_dir = dir.to_string()
         + "/target/wasm32-unknown-unknown/debug/"
@@ -77,7 +77,7 @@ pub(crate) struct DatabaseRunner {
 }
 
 impl DatabaseRunner {
-    pub(crate) fn exec(&self) {
+    pub(crate) fn wait_for_msgs(&self) {
         let mut msg = 0;
         while msg < *self.messages.borrow() {
             self.spacetime.advance_one_message_blocking().unwrap();
@@ -85,6 +85,16 @@ impl DatabaseRunner {
         }
     }
 }
+
+/* impl Drop for DatabaseRunner {
+    fn drop(&mut self) {
+        let mut msg = 0;
+        while msg < *self.messages.borrow() {
+            self.spacetime.advance_one_message().unwrap();
+            msg += 1;
+        }
+    }
+} */
 
 impl std::ops::Deref for DatabaseRunner {
     type Target = DbConnection;
