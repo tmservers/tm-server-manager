@@ -3,7 +3,7 @@ use spacetimedb::{ReducerContext, Table, TimeDuration};
 use crate::{
     auth::Authorization,
     graph::{CompetitionKind, Competitions, NodeIndex},
-    registration::Registration,
+    registration::RegistrationRules,
     scheduling::Scheduling,
     tournament::tournament,
 };
@@ -31,7 +31,7 @@ pub struct Competition {
 
     scheduling: Scheduling,
 
-    registration: Registration,
+    registration_rules: RegistrationRules,
 
     // TODO Can capture a server at the end of the registration to serve
     // as a lobby server which automatically delegates players to their
@@ -80,8 +80,12 @@ impl Competition {
             competitions: Competitions::new(),
             entry_points: None,
             scheduling: Scheduling::Manual,
-            registration: Registration::Open,
+            registration_rules: RegistrationRules::Open,
         }
+    }
+
+    pub(crate) fn registration_rules(&self) -> &RegistrationRules {
+        &self.registration_rules
     }
 }
 

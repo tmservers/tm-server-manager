@@ -5,7 +5,7 @@ use crate::{
     auth::Authorization,
     competition::competition,
     r#match::{leaderboard::MatchLeaderboardRules, match_state::MatchState},
-    registration::Registration,
+    registration::RegistrationRules,
     scheduling::Scheduling,
     server::tm_server,
     tournament::tournament,
@@ -46,7 +46,8 @@ pub struct TmMatch {
 
     scheduling: Scheduling,
 
-    registration: Registration,
+    // Should i permit registration in a lead node scenario like the match?
+    registration_rules: RegistrationRules,
 
     /// The assigned server that will be used by this match.
     server_id: Option<String>,
@@ -137,7 +138,7 @@ pub fn create_match(
         leaderboard: MatchLeaderboardRules::new(),
         state: MatchState::new(),
         scheduling: Scheduling::Manual,
-        registration: Registration::Open,
+        registration_rules: RegistrationRules::Open,
     };
 
     if ctx.db.tournament().id().find(competition_id).is_none() {

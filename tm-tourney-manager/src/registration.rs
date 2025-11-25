@@ -1,6 +1,6 @@
 use spacetimedb::{ReducerContext, Table, Timestamp, reducer, table};
 
-use crate::competition::competition;
+use crate::{auth::Authorization, competition::competition};
 
 #[table(name= registration_player)]
 pub struct RegistrationPlayer {
@@ -11,27 +11,25 @@ pub struct RegistrationPlayer {
 
 #[derive(Debug)]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
-pub enum Registration {
-    Players(PlayerRegistration),
-    Team(TeamRegistration),
+pub enum RegistrationRules {
+    Players(RegistrationPlayerRules),
+    Team(RegistrationTeamRules),
     Inherit,
     Open,
 }
 
 #[derive(Debug)]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
-pub struct PlayerRegistration {
+pub struct RegistrationPlayerRules {
     player_limit: Option<u32>,
-    players: Vec<String>,
 }
 
 #[derive(Debug)]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
-pub struct TeamRegistration {
+pub struct RegistrationTeamRules {
     team_limit: Option<u32>,
     team_size_min: u8,
     team_size_max: u8,
-    teams: Vec<TeamInfo>,
 }
 
 #[derive(Debug)]
@@ -39,15 +37,20 @@ pub struct TeamRegistration {
 pub struct TeamInfo {
     registered_at: Timestamp,
     name: String,
+    creator: String,
     members: Vec<String>,
 }
 
 #[reducer]
-pub fn competition_register(ctx: &ReducerContext, compeition_id: u32) -> Result<(), String> {
+pub fn competition_register_player(ctx: &ReducerContext, compeition_id: u32) -> Result<(), String> {
+    let player_id = ctx.auth_user()?;
+
     let Some(comp) = ctx.db.competition().id().find(compeition_id) else {
         return Err("Competition not found".into());
     };
     let rules = comp.registration_rules();
+
+    //rules.
 
     let player_count = ctx
         .db
@@ -65,7 +68,12 @@ pub fn competition_register(ctx: &ReducerContext, compeition_id: u32) -> Result<
 }
 
 #[reducer]
-pub fn competition_unregister(ctx: &ReducerContext, compeition_id: u32) -> Result<(), String> {
+pub fn competition_unregister_player(
+    ctx: &ReducerContext,
+    compeition_id: u32,
+) -> Result<(), String> {
+    ctx.auth_user()?;
+
     let Some(comp) = ctx.db.competition().id().find(compeition_id) else {
         return Err(format!(
             "Competition with id {compeition_id} was not found."

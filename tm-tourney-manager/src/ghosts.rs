@@ -2,14 +2,15 @@ use spacetimedb::ReducerContext;
 
 #[cfg_attr(feature="spacetime",spacetimedb::table(name = match_ghost,public))]
 pub struct MatchGhost {
-    #[cfg_attr(feature = "spacetime", auto_inc)]
-    id: u32,
+    //id doesnt tell me anything
+    //#[cfg_attr(feature = "spacetime", auto_inc)]
+    //id: u32,
 
     //TODO
-    //tournament
-    //match
+    tournament_id: u32,
+    match_id: u32,
     //map_uid
-    //player_uid
+    player_id: String,
     uid: String,
 }
 
@@ -29,8 +30,10 @@ pub fn post_ghost(ctx: &ReducerContext, ghost: Vec<u8>) -> Result<(), String> {
     // or a second arg with the round must be provided to the reducer.
 
     ctx.db.match_ghost().insert(MatchGhost {
-        id: 0,
         uid: "TODO".into(),
+        tournament_id: 0,
+        match_id: 0,
+        player_id: "TODO".into(),
     });
 
     Ok(())
