@@ -15,12 +15,12 @@ tokio.workspace = true
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
-tm-server-client = { path = "../tm-server-client" }
+tm-server-client.workspace = true
 
 spacetimedb-sdk.workspace = true
 tm-tourney-manager-api-rs.workspace = true
 
-gamebox-files = { path = "../gamebox-files" }
+gamebox-files.workspace = true
 
 takumi.workspace = true
 

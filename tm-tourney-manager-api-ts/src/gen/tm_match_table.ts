@@ -10,7 +10,6 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 import Scheduling from "./scheduling_type";
-import RegistrationRules from "./registration_rules_type";
 import ServerConfig from "./server_config_type";
 import MatchStatus from "./match_status_type";
 import MatchLeaderboardRules from "./match_leaderboard_rules_type";
@@ -23,9 +22,6 @@ export default __t.row({
   competitionId: __t.u32(),
   get scheduling() {
     return Scheduling;
-  },
-  get registrationRules() {
-    return RegistrationRules;
   },
   serverId: __t.option(__t.string()),
   get preMatchConfig() {

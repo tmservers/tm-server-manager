@@ -77,7 +77,8 @@ pub mod podium_type;
 pub mod post_event_reducer;
 pub mod post_ghost_reducer;
 pub mod post_record_reducer;
-pub mod register_server_reducer;
+pub mod post_replay_procedure;
+pub mod register_server_procedure;
 pub mod registration_player_rules_type;
 pub mod registration_player_table;
 pub mod registration_player_type;
@@ -232,9 +233,8 @@ pub use podium_type::Podium;
 pub use post_event_reducer::{post_event, set_flags_for_post_event, PostEventCallbackId};
 pub use post_ghost_reducer::{post_ghost, set_flags_for_post_ghost, PostGhostCallbackId};
 pub use post_record_reducer::{post_record, set_flags_for_post_record, PostRecordCallbackId};
-pub use register_server_reducer::{
-    register_server, set_flags_for_register_server, RegisterServerCallbackId,
-};
+pub use post_replay_procedure::post_replay;
+pub use register_server_procedure::register_server;
 pub use registration_player_rules_type::RegistrationPlayerRules;
 pub use registration_player_table::*;
 pub use registration_player_type::RegistrationPlayer;
@@ -361,10 +361,6 @@ pub enum Reducer {
         player_uid: String,
         time: u32,
     },
-    RegisterServer {
-        login: String,
-        password: String,
-    },
     ServerMethodCall {
         server_id: String,
         method: MethodCall,
@@ -405,7 +401,6 @@ impl __sdk::Reducer for Reducer {
             Reducer::PostEvent { .. } => "post_event",
             Reducer::PostGhost { .. } => "post_ghost",
             Reducer::PostRecord { .. } => "post_record",
-            Reducer::RegisterServer { .. } => "register_server",
             Reducer::ServerMethodCall { .. } => "server_method_call",
             Reducer::ServerMethodResponse { .. } => "server_method_response",
             Reducer::TryStart { .. } => "try_start",
@@ -500,10 +495,6 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 )?
                 .into(),
             ),
-            "register_server" => Ok(__sdk::parse_reducer_args::<
-                register_server_reducer::RegisterServerArgs,
-            >("register_server", &value.args)?
-            .into()),
             "server_method_call" => Ok(__sdk::parse_reducer_args::<
                 server_method_call_reducer::ServerMethodCallArgs,
             >("server_method_call", &value.args)?

@@ -8,9 +8,9 @@ use crate::{ClientError, TrackmaniaServer};
 #[allow(async_fn_in_trait)]
 pub trait ModeScriptMethodsXmlRpc {
     async fn enable_callbacks(&self, enable: bool) -> Result<bool, ClientError>;
-    async fn get_callbacks_list(&self, enable: bool) -> Result<bool, ClientError>;
-    async fn get_callbacks_list_enabled(&self, enable: bool) -> Result<bool, ClientError>;
-    async fn get_callbacks_list_disabled(&self, enable: bool) -> Result<bool, ClientError>;
+    async fn get_callbacks_list(&self) -> Result<bool, ClientError>;
+    async fn get_callbacks_list_enabled(&self) -> Result<bool, ClientError>;
+    async fn get_callbacks_list_disabled(&self) -> Result<bool, ClientError>;
     async fn block_callbacks(&self, enable: bool) -> Result<bool, ClientError>;
     async fn unblock_callbacks(&self, enable: bool) -> Result<bool, ClientError>;
     async fn get_callback_help(&self, enable: bool) -> Result<bool, ClientError>;
@@ -44,16 +44,24 @@ impl ModeScriptMethodsXmlRpc for TrackmaniaServer {
         .await
     }
 
-    async fn get_callbacks_list(&self, enable: bool) -> Result<bool, ClientError> {
+    async fn get_callbacks_list(&self) -> Result<bool, ClientError> {
+        self.call(
+            "TriggerModeScriptEventArray",
+            ("XmlRpc.GetCallbacksList", ["hmmge"]),
+        )
+        .await
+    }
+
+    async fn get_callbacks_list_enabled(&self) -> Result<bool, ClientError> {
         todo!()
     }
 
-    async fn get_callbacks_list_enabled(&self, enable: bool) -> Result<bool, ClientError> {
-        todo!()
-    }
-
-    async fn get_callbacks_list_disabled(&self, enable: bool) -> Result<bool, ClientError> {
-        todo!()
+    async fn get_callbacks_list_disabled(&self) -> Result<bool, ClientError> {
+        self.call(
+            "TriggerModeScriptEventArray",
+            ("XmlRpc.GetCallbacksList_Disabled", ["jaaaa"]),
+        )
+        .await
     }
 
     async fn block_callbacks(&self, enable: bool) -> Result<bool, ClientError> {
@@ -138,7 +146,11 @@ impl ModeScriptMethodsXmlRpc for TrackmaniaServer {
 
 #[allow(async_fn_in_trait)]
 pub trait XmlRpcMethods {
-    async fn kick(&self, player: String, message: Option<String>) -> Result<bool, ClientError>;
+    async fn kick(
+        &self,
+        player: impl Into<String>,
+        message: Option<impl Into<String>>,
+    ) -> Result<bool, ClientError>;
 
     async fn add_guest(&self, player: &str) -> Result<bool, ClientError>;
 
@@ -169,8 +181,23 @@ pub trait XmlRpcMethods {
 }
 
 impl XmlRpcMethods for TrackmaniaServer {
-    async fn kick(&self, player: String, message: Option<String>) -> Result<bool, ClientError> {
-        todo!()
+    async fn kick(
+        &self,
+        player: impl Into<String>,
+        message: Option<impl Into<String>>,
+    ) -> Result<bool, ClientError> {
+        self.call(
+            "Kick",
+            (
+                player.into(),
+                if let Some(msg) = message {
+                    msg.into()
+                } else {
+                    "".to_string()
+                },
+            ),
+        )
+        .await
     }
 
     async fn add_guest(&self, login: &str) -> Result<bool, ClientError> {

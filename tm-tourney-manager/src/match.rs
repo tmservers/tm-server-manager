@@ -46,10 +46,8 @@ pub struct TmMatch {
 
     scheduling: Scheduling,
 
-    // Should i permit registration in a lead node scenario like the match?
-    registration_rules: RegistrationRules,
-
-    /// The assigned server that will be used by this match.
+    // qualified_entities: RegistrationRules,
+    /// The assigned server that is currently used by this match.
     server_id: Option<String>,
 
     /// The moment the server is captured by the match the pre_match_config gets loaded in.
@@ -138,7 +136,7 @@ pub fn create_match(
         leaderboard: MatchLeaderboardRules::new(),
         state: MatchState::new(),
         scheduling: Scheduling::Manual,
-        registration_rules: RegistrationRules::Open,
+        //registration_rules: RegistrationRules::Open,
     };
 
     if ctx.db.tournament().id().find(competition_id).is_none() {

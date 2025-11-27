@@ -63,8 +63,6 @@ import PostGhost from "./post_ghost_reducer";
 export { PostGhost };
 import PostRecord from "./post_record_reducer";
 export { PostRecord };
-import RegisterServer from "./register_server_reducer";
-export { RegisterServer };
 import ServerMethodCall from "./server_method_call_reducer";
 export { ServerMethodCall };
 import ServerMethodResponse from "./server_method_response_reducer";
@@ -75,6 +73,10 @@ import UpdateMatchConfig from "./update_match_config_reducer";
 export { UpdateMatchConfig };
 
 // Import and reexport all procedure arg types
+import * as PostReplayProcedure from "./post_replay_procedure";
+export { PostReplayProcedure };
+import * as RegisterServerProcedure from "./register_server_procedure";
+export { RegisterServerProcedure };
 
 // Import and reexport all table handle types
 import CompetitionRow from "./competition_table";
@@ -527,7 +529,6 @@ const reducersSchema = __reducers(
   __reducerSchema("post_event", PostEvent),
   __reducerSchema("post_ghost", PostGhost),
   __reducerSchema("post_record", PostRecord),
-  __reducerSchema("register_server", RegisterServer),
   __reducerSchema("server_method_call", ServerMethodCall),
   __reducerSchema("server_method_response", ServerMethodResponse),
   __reducerSchema("try_start", TryStart),
@@ -536,6 +537,8 @@ const reducersSchema = __reducers(
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */
 const proceduresSchema = __procedures(
+  __procedureSchema("post_replay", PostReplayProcedure.params, PostReplayProcedure.returnType),
+  __procedureSchema("register_server", RegisterServerProcedure.params, RegisterServerProcedure.returnType),
 );
 
 /** The remote SpacetimeDB module schema, both runtime and type information. */

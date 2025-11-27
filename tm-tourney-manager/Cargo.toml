@@ -20,7 +20,8 @@ spacetimedb = { workspace = true, optional = true }
 tm-server-types = { path = "../tm-server-types" }
 gbx-header = "0"
 
-#petgraph = { version = "*" }
+#gamebox-files.workspace = true
+base64.workspace = true
 
 
 [features]

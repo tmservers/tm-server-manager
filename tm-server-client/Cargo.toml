@@ -13,7 +13,7 @@ edition.workspace = true
 repository.workspace = true
 
 [dependencies]
-tm-server-types = { path = "../tm-server-types", features = ["serde"] }
+tm-server-types = { workspace = true, features = ["serde"] }
 
 tokio = { version = "*", features = ["full"] }
 tachyonix = "*"

@@ -5377,6 +5377,7 @@ dependencies = [
 name = "tm-tourney-manager"
 version = "0.0.4-dev"
 dependencies = [
+ "base64 0.21.7",
  "gbx-header",
  "log",
  "spacetimedb",

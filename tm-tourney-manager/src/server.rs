@@ -1,5 +1,8 @@
-use spacetimedb::view;
+use base64::Engine;
+use base64::prelude::BASE64_STANDARD;
+use spacetimedb::http::Request;
 use spacetimedb::{Identity, ReducerContext, Table, ViewContext};
+use spacetimedb::{ProcedureContext, view};
 use tm_server_types::{config::ServerConfig, event::Event};
 
 use crate::server::{config::tm_server_config, state::ServerState};
@@ -89,48 +92,77 @@ impl TmServer {
 
 /// Elevates an annonymous user to a trackmania server.
 /// password of the server doesn't get saved but rather verified for validity.
-#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn register_server(
-    ctx: &ReducerContext,
-    login: String,
-    password: String,
-) -> Result<(), String> {
-    if ctx.db.tm_server().identity().find(ctx.sender).is_some() {
-        // Server identity is already verified.
-        return Ok(());
-    }
-    if let Some(mut server) = ctx.db.tm_server().id().find(&login) {
-        // The new identity is assigned to the server.
-        server.set_identity(ctx.identity());
-        ctx.db.tm_server().id().update(server);
-        Ok(())
-    } else {
-        //TODO make HTTP call when its available and verify that credentials are correct.
+#[cfg_attr(feature = "spacetime", spacetimedb::procedure)]
+pub fn register_server(ctx: &mut ProcedureContext, login: String, password: String)
+/* -> Result<(), String> */
+{
+    let request = Request::builder()
+        .method("POST")
+        .uri("https://prod.trackmania.core.nadeo.online/v2/authentication/token/basic")
+        .header(
+            "Authorization",
+            format!(
+                "Basic {}",
+                BASE64_STANDARD.encode(login.clone() + ":" + &password)
+            ),
+        )
+        .header("Content-Type", "application/json")
+        .header("User-Agent", "tm-tourney-manager | central")
+        .body(r#"{ "audience": "NadeoServices" }"#)
+        .unwrap();
+    let result = ctx.http.send(request).unwrap();
 
-        // Server has never been seen before so create a new one.
-        ctx.db.tm_server().insert(TmServer {
-            online: true,
-            id: login,
-            active_match: None,
-            //TODO obtain userid from HTTP request
-            owner_id: "test_user".into(),
-            // server_method: None,
-            config: ServerConfig::default(),
-            state: ServerState::default(),
-            identity: ctx.identity(),
-            capturable: true,
-        });
-        Ok(())
+    let status = result.status();
+
+    if status.is_success() {
+        let body = result.into_body();
+        let string = body.into_string().unwrap();
+        //let string = BASE64_STANDARD.decode(string);
+        log::error!("{:?}", string)
+    } else {
+        //TODO error handling
+        log::error!("Server registration failed because of nadeo request");
+        panic!()
     }
+
+    ctx.with_tx(|ctx| {
+        if ctx.db.tm_server().identity().find(ctx.sender).is_some() {
+            // Server identity is already verified.
+            // return Ok(());
+        }
+        if let Some(mut server) = ctx.db.tm_server().id().find(&login) {
+            // The new identity is assigned to the server.
+            server.set_identity(ctx.identity());
+            ctx.db.tm_server().id().update(server);
+            //Ok(())
+        } else {
+            //TODO make HTTP call when its available and verify that credentials are correct.
+
+            // Server has never been seen before so create a new one.
+            ctx.db.tm_server().insert(TmServer {
+                online: true,
+                id: login.clone(),
+                active_match: None,
+                //TODO obtain userid from HTTP request
+                owner_id: "test_user".into(),
+                // server_method: None,
+                config: ServerConfig::default(),
+                state: ServerState::default(),
+                identity: ctx.identity(),
+                capturable: true,
+            });
+            //Ok(())
+        }
+    });
 }
 
 /* #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn load_server_config(ctx: &ReducerContext, id: String, with_config: u32) {
     if let Some(mut server) = ctx.db.tm_server().id().find(id)
-        && let Some(config) = ctx.db.tm_server_config().id().find(with_config)
+    && let Some(config) = ctx.db.tm_server_config().id().find(with_config)
     {
-        server.set_config(config.get_config());
-        ctx.db.tm_server().id().update(server);
+    server.set_config(config.get_config());
+    ctx.db.tm_server().id().update(server);
     }
 }
 

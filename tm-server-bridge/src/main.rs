@@ -124,11 +124,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             )
             .await;
 
+        let mhm = server.get_callbacks_list_disabled().await;
+        let mhm = server.get_callbacks_list().await;
+
         // Emit all events
         server.event(move |event| {
             let event = event.clone();
             tokio::spawn(async move {
                 let server = TRACKMANIA.wait();
+
+                if let tm_server_client::types::event::Event::PlayerConenct(player) = &event
+                    && player.login != "bla"
+                    && !player.is_spectator
+                {
+                    _ = server
+                        .kick(
+                            player.login.clone(),
+                            Some("You are not on the whitelist! :("),
+                        )
+                        .await;
+                    tracing::error!("player successfully kicked {}", &player.login);
+                };
+
                 if let tm_server_client::types::event::Event::EndRoundStart(info) = &event {
                     let file_name = format!("{}{}", info.count, info.time);
                     if let Err(error) = server.save_current_replay(&file_name).await {
@@ -229,8 +246,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             ]);
 
         spacetime
-            .reducers
-            .register_server(tm_server_login, tm_server_password)?;
+            .procedures
+            .register_server(tm_server_login, tm_server_password);
 
         spacetime.db.tm_server().on_insert(server_bootstrap);
         spacetime.db.tm_server().on_update(server_update);

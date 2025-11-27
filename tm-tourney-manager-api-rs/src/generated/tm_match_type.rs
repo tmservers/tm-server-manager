@@ -7,7 +7,6 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 use super::match_leaderboard_rules_type::MatchLeaderboardRules;
 use super::match_state_type::MatchState;
 use super::match_status_type::MatchStatus;
-use super::registration_rules_type::RegistrationRules;
 use super::scheduling_type::Scheduling;
 use super::server_config_type::ServerConfig;
 
@@ -18,7 +17,6 @@ pub struct TmMatch {
     pub tournament_id: u32,
     pub competition_id: u32,
     pub scheduling: Scheduling,
-    pub registration_rules: RegistrationRules,
     pub server_id: Option<String>,
     pub pre_match_config: Option<ServerConfig>,
     pub match_config: Option<ServerConfig>,

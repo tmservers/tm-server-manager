@@ -27,19 +27,32 @@ repository = "https://github.com/kistz/tm-tourney-manager"
 edition = "2024"
 
 
-[workspace.dependencies.tokio]
-features = ["full"]
-version = "1"
-
-[workspace.dependencies.tm-tourney-manager-api-rs]
-path = "./tm-tourney-manager-api-rs"
-
 [workspace.dependencies]
+#==================
+# Util Dependencies
+#==================
 takumi = "0"
 dotenvy = "0.15"
-spacetimedb = "1.10"
+tokio = { features = ["full"], version = "1" }
+base64 = { version = "*" }
+
+
+#============
+# SpacetimeDB
+#============
+spacetimedb = { version = "1.10", features = ["unstable"] }
 spacetimedb-lib = "1.10"
 spacetimedb-sdk = "1.10"
+
+
+#==============
+# Worspace Deps
+#==============
+gamebox-files = { path = "./gamebox-files" }
+tm-tourney-manager-api-rs = { path = "./tm-tourney-manager-api-rs" }
+tm-server-types = { path = "./tm-server-types" }
+tm-server-client = { path = "./tm-server-client" }
+
 
 #=======
 #Testing
