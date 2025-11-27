@@ -5,7 +5,7 @@ use crate::{
     graph::{CompetitionKind, Competitions, NodeIndex},
     registration::RegistrationRules,
     scheduling::Scheduling,
-    tournament::tournament,
+    tournament::tounrament,
 };
 
 mod scheduling;
@@ -134,7 +134,7 @@ pub fn create_competition(
     let user = ctx.auth_user()?;
 
     // Tournament and parent ids need to be valid.
-    if ctx.db.tournament().id().find(tournament_id).is_none() {
+    if ctx.db.tounrament().id().find(tournament_id).is_none() {
         return Err("Invalid tournament_id".into());
     };
     let Some(mut parent_competition) = ctx.db.competition().id().find(parent_id) else {

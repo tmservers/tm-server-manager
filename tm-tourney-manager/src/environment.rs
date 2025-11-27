@@ -1,0 +1,19 @@
+use spacetimedb::{ReducerContext, Table, reducer, table};
+
+#[table(name=env)]
+pub(crate) struct Env {
+    #[primary_key]
+    key: String,
+    value: String,
+}
+
+
+//Allows module owners to 
+#[reducer]
+fn create_env_var(ctx: &ReducerContext, key: String, value: String) -> Result<(), String> {
+    //TODO only modult owners should be able to do this.
+
+    ctx.db.env().try_insert(Env { key, value })?;
+
+    Ok(())
+}

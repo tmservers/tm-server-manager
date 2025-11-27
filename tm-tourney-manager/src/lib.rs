@@ -5,6 +5,7 @@ use crate::server::tm_server;
 pub mod auth;
 pub mod competition;
 pub mod emulator;
+pub mod environment;
 pub mod generator;
 pub mod ghosts;
 pub mod r#match;

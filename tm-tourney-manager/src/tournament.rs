@@ -1,4 +1,4 @@
-use spacetimedb::{ReducerContext, SpacetimeType, Table, reducer, table};
+use spacetimedb::{ReducerContext, SpacetimeType, Table, ViewContext, reducer, table, view};
 
 use crate::{
     auth::Authorization,
@@ -7,8 +7,8 @@ use crate::{
 
 /// A tournament is a logical grouping of competitions and also the only way to obtain a competition in the first place.
 /// It does not provide functionality in of itself but is responsible for all the metadata.
-#[cfg_attr(feature = "spacetime", spacetimedb::table(name = tournament,public))]
-pub struct Tournament {
+#[cfg_attr(feature = "spacetime", spacetimedb::table(name = tounrament,public))] //TODO make private and rename use view instead
+pub struct TabTournament {
     #[auto_inc]
     #[primary_key]
     pub id: u32,
@@ -26,7 +26,7 @@ pub struct Tournament {
     competition: u32,
 }
 
-impl Tournament {
+impl TabTournament {
     pub(crate) fn set_competition(&mut self, comp_id: u32) {
         self.competition = comp_id
     }
@@ -51,7 +51,7 @@ pub enum TournamentStatus {
 fn create_tournament(ctx: &ReducerContext, name: String) -> Result<(), String> {
     let user = ctx.auth_user()?;
 
-    let mut tournament = ctx.db.tournament().try_insert(Tournament {
+    let mut tournament = ctx.db.tounrament().try_insert(TabTournament {
         id: 0,
         name: name.clone(),
         creator: user,
@@ -66,7 +66,16 @@ fn create_tournament(ctx: &ReducerContext, name: String) -> Result<(), String> {
     let competition = ctx.db.competition().try_insert(competition)?;
 
     tournament.set_competition(competition.id);
-    ctx.db.tournament().id().update(tournament);
+    ctx.db.tounrament().id().update(tournament);
 
     Ok(())
 }
+
+/// The exposed type to receive tournaments.
+#[derive(Debug, SpacetimeType)]
+pub struct TournamentV1 {}
+
+/* #[view(name=tournament,public)]
+pub fn tournament(ctx: &ViewContext) -> Vec<TournamentV1> {
+    ctx.db.tab_tournament().id().find(1).unwrap()]
+} */
