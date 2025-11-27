@@ -37,9 +37,9 @@ path = "./tm-tourney-manager-api-rs"
 [workspace.dependencies]
 takumi = "0"
 dotenvy = "0.15"
-spacetimedb = "1.9"
-spacetimedb-lib = "1.9"
-spacetimedb-sdk = "1.9"
+spacetimedb = "1.10"
+spacetimedb-lib = "1.10"
+spacetimedb-sdk = "1.10"
 
 #=======
 #Testing
