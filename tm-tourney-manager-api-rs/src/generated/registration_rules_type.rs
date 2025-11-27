@@ -4,17 +4,21 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::team_info_type::TeamInfo;
+use super::registration_player_rules_type::RegistrationPlayerRules;
+use super::registration_team_rules_type::RegistrationTeamRules;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct TeamRegistration {
-    pub team_limit: Option<u32>,
-    pub team_size_min: u8,
-    pub team_size_max: u8,
-    pub teams: Vec<TeamInfo>,
+pub enum RegistrationRules {
+    Players(RegistrationPlayerRules),
+
+    Team(RegistrationTeamRules),
+
+    Inherit,
+
+    Open,
 }
 
-impl __sdk::InModule for TeamRegistration {
+impl __sdk::InModule for RegistrationRules {
     type Module = super::RemoteModule;
 }

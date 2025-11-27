@@ -11,7 +11,7 @@ import {
 } from "spacetimedb";
 import CompetitionStatus from "./competition_status_type";
 import Scheduling from "./scheduling_type";
-import Registration from "./registration_type";
+import RegistrationRules from "./registration_rules_type";
 import Competitions from "./competitions_type";
 
 
@@ -27,8 +27,8 @@ export default __t.object("Competition", {
   get scheduling() {
     return Scheduling;
   },
-  get registration() {
-    return Registration;
+  get registrationRules() {
+    return RegistrationRules;
   },
   entryPoints: __t.option(__t.array(__t.u32())),
   get competitions() {

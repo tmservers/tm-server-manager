@@ -9,21 +9,21 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
-import PlayerRegistration from "./player_registration_type";
-import TeamRegistration from "./team_registration_type";
+import RegistrationPlayerRules from "./registration_player_rules_type";
+import RegistrationTeamRules from "./registration_team_rules_type";
 
 
-// The tagged union or sum type for the algebraic type `Registration`.
-const Registration = __t.enum("Registration", {get Players() {
-    return PlayerRegistration;
+// The tagged union or sum type for the algebraic type `RegistrationRules`.
+const RegistrationRules = __t.enum("RegistrationRules", {get Players() {
+    return RegistrationPlayerRules;
   },
   get Team() {
-    return TeamRegistration;
+    return RegistrationTeamRules;
   },
   Inherit: __t.unit(),
   Open: __t.unit(),
 });
 
-export default Registration;
+export default RegistrationRules;
 
 

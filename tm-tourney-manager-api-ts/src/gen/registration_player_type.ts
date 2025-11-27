@@ -9,16 +9,11 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
-import TeamInfo from "./team_info_type";
 
-
-export default __t.object("TeamRegistration", {
-  teamLimit: __t.option(__t.u32()),
-  teamSizeMin: __t.u8(),
-  teamSizeMax: __t.u8(),
-  get teams() {
-    return __t.array(TeamInfo);
-  },
+export default __t.object("RegistrationPlayer", {
+  competition: __t.u32(),
+  playerId: __t.string(),
+  registeredAt: __t.timestamp(),
 });
 
 

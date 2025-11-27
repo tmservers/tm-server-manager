@@ -10,10 +10,8 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-export default __t.object("TeamInfo", {
-  registeredAt: __t.timestamp(),
-  name: __t.string(),
-  members: __t.array(__t.string()),
+export default __t.object("RegistrationPlayerRules", {
+  playerLimit: __t.option(__t.u32()),
 });
 
 
