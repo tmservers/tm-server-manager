@@ -23,6 +23,7 @@ pub mod competition_type;
 pub mod competition_unregister_player_reducer;
 pub mod competitions_type;
 pub mod create_competition_reducer;
+pub mod create_env_var_reducer;
 pub mod create_event_template_reducer;
 pub mod create_match_reducer;
 pub mod create_server_config_reducer;
@@ -37,6 +38,8 @@ pub mod end_round_start_type;
 pub mod end_server_type;
 pub mod end_turn_end_type;
 pub mod end_turn_start_type;
+pub mod env_table;
+pub mod env_type;
 pub mod event_config_table;
 pub mod event_config_type;
 pub mod event_type;
@@ -75,9 +78,8 @@ pub mod player_disconnect_type;
 pub mod player_type;
 pub mod podium_type;
 pub mod post_event_reducer;
-pub mod post_ghost_reducer;
 pub mod post_record_reducer;
-pub mod post_replay_procedure;
+pub mod post_round_replay_procedure;
 pub mod register_server_procedure;
 pub mod registration_player_rules_type;
 pub mod registration_player_table;
@@ -103,6 +105,7 @@ pub mod start_match_type;
 pub mod start_round_type;
 pub mod start_server_type;
 pub mod start_turn_type;
+pub mod tab_tournament_type;
 pub mod team_type;
 pub mod this_tm_server_table;
 pub mod tm_comp_record_type;
@@ -124,7 +127,6 @@ pub mod tm_server_table;
 pub mod tm_server_type;
 pub mod tournament_status_type;
 pub mod tournament_table;
-pub mod tournament_type;
 pub mod try_start_reducer;
 pub mod unloading_map_end_type;
 pub mod unloading_map_start_type;
@@ -164,6 +166,9 @@ pub use competitions_type::Competitions;
 pub use create_competition_reducer::{
     create_competition, set_flags_for_create_competition, CreateCompetitionCallbackId,
 };
+pub use create_env_var_reducer::{
+    create_env_var, set_flags_for_create_env_var, CreateEnvVarCallbackId,
+};
 pub use create_event_template_reducer::{
     create_event_template, set_flags_for_create_event_template, CreateEventTemplateCallbackId,
 };
@@ -184,6 +189,8 @@ pub use end_round_start_type::EndRoundStart;
 pub use end_server_type::EndServer;
 pub use end_turn_end_type::EndTurnEnd;
 pub use end_turn_start_type::EndTurnStart;
+pub use env_table::*;
+pub use env_type::Env;
 pub use event_config_table::*;
 pub use event_config_type::EventConfig;
 pub use event_type::Event;
@@ -231,9 +238,8 @@ pub use player_disconnect_type::PlayerDisconnect;
 pub use player_type::Player;
 pub use podium_type::Podium;
 pub use post_event_reducer::{post_event, set_flags_for_post_event, PostEventCallbackId};
-pub use post_ghost_reducer::{post_ghost, set_flags_for_post_ghost, PostGhostCallbackId};
 pub use post_record_reducer::{post_record, set_flags_for_post_record, PostRecordCallbackId};
-pub use post_replay_procedure::post_replay;
+pub use post_round_replay_procedure::post_round_replay;
 pub use register_server_procedure::register_server;
 pub use registration_player_rules_type::RegistrationPlayerRules;
 pub use registration_player_table::*;
@@ -263,6 +269,7 @@ pub use start_match_type::StartMatch;
 pub use start_round_type::StartRound;
 pub use start_server_type::StartServer;
 pub use start_turn_type::StartTurn;
+pub use tab_tournament_type::TabTournament;
 pub use team_type::Team;
 pub use this_tm_server_table::*;
 pub use tm_comp_record_type::TmCompRecord;
@@ -284,7 +291,6 @@ pub use tm_server_table::*;
 pub use tm_server_type::TmServer;
 pub use tournament_status_type::TournamentStatus;
 pub use tournament_table::*;
-pub use tournament_type::Tournament;
 pub use try_start_reducer::{set_flags_for_try_start, try_start, TryStartCallbackId};
 pub use unloading_map_end_type::UnloadingMapEnd;
 pub use unloading_map_start_type::UnloadingMapStart;
@@ -323,6 +329,10 @@ pub enum Reducer {
         parent_id: u32,
         with_template: Option<u32>,
     },
+    CreateEnvVar {
+        key: String,
+        value: String,
+    },
     CreateEventTemplate {
         name: String,
     },
@@ -352,9 +362,6 @@ pub enum Reducer {
     },
     PostEvent {
         event: Event,
-    },
-    PostGhost {
-        ghost: Vec<u8>,
     },
     PostRecord {
         map_uid: String,
@@ -390,6 +397,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::CompetitionRegisterPlayer { .. } => "competition_register_player",
             Reducer::CompetitionUnregisterPlayer { .. } => "competition_unregister_player",
             Reducer::CreateCompetition { .. } => "create_competition",
+            Reducer::CreateEnvVar { .. } => "create_env_var",
             Reducer::CreateEventTemplate { .. } => "create_event_template",
             Reducer::CreateMatch { .. } => "create_match",
             Reducer::CreateServerConfig { .. } => "create_server_config",
@@ -399,7 +407,6 @@ impl __sdk::Reducer for Reducer {
             Reducer::MatchConfigured { .. } => "match_configured",
             Reducer::OnTournamentEventSchedule { .. } => "on_tournament_event_schedule",
             Reducer::PostEvent { .. } => "post_event",
-            Reducer::PostGhost { .. } => "post_ghost",
             Reducer::PostRecord { .. } => "post_record",
             Reducer::ServerMethodCall { .. } => "server_method_call",
             Reducer::ServerMethodResponse { .. } => "server_method_response",
@@ -436,6 +443,10 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "create_competition" => Ok(__sdk::parse_reducer_args::<
                 create_competition_reducer::CreateCompetitionArgs,
             >("create_competition", &value.args)?
+            .into()),
+            "create_env_var" => Ok(__sdk::parse_reducer_args::<
+                create_env_var_reducer::CreateEnvVarArgs,
+            >("create_env_var", &value.args)?
             .into()),
             "create_event_template" => Ok(__sdk::parse_reducer_args::<
                 create_event_template_reducer::CreateEventTemplateArgs,
@@ -477,13 +488,6 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "post_event" => Ok(
                 __sdk::parse_reducer_args::<post_event_reducer::PostEventArgs>(
                     "post_event",
-                    &value.args,
-                )?
-                .into(),
-            ),
-            "post_ghost" => Ok(
-                __sdk::parse_reducer_args::<post_ghost_reducer::PostGhostArgs>(
-                    "post_ghost",
                     &value.args,
                 )?
                 .into(),
@@ -531,6 +535,7 @@ pub struct DbUpdate {
     competition: __sdk::TableUpdate<Competition>,
     competition_record: __sdk::TableUpdate<TmRecord>,
     competition_schedule: __sdk::TableUpdate<CompetitionSchedule>,
+    env: __sdk::TableUpdate<Env>,
     event_config: __sdk::TableUpdate<EventConfig>,
     generator: __sdk::TableUpdate<Generator>,
     map_record: __sdk::TableUpdate<TmRecord>,
@@ -547,7 +552,7 @@ pub struct DbUpdate {
     tm_server_event: __sdk::TableUpdate<TmServerEvent>,
     tm_server_method_call: __sdk::TableUpdate<TmServerMethodCall>,
     tm_server_method_response: __sdk::TableUpdate<TmServerMethodResponse>,
-    tournament: __sdk::TableUpdate<Tournament>,
+    tournament: __sdk::TableUpdate<TabTournament>,
     user: __sdk::TableUpdate<User>,
 }
 
@@ -566,6 +571,9 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "competition_schedule" => db_update.competition_schedule.append(
                     competition_schedule_table::parse_table_update(table_update)?,
                 ),
+                "env" => db_update
+                    .env
+                    .append(env_table::parse_table_update(table_update)?),
                 "event_config" => db_update
                     .event_config
                     .append(event_config_table::parse_table_update(table_update)?),
@@ -655,6 +663,9 @@ impl __sdk::DbUpdate for DbUpdate {
                 &self.competition_schedule,
             )
             .with_updates_by_pk(|row| &row.scheduled_id);
+        diff.env = cache
+            .apply_diff_to_table::<Env>("env", &self.env)
+            .with_updates_by_pk(|row| &row.key);
         diff.event_config =
             cache.apply_diff_to_table::<EventConfig>("event_config", &self.event_config);
         diff.generator = cache.apply_diff_to_table::<Generator>("generator", &self.generator);
@@ -695,7 +706,7 @@ impl __sdk::DbUpdate for DbUpdate {
             )
             .with_updates_by_pk(|row| &row.id);
         diff.tournament = cache
-            .apply_diff_to_table::<Tournament>("tournament", &self.tournament)
+            .apply_diff_to_table::<TabTournament>("tournament", &self.tournament)
             .with_updates_by_pk(|row| &row.id);
         diff.user = cache
             .apply_diff_to_table::<User>("user", &self.user)
@@ -719,6 +730,7 @@ pub struct AppliedDiff<'r> {
     competition: __sdk::TableAppliedDiff<'r, Competition>,
     competition_record: __sdk::TableAppliedDiff<'r, TmRecord>,
     competition_schedule: __sdk::TableAppliedDiff<'r, CompetitionSchedule>,
+    env: __sdk::TableAppliedDiff<'r, Env>,
     event_config: __sdk::TableAppliedDiff<'r, EventConfig>,
     generator: __sdk::TableAppliedDiff<'r, Generator>,
     map_record: __sdk::TableAppliedDiff<'r, TmRecord>,
@@ -735,7 +747,7 @@ pub struct AppliedDiff<'r> {
     tm_server_event: __sdk::TableAppliedDiff<'r, TmServerEvent>,
     tm_server_method_call: __sdk::TableAppliedDiff<'r, TmServerMethodCall>,
     tm_server_method_response: __sdk::TableAppliedDiff<'r, TmServerMethodResponse>,
-    tournament: __sdk::TableAppliedDiff<'r, Tournament>,
+    tournament: __sdk::TableAppliedDiff<'r, TabTournament>,
     user: __sdk::TableAppliedDiff<'r, User>,
     __unused: std::marker::PhantomData<&'r ()>,
 }
@@ -765,6 +777,7 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             &self.competition_schedule,
             event,
         );
+        callbacks.invoke_table_row_callbacks::<Env>("env", &self.env, event);
         callbacks.invoke_table_row_callbacks::<EventConfig>(
             "event_config",
             &self.event_config,
@@ -821,7 +834,11 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             &self.tm_server_method_response,
             event,
         );
-        callbacks.invoke_table_row_callbacks::<Tournament>("tournament", &self.tournament, event);
+        callbacks.invoke_table_row_callbacks::<TabTournament>(
+            "tournament",
+            &self.tournament,
+            event,
+        );
         callbacks.invoke_table_row_callbacks::<User>("user", &self.user, event);
     }
 }
@@ -1545,6 +1562,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
         competition_table::register_table(client_cache);
         competition_record_table::register_table(client_cache);
         competition_schedule_table::register_table(client_cache);
+        env_table::register_table(client_cache);
         event_config_table::register_table(client_cache);
         generator_table::register_table(client_cache);
         map_record_table::register_table(client_cache);

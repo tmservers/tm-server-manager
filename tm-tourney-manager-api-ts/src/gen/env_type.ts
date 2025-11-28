@@ -10,6 +10,9 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-export default {
-  ghost: __t.byteArray(),
-};
+export default __t.object("Env", {
+  key: __t.string(),
+  value: __t.string(),
+});
+
+

@@ -2,8 +2,8 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN YOUR MODULE SOURCE CODE INSTEAD.
 
 #![allow(unused, clippy::all)]
+use super::tab_tournament_type::TabTournament;
 use super::tournament_status_type::TournamentStatus;
-use super::tournament_type::Tournament;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 /// Table handle for the table `tournament`.
@@ -15,7 +15,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 /// but to directly chain method calls,
 /// like `ctx.db.tournament().on_insert(...)`.
 pub struct TournamentTableHandle<'ctx> {
-    imp: __sdk::TableHandle<Tournament>,
+    imp: __sdk::TableHandle<TabTournament>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -32,7 +32,7 @@ pub trait TournamentTableAccess {
 impl TournamentTableAccess for super::RemoteTables {
     fn tournament(&self) -> TournamentTableHandle<'_> {
         TournamentTableHandle {
-            imp: self.imp.get_table::<Tournament>("tournament"),
+            imp: self.imp.get_table::<TabTournament>("tournament"),
             ctx: std::marker::PhantomData,
         }
     }
@@ -42,13 +42,13 @@ pub struct TournamentInsertCallbackId(__sdk::CallbackId);
 pub struct TournamentDeleteCallbackId(__sdk::CallbackId);
 
 impl<'ctx> __sdk::Table for TournamentTableHandle<'ctx> {
-    type Row = Tournament;
+    type Row = TabTournament;
     type EventContext = super::EventContext;
 
     fn count(&self) -> u64 {
         self.imp.count()
     }
-    fn iter(&self) -> impl Iterator<Item = Tournament> + '_ {
+    fn iter(&self) -> impl Iterator<Item = TabTournament> + '_ {
         self.imp.iter()
     }
 
@@ -81,7 +81,7 @@ impl<'ctx> __sdk::Table for TournamentTableHandle<'ctx> {
 
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
-    let _table = client_cache.get_or_make_table::<Tournament>("tournament");
+    let _table = client_cache.get_or_make_table::<TabTournament>("tournament");
     _table.add_unique_constraint::<u32>("id", |row| &row.id);
     _table.add_unique_constraint::<String>("name", |row| &row.name);
 }
@@ -105,9 +105,9 @@ impl<'ctx> __sdk::TableWithPrimaryKey for TournamentTableHandle<'ctx> {
 #[doc(hidden)]
 pub(super) fn parse_table_update(
     raw_updates: __ws::TableUpdate<__ws::BsatnFormat>,
-) -> __sdk::Result<__sdk::TableUpdate<Tournament>> {
+) -> __sdk::Result<__sdk::TableUpdate<TabTournament>> {
     __sdk::TableUpdate::parse_table_update(raw_updates).map_err(|e| {
-        __sdk::InternalError::failed_parse("TableUpdate<Tournament>", "TableUpdate")
+        __sdk::InternalError::failed_parse("TableUpdate<TabTournament>", "TableUpdate")
             .with_cause(e)
             .into()
     })
@@ -121,7 +121,7 @@ pub(super) fn parse_table_update(
 /// but to directly chain method calls,
 /// like `ctx.db.tournament().id().find(...)`.
 pub struct TournamentIdUnique<'ctx> {
-    imp: __sdk::UniqueConstraintHandle<Tournament, u32>,
+    imp: __sdk::UniqueConstraintHandle<TabTournament, u32>,
     phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -138,7 +138,7 @@ impl<'ctx> TournamentTableHandle<'ctx> {
 impl<'ctx> TournamentIdUnique<'ctx> {
     /// Find the subscribed row whose `id` column value is equal to `col_val`,
     /// if such a row is present in the client cache.
-    pub fn find(&self, col_val: &u32) -> Option<Tournament> {
+    pub fn find(&self, col_val: &u32) -> Option<TabTournament> {
         self.imp.find(col_val)
     }
 }
@@ -151,7 +151,7 @@ impl<'ctx> TournamentIdUnique<'ctx> {
 /// but to directly chain method calls,
 /// like `ctx.db.tournament().name().find(...)`.
 pub struct TournamentNameUnique<'ctx> {
-    imp: __sdk::UniqueConstraintHandle<Tournament, String>,
+    imp: __sdk::UniqueConstraintHandle<TabTournament, String>,
     phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -168,7 +168,7 @@ impl<'ctx> TournamentTableHandle<'ctx> {
 impl<'ctx> TournamentNameUnique<'ctx> {
     /// Find the subscribed row whose `name` column value is equal to `col_val`,
     /// if such a row is present in the client cache.
-    pub fn find(&self, col_val: &String) -> Option<Tournament> {
+    pub fn find(&self, col_val: &String) -> Option<TabTournament> {
         self.imp.find(col_val)
     }
 }

@@ -6,24 +6,24 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-struct PostReplayArgs {
+struct PostRoundReplayArgs {
     pub replay: Vec<u8>,
 }
 
-impl __sdk::InModule for PostReplayArgs {
+impl __sdk::InModule for PostRoundReplayArgs {
     type Module = super::RemoteModule;
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the procedure `post_replay`.
+/// Extension trait for access to the procedure `post_round_replay`.
 ///
 /// Implemented for [`super::RemoteProcedures`].
-pub trait post_replay {
-    fn post_replay(&self, replay: Vec<u8>) {
-        self.post_replay_then(replay, |_, _| {});
+pub trait post_round_replay {
+    fn post_round_replay(&self, replay: Vec<u8>) {
+        self.post_round_replay_then(replay, |_, _| {});
     }
 
-    fn post_replay_then(
+    fn post_round_replay_then(
         &self,
         replay: Vec<u8>,
 
@@ -33,8 +33,8 @@ pub trait post_replay {
     );
 }
 
-impl post_replay for super::RemoteProcedures {
-    fn post_replay_then(
+impl post_round_replay for super::RemoteProcedures {
+    fn post_round_replay_then(
         &self,
         replay: Vec<u8>,
 
@@ -43,8 +43,8 @@ impl post_replay for super::RemoteProcedures {
             + 'static,
     ) {
         self.imp.invoke_procedure_with_callback::<_, ()>(
-            "post_replay",
-            PostReplayArgs { replay },
+            "post_round_replay",
+            PostRoundReplayArgs { replay },
             __callback,
         );
     }

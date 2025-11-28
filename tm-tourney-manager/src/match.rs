@@ -8,7 +8,7 @@ use crate::{
     registration::RegistrationRules,
     scheduling::Scheduling,
     server::tm_server,
-    tournament::tounrament,
+    tournament::tournament,
 };
 
 mod leaderboard;
@@ -139,7 +139,7 @@ pub fn create_match(
         //registration_rules: RegistrationRules::Open,
     };
 
-    if ctx.db.tounrament().id().find(competition_id).is_none() {
+    if ctx.db.tournament().id().find(competition_id).is_none() {
         return Err("Invalid tournament".into());
     };
 

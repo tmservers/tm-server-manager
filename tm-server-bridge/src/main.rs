@@ -163,23 +163,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
                     match std::fs::read(&full_path) {
                         Ok(file) => {
-                            let gbx = gamebox_files::try_parse_buffer(&file);
-                            tracing::error!("{gbx:?}");
-
-                            if let Err(error) = SPACETIME.wait().reducers.post_ghost(file) {
-                                tracing::error!(
-                                    "Failed to add Ghosts for current round. Reason {error}"
-                                )
-                            };
-                            //TODO parse the file and split off ghosts?
-                            // Open questiones:
-                            // - What about time attack?
-                            //   - No Ghost can be associated with a player but rather a Vec<Ghost> for all the runs
-                            //  -> Since we only offer round based ghosts it could just display the whole ghost
-                            // - How much file size savings when extracting ghosts.
-                            // - Should the transformation happen on the client or the server?
-                            //   - Probably client side since we already have a sidecar anyway...
-                            // - Which metadata should be stored alongside the ghost? (can happen server side)
+                            SPACETIME.wait().procedures.post_round_replay(file);
                         }
                         Err(error) => {
                             tracing::error!("Failed to read replay file. Reason: {error}")

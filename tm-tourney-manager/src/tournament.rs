@@ -7,7 +7,7 @@ use crate::{
 
 /// A tournament is a logical grouping of competitions and also the only way to obtain a competition in the first place.
 /// It does not provide functionality in of itself but is responsible for all the metadata.
-#[cfg_attr(feature = "spacetime", spacetimedb::table(name = tounrament,public))] //TODO make private and rename use view instead
+#[cfg_attr(feature = "spacetime", spacetimedb::table(name = tournament,public))] //TODO make private and rename use view instead
 pub struct TabTournament {
     #[auto_inc]
     #[primary_key]
@@ -51,7 +51,7 @@ pub enum TournamentStatus {
 fn create_tournament(ctx: &ReducerContext, name: String) -> Result<(), String> {
     let user = ctx.auth_user()?;
 
-    let mut tournament = ctx.db.tounrament().try_insert(TabTournament {
+    let mut tournament = ctx.db.tournament().try_insert(TabTournament {
         id: 0,
         name: name.clone(),
         creator: user,
@@ -66,7 +66,7 @@ fn create_tournament(ctx: &ReducerContext, name: String) -> Result<(), String> {
     let competition = ctx.db.competition().try_insert(competition)?;
 
     tournament.set_competition(competition.id);
-    ctx.db.tounrament().id().update(tournament);
+    ctx.db.tournament().id().update(tournament);
 
     Ok(())
 }

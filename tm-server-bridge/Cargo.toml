@@ -20,7 +20,6 @@ tm-server-client.workspace = true
 spacetimedb-sdk.workspace = true
 tm-tourney-manager-api-rs.workspace = true
 
-gamebox-files.workspace = true
 
 takumi.workspace = true
 

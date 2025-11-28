@@ -41,6 +41,8 @@ import CompetitionUnregisterPlayer from "./competition_unregister_player_reducer
 export { CompetitionUnregisterPlayer };
 import CreateCompetition from "./create_competition_reducer";
 export { CreateCompetition };
+import CreateEnvVar from "./create_env_var_reducer";
+export { CreateEnvVar };
 import CreateEventTemplate from "./create_event_template_reducer";
 export { CreateEventTemplate };
 import CreateMatch from "./create_match_reducer";
@@ -59,8 +61,6 @@ import OnTournamentEventSchedule from "./on_tournament_event_schedule_reducer";
 export { OnTournamentEventSchedule };
 import PostEvent from "./post_event_reducer";
 export { PostEvent };
-import PostGhost from "./post_ghost_reducer";
-export { PostGhost };
 import PostRecord from "./post_record_reducer";
 export { PostRecord };
 import ServerMethodCall from "./server_method_call_reducer";
@@ -73,8 +73,8 @@ import UpdateMatchConfig from "./update_match_config_reducer";
 export { UpdateMatchConfig };
 
 // Import and reexport all procedure arg types
-import * as PostReplayProcedure from "./post_replay_procedure";
-export { PostReplayProcedure };
+import * as PostRoundReplayProcedure from "./post_round_replay_procedure";
+export { PostRoundReplayProcedure };
 import * as RegisterServerProcedure from "./register_server_procedure";
 export { RegisterServerProcedure };
 
@@ -85,6 +85,8 @@ import CompetitionRecordRow from "./competition_record_table";
 export { CompetitionRecordRow };
 import CompetitionScheduleRow from "./competition_schedule_table";
 export { CompetitionScheduleRow };
+import EnvRow from "./env_table";
+export { EnvRow };
 import EventConfigRow from "./event_config_table";
 export { EventConfigRow };
 import GeneratorRow from "./generator_table";
@@ -161,6 +163,8 @@ import EndTurnEnd from "./end_turn_end_type";
 export { EndTurnEnd };
 import EndTurnStart from "./end_turn_start_type";
 export { EndTurnStart };
+import Env from "./env_type";
+export { Env };
 import Event from "./event_type";
 export { Event };
 import EventConfig from "./event_config_type";
@@ -257,6 +261,8 @@ import StartServer from "./start_server_type";
 export { StartServer };
 import StartTurn from "./start_turn_type";
 export { StartTurn };
+import TabTournament from "./tab_tournament_type";
+export { TabTournament };
 import Team from "./team_type";
 export { Team };
 import TmCompRecord from "./tm_comp_record_type";
@@ -277,8 +283,6 @@ import TmServerMethodCall from "./tm_server_method_call_type";
 export { TmServerMethodCall };
 import TmServerMethodResponse from "./tm_server_method_response_type";
 export { TmServerMethodResponse };
-import Tournament from "./tournament_type";
-export { Tournament };
 import TournamentStatus from "./tournament_status_type";
 export { TournamentStatus };
 import UnloadingMapEnd from "./unloading_map_end_type";
@@ -318,6 +322,17 @@ const tablesSchema = __schema(
       { name: 'competition_schedule_scheduled_id_key', constraint: 'unique', columns: ['scheduledId'] },
     ],
   }, CompetitionScheduleRow),
+  __table({
+    name: 'env',
+    indexes: [
+      { name: 'key', algorithm: 'btree', columns: [
+        'key',
+      ] },
+    ],
+    constraints: [
+      { name: 'env_key_key', constraint: 'unique', columns: ['key'] },
+    ],
+  }, EnvRow),
   __table({
     name: 'event_config',
     indexes: [
@@ -519,6 +534,7 @@ const reducersSchema = __reducers(
   __reducerSchema("competition_register_player", CompetitionRegisterPlayer),
   __reducerSchema("competition_unregister_player", CompetitionUnregisterPlayer),
   __reducerSchema("create_competition", CreateCompetition),
+  __reducerSchema("create_env_var", CreateEnvVar),
   __reducerSchema("create_event_template", CreateEventTemplate),
   __reducerSchema("create_match", CreateMatch),
   __reducerSchema("create_server_config", CreateServerConfig),
@@ -527,7 +543,6 @@ const reducersSchema = __reducers(
   __reducerSchema("match_configured", MatchConfigured),
   __reducerSchema("on_tournament_event_schedule", OnTournamentEventSchedule),
   __reducerSchema("post_event", PostEvent),
-  __reducerSchema("post_ghost", PostGhost),
   __reducerSchema("post_record", PostRecord),
   __reducerSchema("server_method_call", ServerMethodCall),
   __reducerSchema("server_method_response", ServerMethodResponse),
@@ -537,7 +552,7 @@ const reducersSchema = __reducers(
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */
 const proceduresSchema = __procedures(
-  __procedureSchema("post_replay", PostReplayProcedure.params, PostReplayProcedure.returnType),
+  __procedureSchema("post_round_replay", PostRoundReplayProcedure.params, PostRoundReplayProcedure.returnType),
   __procedureSchema("register_server", RegisterServerProcedure.params, RegisterServerProcedure.returnType),
 );
 

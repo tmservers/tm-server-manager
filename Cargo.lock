@@ -5322,7 +5322,6 @@ name = "tm-server-bridge"
 version = "0.0.4-dev"
 dependencies = [
  "dotenvy",
- "gamebox-files",
  "nadeo-api",
  "opentelemetry",
  "opentelemetry-jaeger-propagator",

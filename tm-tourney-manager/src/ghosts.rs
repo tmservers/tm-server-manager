@@ -1,6 +1,6 @@
-use spacetimedb::{ProcedureContext, ProcedureResult, ReducerContext, procedure};
+use spacetimedb::{ProcedureContext, ProcedureResult, ReducerContext, http::Request, procedure};
 
-use crate::auth::Authorization;
+use crate::{auth::Authorization, environment::env};
 
 #[cfg_attr(feature="spacetime",spacetimedb::table(name = match_ghost,public))]
 pub struct MatchGhost {
@@ -16,45 +16,49 @@ pub struct MatchGhost {
     uid: String,
 }
 
-#[cfg(feature = "spacetime")]
-#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn post_ghost(ctx: &ReducerContext, ghost: Vec<u8>) -> Result<(), String> {
-    use spacetimedb::Table;
-
-    use crate::auth::Authorization;
-
-    let server = ctx.auth_server()?;
-    //TODO get all the information from the server -> match and stuff.
-
-    //TODO make http call to save in object storage.
-    // AHHH HOW TO ENSURE THAT the next round doesnt start before all ghosts are uploaded?
-    //maybe dump the replay file and parse server side.
-    // or a second arg with the round must be provided to the reducer.
-
-    ctx.db.match_ghost().insert(MatchGhost {
-        uid: "TODO".into(),
-        tournament_id: 0,
-        match_id: 0,
-        player_id: "TODO".into(),
-    });
-
-    Ok(())
-}
-
 #[procedure]
-pub fn post_replay(ctx: &mut ProcedureContext, replay: Vec<u8>) {
-    //let files = gamebox_files::try_parse_buffer(&replay);
-
+pub fn post_round_replay(ctx: &mut ProcedureContext, replay: Vec<u8>) {
     //TODO: This unwrap is bad but i cant return a Result<T,E> and ? the call atm because its no spacetme type.
     let server = ctx.try_with_tx(|ctx| ctx.auth_server()).unwrap();
 
-    //let server = ctx.auth_server()?;
+    //TODO: Parse the replay file into individual ghosts.
+    //let files = gamebox_files::try_parse_buffer(&replay);
+
     //TODO get all the information from the server -> match and stuff.
 
-    //TODO make http call to save in object storage.
-    // AHHH HOW TO ENSURE THAT the next round doesnt start before all ghosts are uploaded?
-    //maybe dump the replay file and parse server side.
-    // or a second arg with the round must be provided to the reducer.
+    let base_url = ctx
+        .try_with_tx(
+            |ctx| match ctx.db.env().key().find("S3_BASE_URL".to_string()) {
+                Some(var) => Ok(var.value),
+                None => Err("Key of environment variable not found.".to_string()),
+            },
+        )
+        .unwrap();
+
+    let key_id = ctx
+        .try_with_tx(
+            |ctx| match ctx.db.env().key().find("S3_KEY_ID".to_string()) {
+                Some(var) => Ok(var.value),
+                None => Err("Key of environment variable not found.".to_string()),
+            },
+        )
+        .unwrap();
+
+    let key_secret = ctx
+        .try_with_tx(
+            |ctx| match ctx.db.env().key().find("S3_KEY_SECRET".to_string()) {
+                Some(var) => Ok(var.value),
+                None => Err("Key of environment variable not found.".to_string()),
+            },
+        )
+        .unwrap();
+
+    let request = Request::builder()
+        .method("PUT")
+        .uri("https://s3.eu-central-003.backblazeb2.com/tm-tourney-manager-staging/whatever")
+        .body(replay)
+        .unwrap();
+    let result = ctx.http.send(request).unwrap();
 
     /* ctx.db.match_ghost().insert(MatchGhost {
         uid: "TODO".into(),

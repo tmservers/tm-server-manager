@@ -4,20 +4,13 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::tournament_status_type::TournamentStatus;
-
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct Tournament {
-    pub id: u32,
-    pub creator: String,
-    pub owners: Vec<String>,
-    pub name: String,
-    pub description: String,
-    pub status: TournamentStatus,
-    pub competition: u32,
+pub struct Env {
+    pub key: String,
+    pub value: String,
 }
 
-impl __sdk::InModule for Tournament {
+impl __sdk::InModule for Env {
     type Module = super::RemoteModule;
 }
