@@ -6,7 +6,6 @@ members = [
     "tm-server-client",
     "tm-server-types",
     "tm-tourney-manager",
-    "tm-tourney-manager-admin",
     "tm-tourney-manager-api-rs",
     "tm-tourney-manager-test",
 ]
