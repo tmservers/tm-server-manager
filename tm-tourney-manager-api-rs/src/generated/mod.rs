@@ -55,10 +55,13 @@ pub mod map_record_table;
 pub mod map_type;
 pub mod match_assign_server_reducer;
 pub mod match_configured_reducer;
+pub mod match_entity_rules_type;
 pub mod match_ghost_table;
 pub mod match_ghost_type;
 pub mod match_leaderboard_rules_type;
 pub mod match_record_table;
+pub mod match_standings_table;
+pub mod match_standings_type;
 pub mod match_state_type;
 pub mod match_status_type;
 pub mod match_template_table;
@@ -127,10 +130,11 @@ pub mod tm_server_table;
 pub mod tm_server_type;
 pub mod tournament_status_type;
 pub mod tournament_table;
-pub mod try_start_reducer;
+pub mod try_start_match_reducer;
 pub mod unloading_map_end_type;
 pub mod unloading_map_start_type;
 pub mod update_match_config_reducer;
+pub mod update_pre_match_config_reducer;
 pub mod user_table;
 pub mod user_type;
 pub mod warmup_duration_type;
@@ -212,10 +216,13 @@ pub use match_assign_server_reducer::{
 pub use match_configured_reducer::{
     match_configured, set_flags_for_match_configured, MatchConfiguredCallbackId,
 };
+pub use match_entity_rules_type::MatchEntityRules;
 pub use match_ghost_table::*;
 pub use match_ghost_type::MatchGhost;
 pub use match_leaderboard_rules_type::MatchLeaderboardRules;
 pub use match_record_table::*;
+pub use match_standings_table::*;
+pub use match_standings_type::MatchStandings;
 pub use match_state_type::MatchState;
 pub use match_status_type::MatchStatus;
 pub use match_template_table::*;
@@ -291,11 +298,16 @@ pub use tm_server_table::*;
 pub use tm_server_type::TmServer;
 pub use tournament_status_type::TournamentStatus;
 pub use tournament_table::*;
-pub use try_start_reducer::{set_flags_for_try_start, try_start, TryStartCallbackId};
+pub use try_start_match_reducer::{
+    set_flags_for_try_start_match, try_start_match, TryStartMatchCallbackId,
+};
 pub use unloading_map_end_type::UnloadingMapEnd;
 pub use unloading_map_start_type::UnloadingMapStart;
 pub use update_match_config_reducer::{
     set_flags_for_update_match_config, update_match_config, UpdateMatchConfigCallbackId,
+};
+pub use update_pre_match_config_reducer::{
+    set_flags_for_update_pre_match_config, update_pre_match_config, UpdatePreMatchConfigCallbackId,
 };
 pub use user_table::*;
 pub use user_type::User;
@@ -340,7 +352,6 @@ pub enum Reducer {
         tournament_id: u32,
         competition_id: u32,
         with_template: Option<u32>,
-        auto_provisioning_server: bool,
     },
     CreateServerConfig {
         id: String,
@@ -376,10 +387,14 @@ pub enum Reducer {
         call_id: u32,
         response: MethodResponse,
     },
-    TryStart {
+    TryStartMatch {
         match_id: u32,
     },
     UpdateMatchConfig {
+        id: u32,
+        config: ServerConfig,
+    },
+    UpdatePreMatchConfig {
         id: u32,
         config: ServerConfig,
     },
@@ -410,8 +425,9 @@ impl __sdk::Reducer for Reducer {
             Reducer::PostRecord { .. } => "post_record",
             Reducer::ServerMethodCall { .. } => "server_method_call",
             Reducer::ServerMethodResponse { .. } => "server_method_response",
-            Reducer::TryStart { .. } => "try_start",
+            Reducer::TryStartMatch { .. } => "try_start_match",
             Reducer::UpdateMatchConfig { .. } => "update_match_config",
+            Reducer::UpdatePreMatchConfig { .. } => "update_pre_match_config",
             _ => unreachable!(),
         }
     }
@@ -507,16 +523,17 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 server_method_response_reducer::ServerMethodResponseArgs,
             >("server_method_response", &value.args)?
             .into()),
-            "try_start" => Ok(
-                __sdk::parse_reducer_args::<try_start_reducer::TryStartArgs>(
-                    "try_start",
-                    &value.args,
-                )?
-                .into(),
-            ),
+            "try_start_match" => Ok(__sdk::parse_reducer_args::<
+                try_start_match_reducer::TryStartMatchArgs,
+            >("try_start_match", &value.args)?
+            .into()),
             "update_match_config" => Ok(__sdk::parse_reducer_args::<
                 update_match_config_reducer::UpdateMatchConfigArgs,
             >("update_match_config", &value.args)?
+            .into()),
+            "update_pre_match_config" => Ok(__sdk::parse_reducer_args::<
+                update_pre_match_config_reducer::UpdatePreMatchConfigArgs,
+            >("update_pre_match_config", &value.args)?
             .into()),
             unknown => {
                 Err(
@@ -541,6 +558,7 @@ pub struct DbUpdate {
     map_record: __sdk::TableUpdate<TmRecord>,
     match_ghost: __sdk::TableUpdate<MatchGhost>,
     match_record: __sdk::TableUpdate<TmRecord>,
+    match_standings: __sdk::TableUpdate<MatchStandings>,
     match_template: __sdk::TableUpdate<MatchTemplate>,
     registration_player: __sdk::TableUpdate<RegistrationPlayer>,
     this_tm_server: __sdk::TableUpdate<TmServer>,
@@ -589,6 +607,9 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "match_record" => db_update
                     .match_record
                     .append(match_record_table::parse_table_update(table_update)?),
+                "match_standings" => db_update
+                    .match_standings
+                    .append(match_standings_table::parse_table_update(table_update)?),
                 "match_template" => db_update
                     .match_template
                     .append(match_template_table::parse_table_update(table_update)?),
@@ -716,6 +737,8 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.map_record = cache.apply_diff_to_table::<TmRecord>("map_record", &self.map_record);
         diff.match_record =
             cache.apply_diff_to_table::<TmRecord>("match_record", &self.match_record);
+        diff.match_standings =
+            cache.apply_diff_to_table::<MatchStandings>("match_standings", &self.match_standings);
         diff.this_tm_server =
             cache.apply_diff_to_table::<TmServer>("this_tm_server", &self.this_tm_server);
 
@@ -736,6 +759,7 @@ pub struct AppliedDiff<'r> {
     map_record: __sdk::TableAppliedDiff<'r, TmRecord>,
     match_ghost: __sdk::TableAppliedDiff<'r, MatchGhost>,
     match_record: __sdk::TableAppliedDiff<'r, TmRecord>,
+    match_standings: __sdk::TableAppliedDiff<'r, MatchStandings>,
     match_template: __sdk::TableAppliedDiff<'r, MatchTemplate>,
     registration_player: __sdk::TableAppliedDiff<'r, RegistrationPlayer>,
     this_tm_server: __sdk::TableAppliedDiff<'r, TmServer>,
@@ -787,6 +811,11 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
         callbacks.invoke_table_row_callbacks::<TmRecord>("map_record", &self.map_record, event);
         callbacks.invoke_table_row_callbacks::<MatchGhost>("match_ghost", &self.match_ghost, event);
         callbacks.invoke_table_row_callbacks::<TmRecord>("match_record", &self.match_record, event);
+        callbacks.invoke_table_row_callbacks::<MatchStandings>(
+            "match_standings",
+            &self.match_standings,
+            event,
+        );
         callbacks.invoke_table_row_callbacks::<MatchTemplate>(
             "match_template",
             &self.match_template,
@@ -1568,6 +1597,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
         map_record_table::register_table(client_cache);
         match_ghost_table::register_table(client_cache);
         match_record_table::register_table(client_cache);
+        match_standings_table::register_table(client_cache);
         match_template_table::register_table(client_cache);
         registration_player_table::register_table(client_cache);
         this_tm_server_table::register_table(client_cache);

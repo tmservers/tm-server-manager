@@ -2,14 +2,13 @@ use nadeo_api::{NadeoRequest, auth::AuthType, request::Method};
 use serde::{Deserialize, Serialize};
 use tm_server_client::{ClientError, method::XmlRpcMethods};
 use tm_tourney_manager_api_rs::TmServer;
-use tracing::info;
 
 use crate::{NADEO, TRACKMANIA};
 
 pub async fn configure(tm_server: TmServer) {
     let local_server = TRACKMANIA.wait();
 
-    //SAFETY: Same type but rust cant know that.
+    //SAFETY: Same type but rust can't know that.
     let configuration = unsafe {
         std::mem::transmute::<
             tm_tourney_manager_api_rs::ServerConfig,
@@ -55,6 +54,7 @@ pub(crate) async fn get_maps(maps: impl Iterator<Item = &String>) {
         name: String,
     }
 
+    //TODO: better to use the mapUidList and afterwards make a for loop  to reduce nadeo api calls.
     for map in maps {
         let req = NadeoRequest::builder()
             .method(Method::GET)

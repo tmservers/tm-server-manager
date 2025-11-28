@@ -10,12 +10,5 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-// The tagged union or sum type for the algebraic type `CompetitionKind`.
-const CompetitionKind = __t.enum("CompetitionKind", {MatchV1: __t.u32(),
-  CompetitionV1: __t.u32(),
-  MapMonitorV1: __t.u32(),
+export default __t.row({
 });
-
-export default CompetitionKind;
-
-

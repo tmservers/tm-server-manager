@@ -1,4 +1,7 @@
+use spacetimedb::{AnonymousViewContext, SpacetimeType, ViewContext, view};
 use tm_server_types::event::Event;
+
+use crate::server::event::tm_server_event__view;
 
 //TODO probably factor out in own crate for proper support in client applications.
 pub struct LeaderboardEmulator {
@@ -61,4 +64,17 @@ pub struct RoundsRound {
 pub struct RoundsRoundPlayer {
     id: String,
     ghost: u32,
+}
+
+#[derive(Debug, SpacetimeType)]
+pub struct MatchStandings {}
+
+#[view(name=match_standings,public)]
+pub fn match_standings(ctx: &AnonymousViewContext, /* TODO: match id */) -> Option<MatchStandings> {
+    let match_id: u32 = 1; //TODO get this from the view arg.
+
+    //TODO
+    for event in ctx.db.tm_server_event().event_match().filter(match_id) {}
+
+    None
 }

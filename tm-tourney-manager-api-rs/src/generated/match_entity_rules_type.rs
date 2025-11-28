@@ -6,14 +6,8 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub enum CompetitionKind {
-    MatchV1(u32),
+pub struct MatchEntityRules {}
 
-    CompetitionV1(u32),
-
-    MapMonitorV1(u32),
-}
-
-impl __sdk::InModule for CompetitionKind {
+impl __sdk::InModule for MatchEntityRules {
     type Module = super::RemoteModule;
 }

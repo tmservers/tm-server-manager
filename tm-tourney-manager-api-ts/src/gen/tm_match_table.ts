@@ -12,8 +12,9 @@ import {
 import Scheduling from "./scheduling_type";
 import ServerConfig from "./server_config_type";
 import MatchStatus from "./match_status_type";
-import MatchLeaderboardRules from "./match_leaderboard_rules_type";
 import MatchState from "./match_state_type";
+import MatchEntityRules from "./match_entity_rules_type";
+import MatchLeaderboardRules from "./match_leaderboard_rules_type";
 
 
 export default __t.row({
@@ -36,10 +37,13 @@ export default __t.row({
   get status() {
     return MatchStatus;
   },
-  get leaderboard() {
-    return MatchLeaderboardRules;
-  },
   get state() {
     return MatchState;
+  },
+  get permittedEntities() {
+    return MatchEntityRules;
+  },
+  get leaderboard() {
+    return MatchLeaderboardRules;
   },
 });

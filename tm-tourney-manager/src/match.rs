@@ -1,4 +1,4 @@
-use spacetimedb::{ReducerContext, Table};
+use spacetimedb::{ReducerContext, SpacetimeType, Table};
 use tm_server_types::{config::ServerConfig, event::Event};
 
 use crate::{
@@ -46,7 +46,6 @@ pub struct TmMatch {
 
     scheduling: Scheduling,
 
-    // qualified_entities: RegistrationRules,
     /// The assigned server that is currently used by this match.
     server_id: Option<String>,
 
@@ -59,8 +58,10 @@ pub struct TmMatch {
     post_match_config: Option<ServerConfig>,
 
     status: MatchStatus,
-    leaderboard: MatchLeaderboardRules,
     state: MatchState,
+
+    permitted_entities: MatchEntityRules,
+    leaderboard: MatchLeaderboardRules,
 }
 
 impl TmMatch {
@@ -119,7 +120,10 @@ pub fn create_match(
     tournament_id: u32,
     competition_id: u32,
     with_template: Option<u32>,
-    auto_provisioning_server: bool,
+    //TODO: how to auto provision good?
+    // maybe remove it from here and always auto assign from owned servers if not done manually in time.
+    // THis would be done when switching to upcoming.
+    //auto_provisioning_server: bool,
 ) -> Result<(), String> {
     ctx.auth_user()?;
 
@@ -129,14 +133,14 @@ pub fn create_match(
         competition_id,
         tournament_id,
         status: MatchStatus::Configuring,
-        server_id: if auto_provisioning_server { None } else { None },
+        server_id: None,
         pre_match_config: None,
         match_config: None,
         post_match_config: None,
         leaderboard: MatchLeaderboardRules::new(),
         state: MatchState::new(),
         scheduling: Scheduling::Manual,
-        //registration_rules: RegistrationRules::Open,
+        permitted_entities: MatchEntityRules::new(),
     };
 
     if ctx.db.tournament().id().find(competition_id).is_none() {
@@ -180,23 +184,45 @@ pub fn match_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> {
     ctx.auth_user()?;
     if let Some(mut tm_match) = ctx.db.tm_match().id().find(id)
         && tm_match.status == MatchStatus::Configuring
-        && tm_match.server_id.is_some()
+        && let Some(tm_server_id) = &tm_match.server_id
         && tm_match.match_config.is_some()
     {
         tm_match.status = MatchStatus::Upcoming;
+
+        // Send the configuration of the corresponding match to the associated server.
+        let Some(mut tm_server) = ctx.db.tm_server().id().find(tm_server_id) else {
+            return Err(format!("No server with id {tm_server_id} could be found"));
+        };
+        if tm_match.pre_match_config.is_some() {
+            tm_server.set_config(tm_match.pre_match_config.clone().unwrap());
+        } else {
+            tm_server.set_config(tm_match.match_config.clone().unwrap());
+        }
+
         ctx.db.tm_match().id().update(tm_match);
+
+        ctx.db.tm_server().id().update(tm_server);
     }
     Ok(())
 }
 
-/* #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn update_pre_match_config(ctx: &ReducerContext, id: u32, config: ServerConfig) {
-    //TODO authorization
-    if let Some(mut stage_match) = ctx.db.stage_match().id().find(id) {
-        stage_match.match_config = Some(config);
-        ctx.db.stage_match().id().update(stage_match);
+#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
+pub fn update_pre_match_config(
+    ctx: &ReducerContext,
+    id: u32,
+    config: ServerConfig,
+) -> Result<(), String> {
+    ctx.auth_user()?;
+    if let Some(mut tm_match) = ctx.db.tm_match().id().find(id)
+        && tm_match.status == MatchStatus::Configuring
+    {
+        tm_match.pre_match_config = Some(config);
+        ctx.db.tm_match().id().update(tm_match);
+        Ok(())
+    } else {
+        Err(format!("Match with id: {id} not found."))
     }
-} */
+}
 
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn update_match_config(
@@ -205,9 +231,11 @@ pub fn update_match_config(
     config: ServerConfig,
 ) -> Result<(), String> {
     ctx.auth_user()?;
-    if let Some(mut stage_match) = ctx.db.tm_match().id().find(id) {
-        stage_match.match_config = Some(config);
-        ctx.db.tm_match().id().update(stage_match);
+    if let Some(mut tm_match) = ctx.db.tm_match().id().find(id)
+        && tm_match.status == MatchStatus::Configuring
+    {
+        tm_match.match_config = Some(config);
+        ctx.db.tm_match().id().update(tm_match);
         Ok(())
     } else {
         Err(format!("Match with id: {id} not found."))
@@ -217,7 +245,7 @@ pub fn update_match_config(
 /// If the match is fully configured and ready start.
 /// This can also serve as a manual override for scheduled matches.
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn try_start(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
+pub fn try_start_match(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
     ctx.auth_user()?;
     if let Some(mut tm_match) = ctx.db.tm_match().id().find(match_id)
         // Match needs an assigned server
@@ -242,4 +270,13 @@ pub struct MatchTemplate {
     id: u32,
 
     creator: String,
+}
+
+#[derive(Debug, SpacetimeType)]
+pub struct MatchEntityRules {}
+
+impl MatchEntityRules {
+    fn new() -> Self {
+        MatchEntityRules {}
+    }
 }

@@ -67,10 +67,12 @@ import ServerMethodCall from "./server_method_call_reducer";
 export { ServerMethodCall };
 import ServerMethodResponse from "./server_method_response_reducer";
 export { ServerMethodResponse };
-import TryStart from "./try_start_reducer";
-export { TryStart };
+import TryStartMatch from "./try_start_match_reducer";
+export { TryStartMatch };
 import UpdateMatchConfig from "./update_match_config_reducer";
 export { UpdateMatchConfig };
+import UpdatePreMatchConfig from "./update_pre_match_config_reducer";
+export { UpdatePreMatchConfig };
 
 // Import and reexport all procedure arg types
 import * as PostRoundReplayProcedure from "./post_round_replay_procedure";
@@ -97,6 +99,8 @@ import MatchGhostRow from "./match_ghost_table";
 export { MatchGhostRow };
 import MatchRecordRow from "./match_record_table";
 export { MatchRecordRow };
+import MatchStandingsRow from "./match_standings_table";
+export { MatchStandingsRow };
 import MatchTemplateRow from "./match_template_table";
 export { MatchTemplateRow };
 import RegistrationPlayerRow from "./registration_player_table";
@@ -183,10 +187,14 @@ import Map from "./map_type";
 export { Map };
 import MapPoolConfig from "./map_pool_config_type";
 export { MapPoolConfig };
+import MatchEntityRules from "./match_entity_rules_type";
+export { MatchEntityRules };
 import MatchGhost from "./match_ghost_type";
 export { MatchGhost };
 import MatchLeaderboardRules from "./match_leaderboard_rules_type";
 export { MatchLeaderboardRules };
+import MatchStandings from "./match_standings_type";
+export { MatchStandings };
 import MatchState from "./match_state_type";
 export { MatchState };
 import MatchStatus from "./match_status_type";
@@ -438,8 +446,7 @@ const tablesSchema = __schema(
       { name: 'event', algorithm: 'btree', columns: [
         'event',
       ] },
-      { name: 'event_filtering', algorithm: 'btree', columns: [
-        'tournamentId',
+      { name: 'event_match', algorithm: 'btree', columns: [
         'matchId',
       ] },
     ],
@@ -520,6 +527,13 @@ const tablesSchema = __schema(
     ],
   }, MatchRecordRow),
   __table({
+    name: 'match_standings',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MatchStandingsRow),
+  __table({
     name: 'this_tm_server',
     indexes: [
     ],
@@ -546,8 +560,9 @@ const reducersSchema = __reducers(
   __reducerSchema("post_record", PostRecord),
   __reducerSchema("server_method_call", ServerMethodCall),
   __reducerSchema("server_method_response", ServerMethodResponse),
-  __reducerSchema("try_start", TryStart),
+  __reducerSchema("try_start_match", TryStartMatch),
   __reducerSchema("update_match_config", UpdateMatchConfig),
+  __reducerSchema("update_pre_match_config", UpdatePreMatchConfig),
 );
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */

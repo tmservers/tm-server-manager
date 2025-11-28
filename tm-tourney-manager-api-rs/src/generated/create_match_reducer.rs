@@ -10,7 +10,6 @@ pub(super) struct CreateMatchArgs {
     pub tournament_id: u32,
     pub competition_id: u32,
     pub with_template: Option<u32>,
-    pub auto_provisioning_server: bool,
 }
 
 impl From<CreateMatchArgs> for super::Reducer {
@@ -19,7 +18,6 @@ impl From<CreateMatchArgs> for super::Reducer {
             tournament_id: args.tournament_id,
             competition_id: args.competition_id,
             with_template: args.with_template,
-            auto_provisioning_server: args.auto_provisioning_server,
         }
     }
 }
@@ -45,7 +43,6 @@ pub trait create_match {
         tournament_id: u32,
         competition_id: u32,
         with_template: Option<u32>,
-        auto_provisioning_server: bool,
     ) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `create_match`.
     ///
@@ -56,9 +53,7 @@ pub trait create_match {
     /// to cancel the callback.
     fn on_create_match(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &u32, &u32, &Option<u32>, &bool)
-            + Send
-            + 'static,
+        callback: impl FnMut(&super::ReducerEventContext, &u32, &u32, &Option<u32>) + Send + 'static,
     ) -> CreateMatchCallbackId;
     /// Cancel a callback previously registered by [`Self::on_create_match`],
     /// causing it not to run in the future.
@@ -71,7 +66,6 @@ impl create_match for super::RemoteReducers {
         tournament_id: u32,
         competition_id: u32,
         with_template: Option<u32>,
-        auto_provisioning_server: bool,
     ) -> __sdk::Result<()> {
         self.imp.call_reducer(
             "create_match",
@@ -79,15 +73,12 @@ impl create_match for super::RemoteReducers {
                 tournament_id,
                 competition_id,
                 with_template,
-                auto_provisioning_server,
             },
         )
     }
     fn on_create_match(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &u32, &u32, &Option<u32>, &bool)
-            + Send
-            + 'static,
+        mut callback: impl FnMut(&super::ReducerEventContext, &u32, &u32, &Option<u32>) + Send + 'static,
     ) -> CreateMatchCallbackId {
         CreateMatchCallbackId(self.imp.on_reducer(
             "create_match",
@@ -100,7 +91,6 @@ impl create_match for super::RemoteReducers {
                                     tournament_id,
                                     competition_id,
                                     with_template,
-                                    auto_provisioning_server,
                                 },
                             ..
                         },
@@ -109,13 +99,7 @@ impl create_match for super::RemoteReducers {
                 else {
                     unreachable!()
                 };
-                callback(
-                    ctx,
-                    tournament_id,
-                    competition_id,
-                    with_template,
-                    auto_provisioning_server,
-                )
+                callback(ctx, tournament_id, competition_id, with_template)
             }),
         ))
     }

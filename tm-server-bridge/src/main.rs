@@ -277,15 +277,14 @@ fn on_disconnected(_ctx: &ErrorContext, err: Option<Error>) {
 }
 
 fn server_update(_: &EventContext, old: &TmServer, new: &TmServer) {
-    let new = new.clone();
-    let old = old.clone();
+    //TODO check for match status change aswell!
 
-    tokio::spawn(async move {
-        //TODO this needs to be cleaner
-        if old.config != new.config {
+    if old.config != new.config {
+        let new = new.clone();
+        tokio::spawn(async move {
             configure(new).await;
-        }
-    });
+        });
+    }
 }
 
 fn server_bootstrap(ctx: &EventContext, new: &TmServer) {
