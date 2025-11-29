@@ -95,6 +95,8 @@ import GeneratorRow from "./generator_table";
 export { GeneratorRow };
 import MapRecordRow from "./map_record_table";
 export { MapRecordRow };
+import MatchEventRow from "./match_event_table";
+export { MatchEventRow };
 import MatchGhostRow from "./match_ghost_table";
 export { MatchGhostRow };
 import MatchRecordRow from "./match_record_table";
@@ -117,8 +119,6 @@ import TmServerRow from "./tm_server_table";
 export { TmServerRow };
 import TmServerConfigRow from "./tm_server_config_table";
 export { TmServerConfigRow };
-import TmServerEventRow from "./tm_server_event_table";
-export { TmServerEventRow };
 import TmServerMethodCallRow from "./tm_server_method_call_table";
 export { TmServerMethodCallRow };
 import TmServerMethodResponseRow from "./tm_server_method_response_table";
@@ -189,6 +189,8 @@ import MapPoolConfig from "./map_pool_config_type";
 export { MapPoolConfig };
 import MatchEntityRules from "./match_entity_rules_type";
 export { MatchEntityRules };
+import MatchEvent from "./match_event_type";
+export { MatchEvent };
 import MatchGhost from "./match_ghost_type";
 export { MatchGhost };
 import MatchLeaderboardRules from "./match_leaderboard_rules_type";
@@ -285,8 +287,6 @@ import TmServer from "./tm_server_type";
 export { TmServer };
 import TmServerConfig from "./tm_server_config_type";
 export { TmServerConfig };
-import TmServerEvent from "./tm_server_event_type";
-export { TmServerEvent };
 import TmServerMethodCall from "./tm_server_method_call_type";
 export { TmServerMethodCall };
 import TmServerMethodResponse from "./tm_server_method_response_type";
@@ -355,6 +355,19 @@ const tablesSchema = __schema(
     constraints: [
     ],
   }, GeneratorRow),
+  __table({
+    name: 'match_event',
+    indexes: [
+      { name: 'event', algorithm: 'btree', columns: [
+        'event',
+      ] },
+      { name: 'event_match', algorithm: 'btree', columns: [
+        'matchId',
+      ] },
+    ],
+    constraints: [
+    ],
+  }, MatchEventRow),
   __table({
     name: 'match_ghost',
     indexes: [
@@ -440,19 +453,6 @@ const tablesSchema = __schema(
       { name: 'tm_server_config_id_key', constraint: 'unique', columns: ['id'] },
     ],
   }, TmServerConfigRow),
-  __table({
-    name: 'tm_server_event',
-    indexes: [
-      { name: 'event', algorithm: 'btree', columns: [
-        'event',
-      ] },
-      { name: 'event_match', algorithm: 'btree', columns: [
-        'matchId',
-      ] },
-    ],
-    constraints: [
-    ],
-  }, TmServerEventRow),
   __table({
     name: 'tm_server_method_call',
     indexes: [

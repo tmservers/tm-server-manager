@@ -56,6 +56,8 @@ pub mod map_type;
 pub mod match_assign_server_reducer;
 pub mod match_configured_reducer;
 pub mod match_entity_rules_type;
+pub mod match_event_table;
+pub mod match_event_type;
 pub mod match_ghost_table;
 pub mod match_ghost_type;
 pub mod match_leaderboard_rules_type;
@@ -120,8 +122,6 @@ pub mod tm_match_type;
 pub mod tm_record_type;
 pub mod tm_server_config_table;
 pub mod tm_server_config_type;
-pub mod tm_server_event_table;
-pub mod tm_server_event_type;
 pub mod tm_server_method_call_table;
 pub mod tm_server_method_call_type;
 pub mod tm_server_method_response_table;
@@ -217,6 +217,8 @@ pub use match_configured_reducer::{
     match_configured, set_flags_for_match_configured, MatchConfiguredCallbackId,
 };
 pub use match_entity_rules_type::MatchEntityRules;
+pub use match_event_table::*;
+pub use match_event_type::MatchEvent;
 pub use match_ghost_table::*;
 pub use match_ghost_type::MatchGhost;
 pub use match_leaderboard_rules_type::MatchLeaderboardRules;
@@ -288,8 +290,6 @@ pub use tm_match_type::TmMatch;
 pub use tm_record_type::TmRecord;
 pub use tm_server_config_table::*;
 pub use tm_server_config_type::TmServerConfig;
-pub use tm_server_event_table::*;
-pub use tm_server_event_type::TmServerEvent;
 pub use tm_server_method_call_table::*;
 pub use tm_server_method_call_type::TmServerMethodCall;
 pub use tm_server_method_response_table::*;
@@ -556,6 +556,7 @@ pub struct DbUpdate {
     event_config: __sdk::TableUpdate<EventConfig>,
     generator: __sdk::TableUpdate<Generator>,
     map_record: __sdk::TableUpdate<TmRecord>,
+    match_event: __sdk::TableUpdate<MatchEvent>,
     match_ghost: __sdk::TableUpdate<MatchGhost>,
     match_record: __sdk::TableUpdate<TmRecord>,
     match_standings: __sdk::TableUpdate<MatchStandings>,
@@ -567,7 +568,6 @@ pub struct DbUpdate {
     tm_match_record: __sdk::TableUpdate<TmCompRecord>,
     tm_server: __sdk::TableUpdate<TmServer>,
     tm_server_config: __sdk::TableUpdate<TmServerConfig>,
-    tm_server_event: __sdk::TableUpdate<TmServerEvent>,
     tm_server_method_call: __sdk::TableUpdate<TmServerMethodCall>,
     tm_server_method_response: __sdk::TableUpdate<TmServerMethodResponse>,
     tournament: __sdk::TableUpdate<TabTournament>,
@@ -601,6 +601,9 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "map_record" => db_update
                     .map_record
                     .append(map_record_table::parse_table_update(table_update)?),
+                "match_event" => db_update
+                    .match_event
+                    .append(match_event_table::parse_table_update(table_update)?),
                 "match_ghost" => db_update
                     .match_ghost
                     .append(match_ghost_table::parse_table_update(table_update)?),
@@ -634,9 +637,6 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "tm_server_config" => db_update
                     .tm_server_config
                     .append(tm_server_config_table::parse_table_update(table_update)?),
-                "tm_server_event" => db_update
-                    .tm_server_event
-                    .append(tm_server_event_table::parse_table_update(table_update)?),
                 "tm_server_method_call" => db_update.tm_server_method_call.append(
                     tm_server_method_call_table::parse_table_update(table_update)?,
                 ),
@@ -690,6 +690,8 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.event_config =
             cache.apply_diff_to_table::<EventConfig>("event_config", &self.event_config);
         diff.generator = cache.apply_diff_to_table::<Generator>("generator", &self.generator);
+        diff.match_event =
+            cache.apply_diff_to_table::<MatchEvent>("match_event", &self.match_event);
         diff.match_ghost =
             cache.apply_diff_to_table::<MatchGhost>("match_ghost", &self.match_ghost);
         diff.match_template = cache
@@ -712,8 +714,6 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.tm_server_config = cache
             .apply_diff_to_table::<TmServerConfig>("tm_server_config", &self.tm_server_config)
             .with_updates_by_pk(|row| &row.id);
-        diff.tm_server_event =
-            cache.apply_diff_to_table::<TmServerEvent>("tm_server_event", &self.tm_server_event);
         diff.tm_server_method_call = cache
             .apply_diff_to_table::<TmServerMethodCall>(
                 "tm_server_method_call",
@@ -757,6 +757,7 @@ pub struct AppliedDiff<'r> {
     event_config: __sdk::TableAppliedDiff<'r, EventConfig>,
     generator: __sdk::TableAppliedDiff<'r, Generator>,
     map_record: __sdk::TableAppliedDiff<'r, TmRecord>,
+    match_event: __sdk::TableAppliedDiff<'r, MatchEvent>,
     match_ghost: __sdk::TableAppliedDiff<'r, MatchGhost>,
     match_record: __sdk::TableAppliedDiff<'r, TmRecord>,
     match_standings: __sdk::TableAppliedDiff<'r, MatchStandings>,
@@ -768,7 +769,6 @@ pub struct AppliedDiff<'r> {
     tm_match_record: __sdk::TableAppliedDiff<'r, TmCompRecord>,
     tm_server: __sdk::TableAppliedDiff<'r, TmServer>,
     tm_server_config: __sdk::TableAppliedDiff<'r, TmServerConfig>,
-    tm_server_event: __sdk::TableAppliedDiff<'r, TmServerEvent>,
     tm_server_method_call: __sdk::TableAppliedDiff<'r, TmServerMethodCall>,
     tm_server_method_response: __sdk::TableAppliedDiff<'r, TmServerMethodResponse>,
     tournament: __sdk::TableAppliedDiff<'r, TabTournament>,
@@ -809,6 +809,7 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
         );
         callbacks.invoke_table_row_callbacks::<Generator>("generator", &self.generator, event);
         callbacks.invoke_table_row_callbacks::<TmRecord>("map_record", &self.map_record, event);
+        callbacks.invoke_table_row_callbacks::<MatchEvent>("match_event", &self.match_event, event);
         callbacks.invoke_table_row_callbacks::<MatchGhost>("match_ghost", &self.match_ghost, event);
         callbacks.invoke_table_row_callbacks::<TmRecord>("match_record", &self.match_record, event);
         callbacks.invoke_table_row_callbacks::<MatchStandings>(
@@ -846,11 +847,6 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
         callbacks.invoke_table_row_callbacks::<TmServerConfig>(
             "tm_server_config",
             &self.tm_server_config,
-            event,
-        );
-        callbacks.invoke_table_row_callbacks::<TmServerEvent>(
-            "tm_server_event",
-            &self.tm_server_event,
             event,
         );
         callbacks.invoke_table_row_callbacks::<TmServerMethodCall>(
@@ -1595,6 +1591,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
         event_config_table::register_table(client_cache);
         generator_table::register_table(client_cache);
         map_record_table::register_table(client_cache);
+        match_event_table::register_table(client_cache);
         match_ghost_table::register_table(client_cache);
         match_record_table::register_table(client_cache);
         match_standings_table::register_table(client_cache);
@@ -1606,7 +1603,6 @@ impl __sdk::SpacetimeModule for RemoteModule {
         tm_match_record_table::register_table(client_cache);
         tm_server_table::register_table(client_cache);
         tm_server_config_table::register_table(client_cache);
-        tm_server_event_table::register_table(client_cache);
         tm_server_method_call_table::register_table(client_cache);
         tm_server_method_response_table::register_table(client_cache);
         tournament_table::register_table(client_cache);

@@ -12,6 +12,8 @@ pub enum CompetitionKind {
     CompetitionV1(u32),
 
     MapMonitorV1(u32),
+
+    ServerV1(u32),
 }
 
 impl __sdk::InModule for CompetitionKind {

@@ -79,3 +79,8 @@ pub struct TournamentV1 {}
 pub fn tournament(ctx: &ViewContext) -> Vec<TournamentV1> {
     ctx.db.tab_tournament().id().find(1).unwrap()]
 } */
+
+/* #[view(name=organized_tournament,public)]
+pub fn organized_tournament(ctx: &ViewContext) -> Vec<TournamentV1> {
+    ctx.db.tournament()
+} */

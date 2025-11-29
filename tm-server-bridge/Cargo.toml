@@ -12,22 +12,22 @@ repository.workspace = true
 
 [dependencies]
 tokio.workspace = true
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-
-tm-server-client.workspace = true
 
 spacetimedb-sdk.workspace = true
+tm-server-client.workspace = true
 tm-tourney-manager-api-rs.workspace = true
-
-
-takumi.workspace = true
-
-nadeo-api = "*"
 
 dotenvy.workspace = true
 
+takumi.workspace = true
+
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
 serde = { version = "*", features = ['derive'] }
+
+nadeo-api = "*"
+
 
 # Implements the types defined in the Otel spec
 opentelemetry = { version = "0.31.0", default-features = false, features = [

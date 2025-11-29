@@ -11,6 +11,7 @@ use crate::{
     tournament::tournament,
 };
 
+pub mod event;
 mod leaderboard;
 pub mod match_state;
 

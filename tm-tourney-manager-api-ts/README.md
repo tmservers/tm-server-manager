@@ -1,15 +1,7 @@
 # tm-tourney-manager-api-ts
 
-To install dependencies:
+Companion package to the `spacetimedb` package to provide the generated api bindings for your integration.
 
-```bash
-bun install
-```
+The code is not hand maintained but generated with the `spacetime cli` and synced with every release of the project.
 
-To run:
-
-```bash
-bun run index.ts
-```
-
-This project was created using `bun init` in bun v1.2.23. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+This means you can theoretically also depend on the generated code yourself instead of this package if you like that approach more.

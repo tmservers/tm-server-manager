@@ -3,27 +3,15 @@ use tm_server_types::event::Event;
 
 use crate::{
     auth::Authorization,
-    r#match::{match_state::MatchState, tm_match},
+    r#match::{
+        event::{MatchEvent, match_event},
+        match_state::MatchState,
+        tm_match,
+    },
     server::tm_server,
 };
 
-#[table(
-    name = tm_server_event,
-    public,
-    index(
-        name = event_match,
-        btree(columns = [match_id]))
-    )]
-pub struct TmServerEvent {
-    tournament_id: u32,
-    match_id: u32,
-
-    state: MatchState,
-
-    #[index(btree)]
-    event: Event,
-}
-
+/// Servers call this to post the event stream.
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
     let login = ctx.auth_server()?;
@@ -47,7 +35,7 @@ pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
         };
 
         let tournament_id = tm_match.get_tournament();
-        ctx.db.tm_server_event().insert(TmServerEvent {
+        ctx.db.match_event().insert(MatchEvent {
             tournament_id,
             match_id,
             event,

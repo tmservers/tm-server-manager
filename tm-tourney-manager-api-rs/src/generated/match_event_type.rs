@@ -9,13 +9,13 @@ use super::match_state_type::MatchState;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct TmServerEvent {
+pub struct MatchEvent {
     pub tournament_id: u32,
     pub match_id: u32,
     pub state: MatchState,
     pub event: Event,
 }
 
-impl __sdk::InModule for TmServerEvent {
+impl __sdk::InModule for MatchEvent {
     type Module = super::RemoteModule;
 }
