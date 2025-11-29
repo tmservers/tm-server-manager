@@ -1,9 +1,27 @@
 {
   "name": "tm-tourney-manager-api-ts",
-  "version": "0.0.9",
   "description": "API bindings for the tm-tounrey-manager project",
-  "module": "src/index.ts",
-  "types": "src/index.ts",
+  "version": "0.0.12",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "module": "./dist/index.js",
+  "main": "./dist/index.cjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
   "license": "(MIT OR Apache-2.0)",
   "repository": {
     "url": "https://github.com/kistz/tm-tourney-manager"
@@ -12,12 +30,16 @@
     "name": "Kilian Strunz",
     "url": "https://github.com/kistz"
   },
-  "type": "module",
+  "scripts": {
+    "build": "bunup",
+    "dev": "bunup --watch"
+  },
   "dependencies": {
     "spacetimedb": "1.10.0"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "bunup": "^0.16.10"
   },
   "peerDependencies": {
     "typescript": "^5"
