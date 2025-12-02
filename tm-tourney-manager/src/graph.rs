@@ -52,6 +52,35 @@ pub struct Node {
     weight: CompetitionKind,
     /// Next edge in outgoing and incoming edge lists.
     next: StartEnd,
+
+    //which invariants should the thing provide?
+    //How would i batch multiple matches into a custom leaderboard.
+
+    // Can there be multiple output nodes?
+    //-> i think not
+    // Only one node in the whole competition can be marked as a output.
+    //-> This should then be a member of a competition intself and likely an Option<CompetitionKind>,
+    //-> I need to provide an interface where every node can give back results that are ordered and probably should operate on Entities
+    //-> These entities are Players or Teams.
+    //->-> A leaderboard node type could be exposed to further post process these results.
+    //->-> Need a interface where we can input these results and define rules on them.
+
+    //THE INTERFACE WOULD ENSURE THAT EVERY NODE TYPE HAS ONE LEADEARBOARD ASSOCIATED WITH IT.
+    output: bool,
+
+    // We need something where we can define the range of the input.
+    // Actually not only the range but rules on how to distribute something to the ndoes
+    // This would be part of the functionality of competitions.
+    // There we have the problem: What is the MAX thing a Competition is allowed to handle?
+    // What to do if there is less than the MAX? -> How rather how to expose it to users.
+
+    //THere need to be node templates and compeitiion templates.
+    // Maybe the competition templates should handling this somehow :thinking: but that would prevent
+    // users from specifing their thing in advance when the concrete stuff is not known.
+    // Maybe this would be best to handle with a competitionStage thats called generate.
+    //-> Generate would then prevent things that depend on generation to be run before actually knowing the specifics.
+    //-> Maybe this would also be handled by the npdes themselves idk.
+    input: bool,
 }
 
 #[derive(Debug)]
@@ -90,6 +119,9 @@ impl Competitions {
                 start: u32::MAX,
                 end: u32::MAX,
             },
+
+            output: false,
+            input: false,
         });
         id
     }
@@ -139,4 +171,5 @@ pub enum CompetitionKind {
     ServerV1(u32),
 }
 
+// How to handle the recursion when scheduling??
 // How to handle the recursion when scheduling??
