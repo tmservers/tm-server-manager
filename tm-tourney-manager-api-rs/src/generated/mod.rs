@@ -337,7 +337,6 @@ pub enum Reducer {
     },
     CreateCompetition {
         name: String,
-        tournament_id: u32,
         parent_id: u32,
         with_template: Option<u32>,
     },
@@ -349,7 +348,6 @@ pub enum Reducer {
         name: String,
     },
     CreateMatch {
-        tournament_id: u32,
         competition_id: u32,
         with_template: Option<u32>,
     },

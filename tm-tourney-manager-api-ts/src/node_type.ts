@@ -20,6 +20,8 @@ export default __t.object("Node", {
   get next() {
     return StartEnd;
   },
+  output: __t.bool(),
+  input: __t.bool(),
 });
 
 

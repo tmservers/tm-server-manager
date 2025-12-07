@@ -118,7 +118,6 @@ pub enum MatchStatus {
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn create_match(
     ctx: &ReducerContext,
-    tournament_id: u32,
     competition_id: u32,
     with_template: Option<u32>,
     //TODO: how to auto provision good?
@@ -128,11 +127,15 @@ pub fn create_match(
 ) -> Result<(), String> {
     ctx.auth_user()?;
 
+    let Some(mut parent_competition) = ctx.db.competition().id().find(competition_id) else {
+        return Err("Invalid competition".into());
+    };
+
     // Create an uncommitted match
     let tm_match = TmMatch {
         id: 0,
         competition_id,
-        tournament_id,
+        tournament_id: parent_competition.get_tournament(),
         status: MatchStatus::Configuring,
         server_id: None,
         pre_match_config: None,
@@ -142,14 +145,6 @@ pub fn create_match(
         state: MatchState::new(),
         scheduling: Scheduling::Manual,
         permitted_entities: MatchEntityRules::new(),
-    };
-
-    if ctx.db.tournament().id().find(competition_id).is_none() {
-        return Err("Invalid tournament".into());
-    };
-
-    let Some(mut parent_competition) = ctx.db.competition().id().find(competition_id) else {
-        return Err("Invalid competition".into());
     };
 
     let tm_match = ctx.db.tm_match().try_insert(tm_match)?;

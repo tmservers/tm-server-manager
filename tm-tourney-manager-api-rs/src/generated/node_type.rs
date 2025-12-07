@@ -12,6 +12,8 @@ use super::start_end_type::StartEnd;
 pub struct Node {
     pub weight: CompetitionKind,
     pub next: StartEnd,
+    pub output: bool,
+    pub input: bool,
 }
 
 impl __sdk::InModule for Node {

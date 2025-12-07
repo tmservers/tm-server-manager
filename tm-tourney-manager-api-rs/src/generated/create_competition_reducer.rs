@@ -8,7 +8,6 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[sats(crate = __lib)]
 pub(super) struct CreateCompetitionArgs {
     pub name: String,
-    pub tournament_id: u32,
     pub parent_id: u32,
     pub with_template: Option<u32>,
 }
@@ -17,7 +16,6 @@ impl From<CreateCompetitionArgs> for super::Reducer {
     fn from(args: CreateCompetitionArgs) -> Self {
         Self::CreateCompetition {
             name: args.name,
-            tournament_id: args.tournament_id,
             parent_id: args.parent_id,
             with_template: args.with_template,
         }
@@ -43,7 +41,6 @@ pub trait create_competition {
     fn create_competition(
         &self,
         name: String,
-        tournament_id: u32,
         parent_id: u32,
         with_template: Option<u32>,
     ) -> __sdk::Result<()>;
@@ -56,9 +53,7 @@ pub trait create_competition {
     /// to cancel the callback.
     fn on_create_competition(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &String, &u32, &u32, &Option<u32>)
-            + Send
-            + 'static,
+        callback: impl FnMut(&super::ReducerEventContext, &String, &u32, &Option<u32>) + Send + 'static,
     ) -> CreateCompetitionCallbackId;
     /// Cancel a callback previously registered by [`Self::on_create_competition`],
     /// causing it not to run in the future.
@@ -69,7 +64,6 @@ impl create_competition for super::RemoteReducers {
     fn create_competition(
         &self,
         name: String,
-        tournament_id: u32,
         parent_id: u32,
         with_template: Option<u32>,
     ) -> __sdk::Result<()> {
@@ -77,7 +71,6 @@ impl create_competition for super::RemoteReducers {
             "create_competition",
             CreateCompetitionArgs {
                 name,
-                tournament_id,
                 parent_id,
                 with_template,
             },
@@ -85,7 +78,7 @@ impl create_competition for super::RemoteReducers {
     }
     fn on_create_competition(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &String, &u32, &u32, &Option<u32>)
+        mut callback: impl FnMut(&super::ReducerEventContext, &String, &u32, &Option<u32>)
             + Send
             + 'static,
     ) -> CreateCompetitionCallbackId {
@@ -98,7 +91,6 @@ impl create_competition for super::RemoteReducers {
                             reducer:
                                 super::Reducer::CreateCompetition {
                                     name,
-                                    tournament_id,
                                     parent_id,
                                     with_template,
                                 },
@@ -109,7 +101,7 @@ impl create_competition for super::RemoteReducers {
                 else {
                     unreachable!()
                 };
-                callback(ctx, name, tournament_id, parent_id, with_template)
+                callback(ctx, name, parent_id, with_template)
             }),
         ))
     }

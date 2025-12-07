@@ -66,6 +66,10 @@ impl Competition {
             .try_add_competition(CompetitionKind::MatchV1(match_id));
     }
 
+    pub(crate) fn get_tournament(&self) -> u32 {
+        self.tournament_id
+    }
+
     /// # Safety
     /// The new competition has to be commited to spacetime db through the `create_competition` reducer.
     /// Otherwise the id is invalid.
@@ -127,22 +131,19 @@ pub struct EventConfig {
 pub fn create_competition(
     ctx: &ReducerContext,
     name: String,
-    tournament_id: u32,
     parent_id: u32,
     with_template: Option<u32>,
 ) -> Result<(), String> {
     let user = ctx.auth_user()?;
 
-    // Tournament and parent ids need to be valid.
-    if ctx.db.tournament().id().find(tournament_id).is_none() {
-        return Err("Invalid tournament_id".into());
-    };
+    // If parent is valid it is guaranteed that it has a valid tournament associated with it.
     let Some(mut parent_competition) = ctx.db.competition().id().find(parent_id) else {
         return Err("Invalid parent_id".into());
     };
 
     //SAFETY: The competition gets commnited afterwards.
-    let new_competition = unsafe { Competition::new(name, Some(parent_id), tournament_id) };
+    let new_competition =
+        unsafe { Competition::new(name, Some(parent_id), parent_competition.get_tournament()) };
     match ctx.db.competition().try_insert(new_competition) {
         // If the insertion of the new competition succeeds we need to update the parent
         // to include it in the graph.
