@@ -73,6 +73,7 @@ impl add_dependency for super::RemoteReducers {
         AddDependencyCallbackId(self.imp.on_reducer(
             "add_dependency",
             Box::new(move |ctx: &super::ReducerEventContext| {
+                #[allow(irrefutable_let_patterns)]
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {

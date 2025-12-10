@@ -67,6 +67,7 @@ impl match_assign_server for super::RemoteReducers {
         MatchAssignServerCallbackId(self.imp.on_reducer(
             "match_assign_server",
             Box::new(move |ctx: &super::ReducerEventContext| {
+                #[allow(irrefutable_let_patterns)]
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {

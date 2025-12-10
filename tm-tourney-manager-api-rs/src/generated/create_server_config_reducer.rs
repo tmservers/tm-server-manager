@@ -69,6 +69,7 @@ impl create_server_config for super::RemoteReducers {
         CreateServerConfigCallbackId(self.imp.on_reducer(
             "create_server_config",
             Box::new(move |ctx: &super::ReducerEventContext| {
+                #[allow(irrefutable_let_patterns)]
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {

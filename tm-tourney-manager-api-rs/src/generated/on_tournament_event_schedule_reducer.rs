@@ -65,6 +65,7 @@ impl on_tournament_event_schedule for super::RemoteReducers {
         OnTournamentEventScheduleCallbackId(self.imp.on_reducer(
             "on_tournament_event_schedule",
             Box::new(move |ctx: &super::ReducerEventContext| {
+                #[allow(irrefutable_let_patterns)]
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {

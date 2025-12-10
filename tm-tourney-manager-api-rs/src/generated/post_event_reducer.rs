@@ -62,6 +62,7 @@ impl post_event for super::RemoteReducers {
         PostEventCallbackId(self.imp.on_reducer(
             "post_event",
             Box::new(move |ctx: &super::ReducerEventContext| {
+                #[allow(irrefutable_let_patterns)]
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {

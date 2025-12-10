@@ -65,6 +65,7 @@ impl create_env_var for super::RemoteReducers {
         CreateEnvVarCallbackId(self.imp.on_reducer(
             "create_env_var",
             Box::new(move |ctx: &super::ReducerEventContext| {
+                #[allow(irrefutable_let_patterns)]
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {

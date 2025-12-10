@@ -61,6 +61,7 @@ impl create_event_template for super::RemoteReducers {
         CreateEventTemplateCallbackId(self.imp.on_reducer(
             "create_event_template",
             Box::new(move |ctx: &super::ReducerEventContext| {
+                #[allow(irrefutable_let_patterns)]
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {

@@ -59,6 +59,7 @@ impl client_connected for super::RemoteReducers {
         ClientConnectedCallbackId(self.imp.on_reducer(
             "client_connected",
             Box::new(move |ctx: &super::ReducerEventContext| {
+                #[allow(irrefutable_let_patterns)]
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {

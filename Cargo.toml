@@ -39,9 +39,9 @@ base64 = { version = "*" }
 #============
 # SpacetimeDB
 #============
-spacetimedb = { version = "1.10", features = ["unstable"] }
-spacetimedb-lib = "1.10"
-spacetimedb-sdk = "1.10"
+spacetimedb = { version = "1.11", features = ["unstable"] }
+spacetimedb-lib = "1.11"
+spacetimedb-sdk = "1.11"
 
 
 #==============

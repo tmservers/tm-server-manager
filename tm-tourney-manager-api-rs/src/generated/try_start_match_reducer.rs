@@ -63,6 +63,7 @@ impl try_start_match for super::RemoteReducers {
         TryStartMatchCallbackId(self.imp.on_reducer(
             "try_start_match",
             Box::new(move |ctx: &super::ReducerEventContext| {
+                #[allow(irrefutable_let_patterns)]
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {

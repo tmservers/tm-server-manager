@@ -69,6 +69,7 @@ impl server_method_call for super::RemoteReducers {
         ServerMethodCallCallbackId(self.imp.on_reducer(
             "server_method_call",
             Box::new(move |ctx: &super::ReducerEventContext| {
+                #[allow(irrefutable_let_patterns)]
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {

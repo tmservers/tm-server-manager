@@ -85,6 +85,7 @@ impl create_competition for super::RemoteReducers {
         CreateCompetitionCallbackId(self.imp.on_reducer(
             "create_competition",
             Box::new(move |ctx: &super::ReducerEventContext| {
+                #[allow(irrefutable_let_patterns)]
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {

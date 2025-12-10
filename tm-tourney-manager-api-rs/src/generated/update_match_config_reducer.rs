@@ -67,6 +67,7 @@ impl update_match_config for super::RemoteReducers {
         UpdateMatchConfigCallbackId(self.imp.on_reducer(
             "update_match_config",
             Box::new(move |ctx: &super::ReducerEventContext| {
+                #[allow(irrefutable_let_patterns)]
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {

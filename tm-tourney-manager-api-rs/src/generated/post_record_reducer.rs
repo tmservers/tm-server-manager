@@ -73,6 +73,7 @@ impl post_record for super::RemoteReducers {
         PostRecordCallbackId(self.imp.on_reducer(
             "post_record",
             Box::new(move |ctx: &super::ReducerEventContext| {
+                #[allow(irrefutable_let_patterns)]
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {

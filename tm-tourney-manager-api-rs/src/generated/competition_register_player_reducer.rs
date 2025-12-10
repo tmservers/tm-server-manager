@@ -65,6 +65,7 @@ impl competition_register_player for super::RemoteReducers {
         CompetitionRegisterPlayerCallbackId(self.imp.on_reducer(
             "competition_register_player",
             Box::new(move |ctx: &super::ReducerEventContext| {
+                #[allow(irrefutable_let_patterns)]
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {

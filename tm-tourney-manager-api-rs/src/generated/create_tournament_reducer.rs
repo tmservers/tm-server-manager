@@ -61,6 +61,7 @@ impl create_tournament for super::RemoteReducers {
         CreateTournamentCallbackId(self.imp.on_reducer(
             "create_tournament",
             Box::new(move |ctx: &super::ReducerEventContext| {
+                #[allow(irrefutable_let_patterns)]
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {
