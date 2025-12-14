@@ -105,8 +105,12 @@ import MatchStandingsRow from "./match_standings_table";
 export { MatchStandingsRow };
 import MatchTemplateRow from "./match_template_table";
 export { MatchTemplateRow };
+import MyTournamentRow from "./my_tournament_table";
+export { MyTournamentRow };
 import RegistrationPlayerRow from "./registration_player_table";
 export { RegistrationPlayerRow };
+import TabTournamentRow from "./tab_tournament_table";
+export { TabTournamentRow };
 import ThisTmServerRow from "./this_tm_server_table";
 export { ThisTmServerRow };
 import TmMapRecordRow from "./tm_map_record_table";
@@ -127,6 +131,8 @@ import TournamentRow from "./tournament_table";
 export { TournamentRow };
 import UserRow from "./user_table";
 export { UserRow };
+import UserIdentityRow from "./user_identity_table";
+export { UserIdentityRow };
 
 // Import and reexport all types
 import BanArgs from "./ban_args_type";
@@ -271,8 +277,6 @@ import StartServer from "./start_server_type";
 export { StartServer };
 import StartTurn from "./start_turn_type";
 export { StartTurn };
-import TabTournament from "./tab_tournament_type";
-export { TabTournament };
 import Team from "./team_type";
 export { Team };
 import TmCompRecord from "./tm_comp_record_type";
@@ -293,12 +297,16 @@ import TmServerMethodResponse from "./tm_server_method_response_type";
 export { TmServerMethodResponse };
 import TournamentStatus from "./tournament_status_type";
 export { TournamentStatus };
+import TournamentV1 from "./tournament_v_1_type";
+export { TournamentV1 };
 import UnloadingMapEnd from "./unloading_map_end_type";
 export { UnloadingMapEnd };
 import UnloadingMapStart from "./unloading_map_start_type";
 export { UnloadingMapStart };
 import User from "./user_type";
 export { User };
+import UserIdentity from "./user_identity_type";
+export { UserIdentity };
 import WarmupDuration from "./warmup_duration_type";
 export { WarmupDuration };
 import WarmupRound from "./warmup_round_type";
@@ -394,6 +402,21 @@ const tablesSchema = __schema(
     ],
   }, RegistrationPlayerRow),
   __table({
+    name: 'tab_tournament',
+    indexes: [
+      { name: 'id', algorithm: 'btree', columns: [
+        'id',
+      ] },
+      { name: 'name', algorithm: 'btree', columns: [
+        'name',
+      ] },
+    ],
+    constraints: [
+      { name: 'tab_tournament_id_key', constraint: 'unique', columns: ['id'] },
+      { name: 'tab_tournament_name_key', constraint: 'unique', columns: ['name'] },
+    ],
+  }, TabTournamentRow),
+  __table({
     name: 'tm_map_record',
     indexes: [
       { name: 'record_id', algorithm: 'btree', columns: [
@@ -476,35 +499,27 @@ const tablesSchema = __schema(
     ],
   }, TmServerMethodResponseRow),
   __table({
-    name: 'tournament',
-    indexes: [
-      { name: 'id', algorithm: 'btree', columns: [
-        'id',
-      ] },
-      { name: 'name', algorithm: 'btree', columns: [
-        'name',
-      ] },
-    ],
-    constraints: [
-      { name: 'tournament_id_key', constraint: 'unique', columns: ['id'] },
-      { name: 'tournament_name_key', constraint: 'unique', columns: ['name'] },
-    ],
-  }, TournamentRow),
-  __table({
     name: 'user',
     indexes: [
       { name: 'id', algorithm: 'btree', columns: [
         'id',
       ] },
+    ],
+    constraints: [
+      { name: 'user_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, UserRow),
+  __table({
+    name: 'user_identity',
+    indexes: [
       { name: 'identity', algorithm: 'btree', columns: [
         'identity',
       ] },
     ],
     constraints: [
-      { name: 'user_id_key', constraint: 'unique', columns: ['id'] },
-      { name: 'user_identity_key', constraint: 'unique', columns: ['identity'] },
+      { name: 'user_identity_identity_key', constraint: 'unique', columns: ['identity'] },
     ],
-  }, UserRow),
+  }, UserIdentityRow),
   __table({
     name: 'competition_record',
     indexes: [
@@ -534,12 +549,26 @@ const tablesSchema = __schema(
     ],
   }, MatchStandingsRow),
   __table({
+    name: 'my_tournament',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyTournamentRow),
+  __table({
     name: 'this_tm_server',
     indexes: [
     ],
     constraints: [
     ],
   }, ThisTmServerRow),
+  __table({
+    name: 'tournament',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, TournamentRow),
 );
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */

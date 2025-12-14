@@ -1,14 +1,18 @@
-use spacetimedb::{ReducerContext, SpacetimeType, Table, ViewContext, reducer, table, view};
+use spacetimedb::{
+    AnonymousViewContext, Query, ReducerContext, SpacetimeType, Table, ViewContext, reducer, table,
+    view,
+};
 
 use crate::{
     auth::Authorization,
     competition::{Competition, competition},
+    user::{user__view, user_identity__view},
 };
 
 /// A tournament is a logical grouping of competitions and also the only way to obtain a competition in the first place.
 /// It does not provide functionality in of itself but is responsible for all the metadata.
-#[cfg_attr(feature = "spacetime", spacetimedb::table(name = tournament,public))] //TODO make private and rename use view instead
-pub struct TabTournament {
+#[cfg_attr(feature = "spacetime", spacetimedb::table(name = tab_tournament))]
+pub struct TournamentV1 {
     #[auto_inc]
     #[primary_key]
     pub id: u32,
@@ -26,13 +30,13 @@ pub struct TabTournament {
     competition: u32,
 }
 
-impl TabTournament {
+impl TournamentV1 {
     pub(crate) fn set_competition(&mut self, comp_id: u32) {
         self.competition = comp_id
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
 pub enum TournamentStatus {
     // public API cant query it
@@ -45,13 +49,20 @@ pub enum TournamentStatus {
     Ended,
 }
 
+impl TournamentStatus {
+    //TODO this method cannot be used because of custom type
+    fn is_public(&self) -> bool {
+        *self != TournamentStatus::Planning
+    }
+}
+
 /// The only thing necessary for a creation of a tounrnant is a unique name.
 /// The rest of the setup can must be made in subsequent calls.
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 fn create_tournament(ctx: &ReducerContext, name: String) -> Result<(), String> {
     let user = ctx.auth_user()?;
 
-    let mut tournament = ctx.db.tournament().try_insert(TabTournament {
+    let mut tournament = ctx.db.tab_tournament().try_insert(TournamentV1 {
         id: 0,
         name: name.clone(),
         creator: user,
@@ -66,21 +77,31 @@ fn create_tournament(ctx: &ReducerContext, name: String) -> Result<(), String> {
     let competition = ctx.db.competition().try_insert(competition)?;
 
     tournament.set_competition(competition.id);
-    ctx.db.tournament().id().update(tournament);
+    ctx.db.tab_tournament().id().update(tournament);
 
     Ok(())
 }
 
-/// The exposed type to receive tournaments.
-#[derive(Debug, SpacetimeType)]
-pub struct TournamentV1 {}
+#[view(name=tournament,public)]
+pub fn tournament(ctx: &AnonymousViewContext) -> Query<TournamentV1> {
+    ctx.from
+        .tab_tournament()
+        //TODO this equality doesnt work atm because of enum
+        //.r#where(|t| t.status.ne(TournamentStatus::Planning))
+        .build()
+}
 
-/* #[view(name=tournament,public)]
-pub fn tournament(ctx: &ViewContext) -> Vec<TournamentV1> {
-    ctx.db.tab_tournament().id().find(1).unwrap()]
-} */
+#[view(name=my_tournament,public)]
+pub fn my_tournament(ctx: &ViewContext) -> Query<TournamentV1> {
+    let id = if let Some(user) = ctx.db.user_identity().identity().find(ctx.sender) {
+        user.id
+    } else {
+        String::new()
+    };
 
-/* #[view(name=organized_tournament,public)]
-pub fn organized_tournament(ctx: &ViewContext) -> Vec<TournamentV1> {
-    ctx.db.tournament()
-} */
+    ctx.from
+        .tab_tournament()
+        //TODO more advanced access control with collaborators and stuff.
+        .r#where(|t| t.creator.eq(id.clone()))
+        .build()
+}

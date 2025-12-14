@@ -6,42 +6,42 @@ use super::tournament_status_type::TournamentStatus;
 use super::tournament_v_1_type::TournamentV1;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-/// Table handle for the table `tournament`.
+/// Table handle for the table `my_tournament`.
 ///
-/// Obtain a handle from the [`TournamentTableAccess::tournament`] method on [`super::RemoteTables`],
-/// like `ctx.db.tournament()`.
+/// Obtain a handle from the [`MyTournamentTableAccess::my_tournament`] method on [`super::RemoteTables`],
+/// like `ctx.db.my_tournament()`.
 ///
 /// Users are encouraged not to explicitly reference this type,
 /// but to directly chain method calls,
-/// like `ctx.db.tournament().on_insert(...)`.
-pub struct TournamentTableHandle<'ctx> {
+/// like `ctx.db.my_tournament().on_insert(...)`.
+pub struct MyTournamentTableHandle<'ctx> {
     imp: __sdk::TableHandle<TournamentV1>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the table `tournament`.
+/// Extension trait for access to the table `my_tournament`.
 ///
 /// Implemented for [`super::RemoteTables`].
-pub trait TournamentTableAccess {
+pub trait MyTournamentTableAccess {
     #[allow(non_snake_case)]
-    /// Obtain a [`TournamentTableHandle`], which mediates access to the table `tournament`.
-    fn tournament(&self) -> TournamentTableHandle<'_>;
+    /// Obtain a [`MyTournamentTableHandle`], which mediates access to the table `my_tournament`.
+    fn my_tournament(&self) -> MyTournamentTableHandle<'_>;
 }
 
-impl TournamentTableAccess for super::RemoteTables {
-    fn tournament(&self) -> TournamentTableHandle<'_> {
-        TournamentTableHandle {
-            imp: self.imp.get_table::<TournamentV1>("tournament"),
+impl MyTournamentTableAccess for super::RemoteTables {
+    fn my_tournament(&self) -> MyTournamentTableHandle<'_> {
+        MyTournamentTableHandle {
+            imp: self.imp.get_table::<TournamentV1>("my_tournament"),
             ctx: std::marker::PhantomData,
         }
     }
 }
 
-pub struct TournamentInsertCallbackId(__sdk::CallbackId);
-pub struct TournamentDeleteCallbackId(__sdk::CallbackId);
+pub struct MyTournamentInsertCallbackId(__sdk::CallbackId);
+pub struct MyTournamentDeleteCallbackId(__sdk::CallbackId);
 
-impl<'ctx> __sdk::Table for TournamentTableHandle<'ctx> {
+impl<'ctx> __sdk::Table for MyTournamentTableHandle<'ctx> {
     type Row = TournamentV1;
     type EventContext = super::EventContext;
 
@@ -52,36 +52,36 @@ impl<'ctx> __sdk::Table for TournamentTableHandle<'ctx> {
         self.imp.iter()
     }
 
-    type InsertCallbackId = TournamentInsertCallbackId;
+    type InsertCallbackId = MyTournamentInsertCallbackId;
 
     fn on_insert(
         &self,
         callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
-    ) -> TournamentInsertCallbackId {
-        TournamentInsertCallbackId(self.imp.on_insert(Box::new(callback)))
+    ) -> MyTournamentInsertCallbackId {
+        MyTournamentInsertCallbackId(self.imp.on_insert(Box::new(callback)))
     }
 
-    fn remove_on_insert(&self, callback: TournamentInsertCallbackId) {
+    fn remove_on_insert(&self, callback: MyTournamentInsertCallbackId) {
         self.imp.remove_on_insert(callback.0)
     }
 
-    type DeleteCallbackId = TournamentDeleteCallbackId;
+    type DeleteCallbackId = MyTournamentDeleteCallbackId;
 
     fn on_delete(
         &self,
         callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
-    ) -> TournamentDeleteCallbackId {
-        TournamentDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
+    ) -> MyTournamentDeleteCallbackId {
+        MyTournamentDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
     }
 
-    fn remove_on_delete(&self, callback: TournamentDeleteCallbackId) {
+    fn remove_on_delete(&self, callback: MyTournamentDeleteCallbackId) {
         self.imp.remove_on_delete(callback.0)
     }
 }
 
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
-    let _table = client_cache.get_or_make_table::<TournamentV1>("tournament");
+    let _table = client_cache.get_or_make_table::<TournamentV1>("my_tournament");
 }
 
 #[doc(hidden)]

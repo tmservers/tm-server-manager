@@ -8,7 +8,7 @@ use crate::{
     registration::RegistrationRules,
     scheduling::Scheduling,
     server::tm_server,
-    tournament::tournament,
+    tournament::tab_tournament,
 };
 
 pub mod event;

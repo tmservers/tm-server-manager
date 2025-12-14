@@ -12,7 +12,7 @@ import {
 import TournamentStatus from "./tournament_status_type";
 
 
-export default __t.object("TabTournament", {
+export default __t.object("TournamentV1", {
   id: __t.u32(),
   creator: __t.string(),
   owners: __t.array(__t.string()),

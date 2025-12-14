@@ -5,7 +5,7 @@ use crate::{
     graph::{CompetitionKind, Competitions, NodeIndex},
     registration::RegistrationRules,
     scheduling::Scheduling,
-    tournament::tournament,
+    tournament::tab_tournament,
 };
 
 mod scheduling;
