@@ -6,28 +6,30 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-struct RegisterServerArgs {
+struct PromoteToServerArgs {
     pub login: String,
     pub password: String,
+    pub account_id: String,
 }
 
-impl __sdk::InModule for RegisterServerArgs {
+impl __sdk::InModule for PromoteToServerArgs {
     type Module = super::RemoteModule;
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the procedure `register_server`.
+/// Extension trait for access to the procedure `promote_to_server`.
 ///
 /// Implemented for [`super::RemoteProcedures`].
-pub trait register_server {
-    fn register_server(&self, login: String, password: String) {
-        self.register_server_then(login, password, |_, _| {});
+pub trait promote_to_server {
+    fn promote_to_server(&self, login: String, password: String, account_id: String) {
+        self.promote_to_server_then(login, password, account_id, |_, _| {});
     }
 
-    fn register_server_then(
+    fn promote_to_server_then(
         &self,
         login: String,
         password: String,
+        account_id: String,
 
         __callback: impl FnOnce(&super::ProcedureEventContext, Result<(), __sdk::InternalError>)
             + Send
@@ -35,19 +37,24 @@ pub trait register_server {
     );
 }
 
-impl register_server for super::RemoteProcedures {
-    fn register_server_then(
+impl promote_to_server for super::RemoteProcedures {
+    fn promote_to_server_then(
         &self,
         login: String,
         password: String,
+        account_id: String,
 
         __callback: impl FnOnce(&super::ProcedureEventContext, Result<(), __sdk::InternalError>)
             + Send
             + 'static,
     ) {
         self.imp.invoke_procedure_with_callback::<_, ()>(
-            "register_server",
-            RegisterServerArgs { login, password },
+            "promote_to_server",
+            PromoteToServerArgs {
+                login,
+                password,
+                account_id,
+            },
             __callback,
         );
     }

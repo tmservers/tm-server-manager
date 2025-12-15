@@ -13,5 +13,6 @@ import {
 export const params = {
   login: __t.string(),
   password: __t.string(),
+  accountId: __t.string(),
 };
 export const returnType = __t.unit()

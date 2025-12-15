@@ -14,7 +14,7 @@ import ServerState from "./server_state_type";
 
 
 export default __t.row({
-  id: __t.string().primaryKey(),
+  tmLogin: __t.string().primaryKey(),
   identity: __t.identity(),
   ownerId: __t.string(),
   online: __t.bool(),

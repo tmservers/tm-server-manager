@@ -27,7 +27,7 @@ fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
         // The server comes back online.
         if let Some(mut server) = ctx.db.tm_server().identity().find(ctx.sender) {
             server.set_online();
-            ctx.db.tm_server().id().update(server);
+            ctx.db.tm_server().tm_login().update(server);
             Ok(())
         } else {
             // Client connects annonymously.
@@ -40,6 +40,6 @@ fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
 fn identity_disconnected(ctx: &ReducerContext) {
     if let Some(mut server) = ctx.db.tm_server().identity().find(ctx.sender) {
         server.set_offline();
-        ctx.db.tm_server().id().update(server);
+        ctx.db.tm_server().tm_login().update(server);
     }
 }

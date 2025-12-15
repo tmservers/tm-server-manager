@@ -16,7 +16,7 @@ pub mod state;
 pub struct TmServer {
     /// Trackmania server logins are unique.
     #[primary_key]
-    pub id: String,
+    pub tm_login: String,
     #[unique]
     pub identity: Identity,
 
@@ -93,7 +93,12 @@ impl TmServer {
 /// Elevates an annonymous user to a trackmania server.
 /// password of the server doesn't get saved but rather verified for validity.
 #[cfg_attr(feature = "spacetime", spacetimedb::procedure)]
-pub fn register_server(ctx: &mut ProcedureContext, login: String, password: String)
+pub fn promote_to_server(
+    ctx: &mut ProcedureContext,
+    login: String,
+    password: String,
+    account_id: String,
+)
 /* -> Result<(), String> */
 {
     let request = Request::builder()
@@ -130,10 +135,10 @@ pub fn register_server(ctx: &mut ProcedureContext, login: String, password: Stri
             // Server identity is already verified.
             // return Ok(());
         }
-        if let Some(mut server) = ctx.db.tm_server().id().find(&login) {
+        if let Some(mut server) = ctx.db.tm_server().tm_login().find(&login) {
             // The new identity is assigned to the server.
             server.set_identity(ctx.identity());
-            ctx.db.tm_server().id().update(server);
+            ctx.db.tm_server().tm_login().update(server);
             //Ok(())
         } else {
             //TODO make HTTP call when its available and verify that credentials are correct.
@@ -141,10 +146,10 @@ pub fn register_server(ctx: &mut ProcedureContext, login: String, password: Stri
             // Server has never been seen before so create a new one.
             ctx.db.tm_server().insert(TmServer {
                 online: true,
-                id: login.clone(),
+                tm_login: login.clone(),
                 active_match: None,
                 //TODO obtain userid from HTTP request
-                owner_id: "test_user".into(),
+                owner_id: account_id.clone(),
                 // server_method: None,
                 config: ServerConfig::default(),
                 state: ServerState::default(),

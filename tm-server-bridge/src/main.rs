@@ -76,6 +76,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         .expect("Environment variable: TM_MASTERSERVER_LOGIN MUST be set");
     let tm_server_password = std::env::var("TM_MASTERSERVER_PASSWORD")
         .expect("Environment variable: TM_MASTERSERVER_password MUST be set");
+    let tm_account_id = std::env::var("TM_ACCOUNT_ID")
+        .expect("Environment variable: TM_ACCOUNT_ID MUST be set at the moment.
+        This will be the account where the server will be available under and can be obtained from e.g. trackmania.io. 
+        We hope to make this optional in the future but depend on a change from nadeo on that sooo good luck ^^");
 
     TRACKMANIA_FILES
         .set(std::env::var("TM_FILES").unwrap_or("./UserData".into()))
@@ -229,9 +233,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 "SELECT * FROM tm_server_method_call".into(), //TODO this should be possible with views since you should only be able to query the server as a server.
             ]);
 
+        //TODO check if connecting has succeeded
         spacetime
             .procedures
-            .register_server(tm_server_login, tm_server_password);
+            .promote_to_server(tm_server_login, tm_server_password, tm_account_id);
 
         spacetime.db.tm_server().on_insert(server_bootstrap);
         spacetime.db.tm_server().on_update(server_update);

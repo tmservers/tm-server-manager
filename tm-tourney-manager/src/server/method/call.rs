@@ -31,7 +31,7 @@ pub fn server_method_call(
     //TODO do the proper auth
     // the challenge is who is able to access the server? not only owner i guess
 
-    let Some(tm_server) = ctx.db.tm_server().id().find(&server_id) else {
+    let Some(tm_server) = ctx.db.tm_server().tm_login().find(&server_id) else {
         return Err(format!("Server with id {server_id} was not found."));
     };
 

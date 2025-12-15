@@ -77,8 +77,8 @@ export { UpdatePreMatchConfig };
 // Import and reexport all procedure arg types
 import * as PostRoundReplayProcedure from "./post_round_replay_procedure";
 export { PostRoundReplayProcedure };
-import * as RegisterServerProcedure from "./register_server_procedure";
-export { RegisterServerProcedure };
+import * as PromoteToServerProcedure from "./promote_to_server_procedure";
+export { PromoteToServerProcedure };
 
 // Import and reexport all table handle types
 import CompetitionRow from "./competition_table";
@@ -453,16 +453,16 @@ const tablesSchema = __schema(
   __table({
     name: 'tm_server',
     indexes: [
-      { name: 'id', algorithm: 'btree', columns: [
-        'id',
-      ] },
       { name: 'identity', algorithm: 'btree', columns: [
         'identity',
       ] },
+      { name: 'tm_login', algorithm: 'btree', columns: [
+        'tmLogin',
+      ] },
     ],
     constraints: [
-      { name: 'tm_server_id_key', constraint: 'unique', columns: ['id'] },
       { name: 'tm_server_identity_key', constraint: 'unique', columns: ['identity'] },
+      { name: 'tm_server_tm_login_key', constraint: 'unique', columns: ['tmLogin'] },
     ],
   }, TmServerRow),
   __table({
@@ -597,7 +597,7 @@ const reducersSchema = __reducers(
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */
 const proceduresSchema = __procedures(
   __procedureSchema("post_round_replay", PostRoundReplayProcedure.params, PostRoundReplayProcedure.returnType),
-  __procedureSchema("register_server", RegisterServerProcedure.params, RegisterServerProcedure.returnType),
+  __procedureSchema("promote_to_server", PromoteToServerProcedure.params, PromoteToServerProcedure.returnType),
 );
 
 /** The remote SpacetimeDB module schema, both runtime and type information. */

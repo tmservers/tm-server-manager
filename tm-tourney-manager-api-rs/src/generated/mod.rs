@@ -86,7 +86,7 @@ pub mod podium_type;
 pub mod post_event_reducer;
 pub mod post_record_reducer;
 pub mod post_round_replay_procedure;
-pub mod register_server_procedure;
+pub mod promote_to_server_procedure;
 pub mod registration_player_rules_type;
 pub mod registration_player_table;
 pub mod registration_player_type;
@@ -254,7 +254,7 @@ pub use podium_type::Podium;
 pub use post_event_reducer::{post_event, set_flags_for_post_event, PostEventCallbackId};
 pub use post_record_reducer::{post_record, set_flags_for_post_record, PostRecordCallbackId};
 pub use post_round_replay_procedure::post_round_replay;
-pub use register_server_procedure::register_server;
+pub use promote_to_server_procedure::promote_to_server;
 pub use registration_player_rules_type::RegistrationPlayerRules;
 pub use registration_player_table::*;
 pub use registration_player_type::RegistrationPlayer;
@@ -731,7 +731,7 @@ impl __sdk::DbUpdate for DbUpdate {
             cache.apply_diff_to_table::<TmCompRecord>("tm_match_record", &self.tm_match_record);
         diff.tm_server = cache
             .apply_diff_to_table::<TmServer>("tm_server", &self.tm_server)
-            .with_updates_by_pk(|row| &row.id);
+            .with_updates_by_pk(|row| &row.tm_login);
         diff.tm_server_config = cache
             .apply_diff_to_table::<TmServerConfig>("tm_server_config", &self.tm_server_config)
             .with_updates_by_pk(|row| &row.id);

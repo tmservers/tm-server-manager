@@ -16,7 +16,7 @@ use crate::{
 pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
     let login = ctx.auth_server()?;
 
-    if let Some(mut tm_server) = ctx.db.tm_server().id().find(login)
+    if let Some(mut tm_server) = ctx.db.tm_server().tm_login().find(login)
         && let Some(match_id) = tm_server.active_match()
         && let Some(mut tm_match) = ctx.db.tm_match().id().find(match_id)
         && tm_match.is_live()
@@ -46,7 +46,7 @@ pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
             ctx.db.tm_match().id().update(tm_match);
         }
         if server_changed || match_ended {
-            ctx.db.tm_server().id().update(tm_server);
+            ctx.db.tm_server().tm_login().update(tm_server);
         }
     }
     Ok(())

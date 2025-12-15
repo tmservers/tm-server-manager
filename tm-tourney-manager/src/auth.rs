@@ -22,7 +22,7 @@ impl Authorization for ReducerContext {
 
     fn auth_server(&self) -> Result<String, String> {
         if let Some(server) = self.db.tm_server().identity().find(self.identity()) {
-            return Ok(server.id.clone());
+            return Ok(server.tm_login.clone());
         }
 
         //TODO
