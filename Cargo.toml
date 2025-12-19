@@ -3,7 +3,7 @@ members = [
     "gamebox-files",
     "tm-leaderboard-worker",
     "tm-server-bridge",
-    "tm-server-client",
+    "tm-server-controller",
     "tm-server-types",
     "tm-tourney-manager",
     "tm-tourney-manager-api-rs",
@@ -50,7 +50,7 @@ spacetimedb-sdk = "1.11"
 gamebox-files = { path = "./gamebox-files" }
 tm-tourney-manager-api-rs = { path = "./tm-tourney-manager-api-rs" }
 tm-server-types = { path = "./tm-server-types" }
-tm-server-client = { path = "./tm-server-client" }
+tm-server-controller = { path = "./tm-server-controller" }
 
 
 #=======

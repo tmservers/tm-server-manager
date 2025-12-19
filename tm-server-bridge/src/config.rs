@@ -1,6 +1,6 @@
 use nadeo_api::{NadeoRequest, auth::AuthType, request::Method};
 use serde::{Deserialize, Serialize};
-use tm_server_client::{ClientError, method::XmlRpcMethods};
+use tm_server_controller::{ClientError, method::XmlRpcMethods};
 use tm_tourney_manager_api_rs::TmServer;
 
 use crate::{NADEO, TRACKMANIA};
@@ -12,7 +12,7 @@ pub async fn configure(tm_server: TmServer) {
     let configuration = unsafe {
         std::mem::transmute::<
             tm_tourney_manager_api_rs::ServerConfig,
-            tm_server_client::types::config::ServerConfig,
+            tm_server_controller::types::config::ServerConfig,
         >(tm_server.config)
     };
 

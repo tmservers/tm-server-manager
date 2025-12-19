@@ -1,4 +1,4 @@
-use tm_server_client::method::{ModeScriptMethodsXmlRpc, XmlRpcMethods};
+use tm_server_controller::method::{ModeScriptMethodsXmlRpc, XmlRpcMethods};
 use tm_tourney_manager_api_rs::ServerState;
 use tracing::{info, warn};
 

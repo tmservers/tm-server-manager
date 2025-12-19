@@ -1024,7 +1024,7 @@ dependencies = [
  "base64 0.22.1",
  "chrono",
  "dxr_derive",
- "quick-xml 0.37.5",
+ "quick-xml",
  "serde",
  "thiserror 1.0.69",
 ]
@@ -2969,16 +2969,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "quick-xml"
-version = "0.38.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "42a232e7487fc2ef313d96dde7948e7a3c05101870d8985e4fd8d26aedd27b89"
-dependencies = [
- "memchr",
- "serde",
-]
-
-[[package]]
 name = "quote"
 version = "1.0.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4340,7 +4330,7 @@ dependencies = [
  "spacetimedb-sdk",
  "takumi",
  "testcontainers",
- "tm-server-client",
+ "tm-server-controller",
  "tm-tourney-manager-api-rs",
  "tokio",
  "tracing",
@@ -4349,21 +4339,21 @@ dependencies = [
 ]
 
 [[package]]
-name = "tm-server-client"
+name = "tm-server-controller"
 version = "0.0.4-dev"
 dependencies = [
- "base64 0.22.1",
+ "base64 0.21.7",
  "bytes",
  "dashmap",
  "dxr",
  "insta",
  "opentelemetry",
- "quick-xml 0.38.3",
+ "quick-xml",
  "serde",
  "serde_json",
  "tachyonix",
  "testcontainers",
- "thiserror 2.0.17",
+ "thiserror 1.0.69",
  "tm-server-types",
  "tokio",
  "tracing",

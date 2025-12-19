@@ -1,4 +1,4 @@
-use tm_server_client::types::method::{MethodCall, MethodResponse};
+use tm_server_controller::types::method::{MethodCall, MethodResponse};
 use tm_tourney_manager_api_rs::{EventContext, TmServerMethodCall, server_method_response};
 
 use crate::{SPACETIME, TRACKMANIA};

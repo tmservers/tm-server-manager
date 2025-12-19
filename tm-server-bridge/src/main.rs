@@ -13,7 +13,7 @@ use takumi::{
 };
 use tm_tourney_manager_api_rs::*;
 
-use tm_server_client::{
+use tm_server_controller::{
     ClientError, TrackmaniaServer,
     method::{ModeScriptMethodsXmlRpc, XmlRpcMethods},
 };
@@ -137,7 +137,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             tokio::spawn(async move {
                 let server = TRACKMANIA.wait();
 
-                if let tm_server_client::types::event::Event::PlayerConenct(player) = &event
+                if let tm_server_controller::types::event::Event::PlayerConenct(player) = &event
                     && player.login != "bla"
                     && !player.is_spectator
                 {
@@ -150,7 +150,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                     tracing::error!("player successfully kicked {}", &player.login);
                 };
 
-                if let tm_server_client::types::event::Event::EndRoundStart(info) = &event {
+                if let tm_server_controller::types::event::Event::EndRoundStart(info) = &event {
                     let file_name = format!("{}{}", info.count, info.time);
                     if let Err(error) = server.save_current_replay(&file_name).await {
                         tracing::error!(
@@ -201,7 +201,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         //SAFETY: Its the same type. Sadly Rust can not know that :< .
                         unsafe {
                             std::mem::transmute::<
-                                tm_server_client::types::event::Event,
+                                tm_server_controller::types::event::Event,
                                 tm_tourney_manager_api_rs::Event,
                             >(event)
                         },

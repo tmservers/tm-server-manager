@@ -1,5 +1,5 @@
 [package]
-name = "tm-server-client"
+name = "tm-server-controller"
 description = "Call methods on and receive events from a trackmania server through XML-RPC"
 readme = "README.md"
 publish = true
