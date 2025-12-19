@@ -1,9 +1,6 @@
-use tm_server_types::{
-    base::PlayerInfo,
-    event::{Scores, WayPoint},
-};
+use tm_server_types::event::{Scores, WayPoint};
 
-use crate::{ClientError, TrackmaniaServer};
+use crate::TrackmaniaServer;
 
 pub use tm_server_types::*;
 

@@ -5,9 +5,7 @@ use std::sync::Arc;
 
 use bytes::{Buf, BytesMut};
 use dashmap::DashMap;
-use dxr::{
-    DxrError, Fault, FaultResponse, MethodCall, MethodResponse, TryFromValue, TryToParams, Value,
-};
+use dxr::{Fault, MethodCall, MethodResponse, TryFromValue, TryToParams, Value};
 
 use tachyonix::Sender;
 use thiserror::Error;
@@ -225,15 +223,15 @@ impl TrackmaniaServer {
                     //check if this is a method response we are waiting for.
                     if packet.is_method_response() {
                         let (_, response) = reader_response.remove(&packet.handler).unwrap();
-                        _ = response.send(body_to_response(&packet.body).unwrap());
+                        _ = response.send(MethodResponse::from_xml(&packet.body).unwrap());
                     } else {
                         // if its not a method response it must be an event.
-                        let callback = dxr::deserialize_xml::<MethodCall>(&packet.body).unwrap();
-                        let mut callback_name = callback.name().into();
+                        let callback = MethodCall::from_xml(&packet.body).unwrap();
+                        let mut callback_name = callback.name;
                         // Event from the ModeScript extension which is the newer counterpart to the legacy events.
                         let event = if callback_name == "ManiaPlanet.ModeScriptCallbackArray" {
-                            let params = callback.params();
-                            callback_name = String::try_from_value(&params[0]).unwrap();
+                            let params = callback.params;
+                            callback_name = String::try_from_value(&params[0]).unwrap().into();
 
                             let value = Vec::<Value>::try_from_value(&params[1]).unwrap();
                             let modescript_callback_body =
@@ -250,8 +248,11 @@ impl TrackmaniaServer {
                                 }
                             }
                         } else {
-                            println!("Old callback: {:?}", callback);
-                            let params = callback.params();
+                            println!(
+                                "Old callback Name: {:?} , Body: {:?}",
+                                callback_name, callback.params
+                            );
+                            let params = callback.params;
                             match Event::from_legacy(&callback_name, params) {
                                 Ok(event) => event,
                                 Err(error) => {
@@ -331,9 +332,6 @@ impl TrackmaniaServer {
         method: tm_server_types::method::MethodCall,
     ) -> tm_server_types::method::MethodResponse {
         method.call_with_server(self).await
-
-        // extract return value
-        //Ok(R::try_from_value(&result)?)
     }
 
     /// Allows to call a method on the server.
@@ -353,16 +351,14 @@ impl TrackmaniaServer {
     // Internal helper to get correct method call response.
     async fn call_inner(
         &self,
-        method: Cow<'_, str>,
+        name: Cow<'_, str>,
         params: Vec<Value>,
     ) -> Result<Value, ClientError> {
         // serialize XML-RPC method call
-        let request = MethodCall::new(method, params);
-        let xml = dxr::serialize_xml(&request)
-            .map_err(|error| DxrError::invalid_data(error.to_string()))?;
+        let request_xml = MethodCall { name, params }.to_xml()?;
 
         // concatenate the body with the xml header.
-        let body = [r#"<?xml version="1.0"?>"#, xml.as_str()].join("");
+        let body = [r#"<?xml version="1.0"?>"#, &request_xml].join("");
 
         // Obtain the way to send a message to the server.
         let message_sender = self.message_sender.clone();
@@ -388,38 +384,8 @@ impl TrackmaniaServer {
         .unwrap()
         .unwrap();
 
-        Ok(response.inner())
+        Ok(response.value)
     }
-}
-
-fn body_to_response(contents: &str) -> Result<MethodResponse, ClientError> {
-    // need to check for FaultResponse first:
-    // - a missing <params> tag is ambiguous (can be either an empty response, or a fault response)
-    // - a present <fault> tag is unambiguous
-    let error2 = match dxr::deserialize_xml(contents) {
-        Ok(fault) => {
-            let response: FaultResponse = fault;
-            return match Fault::try_from(response) {
-                // server fault: return Fault
-                Ok(fault) => Err(fault.into()),
-                // malformed server fault: return DxrError
-                Err(error) => Err(error.into()),
-            };
-        }
-        Err(error) => error.to_string(),
-    };
-
-    let error1 = match dxr::deserialize_xml(contents) {
-        Ok(response) => return Ok(response),
-        Err(error) => error.to_string(),
-    };
-
-    // log errors if the contents could not be deserialized as either response or fault
-    error!("Failed to deserialize response as either value or fault.");
-    error!("Response failed with: {error1}; Fault failed with: {error2}");
-
-    // malformed response: return DxrError::InvalidData
-    Err(DxrError::invalid_data(contents.to_owned()).into())
 }
 
 #[derive(Debug, Error)]
@@ -436,7 +402,7 @@ pub enum ClientError {
     RPC {
         /// XML-RPC parsing error.
         #[from]
-        error: DxrError,
+        error: dxr::Error,
     },
     #[error("request incomplete")]
     Incomplete,
@@ -448,7 +414,7 @@ impl ClientError {
         ClientError::Fault { fault }
     }
 
-    fn rpc(error: DxrError) -> Self {
+    fn rpc(error: dxr::Error) -> Self {
         ClientError::RPC { error }
     }
 }

@@ -19,7 +19,7 @@ pub struct PlayerChat {
 }
 
 impl TryFromParams for PlayerChat {
-    fn try_from_params(values: &[dxr::Value]) -> Result<Self, dxr::DxrError> {
+    fn try_from_params(values: &[dxr::Value]) -> Result<Self, dxr::Error> {
         Ok(Self {
             login: String::try_from_value(&values[1]).unwrap(),
             text: String::try_from_value(&values[2]).unwrap(),
@@ -44,7 +44,7 @@ pub struct PlayerConnect {
 }
 
 impl TryFromParams for PlayerConnect {
-    fn try_from_params(values: &[dxr::Value]) -> Result<Self, dxr::DxrError> {
+    fn try_from_params(values: &[dxr::Value]) -> Result<Self, dxr::Error> {
         Ok(Self {
             login: String::try_from_value(&values[0]).unwrap(),
             is_spectator: bool::try_from_value(&values[1]).unwrap(),
@@ -67,7 +67,7 @@ pub struct PlayerDisconnect {
 }
 
 impl TryFromParams for PlayerDisconnect {
-    fn try_from_params(values: &[dxr::Value]) -> Result<Self, dxr::DxrError> {
+    fn try_from_params(values: &[dxr::Value]) -> Result<Self, dxr::Error> {
         Ok(Self {
             login: String::try_from_value(&values[0]).unwrap(),
             disconnect_reason: String::try_from_value(&values[1]).unwrap(),

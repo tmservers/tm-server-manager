@@ -1,5 +1,5 @@
 mod way_point;
-use dxr::{DxrError, TryFromParams, Value};
+use dxr::{Error as DxrError, TryFromParams, Value};
 use json::Error;
 pub use way_point::WayPoint;
 
