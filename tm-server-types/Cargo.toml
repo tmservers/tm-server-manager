@@ -14,10 +14,11 @@ repository.workspace = true
 [dependencies]
 spacetimedb-lib = { workspace = true, optional = true }
 
-serde = { version = "*", optional = true }
+serde = { workspace = true, optional = true }
 # Renamed to json because maybe swtich to simd-json
-json = { package = "serde_json", version = "*" }
-dxr = { version = "0", features = ["derive"] }
+json.workspace = true
+dxr = { workspace = true, features = ["derive"] }
+base64.workspace = true
 
 
 [features]

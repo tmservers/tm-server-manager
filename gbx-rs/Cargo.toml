@@ -1,5 +1,5 @@
 [package]
-name = "gamebox-files"
+name = "gbx-rs"
 description = "Parse .GBX files for Trackmania and perform read/write operations."
 readme = "README.md"
 publish = true

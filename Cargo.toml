@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "gamebox-files",
+    "gbx-rs",
     "tm-leaderboard-worker",
     "tm-server-bridge",
     "tm-server-controller",
@@ -34,6 +34,10 @@ takumi = "0"
 dotenvy = "0.15"
 tokio = { features = ["full"], version = "1" }
 base64 = { version = "*" }
+dxr = "0.8"
+# Renamed to json because maybe swtich to simd-json
+json = { package = "serde_json", version = "*" }
+serde = { version = "1" }
 
 
 #============
@@ -47,7 +51,7 @@ spacetimedb-sdk = "1.11"
 #==============
 # Worspace Deps
 #==============
-gamebox-files = { path = "./gamebox-files" }
+gbx-rs = { path = "./gbx-rs" }
 tm-tourney-manager-api-rs = { path = "./tm-tourney-manager-api-rs" }
 tm-server-types = { path = "./tm-server-types" }
 tm-server-controller = { path = "./tm-server-controller" }

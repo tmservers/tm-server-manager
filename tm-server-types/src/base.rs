@@ -1,4 +1,5 @@
 mod player;
+use base64::{Engine, prelude::BASE64_STANDARD};
 pub use player::*;
 
 mod team;
@@ -10,14 +11,7 @@ pub use map::Map;
 mod time;
 pub use time::*;
 
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
-#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
-pub struct UbisoftId {
-    account_id: String,
-}
-/* fn convert_login_into_ubiid(string: String) -> String {
+pub fn convert_login_into_ubiid(string: String) -> String {
     let string = string.replace("-", "+");
     let mut string = string.replace("_", "/");
 
@@ -49,4 +43,4 @@ pub struct UbisoftId {
         + &encode_hex(&bytes[10..16]);
 
     i_dont_want_to_anymore.to_lowercase()
-} */
+}

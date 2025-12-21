@@ -15,17 +15,15 @@ repository.workspace = true
 [dependencies]
 tm-server-types = { workspace = true, features = ["serde"] }
 
-tokio = { version = "*", features = ["full"] }
+tokio = { workspace = true, features = ["full"] }
 tachyonix = "*"
 bytes = "1"
 
-serde = { version = "1", features = ["derive"] }
-# Renamed to json because maybe swtich to simd-json
-json = { package = "serde_json", version = "*" }
-dxr = { version = "0", features = [] }
-quick-xml = { version = "*", features = ['serialize'] }
+serde = { workspace = true, features = ["derive"] }
 
-base64 = "*"
+
+dxr.workspace = true
+base64.workspace = true
 
 dashmap = "*"
 

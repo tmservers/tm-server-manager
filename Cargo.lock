@@ -1033,7 +1033,7 @@ checksum = "d823ec61c98061befb8d168364c547a82c6d936fdd4fc96e2ab8396b79eea020"
 dependencies = [
  "base64 0.22.1",
  "dxr_derive",
- "quick-xml 0.37.5",
+ "quick-xml",
  "serde",
  "thiserror 2.0.17",
  "winnow",
@@ -1411,16 +1411,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "gamebox-files"
-version = "0.0.4-dev"
-dependencies = [
- "bytes",
- "flate2",
- "minilzo-rs",
- "thiserror 2.0.17",
-]
-
-[[package]]
 name = "gbx-header"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1433,6 +1423,16 @@ dependencies = [
  "serde",
  "serde_json",
  "xml-rs",
+]
+
+[[package]]
+name = "gbx-rs"
+version = "0.0.4-dev"
+dependencies = [
+ "bytes",
+ "flate2",
+ "minilzo-rs",
+ "thiserror 2.0.17",
 ]
 
 [[package]]
@@ -2951,16 +2951,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "quick-xml"
-version = "0.38.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b66c2058c55a409d601666cffe35f04333cf1013010882cec174a7467cd4e21c"
-dependencies = [
- "memchr",
- "serde",
-]
-
-[[package]]
 name = "quote"
 version = "1.0.42"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4327,9 +4317,7 @@ dependencies = [
  "dxr",
  "insta",
  "opentelemetry",
- "quick-xml 0.38.4",
  "serde",
- "serde_json",
  "tachyonix",
  "testcontainers",
  "thiserror 2.0.17",
@@ -4342,6 +4330,7 @@ dependencies = [
 name = "tm-server-types"
 version = "0.0.4-dev"
 dependencies = [
+ "base64 0.21.7",
  "dxr",
  "serde",
  "serde_json",
