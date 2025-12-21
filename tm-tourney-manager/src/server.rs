@@ -93,7 +93,7 @@ impl TmServer {
 /// Elevates an annonymous user to a trackmania server.
 /// password of the server doesn't get saved but rather verified for validity.
 #[cfg_attr(feature = "spacetime", spacetimedb::procedure)]
-pub fn promote_to_server(
+pub fn login_as_server(
     ctx: &mut ProcedureContext,
     login: String,
     password: String,
@@ -101,7 +101,7 @@ pub fn promote_to_server(
 )
 /* -> Result<(), String> */
 {
-    let request = Request::builder()
+    /*  let request = Request::builder()
         .method("POST")
         .uri("https://prod.trackmania.core.nadeo.online/v2/authentication/token/basic")
         .header(
@@ -128,7 +128,7 @@ pub fn promote_to_server(
         //TODO error handling
         log::error!("Server registration failed because of nadeo request");
         panic!()
-    }
+    } */
 
     ctx.with_tx(|ctx| {
         if ctx.db.tm_server().identity().find(ctx.sender).is_some() {

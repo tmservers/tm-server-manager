@@ -237,7 +237,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         //TODO check if connecting has succeeded
         spacetime
             .procedures
-            .promote_to_server(tm_server_login, tm_server_password, tm_account_id);
+            .login_as_server(tm_server_login, tm_server_password, tm_account_id);
 
         spacetime.db.tm_server().on_insert(server_bootstrap);
         spacetime.db.tm_server().on_update(server_update);

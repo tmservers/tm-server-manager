@@ -75,10 +75,10 @@ import UpdatePreMatchConfig from "./update_pre_match_config_reducer";
 export { UpdatePreMatchConfig };
 
 // Import and reexport all procedure arg types
+import * as LoginAsServerProcedure from "./login_as_server_procedure";
+export { LoginAsServerProcedure };
 import * as PostRoundReplayProcedure from "./post_round_replay_procedure";
 export { PostRoundReplayProcedure };
-import * as PromoteToServerProcedure from "./promote_to_server_procedure";
-export { PromoteToServerProcedure };
 
 // Import and reexport all table handle types
 import CompetitionRow from "./competition_table";
@@ -596,8 +596,8 @@ const reducersSchema = __reducers(
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */
 const proceduresSchema = __procedures(
+  __procedureSchema("login_as_server", LoginAsServerProcedure.params, LoginAsServerProcedure.returnType),
   __procedureSchema("post_round_replay", PostRoundReplayProcedure.params, PostRoundReplayProcedure.returnType),
-  __procedureSchema("promote_to_server", PromoteToServerProcedure.params, PromoteToServerProcedure.returnType),
 );
 
 /** The remote SpacetimeDB module schema, both runtime and type information. */

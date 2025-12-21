@@ -6,26 +6,26 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-struct PromoteToServerArgs {
+struct LoginAsServerArgs {
     pub login: String,
     pub password: String,
     pub account_id: String,
 }
 
-impl __sdk::InModule for PromoteToServerArgs {
+impl __sdk::InModule for LoginAsServerArgs {
     type Module = super::RemoteModule;
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the procedure `promote_to_server`.
+/// Extension trait for access to the procedure `login_as_server`.
 ///
 /// Implemented for [`super::RemoteProcedures`].
-pub trait promote_to_server {
-    fn promote_to_server(&self, login: String, password: String, account_id: String) {
-        self.promote_to_server_then(login, password, account_id, |_, _| {});
+pub trait login_as_server {
+    fn login_as_server(&self, login: String, password: String, account_id: String) {
+        self.login_as_server_then(login, password, account_id, |_, _| {});
     }
 
-    fn promote_to_server_then(
+    fn login_as_server_then(
         &self,
         login: String,
         password: String,
@@ -37,8 +37,8 @@ pub trait promote_to_server {
     );
 }
 
-impl promote_to_server for super::RemoteProcedures {
-    fn promote_to_server_then(
+impl login_as_server for super::RemoteProcedures {
+    fn login_as_server_then(
         &self,
         login: String,
         password: String,
@@ -49,8 +49,8 @@ impl promote_to_server for super::RemoteProcedures {
             + 'static,
     ) {
         self.imp.invoke_procedure_with_callback::<_, ()>(
-            "promote_to_server",
-            PromoteToServerArgs {
+            "login_as_server",
+            LoginAsServerArgs {
                 login,
                 password,
                 account_id,
