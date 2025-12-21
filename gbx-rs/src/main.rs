@@ -1,4 +1,4 @@
-use gamebox_files::try_parse_buffer;
+use gbx_rs::try_parse_buffer;
 
 fn main() {
     let file =

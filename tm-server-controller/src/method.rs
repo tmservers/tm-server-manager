@@ -1,5 +1,5 @@
 use tm_server_types::{
-    base::PlayerInfo,
+    base::{PlayerInfo, account_id_to_login},
     method::{MethodCall, MethodError, MethodResponse},
 };
 
@@ -148,7 +148,7 @@ impl ModeScriptMethodsXmlRpc for TrackmaniaServer {
 pub trait XmlRpcMethods {
     async fn kick(
         &self,
-        player: impl Into<String>,
+        account_id: impl Into<String>,
         message: Option<impl Into<String>>,
     ) -> Result<bool, ClientError>;
 
@@ -181,15 +181,17 @@ pub trait XmlRpcMethods {
 }
 
 impl XmlRpcMethods for TrackmaniaServer {
+    /// Kicks the player with the specified account_id from the server.
     async fn kick(
         &self,
-        player: impl Into<String>,
+        account_id: impl Into<String>,
         message: Option<impl Into<String>>,
     ) -> Result<bool, ClientError> {
+        let login = account_id_to_login(&account_id.into());
         self.call(
             "Kick",
             (
-                player.into(),
+                login,
                 if let Some(msg) = message {
                     msg.into()
                 } else {

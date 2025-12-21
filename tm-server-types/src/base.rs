@@ -1,5 +1,8 @@
 mod player;
-use base64::{Engine, prelude::BASE64_STANDARD};
+use base64::{
+    Engine,
+    prelude::{BASE64_STANDARD, BASE64_URL_SAFE_NO_PAD},
+};
 pub use player::*;
 
 mod team;
@@ -51,7 +54,7 @@ pub fn account_id_to_login(account_id: &str) -> String {
         .step_by(2)
         .map(|i| u8::from_str_radix(&no_dashes[i..i + 2], 16).unwrap())
         .collect();
-    BASE64_STANDARD.encode(bytes)
+    BASE64_URL_SAFE_NO_PAD.encode(bytes)
 }
 
 #[test]

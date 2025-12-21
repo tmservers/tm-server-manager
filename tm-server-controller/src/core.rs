@@ -51,7 +51,7 @@ impl GbxPacket {
 enum GbxMethodCall {
     MethodCall {
         message: String,
-        responder: oneshot::Sender<MethodResponse>,
+        responder: oneshot::Sender<Result<MethodResponse, dxr::Error>>,
     },
     /* Callback {
         message: String,
@@ -109,7 +109,7 @@ pub struct TrackmaniaServer {
     message_sender: Sender<GbxMethodCall>,
 
     /// Associates a handler value with a oneshot channel to correctly receive the response.
-    response_mapping: Arc<DashMap<u32, oneshot::Sender<MethodResponse>>>,
+    response_mapping: Arc<DashMap<u32, oneshot::Sender<Result<MethodResponse, dxr::Error>>>>,
 
     /// Subscriptions to the global_callback receive every event raised on the server.
     global_callback: broadcast::Receiver<Arc<Event>>,
@@ -164,7 +164,7 @@ impl TrackmaniaServer {
     fn setup_write_loop(
         mut write_request: tachyonix::Receiver<GbxMethodCall>,
         mut writer: WriteHalf<BufWriter<TcpStream>>,
-        writer_response: Arc<DashMap<u32, oneshot::Sender<MethodResponse>>>,
+        writer_response: Arc<DashMap<u32, oneshot::Sender<Result<MethodResponse, dxr::Error>>>>,
     ) {
         tokio::spawn(async move {
             let mut handler = 0x80000000u32;
@@ -194,7 +194,7 @@ impl TrackmaniaServer {
 
     /// Internal helper to setup the thread which is responsible for receiving messages (method call responses and events) from the server.
     fn setup_read_loop(
-        reader_response: Arc<DashMap<u32, oneshot::Sender<MethodResponse>>>,
+        reader_response: Arc<DashMap<u32, oneshot::Sender<Result<MethodResponse, dxr::Error>>>>,
         registered_callbacks: RegisiteredCallbacks,
         global_callback_sender: broadcast::Sender<Arc<Event>>,
         mut reader: ReadHalf<BufWriter<TcpStream>>,
@@ -223,7 +223,7 @@ impl TrackmaniaServer {
                     //check if this is a method response we are waiting for.
                     if packet.is_method_response() {
                         let (_, response) = reader_response.remove(&packet.handler).unwrap();
-                        _ = response.send(MethodResponse::from_xml(&packet.body).unwrap());
+                        _ = response.send(MethodResponse::from_xml(&packet.body));
                     } else {
                         // if its not a method response it must be an event.
                         let callback = MethodCall::from_xml(&packet.body).unwrap();
@@ -384,7 +384,7 @@ impl TrackmaniaServer {
         .unwrap()
         .unwrap();
 
-        Ok(response.value)
+        Ok(response?.value)
     }
 }
 

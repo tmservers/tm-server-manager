@@ -128,8 +128,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             )
             .await;
 
-        let mhm = server.get_callbacks_list_disabled().await;
-        let mhm = server.get_callbacks_list().await;
+        _ = server.get_callbacks_list_disabled().await;
+        _ = server.get_callbacks_list().await;
 
         // Emit all events
         server.event(move |event| {
@@ -137,7 +137,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             tokio::spawn(async move {
                 let server = TRACKMANIA.wait();
 
-                if let tm_server_controller::types::event::Event::PlayerConenct(player) = &event
+                //TODO reenable automatic kicking
+                /* if let tm_server_controller::types::event::Event::PlayerConenct(player) = &event
                     && player.account_id != "bla"
                     && !player.is_spectator
                 {
@@ -148,7 +149,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         )
                         .await;
                     tracing::error!("player successfully kicked {}", &player.account_id);
-                };
+                }; */
 
                 if let tm_server_controller::types::event::Event::EndRoundStart(info) = &event {
                     let file_name = format!("{}{}", info.count, info.time);
@@ -229,7 +230,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             .on_applied(|_| tracing::debug!("Subscription successfully applied!"))
             .on_error(|_, mhm| tracing::error!("Subscription failed: {mhm:?}"))
             .subscribe([
-                format!("SELECT * FROM tm_server WHERE id = '{tm_server_login}'"), //TODO replace with views
+                format!("SELECT * FROM tm_server WHERE tm_login = '{tm_server_login}'"), //TODO replace with views
                 "SELECT * FROM tm_server_method_call".into(), //TODO this should be possible with views since you should only be able to query the server as a server.
             ]);
 

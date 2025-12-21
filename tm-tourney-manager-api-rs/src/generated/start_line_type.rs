@@ -8,7 +8,6 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[sats(crate = __lib)]
 pub struct StartLine {
     pub account_id: String,
-    pub login: String,
     pub time: u32,
 }
 

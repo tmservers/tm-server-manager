@@ -9,7 +9,6 @@ use super::round_time_type::RoundTime;
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct Player {
-    pub login: String,
     pub account_id: String,
     pub name: String,
     pub team: i32,
