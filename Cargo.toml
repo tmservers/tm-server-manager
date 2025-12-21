@@ -43,9 +43,9 @@ serde = { version = "1" }
 #============
 # SpacetimeDB
 #============
-spacetimedb = { version = "1.11", features = ["unstable"] }
-spacetimedb-lib = "1.11"
-spacetimedb-sdk = "1.11"
+spacetimedb = { version = "=1.11.0", features = ["unstable"] }
+spacetimedb-lib = "=1.11.0"
+spacetimedb-sdk = "=1.11.0"
 
 
 #==============
