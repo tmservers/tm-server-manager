@@ -51,6 +51,7 @@ pub mod kick_args_type;
 pub mod loading_map_end_type;
 pub mod loading_map_start_type;
 pub mod login_as_server_procedure;
+pub mod login_as_worker_procedure;
 pub mod map_pool_config_type;
 pub mod map_record_table;
 pub mod map_type;
@@ -129,6 +130,8 @@ pub mod tm_server_method_response_table;
 pub mod tm_server_method_response_type;
 pub mod tm_server_table;
 pub mod tm_server_type;
+pub mod tm_worker_table;
+pub mod tm_worker_type;
 pub mod tournament_status_type;
 pub mod tournament_table;
 pub mod tournament_v_1_type;
@@ -212,6 +215,7 @@ pub use kick_args_type::KickArgs;
 pub use loading_map_end_type::LoadingMapEnd;
 pub use loading_map_start_type::LoadingMapStart;
 pub use login_as_server_procedure::login_as_server;
+pub use login_as_worker_procedure::login_as_worker;
 pub use map_pool_config_type::MapPoolConfig;
 pub use map_record_table::*;
 pub use map_type::Map;
@@ -301,6 +305,8 @@ pub use tm_server_method_response_table::*;
 pub use tm_server_method_response_type::TmServerMethodResponse;
 pub use tm_server_table::*;
 pub use tm_server_type::TmServer;
+pub use tm_worker_table::*;
+pub use tm_worker_type::TmWorker;
 pub use tournament_status_type::TournamentStatus;
 pub use tournament_table::*;
 pub use tournament_v_1_type::TournamentV1;
@@ -578,6 +584,7 @@ pub struct DbUpdate {
     tm_server_config: __sdk::TableUpdate<TmServerConfig>,
     tm_server_method_call: __sdk::TableUpdate<TmServerMethodCall>,
     tm_server_method_response: __sdk::TableUpdate<TmServerMethodResponse>,
+    tm_worker: __sdk::TableUpdate<TmWorker>,
     tournament: __sdk::TableUpdate<TournamentV1>,
     user: __sdk::TableUpdate<User>,
     user_identity: __sdk::TableUpdate<UserIdentity>,
@@ -658,6 +665,9 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "tm_server_method_response" => db_update.tm_server_method_response.append(
                     tm_server_method_response_table::parse_table_update(table_update)?,
                 ),
+                "tm_worker" => db_update
+                    .tm_worker
+                    .append(tm_worker_table::parse_table_update(table_update)?),
                 "tournament" => db_update
                     .tournament
                     .append(tournament_table::parse_table_update(table_update)?),
@@ -747,6 +757,9 @@ impl __sdk::DbUpdate for DbUpdate {
                 &self.tm_server_method_response,
             )
             .with_updates_by_pk(|row| &row.id);
+        diff.tm_worker = cache
+            .apply_diff_to_table::<TmWorker>("tm_worker", &self.tm_worker)
+            .with_updates_by_pk(|row| &row.tm_login);
         diff.user = cache
             .apply_diff_to_table::<User>("user", &self.user)
             .with_updates_by_pk(|row| &row.id);
@@ -797,6 +810,7 @@ pub struct AppliedDiff<'r> {
     tm_server_config: __sdk::TableAppliedDiff<'r, TmServerConfig>,
     tm_server_method_call: __sdk::TableAppliedDiff<'r, TmServerMethodCall>,
     tm_server_method_response: __sdk::TableAppliedDiff<'r, TmServerMethodResponse>,
+    tm_worker: __sdk::TableAppliedDiff<'r, TmWorker>,
     tournament: __sdk::TableAppliedDiff<'r, TournamentV1>,
     user: __sdk::TableAppliedDiff<'r, User>,
     user_identity: __sdk::TableAppliedDiff<'r, UserIdentity>,
@@ -896,6 +910,7 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             &self.tm_server_method_response,
             event,
         );
+        callbacks.invoke_table_row_callbacks::<TmWorker>("tm_worker", &self.tm_worker, event);
         callbacks.invoke_table_row_callbacks::<TournamentV1>("tournament", &self.tournament, event);
         callbacks.invoke_table_row_callbacks::<User>("user", &self.user, event);
         callbacks.invoke_table_row_callbacks::<UserIdentity>(
@@ -1645,6 +1660,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
         tm_server_config_table::register_table(client_cache);
         tm_server_method_call_table::register_table(client_cache);
         tm_server_method_response_table::register_table(client_cache);
+        tm_worker_table::register_table(client_cache);
         tournament_table::register_table(client_cache);
         user_table::register_table(client_cache);
         user_identity_table::register_table(client_cache);

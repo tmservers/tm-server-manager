@@ -9,12 +9,14 @@ pub mod environment;
 pub mod generator;
 pub mod ghosts;
 pub mod r#match;
+pub mod monitoring;
 pub mod record;
 pub mod registration;
 pub mod scheduling;
 pub mod server;
 pub mod tournament;
 pub mod user;
+pub mod worker;
 
 pub mod graph;
 

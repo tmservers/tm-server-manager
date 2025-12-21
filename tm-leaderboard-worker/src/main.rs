@@ -4,10 +4,12 @@ use nadeo_api_rs::{
     auth::{NadeoClient, UserAgentDetails},
     live::LiveApiClient,
 };
-use tm_tourney_manager_api_rs::{DbConnection, post_record};
+use tm_tourney_manager_api_rs::{DbConnection, login_as_worker, post_record};
 use tokio::signal;
 
 static SPACETIME: OnceLock<DbConnection> = OnceLock::new();
+
+static NADEO_API: OnceLock<NadeoClient> = OnceLock::new();
 
 fn connect_to_db() -> DbConnection {
     DbConnection::builder()
@@ -29,15 +31,25 @@ async fn main() {
     let tm_server_login = std::env::var("TM_MASTERSERVER_LOGIN")
         .expect("Environment variable: TM_MASTERSERVER_LOGIN MUST be set");
     let tm_server_password = std::env::var("TM_MASTERSERVER_PASSWORD")
-        .expect("Environment variable: TM_MASTERSERVER_password MUST be set");
+        .expect("Environment variable: TM_MASTERSERVER_PASSWORD MUST be set");
+    let tm_account_id =
+        std::env::var("TM_ACCOUNT_ID").expect("Environment variable: TM_ACCOUNT_ID MUST be set");
 
     let spacetime = connect_to_db();
     _ = SPACETIME.set(spacetime);
     tokio::spawn(async move {
+        let spacetime = SPACETIME.wait();
         loop {
-            _ = SPACETIME.wait().run_async().await;
+            _ = spacetime.run_async().await;
         }
     });
+
+    //TODO check if the auth succeeded
+    SPACETIME.wait().procedures.login_as_worker(
+        tm_server_login.clone(),
+        tm_server_password.clone(),
+        tm_account_id.clone(),
+    );
 
     let client = NadeoClient::create(
         nadeo_api_rs::auth::NadeoCredentials::DedicatedServer {
@@ -49,6 +61,10 @@ async fn main() {
     )
     .await
     .unwrap();
+
+    _ = NADEO_API.set(client);
+
+    let client = NADEO_API.wait();
 
     let lb = client
         .get_map_leaderboard("vjyNNUu997cC5PW8e3x7Y9RsAF0", true, 100, 0)

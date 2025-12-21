@@ -62,7 +62,7 @@ pub fn post_record(
     player_uid: String,
     time: u32,
 ) -> Result<(), String> {
-    ctx.auth_server()?;
+    ctx.auth_worker()?;
 
     for record in ctx
         .db

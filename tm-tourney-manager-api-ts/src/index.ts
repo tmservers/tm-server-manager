@@ -77,6 +77,8 @@ export { UpdatePreMatchConfig };
 // Import and reexport all procedure arg types
 import * as LoginAsServerProcedure from "./login_as_server_procedure";
 export { LoginAsServerProcedure };
+import * as LoginAsWorkerProcedure from "./login_as_worker_procedure";
+export { LoginAsWorkerProcedure };
 import * as PostRoundReplayProcedure from "./post_round_replay_procedure";
 export { PostRoundReplayProcedure };
 
@@ -127,6 +129,8 @@ import TmServerMethodCallRow from "./tm_server_method_call_table";
 export { TmServerMethodCallRow };
 import TmServerMethodResponseRow from "./tm_server_method_response_table";
 export { TmServerMethodResponseRow };
+import TmWorkerRow from "./tm_worker_table";
+export { TmWorkerRow };
 import TournamentRow from "./tournament_table";
 export { TournamentRow };
 import UserRow from "./user_table";
@@ -295,6 +299,8 @@ import TmServerMethodCall from "./tm_server_method_call_type";
 export { TmServerMethodCall };
 import TmServerMethodResponse from "./tm_server_method_response_type";
 export { TmServerMethodResponse };
+import TmWorker from "./tm_worker_type";
+export { TmWorker };
 import TournamentStatus from "./tournament_status_type";
 export { TournamentStatus };
 import TournamentV1 from "./tournament_v_1_type";
@@ -499,6 +505,21 @@ const tablesSchema = __schema(
     ],
   }, TmServerMethodResponseRow),
   __table({
+    name: 'tm_worker',
+    indexes: [
+      { name: 'identity', algorithm: 'btree', columns: [
+        'identity',
+      ] },
+      { name: 'tm_login', algorithm: 'btree', columns: [
+        'tmLogin',
+      ] },
+    ],
+    constraints: [
+      { name: 'tm_worker_identity_key', constraint: 'unique', columns: ['identity'] },
+      { name: 'tm_worker_tm_login_key', constraint: 'unique', columns: ['tmLogin'] },
+    ],
+  }, TmWorkerRow),
+  __table({
     name: 'user',
     indexes: [
       { name: 'id', algorithm: 'btree', columns: [
@@ -597,6 +618,7 @@ const reducersSchema = __reducers(
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */
 const proceduresSchema = __procedures(
   __procedureSchema("login_as_server", LoginAsServerProcedure.params, LoginAsServerProcedure.returnType),
+  __procedureSchema("login_as_worker", LoginAsWorkerProcedure.params, LoginAsWorkerProcedure.returnType),
   __procedureSchema("post_round_replay", PostRoundReplayProcedure.params, PostRoundReplayProcedure.returnType),
 );
 
