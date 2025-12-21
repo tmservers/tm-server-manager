@@ -3,12 +3,11 @@
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub struct Map {
-    //#[cfg_attr(feature = "serde", serde(rename = "accountid"))]
     uid: String,
     name: String,
     filename: String,
-    //login
-    author: String,
+    #[cfg_attr(feature = "serde", serde(rename = "author"))]
+    author_login: String,
     #[cfg_attr(feature = "serde", serde(rename = "authornickname"))]
     author_nickname: String,
     environment: String,

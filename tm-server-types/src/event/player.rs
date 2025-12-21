@@ -1,15 +1,14 @@
 use dxr::{TryFromParams, TryFromValue};
 
+use crate::base::login_to_account_id;
+
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub struct PlayerChat {
-    //TODO
-    /*  #[cfg_attr(feature = "serde", serde(rename = "Login", deserialize_with = ""))]
-    account_id: UbisoftId, */
     #[cfg_attr(feature = "serde", serde(rename = "Login"))]
-    pub login: String,
+    pub account_id: String,
     #[cfg_attr(feature = "serde", serde(rename = "Text"))]
     pub text: String,
     #[cfg_attr(feature = "serde", serde(rename = "IsRegisteredCmd"))]
@@ -21,10 +20,10 @@ pub struct PlayerChat {
 impl TryFromParams for PlayerChat {
     fn try_from_params(values: &[dxr::Value]) -> Result<Self, dxr::Error> {
         Ok(Self {
-            login: String::try_from_value(&values[1]).unwrap(),
-            text: String::try_from_value(&values[2]).unwrap(),
-            is_registered_cmd: bool::try_from_value(&values[3]).unwrap(),
-            options: i32::try_from_value(&values[4]).unwrap(),
+            account_id: login_to_account_id(&String::try_from_value(&values[1])?),
+            text: String::try_from_value(&values[2])?,
+            is_registered_cmd: bool::try_from_value(&values[3])?,
+            options: i32::try_from_value(&values[4])?,
         })
     }
 }
@@ -34,11 +33,8 @@ impl TryFromParams for PlayerChat {
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub struct PlayerConnect {
-    //TODO
-    /*  #[cfg_attr(feature = "serde", serde(rename = "Login", deserialize_with = ""))]
-    account_id: UbisoftId, */
     #[cfg_attr(feature = "serde", serde(rename = "Login"))]
-    pub login: String,
+    pub account_id: String,
     #[cfg_attr(feature = "serde", serde(rename = "IsSpectator"))]
     pub is_spectator: bool,
 }
@@ -46,8 +42,8 @@ pub struct PlayerConnect {
 impl TryFromParams for PlayerConnect {
     fn try_from_params(values: &[dxr::Value]) -> Result<Self, dxr::Error> {
         Ok(Self {
-            login: String::try_from_value(&values[0]).unwrap(),
-            is_spectator: bool::try_from_value(&values[1]).unwrap(),
+            account_id: login_to_account_id(&String::try_from_value(&values[0])?),
+            is_spectator: bool::try_from_value(&values[1])?,
         })
     }
 }
@@ -57,11 +53,8 @@ impl TryFromParams for PlayerConnect {
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub struct PlayerDisconnect {
-    //TODO
-    /*  #[cfg_attr(feature = "serde", serde(rename = "Login", deserialize_with = ""))]
-    account_id: UbisoftId, */
     #[cfg_attr(feature = "serde", serde(rename = "Login"))]
-    pub login: String,
+    pub account_id: String,
     #[cfg_attr(feature = "serde", serde(rename = "DisconnectReason"))]
     pub disconnect_reason: String,
 }
@@ -69,8 +62,8 @@ pub struct PlayerDisconnect {
 impl TryFromParams for PlayerDisconnect {
     fn try_from_params(values: &[dxr::Value]) -> Result<Self, dxr::Error> {
         Ok(Self {
-            login: String::try_from_value(&values[0]).unwrap(),
-            disconnect_reason: String::try_from_value(&values[1]).unwrap(),
+            account_id: login_to_account_id(&String::try_from_value(&values[0])?),
+            disconnect_reason: String::try_from_value(&values[1])?,
         })
     }
 }

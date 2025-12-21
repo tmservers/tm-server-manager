@@ -5,6 +5,5 @@
 pub struct GiveUp {
     #[cfg_attr(feature = "serde", serde(rename = "accountid"))]
     pub account_id: String,
-    pub login: String,
     pub time: u32,
 }

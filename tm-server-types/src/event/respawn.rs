@@ -5,7 +5,6 @@
 pub struct Respawn {
     #[cfg_attr(feature = "serde", serde(rename = "accountid"))]
     pub account_id: String,
-    pub login: String,
     pub time: u32,
 
     #[cfg_attr(feature = "serde", serde(rename = "nbrespawns"))]

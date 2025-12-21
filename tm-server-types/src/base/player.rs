@@ -7,7 +7,6 @@ use crate::base::RoundTime;
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub struct Player {
-    login: String,
     #[cfg_attr(feature = "serde", serde(rename = "accountid"))]
     account_id: String,
 

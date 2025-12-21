@@ -138,16 +138,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 let server = TRACKMANIA.wait();
 
                 if let tm_server_controller::types::event::Event::PlayerConenct(player) = &event
-                    && player.login != "bla"
+                    && player.account_id != "bla"
                     && !player.is_spectator
                 {
                     _ = server
                         .kick(
-                            player.login.clone(),
+                            player.account_id.clone(),
                             Some("You are not on the whitelist! :("),
                         )
                         .await;
-                    tracing::error!("player successfully kicked {}", &player.login);
+                    tracing::error!("player successfully kicked {}", &player.account_id);
                 };
 
                 if let tm_server_controller::types::event::Event::EndRoundStart(info) = &event {

@@ -7,7 +7,6 @@ use crate::event::Event;
 pub struct WayPoint {
     #[cfg_attr(feature = "serde", serde(rename = "accountid"))]
     pub account_id: String,
-    pub login: String,
     pub time: u32,
     pub racetime: u32,
     pub laptime: u32,

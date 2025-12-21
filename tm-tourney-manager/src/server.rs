@@ -78,7 +78,7 @@ impl TmServer {
 
     pub(crate) fn add_server_event(&mut self, event: &Event) -> bool {
         match event {
-            Event::PlayerConenct(player) => log::error!("Player connected: {}", player.login),
+            Event::PlayerConenct(player) => log::error!("Player connected: {}", player.account_id),
             _ => return false,
         }
         log::warn!("{:#?}", self.state);
