@@ -1,6 +1,6 @@
 use spacetimedb::{JwtClaims, ReducerContext};
 
-use crate::server::tm_server;
+use crate::{server::tm_server, worker::tm_worker};
 
 pub trait Authorization {
     fn auth_user(&self) -> Result<String, String>;
@@ -31,8 +31,8 @@ impl Authorization for ReducerContext {
     }
 
     fn auth_worker(&self) -> Result<String, String> {
-        if let Some(server) = self.db.tm_server().identity().find(self.identity()) {
-            return Ok(server.tm_login.clone());
+        if let Some(worker) = self.db.tm_worker().identity().find(self.identity()) {
+            return Ok(worker.tm_login.clone());
         }
 
         //TODO

@@ -11,7 +11,7 @@ use crate::{
     index(
         name = record_id,
         btree(columns = [map_uid, player_uid]))
-    )]
+    ,public)] //TODO make private
 pub struct TmMapRecord {
     map_uid: String,
     player_uid: String,
@@ -62,19 +62,25 @@ pub fn post_record(
     player_uid: String,
     time: u32,
 ) -> Result<(), String> {
-    ctx.auth_worker()?;
+    //TODO
+    //ctx.auth_worker()?;
 
-    for record in ctx
+    if let Some(record) = ctx
         .db
         .tm_map_record()
         .record_id()
         .filter((&map_uid, &player_uid))
+        .next()
     {
         if record.time > time {
             /* TODO update */
+            println!("we should update the record");
+            return Ok(());
+        } else {
             return Ok(());
         }
     }
+
     ctx.db.tm_map_record().insert(TmMapRecord {
         map_uid,
         player_uid,
