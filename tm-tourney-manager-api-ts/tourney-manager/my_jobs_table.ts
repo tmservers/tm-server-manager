@@ -11,6 +11,6 @@ import {
 } from "spacetimedb";
 
 export default __t.row({
-  tmLogin: __t.string(),
-  mapUid: __t.string(),
+  tmLogin: __t.string().name("tm_login"),
+  mapUid: __t.string().name("map_uid"),
 });

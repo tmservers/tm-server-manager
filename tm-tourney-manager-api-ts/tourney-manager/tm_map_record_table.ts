@@ -12,8 +12,8 @@ import {
 
 export default __t.row({
   id: __t.u32().primaryKey(),
-  mapUid: __t.string(),
-  playerUid: __t.string(),
+  mapUid: __t.string().name("map_uid"),
+  playerUid: __t.string().name("player_uid"),
   timestamp: __t.timestamp(),
   time: __t.u32(),
 });

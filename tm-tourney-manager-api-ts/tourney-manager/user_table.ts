@@ -13,6 +13,6 @@ import {
 export default __t.row({
   id: __t.string().primaryKey(),
   name: __t.string(),
-  clubTag: __t.string(),
+  clubTag: __t.string().name("club_tag"),
   online: __t.bool(),
 });
