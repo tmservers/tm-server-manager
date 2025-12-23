@@ -773,8 +773,9 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.tab_tournament = cache
             .apply_diff_to_table::<TournamentV1>("tab_tournament", &self.tab_tournament)
             .with_updates_by_pk(|row| &row.id);
-        diff.tm_map_record =
-            cache.apply_diff_to_table::<TmMapRecord>("tm_map_record", &self.tm_map_record);
+        diff.tm_map_record = cache
+            .apply_diff_to_table::<TmMapRecord>("tm_map_record", &self.tm_map_record)
+            .with_updates_by_pk(|row| &row.id);
         diff.tm_match = cache
             .apply_diff_to_table::<TmMatch>("tm_match", &self.tm_match)
             .with_updates_by_pk(|row| &row.id);

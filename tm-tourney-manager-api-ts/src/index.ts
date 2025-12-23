@@ -443,12 +443,16 @@ const tablesSchema = __schema(
   __table({
     name: 'tm_map_record',
     indexes: [
+      { name: 'id', algorithm: 'btree', columns: [
+        'id',
+      ] },
       { name: 'record_id', algorithm: 'btree', columns: [
         'mapUid',
         'playerUid',
       ] },
     ],
     constraints: [
+      { name: 'tm_map_record_id_key', constraint: 'unique', columns: ['id'] },
     ],
   }, TmMapRecordRow),
   __table({

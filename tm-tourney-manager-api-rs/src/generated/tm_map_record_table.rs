@@ -81,6 +81,23 @@ impl<'ctx> __sdk::Table for TmMapRecordTableHandle<'ctx> {
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
     let _table = client_cache.get_or_make_table::<TmMapRecord>("tm_map_record");
+    _table.add_unique_constraint::<u32>("id", |row| &row.id);
+}
+pub struct TmMapRecordUpdateCallbackId(__sdk::CallbackId);
+
+impl<'ctx> __sdk::TableWithPrimaryKey for TmMapRecordTableHandle<'ctx> {
+    type UpdateCallbackId = TmMapRecordUpdateCallbackId;
+
+    fn on_update(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row, &Self::Row) + Send + 'static,
+    ) -> TmMapRecordUpdateCallbackId {
+        TmMapRecordUpdateCallbackId(self.imp.on_update(Box::new(callback)))
+    }
+
+    fn remove_on_update(&self, callback: TmMapRecordUpdateCallbackId) {
+        self.imp.remove_on_update(callback.0)
+    }
 }
 
 #[doc(hidden)]
@@ -92,4 +109,34 @@ pub(super) fn parse_table_update(
             .with_cause(e)
             .into()
     })
+}
+
+/// Access to the `id` unique index on the table `tm_map_record`,
+/// which allows point queries on the field of the same name
+/// via the [`TmMapRecordIdUnique::find`] method.
+///
+/// Users are encouraged not to explicitly reference this type,
+/// but to directly chain method calls,
+/// like `ctx.db.tm_map_record().id().find(...)`.
+pub struct TmMapRecordIdUnique<'ctx> {
+    imp: __sdk::UniqueConstraintHandle<TmMapRecord, u32>,
+    phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
+}
+
+impl<'ctx> TmMapRecordTableHandle<'ctx> {
+    /// Get a handle on the `id` unique index on the table `tm_map_record`.
+    pub fn id(&self) -> TmMapRecordIdUnique<'ctx> {
+        TmMapRecordIdUnique {
+            imp: self.imp.get_unique_constraint::<u32>("id"),
+            phantom: std::marker::PhantomData,
+        }
+    }
+}
+
+impl<'ctx> TmMapRecordIdUnique<'ctx> {
+    /// Find the subscribed row whose `id` column value is equal to `col_val`,
+    /// if such a row is present in the client cache.
+    pub fn find(&self, col_val: &u32) -> Option<TmMapRecord> {
+        self.imp.find(col_val)
+    }
 }

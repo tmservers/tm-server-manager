@@ -13,6 +13,10 @@ use crate::{
         btree(columns = [map_uid, player_uid]))
     ,public)] //TODO make private
 pub struct TmMapRecord {
+    #[auto_inc]
+    #[primary_key]
+    pub id: u32,
+
     map_uid: String,
     player_uid: String,
 
@@ -65,7 +69,7 @@ pub fn post_record(
     //TODO
     //ctx.auth_worker()?;
 
-    if let Some(record) = ctx
+    if let Some(mut record) = ctx
         .db
         .tm_map_record()
         .record_id()
@@ -73,8 +77,9 @@ pub fn post_record(
         .next()
     {
         if record.time > time {
-            /* TODO update */
-            println!("we should update the record");
+            record.time = time;
+            record.timestamp = ctx.timestamp;
+            ctx.db.tm_map_record().id().update(record);
             return Ok(());
         } else {
             return Ok(());
@@ -82,6 +87,7 @@ pub fn post_record(
     }
 
     ctx.db.tm_map_record().insert(TmMapRecord {
+        id: 0,
         map_uid,
         player_uid,
         timestamp: ctx.timestamp,
