@@ -10,6 +10,7 @@ use crate::{
 
 mod scheduling;
 
+/// Always
 #[cfg_attr(feature = "spacetime",spacetimedb::table(name = competition,public))]
 pub struct Competition {
     #[auto_inc]
@@ -25,7 +26,7 @@ pub struct Competition {
     status: CompetitionStatus,
     // The Timestamp at which the event starts.
     // If no starting time is selected it has to be started manually.
-    //starting_at: Timestamp,
+    // starting_at: Timestamp,
     // Estimated duration how long the competition is gonna take.
     estimate: Option<TimeDuration>,
 
