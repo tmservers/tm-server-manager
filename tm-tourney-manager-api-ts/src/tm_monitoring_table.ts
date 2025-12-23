@@ -16,7 +16,7 @@ export default __t.row({
   id: __t.u32().primaryKey(),
   tournament: __t.u32(),
   competition: __t.u32(),
-  get monitor() {
+  get settings() {
     return MonitoringSettings;
   },
   name: __t.option(__t.string()),

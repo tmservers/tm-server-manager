@@ -1,6 +1,9 @@
-use spacetimedb::{ReducerContext, SpacetimeType, reducer};
+use spacetimedb::{ReducerContext, SpacetimeType, Table, reducer};
 
-use crate::auth::Authorization;
+use crate::{
+    auth::Authorization,
+    worker::jobs::{TmWorkerJobs, tm_worker_jobs},
+};
 
 #[ spacetimedb::table(name=tm_monitoring)]
 pub struct TmMonitoring {
@@ -11,7 +14,7 @@ pub struct TmMonitoring {
     tournament: u32,
     competition: u32,
 
-    monitor: MonitoringSettings,
+    settings: MonitoringSettings,
 
     name: Option<String>,
 
@@ -43,5 +46,25 @@ pub fn create_monitor(
     settings: MonitoringSettings,
 ) -> Result<(), String> {
     ctx.auth_user()?;
+    //TODO proper auth.
+    let monitor = ctx.db.tm_monitoring().insert(TmMonitoring {
+        id: 0,
+        //TODO
+        tournament: 0,
+        competition,
+        settings,
+        name: None,
+        active: true,
+    });
+
+    match monitor.settings {
+        MonitoringSettings::Club(monitoring_settings_club) => todo!(),
+        MonitoringSettings::Map(monitoring_settings_map) => {
+            ctx.db
+                .tm_worker_jobs()
+                .insert(TmWorkerJobs::new(monitoring_settings_map.map_uid));
+        }
+    }
+
     Ok(())
 }

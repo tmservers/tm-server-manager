@@ -12,7 +12,7 @@ pub struct TmMonitoring {
     pub id: u32,
     pub tournament: u32,
     pub competition: u32,
-    pub monitor: MonitoringSettings,
+    pub settings: MonitoringSettings,
     pub name: Option<String>,
     pub active: bool,
 }

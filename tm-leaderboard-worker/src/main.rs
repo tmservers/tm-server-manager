@@ -1,11 +1,4 @@
-use std::{
-    cell::{OnceCell, RefCell},
-    collections::{HashMap, HashSet, VecDeque},
-    fmt::Pointer,
-    iter::Once,
-    sync::OnceLock,
-    time::Duration,
-};
+use std::{collections::VecDeque, sync::OnceLock, time::Duration};
 
 use nadeo_api_rs::{
     auth::{NadeoClient, UserAgentDetails},
@@ -17,6 +10,7 @@ use tm_tourney_manager_api_rs::{DbConnection, MyJobsTableAccess, login_as_worker
 use tokio::{
     signal,
     sync::Mutex,
+    task::spawn_blocking,
     time::{Instant, sleep_until},
 };
 
@@ -30,6 +24,7 @@ fn connect_to_db() -> DbConnection {
     DbConnection::builder()
         //.on_connect_error(on_connect_error)
         //.on_disconnect(on_disconnected)
+        //.on_connect(|c, i, w| println!("{i}"))
         .with_module_name(
             std::env::var("SPACETIMEDB_MODULE").unwrap_or("tm-tourney-manager".to_string()),
         )
@@ -87,30 +82,43 @@ async fn main() {
         .subscription_builder()
         .subscribe("SELECT * FROM my_jobs");
 
+    _ = JOB_QUEUE.set(Mutex::new(VecDeque::new()));
+
     //Keep Queue up to data.
     {
         SPACETIME.wait().db.my_jobs().on_insert(|_ctx, row| {
-            let mut queue = JOB_QUEUE.wait().blocking_lock();
-
-            queue.push_back(row.map_uid.clone());
+            let map = row.map_uid.clone();
+            spawn_blocking(|| {
+                let mut queue = JOB_QUEUE.wait().blocking_lock();
+                println!("REACHED");
+                queue.push_back(map);
+            });
         });
 
         SPACETIME.wait().db.my_jobs().on_delete(|_ctx, row| {
-            let mut queue = JOB_QUEUE.wait().blocking_lock();
-            let map_pos = queue.iter().position(|v| *v == row.map_uid);
-            if let Some(position) = map_pos {
-                queue.remove(position);
-            }
+            let map = row.map_uid.clone();
+            spawn_blocking(move || {
+                let mut queue = JOB_QUEUE.wait().blocking_lock();
+                println!("REACHED");
+                let map_pos = queue.iter().position(|v| *v == map);
+                if let Some(position) = map_pos {
+                    queue.remove(position);
+                }
+            });
         });
     }
 
     tokio::spawn(async {
         loop {
-            sleep_until(Instant::now() + Duration::from_secs(10)).await;
+            sleep_until(Instant::now() + Duration::from_secs(60)).await;
+            println!("LOOPED");
 
             let mut queue = JOB_QUEUE.wait().lock().await;
 
-            let map = queue[0].clone();
+            let Some(map) = queue.front().cloned() else {
+                println!("Queue was empty");
+                continue;
+            };
             queue.rotate_right(1);
 
             let lb = client
@@ -120,6 +128,7 @@ async fn main() {
                 .tops
                 .pop()
                 .unwrap();
+            println!("{lb:?}");
             for pos in lb.top.into_iter() {
                 println!("{pos:?}");
                 SPACETIME

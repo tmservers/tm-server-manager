@@ -16,7 +16,7 @@ export default __t.object("TmMonitoring", {
   id: __t.u32(),
   tournament: __t.u32(),
   competition: __t.u32(),
-  get monitor() {
+  get settings() {
     return MonitoringSettings;
   },
   name: __t.option(__t.string()),

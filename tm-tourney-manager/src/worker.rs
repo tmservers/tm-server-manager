@@ -1,6 +1,6 @@
 use spacetimedb::{Identity, ProcedureContext, Table};
 
-mod jobs;
+pub mod jobs;
 
 #[cfg_attr(feature = "spacetime", spacetimedb::table(name=tm_worker, public))]
 pub struct TmWorker {
@@ -63,15 +63,18 @@ pub fn login_as_worker(
         panic!()
     } */
 
+    let sender = ctx.sender;
+
     ctx.with_tx(|ctx| {
-        if ctx.db.tm_worker().identity().find(ctx.sender).is_some() {
+        if ctx.db.tm_worker().identity().find(sender).is_some() {
             // Server identity is already verified.
             // return Ok(());
         }
-        if let Some(mut server) = ctx.db.tm_worker().tm_login().find(&login) {
+        if let Some(mut worker) = ctx.db.tm_worker().tm_login().find(&login) {
             // The new identity is assigned to the server.
-            server.set_identity(ctx.identity());
-            ctx.db.tm_worker().tm_login().update(server);
+            log::error!("Setting new identity {}", sender);
+            worker.set_identity(sender);
+            ctx.db.tm_worker().tm_login().update(worker);
             //Ok(())
         } else {
             //TODO make HTTP call when its available and verify that credentials are correct.
@@ -81,7 +84,7 @@ pub fn login_as_worker(
                 online: true,
                 tm_login: login.clone(),
                 owner_id: account_id.clone(),
-                identity: ctx.identity(),
+                identity: sender,
             });
             //Ok(())
         }
