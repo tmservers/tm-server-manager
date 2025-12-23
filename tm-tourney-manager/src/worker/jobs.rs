@@ -4,7 +4,10 @@ use crate::worker::tm_worker__view;
 
 #[cfg_attr(feature = "spacetime", spacetimedb::table(name=tm_worker_jobs,index(name= worker_id,btree(columns= [tm_login]))))]
 pub struct TmWorkerJobs {
+    // The
     pub tm_login: String,
+
+    map_uid: String,
 }
 
 #[derive(Debug, SpacetimeType)]

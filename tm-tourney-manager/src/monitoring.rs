@@ -9,11 +9,13 @@ pub struct TmMonitoring {
     pub id: u32,
 
     tournament: u32,
-    parent_competition: u32,
+    competition: u32,
 
     monitor: MonitoringSettings,
 
     name: Option<String>,
+
+    active: bool,
 }
 
 #[derive(Debug, SpacetimeType)]
@@ -35,7 +37,11 @@ pub struct MonitoringSettingsMap {
 }
 
 #[reducer]
-pub fn create_monitor(ctx: &ReducerContext) -> Result<(), String> {
+pub fn create_monitor(
+    ctx: &ReducerContext,
+    competition: u32,
+    settings: MonitoringSettings,
+) -> Result<(), String> {
     ctx.auth_user()?;
     Ok(())
 }

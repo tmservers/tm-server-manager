@@ -47,6 +47,8 @@ import CreateEventTemplate from "./create_event_template_reducer";
 export { CreateEventTemplate };
 import CreateMatch from "./create_match_reducer";
 export { CreateMatch };
+import CreateMonitor from "./create_monitor_reducer";
+export { CreateMonitor };
 import CreateServerConfig from "./create_server_config_reducer";
 export { CreateServerConfig };
 import CreateTournament from "./create_tournament_reducer";
@@ -107,6 +109,8 @@ import MatchStandingsRow from "./match_standings_table";
 export { MatchStandingsRow };
 import MatchTemplateRow from "./match_template_table";
 export { MatchTemplateRow };
+import MyJobsRow from "./my_jobs_table";
+export { MyJobsRow };
 import MyTournamentRow from "./my_tournament_table";
 export { MyTournamentRow };
 import RegistrationPlayerRow from "./registration_player_table";
@@ -121,6 +125,8 @@ import TmMatchRow from "./tm_match_table";
 export { TmMatchRow };
 import TmMatchRecordRow from "./tm_match_record_table";
 export { TmMatchRecordRow };
+import TmMonitoringRow from "./tm_monitoring_table";
+export { TmMonitoringRow };
 import TmServerRow from "./tm_server_table";
 export { TmServerRow };
 import TmServerConfigRow from "./tm_server_config_table";
@@ -131,6 +137,8 @@ import TmServerMethodResponseRow from "./tm_server_method_response_table";
 export { TmServerMethodResponseRow };
 import TmWorkerRow from "./tm_worker_table";
 export { TmWorkerRow };
+import TmWorkerJobsRow from "./tm_worker_jobs_table";
+export { TmWorkerJobsRow };
 import TournamentRow from "./tournament_table";
 export { TournamentRow };
 import UserRow from "./user_table";
@@ -223,6 +231,12 @@ import ModeConfig from "./mode_config_type";
 export { ModeConfig };
 import ModeRules from "./mode_rules_type";
 export { ModeRules };
+import MonitoringSettings from "./monitoring_settings_type";
+export { MonitoringSettings };
+import MonitoringSettingsClub from "./monitoring_settings_club_type";
+export { MonitoringSettingsClub };
+import MonitoringSettingsMap from "./monitoring_settings_map_type";
+export { MonitoringSettingsMap };
 import Node from "./node_type";
 export { Node };
 import PlayLoopEnd from "./play_loop_end_type";
@@ -289,6 +303,8 @@ import TmMapRecord from "./tm_map_record_type";
 export { TmMapRecord };
 import TmMatch from "./tm_match_type";
 export { TmMatch };
+import TmMonitoring from "./tm_monitoring_type";
+export { TmMonitoring };
 import TmRecord from "./tm_record_type";
 export { TmRecord };
 import TmServer from "./tm_server_type";
@@ -301,6 +317,8 @@ import TmServerMethodResponse from "./tm_server_method_response_type";
 export { TmServerMethodResponse };
 import TmWorker from "./tm_worker_type";
 export { TmWorker };
+import TmWorkerJobs from "./tm_worker_jobs_type";
+export { TmWorkerJobs };
 import TournamentStatus from "./tournament_status_type";
 export { TournamentStatus };
 import TournamentV1 from "./tournament_v_1_type";
@@ -457,6 +475,17 @@ const tablesSchema = __schema(
     ],
   }, TmMatchRecordRow),
   __table({
+    name: 'tm_monitoring',
+    indexes: [
+      { name: 'id', algorithm: 'btree', columns: [
+        'id',
+      ] },
+    ],
+    constraints: [
+      { name: 'tm_monitoring_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, TmMonitoringRow),
+  __table({
     name: 'tm_server',
     indexes: [
       { name: 'identity', algorithm: 'btree', columns: [
@@ -520,6 +549,16 @@ const tablesSchema = __schema(
     ],
   }, TmWorkerRow),
   __table({
+    name: 'tm_worker_jobs',
+    indexes: [
+      { name: 'worker_id', algorithm: 'btree', columns: [
+        'tmLogin',
+      ] },
+    ],
+    constraints: [
+    ],
+  }, TmWorkerJobsRow),
+  __table({
     name: 'user',
     indexes: [
       { name: 'id', algorithm: 'btree', columns: [
@@ -570,6 +609,13 @@ const tablesSchema = __schema(
     ],
   }, MatchStandingsRow),
   __table({
+    name: 'my_jobs',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyJobsRow),
+  __table({
     name: 'my_tournament',
     indexes: [
     ],
@@ -601,6 +647,7 @@ const reducersSchema = __reducers(
   __reducerSchema("create_env_var", CreateEnvVar),
   __reducerSchema("create_event_template", CreateEventTemplate),
   __reducerSchema("create_match", CreateMatch),
+  __reducerSchema("create_monitor", CreateMonitor),
   __reducerSchema("create_server_config", CreateServerConfig),
   __reducerSchema("create_tournament", CreateTournament),
   __reducerSchema("match_assign_server", MatchAssignServer),

@@ -26,6 +26,7 @@ pub mod create_competition_reducer;
 pub mod create_env_var_reducer;
 pub mod create_event_template_reducer;
 pub mod create_match_reducer;
+pub mod create_monitor_reducer;
 pub mod create_server_config_reducer;
 pub mod create_tournament_reducer;
 pub mod custom_type;
@@ -75,6 +76,10 @@ pub mod method_error_type;
 pub mod method_response_type;
 pub mod mode_config_type;
 pub mod mode_rules_type;
+pub mod monitoring_settings_club_type;
+pub mod monitoring_settings_map_type;
+pub mod monitoring_settings_type;
+pub mod my_jobs_table;
 pub mod my_tournament_table;
 pub mod node_type;
 pub mod on_tournament_event_schedule_reducer;
@@ -121,6 +126,8 @@ pub mod tm_map_record_type;
 pub mod tm_match_record_table;
 pub mod tm_match_table;
 pub mod tm_match_type;
+pub mod tm_monitoring_table;
+pub mod tm_monitoring_type;
 pub mod tm_record_type;
 pub mod tm_server_config_table;
 pub mod tm_server_config_type;
@@ -130,6 +137,8 @@ pub mod tm_server_method_response_table;
 pub mod tm_server_method_response_type;
 pub mod tm_server_table;
 pub mod tm_server_type;
+pub mod tm_worker_jobs_table;
+pub mod tm_worker_jobs_type;
 pub mod tm_worker_table;
 pub mod tm_worker_type;
 pub mod tournament_status_type;
@@ -184,6 +193,9 @@ pub use create_event_template_reducer::{
     create_event_template, set_flags_for_create_event_template, CreateEventTemplateCallbackId,
 };
 pub use create_match_reducer::{create_match, set_flags_for_create_match, CreateMatchCallbackId};
+pub use create_monitor_reducer::{
+    create_monitor, set_flags_for_create_monitor, CreateMonitorCallbackId,
+};
 pub use create_server_config_reducer::{
     create_server_config, set_flags_for_create_server_config, CreateServerConfigCallbackId,
 };
@@ -243,6 +255,10 @@ pub use method_error_type::MethodError;
 pub use method_response_type::MethodResponse;
 pub use mode_config_type::ModeConfig;
 pub use mode_rules_type::ModeRules;
+pub use monitoring_settings_club_type::MonitoringSettingsClub;
+pub use monitoring_settings_map_type::MonitoringSettingsMap;
+pub use monitoring_settings_type::MonitoringSettings;
+pub use my_jobs_table::*;
 pub use my_tournament_table::*;
 pub use node_type::Node;
 pub use on_tournament_event_schedule_reducer::{
@@ -296,6 +312,8 @@ pub use tm_map_record_type::TmMapRecord;
 pub use tm_match_record_table::*;
 pub use tm_match_table::*;
 pub use tm_match_type::TmMatch;
+pub use tm_monitoring_table::*;
+pub use tm_monitoring_type::TmMonitoring;
 pub use tm_record_type::TmRecord;
 pub use tm_server_config_table::*;
 pub use tm_server_config_type::TmServerConfig;
@@ -305,6 +323,8 @@ pub use tm_server_method_response_table::*;
 pub use tm_server_method_response_type::TmServerMethodResponse;
 pub use tm_server_table::*;
 pub use tm_server_type::TmServer;
+pub use tm_worker_jobs_table::*;
+pub use tm_worker_jobs_type::TmWorkerJobs;
 pub use tm_worker_table::*;
 pub use tm_worker_type::TmWorker;
 pub use tournament_status_type::TournamentStatus;
@@ -364,6 +384,10 @@ pub enum Reducer {
     CreateMatch {
         competition_id: u32,
         with_template: Option<u32>,
+    },
+    CreateMonitor {
+        competition: u32,
+        settings: MonitoringSettings,
     },
     CreateServerConfig {
         id: String,
@@ -427,6 +451,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::CreateEnvVar { .. } => "create_env_var",
             Reducer::CreateEventTemplate { .. } => "create_event_template",
             Reducer::CreateMatch { .. } => "create_match",
+            Reducer::CreateMonitor { .. } => "create_monitor",
             Reducer::CreateServerConfig { .. } => "create_server_config",
             Reducer::CreateTournament { .. } => "create_tournament",
             Reducer::IdentityDisconnected => "identity_disconnected",
@@ -487,6 +512,10 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 )?
                 .into(),
             ),
+            "create_monitor" => Ok(__sdk::parse_reducer_args::<
+                create_monitor_reducer::CreateMonitorArgs,
+            >("create_monitor", &value.args)?
+            .into()),
             "create_server_config" => Ok(__sdk::parse_reducer_args::<
                 create_server_config_reducer::CreateServerConfigArgs,
             >("create_server_config", &value.args)?
@@ -573,6 +602,7 @@ pub struct DbUpdate {
     match_record: __sdk::TableUpdate<TmRecord>,
     match_standings: __sdk::TableUpdate<MatchStandings>,
     match_template: __sdk::TableUpdate<MatchTemplate>,
+    my_jobs: __sdk::TableUpdate<TmWorkerJobs>,
     my_tournament: __sdk::TableUpdate<TournamentV1>,
     registration_player: __sdk::TableUpdate<RegistrationPlayer>,
     tab_tournament: __sdk::TableUpdate<TournamentV1>,
@@ -580,11 +610,13 @@ pub struct DbUpdate {
     tm_map_record: __sdk::TableUpdate<TmMapRecord>,
     tm_match: __sdk::TableUpdate<TmMatch>,
     tm_match_record: __sdk::TableUpdate<TmCompRecord>,
+    tm_monitoring: __sdk::TableUpdate<TmMonitoring>,
     tm_server: __sdk::TableUpdate<TmServer>,
     tm_server_config: __sdk::TableUpdate<TmServerConfig>,
     tm_server_method_call: __sdk::TableUpdate<TmServerMethodCall>,
     tm_server_method_response: __sdk::TableUpdate<TmServerMethodResponse>,
     tm_worker: __sdk::TableUpdate<TmWorker>,
+    tm_worker_jobs: __sdk::TableUpdate<TmWorkerJobs>,
     tournament: __sdk::TableUpdate<TournamentV1>,
     user: __sdk::TableUpdate<User>,
     user_identity: __sdk::TableUpdate<UserIdentity>,
@@ -632,6 +664,9 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "match_template" => db_update
                     .match_template
                     .append(match_template_table::parse_table_update(table_update)?),
+                "my_jobs" => db_update
+                    .my_jobs
+                    .append(my_jobs_table::parse_table_update(table_update)?),
                 "my_tournament" => db_update
                     .my_tournament
                     .append(my_tournament_table::parse_table_update(table_update)?),
@@ -653,6 +688,9 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "tm_match_record" => db_update
                     .tm_match_record
                     .append(tm_match_record_table::parse_table_update(table_update)?),
+                "tm_monitoring" => db_update
+                    .tm_monitoring
+                    .append(tm_monitoring_table::parse_table_update(table_update)?),
                 "tm_server" => db_update
                     .tm_server
                     .append(tm_server_table::parse_table_update(table_update)?),
@@ -668,6 +706,9 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "tm_worker" => db_update
                     .tm_worker
                     .append(tm_worker_table::parse_table_update(table_update)?),
+                "tm_worker_jobs" => db_update
+                    .tm_worker_jobs
+                    .append(tm_worker_jobs_table::parse_table_update(table_update)?),
                 "tournament" => db_update
                     .tournament
                     .append(tournament_table::parse_table_update(table_update)?),
@@ -739,6 +780,9 @@ impl __sdk::DbUpdate for DbUpdate {
             .with_updates_by_pk(|row| &row.id);
         diff.tm_match_record =
             cache.apply_diff_to_table::<TmCompRecord>("tm_match_record", &self.tm_match_record);
+        diff.tm_monitoring = cache
+            .apply_diff_to_table::<TmMonitoring>("tm_monitoring", &self.tm_monitoring)
+            .with_updates_by_pk(|row| &row.id);
         diff.tm_server = cache
             .apply_diff_to_table::<TmServer>("tm_server", &self.tm_server)
             .with_updates_by_pk(|row| &row.tm_login);
@@ -760,6 +804,8 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.tm_worker = cache
             .apply_diff_to_table::<TmWorker>("tm_worker", &self.tm_worker)
             .with_updates_by_pk(|row| &row.tm_login);
+        diff.tm_worker_jobs =
+            cache.apply_diff_to_table::<TmWorkerJobs>("tm_worker_jobs", &self.tm_worker_jobs);
         diff.user = cache
             .apply_diff_to_table::<User>("user", &self.user)
             .with_updates_by_pk(|row| &row.id);
@@ -773,6 +819,7 @@ impl __sdk::DbUpdate for DbUpdate {
             cache.apply_diff_to_table::<TmRecord>("match_record", &self.match_record);
         diff.match_standings =
             cache.apply_diff_to_table::<MatchStandings>("match_standings", &self.match_standings);
+        diff.my_jobs = cache.apply_diff_to_table::<TmWorkerJobs>("my_jobs", &self.my_jobs);
         diff.my_tournament =
             cache.apply_diff_to_table::<TournamentV1>("my_tournament", &self.my_tournament);
         diff.this_tm_server =
@@ -799,6 +846,7 @@ pub struct AppliedDiff<'r> {
     match_record: __sdk::TableAppliedDiff<'r, TmRecord>,
     match_standings: __sdk::TableAppliedDiff<'r, MatchStandings>,
     match_template: __sdk::TableAppliedDiff<'r, MatchTemplate>,
+    my_jobs: __sdk::TableAppliedDiff<'r, TmWorkerJobs>,
     my_tournament: __sdk::TableAppliedDiff<'r, TournamentV1>,
     registration_player: __sdk::TableAppliedDiff<'r, RegistrationPlayer>,
     tab_tournament: __sdk::TableAppliedDiff<'r, TournamentV1>,
@@ -806,11 +854,13 @@ pub struct AppliedDiff<'r> {
     tm_map_record: __sdk::TableAppliedDiff<'r, TmMapRecord>,
     tm_match: __sdk::TableAppliedDiff<'r, TmMatch>,
     tm_match_record: __sdk::TableAppliedDiff<'r, TmCompRecord>,
+    tm_monitoring: __sdk::TableAppliedDiff<'r, TmMonitoring>,
     tm_server: __sdk::TableAppliedDiff<'r, TmServer>,
     tm_server_config: __sdk::TableAppliedDiff<'r, TmServerConfig>,
     tm_server_method_call: __sdk::TableAppliedDiff<'r, TmServerMethodCall>,
     tm_server_method_response: __sdk::TableAppliedDiff<'r, TmServerMethodResponse>,
     tm_worker: __sdk::TableAppliedDiff<'r, TmWorker>,
+    tm_worker_jobs: __sdk::TableAppliedDiff<'r, TmWorkerJobs>,
     tournament: __sdk::TableAppliedDiff<'r, TournamentV1>,
     user: __sdk::TableAppliedDiff<'r, User>,
     user_identity: __sdk::TableAppliedDiff<'r, UserIdentity>,
@@ -863,6 +913,7 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             &self.match_template,
             event,
         );
+        callbacks.invoke_table_row_callbacks::<TmWorkerJobs>("my_jobs", &self.my_jobs, event);
         callbacks.invoke_table_row_callbacks::<TournamentV1>(
             "my_tournament",
             &self.my_tournament,
@@ -894,6 +945,11 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             &self.tm_match_record,
             event,
         );
+        callbacks.invoke_table_row_callbacks::<TmMonitoring>(
+            "tm_monitoring",
+            &self.tm_monitoring,
+            event,
+        );
         callbacks.invoke_table_row_callbacks::<TmServer>("tm_server", &self.tm_server, event);
         callbacks.invoke_table_row_callbacks::<TmServerConfig>(
             "tm_server_config",
@@ -911,6 +967,11 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             event,
         );
         callbacks.invoke_table_row_callbacks::<TmWorker>("tm_worker", &self.tm_worker, event);
+        callbacks.invoke_table_row_callbacks::<TmWorkerJobs>(
+            "tm_worker_jobs",
+            &self.tm_worker_jobs,
+            event,
+        );
         callbacks.invoke_table_row_callbacks::<TournamentV1>("tournament", &self.tournament, event);
         callbacks.invoke_table_row_callbacks::<User>("user", &self.user, event);
         callbacks.invoke_table_row_callbacks::<UserIdentity>(
@@ -1649,6 +1710,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
         match_record_table::register_table(client_cache);
         match_standings_table::register_table(client_cache);
         match_template_table::register_table(client_cache);
+        my_jobs_table::register_table(client_cache);
         my_tournament_table::register_table(client_cache);
         registration_player_table::register_table(client_cache);
         tab_tournament_table::register_table(client_cache);
@@ -1656,11 +1718,13 @@ impl __sdk::SpacetimeModule for RemoteModule {
         tm_map_record_table::register_table(client_cache);
         tm_match_table::register_table(client_cache);
         tm_match_record_table::register_table(client_cache);
+        tm_monitoring_table::register_table(client_cache);
         tm_server_table::register_table(client_cache);
         tm_server_config_table::register_table(client_cache);
         tm_server_method_call_table::register_table(client_cache);
         tm_server_method_response_table::register_table(client_cache);
         tm_worker_table::register_table(client_cache);
+        tm_worker_jobs_table::register_table(client_cache);
         tournament_table::register_table(client_cache);
         user_table::register_table(client_cache);
         user_identity_table::register_table(client_cache);

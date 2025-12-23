@@ -1,15 +1,30 @@
-use std::sync::OnceLock;
+use std::{
+    cell::{OnceCell, RefCell},
+    collections::{HashMap, HashSet, VecDeque},
+    fmt::Pointer,
+    iter::Once,
+    sync::OnceLock,
+    time::Duration,
+};
 
 use nadeo_api_rs::{
     auth::{NadeoClient, UserAgentDetails},
     live::LiveApiClient,
 };
-use tm_tourney_manager_api_rs::{DbConnection, login_as_worker, post_record};
-use tokio::signal;
+use spacetimedb_sdk::Table;
+use spacetimedb_sdk::db_context::DbContext;
+use tm_tourney_manager_api_rs::{DbConnection, MyJobsTableAccess, login_as_worker, post_record};
+use tokio::{
+    signal,
+    sync::Mutex,
+    time::{Instant, sleep_until},
+};
 
 static SPACETIME: OnceLock<DbConnection> = OnceLock::new();
 
 static NADEO_API: OnceLock<NadeoClient> = OnceLock::new();
+
+static JOB_QUEUE: OnceLock<Mutex<VecDeque<String>>> = OnceLock::new();
 
 fn connect_to_db() -> DbConnection {
     DbConnection::builder()
@@ -66,25 +81,55 @@ async fn main() {
 
     let client = NADEO_API.wait();
 
-    let lb = client
-        .get_map_leaderboard("vjyNNUu997cC5PW8e3x7Y9RsAF0", true, 100, 0)
-        .await
-        .unwrap()
-        .tops
-        .pop()
-        .unwrap();
-    for pos in lb.top.into_iter() {
-        println!("{pos:?}");
-        SPACETIME
-            .wait()
-            .reducers
-            .post_record(
-                "vjyNNUu997cC5PW8e3x7Y9RsAF0".into(),
-                pos.accountId,
-                pos.score as u32,
-            )
-            .unwrap();
+    //TODO error handling.
+    SPACETIME
+        .wait()
+        .subscription_builder()
+        .subscribe("SELECT * FROM my_jobs");
+
+    //Keep Queue up to data.
+    {
+        SPACETIME.wait().db.my_jobs().on_insert(|_ctx, row| {
+            let mut queue = JOB_QUEUE.wait().blocking_lock();
+
+            queue.push_back(row.map_uid.clone());
+        });
+
+        SPACETIME.wait().db.my_jobs().on_delete(|_ctx, row| {
+            let mut queue = JOB_QUEUE.wait().blocking_lock();
+            let map_pos = queue.iter().position(|v| *v == row.map_uid);
+            if let Some(position) = map_pos {
+                queue.remove(position);
+            }
+        });
     }
+
+    tokio::spawn(async {
+        loop {
+            sleep_until(Instant::now() + Duration::from_secs(10)).await;
+
+            let mut queue = JOB_QUEUE.wait().lock().await;
+
+            let map = queue[0].clone();
+            queue.rotate_right(1);
+
+            let lb = client
+                .get_map_leaderboard(&map, true, 100, 0)
+                .await
+                .unwrap()
+                .tops
+                .pop()
+                .unwrap();
+            for pos in lb.top.into_iter() {
+                println!("{pos:?}");
+                SPACETIME
+                    .wait()
+                    .reducers
+                    .post_record(map.clone(), pos.accountId, pos.score as u32)
+                    .unwrap();
+            }
+        }
+    });
 
     match signal::ctrl_c().await {
         Ok(()) => {}
