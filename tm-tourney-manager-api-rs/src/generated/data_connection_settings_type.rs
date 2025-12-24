@@ -4,22 +4,13 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::server_config_type::ServerConfig;
-use super::server_state_type::ServerState;
-
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct TmServer {
-    pub tm_login: String,
-    pub identity: __sdk::Identity,
-    pub owner_id: String,
-    pub online: bool,
-    pub config: ServerConfig,
-    pub state: ServerState,
-    pub capturable: bool,
-    pub active_match: Option<u32>,
+pub struct DataConnectionSettings {
+    pub count_top: Option<u8>,
+    pub count_bottom: Option<u8>,
 }
 
-impl __sdk::InModule for TmServer {
+impl __sdk::InModule for DataConnectionSettings {
     type Module = super::RemoteModule;
 }

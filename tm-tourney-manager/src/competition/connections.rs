@@ -17,7 +17,15 @@ pub struct TabCompetitionConnection {
 
 #[derive(Debug, SpacetimeType)]
 pub enum ConnectionSettings {
-    Empty,
+    Waiting,
+    Data(DataConnectionSettings),
+}
+
+/// Very much a placeholder at the moment.
+#[derive(Debug, SpacetimeType)]
+pub struct DataConnectionSettings {
+    count_top: Option<u8>,
+    count_bottom: Option<u8>,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -124,7 +132,7 @@ pub fn create_connection(
             connection_to,
             connection_from_variant,
             connection_to_variant,
-            connection_settings: ConnectionSettings::Empty,
+            connection_settings: ConnectionSettings::Waiting,
         })?;
 
     Ok(())

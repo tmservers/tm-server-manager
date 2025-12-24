@@ -2,15 +2,8 @@ use std::sync::OnceLock;
 
 use nadeo_api::NadeoClient;
 
-use spacetimedb_sdk::{DbContext, Error, Identity, Table, TableWithPrimaryKey};
+use spacetimedb_sdk::{DbContext, Error, Table, TableWithPrimaryKey};
 
-use takumi::{
-    layout::{
-        Viewport,
-        node::{ContainerNode, NodeKind, TextNode},
-    },
-    rendering::RenderOptionsBuilder,
-};
 use tm_tourney_manager_api_rs::*;
 
 use tm_server_controller::{
@@ -239,8 +232,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             .procedures
             .login_as_server(tm_server_login, tm_server_password, tm_account_id);
 
-        spacetime.db.tm_server().on_insert(server_bootstrap);
-        spacetime.db.tm_server().on_update(server_update);
+        //TODO switch to this_server if on_update callbacks are there
+        spacetime.db.tab_tm_server().on_insert(server_bootstrap);
+        spacetime.db.tab_tm_server().on_update(server_update);
 
         spacetime
             .db
@@ -282,7 +276,7 @@ fn on_disconnected(_ctx: &ErrorContext, err: Option<Error>) {
     }
 }
 
-fn server_update(_: &EventContext, old: &TmServer, new: &TmServer) {
+fn server_update(_: &EventContext, old: &TmServerV1, new: &TmServerV1) {
     //TODO check for match status change aswell!
 
     if old.config != new.config {
@@ -293,7 +287,7 @@ fn server_update(_: &EventContext, old: &TmServer, new: &TmServer) {
     }
 }
 
-fn server_bootstrap(ctx: &EventContext, new: &TmServer) {
+fn server_bootstrap(ctx: &EventContext, new: &TmServerV1) {
     let local_server = TRACKMANIA.wait();
     let new = new.clone();
     tokio::spawn(async move {

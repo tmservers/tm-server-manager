@@ -13,7 +13,7 @@ pub mod method;
 pub mod state;
 
 //TODO maybe rename to RawServerV1
-#[cfg_attr(feature = "spacetime", spacetimedb::table(name=tab_tm_server))]
+#[cfg_attr(feature = "spacetime", spacetimedb::table(name=tab_tm_server,public))] //TODO make private is on_update callbacks for views are there
 pub struct TmServerV1 {
     /// Trackmania server logins are unique.
     #[primary_key]

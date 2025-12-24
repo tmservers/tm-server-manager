@@ -4,7 +4,7 @@
 #![allow(unused, clippy::all)]
 use super::server_config_type::ServerConfig;
 use super::server_state_type::ServerState;
-use super::tm_server_type::TmServer;
+use super::tm_server_v_1_type::TmServerV1;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 /// Table handle for the table `this_tm_server`.
@@ -16,7 +16,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 /// but to directly chain method calls,
 /// like `ctx.db.this_tm_server().on_insert(...)`.
 pub struct ThisTmServerTableHandle<'ctx> {
-    imp: __sdk::TableHandle<TmServer>,
+    imp: __sdk::TableHandle<TmServerV1>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -33,7 +33,7 @@ pub trait ThisTmServerTableAccess {
 impl ThisTmServerTableAccess for super::RemoteTables {
     fn this_tm_server(&self) -> ThisTmServerTableHandle<'_> {
         ThisTmServerTableHandle {
-            imp: self.imp.get_table::<TmServer>("this_tm_server"),
+            imp: self.imp.get_table::<TmServerV1>("this_tm_server"),
             ctx: std::marker::PhantomData,
         }
     }
@@ -43,13 +43,13 @@ pub struct ThisTmServerInsertCallbackId(__sdk::CallbackId);
 pub struct ThisTmServerDeleteCallbackId(__sdk::CallbackId);
 
 impl<'ctx> __sdk::Table for ThisTmServerTableHandle<'ctx> {
-    type Row = TmServer;
+    type Row = TmServerV1;
     type EventContext = super::EventContext;
 
     fn count(&self) -> u64 {
         self.imp.count()
     }
-    fn iter(&self) -> impl Iterator<Item = TmServer> + '_ {
+    fn iter(&self) -> impl Iterator<Item = TmServerV1> + '_ {
         self.imp.iter()
     }
 
@@ -82,15 +82,15 @@ impl<'ctx> __sdk::Table for ThisTmServerTableHandle<'ctx> {
 
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
-    let _table = client_cache.get_or_make_table::<TmServer>("this_tm_server");
+    let _table = client_cache.get_or_make_table::<TmServerV1>("this_tm_server");
 }
 
 #[doc(hidden)]
 pub(super) fn parse_table_update(
     raw_updates: __ws::TableUpdate<__ws::BsatnFormat>,
-) -> __sdk::Result<__sdk::TableUpdate<TmServer>> {
+) -> __sdk::Result<__sdk::TableUpdate<TmServerV1>> {
     __sdk::TableUpdate::parse_table_update(raw_updates).map_err(|e| {
-        __sdk::InternalError::failed_parse("TableUpdate<TmServer>", "TableUpdate")
+        __sdk::InternalError::failed_parse("TableUpdate<TmServerV1>", "TableUpdate")
             .with_cause(e)
             .into()
     })

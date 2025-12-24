@@ -121,6 +121,8 @@ import TabCompetitionRow from "./tab_competition_table";
 export { TabCompetitionRow };
 import TabCompetitionConnectionRow from "./tab_competition_connection_table";
 export { TabCompetitionConnectionRow };
+import TabTmServerRow from "./tab_tm_server_table";
+export { TabTmServerRow };
 import TabTournamentRow from "./tab_tournament_table";
 export { TabTournamentRow };
 import ThisTmServerRow from "./this_tm_server_table";
@@ -173,6 +175,8 @@ import ConnectionSettings from "./connection_settings_type";
 export { ConnectionSettings };
 import Custom from "./custom_type";
 export { Custom };
+import DataConnectionSettings from "./data_connection_settings_type";
+export { DataConnectionSettings };
 import EndMapEnd from "./end_map_end_type";
 export { EndMapEnd };
 import EndMapStart from "./end_map_start_type";
@@ -311,14 +315,14 @@ import TmMonitoring from "./tm_monitoring_type";
 export { TmMonitoring };
 import TmRecord from "./tm_record_type";
 export { TmRecord };
-import TmServer from "./tm_server_type";
-export { TmServer };
 import TmServerConfig from "./tm_server_config_type";
 export { TmServerConfig };
 import TmServerMethodCall from "./tm_server_method_call_type";
 export { TmServerMethodCall };
 import TmServerMethodResponse from "./tm_server_method_response_type";
 export { TmServerMethodResponse };
+import TmServerV1 from "./tm_server_v_1_type";
+export { TmServerV1 };
 import TmWorker from "./tm_worker_type";
 export { TmWorker };
 import TmWorkerJobs from "./tm_worker_jobs_type";
@@ -446,6 +450,24 @@ const tablesSchema = __schema(
     ],
   }, TabCompetitionConnectionRow),
   __table({
+    name: 'tab_tm_server',
+    indexes: [
+      { name: 'identity', algorithm: 'btree', columns: [
+        'identity',
+      ] },
+      { name: 'owner_id', algorithm: 'btree', columns: [
+        'ownerId',
+      ] },
+      { name: 'tm_login', algorithm: 'btree', columns: [
+        'tmLogin',
+      ] },
+    ],
+    constraints: [
+      { name: 'tab_tm_server_identity_key', constraint: 'unique', columns: ['identity'] },
+      { name: 'tab_tm_server_tm_login_key', constraint: 'unique', columns: ['tmLogin'] },
+    ],
+  }, TabTmServerRow),
+  __table({
     name: 'tab_tournament',
     indexes: [
       { name: 'id', algorithm: 'btree', columns: [
@@ -509,21 +531,6 @@ const tablesSchema = __schema(
       { name: 'tm_monitoring_id_key', constraint: 'unique', columns: ['id'] },
     ],
   }, TmMonitoringRow),
-  __table({
-    name: 'tm_server',
-    indexes: [
-      { name: 'identity', algorithm: 'btree', columns: [
-        'identity',
-      ] },
-      { name: 'tm_login', algorithm: 'btree', columns: [
-        'tmLogin',
-      ] },
-    ],
-    constraints: [
-      { name: 'tm_server_identity_key', constraint: 'unique', columns: ['identity'] },
-      { name: 'tm_server_tm_login_key', constraint: 'unique', columns: ['tmLogin'] },
-    ],
-  }, TmServerRow),
   __table({
     name: 'tm_server_config',
     indexes: [
@@ -667,6 +674,13 @@ const tablesSchema = __schema(
     constraints: [
     ],
   }, ThisTmServerRow),
+  __table({
+    name: 'tm_server',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, TmServerRow),
   __table({
     name: 'tournament',
     indexes: [
