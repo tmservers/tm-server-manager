@@ -1,7 +1,7 @@
 use spacetimedb::{ReducerContext, Table};
 
 use crate::{
-    server::tm_server,
+    server::tab_tm_server,
     user::{User as UserStruct, UserIdentity, user as db_user, user_identity},
 };
 
@@ -43,9 +43,9 @@ fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
         Ok(())
     } else {
         // The server comes back online.
-        if let Some(mut server) = ctx.db.tm_server().identity().find(ctx.sender) {
+        if let Some(mut server) = ctx.db.tab_tm_server().identity().find(ctx.sender) {
             server.set_online();
-            ctx.db.tm_server().tm_login().update(server);
+            ctx.db.tab_tm_server().tm_login().update(server);
             Ok(())
         } else {
             // Client connects annonymously.
@@ -56,8 +56,8 @@ fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
 
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer(client_disconnected))]
 fn identity_disconnected(ctx: &ReducerContext) {
-    if let Some(mut server) = ctx.db.tm_server().identity().find(ctx.sender) {
+    if let Some(mut server) = ctx.db.tab_tm_server().identity().find(ctx.sender) {
         server.set_offline();
-        ctx.db.tm_server().tm_login().update(server);
+        ctx.db.tab_tm_server().tm_login().update(server);
     }
 }

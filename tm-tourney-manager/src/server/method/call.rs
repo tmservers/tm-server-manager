@@ -1,7 +1,7 @@
 use spacetimedb::{ReducerContext, Table, reducer};
 use tm_server_types::method::MethodCall;
 
-use crate::server::tm_server;
+use crate::server::tab_tm_server;
 
 #[cfg_attr(feature = "spacetime", spacetimedb::table(name=tm_server_method_call, public))]
 pub struct TmServerMethodCall {
@@ -31,7 +31,7 @@ pub fn server_method_call(
     //TODO do the proper auth
     // the challenge is who is able to access the server? not only owner i guess
 
-    let Some(tm_server) = ctx.db.tm_server().tm_login().find(&server_id) else {
+    let Some(tm_server) = ctx.db.tab_tm_server().tm_login().find(&server_id) else {
         return Err(format!("Server with id {server_id} was not found."));
     };
 
