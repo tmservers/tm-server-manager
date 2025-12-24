@@ -12,7 +12,6 @@ import {
 import CompetitionStatus from "./competition_status_type";
 import Scheduling from "./scheduling_type";
 import RegistrationRules from "./registration_rules_type";
-import Competitions from "./competitions_type";
 
 
 export default __t.row({
@@ -29,9 +28,5 @@ export default __t.row({
   },
   get registrationRules() {
     return RegistrationRules.name("registration_rules");
-  },
-  entryPoints: __t.option(__t.array(__t.u32())).name("entry_points"),
-  get competitions() {
-    return Competitions;
   },
 });

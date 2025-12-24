@@ -5,7 +5,6 @@
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 use super::competition_status_type::CompetitionStatus;
-use super::competitions_type::Competitions;
 use super::registration_rules_type::RegistrationRules;
 use super::scheduling_type::Scheduling;
 
@@ -20,8 +19,6 @@ pub struct Competition {
     pub estimate: Option<__sdk::TimeDuration>,
     pub scheduling: Scheduling,
     pub registration_rules: RegistrationRules,
-    pub entry_points: Option<Vec<u32>>,
-    pub competitions: Competitions,
 }
 
 impl __sdk::InModule for Competition {

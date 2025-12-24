@@ -127,7 +127,7 @@ pub fn create_match(
 ) -> Result<(), String> {
     ctx.is_user()?;
 
-    let Some(mut parent_competition) = ctx.db.competition().id().find(competition_id) else {
+    let Some(parent_competition) = ctx.db.competition().id().find(competition_id) else {
         return Err("Invalid competition".into());
     };
 
@@ -147,9 +147,7 @@ pub fn create_match(
         permitted_entities: MatchEntityRules::new(),
     };
 
-    let tm_match = ctx.db.tm_match().try_insert(tm_match)?;
-    parent_competition.add_match(tm_match.id);
-    ctx.db.competition().id().update(parent_competition);
+    ctx.db.tm_match().try_insert(tm_match)?;
 
     Ok(())
 }

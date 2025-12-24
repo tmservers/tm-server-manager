@@ -1,13 +1,11 @@
 use spacetimedb::{ReducerContext, Table, TimeDuration};
 
 use crate::{
-    auth::Authorization,
-    graph::{CompetitionKindRef, Competitions, NodeIndex},
-    registration::RegistrationRules,
-    scheduling::Scheduling,
+    auth::Authorization, registration::RegistrationRules, scheduling::Scheduling,
     tournament::tab_tournament,
 };
 
+pub mod connections;
 mod scheduling;
 
 /// Always
@@ -33,7 +31,6 @@ pub struct Competition {
     scheduling: Scheduling,
 
     registration_rules: RegistrationRules,
-
     // TODO Can capture a server at the end of the registration to serve
     // as a lobby server which automatically delegates players to their
     // corresponding desination server based on active matches.
@@ -49,23 +46,22 @@ pub struct Competition {
     // approach would be to save the affected entry points in a schedule
     // This would be possible since they are own rows in the first place.
     // We could also have some sort of a barrier table or smth which takes care of this.
-    entry_points: Option<Vec<NodeIndex>>,
-
-    competitions: Competitions,
+    //entry_points: Option<Vec<NodeIndex>>,
+    //competitions: Competitions,
 }
 
 impl Competition {
-    pub fn add_competition(&mut self, competition_id: u32) {
+    /* pub fn add_competition(&mut self, competition_id: u32) {
         //TODO
         self.competitions
             .try_add_competition(CompetitionKindRef::CompetitionV1(competition_id));
-    }
+    } */
 
-    pub fn add_match(&mut self, match_id: u32) {
+    /* pub fn add_match(&mut self, match_id: u32) {
         //TODO
         self.competitions
             .try_add_competition(CompetitionKindRef::MatchV1(match_id));
-    }
+    } */
 
     pub(crate) fn get_tournament(&self) -> u32 {
         self.tournament_id
@@ -82,8 +78,8 @@ impl Competition {
             name,
             status: CompetitionStatus::Planning,
             estimate: None,
-            competitions: Competitions::new(),
-            entry_points: None,
+            //competitions: Competitions::new(),
+            //entry_points: None,
             scheduling: Scheduling::Manual,
             registration_rules: RegistrationRules::Open,
         }
@@ -138,26 +134,19 @@ pub fn create_competition(
     let user = ctx.is_user()?;
 
     // If parent is valid it is guaranteed that it has a valid tournament associated with it.
-    let Some(mut parent_competition) = ctx.db.competition().id().find(parent_id) else {
+    let Some(parent_competition) = ctx.db.competition().id().find(parent_id) else {
         return Err("Invalid parent_id".into());
     };
 
     //SAFETY: The competition gets commnited afterwards.
     let new_competition =
         unsafe { Competition::new(name, Some(parent_id), parent_competition.get_tournament()) };
-    match ctx.db.competition().try_insert(new_competition) {
-        // If the insertion of the new competition succeeds we need to update the parent
-        // to include it in the graph.
-        Ok(competition) => {
-            parent_competition.add_competition(competition.id);
-            ctx.db.competition().id().update(parent_competition);
-            Ok(())
-        }
-        Err(err) => Err(err.to_string()),
-    }
+    ctx.db.competition().try_insert(new_competition)?;
+
+    Ok(())
 }
 
-#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
+/* #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn add_dependency(
     ctx: &ReducerContext,
     comp_id: u32,
@@ -176,7 +165,7 @@ pub fn add_dependency(
     if from_id.parent_id != to_id.parent_id || from_id.tournament_id != to_id.tournament_id {} */
 
     Ok(())
-}
+} */
 
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn create_event_template(ctx: &ReducerContext, name: String /* config:  */) {}

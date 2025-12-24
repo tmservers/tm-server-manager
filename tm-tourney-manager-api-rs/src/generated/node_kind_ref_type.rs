@@ -4,18 +4,20 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::competition_kind_type::CompetitionKind;
-use super::start_end_type::StartEnd;
-
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct Node {
-    pub weight: CompetitionKind,
-    pub next: StartEnd,
-    pub output: bool,
-    pub input: bool,
+pub enum NodeKindRef {
+    MatchV1(u32),
+
+    CompetitionV1(u32),
+
+    MapMonitorV1(u32),
+
+    MonitoringV1(u32),
+
+    ServerV1(u32),
 }
 
-impl __sdk::InModule for Node {
+impl __sdk::InModule for NodeKindRef {
     type Module = super::RemoteModule;
 }

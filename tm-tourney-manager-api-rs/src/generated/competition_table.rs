@@ -4,7 +4,6 @@
 #![allow(unused, clippy::all)]
 use super::competition_status_type::CompetitionStatus;
 use super::competition_type::Competition;
-use super::competitions_type::Competitions;
 use super::registration_rules_type::RegistrationRules;
 use super::scheduling_type::Scheduling;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};

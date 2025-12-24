@@ -9,16 +9,7 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
-import StartEnd from "./start_end_type";
 
-
-export default __t.object("Edge", {
-  get next() {
-    return StartEnd;
-  },
-  get node() {
-    return StartEnd;
-  },
-});
+export default __t.object("ConnectionSettings", {});
 
 

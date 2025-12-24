@@ -26,7 +26,7 @@ pub struct Graph<N, E> {
     //ty: PhantomData<Ty>,
 } */
 
-pub type NodeIndex = u32;
+/* pub type NodeIndex = u32;
 pub type EdgeIndex = u32;
 
 /// The error type for fallible `Graph` & `StableGraph` operations.
@@ -43,9 +43,9 @@ pub enum GraphError {
 
     /// Node indices out of bounds.
     NodeOutBounds,
-}
+} */
 
-#[derive(Debug)]
+/* #[derive(Debug)]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
 pub struct Node {
     /// Associated node data.
@@ -81,9 +81,9 @@ pub struct Node {
     //-> Generate would then prevent things that depend on generation to be run before actually knowing the specifics.
     //-> Maybe this would also be handled by the npdes themselves idk.
     input: bool,
-}
+} */
 
-#[derive(Debug)]
+/* #[derive(Debug)]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
 pub struct Edge {
     /// Next edge in outgoing and incoming edge lists.
@@ -97,16 +97,16 @@ pub struct Edge {
 pub struct StartEnd {
     start: u32,
     end: u32,
-}
+} */
 
-/// A Directed Acyclic Graph.
-#[derive(Debug, Default)]
+// A Directed Acyclic Graph.
+/* #[derive(Debug, Default)]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
 pub struct Competitions {
     nodes: Vec<Node>,
     edges: Vec<Edge>,
-}
-impl Competitions {
+} */
+/* impl Competitions {
     pub fn new() -> Self {
         Self::default()
     }
@@ -159,17 +159,7 @@ impl Competitions {
         self.edges.push(edge);
         Ok(edge_idx)
     }
-}
-
-#[derive(Debug)]
-#[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
-pub enum CompetitionKindRef {
-    MatchV1(u32),
-    CompetitionV1(u32),
-    MapMonitorV1(u32),
-    MonitoringV1(u32),
-    ServerV1(u32),
-}
+} */
 
 // How to handle the recursion when scheduling??
 // How to handle the recursion when scheduling??

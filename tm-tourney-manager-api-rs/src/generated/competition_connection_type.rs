@@ -4,15 +4,18 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::start_end_type::StartEnd;
+use super::connection_settings_type::ConnectionSettings;
+use super::node_kind_ref_type::NodeKindRef;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct Edge {
-    pub next: StartEnd,
-    pub node: StartEnd,
+pub struct CompetitionConnection {
+    pub competition_id: u32,
+    pub connection_from: NodeKindRef,
+    pub connection_to: NodeKindRef,
+    pub connection_settings: ConnectionSettings,
 }
 
-impl __sdk::InModule for Edge {
+impl __sdk::InModule for CompetitionConnection {
     type Module = super::RemoteModule;
 }

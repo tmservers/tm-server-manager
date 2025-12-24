@@ -15,7 +15,6 @@ pub struct TournamentV1 {
     pub name: String,
     pub description: String,
     pub status: TournamentStatus,
-    pub competition: u32,
 }
 
 impl __sdk::InModule for TournamentV1 {

@@ -10,8 +10,14 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
+import NodeKindRef from "./node_kind_ref_type";
+
 export default {
-  compId: __t.u32(),
-  fromNode: __t.u32(),
-  toNode: __t.u32(),
+  competitionId: __t.u32(),
+  get connectionFrom() {
+    return NodeKindRef;
+  },
+  get connectionTo() {
+    return NodeKindRef;
+  },
 };

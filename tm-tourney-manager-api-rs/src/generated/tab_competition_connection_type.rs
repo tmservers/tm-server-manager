@@ -4,16 +4,19 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::edge_type::Edge;
-use super::node_type::Node;
+use super::connection_settings_type::ConnectionSettings;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct Competitions {
-    pub nodes: Vec<Node>,
-    pub edges: Vec<Edge>,
+pub struct TabCompetitionConnection {
+    pub competition_id: u32,
+    pub connection_from: u32,
+    pub connection_to: u32,
+    pub connection_from_variant: u8,
+    pub connection_to_variant: u8,
+    pub connection_settings: ConnectionSettings,
 }
 
-impl __sdk::InModule for Competitions {
+impl __sdk::InModule for TabCompetitionConnection {
     type Module = super::RemoteModule;
 }

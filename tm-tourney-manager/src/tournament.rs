@@ -26,15 +26,9 @@ pub struct TournamentV1 {
     description: String,
 
     status: TournamentStatus,
-
-    competition: u32,
 }
 
-impl TournamentV1 {
-    pub(crate) fn set_competition(&mut self, comp_id: u32) {
-        self.competition = comp_id
-    }
-}
+impl TournamentV1 {}
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
@@ -62,22 +56,18 @@ impl TournamentStatus {
 fn create_tournament(ctx: &ReducerContext, name: String) -> Result<(), String> {
     let user = ctx.is_user()?;
 
-    let mut tournament = ctx.db.tab_tournament().try_insert(TournamentV1 {
+    let tournament = ctx.db.tab_tournament().try_insert(TournamentV1 {
         id: 0,
         name: name.clone(),
         creator: user,
         status: TournamentStatus::Planning,
         owners: Vec::new(),
         description: "".into(),
-        competition: 0,
     })?;
 
     //SAFETY: Comitted afterwards
     let competition = unsafe { Competition::new(name, None, tournament.id) };
-    let competition = ctx.db.competition().try_insert(competition)?;
-
-    tournament.set_competition(competition.id);
-    ctx.db.tab_tournament().id().update(tournament);
+    ctx.db.competition().try_insert(competition)?;
 
     Ok(())
 }
