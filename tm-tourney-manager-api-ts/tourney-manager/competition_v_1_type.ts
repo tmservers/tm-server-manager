@@ -14,7 +14,7 @@ import Scheduling from "./scheduling_type";
 import RegistrationRules from "./registration_rules_type";
 
 
-export default __t.object("Competition", {
+export default __t.object("CompetitionV1", {
   id: __t.u32(),
   tournamentId: __t.u32(),
   parentId: __t.option(__t.u32()),

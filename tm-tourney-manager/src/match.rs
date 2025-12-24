@@ -3,7 +3,7 @@ use tm_server_types::{config::ServerConfig, event::Event};
 
 use crate::{
     auth::Authorization,
-    competition::competition,
+    competition::tab_competition,
     r#match::{leaderboard::MatchLeaderboardRules, match_state::MatchState},
     registration::RegistrationRules,
     scheduling::Scheduling,
@@ -131,7 +131,7 @@ pub fn create_match(
 ) -> Result<(), String> {
     ctx.get_user()?;
 
-    let Some(parent_competition) = ctx.db.competition().id().find(competition_id) else {
+    let Some(parent_competition) = ctx.db.tab_competition().id().find(competition_id) else {
         return Err("Invalid competition".into());
     };
 

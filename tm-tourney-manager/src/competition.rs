@@ -1,4 +1,4 @@
-use spacetimedb::{ReducerContext, Table, TimeDuration};
+use spacetimedb::{AnonymousViewContext, Query, ReducerContext, Table, TimeDuration, view};
 
 use crate::{
     auth::Authorization, registration::RegistrationRules, scheduling::Scheduling,
@@ -9,8 +9,8 @@ pub mod connections;
 mod scheduling;
 
 /// Always
-#[cfg_attr(feature = "spacetime",spacetimedb::table(name = competition,public))]
-pub struct Competition {
+#[cfg_attr(feature = "spacetime",spacetimedb::table(name = tab_competition))]
+pub struct CompetitionV1 {
     #[auto_inc]
     #[primary_key]
     pub id: u32,
@@ -50,7 +50,7 @@ pub struct Competition {
     //competitions: Competitions,
 }
 
-impl Competition {
+impl CompetitionV1 {
     /* pub fn add_competition(&mut self, competition_id: u32) {
         //TODO
         self.competitions
@@ -138,14 +138,14 @@ pub fn create_competition(
     let user = ctx.get_user()?;
 
     // If parent is valid it is guaranteed that it has a valid tournament associated with it.
-    let Some(parent_competition) = ctx.db.competition().id().find(parent_id) else {
+    let Some(parent_competition) = ctx.db.tab_competition().id().find(parent_id) else {
         return Err("Invalid parent_id".into());
     };
 
     //SAFETY: The competition gets commnited afterwards.
     let new_competition =
-        unsafe { Competition::new(name, Some(parent_id), parent_competition.get_tournament()) };
-    ctx.db.competition().try_insert(new_competition)?;
+        unsafe { CompetitionV1::new(name, Some(parent_id), parent_competition.get_tournament()) };
+    ctx.db.tab_competition().try_insert(new_competition)?;
 
     Ok(())
 }
@@ -170,6 +170,15 @@ pub fn add_dependency(
 
     Ok(())
 } */
+
+#[view(name=competition,public)]
+pub fn competition(ctx: &AnonymousViewContext) -> Query<CompetitionV1> {
+    ctx.from
+        .tab_competition()
+        //TODO this equality doesnt work atm because of enum
+        //.r#where(|t| t.status.ne(TournamentStatus::Planning))
+        .build()
+}
 
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn create_event_template(ctx: &ReducerContext, name: String /* config:  */) {}

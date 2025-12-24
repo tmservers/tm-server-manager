@@ -13,7 +13,6 @@ import {
 import NodeKindRef from "./node_kind_ref_type";
 
 export default {
-  competitionId: __t.u32(),
   get connectionFrom() {
     return NodeKindRef;
   },

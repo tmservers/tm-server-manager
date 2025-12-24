@@ -10,7 +10,7 @@ use super::scheduling_type::Scheduling;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct Competition {
+pub struct CompetitionV1 {
     pub id: u32,
     pub tournament_id: u32,
     pub parent_id: Option<u32>,
@@ -21,6 +21,6 @@ pub struct Competition {
     pub registration_rules: RegistrationRules,
 }
 
-impl __sdk::InModule for Competition {
+impl __sdk::InModule for CompetitionV1 {
     type Module = super::RemoteModule;
 }

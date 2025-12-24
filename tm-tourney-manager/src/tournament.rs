@@ -5,7 +5,7 @@ use spacetimedb::{
 
 use crate::{
     auth::Authorization,
-    competition::{Competition, competition},
+    competition::{CompetitionV1, tab_competition},
     user::{user__view, user_identity__view},
 };
 
@@ -66,8 +66,8 @@ fn create_tournament(ctx: &ReducerContext, name: String) -> Result<(), String> {
     })?;
 
     //SAFETY: Comitted afterwards
-    let competition = unsafe { Competition::new(name, None, tournament.id) };
-    ctx.db.competition().try_insert(competition)?;
+    let competition = unsafe { CompetitionV1::new(name, None, tournament.id) };
+    ctx.db.tab_competition().try_insert(competition)?;
 
     Ok(())
 }

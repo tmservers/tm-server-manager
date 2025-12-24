@@ -1,6 +1,6 @@
 use spacetimedb::{ReducerContext, SpacetimeType, Table, ViewContext, reducer, view};
 
-use crate::{auth::Authorization, competition::competition, r#match::tm_match};
+use crate::{auth::Authorization, competition::tab_competition, r#match::tm_match};
 
 #[spacetimedb::table(name = tab_competition_connection,index(name=connection_exists,btree(columns=[connection_from_variant,connection_from,connection_to_variant,connection_to])))]
 pub struct TabCompetitionConnection {
@@ -16,9 +16,11 @@ pub struct TabCompetitionConnection {
 }
 
 #[derive(Debug, SpacetimeType)]
-pub struct ConnectionSettings {}
+pub enum ConnectionSettings {
+    Empty,
+}
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
 pub enum NodeKindRef {
     MatchV1(u32),
@@ -39,7 +41,7 @@ impl NodeKindRef {
                 }
             }
             NodeKindRef::CompetitionV1(c) => {
-                if let Some(co) = ctx.db.competition().id().find(c) {
+                if let Some(co) = ctx.db.tab_competition().id().find(c) {
                     if let Some(id) = co.get_comp_id() {
                         Ok(id)
                     } else {
@@ -83,6 +85,10 @@ pub fn create_connection(
 ) -> Result<(), String> {
     let account_id = ctx.get_user()?;
 
+    if connection_from == connection_to {
+        return Err("Cannot connect a Node to itself.".into());
+    }
+
     let from_comp = connection_from.get_competition(ctx)?;
     let to_comp = connection_to.get_competition(ctx)?;
 
@@ -118,7 +124,7 @@ pub fn create_connection(
             connection_to,
             connection_from_variant,
             connection_to_variant,
-            connection_settings: ConnectionSettings {},
+            connection_settings: ConnectionSettings::Empty,
         })?;
 
     Ok(())
@@ -134,6 +140,7 @@ pub struct CompetitionConnection {
     connection_settings: ConnectionSettings,
 }
 
+//TODO maybe just use for access control
 #[view(name=competition_connection,public)]
 pub fn competition_connection(ctx: &ViewContext) -> Vec<CompetitionConnection> {
     let competition_id: u32 = 1;

@@ -19,8 +19,8 @@ pub mod competition_schedule_table;
 pub mod competition_schedule_type;
 pub mod competition_status_type;
 pub mod competition_table;
-pub mod competition_type;
 pub mod competition_unregister_player_reducer;
+pub mod competition_v_1_type;
 pub mod connection_settings_type;
 pub mod create_competition_reducer;
 pub mod create_connection_reducer;
@@ -118,6 +118,7 @@ pub mod start_server_type;
 pub mod start_turn_type;
 pub mod tab_competition_connection_table;
 pub mod tab_competition_connection_type;
+pub mod tab_competition_table;
 pub mod tab_tournament_table;
 pub mod team_type;
 pub mod this_tm_server_table;
@@ -176,11 +177,11 @@ pub use competition_schedule_table::*;
 pub use competition_schedule_type::CompetitionSchedule;
 pub use competition_status_type::CompetitionStatus;
 pub use competition_table::*;
-pub use competition_type::Competition;
 pub use competition_unregister_player_reducer::{
     competition_unregister_player, set_flags_for_competition_unregister_player,
     CompetitionUnregisterPlayerCallbackId,
 };
+pub use competition_v_1_type::CompetitionV1;
 pub use connection_settings_type::ConnectionSettings;
 pub use create_competition_reducer::{
     create_competition, set_flags_for_create_competition, CreateCompetitionCallbackId,
@@ -305,6 +306,7 @@ pub use start_server_type::StartServer;
 pub use start_turn_type::StartTurn;
 pub use tab_competition_connection_table::*;
 pub use tab_competition_connection_type::TabCompetitionConnection;
+pub use tab_competition_table::*;
 pub use tab_tournament_table::*;
 pub use team_type::Team;
 pub use this_tm_server_table::*;
@@ -372,7 +374,6 @@ pub enum Reducer {
         with_template: Option<u32>,
     },
     CreateConnection {
-        competition_id: u32,
         connection_from: NodeKindRef,
         connection_to: NodeKindRef,
     },
@@ -592,7 +593,7 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
 #[allow(non_snake_case)]
 #[doc(hidden)]
 pub struct DbUpdate {
-    competition: __sdk::TableUpdate<Competition>,
+    competition: __sdk::TableUpdate<CompetitionV1>,
     competition_connection: __sdk::TableUpdate<CompetitionConnection>,
     competition_record: __sdk::TableUpdate<TmRecord>,
     competition_schedule: __sdk::TableUpdate<CompetitionSchedule>,
@@ -608,6 +609,7 @@ pub struct DbUpdate {
     my_jobs: __sdk::TableUpdate<TmWorkerJobs>,
     my_tournament: __sdk::TableUpdate<TournamentV1>,
     registration_player: __sdk::TableUpdate<RegistrationPlayer>,
+    tab_competition: __sdk::TableUpdate<CompetitionV1>,
     tab_competition_connection: __sdk::TableUpdate<TabCompetitionConnection>,
     tab_tournament: __sdk::TableUpdate<TournamentV1>,
     this_tm_server: __sdk::TableUpdate<TmServer>,
@@ -680,6 +682,9 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "registration_player" => db_update
                     .registration_player
                     .append(registration_player_table::parse_table_update(table_update)?),
+                "tab_competition" => db_update
+                    .tab_competition
+                    .append(tab_competition_table::parse_table_update(table_update)?),
                 "tab_competition_connection" => db_update.tab_competition_connection.append(
                     tab_competition_connection_table::parse_table_update(table_update)?,
                 ),
@@ -754,9 +759,6 @@ impl __sdk::DbUpdate for DbUpdate {
     ) -> AppliedDiff<'_> {
         let mut diff = AppliedDiff::default();
 
-        diff.competition = cache
-            .apply_diff_to_table::<Competition>("competition", &self.competition)
-            .with_updates_by_pk(|row| &row.id);
         diff.competition_schedule = cache
             .apply_diff_to_table::<CompetitionSchedule>(
                 "competition_schedule",
@@ -780,6 +782,9 @@ impl __sdk::DbUpdate for DbUpdate {
             "registration_player",
             &self.registration_player,
         );
+        diff.tab_competition = cache
+            .apply_diff_to_table::<CompetitionV1>("tab_competition", &self.tab_competition)
+            .with_updates_by_pk(|row| &row.id);
         diff.tab_competition_connection = cache.apply_diff_to_table::<TabCompetitionConnection>(
             "tab_competition_connection",
             &self.tab_competition_connection,
@@ -827,6 +832,8 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.user_identity = cache
             .apply_diff_to_table::<UserIdentity>("user_identity", &self.user_identity)
             .with_updates_by_pk(|row| &row.identity);
+        diff.competition =
+            cache.apply_diff_to_table::<CompetitionV1>("competition", &self.competition);
         diff.competition_connection = cache.apply_diff_to_table::<CompetitionConnection>(
             "competition_connection",
             &self.competition_connection,
@@ -853,7 +860,7 @@ impl __sdk::DbUpdate for DbUpdate {
 #[allow(non_snake_case)]
 #[doc(hidden)]
 pub struct AppliedDiff<'r> {
-    competition: __sdk::TableAppliedDiff<'r, Competition>,
+    competition: __sdk::TableAppliedDiff<'r, CompetitionV1>,
     competition_connection: __sdk::TableAppliedDiff<'r, CompetitionConnection>,
     competition_record: __sdk::TableAppliedDiff<'r, TmRecord>,
     competition_schedule: __sdk::TableAppliedDiff<'r, CompetitionSchedule>,
@@ -869,6 +876,7 @@ pub struct AppliedDiff<'r> {
     my_jobs: __sdk::TableAppliedDiff<'r, TmWorkerJobs>,
     my_tournament: __sdk::TableAppliedDiff<'r, TournamentV1>,
     registration_player: __sdk::TableAppliedDiff<'r, RegistrationPlayer>,
+    tab_competition: __sdk::TableAppliedDiff<'r, CompetitionV1>,
     tab_competition_connection: __sdk::TableAppliedDiff<'r, TabCompetitionConnection>,
     tab_tournament: __sdk::TableAppliedDiff<'r, TournamentV1>,
     this_tm_server: __sdk::TableAppliedDiff<'r, TmServer>,
@@ -898,7 +906,7 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
         event: &EventContext,
         callbacks: &mut __sdk::DbCallbacks<RemoteModule>,
     ) {
-        callbacks.invoke_table_row_callbacks::<Competition>(
+        callbacks.invoke_table_row_callbacks::<CompetitionV1>(
             "competition",
             &self.competition,
             event,
@@ -948,6 +956,11 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
         callbacks.invoke_table_row_callbacks::<RegistrationPlayer>(
             "registration_player",
             &self.registration_player,
+            event,
+        );
+        callbacks.invoke_table_row_callbacks::<CompetitionV1>(
+            "tab_competition",
+            &self.tab_competition,
             event,
         );
         callbacks.invoke_table_row_callbacks::<TabCompetitionConnection>(
@@ -1745,6 +1758,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
         my_jobs_table::register_table(client_cache);
         my_tournament_table::register_table(client_cache);
         registration_player_table::register_table(client_cache);
+        tab_competition_table::register_table(client_cache);
         tab_competition_connection_table::register_table(client_cache);
         tab_tournament_table::register_table(client_cache);
         this_tm_server_table::register_table(client_cache);

@@ -117,6 +117,8 @@ import MyTournamentRow from "./my_tournament_table";
 export { MyTournamentRow };
 import RegistrationPlayerRow from "./registration_player_table";
 export { RegistrationPlayerRow };
+import TabCompetitionRow from "./tab_competition_table";
+export { TabCompetitionRow };
 import TabCompetitionConnectionRow from "./tab_competition_connection_table";
 export { TabCompetitionConnectionRow };
 import TabTournamentRow from "./tab_tournament_table";
@@ -159,14 +161,14 @@ import ChatSendToUserArgs from "./chat_send_to_user_args_type";
 export { ChatSendToUserArgs };
 import Common from "./common_type";
 export { Common };
-import Competition from "./competition_type";
-export { Competition };
 import CompetitionConnection from "./competition_connection_type";
 export { CompetitionConnection };
 import CompetitionSchedule from "./competition_schedule_type";
 export { CompetitionSchedule };
 import CompetitionStatus from "./competition_status_type";
 export { CompetitionStatus };
+import CompetitionV1 from "./competition_v_1_type";
+export { CompetitionV1 };
 import ConnectionSettings from "./connection_settings_type";
 export { ConnectionSettings };
 import Custom from "./custom_type";
@@ -343,17 +345,6 @@ export { WayPoint };
 /** The schema information for all tables in this module. This is defined the same was as the tables would have been defined in the server. */
 const tablesSchema = __schema(
   __table({
-    name: 'competition',
-    indexes: [
-      { name: 'id', algorithm: 'btree', columns: [
-        'id',
-      ] },
-    ],
-    constraints: [
-      { name: 'competition_id_key', constraint: 'unique', columns: ['id'] },
-    ],
-  }, CompetitionRow),
-  __table({
     name: 'competition_schedule',
     indexes: [
       { name: 'scheduled_id', algorithm: 'btree', columns: [
@@ -427,6 +418,17 @@ const tablesSchema = __schema(
     constraints: [
     ],
   }, RegistrationPlayerRow),
+  __table({
+    name: 'tab_competition',
+    indexes: [
+      { name: 'id', algorithm: 'btree', columns: [
+        'id',
+      ] },
+    ],
+    constraints: [
+      { name: 'tab_competition_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, TabCompetitionRow),
   __table({
     name: 'tab_competition_connection',
     indexes: [
@@ -602,6 +604,13 @@ const tablesSchema = __schema(
       { name: 'user_identity_identity_key', constraint: 'unique', columns: ['identity'] },
     ],
   }, UserIdentityRow),
+  __table({
+    name: 'competition',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, CompetitionRow),
   __table({
     name: 'competition_connection',
     indexes: [

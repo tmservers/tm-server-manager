@@ -9,7 +9,6 @@ use super::node_kind_ref_type::NodeKindRef;
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct CreateConnectionArgs {
-    pub competition_id: u32,
     pub connection_from: NodeKindRef,
     pub connection_to: NodeKindRef,
 }
@@ -17,7 +16,6 @@ pub(super) struct CreateConnectionArgs {
 impl From<CreateConnectionArgs> for super::Reducer {
     fn from(args: CreateConnectionArgs) -> Self {
         Self::CreateConnection {
-            competition_id: args.competition_id,
             connection_from: args.connection_from,
             connection_to: args.connection_to,
         }
@@ -42,7 +40,6 @@ pub trait create_connection {
     ///  and its status can be observed by listening for [`Self::on_create_connection`] callbacks.
     fn create_connection(
         &self,
-        competition_id: u32,
         connection_from: NodeKindRef,
         connection_to: NodeKindRef,
     ) -> __sdk::Result<()>;
@@ -55,9 +52,7 @@ pub trait create_connection {
     /// to cancel the callback.
     fn on_create_connection(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &u32, &NodeKindRef, &NodeKindRef)
-            + Send
-            + 'static,
+        callback: impl FnMut(&super::ReducerEventContext, &NodeKindRef, &NodeKindRef) + Send + 'static,
     ) -> CreateConnectionCallbackId;
     /// Cancel a callback previously registered by [`Self::on_create_connection`],
     /// causing it not to run in the future.
@@ -67,14 +62,12 @@ pub trait create_connection {
 impl create_connection for super::RemoteReducers {
     fn create_connection(
         &self,
-        competition_id: u32,
         connection_from: NodeKindRef,
         connection_to: NodeKindRef,
     ) -> __sdk::Result<()> {
         self.imp.call_reducer(
             "create_connection",
             CreateConnectionArgs {
-                competition_id,
                 connection_from,
                 connection_to,
             },
@@ -82,7 +75,7 @@ impl create_connection for super::RemoteReducers {
     }
     fn on_create_connection(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &u32, &NodeKindRef, &NodeKindRef)
+        mut callback: impl FnMut(&super::ReducerEventContext, &NodeKindRef, &NodeKindRef)
             + Send
             + 'static,
     ) -> CreateConnectionCallbackId {
@@ -95,7 +88,6 @@ impl create_connection for super::RemoteReducers {
                         __sdk::ReducerEvent {
                             reducer:
                                 super::Reducer::CreateConnection {
-                                    competition_id,
                                     connection_from,
                                     connection_to,
                                 },
@@ -106,7 +98,7 @@ impl create_connection for super::RemoteReducers {
                 else {
                     unreachable!()
                 };
-                callback(ctx, competition_id, connection_from, connection_to)
+                callback(ctx, connection_from, connection_to)
             }),
         ))
     }

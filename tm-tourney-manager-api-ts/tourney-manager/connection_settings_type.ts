@@ -10,6 +10,10 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-export default __t.object("ConnectionSettings", {});
+// The tagged union or sum type for the algebraic type `ConnectionSettings`.
+const ConnectionSettings = __t.enum("ConnectionSettings", {Empty: __t.unit(),
+});
+
+export default ConnectionSettings;
 
 
