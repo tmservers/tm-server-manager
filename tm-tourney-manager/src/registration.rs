@@ -43,7 +43,7 @@ pub struct TeamInfo {
 
 #[reducer]
 pub fn competition_register_player(ctx: &ReducerContext, compeition_id: u32) -> Result<(), String> {
-    let player_id = ctx.is_user()?;
+    let player_id = ctx.get_user()?;
 
     let Some(comp) = ctx.db.competition().id().find(compeition_id) else {
         return Err("Competition not found".into());
@@ -72,7 +72,7 @@ pub fn competition_unregister_player(
     ctx: &ReducerContext,
     compeition_id: u32,
 ) -> Result<(), String> {
-    ctx.is_user()?;
+    ctx.get_user()?;
 
     let Some(comp) = ctx.db.competition().id().find(compeition_id) else {
         return Err(format!(

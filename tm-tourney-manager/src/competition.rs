@@ -67,6 +67,10 @@ impl Competition {
         self.tournament_id
     }
 
+    pub(crate) fn get_comp_id(&self) -> Option<u32> {
+        self.parent_id
+    }
+
     /// # Safety
     /// The new competition has to be commited to spacetime db through the `create_competition` reducer.
     /// Otherwise the id is invalid.
@@ -131,7 +135,7 @@ pub fn create_competition(
     parent_id: u32,
     with_template: Option<u32>,
 ) -> Result<(), String> {
-    let user = ctx.is_user()?;
+    let user = ctx.get_user()?;
 
     // If parent is valid it is guaranteed that it has a valid tournament associated with it.
     let Some(parent_competition) = ctx.db.competition().id().find(parent_id) else {

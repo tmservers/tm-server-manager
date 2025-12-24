@@ -54,7 +54,7 @@ impl TournamentStatus {
 /// The rest of the setup can must be made in subsequent calls.
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 fn create_tournament(ctx: &ReducerContext, name: String) -> Result<(), String> {
-    let user = ctx.is_user()?;
+    let user = ctx.get_user()?;
 
     let tournament = ctx.db.tab_tournament().try_insert(TournamentV1 {
         id: 0,

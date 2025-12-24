@@ -14,7 +14,7 @@ use crate::{
 /// Servers call this to post the event stream.
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
-    let login = ctx.is_server()?;
+    let login = ctx.get_server()?;
 
     if let Some(mut tm_server) = ctx.db.tm_server().tm_login().find(login)
         && let Some(match_id) = tm_server.active_match()

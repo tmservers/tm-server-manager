@@ -45,7 +45,7 @@ pub fn create_monitor(
     competition: u32,
     settings: MonitoringSettings,
 ) -> Result<(), String> {
-    ctx.is_user()?;
+    ctx.get_user()?;
     //TODO proper auth.
     let monitor = ctx.db.tm_monitoring().insert(TmMonitoring {
         id: 0,

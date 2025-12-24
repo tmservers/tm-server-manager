@@ -20,7 +20,7 @@ pub fn server_method_response(
     //TODO do the proper auth
     // the challenge is who is able to access the server? not only owner i guess
 
-    let server_id = ctx.is_server()?;
+    let server_id = ctx.get_server()?;
 
     let Some(method_call) = ctx.db.tm_server_method_call().id().find(call_id) else {
         return Err(format!(

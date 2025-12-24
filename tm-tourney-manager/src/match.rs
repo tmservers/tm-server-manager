@@ -75,6 +75,10 @@ impl TmMatch {
         self.tournament_id
     }
 
+    pub fn get_comp_id(&self) -> u32 {
+        self.competition_id
+    }
+
     pub fn get_match_state(&self) -> MatchState {
         self.state
     }
@@ -125,7 +129,7 @@ pub fn create_match(
     // THis would be done when switching to upcoming.
     //auto_provisioning_server: bool,
 ) -> Result<(), String> {
-    ctx.is_user()?;
+    ctx.get_user()?;
 
     let Some(parent_competition) = ctx.db.competition().id().find(competition_id) else {
         return Err("Invalid competition".into());
@@ -155,7 +159,7 @@ pub fn create_match(
 /// Assigns a server to the selected match.
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn match_assign_server(ctx: &ReducerContext, to: u32, server_id: String) -> Result<(), String> {
-    ctx.is_user()?;
+    ctx.get_user()?;
     if let Some(mut server) = ctx.db.tm_server().tm_login().find(&server_id)
         && server.active_match().is_none()
         && let Some(stage_match) = ctx.db.tm_match().id().find(to)
@@ -175,7 +179,7 @@ pub fn match_assign_server(ctx: &ReducerContext, to: u32, server_id: String) -> 
 
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn match_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> {
-    ctx.is_user()?;
+    ctx.get_user()?;
     if let Some(mut tm_match) = ctx.db.tm_match().id().find(id)
         && tm_match.status == MatchStatus::Configuring
         && let Some(tm_server_id) = &tm_match.server_id
@@ -206,7 +210,7 @@ pub fn update_pre_match_config(
     id: u32,
     config: ServerConfig,
 ) -> Result<(), String> {
-    ctx.is_user()?;
+    ctx.get_user()?;
     if let Some(mut tm_match) = ctx.db.tm_match().id().find(id)
         && tm_match.status == MatchStatus::Configuring
     {
@@ -224,7 +228,7 @@ pub fn update_match_config(
     id: u32,
     config: ServerConfig,
 ) -> Result<(), String> {
-    ctx.is_user()?;
+    ctx.get_user()?;
     if let Some(mut tm_match) = ctx.db.tm_match().id().find(id)
         && tm_match.status == MatchStatus::Configuring
     {
@@ -240,7 +244,7 @@ pub fn update_match_config(
 /// This can also serve as a manual override for scheduled matches.
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn try_start_match(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
-    ctx.is_user()?;
+    ctx.get_user()?;
     if let Some(mut tm_match) = ctx.db.tm_match().id().find(match_id)
         // Match needs an assigned server
         && let Some(server) = &tm_match.server_id

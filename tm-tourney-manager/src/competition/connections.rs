@@ -29,10 +29,26 @@ pub enum NodeKindRef {
 }
 
 impl NodeKindRef {
-    fn exists(&self, ctx: &ReducerContext) -> bool {
+    fn get_competition(&self, ctx: &ReducerContext) -> Result<u32, String> {
         match self {
-            NodeKindRef::MatchV1(m) => ctx.db.tm_match().id().find(m).is_some(),
-            NodeKindRef::CompetitionV1(c) => ctx.db.competition().id().find(c).is_some(),
+            NodeKindRef::MatchV1(m) => {
+                if let Some(ma) = ctx.db.tm_match().id().find(m) {
+                    Ok(ma.get_comp_id())
+                } else {
+                    Err("Origin of connection does not exist.".into())
+                }
+            }
+            NodeKindRef::CompetitionV1(c) => {
+                if let Some(co) = ctx.db.competition().id().find(c) {
+                    if let Some(id) = co.get_comp_id() {
+                        Ok(id)
+                    } else {
+                        Err("Compeittion without Parent cannot be part of a connection".into())
+                    }
+                } else {
+                    Err("Target of connection does not exist.".into())
+                }
+            }
             NodeKindRef::MapMonitorV1(_) => todo!(),
             NodeKindRef::MonitoringV1(_) => todo!(),
             NodeKindRef::ServerV1(_) => todo!(),
@@ -58,24 +74,20 @@ impl NodeKindRef {
     }
 }
 
+/// Since we need to check either way if the two thing have the same parent we can omit specifing the competition manually.
 #[reducer]
 pub fn create_connection(
     ctx: &ReducerContext,
-    competition_id: u32,
     connection_from: NodeKindRef,
     connection_to: NodeKindRef,
 ) -> Result<(), String> {
-    let account_id = ctx.is_user()?;
+    let account_id = ctx.get_user()?;
 
-    let Some(comp) = ctx.db.competition().id().find(competition_id) else {
-        return Err("Competition could not be found.".into());
-    };
+    let from_comp = connection_from.get_competition(ctx)?;
+    let to_comp = connection_to.get_competition(ctx)?;
 
-    if !connection_from.exists(ctx) {
-        return Err("Origin of connection does not exist.".into());
-    }
-    if !connection_to.exists(ctx) {
-        return Err("Target of connection does not exist.".into());
+    if from_comp != to_comp {
+        return Err("Cannot add a connection where nodes are part of different parents!".into());
     }
 
     //TODO FIXME: Detect cycles and reject.
@@ -101,7 +113,7 @@ pub fn create_connection(
     ctx.db
         .tab_competition_connection()
         .try_insert(TabCompetitionConnection {
-            competition_id,
+            competition_id: from_comp,
             connection_from,
             connection_to,
             connection_from_variant,
