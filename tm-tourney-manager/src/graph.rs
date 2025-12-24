@@ -49,7 +49,7 @@ pub enum GraphError {
 #[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
 pub struct Node {
     /// Associated node data.
-    weight: CompetitionKind,
+    weight: CompetitionKindRef,
     /// Next edge in outgoing and incoming edge lists.
     next: StartEnd,
 
@@ -66,7 +66,7 @@ pub struct Node {
     //->-> Need a interface where we can input these results and define rules on them.
 
     //THE INTERFACE WOULD ENSURE THAT EVERY NODE TYPE HAS ONE LEADEARBOARD ASSOCIATED WITH IT.
-    output: bool,
+    //output: bool,
 
     // We need something where we can define the range of the input.
     // Actually not only the range but rules on how to distribute something to the ndoes
@@ -111,7 +111,7 @@ impl Competitions {
         Self::default()
     }
 
-    pub fn try_add_competition(&mut self, kind: CompetitionKind) -> NodeIndex {
+    pub(crate) fn try_add_competition(&mut self, kind: CompetitionKindRef) -> NodeIndex {
         let id = self.nodes.len() as u32;
         self.nodes.push(Node {
             weight: kind,
@@ -120,7 +120,6 @@ impl Competitions {
                 end: u32::MAX,
             },
 
-            output: false,
             input: false,
         });
         id
@@ -164,7 +163,7 @@ impl Competitions {
 
 #[derive(Debug)]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
-pub enum CompetitionKind {
+pub enum CompetitionKindRef {
     MatchV1(u32),
     CompetitionV1(u32),
     MapMonitorV1(u32),

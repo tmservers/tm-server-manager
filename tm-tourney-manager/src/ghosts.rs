@@ -19,7 +19,7 @@ pub struct MatchGhost {
 #[procedure]
 pub fn post_round_replay(ctx: &mut ProcedureContext, replay: Vec<u8>) {
     //TODO: This unwrap is bad but i cant return a Result<T,E> and ? the call atm because its no spacetme type.
-    let server = ctx.try_with_tx(|ctx| ctx.auth_server()).unwrap();
+    let server = ctx.try_with_tx(|ctx| ctx.is_server()).unwrap();
 
     //TODO: Parse the replay file into individual ghosts.
     //let files = gamebox_files::try_parse_buffer(&replay);

@@ -1,6 +1,9 @@
-use spacetimedb::ReducerContext;
+use spacetimedb::{ReducerContext, Table};
 
-use crate::server::tm_server;
+use crate::{
+    server::tm_server,
+    user::{User as UserStruct, UserIdentity, user as db_user, user_identity},
+};
 
 pub mod auth;
 pub mod competition;
@@ -24,6 +27,19 @@ pub mod graph;
 fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
     // Execute if one tries to connect authenticated.
     if let Some(jwt) = ctx.sender_auth().jwt() {
+        log::warn!("Tried to connect with jwt");
+
+        //TODO get trackmania id claim.
+        let account_id = String::from("3467014a-c1cc-4aae-99fe-6beb5eca232a");
+        let preferred_username = String::from("Mr.Joermungandr");
+
+        ctx.db
+            .user()
+            .try_insert(UserStruct::new(account_id.clone(), preferred_username))?;
+        ctx.db
+            .user_identity()
+            .try_insert(UserIdentity::new(account_id, ctx.identity()))?;
+
         Ok(())
     } else {
         // The server comes back online.

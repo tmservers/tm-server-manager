@@ -2,7 +2,7 @@ use spacetimedb::{ReducerContext, Table, TimeDuration};
 
 use crate::{
     auth::Authorization,
-    graph::{CompetitionKind, Competitions, NodeIndex},
+    graph::{CompetitionKindRef, Competitions, NodeIndex},
     registration::RegistrationRules,
     scheduling::Scheduling,
     tournament::tab_tournament,
@@ -58,13 +58,13 @@ impl Competition {
     pub fn add_competition(&mut self, competition_id: u32) {
         //TODO
         self.competitions
-            .try_add_competition(CompetitionKind::CompetitionV1(competition_id));
+            .try_add_competition(CompetitionKindRef::CompetitionV1(competition_id));
     }
 
     pub fn add_match(&mut self, match_id: u32) {
         //TODO
         self.competitions
-            .try_add_competition(CompetitionKind::MatchV1(match_id));
+            .try_add_competition(CompetitionKindRef::MatchV1(match_id));
     }
 
     pub(crate) fn get_tournament(&self) -> u32 {
@@ -135,7 +135,7 @@ pub fn create_competition(
     parent_id: u32,
     with_template: Option<u32>,
 ) -> Result<(), String> {
-    let user = ctx.auth_user()?;
+    let user = ctx.is_user()?;
 
     // If parent is valid it is guaranteed that it has a valid tournament associated with it.
     let Some(mut parent_competition) = ctx.db.competition().id().find(parent_id) else {
@@ -164,7 +164,7 @@ pub fn add_dependency(
     from_node: u32,
     to_node: u32,
 ) -> Result<(), String> {
-    ctx.auth_user()?;
+    ctx.is_user()?;
 
     /*   let Some(from_id) = ctx.db.competition().id().find(from_id) else {
         return Err(format!("Competition with id {from_id} not found."));

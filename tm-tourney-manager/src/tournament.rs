@@ -60,7 +60,7 @@ impl TournamentStatus {
 /// The rest of the setup can must be made in subsequent calls.
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 fn create_tournament(ctx: &ReducerContext, name: String) -> Result<(), String> {
-    let user = ctx.auth_user()?;
+    let user = ctx.is_user()?;
 
     let mut tournament = ctx.db.tab_tournament().try_insert(TournamentV1 {
         id: 0,
@@ -94,7 +94,7 @@ pub fn tournament(ctx: &AnonymousViewContext) -> Query<TournamentV1> {
 #[view(name=my_tournament,public)]
 pub fn my_tournament(ctx: &ViewContext) -> Query<TournamentV1> {
     let id = if let Some(user) = ctx.db.user_identity().identity().find(ctx.sender) {
-        user.id
+        user.account_id
     } else {
         String::new()
     };

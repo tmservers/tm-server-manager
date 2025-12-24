@@ -4,7 +4,7 @@ use spacetimedb::{Identity, SpacetimeType, table};
 pub struct User {
     //ubisoft if of the user
     #[primary_key]
-    pub id: String,
+    pub account_id: String,
 
     name: String,
 
@@ -13,10 +13,30 @@ pub struct User {
     online: bool,
 }
 
+impl User {
+    pub fn new(account_id: String, name: String) -> Self {
+        User {
+            account_id,
+            name,
+            club_tag: "".into(),
+            online: true,
+        }
+    }
+}
+
 #[cfg_attr(feature = "spacetime", spacetimedb::table(name = user_identity))]
 pub struct UserIdentity {
     #[primary_key]
     pub identity: Identity,
     //ubisoft if of the user
-    pub id: String,
+    pub account_id: String,
+}
+
+impl UserIdentity {
+    pub fn new(account_id: String, identity: Identity) -> Self {
+        Self {
+            identity,
+            account_id,
+        }
+    }
 }
