@@ -7,6 +7,8 @@ pub struct TabCompetitionConnection {
     #[index(btree)]
     competition_id: u32,
 
+    tournament_id: u32,
+
     connection_from: u32,
     connection_to: u32,
     connection_from_variant: u8,
@@ -65,6 +67,28 @@ impl NodeKindRef {
         }
     }
 
+    fn get_tournament(&self, ctx: &ReducerContext) -> u32 {
+        match self {
+            NodeKindRef::MatchV1(m) => {
+                if let Some(ma) = ctx.db.tm_match().id().find(m) {
+                    ma.get_tournament()
+                } else {
+                    u32::MAX
+                }
+            }
+            NodeKindRef::CompetitionV1(c) => {
+                if let Some(co) = ctx.db.tab_competition().id().find(c) {
+                    co.get_tournament()
+                } else {
+                    u32::MAX
+                }
+            }
+            NodeKindRef::MapMonitorV1(_) => todo!(),
+            NodeKindRef::MonitoringV1(_) => todo!(),
+            NodeKindRef::ServerV1(_) => todo!(),
+        }
+    }
+
     fn split(self) -> (u8, u32) {
         match self {
             NodeKindRef::MatchV1(m) => (1, m),
@@ -104,6 +128,9 @@ pub fn create_connection(
         return Err("Cannot add a connection where nodes are part of different parents!".into());
     }
 
+    //TODO maybe this is not necessary but easier for now
+    let tournament_id = connection_from.get_tournament(ctx);
+
     //TODO FIXME: Detect cycles and reject.
 
     let (connection_from_variant, connection_from) = connection_from.split();
@@ -127,6 +154,7 @@ pub fn create_connection(
     ctx.db
         .tab_competition_connection()
         .try_insert(TabCompetitionConnection {
+            tournament_id,
             competition_id: from_comp,
             connection_from,
             connection_to,
@@ -151,11 +179,11 @@ pub struct CompetitionConnection {
 //TODO maybe just use for access control
 #[view(name=competition_connection,public)]
 pub fn competition_connection(ctx: &ViewContext) -> Vec<CompetitionConnection> {
-    let competition_id: u32 = 1;
+    let competition_id: u32 = 500000;
     ctx.db
         .tab_competition_connection()
         .competition_id()
-        .filter(competition_id)
+        .filter(!competition_id)
         .map(|v| CompetitionConnection {
             competition_id: v.competition_id,
             connection_from: NodeKindRef::combine(v.connection_from_variant, v.connection_from),
