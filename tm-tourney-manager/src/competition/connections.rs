@@ -7,6 +7,7 @@ pub struct TabCompetitionConnection {
     #[index(btree)]
     competition_id: u32,
 
+    //Maybe not necessary if we can expose another view with arg or something like that.
     tournament_id: u32,
 
     connection_from: u32,
