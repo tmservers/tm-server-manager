@@ -122,6 +122,7 @@ pub mod tab_competition_connection_type;
 pub mod tab_competition_table;
 pub mod tab_tm_server_table;
 pub mod tab_tournament_table;
+pub mod tab_user_table;
 pub mod team_type;
 pub mod this_tm_server_table;
 pub mod tm_comp_record_type;
@@ -312,6 +313,7 @@ pub use tab_competition_connection_type::TabCompetitionConnection;
 pub use tab_competition_table::*;
 pub use tab_tm_server_table::*;
 pub use tab_tournament_table::*;
+pub use tab_user_table::*;
 pub use team_type::Team;
 pub use this_tm_server_table::*;
 pub use tm_comp_record_type::TmCompRecord;
@@ -617,6 +619,7 @@ pub struct DbUpdate {
     tab_competition_connection: __sdk::TableUpdate<TabCompetitionConnection>,
     tab_tm_server: __sdk::TableUpdate<TmServerV1>,
     tab_tournament: __sdk::TableUpdate<TournamentV1>,
+    tab_user: __sdk::TableUpdate<User>,
     this_tm_server: __sdk::TableUpdate<TmServerV1>,
     tm_map_record: __sdk::TableUpdate<TmMapRecord>,
     tm_match: __sdk::TableUpdate<TmMatch>,
@@ -699,6 +702,9 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "tab_tournament" => db_update
                     .tab_tournament
                     .append(tab_tournament_table::parse_table_update(table_update)?),
+                "tab_user" => db_update
+                    .tab_user
+                    .append(tab_user_table::parse_table_update(table_update)?),
                 "this_tm_server" => db_update
                     .this_tm_server
                     .append(this_tm_server_table::parse_table_update(table_update)?),
@@ -803,6 +809,9 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.tab_tournament = cache
             .apply_diff_to_table::<TournamentV1>("tab_tournament", &self.tab_tournament)
             .with_updates_by_pk(|row| &row.id);
+        diff.tab_user = cache
+            .apply_diff_to_table::<User>("tab_user", &self.tab_user)
+            .with_updates_by_pk(|row| &row.account_id);
         diff.tm_map_record = cache
             .apply_diff_to_table::<TmMapRecord>("tm_map_record", &self.tm_map_record)
             .with_updates_by_pk(|row| &row.id);
@@ -834,9 +843,6 @@ impl __sdk::DbUpdate for DbUpdate {
             .with_updates_by_pk(|row| &row.tm_login);
         diff.tm_worker_jobs =
             cache.apply_diff_to_table::<TmWorkerJobs>("tm_worker_jobs", &self.tm_worker_jobs);
-        diff.user = cache
-            .apply_diff_to_table::<User>("user", &self.user)
-            .with_updates_by_pk(|row| &row.account_id);
         diff.user_identity = cache
             .apply_diff_to_table::<UserIdentity>("user_identity", &self.user_identity)
             .with_updates_by_pk(|row| &row.identity);
@@ -860,6 +866,7 @@ impl __sdk::DbUpdate for DbUpdate {
             cache.apply_diff_to_table::<TmServerV1>("this_tm_server", &self.this_tm_server);
         diff.tm_server = cache.apply_diff_to_table::<TmServerV1>("tm_server", &self.tm_server);
         diff.tournament = cache.apply_diff_to_table::<TournamentV1>("tournament", &self.tournament);
+        diff.user = cache.apply_diff_to_table::<User>("user", &self.user);
 
         diff
     }
@@ -889,6 +896,7 @@ pub struct AppliedDiff<'r> {
     tab_competition_connection: __sdk::TableAppliedDiff<'r, TabCompetitionConnection>,
     tab_tm_server: __sdk::TableAppliedDiff<'r, TmServerV1>,
     tab_tournament: __sdk::TableAppliedDiff<'r, TournamentV1>,
+    tab_user: __sdk::TableAppliedDiff<'r, User>,
     this_tm_server: __sdk::TableAppliedDiff<'r, TmServerV1>,
     tm_map_record: __sdk::TableAppliedDiff<'r, TmMapRecord>,
     tm_match: __sdk::TableAppliedDiff<'r, TmMatch>,
@@ -988,6 +996,7 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             &self.tab_tournament,
             event,
         );
+        callbacks.invoke_table_row_callbacks::<User>("tab_user", &self.tab_user, event);
         callbacks.invoke_table_row_callbacks::<TmServerV1>(
             "this_tm_server",
             &self.this_tm_server,
@@ -1777,6 +1786,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
         tab_competition_connection_table::register_table(client_cache);
         tab_tm_server_table::register_table(client_cache);
         tab_tournament_table::register_table(client_cache);
+        tab_user_table::register_table(client_cache);
         this_tm_server_table::register_table(client_cache);
         tm_map_record_table::register_table(client_cache);
         tm_match_table::register_table(client_cache);

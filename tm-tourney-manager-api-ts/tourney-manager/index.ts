@@ -125,6 +125,8 @@ import TabTmServerRow from "./tab_tm_server_table";
 export { TabTmServerRow };
 import TabTournamentRow from "./tab_tournament_table";
 export { TabTournamentRow };
+import TabUserRow from "./tab_user_table";
+export { TabUserRow };
 import ThisTmServerRow from "./this_tm_server_table";
 export { ThisTmServerRow };
 import TmMapRecordRow from "./tm_map_record_table";
@@ -483,6 +485,17 @@ const tablesSchema = __schema(
     ],
   }, TabTournamentRow),
   __table({
+    name: 'tab_user',
+    indexes: [
+      { name: 'account_id', algorithm: 'btree', columns: [
+        'accountId',
+      ] },
+    ],
+    constraints: [
+      { name: 'tab_user_account_id_key', constraint: 'unique', columns: ['accountId'] },
+    ],
+  }, TabUserRow),
+  __table({
     name: 'tm_map_record',
     indexes: [
       { name: 'id', algorithm: 'btree', columns: [
@@ -590,17 +603,6 @@ const tablesSchema = __schema(
     ],
   }, TmWorkerJobsRow),
   __table({
-    name: 'user',
-    indexes: [
-      { name: 'account_id', algorithm: 'btree', columns: [
-        'accountId',
-      ] },
-    ],
-    constraints: [
-      { name: 'user_account_id_key', constraint: 'unique', columns: ['accountId'] },
-    ],
-  }, UserRow),
-  __table({
     name: 'user_identity',
     indexes: [
       { name: 'identity', algorithm: 'btree', columns: [
@@ -688,6 +690,13 @@ const tablesSchema = __schema(
     constraints: [
     ],
   }, TournamentRow),
+  __table({
+    name: 'user',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, UserRow),
 );
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */

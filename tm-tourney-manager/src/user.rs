@@ -1,8 +1,8 @@
-use spacetimedb::{Identity, SpacetimeType, table};
+use spacetimedb::{Identity, Query, AnonymousViewContext, view };
 
-#[cfg_attr(feature = "spacetime", spacetimedb::table(name = user))]
+#[cfg_attr(feature = "spacetime", spacetimedb::table(name = tab_user))]
 pub struct User {
-    //ubisoft if of the user
+    //ubisoft id of the user
     #[primary_key]
     pub account_id: String,
 
@@ -22,6 +22,13 @@ impl User {
             online: true,
         }
     }
+}
+
+#[view(name=user,public)]
+pub fn user(ctx: &AnonymousViewContext) -> Query<User> {
+    ctx.from
+        .tab_user()
+        .build()
 }
 
 #[cfg_attr(feature = "spacetime", spacetimedb::table(name = user_identity))]
