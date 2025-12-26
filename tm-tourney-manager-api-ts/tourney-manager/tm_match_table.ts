@@ -9,7 +9,6 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
-import Scheduling from "./scheduling_type";
 import ServerConfig from "./server_config_type";
 import MatchState from "./match_state_type";
 import MatchStatus from "./match_status_type";
@@ -21,9 +20,6 @@ export default __t.row({
   id: __t.u32().primaryKey(),
   tournamentId: __t.u32().name("tournament_id"),
   competitionId: __t.u32().name("competition_id"),
-  get scheduling() {
-    return Scheduling;
-  },
   serverId: __t.option(__t.string()).name("server_id"),
   get preMatchConfig() {
     return __t.option(ServerConfig).name("pre_match_config");

@@ -10,6 +10,7 @@ use super::node_kind_ref_type::NodeKindRef;
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct CompetitionConnection {
+    pub tournament_id: u32,
     pub competition_id: u32,
     pub connection_from: NodeKindRef,
     pub connection_to: NodeKindRef,
