@@ -6,7 +6,6 @@ use super::match_entity_rules_type::MatchEntityRules;
 use super::match_leaderboard_rules_type::MatchLeaderboardRules;
 use super::match_state_type::MatchState;
 use super::match_status_type::MatchStatus;
-use super::scheduling_type::Scheduling;
 use super::server_config_type::ServerConfig;
 use super::tm_match_type::TmMatch;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};

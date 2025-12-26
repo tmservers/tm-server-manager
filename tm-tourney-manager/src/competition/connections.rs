@@ -169,6 +169,7 @@ pub fn create_connection(
 
 #[derive(Debug, SpacetimeType)]
 pub struct CompetitionConnection {
+    tournament_id: u32,
     competition_id: u32,
 
     connection_from: NodeKindRef,
@@ -180,12 +181,13 @@ pub struct CompetitionConnection {
 //TODO maybe just use for access control
 #[view(name=competition_connection,public)]
 pub fn competition_connection(ctx: &ViewContext) -> Vec<CompetitionConnection> {
-    let competition_id: u32 = 500000;
+    let competition_id: u32 = u32::MAX;
     ctx.db
         .tab_competition_connection()
         .competition_id()
         .filter(!competition_id)
         .map(|v| CompetitionConnection {
+            tournament_id: v.tournament_id,
             competition_id: v.competition_id,
             connection_from: NodeKindRef::combine(v.connection_from_variant, v.connection_from),
             connection_to: NodeKindRef::combine(v.connection_to_variant, v.connection_to),

@@ -10,6 +10,7 @@ use super::connection_settings_type::ConnectionSettings;
 #[sats(crate = __lib)]
 pub struct TabCompetitionConnection {
     pub competition_id: u32,
+    pub tournament_id: u32,
     pub connection_from: u32,
     pub connection_to: u32,
     pub connection_from_variant: u8,

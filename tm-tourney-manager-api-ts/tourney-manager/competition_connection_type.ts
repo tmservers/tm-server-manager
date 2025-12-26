@@ -14,6 +14,7 @@ import ConnectionSettings from "./connection_settings_type";
 
 
 export default __t.object("CompetitionConnection", {
+  tournamentId: __t.u32(),
   competitionId: __t.u32(),
   get connectionFrom() {
     return NodeKindRef;

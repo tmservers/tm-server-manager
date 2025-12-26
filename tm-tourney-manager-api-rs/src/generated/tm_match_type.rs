@@ -8,7 +8,6 @@ use super::match_entity_rules_type::MatchEntityRules;
 use super::match_leaderboard_rules_type::MatchLeaderboardRules;
 use super::match_state_type::MatchState;
 use super::match_status_type::MatchStatus;
-use super::scheduling_type::Scheduling;
 use super::server_config_type::ServerConfig;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
@@ -17,7 +16,6 @@ pub struct TmMatch {
     pub id: u32,
     pub tournament_id: u32,
     pub competition_id: u32,
-    pub scheduling: Scheduling,
     pub server_id: Option<String>,
     pub pre_match_config: Option<ServerConfig>,
     pub match_config: Option<ServerConfig>,

@@ -45,8 +45,7 @@ pub struct TmMatch {
     tournament_id: u32,
     competition_id: u32,
 
-    scheduling: Scheduling,
-
+    //scheduling: Scheduling,
     /// The assigned server that is currently used by this match.
     server_id: Option<String>,
 
@@ -147,7 +146,7 @@ pub fn create_match(
         post_match_config: None,
         leaderboard: MatchLeaderboardRules::new(),
         state: MatchState::new(),
-        scheduling: Scheduling::Manual,
+        //scheduling: Scheduling::Manual,
         permitted_entities: MatchEntityRules::new(),
     };
 
