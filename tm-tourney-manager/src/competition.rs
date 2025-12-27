@@ -6,6 +6,7 @@ use crate::{
 };
 
 pub mod connections;
+pub mod registration;
 mod scheduling;
 
 /// Always
