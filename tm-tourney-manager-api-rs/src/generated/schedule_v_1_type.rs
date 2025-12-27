@@ -6,12 +6,13 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct CompetitionSchedule {
+pub struct ScheduleV1 {
     pub scheduled_id: u64,
     pub scheduled_at: __sdk::ScheduleAt,
-    pub text: String,
+    pub competition_id: u32,
+    pub tournament_id: u32,
 }
 
-impl __sdk::InModule for CompetitionSchedule {
+impl __sdk::InModule for ScheduleV1 {
     type Module = super::RemoteModule;
 }

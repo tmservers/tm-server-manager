@@ -5,8 +5,7 @@
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 use super::competition_status_type::CompetitionStatus;
-use super::registration_rules_type::RegistrationRules;
-use super::scheduling_type::Scheduling;
+use super::registration_settings_type::RegistrationSettings;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
@@ -16,9 +15,9 @@ pub struct CompetitionV1 {
     pub parent_id: Option<u32>,
     pub name: String,
     pub status: CompetitionStatus,
-    pub estimate: Option<__sdk::TimeDuration>,
-    pub scheduling: Scheduling,
-    pub registration_rules: RegistrationRules,
+    pub starting_at: Option<__sdk::Timestamp>,
+    pub ending_at: Option<__sdk::Timestamp>,
+    pub registration_settings: RegistrationSettings,
 }
 
 impl __sdk::InModule for CompetitionV1 {

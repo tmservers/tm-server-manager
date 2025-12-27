@@ -95,8 +95,6 @@ impl NodeKindRef {
                     u32::MAX
                 }
             }
-            NodeKindRef::MonitoringV1(_) => todo!(),
-            NodeKindRef::ServerV1(_) => todo!(),
             NodeKindRef::SchedulingV1(sched) => {
                 if let Some(ma) = ctx.db.tab_schedule().scheduled_id().find(*sched as u64) {
                     ma.get_tournament()
@@ -104,6 +102,8 @@ impl NodeKindRef {
                     u32::MAX
                 }
             }
+            NodeKindRef::MonitoringV1(_) => todo!(),
+            NodeKindRef::ServerV1(_) => todo!(),
         }
     }
 

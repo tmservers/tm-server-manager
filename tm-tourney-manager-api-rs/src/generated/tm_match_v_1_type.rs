@@ -12,7 +12,7 @@ use super::server_config_type::ServerConfig;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct TmMatch {
+pub struct TmMatchV1 {
     pub id: u32,
     pub tournament_id: u32,
     pub competition_id: u32,
@@ -26,6 +26,6 @@ pub struct TmMatch {
     pub leaderboard: MatchLeaderboardRules,
 }
 
-impl __sdk::InModule for TmMatch {
+impl __sdk::InModule for TmMatchV1 {
     type Module = super::RemoteModule;
 }

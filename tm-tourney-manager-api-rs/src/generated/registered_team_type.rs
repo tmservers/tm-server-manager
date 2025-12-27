@@ -4,21 +4,14 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::registration_player_rules_type::RegistrationPlayerRules;
-use super::registration_team_rules_type::RegistrationTeamRules;
-
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub enum RegistrationRules {
-    Players(RegistrationPlayerRules),
-
-    Team(RegistrationTeamRules),
-
-    Inherit,
-
-    Open,
+pub struct RegisteredTeam {
+    pub competition_id: u32,
+    pub account_id: String,
+    pub registered_at: __sdk::Timestamp,
 }
 
-impl __sdk::InModule for RegistrationRules {
+impl __sdk::InModule for RegisteredTeam {
     type Module = super::RemoteModule;
 }

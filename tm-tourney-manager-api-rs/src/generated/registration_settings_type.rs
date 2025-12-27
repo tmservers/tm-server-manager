@@ -4,16 +4,19 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
+use super::registration_player_settings_type::RegistrationPlayerSettings;
+use super::registration_team_settings_type::RegistrationTeamSettings;
+
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct EventConfig {
-    pub id: u32,
-    pub owner: String,
-    pub public: bool,
-    pub name: String,
-    pub registration: Option<__sdk::TimeDuration>,
+pub enum RegistrationSettings {
+    Players(RegistrationPlayerSettings),
+
+    Team(RegistrationTeamSettings),
+
+    None,
 }
 
-impl __sdk::InModule for EventConfig {
+impl __sdk::InModule for RegistrationSettings {
     type Module = super::RemoteModule;
 }
