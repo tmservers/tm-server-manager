@@ -178,14 +178,13 @@ pub struct CompetitionConnection {
     connection_settings: ConnectionSettings,
 }
 
-//TODO maybe just use for access control
 #[view(name=competition_connection,public)]
 pub fn competition_connection(ctx: &ViewContext) -> Vec<CompetitionConnection> {
-    let competition_id: u32 = u32::MAX;
     ctx.db
         .tab_competition_connection()
         .competition_id()
-        .filter(!competition_id)
+        //TODO actually make a view arg to filter not return everything.
+        .filter(1u32..u32::MAX)
         .map(|v| CompetitionConnection {
             tournament_id: v.tournament_id,
             competition_id: v.competition_id,

@@ -5,7 +5,7 @@ use crate::{
     tournament::tab_tournament,
 };
 
-pub mod connections;
+pub mod connection;
 pub mod registration;
 mod scheduling;
 

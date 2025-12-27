@@ -65,12 +65,18 @@ import PostEventReducer from "./post_event_reducer";
 export { PostEventReducer };
 import PostRecordReducer from "./post_record_reducer";
 export { PostRecordReducer };
+import RegisterPlayerReducer from "./register_player_reducer";
+export { RegisterPlayerReducer };
 import ServerMethodCallReducer from "./server_method_call_reducer";
 export { ServerMethodCallReducer };
 import ServerMethodResponseReducer from "./server_method_response_reducer";
 export { ServerMethodResponseReducer };
+import TournamentEditDescriptionReducer from "./tournament_edit_description_reducer";
+export { TournamentEditDescriptionReducer };
 import TryStartMatchReducer from "./try_start_match_reducer";
 export { TryStartMatchReducer };
+import UnregisterPlayerReducer from "./unregister_player_reducer";
+export { UnregisterPlayerReducer };
 import UpdateMatchConfigReducer from "./update_match_config_reducer";
 export { UpdateMatchConfigReducer };
 import UpdatePreMatchConfigReducer from "./update_pre_match_config_reducer";
@@ -121,6 +127,8 @@ import TabCompetitionRow from "./tab_competition_table";
 export { TabCompetitionRow };
 import TabCompetitionConnectionRow from "./tab_competition_connection_table";
 export { TabCompetitionConnectionRow };
+import TabRegisteredPlayerRow from "./tab_registered_player_table";
+export { TabRegisteredPlayerRow };
 import TabTmServerRow from "./tab_tm_server_table";
 export { TabTmServerRow };
 import TabTournamentRow from "./tab_tournament_table";
@@ -261,6 +269,8 @@ import PlayerDisconnect from "./player_disconnect_type";
 export { PlayerDisconnect };
 import Podium from "./podium_type";
 export { Podium };
+import RegisteredPlayer from "./registered_player_type";
+export { RegisteredPlayer };
 import RegistrationPlayer from "./registration_player_type";
 export { RegistrationPlayer };
 import RegistrationPlayerRules from "./registration_player_rules_type";
@@ -449,6 +459,16 @@ const tablesSchema = __schema(
     constraints: [
     ],
   }, TabCompetitionConnectionRow),
+  __table({
+    name: 'tab_registered_player',
+    indexes: [
+      { name: 'competition_id', algorithm: 'btree', columns: [
+        'competitionId',
+      ] },
+    ],
+    constraints: [
+    ],
+  }, TabRegisteredPlayerRow),
   __table({
     name: 'tab_tm_server',
     indexes: [
@@ -707,9 +727,12 @@ const reducersSchema = __reducers(
   __reducerSchema("on_tournament_event_schedule", OnTournamentEventScheduleReducer),
   __reducerSchema("post_event", PostEventReducer),
   __reducerSchema("post_record", PostRecordReducer),
+  __reducerSchema("register_player", RegisterPlayerReducer),
   __reducerSchema("server_method_call", ServerMethodCallReducer),
   __reducerSchema("server_method_response", ServerMethodResponseReducer),
+  __reducerSchema("tournament_edit_description", TournamentEditDescriptionReducer),
   __reducerSchema("try_start_match", TryStartMatchReducer),
+  __reducerSchema("unregister_player", UnregisterPlayerReducer),
   __reducerSchema("update_match_config", UpdateMatchConfigReducer),
   __reducerSchema("update_pre_match_config", UpdatePreMatchConfigReducer),
 );
