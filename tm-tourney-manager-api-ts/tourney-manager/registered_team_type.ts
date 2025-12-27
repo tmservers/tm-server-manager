@@ -10,12 +10,10 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-export default __t.object("EventConfig", {
-  id: __t.u32(),
-  owner: __t.string(),
-  public: __t.bool(),
-  name: __t.string(),
-  registration: __t.option(__t.timeDuration()),
+export default __t.object("RegisteredTeam", {
+  competitionId: __t.u32(),
+  accountId: __t.string(),
+  registeredAt: __t.timestamp(),
 });
 
 

@@ -4,6 +4,7 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
+use super::connection_settings_type::ConnectionSettings;
 use super::node_kind_ref_type::NodeKindRef;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
@@ -11,6 +12,7 @@ use super::node_kind_ref_type::NodeKindRef;
 pub(super) struct CreateConnectionArgs {
     pub connection_from: NodeKindRef,
     pub connection_to: NodeKindRef,
+    pub setting: ConnectionSettings,
 }
 
 impl From<CreateConnectionArgs> for super::Reducer {
@@ -18,6 +20,7 @@ impl From<CreateConnectionArgs> for super::Reducer {
         Self::CreateConnection {
             connection_from: args.connection_from,
             connection_to: args.connection_to,
+            setting: args.setting,
         }
     }
 }
@@ -42,6 +45,7 @@ pub trait create_connection {
         &self,
         connection_from: NodeKindRef,
         connection_to: NodeKindRef,
+        setting: ConnectionSettings,
     ) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `create_connection`.
     ///
@@ -52,7 +56,9 @@ pub trait create_connection {
     /// to cancel the callback.
     fn on_create_connection(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &NodeKindRef, &NodeKindRef) + Send + 'static,
+        callback: impl FnMut(&super::ReducerEventContext, &NodeKindRef, &NodeKindRef, &ConnectionSettings)
+            + Send
+            + 'static,
     ) -> CreateConnectionCallbackId;
     /// Cancel a callback previously registered by [`Self::on_create_connection`],
     /// causing it not to run in the future.
@@ -64,18 +70,20 @@ impl create_connection for super::RemoteReducers {
         &self,
         connection_from: NodeKindRef,
         connection_to: NodeKindRef,
+        setting: ConnectionSettings,
     ) -> __sdk::Result<()> {
         self.imp.call_reducer(
             "create_connection",
             CreateConnectionArgs {
                 connection_from,
                 connection_to,
+                setting,
             },
         )
     }
     fn on_create_connection(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &NodeKindRef, &NodeKindRef)
+        mut callback: impl FnMut(&super::ReducerEventContext, &NodeKindRef, &NodeKindRef, &ConnectionSettings)
             + Send
             + 'static,
     ) -> CreateConnectionCallbackId {
@@ -90,6 +98,7 @@ impl create_connection for super::RemoteReducers {
                                 super::Reducer::CreateConnection {
                                     connection_from,
                                     connection_to,
+                                    setting,
                                 },
                             ..
                         },
@@ -98,7 +107,7 @@ impl create_connection for super::RemoteReducers {
                 else {
                     unreachable!()
                 };
-                callback(ctx, connection_from, connection_to)
+                callback(ctx, connection_from, connection_to, setting)
             }),
         ))
     }

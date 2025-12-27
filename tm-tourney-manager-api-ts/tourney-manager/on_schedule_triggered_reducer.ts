@@ -10,6 +10,10 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
+import ScheduleV1 from "./schedule_v_1_type";
+
 export default {
-  compeitionId: __t.u32(),
+  get arg() {
+    return ScheduleV1;
+  },
 };

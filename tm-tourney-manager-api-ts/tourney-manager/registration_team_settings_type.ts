@@ -10,8 +10,11 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-export default __t.row({
-  scheduledId: __t.u64().primaryKey().name("scheduled_id"),
-  scheduledAt: __t.scheduleAt().name("scheduled_at"),
-  text: __t.string(),
+export default __t.object("RegistrationTeamSettings", {
+  teamLimit: __t.option(__t.u32()),
+  teamSizeMin: __t.u8(),
+  teamSizeMax: __t.u8(),
+  registrationDeadline: __t.timestamp(),
 });
+
+

@@ -1,4 +1,6 @@
-use spacetimedb::{ReducerContext, ScheduleAt, Table, Timestamp, reducer, table};
+use spacetimedb::{
+    Query, ReducerContext, ScheduleAt, Table, Timestamp, ViewContext, reducer, table, view,
+};
 
 use crate::competition::tab_competition;
 
@@ -56,4 +58,9 @@ pub fn create_schedule(
     ctx.db.tab_schedule().try_insert(schedule)?;
 
     Ok(())
+}
+
+#[view(name= schedule,public)]
+pub fn schedule(ctx: &ViewContext) -> Query<ScheduleV1> {
+    ctx.from.tab_schedule().build()
 }
