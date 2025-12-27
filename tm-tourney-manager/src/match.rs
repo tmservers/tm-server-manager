@@ -6,7 +6,6 @@ use crate::{
     competition::tab_competition,
     r#match::{leaderboard::MatchLeaderboardRules, match_state::MatchState},
     registration::RegistrationSettings,
-    scheduling::Scheduling,
     server::tab_tm_server,
     tournament::tab_tournament,
 };

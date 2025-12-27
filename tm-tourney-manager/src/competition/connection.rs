@@ -1,6 +1,9 @@
 use spacetimedb::{ReducerContext, SpacetimeType, Table, ViewContext, reducer, view};
 
-use crate::{auth::Authorization, competition::tab_competition, r#match::tab_tm_match};
+use crate::{
+    auth::Authorization, competition::tab_competition, r#match::tab_tm_match,
+    scheduling::tab_schedule,
+};
 
 #[spacetimedb::table(name = tab_competition_connection,index(name=connection_exists,btree(columns=[connection_from_variant,connection_from,connection_to_variant,connection_to])))]
 pub struct TabCompetitionConnection {
@@ -39,6 +42,7 @@ pub enum NodeKindRef {
     CompetitionV1(u32),
     MonitoringV1(u32),
     ServerV1(u32),
+    SchedulingV1(u32),
 }
 
 impl NodeKindRef {
@@ -48,7 +52,7 @@ impl NodeKindRef {
                 if let Some(ma) = ctx.db.tab_tm_match().id().find(m) {
                     Ok(ma.get_comp_id())
                 } else {
-                    Err("Origin of connection does not exist.".into())
+                    Err("Match couldnt be found.".into())
                 }
             }
             NodeKindRef::CompetitionV1(c) => {
@@ -59,7 +63,14 @@ impl NodeKindRef {
                         Err("Compeittion without Parent cannot be part of a connection".into())
                     }
                 } else {
-                    Err("Target of connection does not exist.".into())
+                    Err("Competition could not be found".into())
+                }
+            }
+            NodeKindRef::SchedulingV1(sched) => {
+                if let Some(ma) = ctx.db.tab_schedule().scheduled_id().find(*sched as u64) {
+                    Ok(ma.get_comp_id())
+                } else {
+                    Err("Schedule could not be found.".into())
                 }
             }
             NodeKindRef::MonitoringV1(_) => todo!(),
@@ -67,6 +78,7 @@ impl NodeKindRef {
         }
     }
 
+    /// Safety: can only be called when you know the competiiton exists
     fn get_tournament(&self, ctx: &ReducerContext) -> u32 {
         match self {
             NodeKindRef::MatchV1(m) => {
@@ -85,6 +97,13 @@ impl NodeKindRef {
             }
             NodeKindRef::MonitoringV1(_) => todo!(),
             NodeKindRef::ServerV1(_) => todo!(),
+            NodeKindRef::SchedulingV1(sched) => {
+                if let Some(ma) = ctx.db.tab_schedule().scheduled_id().find(*sched as u64) {
+                    ma.get_tournament()
+                } else {
+                    u32::MAX
+                }
+            }
         }
     }
 
@@ -92,6 +111,7 @@ impl NodeKindRef {
         match self {
             NodeKindRef::MatchV1(m) => (1, m),
             NodeKindRef::CompetitionV1(c) => (2, c),
+            NodeKindRef::SchedulingV1(s) => (3, s),
             NodeKindRef::MonitoringV1(_) => todo!(),
             NodeKindRef::ServerV1(_) => todo!(),
         }
@@ -101,6 +121,7 @@ impl NodeKindRef {
         match variant {
             1 => Self::MatchV1(value),
             2 => Self::CompetitionV1(value),
+            3 => Self::SchedulingV1(value),
             _ => unreachable!(),
         }
     }
