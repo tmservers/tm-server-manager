@@ -60,7 +60,6 @@ pub mod match_event_table;
 pub mod match_event_type;
 pub mod match_ghost_table;
 pub mod match_ghost_type;
-pub mod match_leaderboard_rules_type;
 pub mod match_record_table;
 pub mod match_standings_table;
 pub mod match_standings_type;
@@ -78,6 +77,7 @@ pub mod monitoring_settings_map_type;
 pub mod monitoring_settings_type;
 pub mod my_jobs_table;
 pub mod my_tournament_table;
+pub mod my_tournament_v_1_type;
 pub mod node_kind_ref_type;
 pub mod on_schedule_triggered_reducer;
 pub mod play_loop_end_type;
@@ -99,7 +99,6 @@ pub mod registration_team_settings_type;
 pub mod respawn_bavaviour_type;
 pub mod respawn_type;
 pub mod round_time_type;
-pub mod rounds_leaderboard_type;
 pub mod rounds_type;
 pub mod schedule_table;
 pub mod schedule_v_1_type;
@@ -247,7 +246,6 @@ pub use match_event_table::*;
 pub use match_event_type::MatchEvent;
 pub use match_ghost_table::*;
 pub use match_ghost_type::MatchGhost;
-pub use match_leaderboard_rules_type::MatchLeaderboardRules;
 pub use match_record_table::*;
 pub use match_standings_table::*;
 pub use match_standings_type::MatchStandings;
@@ -265,6 +263,7 @@ pub use monitoring_settings_map_type::MonitoringSettingsMap;
 pub use monitoring_settings_type::MonitoringSettings;
 pub use my_jobs_table::*;
 pub use my_tournament_table::*;
+pub use my_tournament_v_1_type::MyTournamentV1;
 pub use node_kind_ref_type::NodeKindRef;
 pub use on_schedule_triggered_reducer::{
     on_schedule_triggered, set_flags_for_on_schedule_triggered, OnScheduleTriggeredCallbackId,
@@ -290,7 +289,6 @@ pub use registration_team_settings_type::RegistrationTeamSettings;
 pub use respawn_bavaviour_type::RespawnBavaviour;
 pub use respawn_type::Respawn;
 pub use round_time_type::RoundTime;
-pub use rounds_leaderboard_type::RoundsLeaderboard;
 pub use rounds_type::Rounds;
 pub use schedule_table::*;
 pub use schedule_v_1_type::ScheduleV1;
@@ -662,7 +660,7 @@ pub struct DbUpdate {
     match_standings: __sdk::TableUpdate<MatchStandings>,
     match_template: __sdk::TableUpdate<MatchTemplate>,
     my_jobs: __sdk::TableUpdate<TmWorkerJobs>,
-    my_tournament: __sdk::TableUpdate<TournamentV1>,
+    my_tournament: __sdk::TableUpdate<MyTournamentV1>,
     schedule: __sdk::TableUpdate<ScheduleV1>,
     tab_competition: __sdk::TableUpdate<CompetitionV1>,
     tab_competition_connection: __sdk::TableUpdate<TabCompetitionConnection>,
@@ -919,7 +917,7 @@ impl __sdk::DbUpdate for DbUpdate {
             cache.apply_diff_to_table::<MatchStandings>("match_standings", &self.match_standings);
         diff.my_jobs = cache.apply_diff_to_table::<TmWorkerJobs>("my_jobs", &self.my_jobs);
         diff.my_tournament =
-            cache.apply_diff_to_table::<TournamentV1>("my_tournament", &self.my_tournament);
+            cache.apply_diff_to_table::<MyTournamentV1>("my_tournament", &self.my_tournament);
         diff.schedule = cache.apply_diff_to_table::<ScheduleV1>("schedule", &self.schedule);
         diff.this_tm_server =
             cache.apply_diff_to_table::<TmServerV1>("this_tm_server", &self.this_tm_server);
@@ -948,7 +946,7 @@ pub struct AppliedDiff<'r> {
     match_standings: __sdk::TableAppliedDiff<'r, MatchStandings>,
     match_template: __sdk::TableAppliedDiff<'r, MatchTemplate>,
     my_jobs: __sdk::TableAppliedDiff<'r, TmWorkerJobs>,
-    my_tournament: __sdk::TableAppliedDiff<'r, TournamentV1>,
+    my_tournament: __sdk::TableAppliedDiff<'r, MyTournamentV1>,
     schedule: __sdk::TableAppliedDiff<'r, ScheduleV1>,
     tab_competition: __sdk::TableAppliedDiff<'r, CompetitionV1>,
     tab_competition_connection: __sdk::TableAppliedDiff<'r, TabCompetitionConnection>,
@@ -1018,7 +1016,7 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             event,
         );
         callbacks.invoke_table_row_callbacks::<TmWorkerJobs>("my_jobs", &self.my_jobs, event);
-        callbacks.invoke_table_row_callbacks::<TournamentV1>(
+        callbacks.invoke_table_row_callbacks::<MyTournamentV1>(
             "my_tournament",
             &self.my_tournament,
             event,

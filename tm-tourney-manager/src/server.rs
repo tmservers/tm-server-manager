@@ -103,7 +103,7 @@ pub fn login_as_server(
 )
 /* -> Result<(), String> */
 {
-    /*  let request = Request::builder()
+    let request = Request::builder()
         .method("POST")
         .uri("https://prod.trackmania.core.nadeo.online/v2/authentication/token/basic")
         .header(
@@ -111,26 +111,22 @@ pub fn login_as_server(
             format!(
                 "Basic {}",
                 BASE64_STANDARD.encode(login.clone() + ":" + &password)
-                ),
-                )
-                .header("Content-Type", "application/json")
-                .header("User-Agent", "tm-tourney-manager | central")
-                .body(r#"{ "audience": "NadeoServices" }"#)
-                .unwrap();
-            let result = ctx.http.send(request).unwrap();
+            ),
+        )
+        .header("Content-Type", "application/json")
+        .header("User-Agent", "tm-tourney-manager | central")
+        .body(r#"{ "audience": "NadeoServices" }"#)
+        .unwrap();
+    let result = ctx.http.send(request).unwrap();
 
-            let status = result.status();
+    let status = result.status();
 
-            if status.is_success() {
-                let body = result.into_body();
-                let string = body.into_string().unwrap();
-                //let string = BASE64_STANDARD.decode(string);
-                log::error!("{:?}", string)
-    } else {
-        //TODO error handling
-        log::error!("Server registration failed because of nadeo request");
+    if !status.is_success() {
+        //TODO remove panic once we can return Result
+        // return Err("Server registration failed because credential were wrong".into());
+
         panic!()
-        } */
+    }
 
     ctx.with_tx(|ctx| {
         if ctx.db.tab_tm_server().identity().find(ctx.sender).is_some() {
@@ -143,16 +139,12 @@ pub fn login_as_server(
             ctx.db.tab_tm_server().tm_login().update(server);
             //Ok(())
         } else {
-            //TODO make HTTP call when its available and verify that credentials are correct.
-
             // Server has never been seen before so create a new one.
             ctx.db.tab_tm_server().insert(TmServerV1 {
                 online: true,
                 tm_login: login.clone(),
                 active_match: None,
-                //TODO obtain userid from HTTP request
                 owner_id: account_id.clone(),
-                // server_method: None,
                 config: ServerConfig::default(),
                 state: ServerState::default(),
                 identity: ctx.identity(),

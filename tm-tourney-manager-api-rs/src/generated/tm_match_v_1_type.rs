@@ -5,7 +5,6 @@
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 use super::match_entity_rules_type::MatchEntityRules;
-use super::match_leaderboard_rules_type::MatchLeaderboardRules;
 use super::match_state_type::MatchState;
 use super::match_status_type::MatchStatus;
 use super::server_config_type::ServerConfig;
@@ -23,7 +22,6 @@ pub struct TmMatchV1 {
     pub status: MatchStatus,
     pub state: MatchState,
     pub permitted_entities: MatchEntityRules,
-    pub leaderboard: MatchLeaderboardRules,
 }
 
 impl __sdk::InModule for TmMatchV1 {

@@ -1,4 +1,4 @@
-use spacetimedb::{Identity, Query, AnonymousViewContext, view };
+use spacetimedb::{AnonymousViewContext, Identity, Query, view};
 
 #[cfg_attr(feature = "spacetime", spacetimedb::table(name = tab_user))]
 pub struct User {
@@ -22,13 +22,15 @@ impl User {
             online: true,
         }
     }
+
+    pub(crate) fn get_name(&self) -> &String {
+        &self.name
+    }
 }
 
 #[view(name=user,public)]
 pub fn user(ctx: &AnonymousViewContext) -> Query<User> {
-    ctx.from
-        .tab_user()
-        .build()
+    ctx.from.tab_user().build()
 }
 
 #[cfg_attr(feature = "spacetime", spacetimedb::table(name = user_identity))]

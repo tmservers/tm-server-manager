@@ -11,7 +11,6 @@ use super::tournament_status_type::TournamentStatus;
 pub struct TournamentV1 {
     pub id: u32,
     pub creator: String,
-    pub owners: Vec<String>,
     pub name: String,
     pub starting_at: Option<__sdk::Timestamp>,
     pub ending_at: Option<__sdk::Timestamp>,

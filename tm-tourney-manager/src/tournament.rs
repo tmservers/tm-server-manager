@@ -17,8 +17,8 @@ pub struct TournamentV1 {
     #[primary_key]
     pub id: u32,
 
+    #[index(btree)]
     creator: String,
-    owners: Vec<String>,
 
     #[unique]
     name: String,
@@ -64,7 +64,6 @@ fn create_tournament(ctx: &ReducerContext, name: String) -> Result<(), String> {
         name: name.clone(),
         creator: user,
         status: TournamentStatus::Planning,
-        owners: Vec::new(),
         description: "".into(),
         starting_at: None,
         ending_at: None,
@@ -105,17 +104,48 @@ pub fn tournament(ctx: &AnonymousViewContext) -> Query<TournamentV1> {
         .build()
 }
 
+#[derive(Debug, SpacetimeType)]
+pub struct MyTournamentV1 {
+    id: u32,
+
+    creator: String,
+    creator_name: String,
+
+    name: String,
+
+    starting_at: Option<Timestamp>,
+    ending_at: Option<Timestamp>,
+
+    description: String,
+
+    status: TournamentStatus,
+}
+
 #[view(name=my_tournament,public)]
-pub fn my_tournament(ctx: &ViewContext) -> Query<TournamentV1> {
+pub fn my_tournament(ctx: &ViewContext) -> Vec<MyTournamentV1> {
     let id = if let Some(user) = ctx.db.user_identity().identity().find(ctx.sender) {
         user.account_id
     } else {
         String::new()
     };
 
-    ctx.from
+    let Some(user) = ctx.db.tab_user().account_id().find(&id) else {
+        return Vec::new();
+    };
+
+    ctx.db
         .tab_tournament()
-        //TODO more advanced access control with collaborators and stuff.
-        .r#where(|t| t.creator.eq(id.clone()))
-        .build()
+        .creator()
+        .filter(&id)
+        .map(|t| MyTournamentV1 {
+            id: t.id,
+            creator: t.creator,
+            creator_name: user.get_name().to_string(),
+            name: t.name,
+            starting_at: t.starting_at,
+            ending_at: t.ending_at,
+            description: t.description,
+            status: t.status,
+        })
+        .collect()
 }

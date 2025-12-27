@@ -60,7 +60,7 @@ pub struct TmMatchV1 {
     state: MatchState,
 
     permitted_entities: MatchEntityRules,
-    leaderboard: MatchLeaderboardRules,
+    //leaderboard: MatchLeaderboardRules,
 }
 
 impl TmMatchV1 {
@@ -143,9 +143,8 @@ pub fn create_match(
         pre_match_config: None,
         match_config: None,
         post_match_config: None,
-        leaderboard: MatchLeaderboardRules::new(),
+        //leaderboard: MatchLeaderboardRules::new(),
         state: MatchState::new(),
-        //scheduling: Scheduling::Manual,
         permitted_entities: MatchEntityRules::new(),
     };
 

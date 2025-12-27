@@ -3,7 +3,6 @@
 
 #![allow(unused, clippy::all)]
 use super::match_entity_rules_type::MatchEntityRules;
-use super::match_leaderboard_rules_type::MatchLeaderboardRules;
 use super::match_state_type::MatchState;
 use super::match_status_type::MatchStatus;
 use super::server_config_type::ServerConfig;
