@@ -4,14 +4,13 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::data_connection_settings_type::DataConnectionSettings;
-
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
+#[derive(Copy, Eq, Hash)]
 pub enum ConnectionSettings {
     Waiting,
 
-    Data(DataConnectionSettings),
+    Data,
 }
 
 impl __sdk::InModule for ConnectionSettings {

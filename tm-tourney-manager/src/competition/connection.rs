@@ -21,10 +21,16 @@ pub struct TabCompetitionConnection {
     connection_settings: ConnectionSettings,
 }
 
-#[derive(Debug, SpacetimeType)]
+/* #[derive(Debug, SpacetimeType)]
 pub enum ConnectionSettings {
     Waiting,
     Data(DataConnectionSettings),
+} */
+
+#[derive(Debug, SpacetimeType)]
+pub enum ConnectionSettings {
+    Waiting,
+    Data,
 }
 
 ///TODO this could probably be a table and give the CompetitionConnection a primary_key.
@@ -133,6 +139,7 @@ pub fn create_connection(
     ctx: &ReducerContext,
     connection_from: NodeKindRef,
     connection_to: NodeKindRef,
+    setting: ConnectionSettings,
 ) -> Result<(), String> {
     let account_id = ctx.get_user()?;
 
@@ -212,3 +219,5 @@ pub fn competition_connection(ctx: &ViewContext) -> Vec<CompetitionConnection> {
         })
         .collect()
 }
+
+trait ConnectionBehaviour {}

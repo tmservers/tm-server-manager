@@ -12,7 +12,7 @@ import {
 
 // The tagged union or sum type for the algebraic type `CompetitionStatus`.
 const CompetitionStatus = __t.enum("CompetitionStatus", {Planning: __t.unit(),
-  Preparation: __t.unit(),
+  Registration: __t.unit(),
   Ongoing: __t.unit(),
   Completed: __t.unit(),
 });

@@ -16,7 +16,7 @@ import MatchEntityRules from "./match_entity_rules_type";
 import MatchLeaderboardRules from "./match_leaderboard_rules_type";
 
 
-export default __t.object("TmMatch", {
+export default __t.object("TmMatchV1", {
   id: __t.u32(),
   tournamentId: __t.u32(),
   competitionId: __t.u32(),

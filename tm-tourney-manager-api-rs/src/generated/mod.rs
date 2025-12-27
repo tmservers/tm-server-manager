@@ -30,7 +30,6 @@ pub mod create_server_config_reducer;
 pub mod create_team_reducer;
 pub mod create_tournament_reducer;
 pub mod custom_type;
-pub mod data_connection_settings_type;
 pub mod end_map_end_type;
 pub mod end_map_start_type;
 pub mod end_match_type;
@@ -102,6 +101,7 @@ pub mod respawn_type;
 pub mod round_time_type;
 pub mod rounds_leaderboard_type;
 pub mod rounds_type;
+pub mod schedule_table;
 pub mod schedule_v_1_type;
 pub mod scores_type;
 pub mod server_config_type;
@@ -210,7 +210,6 @@ pub use create_tournament_reducer::{
     create_tournament, set_flags_for_create_tournament, CreateTournamentCallbackId,
 };
 pub use custom_type::Custom;
-pub use data_connection_settings_type::DataConnectionSettings;
 pub use end_map_end_type::EndMapEnd;
 pub use end_map_start_type::EndMapStart;
 pub use end_match_type::EndMatch;
@@ -292,6 +291,7 @@ pub use respawn_type::Respawn;
 pub use round_time_type::RoundTime;
 pub use rounds_leaderboard_type::RoundsLeaderboard;
 pub use rounds_type::Rounds;
+pub use schedule_table::*;
 pub use schedule_v_1_type::ScheduleV1;
 pub use scores_type::Scores;
 pub use server_config_type::ServerConfig;
@@ -391,6 +391,7 @@ pub enum Reducer {
     CreateConnection {
         connection_from: NodeKindRef,
         connection_to: NodeKindRef,
+        setting: ConnectionSettings,
     },
     CreateEnvVar {
         key: String,
@@ -660,6 +661,7 @@ pub struct DbUpdate {
     match_template: __sdk::TableUpdate<MatchTemplate>,
     my_jobs: __sdk::TableUpdate<TmWorkerJobs>,
     my_tournament: __sdk::TableUpdate<TournamentV1>,
+    schedule: __sdk::TableUpdate<ScheduleV1>,
     tab_competition: __sdk::TableUpdate<CompetitionV1>,
     tab_competition_connection: __sdk::TableUpdate<TabCompetitionConnection>,
     tab_registered_player: __sdk::TableUpdate<RegisteredPlayer>,
@@ -729,6 +731,9 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "my_tournament" => db_update
                     .my_tournament
                     .append(my_tournament_table::parse_table_update(table_update)?),
+                "schedule" => db_update
+                    .schedule
+                    .append(schedule_table::parse_table_update(table_update)?),
                 "tab_competition" => db_update
                     .tab_competition
                     .append(tab_competition_table::parse_table_update(table_update)?),
@@ -909,6 +914,7 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.my_jobs = cache.apply_diff_to_table::<TmWorkerJobs>("my_jobs", &self.my_jobs);
         diff.my_tournament =
             cache.apply_diff_to_table::<TournamentV1>("my_tournament", &self.my_tournament);
+        diff.schedule = cache.apply_diff_to_table::<ScheduleV1>("schedule", &self.schedule);
         diff.this_tm_server =
             cache.apply_diff_to_table::<TmServerV1>("this_tm_server", &self.this_tm_server);
         diff.tm_match = cache.apply_diff_to_table::<TmMatchV1>("tm_match", &self.tm_match);
@@ -936,6 +942,7 @@ pub struct AppliedDiff<'r> {
     match_template: __sdk::TableAppliedDiff<'r, MatchTemplate>,
     my_jobs: __sdk::TableAppliedDiff<'r, TmWorkerJobs>,
     my_tournament: __sdk::TableAppliedDiff<'r, TournamentV1>,
+    schedule: __sdk::TableAppliedDiff<'r, ScheduleV1>,
     tab_competition: __sdk::TableAppliedDiff<'r, CompetitionV1>,
     tab_competition_connection: __sdk::TableAppliedDiff<'r, TabCompetitionConnection>,
     tab_registered_player: __sdk::TableAppliedDiff<'r, RegisteredPlayer>,
@@ -1008,6 +1015,7 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             &self.my_tournament,
             event,
         );
+        callbacks.invoke_table_row_callbacks::<ScheduleV1>("schedule", &self.schedule, event);
         callbacks.invoke_table_row_callbacks::<CompetitionV1>(
             "tab_competition",
             &self.tab_competition,
@@ -1830,6 +1838,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
         match_template_table::register_table(client_cache);
         my_jobs_table::register_table(client_cache);
         my_tournament_table::register_table(client_cache);
+        schedule_table::register_table(client_cache);
         tab_competition_table::register_table(client_cache);
         tab_competition_connection_table::register_table(client_cache);
         tab_registered_player_table::register_table(client_cache);
