@@ -6,7 +6,7 @@ use crate::{
     r#match::{
         event::{MatchEvent, match_event},
         match_state::MatchState,
-        tm_match,
+        tab_tm_match,
     },
     server::tab_tm_server,
 };
@@ -18,7 +18,7 @@ pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
 
     if let Some(mut tm_server) = ctx.db.tab_tm_server().tm_login().find(login)
         && let Some(match_id) = tm_server.active_match()
-        && let Some(mut tm_match) = ctx.db.tm_match().id().find(match_id)
+        && let Some(mut tm_match) = ctx.db.tab_tm_match().id().find(match_id)
         && tm_match.is_live()
     {
         let match_changed = tm_match.add_server_event(&event);
@@ -43,7 +43,7 @@ pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
         });
 
         if match_changed || match_ended {
-            ctx.db.tm_match().id().update(tm_match);
+            ctx.db.tab_tm_match().id().update(tm_match);
         }
         if server_changed || match_ended {
             ctx.db.tab_tm_server().tm_login().update(tm_server);

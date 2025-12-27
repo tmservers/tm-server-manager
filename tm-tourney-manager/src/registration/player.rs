@@ -29,7 +29,7 @@ pub fn register_player(ctx: &ReducerContext, competition_id: u32) -> Result<(), 
     {
         return Err(format!(
             "User is already registered for competition {} ({competition_id})",
-            competition.name
+            competition.get_name()
         ));
     }
 
@@ -63,7 +63,7 @@ pub fn unregister_player(ctx: &ReducerContext, competition_id: u32) -> Result<()
     else {
         return Err(format!(
             "User is already registered for competition {} ({competition_id})",
-            competition.name
+            competition.get_name()
         ));
     };
 

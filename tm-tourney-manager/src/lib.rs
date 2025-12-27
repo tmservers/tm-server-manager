@@ -21,8 +21,6 @@ pub mod tournament;
 pub mod user;
 pub mod worker;
 
-pub mod graph;
-
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer(client_connected))]
 fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
     // Execute if one tries to connect authenticated.

@@ -1,6 +1,6 @@
 use spacetimedb::{ReducerContext, SpacetimeType, Table, ViewContext, reducer, view};
 
-use crate::{auth::Authorization, competition::tab_competition, r#match::tm_match};
+use crate::{auth::Authorization, competition::tab_competition, r#match::tab_tm_match};
 
 #[spacetimedb::table(name = tab_competition_connection,index(name=connection_exists,btree(columns=[connection_from_variant,connection_from,connection_to_variant,connection_to])))]
 pub struct TabCompetitionConnection {
@@ -24,6 +24,7 @@ pub enum ConnectionSettings {
     Data(DataConnectionSettings),
 }
 
+///TODO this could probably be a table and give the CompetitionConnection a primary_key.
 /// Very much a placeholder at the moment.
 #[derive(Debug, SpacetimeType)]
 pub struct DataConnectionSettings {
@@ -36,7 +37,6 @@ pub struct DataConnectionSettings {
 pub enum NodeKindRef {
     MatchV1(u32),
     CompetitionV1(u32),
-    MapMonitorV1(u32),
     MonitoringV1(u32),
     ServerV1(u32),
 }
@@ -45,7 +45,7 @@ impl NodeKindRef {
     fn get_competition(&self, ctx: &ReducerContext) -> Result<u32, String> {
         match self {
             NodeKindRef::MatchV1(m) => {
-                if let Some(ma) = ctx.db.tm_match().id().find(m) {
+                if let Some(ma) = ctx.db.tab_tm_match().id().find(m) {
                     Ok(ma.get_comp_id())
                 } else {
                     Err("Origin of connection does not exist.".into())
@@ -62,7 +62,6 @@ impl NodeKindRef {
                     Err("Target of connection does not exist.".into())
                 }
             }
-            NodeKindRef::MapMonitorV1(_) => todo!(),
             NodeKindRef::MonitoringV1(_) => todo!(),
             NodeKindRef::ServerV1(_) => todo!(),
         }
@@ -71,7 +70,7 @@ impl NodeKindRef {
     fn get_tournament(&self, ctx: &ReducerContext) -> u32 {
         match self {
             NodeKindRef::MatchV1(m) => {
-                if let Some(ma) = ctx.db.tm_match().id().find(m) {
+                if let Some(ma) = ctx.db.tab_tm_match().id().find(m) {
                     ma.get_tournament()
                 } else {
                     u32::MAX
@@ -84,7 +83,6 @@ impl NodeKindRef {
                     u32::MAX
                 }
             }
-            NodeKindRef::MapMonitorV1(_) => todo!(),
             NodeKindRef::MonitoringV1(_) => todo!(),
             NodeKindRef::ServerV1(_) => todo!(),
         }
@@ -94,7 +92,6 @@ impl NodeKindRef {
         match self {
             NodeKindRef::MatchV1(m) => (1, m),
             NodeKindRef::CompetitionV1(c) => (2, c),
-            NodeKindRef::MapMonitorV1(_) => todo!(),
             NodeKindRef::MonitoringV1(_) => todo!(),
             NodeKindRef::ServerV1(_) => todo!(),
         }
