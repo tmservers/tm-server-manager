@@ -1,12 +1,8 @@
-use spacetimedb::{AnonymousViewContext, Query, ReducerContext, Table, TimeDuration, view};
+use spacetimedb::{AnonymousViewContext, Query, ReducerContext, Table, Timestamp, reducer, view};
 
-use crate::{
-    auth::Authorization, registration::RegistrationRules, scheduling::Scheduling,
-    tournament::tab_tournament,
-};
+use crate::{auth::Authorization, registration::RegistrationSettings};
 
-pub mod connections;
-mod scheduling;
+pub mod connection;
 
 /// Always
 #[cfg_attr(feature = "spacetime",spacetimedb::table(name = tab_competition))]
@@ -22,53 +18,29 @@ pub struct CompetitionV1 {
 
     // Necessary to hide and mark as immutable
     status: CompetitionStatus,
-    // The Timestamp at which the event starts.
-    // If no starting time is selected it has to be started manually.
-    // starting_at: Timestamp,
-    // Estimated duration how long the competition is gonna take.
-    estimate: Option<TimeDuration>,
 
-    scheduling: Scheduling,
+    // The two timestamps to display players in which time range the competiion is taking place.
+    starting_at: Option<Timestamp>,
+    ending_at: Option<Timestamp>,
 
-    registration_rules: RegistrationRules,
+    registration_settings: RegistrationSettings,
     // TODO Can capture a server at the end of the registration to serve
     // as a lobby server which automatically delegates players to their
     // corresponding desination server based on active matches.
     //lobby: Option<u32>,
-
-    //TODO the configured generator can spit out nodes for the competition.
-    //generator: Generator,
-
-    //TODO something along the lines of this
-    //is necessary to delegate things in the following
-    //recursion level.
-    //This could be triggered with a schedule but an alternatie
-    // approach would be to save the affected entry points in a schedule
-    // This would be possible since they are own rows in the first place.
-    // We could also have some sort of a barrier table or smth which takes care of this.
-    //entry_points: Option<Vec<NodeIndex>>,
-    //competitions: Competitions,
 }
 
 impl CompetitionV1 {
-    /* pub fn add_competition(&mut self, competition_id: u32) {
-        //TODO
-        self.competitions
-            .try_add_competition(CompetitionKindRef::CompetitionV1(competition_id));
-    } */
-
-    /* pub fn add_match(&mut self, match_id: u32) {
-        //TODO
-        self.competitions
-            .try_add_competition(CompetitionKindRef::MatchV1(match_id));
-    } */
-
     pub(crate) fn get_tournament(&self) -> u32 {
         self.tournament_id
     }
 
     pub(crate) fn get_comp_id(&self) -> Option<u32> {
         self.parent_id
+    }
+
+    pub(crate) fn get_name(&self) -> &String {
+        &self.name
     }
 
     /// # Safety
@@ -81,53 +53,33 @@ impl CompetitionV1 {
             parent_id,
             name,
             status: CompetitionStatus::Planning,
-            estimate: None,
-            //competitions: Competitions::new(),
-            //entry_points: None,
-            scheduling: Scheduling::Manual,
-            registration_rules: RegistrationRules::Open,
+            starting_at: None,
+            ending_at: None,
+            registration_settings: RegistrationSettings::None,
         }
     }
 
-    pub(crate) fn registration_rules(&self) -> &RegistrationRules {
-        &self.registration_rules
+    pub(crate) fn registration_settings(&self) -> &RegistrationSettings {
+        &self.registration_settings
     }
 }
 
 #[derive(Debug)]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
 pub enum CompetitionStatus {
-    /// If you just created the event it will be in the planning phase.
+    /// If you just created the competition it will be in the planning phase.
     /// Here you can set everything up as you like.
-    /// The event is not visible to the public.
+    /// The competition is not visible to the public.
     Planning,
-    /// To advance into the preparation phase you MUST define a starting time aswell as
-    /// an estimated duration how long the event will take.
-    Preparation,
-    /// Once the event is ongoing the configuration is immutable.
+    Registration,
+    /// Once the competition is ongoing the configuration is immutable.
     /// That means it will play through the configured stages and advancing logic.
     Ongoing,
     /// The whole competition is now immutable.
     Completed,
 }
 
-#[cfg_attr(feature="spacetime",spacetimedb::table(name = event_config,public))]
-pub struct EventConfig {
-    #[cfg_attr(feature = "spacetime", auto_inc)]
-    #[cfg_attr(feature = "spacetime", primary_key)]
-    id: u32,
-
-    owner: String,
-    public: bool,
-    // Global identifier for the event config.
-    #[cfg_attr(feature = "spacetime", unique)]
-    name: String,
-
-    ///  Determines if the
-    registration: Option<TimeDuration>,
-}
-
-/// Adds a new Event to the specified Tournament.
+/// Adds a new Competition to the specified Tournament.
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn create_competition(
     ctx: &ReducerContext,
@@ -150,26 +102,25 @@ pub fn create_competition(
     Ok(())
 }
 
-/* #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn add_dependency(
+#[reducer]
+pub fn competition_registration_settings(
     ctx: &ReducerContext,
-    comp_id: u32,
-    from_node: u32,
-    to_node: u32,
+    competition_id: u32,
+    registration_settings: RegistrationSettings,
 ) -> Result<(), String> {
-    ctx.is_user()?;
+    let user = ctx.get_user()?;
 
-    /*   let Some(from_id) = ctx.db.competition().id().find(from_id) else {
-        return Err(format!("Competition with id {from_id} not found."));
-    };
-    let Some(to_id) = ctx.db.competition().id().find(to_id) else {
-        return Err(format!("Competition with id {to_id} not found."));
+    // If parent is valid it is guaranteed that it has a valid tournament associated with it.
+    let Some(mut competition) = ctx.db.tab_competition().id().find(competition_id) else {
+        return Err("Invalid competition".into());
     };
 
-    if from_id.parent_id != to_id.parent_id || from_id.tournament_id != to_id.tournament_id {} */
+    competition.registration_settings = registration_settings;
+
+    ctx.db.tab_competition().id().update(competition);
 
     Ok(())
-} */
+}
 
 #[view(name=competition,public)]
 pub fn competition(ctx: &AnonymousViewContext) -> Query<CompetitionV1> {

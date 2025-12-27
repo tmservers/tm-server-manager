@@ -6,14 +6,12 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct EventConfig {
-    pub id: u32,
-    pub owner: String,
-    pub public: bool,
-    pub name: String,
-    pub registration: Option<__sdk::TimeDuration>,
+pub struct RegisteredTeam {
+    pub competition_id: u32,
+    pub account_id: String,
+    pub registered_at: __sdk::Timestamp,
 }
 
-impl __sdk::InModule for EventConfig {
+impl __sdk::InModule for RegisteredTeam {
     type Module = super::RemoteModule;
 }

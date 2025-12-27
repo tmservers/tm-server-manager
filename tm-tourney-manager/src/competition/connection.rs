@@ -1,6 +1,9 @@
 use spacetimedb::{ReducerContext, SpacetimeType, Table, ViewContext, reducer, view};
 
-use crate::{auth::Authorization, competition::tab_competition, r#match::tm_match};
+use crate::{
+    auth::Authorization, competition::tab_competition, r#match::tab_tm_match,
+    scheduling::tab_schedule,
+};
 
 #[spacetimedb::table(name = tab_competition_connection,index(name=connection_exists,btree(columns=[connection_from_variant,connection_from,connection_to_variant,connection_to])))]
 pub struct TabCompetitionConnection {
@@ -24,6 +27,7 @@ pub enum ConnectionSettings {
     Data(DataConnectionSettings),
 }
 
+///TODO this could probably be a table and give the CompetitionConnection a primary_key.
 /// Very much a placeholder at the moment.
 #[derive(Debug, SpacetimeType)]
 pub struct DataConnectionSettings {
@@ -36,19 +40,19 @@ pub struct DataConnectionSettings {
 pub enum NodeKindRef {
     MatchV1(u32),
     CompetitionV1(u32),
-    MapMonitorV1(u32),
     MonitoringV1(u32),
     ServerV1(u32),
+    SchedulingV1(u32),
 }
 
 impl NodeKindRef {
     fn get_competition(&self, ctx: &ReducerContext) -> Result<u32, String> {
         match self {
             NodeKindRef::MatchV1(m) => {
-                if let Some(ma) = ctx.db.tm_match().id().find(m) {
+                if let Some(ma) = ctx.db.tab_tm_match().id().find(m) {
                     Ok(ma.get_comp_id())
                 } else {
-                    Err("Origin of connection does not exist.".into())
+                    Err("Match couldnt be found.".into())
                 }
             }
             NodeKindRef::CompetitionV1(c) => {
@@ -59,19 +63,26 @@ impl NodeKindRef {
                         Err("Compeittion without Parent cannot be part of a connection".into())
                     }
                 } else {
-                    Err("Target of connection does not exist.".into())
+                    Err("Competition could not be found".into())
                 }
             }
-            NodeKindRef::MapMonitorV1(_) => todo!(),
+            NodeKindRef::SchedulingV1(sched) => {
+                if let Some(ma) = ctx.db.tab_schedule().scheduled_id().find(*sched as u64) {
+                    Ok(ma.get_comp_id())
+                } else {
+                    Err("Schedule could not be found.".into())
+                }
+            }
             NodeKindRef::MonitoringV1(_) => todo!(),
             NodeKindRef::ServerV1(_) => todo!(),
         }
     }
 
+    /// Safety: can only be called when you know the competiiton exists
     fn get_tournament(&self, ctx: &ReducerContext) -> u32 {
         match self {
             NodeKindRef::MatchV1(m) => {
-                if let Some(ma) = ctx.db.tm_match().id().find(m) {
+                if let Some(ma) = ctx.db.tab_tm_match().id().find(m) {
                     ma.get_tournament()
                 } else {
                     u32::MAX
@@ -84,7 +95,13 @@ impl NodeKindRef {
                     u32::MAX
                 }
             }
-            NodeKindRef::MapMonitorV1(_) => todo!(),
+            NodeKindRef::SchedulingV1(sched) => {
+                if let Some(ma) = ctx.db.tab_schedule().scheduled_id().find(*sched as u64) {
+                    ma.get_tournament()
+                } else {
+                    u32::MAX
+                }
+            }
             NodeKindRef::MonitoringV1(_) => todo!(),
             NodeKindRef::ServerV1(_) => todo!(),
         }
@@ -94,7 +111,7 @@ impl NodeKindRef {
         match self {
             NodeKindRef::MatchV1(m) => (1, m),
             NodeKindRef::CompetitionV1(c) => (2, c),
-            NodeKindRef::MapMonitorV1(_) => todo!(),
+            NodeKindRef::SchedulingV1(s) => (3, s),
             NodeKindRef::MonitoringV1(_) => todo!(),
             NodeKindRef::ServerV1(_) => todo!(),
         }
@@ -104,6 +121,7 @@ impl NodeKindRef {
         match variant {
             1 => Self::MatchV1(value),
             2 => Self::CompetitionV1(value),
+            3 => Self::SchedulingV1(value),
             _ => unreachable!(),
         }
     }
@@ -178,14 +196,13 @@ pub struct CompetitionConnection {
     connection_settings: ConnectionSettings,
 }
 
-//TODO maybe just use for access control
 #[view(name=competition_connection,public)]
 pub fn competition_connection(ctx: &ViewContext) -> Vec<CompetitionConnection> {
-    let competition_id: u32 = u32::MAX;
     ctx.db
         .tab_competition_connection()
         .competition_id()
-        .filter(!competition_id)
+        //TODO actually make a view arg to filter not return everything.
+        .filter(1u32..u32::MAX)
         .map(|v| CompetitionConnection {
             tournament_id: v.tournament_id,
             competition_id: v.competition_id,

@@ -4,8 +4,7 @@
 #![allow(unused, clippy::all)]
 use super::competition_status_type::CompetitionStatus;
 use super::competition_v_1_type::CompetitionV1;
-use super::registration_rules_type::RegistrationRules;
-use super::scheduling_type::Scheduling;
+use super::registration_settings_type::RegistrationSettings;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 /// Table handle for the table `tab_competition`.

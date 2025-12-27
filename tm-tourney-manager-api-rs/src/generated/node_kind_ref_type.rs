@@ -11,11 +11,11 @@ pub enum NodeKindRef {
 
     CompetitionV1(u32),
 
-    MapMonitorV1(u32),
-
     MonitoringV1(u32),
 
     ServerV1(u32),
+
+    SchedulingV1(u32),
 }
 
 impl __sdk::InModule for NodeKindRef {

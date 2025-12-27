@@ -1,6 +1,6 @@
 use spacetimedb::{
-    AnonymousViewContext, Query, ReducerContext, SpacetimeType, Table, ViewContext, reducer, table,
-    view,
+    AnonymousViewContext, Query, ReducerContext, SpacetimeType, Table, Timestamp, ViewContext,
+    reducer, table, view,
 };
 
 use crate::{
@@ -22,6 +22,9 @@ pub struct TournamentV1 {
 
     #[unique]
     name: String,
+
+    starting_at: Option<Timestamp>,
+    ending_at: Option<Timestamp>,
 
     description: String,
 
@@ -63,6 +66,8 @@ fn create_tournament(ctx: &ReducerContext, name: String) -> Result<(), String> {
         status: TournamentStatus::Planning,
         owners: Vec::new(),
         description: "".into(),
+        starting_at: None,
+        ending_at: None,
     })?;
 
     //SAFETY: Comitted afterwards

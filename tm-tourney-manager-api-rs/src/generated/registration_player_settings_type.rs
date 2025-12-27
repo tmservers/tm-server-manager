@@ -6,10 +6,11 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct RegistrationPlayerRules {
+pub struct RegistrationPlayerSettings {
     pub player_limit: Option<u32>,
+    pub registration_deadline: __sdk::Timestamp,
 }
 
-impl __sdk::InModule for RegistrationPlayerRules {
+impl __sdk::InModule for RegistrationPlayerSettings {
     type Module = super::RemoteModule;
 }

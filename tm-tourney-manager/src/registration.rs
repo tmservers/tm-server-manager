@@ -1,37 +1,33 @@
-use spacetimedb::{ReducerContext, Table, Timestamp, reducer, table};
+use spacetimedb::Timestamp;
 
-use crate::{auth::Authorization, competition::tab_competition};
+mod player;
+mod team;
 
-#[table(name= registration_player)]
-pub struct RegistrationPlayer {
-    competition: u32,
-    player_id: String,
-    registered_at: Timestamp,
+#[derive(Debug)]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
+pub enum RegistrationSettings {
+    Players(RegistrationPlayerSettings),
+    Team(RegistrationTeamSettings),
+    None,
 }
 
 #[derive(Debug)]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
-pub enum RegistrationRules {
-    Players(RegistrationPlayerRules),
-    Team(RegistrationTeamRules),
-    Inherit,
-    Open,
-}
-
-#[derive(Debug)]
-#[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
-pub struct RegistrationPlayerRules {
+pub struct RegistrationPlayerSettings {
     player_limit: Option<u32>,
+    registration_deadline: Timestamp,
 }
 
 #[derive(Debug)]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
-pub struct RegistrationTeamRules {
+pub struct RegistrationTeamSettings {
     team_limit: Option<u32>,
     team_size_min: u8,
     team_size_max: u8,
+    registration_deadline: Timestamp,
 }
 
+//TODO make this a table somehow.
 #[derive(Debug)]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
 pub struct TeamInfo {
@@ -39,46 +35,4 @@ pub struct TeamInfo {
     name: String,
     creator: String,
     members: Vec<String>,
-}
-
-#[reducer]
-pub fn competition_register_player(ctx: &ReducerContext, compeition_id: u32) -> Result<(), String> {
-    let player_id = ctx.get_user()?;
-
-    let Some(comp) = ctx.db.tab_competition().id().find(compeition_id) else {
-        return Err("Competition not found".into());
-    };
-    let rules = comp.registration_rules();
-
-    //rules.
-
-    let player_count = ctx
-        .db
-        .registration_player()
-        .iter()
-        .filter(|d| d.competition == compeition_id)
-        .count();
-    let Some(comp) = ctx.db.tab_competition().id().find(compeition_id) else {
-        return Err(format!(
-            "Competition with id {compeition_id} was not found."
-        ));
-    };
-
-    Ok(())
-}
-
-#[reducer]
-pub fn competition_unregister_player(
-    ctx: &ReducerContext,
-    compeition_id: u32,
-) -> Result<(), String> {
-    ctx.get_user()?;
-
-    let Some(comp) = ctx.db.tab_competition().id().find(compeition_id) else {
-        return Err(format!(
-            "Competition with id {compeition_id} was not found."
-        ));
-    };
-
-    Ok(())
 }
