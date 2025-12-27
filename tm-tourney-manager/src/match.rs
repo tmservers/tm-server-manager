@@ -2,12 +2,8 @@ use spacetimedb::{Query, ReducerContext, SpacetimeType, Table, ViewContext, view
 use tm_server_types::{config::ServerConfig, event::Event};
 
 use crate::{
-    auth::Authorization,
-    competition::tab_competition,
-    r#match::{leaderboard::MatchLeaderboardRules, match_state::MatchState},
-    registration::RegistrationSettings,
+    auth::Authorization, competition::tab_competition, r#match::match_state::MatchState,
     server::tab_tm_server,
-    tournament::tab_tournament,
 };
 
 pub mod event;
@@ -44,7 +40,6 @@ pub struct TmMatchV1 {
     tournament_id: u32,
     competition_id: u32,
 
-    //scheduling: Scheduling,
     /// The assigned server that is currently used by this match.
     server_id: Option<String>,
 
@@ -58,9 +53,6 @@ pub struct TmMatchV1 {
 
     status: MatchStatus,
     state: MatchState,
-
-    permitted_entities: MatchEntityRules,
-    //leaderboard: MatchLeaderboardRules,
 }
 
 impl TmMatchV1 {
@@ -143,9 +135,7 @@ pub fn create_match(
         pre_match_config: None,
         match_config: None,
         post_match_config: None,
-        //leaderboard: MatchLeaderboardRules::new(),
         state: MatchState::new(),
-        permitted_entities: MatchEntityRules::new(),
     };
 
     ctx.db.tab_tm_match().try_insert(tm_match)?;
