@@ -2,7 +2,7 @@ use spacetimedb::{ReducerContext, Table};
 
 use crate::{
     server::tab_tm_server,
-    user::{User as UserStruct, UserIdentity, user as db_user, user_identity},
+    user::{User as UserStruct, UserIdentity, tab_user as db_user, user_identity},
 };
 
 pub mod auth;
@@ -32,7 +32,7 @@ fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
         let preferred_username = String::from("Mr.Joermungandr");
 
         ctx.db
-            .user()
+            .tab_user()
             .try_insert(UserStruct::new(account_id.clone(), preferred_username))?;
         ctx.db
             .user_identity()

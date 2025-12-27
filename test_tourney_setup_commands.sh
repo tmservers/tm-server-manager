@@ -48,6 +48,6 @@ spacetime call tm-tourney-manager create_competition "Playoffs" 5 null
 spacetime call tm-tourney-manager create_match 7 null
 spacetime call tm-tourney-manager create_match 7 null
 
-# curl -X POST http://localhost:1234/v1/database/tm-tourney-manager/call/create_connection \
-#      -H "Content-Type: application/json" \
-#      -d '[{"MatchV1": 2},{"MatchV1": 1}]'
+curl -X POST http://localhost:1234/v1/database/tm-tourney-manager/call/create_connection \
+     -H "Content-Type: application/json" \
+     -d '[{"MatchV1": 2},{"MatchV1": 1}, {"Waiting": {}}]'

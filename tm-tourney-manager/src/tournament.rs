@@ -6,7 +6,7 @@ use spacetimedb::{
 use crate::{
     auth::Authorization,
     competition::{CompetitionV1, tab_competition},
-    user::{user__view, user_identity__view},
+    user::{tab_user__view, user_identity__view},
 };
 
 /// A tournament is a logical grouping of competitions and also the only way to obtain a competition in the first place.

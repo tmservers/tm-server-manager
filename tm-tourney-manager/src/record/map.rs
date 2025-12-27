@@ -3,7 +3,7 @@ use spacetimedb::{AnonymousViewContext, ReducerContext, Table, Timestamp, reduce
 use crate::{
     auth::Authorization,
     record::TmRecord,
-    user::{User, user__view},
+    user::{User, tab_user__view},
 };
 
 #[table(
@@ -53,7 +53,7 @@ pub fn map_record(ctx: &AnonymousViewContext) -> Vec<TmRecord> {
         .record_id()
         .filter("vjyNNUu997cC5PW8e3x7Y9RsAF0")
         .map(|r| {
-            let player = ctx.db.user().account_id().find(r.player()).unwrap();
+            let player = ctx.db.tab_user().account_id().find(r.player()).unwrap();
             r.with_player_info(player)
         })
         .collect()
