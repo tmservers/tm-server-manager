@@ -1,3 +1,4 @@
+use petgraph::{Directed, Graph, acyclic::Acyclic, csr::Csr, data::FromElements};
 use spacetimedb::{ReducerContext, SpacetimeType, Table, ViewContext, reducer, view};
 
 use crate::{
@@ -6,6 +7,7 @@ use crate::{
 };
 
 #[spacetimedb::table(name = tab_competition_connection,index(name=connection_exists,btree(columns=[connection_from_variant,connection_from,connection_to_variant,connection_to])))]
+#[derive(Debug, Clone, Copy)]
 pub struct TabCompetitionConnection {
     #[index(btree)]
     competition_id: u32,
@@ -19,6 +21,9 @@ pub struct TabCompetitionConnection {
     connection_to_variant: u8,
 
     connection_settings: ConnectionSettings,
+
+    //Wheter the connection has served its purpose and can be skipped.
+    resolved: bool,
 }
 
 /* #[derive(Debug, SpacetimeType)]
@@ -27,7 +32,7 @@ pub enum ConnectionSettings {
     Data(DataConnectionSettings),
 } */
 
-#[derive(Debug, SpacetimeType)]
+#[derive(Debug, SpacetimeType, Clone, Copy)]
 pub enum ConnectionSettings {
     Waiting,
     Data,
@@ -43,7 +48,7 @@ pub struct DataConnectionSettings {
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
-pub enum NodeKindRef {
+pub enum NodeKindHandle {
     MatchV1(u32),
     CompetitionV1(u32),
     MonitoringV1(u32),
@@ -51,17 +56,17 @@ pub enum NodeKindRef {
     SchedulingV1(u32),
 }
 
-impl NodeKindRef {
+impl NodeKindHandle {
     fn get_competition(&self, ctx: &ReducerContext) -> Result<u32, String> {
         match self {
-            NodeKindRef::MatchV1(m) => {
+            NodeKindHandle::MatchV1(m) => {
                 if let Some(ma) = ctx.db.tab_tm_match().id().find(m) {
                     Ok(ma.get_comp_id())
                 } else {
                     Err("Match couldnt be found.".into())
                 }
             }
-            NodeKindRef::CompetitionV1(c) => {
+            NodeKindHandle::CompetitionV1(c) => {
                 if let Some(co) = ctx.db.tab_competition().id().find(c) {
                     if let Some(id) = co.get_comp_id() {
                         Ok(id)
@@ -72,54 +77,54 @@ impl NodeKindRef {
                     Err("Competition could not be found".into())
                 }
             }
-            NodeKindRef::SchedulingV1(sched) => {
+            NodeKindHandle::SchedulingV1(sched) => {
                 if let Some(ma) = ctx.db.tab_schedule().scheduled_id().find(*sched as u64) {
                     Ok(ma.get_comp_id())
                 } else {
                     Err("Schedule could not be found.".into())
                 }
             }
-            NodeKindRef::MonitoringV1(_) => todo!(),
-            NodeKindRef::ServerV1(_) => todo!(),
+            NodeKindHandle::MonitoringV1(_) => todo!(),
+            NodeKindHandle::ServerV1(_) => todo!(),
         }
     }
 
     /// Safety: can only be called when you know the competiiton exists
     fn get_tournament(&self, ctx: &ReducerContext) -> u32 {
         match self {
-            NodeKindRef::MatchV1(m) => {
+            NodeKindHandle::MatchV1(m) => {
                 if let Some(ma) = ctx.db.tab_tm_match().id().find(m) {
                     ma.get_tournament()
                 } else {
                     u32::MAX
                 }
             }
-            NodeKindRef::CompetitionV1(c) => {
+            NodeKindHandle::CompetitionV1(c) => {
                 if let Some(co) = ctx.db.tab_competition().id().find(c) {
                     co.get_tournament()
                 } else {
                     u32::MAX
                 }
             }
-            NodeKindRef::SchedulingV1(sched) => {
+            NodeKindHandle::SchedulingV1(sched) => {
                 if let Some(ma) = ctx.db.tab_schedule().scheduled_id().find(*sched as u64) {
                     ma.get_tournament()
                 } else {
                     u32::MAX
                 }
             }
-            NodeKindRef::MonitoringV1(_) => todo!(),
-            NodeKindRef::ServerV1(_) => todo!(),
+            NodeKindHandle::MonitoringV1(_) => todo!(),
+            NodeKindHandle::ServerV1(_) => todo!(),
         }
     }
 
     fn split(self) -> (u8, u32) {
         match self {
-            NodeKindRef::MatchV1(m) => (1, m),
-            NodeKindRef::CompetitionV1(c) => (2, c),
-            NodeKindRef::SchedulingV1(s) => (3, s),
-            NodeKindRef::MonitoringV1(_) => todo!(),
-            NodeKindRef::ServerV1(_) => todo!(),
+            NodeKindHandle::MatchV1(m) => (1, m),
+            NodeKindHandle::CompetitionV1(c) => (2, c),
+            NodeKindHandle::SchedulingV1(s) => (3, s),
+            NodeKindHandle::MonitoringV1(_) => todo!(),
+            NodeKindHandle::ServerV1(_) => todo!(),
         }
     }
 
@@ -131,14 +136,34 @@ impl NodeKindRef {
             _ => unreachable!(),
         }
     }
+
+    /* fn resolve(&self, ctx: &ReducerContext) -> Box<dyn NodeBehaviour> {
+        match self {
+            NodeKindHandle::MatchV1(m) => ctx.db.tab_tm_match().id().find(m),
+            NodeKindHandle::CompetitionV1(_) => todo!(),
+            NodeKindHandle::MonitoringV1(_) => todo!(),
+            NodeKindHandle::ServerV1(_) => todo!(),
+            NodeKindHandle::SchedulingV1(_) => todo!(),
+        }
+    } */
+
+    /* fn get_unique(self) -> u64 {
+        match self {
+            NodeKindRef::MatchV1(m) => (1u64 << 32) + m as u64,
+            NodeKindRef::CompetitionV1(_) => (2u64 << 32) + m as u64,
+            NodeKindRef::MonitoringV1(_) => todo!(),
+            NodeKindRef::ServerV1(_) => todo!(),
+            NodeKindRef::SchedulingV1(_) => todo!(),
+        }
+    } */
 }
 
 /// Since we need to check either way if the two thing have the same parent we can omit specifing the competition manually.
 #[reducer]
 pub fn create_connection(
     ctx: &ReducerContext,
-    connection_from: NodeKindRef,
-    connection_to: NodeKindRef,
+    connection_from: NodeKindHandle,
+    connection_to: NodeKindHandle,
     setting: ConnectionSettings,
 ) -> Result<(), String> {
     let account_id = ctx.get_user()?;
@@ -187,6 +212,7 @@ pub fn create_connection(
             connection_from_variant,
             connection_to_variant,
             connection_settings: ConnectionSettings::Waiting,
+            resolved: false,
         })?;
 
     Ok(())
@@ -197,8 +223,8 @@ pub struct CompetitionConnection {
     tournament_id: u32,
     competition_id: u32,
 
-    connection_from: NodeKindRef,
-    connection_to: NodeKindRef,
+    connection_from: NodeKindHandle,
+    connection_to: NodeKindHandle,
 
     connection_settings: ConnectionSettings,
 }
@@ -213,11 +239,56 @@ pub fn competition_connection(ctx: &ViewContext) -> Vec<CompetitionConnection> {
         .map(|v| CompetitionConnection {
             tournament_id: v.tournament_id,
             competition_id: v.competition_id,
-            connection_from: NodeKindRef::combine(v.connection_from_variant, v.connection_from),
-            connection_to: NodeKindRef::combine(v.connection_to_variant, v.connection_to),
+            connection_from: NodeKindHandle::combine(v.connection_from_variant, v.connection_from),
+            connection_to: NodeKindHandle::combine(v.connection_to_variant, v.connection_to),
             connection_settings: v.connection_settings,
         })
         .collect()
 }
 
-trait ConnectionBehaviour {}
+/* trait NodeBehaviour {
+    fn is_finished(&self) -> bool;
+
+    fn try_start(&self);
+} */
+
+#[reducer]
+pub fn internal_graph_resolution_node_finished(
+    ctx: &ReducerContext,
+    competition_id: u32,
+    trigger: NodeKindHandle,
+) -> Result<(), String> {
+    if !ctx.sender_auth().is_internal() {
+        return Err(
+            "Graph evaluation can not be invoked manually due to its reactive nature.".into(),
+        );
+    }
+
+    let nodes = ctx
+        .db
+        .tab_competition_connection()
+        .competition_id()
+        .filter(competition_id)
+        .filter(|c| !c.resolved)
+        .map(|t| CompetitionConnection {
+            tournament_id: t.tournament_id,
+            competition_id: t.competition_id,
+            connection_from: NodeKindHandle::combine(t.connection_from_variant, t.connection_from),
+            connection_to: NodeKindHandle::combine(t.connection_to_variant, t.connection_to),
+            connection_settings: t.connection_settings,
+        });
+
+    for affected_connection in nodes
+        .filter(|n| n.connection_from == trigger)
+        .map(|c| c.connection_to)
+    {
+        //affected_connection.try_start()
+        log::warn!("{affected_connection:?}");
+    }
+
+    /* .map(|v| (v.connection_from, v.connection_to, v.connection_settings)); */
+    //let graph = Graph::<(), ConnectionSettings, Directed>::from_edges(iterable);
+    //let graph = Acyclic::try_from_graph(graph).map_err(|e| format!("{e:?}"))?;
+
+    Ok(())
+}

@@ -23,6 +23,8 @@ gbx-header = "0"
 #gbx-rs.workspace = true
 base64.workspace = true
 
+petgraph.workspace = true
+
 
 [features]
 default = ["spacetime"]

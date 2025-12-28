@@ -7,7 +7,6 @@ use crate::{
 };
 
 pub mod event;
-mod leaderboard;
 pub mod match_state;
 
 // The table name needs to be plural since match is a rust keyword
@@ -255,15 +254,6 @@ pub struct MatchTemplate {
     id: u32,
 
     creator: String,
-}
-
-#[derive(Debug, SpacetimeType)]
-pub struct MatchEntityRules {}
-
-impl MatchEntityRules {
-    fn new() -> Self {
-        MatchEntityRules {}
-    }
 }
 
 #[view(name=tm_match,public)]

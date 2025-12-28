@@ -4,7 +4,7 @@ use tm_server_types::event::Event;
 use crate::{
     auth::Authorization,
     r#match::{
-        event::{MatchEvent, match_event},
+        event::{TmMatchEvent, tab_tm_match_event},
         match_state::MatchState,
         tab_tm_match,
     },
@@ -35,7 +35,7 @@ pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
         };
 
         let tournament_id = tm_match.get_tournament();
-        ctx.db.match_event().insert(MatchEvent {
+        ctx.db.tab_tm_match_event().insert(TmMatchEvent {
             tournament_id,
             match_id,
             event,

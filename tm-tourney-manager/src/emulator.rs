@@ -1,7 +1,7 @@
 use spacetimedb::{AnonymousViewContext, SpacetimeType, ViewContext, view};
 use tm_server_types::event::Event;
 
-use crate::r#match::event::match_event__view;
+use crate::r#match::event::tab_tm_match_event__view;
 
 //TODO probably factor out in own crate for proper support in client applications.
 pub struct LeaderboardEmulator {
@@ -74,7 +74,7 @@ pub fn match_standings(ctx: &AnonymousViewContext, /* TODO: match id */) -> Opti
     let match_id: u32 = 1; //TODO get this from the view arg.
 
     //TODO
-    for event in ctx.db.match_event().event_match().filter(match_id) {}
+    for event in ctx.db.tab_tm_match_event().event_match().filter(match_id) {}
 
     None
 }
