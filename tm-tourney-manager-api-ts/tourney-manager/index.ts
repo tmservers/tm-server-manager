@@ -123,8 +123,8 @@ import MyJobsRow from "./my_jobs_table";
 export { MyJobsRow };
 import MyTournamentRow from "./my_tournament_table";
 export { MyTournamentRow };
-import RegisterdPlayerRow from "./registerd_player_table";
-export { RegisterdPlayerRow };
+import RegisteredPlayerRow from "./registered_player_table";
+export { RegisteredPlayerRow };
 import ScheduleRow from "./schedule_table";
 export { ScheduleRow };
 import TabCompetitionRow from "./tab_competition_table";
@@ -718,12 +718,12 @@ const tablesSchema = __schema(
     ],
   }, MyTournamentRow),
   __table({
-    name: 'registerd_player',
+    name: 'registered_player',
     indexes: [
     ],
     constraints: [
     ],
-  }, RegisterdPlayerRow),
+  }, RegisteredPlayerRow),
   __table({
     name: 'schedule',
     indexes: [

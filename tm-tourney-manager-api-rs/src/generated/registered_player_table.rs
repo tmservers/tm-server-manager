@@ -5,42 +5,42 @@
 use super::registered_player_type::RegisteredPlayer;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-/// Table handle for the table `registerd_player`.
+/// Table handle for the table `registered_player`.
 ///
-/// Obtain a handle from the [`RegisterdPlayerTableAccess::registerd_player`] method on [`super::RemoteTables`],
-/// like `ctx.db.registerd_player()`.
+/// Obtain a handle from the [`RegisteredPlayerTableAccess::registered_player`] method on [`super::RemoteTables`],
+/// like `ctx.db.registered_player()`.
 ///
 /// Users are encouraged not to explicitly reference this type,
 /// but to directly chain method calls,
-/// like `ctx.db.registerd_player().on_insert(...)`.
-pub struct RegisterdPlayerTableHandle<'ctx> {
+/// like `ctx.db.registered_player().on_insert(...)`.
+pub struct RegisteredPlayerTableHandle<'ctx> {
     imp: __sdk::TableHandle<RegisteredPlayer>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the table `registerd_player`.
+/// Extension trait for access to the table `registered_player`.
 ///
 /// Implemented for [`super::RemoteTables`].
-pub trait RegisterdPlayerTableAccess {
+pub trait RegisteredPlayerTableAccess {
     #[allow(non_snake_case)]
-    /// Obtain a [`RegisterdPlayerTableHandle`], which mediates access to the table `registerd_player`.
-    fn registerd_player(&self) -> RegisterdPlayerTableHandle<'_>;
+    /// Obtain a [`RegisteredPlayerTableHandle`], which mediates access to the table `registered_player`.
+    fn registered_player(&self) -> RegisteredPlayerTableHandle<'_>;
 }
 
-impl RegisterdPlayerTableAccess for super::RemoteTables {
-    fn registerd_player(&self) -> RegisterdPlayerTableHandle<'_> {
-        RegisterdPlayerTableHandle {
-            imp: self.imp.get_table::<RegisteredPlayer>("registerd_player"),
+impl RegisteredPlayerTableAccess for super::RemoteTables {
+    fn registered_player(&self) -> RegisteredPlayerTableHandle<'_> {
+        RegisteredPlayerTableHandle {
+            imp: self.imp.get_table::<RegisteredPlayer>("registered_player"),
             ctx: std::marker::PhantomData,
         }
     }
 }
 
-pub struct RegisterdPlayerInsertCallbackId(__sdk::CallbackId);
-pub struct RegisterdPlayerDeleteCallbackId(__sdk::CallbackId);
+pub struct RegisteredPlayerInsertCallbackId(__sdk::CallbackId);
+pub struct RegisteredPlayerDeleteCallbackId(__sdk::CallbackId);
 
-impl<'ctx> __sdk::Table for RegisterdPlayerTableHandle<'ctx> {
+impl<'ctx> __sdk::Table for RegisteredPlayerTableHandle<'ctx> {
     type Row = RegisteredPlayer;
     type EventContext = super::EventContext;
 
@@ -51,36 +51,36 @@ impl<'ctx> __sdk::Table for RegisterdPlayerTableHandle<'ctx> {
         self.imp.iter()
     }
 
-    type InsertCallbackId = RegisterdPlayerInsertCallbackId;
+    type InsertCallbackId = RegisteredPlayerInsertCallbackId;
 
     fn on_insert(
         &self,
         callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
-    ) -> RegisterdPlayerInsertCallbackId {
-        RegisterdPlayerInsertCallbackId(self.imp.on_insert(Box::new(callback)))
+    ) -> RegisteredPlayerInsertCallbackId {
+        RegisteredPlayerInsertCallbackId(self.imp.on_insert(Box::new(callback)))
     }
 
-    fn remove_on_insert(&self, callback: RegisterdPlayerInsertCallbackId) {
+    fn remove_on_insert(&self, callback: RegisteredPlayerInsertCallbackId) {
         self.imp.remove_on_insert(callback.0)
     }
 
-    type DeleteCallbackId = RegisterdPlayerDeleteCallbackId;
+    type DeleteCallbackId = RegisteredPlayerDeleteCallbackId;
 
     fn on_delete(
         &self,
         callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
-    ) -> RegisterdPlayerDeleteCallbackId {
-        RegisterdPlayerDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
+    ) -> RegisteredPlayerDeleteCallbackId {
+        RegisteredPlayerDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
     }
 
-    fn remove_on_delete(&self, callback: RegisterdPlayerDeleteCallbackId) {
+    fn remove_on_delete(&self, callback: RegisteredPlayerDeleteCallbackId) {
         self.imp.remove_on_delete(callback.0)
     }
 }
 
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
-    let _table = client_cache.get_or_make_table::<RegisteredPlayer>("registerd_player");
+    let _table = client_cache.get_or_make_table::<RegisteredPlayer>("registered_player");
 }
 
 #[doc(hidden)]

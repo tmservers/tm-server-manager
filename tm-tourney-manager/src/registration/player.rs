@@ -10,7 +10,7 @@ pub struct RegisteredPlayer {
     registered_at: Timestamp,
 }
 
-#[view(name=registerd_player,public)]
+#[view(name=registered_player,public)]
 pub fn registered_player(ctx: &AnonymousViewContext) -> Query<RegisteredPlayer> {
     ctx.from
         .tab_registered_player()

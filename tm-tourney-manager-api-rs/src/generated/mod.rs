@@ -89,7 +89,7 @@ pub mod post_event_reducer;
 pub mod post_record_reducer;
 pub mod post_round_replay_procedure;
 pub mod register_player_reducer;
-pub mod registerd_player_table;
+pub mod registered_player_table;
 pub mod registered_player_type;
 pub mod registered_team_type;
 pub mod registration_player_settings_type;
@@ -287,7 +287,7 @@ pub use post_round_replay_procedure::post_round_replay;
 pub use register_player_reducer::{
     register_player, set_flags_for_register_player, RegisterPlayerCallbackId,
 };
-pub use registerd_player_table::*;
+pub use registered_player_table::*;
 pub use registered_player_type::RegisteredPlayer;
 pub use registered_team_type::RegisteredTeam;
 pub use registration_player_settings_type::RegistrationPlayerSettings;
@@ -592,7 +592,7 @@ pub struct DbUpdate {
     match_template: __sdk::TableUpdate<MatchTemplate>,
     my_jobs: __sdk::TableUpdate<TmWorkerJobs>,
     my_tournament: __sdk::TableUpdate<MyTournamentV1>,
-    registerd_player: __sdk::TableUpdate<RegisteredPlayer>,
+    registered_player: __sdk::TableUpdate<RegisteredPlayer>,
     schedule: __sdk::TableUpdate<ScheduleV1>,
     tab_competition: __sdk::TableUpdate<CompetitionV1>,
     tab_competition_connection: __sdk::TableUpdate<TabCompetitionConnection>,
@@ -666,9 +666,9 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "my_tournament" => db_update
                     .my_tournament
                     .append(my_tournament_table::parse_table_update(table_update)?),
-                "registerd_player" => db_update
-                    .registerd_player
-                    .append(registerd_player_table::parse_table_update(table_update)?),
+                "registered_player" => db_update
+                    .registered_player
+                    .append(registered_player_table::parse_table_update(table_update)?),
                 "schedule" => db_update
                     .schedule
                     .append(schedule_table::parse_table_update(table_update)?),
@@ -866,8 +866,8 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.my_jobs = cache.apply_diff_to_table::<TmWorkerJobs>("my_jobs", &self.my_jobs);
         diff.my_tournament =
             cache.apply_diff_to_table::<MyTournamentV1>("my_tournament", &self.my_tournament);
-        diff.registerd_player = cache
-            .apply_diff_to_table::<RegisteredPlayer>("registerd_player", &self.registerd_player);
+        diff.registered_player = cache
+            .apply_diff_to_table::<RegisteredPlayer>("registered_player", &self.registered_player);
         diff.schedule = cache.apply_diff_to_table::<ScheduleV1>("schedule", &self.schedule);
         diff.this_tm_server =
             cache.apply_diff_to_table::<TmServerV1>("this_tm_server", &self.this_tm_server);
@@ -897,7 +897,7 @@ pub struct AppliedDiff<'r> {
     match_template: __sdk::TableAppliedDiff<'r, MatchTemplate>,
     my_jobs: __sdk::TableAppliedDiff<'r, TmWorkerJobs>,
     my_tournament: __sdk::TableAppliedDiff<'r, MyTournamentV1>,
-    registerd_player: __sdk::TableAppliedDiff<'r, RegisteredPlayer>,
+    registered_player: __sdk::TableAppliedDiff<'r, RegisteredPlayer>,
     schedule: __sdk::TableAppliedDiff<'r, ScheduleV1>,
     tab_competition: __sdk::TableAppliedDiff<'r, CompetitionV1>,
     tab_competition_connection: __sdk::TableAppliedDiff<'r, TabCompetitionConnection>,
@@ -979,8 +979,8 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             event,
         );
         callbacks.invoke_table_row_callbacks::<RegisteredPlayer>(
-            "registerd_player",
-            &self.registerd_player,
+            "registered_player",
+            &self.registered_player,
             event,
         );
         callbacks.invoke_table_row_callbacks::<ScheduleV1>("schedule", &self.schedule, event);
@@ -1817,7 +1817,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
         match_template_table::register_table(client_cache);
         my_jobs_table::register_table(client_cache);
         my_tournament_table::register_table(client_cache);
-        registerd_player_table::register_table(client_cache);
+        registered_player_table::register_table(client_cache);
         schedule_table::register_table(client_cache);
         tab_competition_table::register_table(client_cache);
         tab_competition_connection_table::register_table(client_cache);
