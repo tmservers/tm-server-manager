@@ -554,9 +554,13 @@ const tablesSchema = __schema(
       { name: 'scheduled_id', algorithm: 'btree', columns: [
         'scheduledId',
       ] },
+      { name: 'tournament_id', algorithm: 'btree', columns: [
+        'tournamentId',
+      ] },
     ],
     constraints: [
       { name: 'tab_tournament_status_schedule_scheduled_id_key', constraint: 'unique', columns: ['scheduledId'] },
+      { name: 'tab_tournament_status_schedule_tournament_id_key', constraint: 'unique', columns: ['tournamentId'] },
     ],
   }, TabTournamentStatusScheduleRow),
   __table({

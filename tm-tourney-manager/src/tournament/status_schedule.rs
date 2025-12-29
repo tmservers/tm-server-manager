@@ -10,6 +10,7 @@ pub struct TournamentStatusScheduleV1 {
 
     pub scheduled_at: ScheduleAt,
 
+    #[unique]
     pub tournament_id: u32,
     pub new_status: TournamentStatus,
 }
@@ -71,11 +72,8 @@ pub fn schedule_tournament_status_change(
     // If there is an existing scheduled status change for this tournament, remove it
     ctx.db
         .tab_tournament_status_schedule()
-        .iter()
-        .filter(|s| s.tournament_id == tournament.id)
-        .for_each(|s| {
-            ctx.db.tab_tournament_status_schedule().delete(s);
-        });
+        .tournament_id()
+        .delete(schedule.tournament_id);
 
     ctx.db
         .tab_tournament_status_schedule()

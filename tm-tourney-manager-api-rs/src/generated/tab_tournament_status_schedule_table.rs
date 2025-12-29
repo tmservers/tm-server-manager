@@ -86,6 +86,7 @@ pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::Remote
     let _table = client_cache
         .get_or_make_table::<TournamentStatusScheduleV1>("tab_tournament_status_schedule");
     _table.add_unique_constraint::<u64>("scheduled_id", |row| &row.scheduled_id);
+    _table.add_unique_constraint::<u32>("tournament_id", |row| &row.tournament_id);
 }
 pub struct TabTournamentStatusScheduleUpdateCallbackId(__sdk::CallbackId);
 
@@ -141,6 +142,36 @@ impl<'ctx> TabTournamentStatusScheduleScheduledIdUnique<'ctx> {
     /// Find the subscribed row whose `scheduled_id` column value is equal to `col_val`,
     /// if such a row is present in the client cache.
     pub fn find(&self, col_val: &u64) -> Option<TournamentStatusScheduleV1> {
+        self.imp.find(col_val)
+    }
+}
+
+/// Access to the `tournament_id` unique index on the table `tab_tournament_status_schedule`,
+/// which allows point queries on the field of the same name
+/// via the [`TabTournamentStatusScheduleTournamentIdUnique::find`] method.
+///
+/// Users are encouraged not to explicitly reference this type,
+/// but to directly chain method calls,
+/// like `ctx.db.tab_tournament_status_schedule().tournament_id().find(...)`.
+pub struct TabTournamentStatusScheduleTournamentIdUnique<'ctx> {
+    imp: __sdk::UniqueConstraintHandle<TournamentStatusScheduleV1, u32>,
+    phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
+}
+
+impl<'ctx> TabTournamentStatusScheduleTableHandle<'ctx> {
+    /// Get a handle on the `tournament_id` unique index on the table `tab_tournament_status_schedule`.
+    pub fn tournament_id(&self) -> TabTournamentStatusScheduleTournamentIdUnique<'ctx> {
+        TabTournamentStatusScheduleTournamentIdUnique {
+            imp: self.imp.get_unique_constraint::<u32>("tournament_id"),
+            phantom: std::marker::PhantomData,
+        }
+    }
+}
+
+impl<'ctx> TabTournamentStatusScheduleTournamentIdUnique<'ctx> {
+    /// Find the subscribed row whose `tournament_id` column value is equal to `col_val`,
+    /// if such a row is present in the client cache.
+    pub fn find(&self, col_val: &u32) -> Option<TournamentStatusScheduleV1> {
         self.imp.find(col_val)
     }
 }
