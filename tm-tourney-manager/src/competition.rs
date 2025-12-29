@@ -1,4 +1,4 @@
-use spacetimedb::{AnonymousViewContext, Query, ReducerContext, Table, Timestamp, reducer, view};
+use spacetimedb::{reducer, view, AnonymousViewContext, Query, ReducerContext, Table, Timestamp};
 
 use crate::{auth::Authorization, registration::RegistrationSettings};
 

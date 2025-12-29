@@ -1,11 +1,11 @@
 use spacetimedb::{
-    AnonymousViewContext, Query, ReducerContext, SpacetimeType, Table, Timestamp, ViewContext,
-    reducer, table, view,
+    reducer, table, view, AnonymousViewContext, Query, ReducerContext, SpacetimeType, Table,
+    Timestamp, ViewContext,
 };
 
 use crate::{
     auth::Authorization,
-    competition::{CompetitionV1, tab_competition},
+    competition::{tab_competition, CompetitionV1},
     user::{tab_user__view, user_identity__view},
 };
 
@@ -58,7 +58,13 @@ impl TournamentStatus {
 /// Requires name, description, starting and ending timestamps.
 /// Description can be empty.
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-fn create_tournament(ctx: &ReducerContext, name: String, description: String, starting_at: Timestamp, ending_at: Timestamp) -> Result<(), String> {
+fn create_tournament(
+    ctx: &ReducerContext,
+    name: String,
+    description: String,
+    starting_at: Timestamp,
+    ending_at: Timestamp,
+) -> Result<(), String> {
     let user = ctx.get_user()?;
 
     let tournament = ctx.db.tab_tournament().try_insert(TournamentV1 {
@@ -134,13 +140,17 @@ fn tournament_edit_dates(
 
     // Check if the current status needs to be updated based on the new dates
     let current_time = ctx.timestamp;
-    if tournament.status == TournamentStatus::Announced && current_time >= starting_at { // Announced and starting time passed -> Ongoing
+    if tournament.status == TournamentStatus::Announced && current_time >= starting_at {
+        // Announced and starting time passed -> Ongoing
         tournament.status = TournamentStatus::Ongoing;
-    } else if tournament.status == TournamentStatus::Ongoing && current_time >= ending_at { // Ongoing and ending time passed -> Ended
+    } else if tournament.status == TournamentStatus::Ongoing && current_time >= ending_at {
+        // Ongoing and ending time passed -> Ended
         tournament.status = TournamentStatus::Ended;
-    } else if tournament.status == TournamentStatus::Ongoing && current_time < starting_at { // Ongoing but starting time is now in the future -> Announced
+    } else if tournament.status == TournamentStatus::Ongoing && current_time < starting_at {
+        // Ongoing but starting time is now in the future -> Announced
         tournament.status = TournamentStatus::Announced;
-    } else if tournament.status == TournamentStatus::Ended && current_time < ending_at { // Ended but ending time is now in the future -> Ongoing
+    } else if tournament.status == TournamentStatus::Ended && current_time < ending_at {
+        // Ended but ending time is now in the future -> Ongoing
         tournament.status = TournamentStatus::Ongoing;
     }
 
@@ -153,10 +163,7 @@ fn tournament_edit_dates(
 }
 
 #[spacetimedb::reducer]
-fn tournament_update_status(
-    ctx: &ReducerContext,
-    tournament_id: u32
-) -> Result<(), String> {
+fn tournament_update_status(ctx: &ReducerContext, tournament_id: u32) -> Result<(), String> {
     let user = ctx.get_user()?;
 
     let Some(mut tournament) = ctx.db.tab_tournament().id().find(tournament_id) else {
