@@ -7,14 +7,14 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct TournamentEditDescriptionArgs {
-    pub tounrnament_id: u32,
+    pub tournament_id: u32,
     pub description: String,
 }
 
 impl From<TournamentEditDescriptionArgs> for super::Reducer {
     fn from(args: TournamentEditDescriptionArgs) -> Self {
         Self::TournamentEditDescription {
-            tounrnament_id: args.tounrnament_id,
+            tournament_id: args.tournament_id,
             description: args.description,
         }
     }
@@ -38,7 +38,7 @@ pub trait tournament_edit_description {
     ///  and its status can be observed by listening for [`Self::on_tournament_edit_description`] callbacks.
     fn tournament_edit_description(
         &self,
-        tounrnament_id: u32,
+        tournament_id: u32,
         description: String,
     ) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `tournament_edit_description`.
@@ -60,13 +60,13 @@ pub trait tournament_edit_description {
 impl tournament_edit_description for super::RemoteReducers {
     fn tournament_edit_description(
         &self,
-        tounrnament_id: u32,
+        tournament_id: u32,
         description: String,
     ) -> __sdk::Result<()> {
         self.imp.call_reducer(
             "tournament_edit_description",
             TournamentEditDescriptionArgs {
-                tounrnament_id,
+                tournament_id,
                 description,
             },
         )
@@ -84,7 +84,7 @@ impl tournament_edit_description for super::RemoteReducers {
                         __sdk::ReducerEvent {
                             reducer:
                                 super::Reducer::TournamentEditDescription {
-                                    tounrnament_id,
+                                    tournament_id,
                                     description,
                                 },
                             ..
@@ -94,7 +94,7 @@ impl tournament_edit_description for super::RemoteReducers {
                 else {
                     unreachable!()
                 };
-                callback(ctx, tounrnament_id, description)
+                callback(ctx, tournament_id, description)
             }),
         ))
     }

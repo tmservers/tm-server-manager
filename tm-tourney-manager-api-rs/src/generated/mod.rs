@@ -13,6 +13,7 @@ pub mod client_connected_reducer;
 pub mod common_type;
 pub mod competition_connection_table;
 pub mod competition_connection_type;
+pub mod competition_edit_name_reducer;
 pub mod competition_record_table;
 pub mod competition_registration_settings_reducer;
 pub mod competition_status_type;
@@ -78,6 +79,7 @@ pub mod my_tournament_table;
 pub mod my_tournament_v_1_type;
 pub mod node_kind_handle_type;
 pub mod on_schedule_triggered_reducer;
+pub mod on_tournament_status_schedule_triggered_reducer;
 pub mod play_loop_end_type;
 pub mod play_loop_start_type;
 pub mod player_chat_type;
@@ -89,6 +91,7 @@ pub mod post_event_reducer;
 pub mod post_record_reducer;
 pub mod post_round_replay_procedure;
 pub mod register_player_reducer;
+pub mod registered_player_table;
 pub mod registered_player_type;
 pub mod registered_team_type;
 pub mod registration_player_settings_type;
@@ -123,6 +126,7 @@ pub mod tab_tm_match_event_table;
 pub mod tab_tm_match_state_table;
 pub mod tab_tm_match_table;
 pub mod tab_tm_server_table;
+pub mod tab_tournament_status_schedule_table;
 pub mod tab_tournament_table;
 pub mod tab_user_table;
 pub mod team_type;
@@ -150,9 +154,13 @@ pub mod tm_worker_jobs_table;
 pub mod tm_worker_jobs_type;
 pub mod tm_worker_table;
 pub mod tm_worker_type;
+pub mod tournament_edit_dates_reducer;
 pub mod tournament_edit_description_reducer;
+pub mod tournament_edit_name_reducer;
+pub mod tournament_status_schedule_v_1_type;
 pub mod tournament_status_type;
 pub mod tournament_table;
+pub mod tournament_update_status_reducer;
 pub mod tournament_v_1_type;
 pub mod try_start_match_reducer;
 pub mod unloading_map_end_type;
@@ -177,6 +185,9 @@ pub use client_connected_reducer::{
 pub use common_type::Common;
 pub use competition_connection_table::*;
 pub use competition_connection_type::CompetitionConnection;
+pub use competition_edit_name_reducer::{
+    competition_edit_name, set_flags_for_competition_edit_name, CompetitionEditNameCallbackId,
+};
 pub use competition_record_table::*;
 pub use competition_registration_settings_reducer::{
     competition_registration_settings, set_flags_for_competition_registration_settings,
@@ -272,6 +283,10 @@ pub use node_kind_handle_type::NodeKindHandle;
 pub use on_schedule_triggered_reducer::{
     on_schedule_triggered, set_flags_for_on_schedule_triggered, OnScheduleTriggeredCallbackId,
 };
+pub use on_tournament_status_schedule_triggered_reducer::{
+    on_tournament_status_schedule_triggered, set_flags_for_on_tournament_status_schedule_triggered,
+    OnTournamentStatusScheduleTriggeredCallbackId,
+};
 pub use play_loop_end_type::PlayLoopEnd;
 pub use play_loop_start_type::PlayLoopStart;
 pub use player_chat_type::PlayerChat;
@@ -285,6 +300,7 @@ pub use post_round_replay_procedure::post_round_replay;
 pub use register_player_reducer::{
     register_player, set_flags_for_register_player, RegisterPlayerCallbackId,
 };
+pub use registered_player_table::*;
 pub use registered_player_type::RegisteredPlayer;
 pub use registered_team_type::RegisteredTeam;
 pub use registration_player_settings_type::RegistrationPlayerSettings;
@@ -323,6 +339,7 @@ pub use tab_tm_match_event_table::*;
 pub use tab_tm_match_state_table::*;
 pub use tab_tm_match_table::*;
 pub use tab_tm_server_table::*;
+pub use tab_tournament_status_schedule_table::*;
 pub use tab_tournament_table::*;
 pub use tab_user_table::*;
 pub use team_type::Team;
@@ -350,12 +367,23 @@ pub use tm_worker_jobs_table::*;
 pub use tm_worker_jobs_type::TmWorkerJobs;
 pub use tm_worker_table::*;
 pub use tm_worker_type::TmWorker;
+pub use tournament_edit_dates_reducer::{
+    set_flags_for_tournament_edit_dates, tournament_edit_dates, TournamentEditDatesCallbackId,
+};
 pub use tournament_edit_description_reducer::{
     set_flags_for_tournament_edit_description, tournament_edit_description,
     TournamentEditDescriptionCallbackId,
 };
+pub use tournament_edit_name_reducer::{
+    set_flags_for_tournament_edit_name, tournament_edit_name, TournamentEditNameCallbackId,
+};
+pub use tournament_status_schedule_v_1_type::TournamentStatusScheduleV1;
 pub use tournament_status_type::TournamentStatus;
 pub use tournament_table::*;
+pub use tournament_update_status_reducer::{
+    set_flags_for_tournament_update_status, tournament_update_status,
+    TournamentUpdateStatusCallbackId,
+};
 pub use tournament_v_1_type::TournamentV1;
 pub use try_start_match_reducer::{
     set_flags_for_try_start_match, try_start_match, TryStartMatchCallbackId,
@@ -388,6 +416,10 @@ pub use way_point_type::WayPoint;
 
 pub enum Reducer {
     ClientConnected,
+    CompetitionEditName {
+        competition_id: u32,
+        name: String,
+    },
     CompetitionRegistrationSettings {
         competition_id: u32,
         registration_settings: RegistrationSettings,
@@ -431,6 +463,9 @@ pub enum Reducer {
     },
     CreateTournament {
         name: String,
+        description: String,
+        starting_at: __sdk::Timestamp,
+        ending_at: __sdk::Timestamp,
     },
     IdentityDisconnected,
     InternalGraphResolutionNodeFinished {
@@ -446,6 +481,9 @@ pub enum Reducer {
     },
     OnScheduleTriggered {
         arg: ScheduleV1,
+    },
+    OnTournamentStatusScheduleTriggered {
+        arg: TournamentStatusScheduleV1,
     },
     PostEvent {
         event: Event,
@@ -466,9 +504,21 @@ pub enum Reducer {
         call_id: u32,
         response: MethodResponse,
     },
+    TournamentEditDates {
+        tournament_id: u32,
+        starting_at: __sdk::Timestamp,
+        ending_at: __sdk::Timestamp,
+    },
     TournamentEditDescription {
-        tounrnament_id: u32,
+        tournament_id: u32,
         description: String,
+    },
+    TournamentEditName {
+        tournament_id: u32,
+        name: String,
+    },
+    TournamentUpdateStatus {
+        tournament_id: u32,
     },
     TryStartMatch {
         match_id: u32,
@@ -494,6 +544,7 @@ impl __sdk::Reducer for Reducer {
     fn reducer_name(&self) -> &'static str {
         match self {
             Reducer::ClientConnected => "client_connected",
+            Reducer::CompetitionEditName { .. } => "competition_edit_name",
             Reducer::CompetitionRegistrationSettings { .. } => "competition_registration_settings",
             Reducer::CreateCompetition { .. } => "create_competition",
             Reducer::CreateConnection { .. } => "create_connection",
@@ -512,12 +563,18 @@ impl __sdk::Reducer for Reducer {
             Reducer::MatchAssignServer { .. } => "match_assign_server",
             Reducer::MatchConfigured { .. } => "match_configured",
             Reducer::OnScheduleTriggered { .. } => "on_schedule_triggered",
+            Reducer::OnTournamentStatusScheduleTriggered { .. } => {
+                "on_tournament_status_schedule_triggered"
+            }
             Reducer::PostEvent { .. } => "post_event",
             Reducer::PostRecord { .. } => "post_record",
             Reducer::RegisterPlayer { .. } => "register_player",
             Reducer::ServerMethodCall { .. } => "server_method_call",
             Reducer::ServerMethodResponse { .. } => "server_method_response",
+            Reducer::TournamentEditDates { .. } => "tournament_edit_dates",
             Reducer::TournamentEditDescription { .. } => "tournament_edit_description",
+            Reducer::TournamentEditName { .. } => "tournament_edit_name",
+            Reducer::TournamentUpdateStatus { .. } => "tournament_update_status",
             Reducer::TryStartMatch { .. } => "try_start_match",
             Reducer::UnregisterPlayer { .. } => "unregister_player",
             Reducer::UpdateMatchConfig { .. } => "update_match_config",
@@ -531,6 +588,7 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
     fn try_from(value: __ws::ReducerCallInfo<__ws::BsatnFormat>) -> __sdk::Result<Self> {
         match &value.reducer_name[..] {
                         "client_connected" => Ok(__sdk::parse_reducer_args::<client_connected_reducer::ClientConnectedArgs>("client_connected", &value.args)?.into()),
+            "competition_edit_name" => Ok(__sdk::parse_reducer_args::<competition_edit_name_reducer::CompetitionEditNameArgs>("competition_edit_name", &value.args)?.into()),
             "competition_registration_settings" => Ok(__sdk::parse_reducer_args::<competition_registration_settings_reducer::CompetitionRegistrationSettingsArgs>("competition_registration_settings", &value.args)?.into()),
             "create_competition" => Ok(__sdk::parse_reducer_args::<create_competition_reducer::CreateCompetitionArgs>("create_competition", &value.args)?.into()),
             "create_connection" => Ok(__sdk::parse_reducer_args::<create_connection_reducer::CreateConnectionArgs>("create_connection", &value.args)?.into()),
@@ -547,12 +605,16 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "match_assign_server" => Ok(__sdk::parse_reducer_args::<match_assign_server_reducer::MatchAssignServerArgs>("match_assign_server", &value.args)?.into()),
             "match_configured" => Ok(__sdk::parse_reducer_args::<match_configured_reducer::MatchConfiguredArgs>("match_configured", &value.args)?.into()),
             "on_schedule_triggered" => Ok(__sdk::parse_reducer_args::<on_schedule_triggered_reducer::OnScheduleTriggeredArgs>("on_schedule_triggered", &value.args)?.into()),
+            "on_tournament_status_schedule_triggered" => Ok(__sdk::parse_reducer_args::<on_tournament_status_schedule_triggered_reducer::OnTournamentStatusScheduleTriggeredArgs>("on_tournament_status_schedule_triggered", &value.args)?.into()),
             "post_event" => Ok(__sdk::parse_reducer_args::<post_event_reducer::PostEventArgs>("post_event", &value.args)?.into()),
             "post_record" => Ok(__sdk::parse_reducer_args::<post_record_reducer::PostRecordArgs>("post_record", &value.args)?.into()),
             "register_player" => Ok(__sdk::parse_reducer_args::<register_player_reducer::RegisterPlayerArgs>("register_player", &value.args)?.into()),
             "server_method_call" => Ok(__sdk::parse_reducer_args::<server_method_call_reducer::ServerMethodCallArgs>("server_method_call", &value.args)?.into()),
             "server_method_response" => Ok(__sdk::parse_reducer_args::<server_method_response_reducer::ServerMethodResponseArgs>("server_method_response", &value.args)?.into()),
+            "tournament_edit_dates" => Ok(__sdk::parse_reducer_args::<tournament_edit_dates_reducer::TournamentEditDatesArgs>("tournament_edit_dates", &value.args)?.into()),
             "tournament_edit_description" => Ok(__sdk::parse_reducer_args::<tournament_edit_description_reducer::TournamentEditDescriptionArgs>("tournament_edit_description", &value.args)?.into()),
+            "tournament_edit_name" => Ok(__sdk::parse_reducer_args::<tournament_edit_name_reducer::TournamentEditNameArgs>("tournament_edit_name", &value.args)?.into()),
+            "tournament_update_status" => Ok(__sdk::parse_reducer_args::<tournament_update_status_reducer::TournamentUpdateStatusArgs>("tournament_update_status", &value.args)?.into()),
             "try_start_match" => Ok(__sdk::parse_reducer_args::<try_start_match_reducer::TryStartMatchArgs>("try_start_match", &value.args)?.into()),
             "unregister_player" => Ok(__sdk::parse_reducer_args::<unregister_player_reducer::UnregisterPlayerArgs>("unregister_player", &value.args)?.into()),
             "update_match_config" => Ok(__sdk::parse_reducer_args::<update_match_config_reducer::UpdateMatchConfigArgs>("update_match_config", &value.args)?.into()),
@@ -579,6 +641,7 @@ pub struct DbUpdate {
     match_template: __sdk::TableUpdate<MatchTemplate>,
     my_jobs: __sdk::TableUpdate<TmWorkerJobs>,
     my_tournament: __sdk::TableUpdate<MyTournamentV1>,
+    registered_player: __sdk::TableUpdate<RegisteredPlayer>,
     schedule: __sdk::TableUpdate<ScheduleV1>,
     tab_competition: __sdk::TableUpdate<CompetitionV1>,
     tab_competition_connection: __sdk::TableUpdate<TabCompetitionConnection>,
@@ -590,6 +653,7 @@ pub struct DbUpdate {
     tab_tm_match_state: __sdk::TableUpdate<TmMatchState>,
     tab_tm_server: __sdk::TableUpdate<TmServerV1>,
     tab_tournament: __sdk::TableUpdate<TournamentV1>,
+    tab_tournament_status_schedule: __sdk::TableUpdate<TournamentStatusScheduleV1>,
     tab_user: __sdk::TableUpdate<User>,
     this_tm_server: __sdk::TableUpdate<TmServerV1>,
     tm_map_record: __sdk::TableUpdate<TmMapRecord>,
@@ -652,6 +716,9 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "my_tournament" => db_update
                     .my_tournament
                     .append(my_tournament_table::parse_table_update(table_update)?),
+                "registered_player" => db_update
+                    .registered_player
+                    .append(registered_player_table::parse_table_update(table_update)?),
                 "schedule" => db_update
                     .schedule
                     .append(schedule_table::parse_table_update(table_update)?),
@@ -685,6 +752,11 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "tab_tournament" => db_update
                     .tab_tournament
                     .append(tab_tournament_table::parse_table_update(table_update)?),
+                "tab_tournament_status_schedule" => {
+                    db_update.tab_tournament_status_schedule.append(
+                        tab_tournament_status_schedule_table::parse_table_update(table_update)?,
+                    )
+                }
                 "tab_user" => db_update
                     .tab_user
                     .append(tab_user_table::parse_table_update(table_update)?),
@@ -797,6 +869,12 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.tab_tournament = cache
             .apply_diff_to_table::<TournamentV1>("tab_tournament", &self.tab_tournament)
             .with_updates_by_pk(|row| &row.id);
+        diff.tab_tournament_status_schedule = cache
+            .apply_diff_to_table::<TournamentStatusScheduleV1>(
+                "tab_tournament_status_schedule",
+                &self.tab_tournament_status_schedule,
+            )
+            .with_updates_by_pk(|row| &row.scheduled_id);
         diff.tab_user = cache
             .apply_diff_to_table::<User>("tab_user", &self.tab_user)
             .with_updates_by_pk(|row| &row.account_id);
@@ -849,6 +927,8 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.my_jobs = cache.apply_diff_to_table::<TmWorkerJobs>("my_jobs", &self.my_jobs);
         diff.my_tournament =
             cache.apply_diff_to_table::<MyTournamentV1>("my_tournament", &self.my_tournament);
+        diff.registered_player = cache
+            .apply_diff_to_table::<RegisteredPlayer>("registered_player", &self.registered_player);
         diff.schedule = cache.apply_diff_to_table::<ScheduleV1>("schedule", &self.schedule);
         diff.this_tm_server =
             cache.apply_diff_to_table::<TmServerV1>("this_tm_server", &self.this_tm_server);
@@ -878,6 +958,7 @@ pub struct AppliedDiff<'r> {
     match_template: __sdk::TableAppliedDiff<'r, MatchTemplate>,
     my_jobs: __sdk::TableAppliedDiff<'r, TmWorkerJobs>,
     my_tournament: __sdk::TableAppliedDiff<'r, MyTournamentV1>,
+    registered_player: __sdk::TableAppliedDiff<'r, RegisteredPlayer>,
     schedule: __sdk::TableAppliedDiff<'r, ScheduleV1>,
     tab_competition: __sdk::TableAppliedDiff<'r, CompetitionV1>,
     tab_competition_connection: __sdk::TableAppliedDiff<'r, TabCompetitionConnection>,
@@ -889,6 +970,7 @@ pub struct AppliedDiff<'r> {
     tab_tm_match_state: __sdk::TableAppliedDiff<'r, TmMatchState>,
     tab_tm_server: __sdk::TableAppliedDiff<'r, TmServerV1>,
     tab_tournament: __sdk::TableAppliedDiff<'r, TournamentV1>,
+    tab_tournament_status_schedule: __sdk::TableAppliedDiff<'r, TournamentStatusScheduleV1>,
     tab_user: __sdk::TableAppliedDiff<'r, User>,
     this_tm_server: __sdk::TableAppliedDiff<'r, TmServerV1>,
     tm_map_record: __sdk::TableAppliedDiff<'r, TmMapRecord>,
@@ -958,6 +1040,11 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             &self.my_tournament,
             event,
         );
+        callbacks.invoke_table_row_callbacks::<RegisteredPlayer>(
+            "registered_player",
+            &self.registered_player,
+            event,
+        );
         callbacks.invoke_table_row_callbacks::<ScheduleV1>("schedule", &self.schedule, event);
         callbacks.invoke_table_row_callbacks::<CompetitionV1>(
             "tab_competition",
@@ -1007,6 +1094,11 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
         callbacks.invoke_table_row_callbacks::<TournamentV1>(
             "tab_tournament",
             &self.tab_tournament,
+            event,
+        );
+        callbacks.invoke_table_row_callbacks::<TournamentStatusScheduleV1>(
+            "tab_tournament_status_schedule",
+            &self.tab_tournament_status_schedule,
             event,
         );
         callbacks.invoke_table_row_callbacks::<User>("tab_user", &self.tab_user, event);
@@ -1792,6 +1884,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
         match_template_table::register_table(client_cache);
         my_jobs_table::register_table(client_cache);
         my_tournament_table::register_table(client_cache);
+        registered_player_table::register_table(client_cache);
         schedule_table::register_table(client_cache);
         tab_competition_table::register_table(client_cache);
         tab_competition_connection_table::register_table(client_cache);
@@ -1803,6 +1896,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
         tab_tm_match_state_table::register_table(client_cache);
         tab_tm_server_table::register_table(client_cache);
         tab_tournament_table::register_table(client_cache);
+        tab_tournament_status_schedule_table::register_table(client_cache);
         tab_user_table::register_table(client_cache);
         this_tm_server_table::register_table(client_cache);
         tm_map_record_table::register_table(client_cache);

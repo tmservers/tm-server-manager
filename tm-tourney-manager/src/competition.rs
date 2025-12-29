@@ -1,4 +1,4 @@
-use spacetimedb::{AnonymousViewContext, Query, ReducerContext, Table, Timestamp, reducer, view};
+use spacetimedb::{reducer, view, AnonymousViewContext, Query, ReducerContext, Table, Timestamp};
 
 use crate::{auth::Authorization, registration::RegistrationSettings};
 
@@ -98,6 +98,25 @@ pub fn create_competition(
     let new_competition =
         unsafe { CompetitionV1::new(name, Some(parent_id), parent_competition.get_tournament()) };
     ctx.db.tab_competition().try_insert(new_competition)?;
+
+    Ok(())
+}
+
+#[reducer]
+pub fn competition_edit_name(
+    ctx: &ReducerContext,
+    competition_id: u32,
+    name: String,
+) -> Result<(), String> {
+    let user = ctx.get_user()?;
+
+    let Some(mut competition) = ctx.db.tab_competition().id().find(competition_id) else {
+        return Err("Invalid competition".into());
+    };
+
+    competition.name = name;
+
+    ctx.db.tab_competition().id().update(competition);
 
     Ok(())
 }

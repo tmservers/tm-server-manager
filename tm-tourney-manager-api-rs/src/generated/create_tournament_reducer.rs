@@ -8,11 +8,19 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[sats(crate = __lib)]
 pub(super) struct CreateTournamentArgs {
     pub name: String,
+    pub description: String,
+    pub starting_at: __sdk::Timestamp,
+    pub ending_at: __sdk::Timestamp,
 }
 
 impl From<CreateTournamentArgs> for super::Reducer {
     fn from(args: CreateTournamentArgs) -> Self {
-        Self::CreateTournament { name: args.name }
+        Self::CreateTournament {
+            name: args.name,
+            description: args.description,
+            starting_at: args.starting_at,
+            ending_at: args.ending_at,
+        }
     }
 }
 
@@ -32,7 +40,13 @@ pub trait create_tournament {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_create_tournament`] callbacks.
-    fn create_tournament(&self, name: String) -> __sdk::Result<()>;
+    fn create_tournament(
+        &self,
+        name: String,
+        description: String,
+        starting_at: __sdk::Timestamp,
+        ending_at: __sdk::Timestamp,
+    ) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `create_tournament`.
     ///
     /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
@@ -42,7 +56,14 @@ pub trait create_tournament {
     /// to cancel the callback.
     fn on_create_tournament(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &String) + Send + 'static,
+        callback: impl FnMut(
+                &super::ReducerEventContext,
+                &String,
+                &String,
+                &__sdk::Timestamp,
+                &__sdk::Timestamp,
+            ) + Send
+            + 'static,
     ) -> CreateTournamentCallbackId;
     /// Cancel a callback previously registered by [`Self::on_create_tournament`],
     /// causing it not to run in the future.
@@ -50,13 +71,33 @@ pub trait create_tournament {
 }
 
 impl create_tournament for super::RemoteReducers {
-    fn create_tournament(&self, name: String) -> __sdk::Result<()> {
-        self.imp
-            .call_reducer("create_tournament", CreateTournamentArgs { name })
+    fn create_tournament(
+        &self,
+        name: String,
+        description: String,
+        starting_at: __sdk::Timestamp,
+        ending_at: __sdk::Timestamp,
+    ) -> __sdk::Result<()> {
+        self.imp.call_reducer(
+            "create_tournament",
+            CreateTournamentArgs {
+                name,
+                description,
+                starting_at,
+                ending_at,
+            },
+        )
     }
     fn on_create_tournament(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &String) + Send + 'static,
+        mut callback: impl FnMut(
+                &super::ReducerEventContext,
+                &String,
+                &String,
+                &__sdk::Timestamp,
+                &__sdk::Timestamp,
+            ) + Send
+            + 'static,
     ) -> CreateTournamentCallbackId {
         CreateTournamentCallbackId(self.imp.on_reducer(
             "create_tournament",
@@ -65,7 +106,13 @@ impl create_tournament for super::RemoteReducers {
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {
-                            reducer: super::Reducer::CreateTournament { name },
+                            reducer:
+                                super::Reducer::CreateTournament {
+                                    name,
+                                    description,
+                                    starting_at,
+                                    ending_at,
+                                },
                             ..
                         },
                     ..
@@ -73,7 +120,7 @@ impl create_tournament for super::RemoteReducers {
                 else {
                     unreachable!()
                 };
-                callback(ctx, name)
+                callback(ctx, name, description, starting_at, ending_at)
             }),
         ))
     }

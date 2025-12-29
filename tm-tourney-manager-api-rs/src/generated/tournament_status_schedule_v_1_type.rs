@@ -8,16 +8,13 @@ use super::tournament_status_type::TournamentStatus;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct TournamentV1 {
-    pub id: u32,
-    pub creator: String,
-    pub name: String,
-    pub starting_at: __sdk::Timestamp,
-    pub ending_at: __sdk::Timestamp,
-    pub description: String,
-    pub status: TournamentStatus,
+pub struct TournamentStatusScheduleV1 {
+    pub scheduled_id: u64,
+    pub scheduled_at: __sdk::ScheduleAt,
+    pub tournament_id: u32,
+    pub new_status: TournamentStatus,
 }
 
-impl __sdk::InModule for TournamentV1 {
+impl __sdk::InModule for TournamentStatusScheduleV1 {
     type Module = super::RemoteModule;
 }
