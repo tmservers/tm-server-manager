@@ -141,17 +141,29 @@ fn tournament_edit_dates(
     // Check if the current status needs to be updated based on the new dates
     let current_time = ctx.timestamp;
     if tournament.status == TournamentStatus::Announced && current_time >= starting_at {
-        // Announced and starting time passed -> Ongoing
-        tournament.status = TournamentStatus::Ongoing;
+        // Announced and starting time passed
+        if current_time < ending_at {
+            // Ending time not yet passed
+            tournament.status = TournamentStatus::Ongoing;
+        } else {
+            // Ending time also passed
+            tournament.status = TournamentStatus::Ended;
+        }
     } else if tournament.status == TournamentStatus::Ongoing && current_time >= ending_at {
-        // Ongoing and ending time passed -> Ended
+        // Ongoing and ending time passed
         tournament.status = TournamentStatus::Ended;
     } else if tournament.status == TournamentStatus::Ongoing && current_time < starting_at {
-        // Ongoing but starting time is now in the future -> Announced
+        // Ongoing but starting time is now in the future
         tournament.status = TournamentStatus::Announced;
     } else if tournament.status == TournamentStatus::Ended && current_time < ending_at {
-        // Ended but ending time is now in the future -> Ongoing
-        tournament.status = TournamentStatus::Ongoing;
+        // Ended but ending time is now in the future
+        if current_time >= starting_at {
+            // Starting time is in the past
+            tournament.status = TournamentStatus::Ongoing;
+        } else {
+            // Starting time is also in the future
+            tournament.status = TournamentStatus::Announced;
+        }
     }
 
     tournament = ctx.db.tab_tournament().id().update(tournament);
