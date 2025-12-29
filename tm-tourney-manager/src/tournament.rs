@@ -55,8 +55,8 @@ impl TournamentStatus {
     }
 }
 
-/// The only thing necessary for a creation of a tounrnant is a unique name.
-/// The rest of the setup can must be made in subsequent calls.
+/// Requires name, description, starting and ending timestamps.
+/// Description can be empty.
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 fn create_tournament(ctx: &ReducerContext, name: String, description: String, starting_at: Timestamp, ending_at: Timestamp) -> Result<(), String> {
     let user = ctx.get_user()?;
