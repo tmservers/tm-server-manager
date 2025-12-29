@@ -156,6 +156,7 @@ pub mod tournament_edit_description_reducer;
 pub mod tournament_edit_name_reducer;
 pub mod tournament_status_type;
 pub mod tournament_table;
+pub mod tournament_update_status_reducer;
 pub mod tournament_v_1_type;
 pub mod try_start_match_reducer;
 pub mod unloading_map_end_type;
@@ -366,6 +367,10 @@ pub use tournament_edit_name_reducer::{
 };
 pub use tournament_status_type::TournamentStatus;
 pub use tournament_table::*;
+pub use tournament_update_status_reducer::{
+    set_flags_for_tournament_update_status, tournament_update_status,
+    TournamentUpdateStatusCallbackId,
+};
 pub use tournament_v_1_type::TournamentV1;
 pub use try_start_match_reducer::{
     set_flags_for_try_start_match, try_start_match, TryStartMatchCallbackId,
@@ -441,6 +446,9 @@ pub enum Reducer {
     },
     CreateTournament {
         name: String,
+        description: String,
+        starting_at: __sdk::Timestamp,
+        ending_at: __sdk::Timestamp,
     },
     IdentityDisconnected,
     InternalGraphResolutionNodeFinished {
@@ -477,17 +485,21 @@ pub enum Reducer {
         response: MethodResponse,
     },
     TournamentEditDates {
-        tounrnament_id: u32,
-        starting_at: Option<__sdk::Timestamp>,
-        ending_at: Option<__sdk::Timestamp>,
+        tournament_id: u32,
+        starting_at: __sdk::Timestamp,
+        ending_at: __sdk::Timestamp,
     },
     TournamentEditDescription {
-        tounrnament_id: u32,
+        tournament_id: u32,
         description: String,
     },
     TournamentEditName {
-        tounrnament_id: u32,
+        tournament_id: u32,
         name: String,
+    },
+    TournamentUpdateStatus {
+        tournament_id: u32,
+        status: TournamentStatus,
     },
     TryStartMatch {
         match_id: u32,
@@ -539,6 +551,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::TournamentEditDates { .. } => "tournament_edit_dates",
             Reducer::TournamentEditDescription { .. } => "tournament_edit_description",
             Reducer::TournamentEditName { .. } => "tournament_edit_name",
+            Reducer::TournamentUpdateStatus { .. } => "tournament_update_status",
             Reducer::TryStartMatch { .. } => "try_start_match",
             Reducer::UnregisterPlayer { .. } => "unregister_player",
             Reducer::UpdateMatchConfig { .. } => "update_match_config",
@@ -576,6 +589,7 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "tournament_edit_dates" => Ok(__sdk::parse_reducer_args::<tournament_edit_dates_reducer::TournamentEditDatesArgs>("tournament_edit_dates", &value.args)?.into()),
             "tournament_edit_description" => Ok(__sdk::parse_reducer_args::<tournament_edit_description_reducer::TournamentEditDescriptionArgs>("tournament_edit_description", &value.args)?.into()),
             "tournament_edit_name" => Ok(__sdk::parse_reducer_args::<tournament_edit_name_reducer::TournamentEditNameArgs>("tournament_edit_name", &value.args)?.into()),
+            "tournament_update_status" => Ok(__sdk::parse_reducer_args::<tournament_update_status_reducer::TournamentUpdateStatusArgs>("tournament_update_status", &value.args)?.into()),
             "try_start_match" => Ok(__sdk::parse_reducer_args::<try_start_match_reducer::TryStartMatchArgs>("try_start_match", &value.args)?.into()),
             "unregister_player" => Ok(__sdk::parse_reducer_args::<unregister_player_reducer::UnregisterPlayerArgs>("unregister_player", &value.args)?.into()),
             "update_match_config" => Ok(__sdk::parse_reducer_args::<update_match_config_reducer::UpdateMatchConfigArgs>("update_match_config", &value.args)?.into()),

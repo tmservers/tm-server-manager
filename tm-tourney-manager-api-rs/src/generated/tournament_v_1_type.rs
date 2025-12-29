@@ -12,8 +12,8 @@ pub struct TournamentV1 {
     pub id: u32,
     pub creator: String,
     pub name: String,
-    pub starting_at: Option<__sdk::Timestamp>,
-    pub ending_at: Option<__sdk::Timestamp>,
+    pub starting_at: __sdk::Timestamp,
+    pub ending_at: __sdk::Timestamp,
     pub description: String,
     pub status: TournamentStatus,
 }

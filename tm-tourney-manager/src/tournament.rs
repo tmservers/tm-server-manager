@@ -23,8 +23,8 @@ pub struct TournamentV1 {
     #[unique]
     name: String,
 
-    starting_at: Option<Timestamp>,
-    ending_at: Option<Timestamp>,
+    starting_at: Timestamp,
+    ending_at: Timestamp,
 
     description: String,
 
@@ -56,7 +56,7 @@ impl TournamentStatus {
 /// The only thing necessary for a creation of a tounrnant is a unique name.
 /// The rest of the setup can must be made in subsequent calls.
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-fn create_tournament(ctx: &ReducerContext, name: String) -> Result<(), String> {
+fn create_tournament(ctx: &ReducerContext, name: String, description: String, starting_at: Timestamp, ending_at: Timestamp) -> Result<(), String> {
     let user = ctx.get_user()?;
 
     let tournament = ctx.db.tab_tournament().try_insert(TournamentV1 {
@@ -64,9 +64,9 @@ fn create_tournament(ctx: &ReducerContext, name: String) -> Result<(), String> {
         name: name.clone(),
         creator: user,
         status: TournamentStatus::Planning,
-        description: "".into(),
-        starting_at: None,
-        ending_at: None,
+        description: description,
+        starting_at: starting_at,
+        ending_at: ending_at,
     })?;
 
     //SAFETY: Comitted afterwards
@@ -79,12 +79,12 @@ fn create_tournament(ctx: &ReducerContext, name: String) -> Result<(), String> {
 #[spacetimedb::reducer]
 fn tournament_edit_name(
     ctx: &ReducerContext,
-    tounrnament_id: u32,
+    tournament_id: u32,
     name: String,
 ) -> Result<(), String> {
     let user = ctx.get_user()?;
 
-    let Some(mut tournament) = ctx.db.tab_tournament().id().find(tounrnament_id) else {
+    let Some(mut tournament) = ctx.db.tab_tournament().id().find(tournament_id) else {
         return Err("Supplied tournament_id incorrect.".into());
     };
 
@@ -98,12 +98,12 @@ fn tournament_edit_name(
 #[spacetimedb::reducer]
 fn tournament_edit_description(
     ctx: &ReducerContext,
-    tounrnament_id: u32,
+    tournament_id: u32,
     description: String,
 ) -> Result<(), String> {
     let user = ctx.get_user()?;
 
-    let Some(mut tournament) = ctx.db.tab_tournament().id().find(tounrnament_id) else {
+    let Some(mut tournament) = ctx.db.tab_tournament().id().find(tournament_id) else {
         return Err("Supplied tournament_id incorrect.".into());
     };
 
@@ -117,18 +117,37 @@ fn tournament_edit_description(
 #[spacetimedb::reducer]
 fn tournament_edit_dates(
     ctx: &ReducerContext,
-    tounrnament_id: u32,
-    starting_at: Option<Timestamp>,
-    ending_at: Option<Timestamp>,
+    tournament_id: u32,
+    starting_at: Timestamp,
+    ending_at: Timestamp,
 ) -> Result<(), String> {
     let user = ctx.get_user()?;
 
-    let Some(mut tournament) = ctx.db.tab_tournament().id().find(tounrnament_id) else {
+    let Some(mut tournament) = ctx.db.tab_tournament().id().find(tournament_id) else {
         return Err("Supplied tournament_id incorrect.".into());
     };
 
     tournament.starting_at = starting_at;
     tournament.ending_at = ending_at;
+
+    ctx.db.tab_tournament().id().update(tournament);
+
+    Ok(())
+}
+
+#[spacetimedb::reducer]
+fn tournament_update_status(
+    ctx: &ReducerContext,
+    tournament_id: u32,
+    status: TournamentStatus,
+) -> Result<(), String> {
+    let user = ctx.get_user()?;
+
+    let Some(mut tournament) = ctx.db.tab_tournament().id().find(tournament_id) else {
+        return Err("Supplied tournament_id incorrect.".into());
+    };
+
+    tournament.status = status;
 
     ctx.db.tab_tournament().id().update(tournament);
 
@@ -153,8 +172,8 @@ pub struct MyTournamentV1 {
 
     name: String,
 
-    starting_at: Option<Timestamp>,
-    ending_at: Option<Timestamp>,
+    starting_at: Timestamp,
+    ending_at: Timestamp,
 
     description: String,
 

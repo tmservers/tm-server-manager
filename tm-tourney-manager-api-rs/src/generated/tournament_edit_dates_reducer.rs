@@ -7,15 +7,15 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct TournamentEditDatesArgs {
-    pub tounrnament_id: u32,
-    pub starting_at: Option<__sdk::Timestamp>,
-    pub ending_at: Option<__sdk::Timestamp>,
+    pub tournament_id: u32,
+    pub starting_at: __sdk::Timestamp,
+    pub ending_at: __sdk::Timestamp,
 }
 
 impl From<TournamentEditDatesArgs> for super::Reducer {
     fn from(args: TournamentEditDatesArgs) -> Self {
         Self::TournamentEditDates {
-            tounrnament_id: args.tounrnament_id,
+            tournament_id: args.tournament_id,
             starting_at: args.starting_at,
             ending_at: args.ending_at,
         }
@@ -40,9 +40,9 @@ pub trait tournament_edit_dates {
     ///  and its status can be observed by listening for [`Self::on_tournament_edit_dates`] callbacks.
     fn tournament_edit_dates(
         &self,
-        tounrnament_id: u32,
-        starting_at: Option<__sdk::Timestamp>,
-        ending_at: Option<__sdk::Timestamp>,
+        tournament_id: u32,
+        starting_at: __sdk::Timestamp,
+        ending_at: __sdk::Timestamp,
     ) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `tournament_edit_dates`.
     ///
@@ -53,12 +53,8 @@ pub trait tournament_edit_dates {
     /// to cancel the callback.
     fn on_tournament_edit_dates(
         &self,
-        callback: impl FnMut(
-                &super::ReducerEventContext,
-                &u32,
-                &Option<__sdk::Timestamp>,
-                &Option<__sdk::Timestamp>,
-            ) + Send
+        callback: impl FnMut(&super::ReducerEventContext, &u32, &__sdk::Timestamp, &__sdk::Timestamp)
+            + Send
             + 'static,
     ) -> TournamentEditDatesCallbackId;
     /// Cancel a callback previously registered by [`Self::on_tournament_edit_dates`],
@@ -69,14 +65,14 @@ pub trait tournament_edit_dates {
 impl tournament_edit_dates for super::RemoteReducers {
     fn tournament_edit_dates(
         &self,
-        tounrnament_id: u32,
-        starting_at: Option<__sdk::Timestamp>,
-        ending_at: Option<__sdk::Timestamp>,
+        tournament_id: u32,
+        starting_at: __sdk::Timestamp,
+        ending_at: __sdk::Timestamp,
     ) -> __sdk::Result<()> {
         self.imp.call_reducer(
             "tournament_edit_dates",
             TournamentEditDatesArgs {
-                tounrnament_id,
+                tournament_id,
                 starting_at,
                 ending_at,
             },
@@ -84,12 +80,8 @@ impl tournament_edit_dates for super::RemoteReducers {
     }
     fn on_tournament_edit_dates(
         &self,
-        mut callback: impl FnMut(
-                &super::ReducerEventContext,
-                &u32,
-                &Option<__sdk::Timestamp>,
-                &Option<__sdk::Timestamp>,
-            ) + Send
+        mut callback: impl FnMut(&super::ReducerEventContext, &u32, &__sdk::Timestamp, &__sdk::Timestamp)
+            + Send
             + 'static,
     ) -> TournamentEditDatesCallbackId {
         TournamentEditDatesCallbackId(self.imp.on_reducer(
@@ -101,7 +93,7 @@ impl tournament_edit_dates for super::RemoteReducers {
                         __sdk::ReducerEvent {
                             reducer:
                                 super::Reducer::TournamentEditDates {
-                                    tounrnament_id,
+                                    tournament_id,
                                     starting_at,
                                     ending_at,
                                 },
@@ -112,7 +104,7 @@ impl tournament_edit_dates for super::RemoteReducers {
                 else {
                     unreachable!()
                 };
-                callback(ctx, tounrnament_id, starting_at, ending_at)
+                callback(ctx, tournament_id, starting_at, ending_at)
             }),
         ))
     }

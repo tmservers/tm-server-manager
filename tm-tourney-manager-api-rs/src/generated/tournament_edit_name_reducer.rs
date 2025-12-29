@@ -7,14 +7,14 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct TournamentEditNameArgs {
-    pub tounrnament_id: u32,
+    pub tournament_id: u32,
     pub name: String,
 }
 
 impl From<TournamentEditNameArgs> for super::Reducer {
     fn from(args: TournamentEditNameArgs) -> Self {
         Self::TournamentEditName {
-            tounrnament_id: args.tounrnament_id,
+            tournament_id: args.tournament_id,
             name: args.name,
         }
     }
@@ -36,7 +36,7 @@ pub trait tournament_edit_name {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_tournament_edit_name`] callbacks.
-    fn tournament_edit_name(&self, tounrnament_id: u32, name: String) -> __sdk::Result<()>;
+    fn tournament_edit_name(&self, tournament_id: u32, name: String) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `tournament_edit_name`.
     ///
     /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
@@ -54,11 +54,11 @@ pub trait tournament_edit_name {
 }
 
 impl tournament_edit_name for super::RemoteReducers {
-    fn tournament_edit_name(&self, tounrnament_id: u32, name: String) -> __sdk::Result<()> {
+    fn tournament_edit_name(&self, tournament_id: u32, name: String) -> __sdk::Result<()> {
         self.imp.call_reducer(
             "tournament_edit_name",
             TournamentEditNameArgs {
-                tounrnament_id,
+                tournament_id,
                 name,
             },
         )
@@ -76,7 +76,7 @@ impl tournament_edit_name for super::RemoteReducers {
                         __sdk::ReducerEvent {
                             reducer:
                                 super::Reducer::TournamentEditName {
-                                    tounrnament_id,
+                                    tournament_id,
                                     name,
                                 },
                             ..
@@ -86,7 +86,7 @@ impl tournament_edit_name for super::RemoteReducers {
                 else {
                     unreachable!()
                 };
-                callback(ctx, tounrnament_id, name)
+                callback(ctx, tournament_id, name)
             }),
         ))
     }
