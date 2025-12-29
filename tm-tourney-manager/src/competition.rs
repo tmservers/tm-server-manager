@@ -110,7 +110,6 @@ pub fn competition_edit_name(
 ) -> Result<(), String> {
     let user = ctx.get_user()?;
 
-    // If parent is valid it is guaranteed that it has a valid tournament associated with it.
     let Some(mut competition) = ctx.db.tab_competition().id().find(competition_id) else {
         return Err("Invalid competition".into());
     };
