@@ -77,6 +77,25 @@ fn create_tournament(ctx: &ReducerContext, name: String) -> Result<(), String> {
 }
 
 #[spacetimedb::reducer]
+fn tournament_edit_name(
+    ctx: &ReducerContext,
+    tounrnament_id: u32,
+    name: String,
+) -> Result<(), String> {
+    let user = ctx.get_user()?;
+
+    let Some(mut tournament) = ctx.db.tab_tournament().id().find(tounrnament_id) else {
+        return Err("Supplied tournament_id incorrect.".into());
+    };
+
+    tournament.name = name;
+
+    ctx.db.tab_tournament().id().update(tournament);
+
+    Ok(())
+}
+
+#[spacetimedb::reducer]
 fn tournament_edit_description(
     ctx: &ReducerContext,
     tounrnament_id: u32,

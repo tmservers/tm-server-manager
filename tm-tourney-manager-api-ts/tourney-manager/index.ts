@@ -79,6 +79,8 @@ import TournamentEditDatesReducer from "./tournament_edit_dates_reducer";
 export { TournamentEditDatesReducer };
 import TournamentEditDescriptionReducer from "./tournament_edit_description_reducer";
 export { TournamentEditDescriptionReducer };
+import TournamentEditNameReducer from "./tournament_edit_name_reducer";
+export { TournamentEditNameReducer };
 import TryStartMatchReducer from "./try_start_match_reducer";
 export { TryStartMatchReducer };
 import UnregisterPlayerReducer from "./unregister_player_reducer";
@@ -792,6 +794,7 @@ const reducersSchema = __reducers(
   __reducerSchema("server_method_response", ServerMethodResponseReducer),
   __reducerSchema("tournament_edit_dates", TournamentEditDatesReducer),
   __reducerSchema("tournament_edit_description", TournamentEditDescriptionReducer),
+  __reducerSchema("tournament_edit_name", TournamentEditNameReducer),
   __reducerSchema("try_start_match", TryStartMatchReducer),
   __reducerSchema("unregister_player", UnregisterPlayerReducer),
   __reducerSchema("update_match_config", UpdateMatchConfigReducer),

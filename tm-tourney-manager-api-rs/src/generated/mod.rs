@@ -153,6 +153,7 @@ pub mod tm_worker_table;
 pub mod tm_worker_type;
 pub mod tournament_edit_dates_reducer;
 pub mod tournament_edit_description_reducer;
+pub mod tournament_edit_name_reducer;
 pub mod tournament_status_type;
 pub mod tournament_table;
 pub mod tournament_v_1_type;
@@ -360,6 +361,9 @@ pub use tournament_edit_description_reducer::{
     set_flags_for_tournament_edit_description, tournament_edit_description,
     TournamentEditDescriptionCallbackId,
 };
+pub use tournament_edit_name_reducer::{
+    set_flags_for_tournament_edit_name, tournament_edit_name, TournamentEditNameCallbackId,
+};
 pub use tournament_status_type::TournamentStatus;
 pub use tournament_table::*;
 pub use tournament_v_1_type::TournamentV1;
@@ -481,6 +485,10 @@ pub enum Reducer {
         tounrnament_id: u32,
         description: String,
     },
+    TournamentEditName {
+        tounrnament_id: u32,
+        name: String,
+    },
     TryStartMatch {
         match_id: u32,
     },
@@ -530,6 +538,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::ServerMethodResponse { .. } => "server_method_response",
             Reducer::TournamentEditDates { .. } => "tournament_edit_dates",
             Reducer::TournamentEditDescription { .. } => "tournament_edit_description",
+            Reducer::TournamentEditName { .. } => "tournament_edit_name",
             Reducer::TryStartMatch { .. } => "try_start_match",
             Reducer::UnregisterPlayer { .. } => "unregister_player",
             Reducer::UpdateMatchConfig { .. } => "update_match_config",
@@ -566,6 +575,7 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "server_method_response" => Ok(__sdk::parse_reducer_args::<server_method_response_reducer::ServerMethodResponseArgs>("server_method_response", &value.args)?.into()),
             "tournament_edit_dates" => Ok(__sdk::parse_reducer_args::<tournament_edit_dates_reducer::TournamentEditDatesArgs>("tournament_edit_dates", &value.args)?.into()),
             "tournament_edit_description" => Ok(__sdk::parse_reducer_args::<tournament_edit_description_reducer::TournamentEditDescriptionArgs>("tournament_edit_description", &value.args)?.into()),
+            "tournament_edit_name" => Ok(__sdk::parse_reducer_args::<tournament_edit_name_reducer::TournamentEditNameArgs>("tournament_edit_name", &value.args)?.into()),
             "try_start_match" => Ok(__sdk::parse_reducer_args::<try_start_match_reducer::TryStartMatchArgs>("try_start_match", &value.args)?.into()),
             "unregister_player" => Ok(__sdk::parse_reducer_args::<unregister_player_reducer::UnregisterPlayerArgs>("unregister_player", &value.args)?.into()),
             "update_match_config" => Ok(__sdk::parse_reducer_args::<update_match_config_reducer::UpdateMatchConfigArgs>("update_match_config", &value.args)?.into()),
