@@ -10,6 +10,10 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
+import TournamentStatusScheduleV1 from "./tournament_status_schedule_v_1_type";
+
 export default {
-  tournamentId: __t.u32(),
+  get arg() {
+    return TournamentStatusScheduleV1;
+  },
 };

@@ -65,6 +65,8 @@ import MatchConfiguredReducer from "./match_configured_reducer";
 export { MatchConfiguredReducer };
 import OnScheduleTriggeredReducer from "./on_schedule_triggered_reducer";
 export { OnScheduleTriggeredReducer };
+import OnTournamentStatusScheduleTriggeredReducer from "./on_tournament_status_schedule_triggered_reducer";
+export { OnTournamentStatusScheduleTriggeredReducer };
 import PostEventReducer from "./post_event_reducer";
 export { PostEventReducer };
 import PostRecordReducer from "./post_record_reducer";
@@ -151,6 +153,8 @@ import TabTmServerRow from "./tab_tm_server_table";
 export { TabTmServerRow };
 import TabTournamentRow from "./tab_tournament_table";
 export { TabTournamentRow };
+import TabTournamentStatusScheduleRow from "./tab_tournament_status_schedule_table";
+export { TabTournamentStatusScheduleRow };
 import TabUserRow from "./tab_user_table";
 export { TabUserRow };
 import ThisTmServerRow from "./this_tm_server_table";
@@ -351,6 +355,8 @@ import TmWorkerJobs from "./tm_worker_jobs_type";
 export { TmWorkerJobs };
 import TournamentStatus from "./tournament_status_type";
 export { TournamentStatus };
+import TournamentStatusScheduleV1 from "./tournament_status_schedule_v_1_type";
+export { TournamentStatusScheduleV1 };
 import TournamentV1 from "./tournament_v_1_type";
 export { TournamentV1 };
 import UnloadingMapEnd from "./unloading_map_end_type";
@@ -540,6 +546,17 @@ const tablesSchema = __schema(
       { name: 'tab_tournament_name_key', constraint: 'unique', columns: ['name'] },
     ],
   }, TabTournamentRow),
+  __table({
+    name: 'tab_tournament_status_schedule',
+    indexes: [
+      { name: 'scheduled_id', algorithm: 'btree', columns: [
+        'scheduledId',
+      ] },
+    ],
+    constraints: [
+      { name: 'tab_tournament_status_schedule_scheduled_id_key', constraint: 'unique', columns: ['scheduledId'] },
+    ],
+  }, TabTournamentStatusScheduleRow),
   __table({
     name: 'tab_user',
     indexes: [
@@ -789,6 +806,7 @@ const reducersSchema = __reducers(
   __reducerSchema("match_assign_server", MatchAssignServerReducer),
   __reducerSchema("match_configured", MatchConfiguredReducer),
   __reducerSchema("on_schedule_triggered", OnScheduleTriggeredReducer),
+  __reducerSchema("on_tournament_status_schedule_triggered", OnTournamentStatusScheduleTriggeredReducer),
   __reducerSchema("post_event", PostEventReducer),
   __reducerSchema("post_record", PostRecordReducer),
   __reducerSchema("register_player", RegisterPlayerReducer),

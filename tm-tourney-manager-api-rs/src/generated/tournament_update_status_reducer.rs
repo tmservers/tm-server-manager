@@ -4,20 +4,16 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::tournament_status_type::TournamentStatus;
-
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct TournamentUpdateStatusArgs {
     pub tournament_id: u32,
-    pub status: TournamentStatus,
 }
 
 impl From<TournamentUpdateStatusArgs> for super::Reducer {
     fn from(args: TournamentUpdateStatusArgs) -> Self {
         Self::TournamentUpdateStatus {
             tournament_id: args.tournament_id,
-            status: args.status,
         }
     }
 }
@@ -38,11 +34,7 @@ pub trait tournament_update_status {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_tournament_update_status`] callbacks.
-    fn tournament_update_status(
-        &self,
-        tournament_id: u32,
-        status: TournamentStatus,
-    ) -> __sdk::Result<()>;
+    fn tournament_update_status(&self, tournament_id: u32) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `tournament_update_status`.
     ///
     /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
@@ -52,7 +44,7 @@ pub trait tournament_update_status {
     /// to cancel the callback.
     fn on_tournament_update_status(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &u32, &TournamentStatus) + Send + 'static,
+        callback: impl FnMut(&super::ReducerEventContext, &u32) + Send + 'static,
     ) -> TournamentUpdateStatusCallbackId;
     /// Cancel a callback previously registered by [`Self::on_tournament_update_status`],
     /// causing it not to run in the future.
@@ -60,22 +52,15 @@ pub trait tournament_update_status {
 }
 
 impl tournament_update_status for super::RemoteReducers {
-    fn tournament_update_status(
-        &self,
-        tournament_id: u32,
-        status: TournamentStatus,
-    ) -> __sdk::Result<()> {
+    fn tournament_update_status(&self, tournament_id: u32) -> __sdk::Result<()> {
         self.imp.call_reducer(
             "tournament_update_status",
-            TournamentUpdateStatusArgs {
-                tournament_id,
-                status,
-            },
+            TournamentUpdateStatusArgs { tournament_id },
         )
     }
     fn on_tournament_update_status(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &u32, &TournamentStatus) + Send + 'static,
+        mut callback: impl FnMut(&super::ReducerEventContext, &u32) + Send + 'static,
     ) -> TournamentUpdateStatusCallbackId {
         TournamentUpdateStatusCallbackId(self.imp.on_reducer(
             "tournament_update_status",
@@ -84,11 +69,7 @@ impl tournament_update_status for super::RemoteReducers {
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {
-                            reducer:
-                                super::Reducer::TournamentUpdateStatus {
-                                    tournament_id,
-                                    status,
-                                },
+                            reducer: super::Reducer::TournamentUpdateStatus { tournament_id },
                             ..
                         },
                     ..
@@ -96,7 +77,7 @@ impl tournament_update_status for super::RemoteReducers {
                 else {
                     unreachable!()
                 };
-                callback(ctx, tournament_id, status)
+                callback(ctx, tournament_id)
             }),
         ))
     }
