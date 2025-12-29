@@ -13,6 +13,7 @@ pub mod client_connected_reducer;
 pub mod common_type;
 pub mod competition_connection_table;
 pub mod competition_connection_type;
+pub mod competition_edit_name_reducer;
 pub mod competition_record_table;
 pub mod competition_registration_settings_reducer;
 pub mod competition_status_type;
@@ -184,6 +185,9 @@ pub use client_connected_reducer::{
 pub use common_type::Common;
 pub use competition_connection_table::*;
 pub use competition_connection_type::CompetitionConnection;
+pub use competition_edit_name_reducer::{
+    competition_edit_name, set_flags_for_competition_edit_name, CompetitionEditNameCallbackId,
+};
 pub use competition_record_table::*;
 pub use competition_registration_settings_reducer::{
     competition_registration_settings, set_flags_for_competition_registration_settings,
@@ -412,6 +416,10 @@ pub use way_point_type::WayPoint;
 
 pub enum Reducer {
     ClientConnected,
+    CompetitionEditName {
+        competition_id: u32,
+        name: String,
+    },
     CompetitionRegistrationSettings {
         competition_id: u32,
         registration_settings: RegistrationSettings,
@@ -536,6 +544,7 @@ impl __sdk::Reducer for Reducer {
     fn reducer_name(&self) -> &'static str {
         match self {
             Reducer::ClientConnected => "client_connected",
+            Reducer::CompetitionEditName { .. } => "competition_edit_name",
             Reducer::CompetitionRegistrationSettings { .. } => "competition_registration_settings",
             Reducer::CreateCompetition { .. } => "create_competition",
             Reducer::CreateConnection { .. } => "create_connection",
@@ -579,6 +588,7 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
     fn try_from(value: __ws::ReducerCallInfo<__ws::BsatnFormat>) -> __sdk::Result<Self> {
         match &value.reducer_name[..] {
                         "client_connected" => Ok(__sdk::parse_reducer_args::<client_connected_reducer::ClientConnectedArgs>("client_connected", &value.args)?.into()),
+            "competition_edit_name" => Ok(__sdk::parse_reducer_args::<competition_edit_name_reducer::CompetitionEditNameArgs>("competition_edit_name", &value.args)?.into()),
             "competition_registration_settings" => Ok(__sdk::parse_reducer_args::<competition_registration_settings_reducer::CompetitionRegistrationSettingsArgs>("competition_registration_settings", &value.args)?.into()),
             "create_competition" => Ok(__sdk::parse_reducer_args::<create_competition_reducer::CreateCompetitionArgs>("create_competition", &value.args)?.into()),
             "create_connection" => Ok(__sdk::parse_reducer_args::<create_connection_reducer::CreateConnectionArgs>("create_connection", &value.args)?.into()),

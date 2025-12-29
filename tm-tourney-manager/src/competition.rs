@@ -103,6 +103,26 @@ pub fn create_competition(
 }
 
 #[reducer]
+pub fn competition_edit_name(
+    ctx: &ReducerContext,
+    competition_id: u32,
+    name: String,
+) -> Result<(), String> {
+    let user = ctx.get_user()?;
+
+    // If parent is valid it is guaranteed that it has a valid tournament associated with it.
+    let Some(mut competition) = ctx.db.tab_competition().id().find(competition_id) else {
+        return Err("Invalid competition".into());
+    };
+
+    competition.name = name;
+
+    ctx.db.tab_competition().id().update(competition);
+
+    Ok(())
+}
+
+#[reducer]
 pub fn competition_registration_settings(
     ctx: &ReducerContext,
     competition_id: u32,

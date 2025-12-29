@@ -33,6 +33,8 @@ import {
 // Import and reexport all reducer arg types
 import ClientConnectedReducer from "./client_connected_reducer";
 export { ClientConnectedReducer };
+import CompetitionEditNameReducer from "./competition_edit_name_reducer";
+export { CompetitionEditNameReducer };
 import CompetitionRegistrationSettingsReducer from "./competition_registration_settings_reducer";
 export { CompetitionRegistrationSettingsReducer };
 import CreateCompetitionReducer from "./create_competition_reducer";
@@ -791,6 +793,7 @@ const tablesSchema = __schema(
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
+  __reducerSchema("competition_edit_name", CompetitionEditNameReducer),
   __reducerSchema("competition_registration_settings", CompetitionRegistrationSettingsReducer),
   __reducerSchema("create_competition", CreateCompetitionReducer),
   __reducerSchema("create_connection", CreateConnectionReducer),
