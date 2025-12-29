@@ -164,7 +164,7 @@ fn tournament_update_status(
     };
 
     if tournament.status != TournamentStatus::Planning {
-        return Err("Tournament status can only be updated from Planning to Announced automatically.".into());
+        return Err("Tournament status can only be updated from Planning state.".into());
     }
 
     let current_time = ctx.timestamp;
