@@ -57,6 +57,8 @@ import CreateTournamentReducer from "./create_tournament_reducer";
 export { CreateTournamentReducer };
 import IdentityDisconnectedReducer from "./identity_disconnected_reducer";
 export { IdentityDisconnectedReducer };
+import InternalGraphResolutionNodeFinishedReducer from "./internal_graph_resolution_node_finished_reducer";
+export { InternalGraphResolutionNodeFinishedReducer };
 import MatchAssignServerReducer from "./match_assign_server_reducer";
 export { MatchAssignServerReducer };
 import MatchConfiguredReducer from "./match_configured_reducer";
@@ -105,14 +107,14 @@ import GeneratorRow from "./generator_table";
 export { GeneratorRow };
 import MapRecordRow from "./map_record_table";
 export { MapRecordRow };
-import MatchEventRow from "./match_event_table";
-export { MatchEventRow };
 import MatchGhostRow from "./match_ghost_table";
 export { MatchGhostRow };
+import MatchLeaderbaordRow from "./match_leaderbaord_table";
+export { MatchLeaderbaordRow };
 import MatchRecordRow from "./match_record_table";
 export { MatchRecordRow };
-import MatchStandingsRow from "./match_standings_table";
-export { MatchStandingsRow };
+import MatchRoundRow from "./match_round_table";
+export { MatchRoundRow };
 import MatchTemplateRow from "./match_template_table";
 export { MatchTemplateRow };
 import MyJobsRow from "./my_jobs_table";
@@ -133,6 +135,10 @@ import TabScheduleRow from "./tab_schedule_table";
 export { TabScheduleRow };
 import TabTmMatchRow from "./tab_tm_match_table";
 export { TabTmMatchRow };
+import TabTmMatchEventRow from "./tab_tm_match_event_table";
+export { TabTmMatchEventRow };
+import TabTmMatchStateRow from "./tab_tm_match_state_table";
+export { TabTmMatchStateRow };
 import TabTmServerRow from "./tab_tm_server_table";
 export { TabTmServerRow };
 import TabTournamentRow from "./tab_tournament_table";
@@ -213,6 +219,8 @@ import GiveUp from "./give_up_type";
 export { GiveUp };
 import KickArgs from "./kick_args_type";
 export { KickArgs };
+import LeaderboardEntry from "./leaderboard_entry_type";
+export { LeaderboardEntry };
 import LoadingMapEnd from "./loading_map_end_type";
 export { LoadingMapEnd };
 import LoadingMapStart from "./loading_map_start_type";
@@ -221,16 +229,8 @@ import Map from "./map_type";
 export { Map };
 import MapPoolConfig from "./map_pool_config_type";
 export { MapPoolConfig };
-import MatchEntityRules from "./match_entity_rules_type";
-export { MatchEntityRules };
-import MatchEvent from "./match_event_type";
-export { MatchEvent };
 import MatchGhost from "./match_ghost_type";
 export { MatchGhost };
-import MatchStandings from "./match_standings_type";
-export { MatchStandings };
-import MatchState from "./match_state_type";
-export { MatchState };
 import MatchStatus from "./match_status_type";
 export { MatchStatus };
 import MatchTemplate from "./match_template_type";
@@ -253,8 +253,8 @@ import MonitoringSettingsMap from "./monitoring_settings_map_type";
 export { MonitoringSettingsMap };
 import MyTournamentV1 from "./my_tournament_v_1_type";
 export { MyTournamentV1 };
-import NodeKindRef from "./node_kind_ref_type";
-export { NodeKindRef };
+import NodeKindHandle from "./node_kind_handle_type";
+export { NodeKindHandle };
 import PlayLoopEnd from "./play_loop_end_type";
 export { PlayLoopEnd };
 import PlayLoopStart from "./play_loop_start_type";
@@ -283,6 +283,8 @@ import Respawn from "./respawn_type";
 export { Respawn };
 import RespawnBavaviour from "./respawn_bavaviour_type";
 export { RespawnBavaviour };
+import RoundStandings from "./round_standings_type";
+export { RoundStandings };
 import RoundTime from "./round_time_type";
 export { RoundTime };
 import Rounds from "./rounds_type";
@@ -317,6 +319,10 @@ import TmCompRecord from "./tm_comp_record_type";
 export { TmCompRecord };
 import TmMapRecord from "./tm_map_record_type";
 export { TmMapRecord };
+import TmMatchEvent from "./tm_match_event_type";
+export { TmMatchEvent };
+import TmMatchState from "./tm_match_state_type";
+export { TmMatchState };
 import TmMatchV1 from "./tm_match_v_1_type";
 export { TmMatchV1 };
 import TmMonitoring from "./tm_monitoring_type";
@@ -374,19 +380,6 @@ const tablesSchema = __schema(
     constraints: [
     ],
   }, GeneratorRow),
-  __table({
-    name: 'match_event',
-    indexes: [
-      { name: 'event', algorithm: 'btree', columns: [
-        'event',
-      ] },
-      { name: 'event_match', algorithm: 'btree', columns: [
-        'matchId',
-      ] },
-    ],
-    constraints: [
-    ],
-  }, MatchEventRow),
   __table({
     name: 'match_ghost',
     indexes: [
@@ -474,6 +467,35 @@ const tablesSchema = __schema(
       { name: 'tab_tm_match_id_key', constraint: 'unique', columns: ['id'] },
     ],
   }, TabTmMatchRow),
+  __table({
+    name: 'tab_tm_match_event',
+    indexes: [
+      { name: 'event', algorithm: 'btree', columns: [
+        'event',
+      ] },
+      { name: 'match_id', algorithm: 'btree', columns: [
+        'matchId',
+      ] },
+      { name: 'match_round_wu', algorithm: 'btree', columns: [
+        'matchId',
+        'round',
+        'isWarmup',
+      ] },
+    ],
+    constraints: [
+    ],
+  }, TabTmMatchEventRow),
+  __table({
+    name: 'tab_tm_match_state',
+    indexes: [
+      { name: 'id', algorithm: 'btree', columns: [
+        'id',
+      ] },
+    ],
+    constraints: [
+      { name: 'tab_tm_match_state_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, TabTmMatchStateRow),
   __table({
     name: 'tab_tm_server',
     indexes: [
@@ -657,6 +679,13 @@ const tablesSchema = __schema(
     ],
   }, MapRecordRow),
   __table({
+    name: 'match_leaderbaord',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MatchLeaderbaordRow),
+  __table({
     name: 'match_record',
     indexes: [
     ],
@@ -664,12 +693,12 @@ const tablesSchema = __schema(
     ],
   }, MatchRecordRow),
   __table({
-    name: 'match_standings',
+    name: 'match_round',
     indexes: [
     ],
     constraints: [
     ],
-  }, MatchStandingsRow),
+  }, MatchRoundRow),
   __table({
     name: 'my_jobs',
     indexes: [
@@ -741,6 +770,7 @@ const reducersSchema = __reducers(
   __reducerSchema("create_server_config", CreateServerConfigReducer),
   __reducerSchema("create_team", CreateTeamReducer),
   __reducerSchema("create_tournament", CreateTournamentReducer),
+  __reducerSchema("internal_graph_resolution_node_finished", InternalGraphResolutionNodeFinishedReducer),
   __reducerSchema("match_assign_server", MatchAssignServerReducer),
   __reducerSchema("match_configured", MatchConfiguredReducer),
   __reducerSchema("on_schedule_triggered", OnScheduleTriggeredReducer),

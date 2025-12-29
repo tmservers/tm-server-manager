@@ -6,8 +6,12 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct MatchEntityRules {}
+pub struct LeaderboardEntry {
+    pub account_id: String,
+    pub account_name: String,
+    pub score: i32,
+}
 
-impl __sdk::InModule for MatchEntityRules {
+impl __sdk::InModule for LeaderboardEntry {
     type Module = super::RemoteModule;
 }

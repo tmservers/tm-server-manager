@@ -10,6 +10,13 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-export default __t.object("MatchStandings", {});
+export default __t.object("TmMatchState", {
+  id: __t.u32(),
+  restarted: __t.u16(),
+  round: __t.u16(),
+  warmup: __t.u16(),
+  isWarmup: __t.bool(),
+  paused: __t.bool(),
+});
 
 

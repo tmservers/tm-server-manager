@@ -65,16 +65,3 @@ pub struct RoundsRoundPlayer {
     id: String,
     ghost: u32,
 }
-
-#[derive(Debug, SpacetimeType)]
-pub struct MatchStandings {}
-
-#[view(name=match_standings,public)]
-pub fn match_standings(ctx: &AnonymousViewContext, /* TODO: match id */) -> Option<MatchStandings> {
-    let match_id: u32 = 1; //TODO get this from the view arg.
-
-    //TODO
-    for event in ctx.db.tab_tm_match_event().event_match().filter(match_id) {}
-
-    None
-}

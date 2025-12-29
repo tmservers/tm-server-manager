@@ -4,7 +4,7 @@
 #![allow(unused, clippy::all)]
 use super::competition_connection_type::CompetitionConnection;
 use super::connection_settings_type::ConnectionSettings;
-use super::node_kind_ref_type::NodeKindRef;
+use super::node_kind_handle_type::NodeKindHandle;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 /// Table handle for the table `competition_connection`.

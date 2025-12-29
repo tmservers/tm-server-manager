@@ -25,7 +25,7 @@ pub mod worker;
 fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
     // Execute if one tries to connect authenticated.
     if let Some(jwt) = ctx.sender_auth().jwt() {
-        log::warn!("Tried to connect with jwt");
+        log::warn!("Tried to connect with jwt {}", jwt.raw_payload());
 
         //TODO get trackmania id claim.
         let account_id = String::from("3467014a-c1cc-4aae-99fe-6beb5eca232a");

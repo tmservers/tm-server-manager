@@ -9,19 +9,17 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
-import MatchState from "./match_state_type";
 import Event from "./event_type";
 
 
-export default __t.object("MatchEvent", {
-  tournamentId: __t.u32(),
-  matchId: __t.u32(),
-  get state() {
-    return MatchState;
-  },
+export default __t.row({
+  matchId: __t.u32().name("match_id"),
+  restarted: __t.u16(),
+  round: __t.u16(),
+  warmup: __t.u16(),
+  isWarmup: __t.bool().name("is_warmup"),
+  paused: __t.bool(),
   get event() {
     return Event;
   },
 });
-
-

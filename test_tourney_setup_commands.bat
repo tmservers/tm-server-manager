@@ -1,9 +1,4 @@
-spacetime publish --break-clients --delete-data=on-conflict -y -p tm-tourney-manager tm-tourney-manager
-spacetime generate --yes --lang rust --out-dir tm-tourney-manager-api-rs/src/generated --project-path tm-tourney-manager
-spacetime generate --yes --lang typescript --out-dir tm-tourney-manager-api-ts/tourney-manager --project-path tm-tourney-manager
-
-spacetime publish --break-clients --delete-data=on-conflict -y -p tm-tourney-manager tm-tourney-manager
-
+spacetime publish --break-clients -c -y -p tm-tourney-manager tm-tourney-manager
 spacetime generate --yes --lang rust --out-dir tm-tourney-manager-api-rs/src/generated --project-path tm-tourney-manager
 spacetime generate --yes --lang typescript --out-dir tm-tourney-manager-api-ts/tourney-manager --project-path tm-tourney-manager
 

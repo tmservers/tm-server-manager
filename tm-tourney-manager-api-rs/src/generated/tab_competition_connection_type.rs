@@ -16,6 +16,7 @@ pub struct TabCompetitionConnection {
     pub connection_from_variant: u8,
     pub connection_to_variant: u8,
     pub connection_settings: ConnectionSettings,
+    pub resolved: bool,
 }
 
 impl __sdk::InModule for TabCompetitionConnection {

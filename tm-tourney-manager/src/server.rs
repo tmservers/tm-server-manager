@@ -103,6 +103,7 @@ pub fn login_as_server(
 )
 /* -> Result<(), String> */
 {
+    log::warn!("Huh");
     let request = Request::builder()
         .method("POST")
         .uri("https://prod.trackmania.core.nadeo.online/v2/authentication/token/basic")
@@ -122,6 +123,7 @@ pub fn login_as_server(
     let status = result.status();
 
     if !status.is_success() {
+        log::error!("API request was not a success");
         //TODO remove panic once we can return Result
         // return Err("Server registration failed because credential were wrong".into());
 

@@ -9,7 +9,7 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
-import NodeKindRef from "./node_kind_ref_type";
+import NodeKindHandle from "./node_kind_handle_type";
 import ConnectionSettings from "./connection_settings_type";
 
 
@@ -17,10 +17,10 @@ export default __t.row({
   tournamentId: __t.u32().name("tournament_id"),
   competitionId: __t.u32().name("competition_id"),
   get connectionFrom() {
-    return NodeKindRef.name("connection_from");
+    return NodeKindHandle.name("connection_from");
   },
   get connectionTo() {
-    return NodeKindRef.name("connection_to");
+    return NodeKindHandle.name("connection_to");
   },
   get connectionSettings() {
     return ConnectionSettings.name("connection_settings");

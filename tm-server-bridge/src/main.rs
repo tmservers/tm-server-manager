@@ -223,7 +223,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             .on_applied(|_| tracing::debug!("Subscription successfully applied!"))
             .on_error(|_, mhm| tracing::error!("Subscription failed: {mhm:?}"))
             .subscribe([
-                format!("SELECT * FROM tm_server WHERE tm_login = '{tm_server_login}'"), //TODO replace with views
+                format!("SELECT * FROM tab_tm_server WHERE tm_login = '{tm_server_login}'"), //TODO replace with views
                 "SELECT * FROM tm_server_method_call".into(), //TODO this should be possible with views since you should only be able to query the server as a server.
             ]);
 

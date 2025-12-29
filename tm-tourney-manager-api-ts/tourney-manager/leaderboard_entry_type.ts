@@ -10,17 +10,10 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-import NodeKindHandle from "./node_kind_handle_type";
-import ConnectionSettings from "./connection_settings_type";
+export default __t.object("LeaderboardEntry", {
+  accountId: __t.string(),
+  accountName: __t.string(),
+  score: __t.i32(),
+});
 
-export default {
-  get connectionFrom() {
-    return NodeKindHandle;
-  },
-  get connectionTo() {
-    return NodeKindHandle;
-  },
-  get setting() {
-    return ConnectionSettings;
-  },
-};
+

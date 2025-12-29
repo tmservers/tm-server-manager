@@ -2,7 +2,9 @@ use spacetimedb::{Query, ReducerContext, SpacetimeType, Table, ViewContext, view
 use tm_server_types::{config::ServerConfig, event::Event};
 
 use crate::{
-    auth::Authorization, competition::tab_competition, r#match::match_state::MatchState,
+    auth::Authorization,
+    competition::tab_competition,
+    r#match::match_state::{TmMatchState, tab_tm_match_state},
     server::tab_tm_server,
 };
 
@@ -51,7 +53,6 @@ pub struct TmMatchV1 {
     post_match_config: Option<ServerConfig>,
 
     status: MatchStatus,
-    state: MatchState,
 }
 
 impl TmMatchV1 {
@@ -68,29 +69,8 @@ impl TmMatchV1 {
         self.competition_id
     }
 
-    pub fn get_match_state(&self) -> MatchState {
-        self.state
-    }
-
     pub(crate) fn end_match(&mut self) {
         self.status = MatchStatus::Ended;
-    }
-
-    pub fn add_server_event(&mut self, event: &Event) -> bool {
-        // Not worth defining as an invariant for calling so need to be sure.
-        if !self.is_live() {
-            return false;
-        }
-
-        match event {
-            Event::WarmupStart => self.state.enable_wu(),
-            Event::WarmupEnd => self.state.disable_wu(),
-            Event::WarmupStartRound(_) => self.state.new_wu_round(),
-            Event::StartRoundStart(_) => self.state.new_round(),
-            _ => return false,
-        }
-        log::warn!("{:#?}", self.state);
-        true
     }
 }
 
@@ -134,10 +114,18 @@ pub fn create_match(
         pre_match_config: None,
         match_config: None,
         post_match_config: None,
-        state: MatchState::new(),
     };
 
-    ctx.db.tab_tm_match().try_insert(tm_match)?;
+    let tm_match = ctx.db.tab_tm_match().try_insert(tm_match)?;
+
+    ctx.db.tab_tm_match_state().try_insert(TmMatchState {
+        id: tm_match.id,
+        restarted: 0,
+        round: 0,
+        warmup: 0,
+        is_warmup: false,
+        paused: false,
+    })?;
 
     Ok(())
 }

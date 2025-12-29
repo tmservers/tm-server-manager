@@ -5,7 +5,7 @@ use crate::{
     auth::Authorization,
     r#match::{
         event::{TmMatchEvent, tab_tm_match_event},
-        match_state::MatchState,
+        match_state::{TmMatchState, tab_tm_match_state},
         tab_tm_match,
     },
     server::tab_tm_server,
@@ -20,8 +20,11 @@ pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
         && let Some(match_id) = tm_server.active_match()
         && let Some(mut tm_match) = ctx.db.tab_tm_match().id().find(match_id)
         && tm_match.is_live()
+        && let Some(mut match_state) = ctx.db.tab_tm_match_state().id().find(match_id)
     {
-        let match_changed = tm_match.add_server_event(&event);
+        // TODO maybe move this whole thing in a function for TmMatch to handle it there.
+
+        let match_state_changed = match_state.add_server_event(&event);
         let server_changed = tm_server.add_server_event(&event);
 
         let match_ended = if let Event::EndMatchEnd(_) = &event {
@@ -34,16 +37,20 @@ pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
             false
         };
 
-        let tournament_id = tm_match.get_tournament();
+        //let tournament_id = tm_match.get_tournament();
         ctx.db.tab_tm_match_event().insert(TmMatchEvent {
-            tournament_id,
+            //tournament_id,
             match_id,
             event,
-            state: tm_match.get_match_state(),
+            restarted: match_state.restarted,
+            round: match_state.round,
+            warmup: match_state.warmup,
+            is_warmup: match_state.is_warmup,
+            paused: match_state.paused,
         });
 
-        if match_changed || match_ended {
-            ctx.db.tab_tm_match().id().update(tm_match);
+        if match_state_changed || match_ended {
+            ctx.db.tab_tm_match_state().id().update(match_state);
         }
         if server_changed || match_ended {
             ctx.db.tab_tm_server().tm_login().update(tm_server);

@@ -4,18 +4,14 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::event_type::Event;
-use super::match_state_type::MatchState;
-
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct MatchEvent {
-    pub tournament_id: u32,
-    pub match_id: u32,
-    pub state: MatchState,
-    pub event: Event,
+pub struct RoundStandings {
+    pub account_id: String,
+    pub account_name: String,
+    pub score: i32,
 }
 
-impl __sdk::InModule for MatchEvent {
+impl __sdk::InModule for RoundStandings {
     type Module = super::RemoteModule;
 }

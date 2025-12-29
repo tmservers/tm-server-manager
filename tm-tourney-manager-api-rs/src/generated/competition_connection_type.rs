@@ -5,15 +5,15 @@
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 use super::connection_settings_type::ConnectionSettings;
-use super::node_kind_ref_type::NodeKindRef;
+use super::node_kind_handle_type::NodeKindHandle;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct CompetitionConnection {
     pub tournament_id: u32,
     pub competition_id: u32,
-    pub connection_from: NodeKindRef,
-    pub connection_to: NodeKindRef,
+    pub connection_from: NodeKindHandle,
+    pub connection_to: NodeKindHandle,
     pub connection_settings: ConnectionSettings,
 }
 

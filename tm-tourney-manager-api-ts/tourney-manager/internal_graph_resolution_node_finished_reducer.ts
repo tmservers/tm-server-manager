@@ -10,12 +10,11 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-export default __t.object("MatchState", {
-  restarted: __t.u16(),
-  round: __t.u16(),
-  warmup: __t.u16(),
-  isWarmup: __t.bool(),
-  paused: __t.bool(),
-});
+import NodeKindHandle from "./node_kind_handle_type";
 
-
+export default {
+  competitionId: __t.u32(),
+  get trigger() {
+    return NodeKindHandle;
+  },
+};
