@@ -95,6 +95,27 @@ fn tournament_edit_description(
     Ok(())
 }
 
+#[spacetimedb::reducer]
+fn tournament_edit_dates(
+    ctx: &ReducerContext,
+    tounrnament_id: u32,
+    starting_at: Option<Timestamp>,
+    ending_at: Option<Timestamp>,
+) -> Result<(), String> {
+    let user = ctx.get_user()?;
+
+    let Some(mut tournament) = ctx.db.tab_tournament().id().find(tounrnament_id) else {
+        return Err("Supplied tournament_id incorrect.".into());
+    };
+
+    tournament.starting_at = starting_at;
+    tournament.ending_at = ending_at;
+
+    ctx.db.tab_tournament().id().update(tournament);
+
+    Ok(())
+}
+
 #[view(name=tournament,public)]
 pub fn tournament(ctx: &AnonymousViewContext) -> Query<TournamentV1> {
     ctx.from
