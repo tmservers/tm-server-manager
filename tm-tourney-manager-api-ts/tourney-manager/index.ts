@@ -75,6 +75,8 @@ import ServerMethodCallReducer from "./server_method_call_reducer";
 export { ServerMethodCallReducer };
 import ServerMethodResponseReducer from "./server_method_response_reducer";
 export { ServerMethodResponseReducer };
+import TournamentEditDatesReducer from "./tournament_edit_dates_reducer";
+export { TournamentEditDatesReducer };
 import TournamentEditDescriptionReducer from "./tournament_edit_description_reducer";
 export { TournamentEditDescriptionReducer };
 import TryStartMatchReducer from "./try_start_match_reducer";
@@ -121,6 +123,8 @@ import MyJobsRow from "./my_jobs_table";
 export { MyJobsRow };
 import MyTournamentRow from "./my_tournament_table";
 export { MyTournamentRow };
+import RegisterdPlayerRow from "./registerd_player_table";
+export { RegisterdPlayerRow };
 import ScheduleRow from "./schedule_table";
 export { ScheduleRow };
 import TabCompetitionRow from "./tab_competition_table";
@@ -714,6 +718,13 @@ const tablesSchema = __schema(
     ],
   }, MyTournamentRow),
   __table({
+    name: 'registerd_player',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, RegisterdPlayerRow),
+  __table({
     name: 'schedule',
     indexes: [
     ],
@@ -779,6 +790,7 @@ const reducersSchema = __reducers(
   __reducerSchema("register_player", RegisterPlayerReducer),
   __reducerSchema("server_method_call", ServerMethodCallReducer),
   __reducerSchema("server_method_response", ServerMethodResponseReducer),
+  __reducerSchema("tournament_edit_dates", TournamentEditDatesReducer),
   __reducerSchema("tournament_edit_description", TournamentEditDescriptionReducer),
   __reducerSchema("try_start_match", TryStartMatchReducer),
   __reducerSchema("unregister_player", UnregisterPlayerReducer),

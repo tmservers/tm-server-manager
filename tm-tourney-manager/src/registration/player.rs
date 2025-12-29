@@ -1,4 +1,4 @@
-use spacetimedb::{ReducerContext, Table, Timestamp, reducer, table};
+use spacetimedb::{AnonymousViewContext, Query, ReducerContext, Table, Timestamp, reducer, table, view};
 
 use crate::{auth::Authorization, competition::tab_competition};
 
@@ -8,6 +8,13 @@ pub struct RegisteredPlayer {
     competition_id: u32,
     account_id: String,
     registered_at: Timestamp,
+}
+
+#[view(name=registerd_player,public)]
+pub fn registered_player(ctx: &AnonymousViewContext) -> Query<RegisteredPlayer> {
+    ctx.from
+        .tab_registered_player()
+        .build()
 }
 
 #[reducer]

@@ -89,6 +89,7 @@ pub mod post_event_reducer;
 pub mod post_record_reducer;
 pub mod post_round_replay_procedure;
 pub mod register_player_reducer;
+pub mod registerd_player_table;
 pub mod registered_player_type;
 pub mod registered_team_type;
 pub mod registration_player_settings_type;
@@ -150,6 +151,7 @@ pub mod tm_worker_jobs_table;
 pub mod tm_worker_jobs_type;
 pub mod tm_worker_table;
 pub mod tm_worker_type;
+pub mod tournament_edit_dates_reducer;
 pub mod tournament_edit_description_reducer;
 pub mod tournament_status_type;
 pub mod tournament_table;
@@ -285,6 +287,7 @@ pub use post_round_replay_procedure::post_round_replay;
 pub use register_player_reducer::{
     register_player, set_flags_for_register_player, RegisterPlayerCallbackId,
 };
+pub use registerd_player_table::*;
 pub use registered_player_type::RegisteredPlayer;
 pub use registered_team_type::RegisteredTeam;
 pub use registration_player_settings_type::RegistrationPlayerSettings;
@@ -350,6 +353,9 @@ pub use tm_worker_jobs_table::*;
 pub use tm_worker_jobs_type::TmWorkerJobs;
 pub use tm_worker_table::*;
 pub use tm_worker_type::TmWorker;
+pub use tournament_edit_dates_reducer::{
+    set_flags_for_tournament_edit_dates, tournament_edit_dates, TournamentEditDatesCallbackId,
+};
 pub use tournament_edit_description_reducer::{
     set_flags_for_tournament_edit_description, tournament_edit_description,
     TournamentEditDescriptionCallbackId,
@@ -466,6 +472,11 @@ pub enum Reducer {
         call_id: u32,
         response: MethodResponse,
     },
+    TournamentEditDates {
+        tounrnament_id: u32,
+        starting_at: Option<__sdk::Timestamp>,
+        ending_at: Option<__sdk::Timestamp>,
+    },
     TournamentEditDescription {
         tounrnament_id: u32,
         description: String,
@@ -517,6 +528,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::RegisterPlayer { .. } => "register_player",
             Reducer::ServerMethodCall { .. } => "server_method_call",
             Reducer::ServerMethodResponse { .. } => "server_method_response",
+            Reducer::TournamentEditDates { .. } => "tournament_edit_dates",
             Reducer::TournamentEditDescription { .. } => "tournament_edit_description",
             Reducer::TryStartMatch { .. } => "try_start_match",
             Reducer::UnregisterPlayer { .. } => "unregister_player",
@@ -552,6 +564,7 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "register_player" => Ok(__sdk::parse_reducer_args::<register_player_reducer::RegisterPlayerArgs>("register_player", &value.args)?.into()),
             "server_method_call" => Ok(__sdk::parse_reducer_args::<server_method_call_reducer::ServerMethodCallArgs>("server_method_call", &value.args)?.into()),
             "server_method_response" => Ok(__sdk::parse_reducer_args::<server_method_response_reducer::ServerMethodResponseArgs>("server_method_response", &value.args)?.into()),
+            "tournament_edit_dates" => Ok(__sdk::parse_reducer_args::<tournament_edit_dates_reducer::TournamentEditDatesArgs>("tournament_edit_dates", &value.args)?.into()),
             "tournament_edit_description" => Ok(__sdk::parse_reducer_args::<tournament_edit_description_reducer::TournamentEditDescriptionArgs>("tournament_edit_description", &value.args)?.into()),
             "try_start_match" => Ok(__sdk::parse_reducer_args::<try_start_match_reducer::TryStartMatchArgs>("try_start_match", &value.args)?.into()),
             "unregister_player" => Ok(__sdk::parse_reducer_args::<unregister_player_reducer::UnregisterPlayerArgs>("unregister_player", &value.args)?.into()),
@@ -579,6 +592,7 @@ pub struct DbUpdate {
     match_template: __sdk::TableUpdate<MatchTemplate>,
     my_jobs: __sdk::TableUpdate<TmWorkerJobs>,
     my_tournament: __sdk::TableUpdate<MyTournamentV1>,
+    registerd_player: __sdk::TableUpdate<RegisteredPlayer>,
     schedule: __sdk::TableUpdate<ScheduleV1>,
     tab_competition: __sdk::TableUpdate<CompetitionV1>,
     tab_competition_connection: __sdk::TableUpdate<TabCompetitionConnection>,
@@ -652,6 +666,9 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "my_tournament" => db_update
                     .my_tournament
                     .append(my_tournament_table::parse_table_update(table_update)?),
+                "registerd_player" => db_update
+                    .registerd_player
+                    .append(registerd_player_table::parse_table_update(table_update)?),
                 "schedule" => db_update
                     .schedule
                     .append(schedule_table::parse_table_update(table_update)?),
@@ -849,6 +866,8 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.my_jobs = cache.apply_diff_to_table::<TmWorkerJobs>("my_jobs", &self.my_jobs);
         diff.my_tournament =
             cache.apply_diff_to_table::<MyTournamentV1>("my_tournament", &self.my_tournament);
+        diff.registerd_player = cache
+            .apply_diff_to_table::<RegisteredPlayer>("registerd_player", &self.registerd_player);
         diff.schedule = cache.apply_diff_to_table::<ScheduleV1>("schedule", &self.schedule);
         diff.this_tm_server =
             cache.apply_diff_to_table::<TmServerV1>("this_tm_server", &self.this_tm_server);
@@ -878,6 +897,7 @@ pub struct AppliedDiff<'r> {
     match_template: __sdk::TableAppliedDiff<'r, MatchTemplate>,
     my_jobs: __sdk::TableAppliedDiff<'r, TmWorkerJobs>,
     my_tournament: __sdk::TableAppliedDiff<'r, MyTournamentV1>,
+    registerd_player: __sdk::TableAppliedDiff<'r, RegisteredPlayer>,
     schedule: __sdk::TableAppliedDiff<'r, ScheduleV1>,
     tab_competition: __sdk::TableAppliedDiff<'r, CompetitionV1>,
     tab_competition_connection: __sdk::TableAppliedDiff<'r, TabCompetitionConnection>,
@@ -956,6 +976,11 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
         callbacks.invoke_table_row_callbacks::<MyTournamentV1>(
             "my_tournament",
             &self.my_tournament,
+            event,
+        );
+        callbacks.invoke_table_row_callbacks::<RegisteredPlayer>(
+            "registerd_player",
+            &self.registerd_player,
             event,
         );
         callbacks.invoke_table_row_callbacks::<ScheduleV1>("schedule", &self.schedule, event);
@@ -1792,6 +1817,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
         match_template_table::register_table(client_cache);
         my_jobs_table::register_table(client_cache);
         my_tournament_table::register_table(client_cache);
+        registerd_player_table::register_table(client_cache);
         schedule_table::register_table(client_cache);
         tab_competition_table::register_table(client_cache);
         tab_competition_connection_table::register_table(client_cache);
