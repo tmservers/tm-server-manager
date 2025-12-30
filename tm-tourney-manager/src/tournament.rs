@@ -135,8 +135,10 @@ fn tournament_edit_dates(
         return Err("Supplied tournament_id incorrect.".into());
     };
 
+    let current_time = ctx.timestamp;
+
     // Don't allow modifying starting_at if tournament already started
-    if tournament.starting_at != starting_at && ctx.timestamp >= tournament.starting_at {
+    if tournament.starting_at != starting_at && current_time >= tournament.starting_at {
         return Err("Cannot modify start date of a tournament that has already started.".into());
     }
 
@@ -146,7 +148,7 @@ fn tournament_edit_dates(
     }
 
     // Don't allow modifying ending_at if tournament already ended
-    if tournament.ending_at != ending_at && ctx.timestamp >= tournament.ending_at {
+    if tournament.ending_at != ending_at && current_time >= tournament.ending_at {
         return Err("Cannot modify end date of a tournament that has already ended.".into());
     }
 
@@ -154,7 +156,6 @@ fn tournament_edit_dates(
     tournament.ending_at = ending_at;
 
     // Check if the current status needs to be updated based on the new dates
-    let current_time = ctx.timestamp;
     if tournament.status == TournamentStatus::Announced && current_time >= starting_at {
         // Announced and starting time passed
         tournament.status = TournamentStatus::Ongoing;
