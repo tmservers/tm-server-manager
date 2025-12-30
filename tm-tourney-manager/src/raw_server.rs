@@ -195,3 +195,28 @@ fn raw_server(ctx: &ViewContext) -> Query<RawServerV1> {
     // Worker should see nothing
     ctx.from.tab_raw_server_online().build()
 }
+
+#[view(name = raw_server_expected_players, public)]
+fn raw_server_expected_players(ctx: &ViewContext) -> Vec</* PlayerEntry */ RawServerV1> {
+    //TODO make player entry struct
+    let Some(server) = ctx.db.tab_raw_server_online().identity().find(ctx.sender) else {
+        return Vec::new();
+    };
+
+    if let Some(match_id) = server.active_match() {
+        //TODO convert the match_id to the list with the connection filter
+        Vec::new()
+    } else {
+        Vec::new()
+    }
+}
+
+#[view(name = raw_server_current_players, public)]
+fn raw_server_current_players(ctx: &ViewContext) -> Vec</* PlayerEntry */ RawServerV1> {
+    //TODO make player entry struct
+    let Some(server) = ctx.db.tab_raw_server_online().identity().find(ctx.sender) else {
+        return Vec::new();
+    };
+
+    Vec::new()
+}

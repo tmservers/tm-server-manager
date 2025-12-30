@@ -6,6 +6,7 @@ use crate::{
     r#match::{
         event::{TmMatchEvent, tab_tm_match_event},
         match_state::{TmMatchState, tab_tm_match_state},
+        players::{TmMatchPlayer, tab_tm_match_players, tab_tm_match_spectators},
         tab_tm_match,
     },
     raw_server::tab_raw_server_online,
@@ -37,6 +38,43 @@ pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
         } else {
             false
         };
+
+        match &event {
+            Event::PlayerConenct(player) => {
+                match player.is_spectator {
+                    true => ctx
+                        .db
+                        .tab_tm_match_players()
+                        .account_id()
+                        .try_insert_or_update(TmMatchPlayer {
+                            match_id,
+                            account_id: player.account_id.clone(),
+                        })?,
+                    false => ctx
+                        .db
+                        .tab_tm_match_spectators()
+                        .account_id()
+                        .try_insert_or_update(TmMatchPlayer {
+                            match_id,
+                            account_id: player.account_id.clone(),
+                        })?,
+                };
+            }
+            Event::PlayerDisconnect(player) => {
+                if !ctx
+                    .db
+                    .tab_tm_match_players()
+                    .account_id()
+                    .delete(player.account_id.clone())
+                {
+                    ctx.db
+                        .tab_tm_match_spectators()
+                        .account_id()
+                        .delete(player.account_id.clone());
+                }
+            }
+            _ => (),
+        }
 
         //let tournament_id = tm_match.get_tournament();
         ctx.db.tab_tm_match_event().insert(TmMatchEvent {

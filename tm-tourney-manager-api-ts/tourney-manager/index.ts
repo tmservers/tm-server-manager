@@ -121,6 +121,8 @@ import MatchGhostRow from "./match_ghost_table";
 export { MatchGhostRow };
 import MatchLeaderbaordRow from "./match_leaderbaord_table";
 export { MatchLeaderbaordRow };
+import MatchPlayersRow from "./match_players_table";
+export { MatchPlayersRow };
 import MatchRecordRow from "./match_record_table";
 export { MatchRecordRow };
 import MatchRoundRow from "./match_round_table";
@@ -133,6 +135,10 @@ import MyTournamentRow from "./my_tournament_table";
 export { MyTournamentRow };
 import RawServerRow from "./raw_server_table";
 export { RawServerRow };
+import RawServerCurrentPlayersRow from "./raw_server_current_players_table";
+export { RawServerCurrentPlayersRow };
+import RawServerExpectedPlayersRow from "./raw_server_expected_players_table";
+export { RawServerExpectedPlayersRow };
 import RegisteredPlayerRow from "./registered_player_table";
 export { RegisteredPlayerRow };
 import ScheduleRow from "./schedule_table";
@@ -157,6 +163,8 @@ import TabTmMatchEventRow from "./tab_tm_match_event_table";
 export { TabTmMatchEventRow };
 import TabTmMatchPlayersRow from "./tab_tm_match_players_table";
 export { TabTmMatchPlayersRow };
+import TabTmMatchSpectatorsRow from "./tab_tm_match_spectators_table";
+export { TabTmMatchSpectatorsRow };
 import TabTmMatchStateRow from "./tab_tm_match_state_table";
 export { TabTmMatchStateRow };
 import TabTournamentRow from "./tab_tournament_table";
@@ -558,6 +566,20 @@ const tablesSchema = __schema(
     ],
   }, TabTmMatchPlayersRow),
   __table({
+    name: 'tab_tm_match_spectators',
+    indexes: [
+      { name: 'account_id', algorithm: 'btree', columns: [
+        'accountId',
+      ] },
+      { name: 'match_id', algorithm: 'btree', columns: [
+        'matchId',
+      ] },
+    ],
+    constraints: [
+      { name: 'tab_tm_match_spectators_account_id_key', constraint: 'unique', columns: ['accountId'] },
+    ],
+  }, TabTmMatchSpectatorsRow),
+  __table({
     name: 'tab_tm_match_state',
     indexes: [
       { name: 'id', algorithm: 'btree', columns: [
@@ -755,6 +777,13 @@ const tablesSchema = __schema(
     ],
   }, MatchLeaderbaordRow),
   __table({
+    name: 'match_players',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MatchPlayersRow),
+  __table({
     name: 'match_record',
     indexes: [
     ],
@@ -789,6 +818,20 @@ const tablesSchema = __schema(
     constraints: [
     ],
   }, RawServerRow),
+  __table({
+    name: 'raw_server_current_players',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, RawServerCurrentPlayersRow),
+  __table({
+    name: 'raw_server_expected_players',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, RawServerExpectedPlayersRow),
   __table({
     name: 'registered_player',
     indexes: [

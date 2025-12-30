@@ -166,6 +166,12 @@ pub trait XmlRpcMethods {
 
     async fn chat_send_server_massage(&self, message: &str) -> Result<bool, ClientError>;
 
+    async fn chat_manual_routing(
+        &self,
+        enable: bool,
+        auto_forward: bool,
+    ) -> Result<bool, ClientError>;
+
     async fn restart_map(&self) -> Result<bool, ClientError>;
 
     async fn next_map(&self) -> Result<bool, ClientError>;
@@ -253,6 +259,15 @@ impl XmlRpcMethods for TrackmaniaServer {
             (content, timeout, hide_on_click),
         )
         .await
+    }
+
+    async fn chat_manual_routing(
+        &self,
+        enable: bool,
+        auto_forward: bool,
+    ) -> Result<bool, ClientError> {
+        self.call("ChatEnableManualRouting", (enable, auto_forward))
+            .await
     }
 }
 

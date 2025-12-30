@@ -105,7 +105,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             .call("Authenticate", ("SuperAdmin", "SuperAdmin"))
             .await;
 
-        let _: Result<bool, ClientError> = server.call("EnableCallbacks", true).await;
+        let _: Result<bool, ClientError> = server.enable_callbacks(true).await;
 
         let _: Result<bool, ClientError> = server
             .call(
@@ -121,6 +121,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             )
             .await;
 
+        _ = server.chat_manual_routing(true, false).await;
+
+        //TODO remove
         _ = server.get_callbacks_list_disabled().await;
         _ = server.get_callbacks_list().await;
 
@@ -225,6 +228,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             .subscribe([
                 format!("SELECT * FROM tab_raw_server_online WHERE tm_login = '{tm_server_login}'"), //TODO replace with views
                 "SELECT * FROM tm_server_method_call".into(), //TODO this should be possible with views since you should only be able to query the server as a server.
+                                                              //"SELECT * FROM raw_server_expected_players",
             ]);
 
         //TODO check if connecting has succeeded
