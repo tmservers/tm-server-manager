@@ -1,7 +1,7 @@
 use spacetimedb::{ReducerContext, Table, reducer};
 use tm_server_types::method::MethodCall;
 
-use crate::server::tab_tm_server;
+use crate::{auth::Authorization, raw_server::tab_raw_server_online};
 
 #[cfg_attr(feature = "spacetime", spacetimedb::table(name=tm_server_method_call, public))]
 pub struct TmServerMethodCall {
@@ -10,8 +10,8 @@ pub struct TmServerMethodCall {
     pub id: u32,
 
     server_id: String,
-    //Audit Log?
-    user_id: String,
+
+    account_id: String,
 
     method: MethodCall,
 }
@@ -28,23 +28,25 @@ pub fn server_method_call(
     server_id: String,
     method: MethodCall,
 ) -> Result<(), String> {
-    //TODO do the proper auth
-    // the challenge is who is able to access the server? not only owner i guess
+    let account_id = ctx.get_user()?;
 
-    let Some(tm_server) = ctx.db.tab_tm_server().tm_login().find(&server_id) else {
-        return Err(format!("Server with id {server_id} was not found."));
+    if ctx
+        .db
+        .tab_raw_server_online()
+        .tm_login()
+        .find(&server_id)
+        .is_some()
+    {
+        return Err(format!(
+            "Server with id {server_id} was not found or is not online."
+        ));
     };
-
-    if !tm_server.online {
-        return Err(format!("Server with id {server_id} is not online."));
-    }
 
     ctx.db
         .tm_server_method_call()
         .try_insert(TmServerMethodCall {
             id: 0,
-            //TODO get from user auth token
-            user_id: "test_user".into(),
+            account_id,
             server_id,
             method,
         })?;

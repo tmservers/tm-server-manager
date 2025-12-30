@@ -223,7 +223,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             .on_applied(|_| tracing::debug!("Subscription successfully applied!"))
             .on_error(|_, mhm| tracing::error!("Subscription failed: {mhm:?}"))
             .subscribe([
-                format!("SELECT * FROM tab_tm_server WHERE tm_login = '{tm_server_login}'"), //TODO replace with views
+                format!("SELECT * FROM tab_raw_server_online WHERE tm_login = '{tm_server_login}'"), //TODO replace with views
                 "SELECT * FROM tm_server_method_call".into(), //TODO this should be possible with views since you should only be able to query the server as a server.
             ]);
 
@@ -233,8 +233,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             .login_as_server(tm_server_login, tm_server_password, tm_account_id);
 
         //TODO switch to this_server if on_update callbacks are there
-        spacetime.db.tab_tm_server().on_insert(server_bootstrap);
-        spacetime.db.tab_tm_server().on_update(server_update);
+        spacetime
+            .db
+            .tab_raw_server_online()
+            .on_insert(server_bootstrap);
+        spacetime
+            .db
+            .tab_raw_server_online()
+            .on_update(server_update);
 
         spacetime
             .db
@@ -276,7 +282,7 @@ fn on_disconnected(_ctx: &ErrorContext, err: Option<Error>) {
     }
 }
 
-fn server_update(_: &EventContext, old: &TmServerV1, new: &TmServerV1) {
+fn server_update(_: &EventContext, old: &RawServerV1, new: &RawServerV1) {
     //TODO check for match status change aswell!
 
     if old.config != new.config {
@@ -287,7 +293,7 @@ fn server_update(_: &EventContext, old: &TmServerV1, new: &TmServerV1) {
     }
 }
 
-fn server_bootstrap(ctx: &EventContext, new: &TmServerV1) {
+fn server_bootstrap(ctx: &EventContext, new: &RawServerV1) {
     let local_server = TRACKMANIA.wait();
     let new = new.clone();
     tokio::spawn(async move {

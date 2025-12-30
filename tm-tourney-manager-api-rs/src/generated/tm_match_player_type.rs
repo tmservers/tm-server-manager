@@ -4,17 +4,13 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::method_call_type::MethodCall;
-
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct TmServerMethodCall {
-    pub id: u32,
-    pub server_id: String,
+pub struct TmMatchPlayer {
+    pub match_id: u32,
     pub account_id: String,
-    pub method: MethodCall,
 }
 
-impl __sdk::InModule for TmServerMethodCall {
+impl __sdk::InModule for TmMatchPlayer {
     type Module = super::RemoteModule;
 }

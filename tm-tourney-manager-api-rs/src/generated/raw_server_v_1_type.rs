@@ -9,11 +9,10 @@ use super::server_state_type::ServerState;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct TmServerV1 {
+pub struct RawServerV1 {
     pub tm_login: String,
     pub identity: __sdk::Identity,
     pub owner_id: String,
-    pub online: bool,
     pub config: ServerConfig,
     pub state: ServerState,
     pub capturable: bool,
@@ -21,6 +20,6 @@ pub struct TmServerV1 {
     pub active_match: Option<u32>,
 }
 
-impl __sdk::InModule for TmServerV1 {
+impl __sdk::InModule for RawServerV1 {
     type Module = super::RemoteModule;
 }

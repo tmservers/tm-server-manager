@@ -1,7 +1,7 @@
 use spacetimedb::{ReducerContext, Table, reducer};
 use tm_server_types::method::{self, MethodResponse};
 
-use crate::{auth::Authorization, server::method::call::tm_server_method_call};
+use crate::{auth::Authorization, raw_server::method::call::tm_server_method_call};
 
 #[cfg_attr(feature = "spacetime", spacetimedb::table(name=tm_server_method_response, public))]
 pub struct TmServerMethodResponse {

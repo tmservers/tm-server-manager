@@ -5,11 +5,12 @@ use crate::{
     auth::Authorization,
     competition::tab_competition,
     r#match::match_state::{TmMatchState, tab_tm_match_state},
-    server::tab_tm_server,
+    raw_server::tab_raw_server_online,
 };
 
 pub mod event;
 pub mod match_state;
+pub mod players;
 
 // The table name needs to be plural since match is a rust keyword
 /// # Match
@@ -134,7 +135,7 @@ pub fn create_match(
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn match_assign_server(ctx: &ReducerContext, to: u32, server_id: String) -> Result<(), String> {
     ctx.get_user()?;
-    if let Some(mut server) = ctx.db.tab_tm_server().tm_login().find(&server_id)
+    if let Some(mut server) = ctx.db.tab_raw_server_online().tm_login().find(&server_id)
         && server.active_match().is_none()
         && let Some(stage_match) = ctx.db.tab_tm_match().id().find(to)
         && stage_match.status == MatchStatus::Configuring
@@ -146,7 +147,7 @@ pub fn match_assign_server(ctx: &ReducerContext, to: u32, server_id: String) -> 
 
         server.set_active_match(tm_match.id);
 
-        ctx.db.tab_tm_server().tm_login().update(server);
+        ctx.db.tab_raw_server_online().tm_login().update(server);
     }
     Ok(())
 }
@@ -162,7 +163,8 @@ pub fn match_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> {
         tm_match.status = MatchStatus::Upcoming;
 
         // Send the configuration of the corresponding match to the associated server.
-        let Some(mut tm_server) = ctx.db.tab_tm_server().tm_login().find(tm_server_id) else {
+        let Some(mut tm_server) = ctx.db.tab_raw_server_online().tm_login().find(tm_server_id)
+        else {
             return Err(format!("No server with id {tm_server_id} could be found"));
         };
         if tm_match.pre_match_config.is_some() {
@@ -173,7 +175,7 @@ pub fn match_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> {
 
         ctx.db.tab_tm_match().id().update(tm_match);
 
-        ctx.db.tab_tm_server().tm_login().update(tm_server);
+        ctx.db.tab_raw_server_online().tm_login().update(tm_server);
     }
     Ok(())
 }
@@ -223,14 +225,14 @@ pub fn try_start_match(ctx: &ReducerContext, match_id: u32) -> Result<(), String
         // Match needs an assigned server
         && let Some(server) = &tm_match.server_id
         //The assigned server needs to be valid
-        && let Some(mut server) = ctx.db.tab_tm_server().tm_login().find(server)
+        && let Some(mut server) = ctx.db.tab_raw_server_online().tm_login().find(server)
         && let Some(config) = &tm_match.match_config
         && tm_match.status == MatchStatus::Upcoming
     {
         server.set_config(config.clone());
         tm_match.status = MatchStatus::Live;
         ctx.db.tab_tm_match().id().update(tm_match);
-        ctx.db.tab_tm_server().tm_login().update(server);
+        ctx.db.tab_raw_server_online().tm_login().update(server);
     }
     Ok(())
 }

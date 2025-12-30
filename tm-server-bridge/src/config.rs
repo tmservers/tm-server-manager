@@ -1,11 +1,11 @@
 use nadeo_api::{NadeoRequest, auth::AuthType, request::Method};
 use serde::{Deserialize, Serialize};
 use tm_server_controller::{ClientError, method::XmlRpcMethods};
-use tm_tourney_manager_api_rs::TmServerV1;
+use tm_tourney_manager_api_rs::RawServerV1;
 
 use crate::{NADEO, TRACKMANIA};
 
-pub async fn configure(tm_server: TmServerV1) {
+pub async fn configure(tm_server: RawServerV1) {
     let local_server = TRACKMANIA.wait();
 
     //SAFETY: Same type but rust can't know that.

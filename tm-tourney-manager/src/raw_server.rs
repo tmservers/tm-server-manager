@@ -5,16 +5,16 @@ use spacetimedb::{Identity, Query, ReducerContext, Table, ViewContext};
 use spacetimedb::{ProcedureContext, view};
 use tm_server_types::{config::ServerConfig, event::Event};
 
-use crate::server::{config::tm_server_config, state::ServerState};
+use crate::raw_server::{config::tm_server_config, state::ServerState};
 
 pub mod config;
 pub mod event;
 pub mod method;
 pub mod state;
 
-//TODO maybe rename to RawServerV1
-#[cfg_attr(feature = "spacetime", spacetimedb::table(name=tab_tm_server,public))] //TODO make private is on_update callbacks for views are there
-pub struct TmServerV1 {
+#[spacetimedb::table(name=tab_raw_server_online,public)] //TODO make private is on_update callbacks for views are there
+#[spacetimedb::table(name=tab_raw_server_offline,public)]
+pub struct RawServerV1 {
     /// Trackmania server logins are unique.
     #[primary_key]
     pub tm_login: String,
@@ -26,8 +26,7 @@ pub struct TmServerV1 {
     owner_id: String,
 
     // Whether the server can be reached with a bridge active.
-    online: bool,
-
+    //online: bool,
     config: ServerConfig,
 
     // Mutable state which the server reacts to.
@@ -44,7 +43,7 @@ pub struct TmServerV1 {
     active_match: Option<u32>,
 }
 
-impl TmServerV1 {
+impl RawServerV1 {
     pub fn active_match(&self) -> Option<u32> {
         self.active_match
     }
@@ -67,12 +66,12 @@ impl TmServerV1 {
         self.active_match = None;
     }
 
-    pub fn set_online(&mut self) {
+    /*  pub fn set_online(&mut self) {
         self.online = true;
     }
     pub fn set_offline(&mut self) {
         self.online = false;
-    }
+    } */
 
     pub fn set_identity(&mut self, identity: Identity) {
         self.identity = identity;
@@ -103,7 +102,6 @@ pub fn login_as_server(
 )
 /* -> Result<(), String> */
 {
-    log::warn!("Huh");
     let request = Request::builder()
         .method("POST")
         .uri("https://prod.trackmania.core.nadeo.online/v2/authentication/token/basic")
@@ -131,19 +129,25 @@ pub fn login_as_server(
     }
 
     ctx.with_tx(|ctx| {
-        if ctx.db.tab_tm_server().identity().find(ctx.sender).is_some() {
+        if ctx
+            .db
+            .tab_raw_server_online()
+            .identity()
+            .find(ctx.sender)
+            .is_some()
+        {
             // Server identity is already verified.
             // return Ok(());
         }
-        if let Some(mut server) = ctx.db.tab_tm_server().tm_login().find(&login) {
+        if let Some(mut server) = ctx.db.tab_raw_server_online().tm_login().find(&login) {
             // The new identity is assigned to the server.
             server.set_identity(ctx.identity());
-            ctx.db.tab_tm_server().tm_login().update(server);
+            ctx.db.tab_raw_server_online().tm_login().update(server);
             //Ok(())
         } else {
             // Server has never been seen before so create a new one.
-            ctx.db.tab_tm_server().insert(TmServerV1 {
-                online: true,
+            ctx.db.tab_raw_server_online().insert(RawServerV1 {
+                //online: true,
                 tm_login: login.clone(),
                 active_match: None,
                 owner_id: account_id.clone(),
@@ -177,17 +181,17 @@ pub fn set_tm_server_state(ctx: &ReducerContext, id: String, state: ServerState)
     }
     */
 
-#[view(name = this_tm_server, public)]
-fn this_tm_server(ctx: &ViewContext) -> Option<TmServerV1> {
-    ctx.db.tab_tm_server().identity().find(ctx.sender)
+#[view(name = this_raw_server, public)]
+fn this_raw_server(ctx: &ViewContext) -> Option<RawServerV1> {
+    ctx.db.tab_raw_server_online().identity().find(ctx.sender)
 }
 
-#[view(name = tm_server, public)]
-fn tm_server(ctx: &ViewContext) -> Query<TmServerV1> {
+#[view(name = raw_server, public)]
+fn raw_server(ctx: &ViewContext) -> Query<RawServerV1> {
     //ctx.db.tab_tm_server().identity().find(ctx.sender)
     //TODO access control.
     // User should see his servers.
     // Server should see himself
     // Worker should see nothing
-    ctx.from.tab_tm_server().build()
+    ctx.from.tab_raw_server_online().build()
 }

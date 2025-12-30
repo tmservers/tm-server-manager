@@ -8,7 +8,7 @@ use crate::{
         match_state::{TmMatchState, tab_tm_match_state},
         tab_tm_match,
     },
-    server::tab_tm_server,
+    raw_server::tab_raw_server_online,
 };
 
 /// Servers call this to post the event stream.
@@ -16,7 +16,7 @@ use crate::{
 pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
     let login = ctx.get_server()?;
 
-    if let Some(mut tm_server) = ctx.db.tab_tm_server().tm_login().find(login)
+    if let Some(mut tm_server) = ctx.db.tab_raw_server_online().tm_login().find(login)
         && let Some(match_id) = tm_server.active_match()
         && let Some(mut tm_match) = ctx.db.tab_tm_match().id().find(match_id)
         && tm_match.is_live()
@@ -54,7 +54,7 @@ pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
             ctx.db.tab_tm_match_state().id().update(match_state);
         }
         if server_changed || match_ended {
-            ctx.db.tab_tm_server().tm_login().update(tm_server);
+            ctx.db.tab_raw_server_online().tm_login().update(tm_server);
         }
     }
     Ok(())

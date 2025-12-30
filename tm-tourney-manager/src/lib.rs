@@ -1,7 +1,7 @@
 use spacetimedb::{ReducerContext, Table};
 
 use crate::{
-    server::tab_tm_server,
+    raw_server::{tab_raw_server_offline, tab_raw_server_online},
     user::{User as UserStruct, UserIdentity, tab_user as db_user, user_identity},
 };
 
@@ -13,10 +13,10 @@ pub mod generator;
 pub mod ghosts;
 pub mod r#match;
 pub mod monitoring;
+pub mod raw_server;
 pub mod record;
 pub mod registration;
 pub mod scheduling;
-pub mod server;
 pub mod tournament;
 pub mod user;
 pub mod worker;
@@ -41,9 +41,9 @@ fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
         Ok(())
     } else {
         // The server comes back online.
-        if let Some(mut server) = ctx.db.tab_tm_server().identity().find(ctx.sender) {
-            server.set_online();
-            ctx.db.tab_tm_server().tm_login().update(server);
+        if let Some(mut server) = ctx.db.tab_raw_server_offline().identity().find(ctx.sender) {
+            // server.set_online();
+            ctx.db.tab_raw_server_online().tm_login().update(server);
             Ok(())
         } else {
             // Client connects annonymously.
@@ -53,9 +53,9 @@ fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
 }
 
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer(client_disconnected))]
-fn identity_disconnected(ctx: &ReducerContext) {
-    if let Some(mut server) = ctx.db.tab_tm_server().identity().find(ctx.sender) {
-        server.set_offline();
-        ctx.db.tab_tm_server().tm_login().update(server);
+fn client_disconnected(ctx: &ReducerContext) {
+    if let Some(mut server) = ctx.db.tab_raw_server_online().identity().find(ctx.sender) {
+        // server.set_offline();
+        ctx.db.tab_raw_server_online().tm_login().update(server);
     }
 }
