@@ -33,11 +33,7 @@ pub struct TournamentV1 {
     status: TournamentStatus,
 }
 
-impl TournamentV1 {
-    pub fn has_started(&self) -> bool {
-        self.status == TournamentStatus::Ongoing || self.status == TournamentStatus::Ended
-    }
-}
+impl TournamentV1 {}
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
@@ -140,7 +136,7 @@ fn tournament_edit_dates(
     };
 
     // Don't allow modifying starting_at if tournament already started
-    if tournament.starting_at != starting_at && tournament.has_started() {
+    if tournament.starting_at != starting_at && ctx.timestamp >= tournament.starting_at {
         return Err("Cannot modify start date of a tournament that has already started.".into());
     }
 
@@ -150,7 +146,7 @@ fn tournament_edit_dates(
     }
 
     // Don't allow modifying ending_at if tournament already ended
-    if tournament.ending_at != ending_at && tournament.status == TournamentStatus::Ended {
+    if tournament.ending_at != ending_at && ctx.timestamp >= tournament.ending_at {
         return Err("Cannot modify end date of a tournament that has already ended.".into());
     }
 
