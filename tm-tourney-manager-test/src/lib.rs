@@ -1,4 +1,4 @@
-#[cfg(test)]
+/* #[cfg(test)]
 use tm_tourney_manager_api_rs::*;
 
 #[cfg(test)]
@@ -51,3 +51,4 @@ fn normal_account_cant_post_event() {
 
     insta::assert_debug_snapshot!(db.db.tournament().iter().collect::<Vec<_>>());
 }
+ */

@@ -31,6 +31,7 @@ pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
             log::error!("MATCH ENDED");
 
             tm_match.end_match();
+            ctx.db.tab_tm_match().id().update(tm_match);
             tm_server.release();
             true
         } else {
