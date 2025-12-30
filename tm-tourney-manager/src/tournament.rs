@@ -135,23 +135,38 @@ fn tournament_edit_dates(
         return Err("Supplied tournament_id incorrect.".into());
     };
 
+    let current_time = ctx.timestamp;
+
+    // Don't allow modifying starting_at if tournament already started
+    if tournament.starting_at != starting_at && current_time >= tournament.starting_at {
+        return Err("Cannot modify start date of a tournament that has already started.".into());
+    }
+
+    // Don't allow modifying ending_at if tournament already ended
+    if tournament.ending_at != ending_at && current_time >= tournament.ending_at {
+        return Err("Cannot modify end date of a tournament that has already ended.".into());
+    }
+
+    // Don't allow modifying ending_at to before starting_at
+    if ending_at < starting_at {
+        return Err("Ending date cannot be before starting date.".into());
+    }
+
     tournament.starting_at = starting_at;
     tournament.ending_at = ending_at;
 
     // Check if the current status needs to be updated based on the new dates
-    let current_time = ctx.timestamp;
     if tournament.status == TournamentStatus::Announced && current_time >= starting_at {
-        // Announced and starting time passed -> Ongoing
+        // Announced and starting time passed
         tournament.status = TournamentStatus::Ongoing;
+
+        if current_time >= ending_at {
+            // Ending time also passed
+            tournament.status = TournamentStatus::Ended;
+        }
     } else if tournament.status == TournamentStatus::Ongoing && current_time >= ending_at {
-        // Ongoing and ending time passed -> Ended
+        // Ongoing and ending time passed
         tournament.status = TournamentStatus::Ended;
-    } else if tournament.status == TournamentStatus::Ongoing && current_time < starting_at {
-        // Ongoing but starting time is now in the future -> Announced
-        tournament.status = TournamentStatus::Announced;
-    } else if tournament.status == TournamentStatus::Ended && current_time < ending_at {
-        // Ended but ending time is now in the future -> Ongoing
-        tournament.status = TournamentStatus::Ongoing;
     }
 
     tournament = ctx.db.tab_tournament().id().update(tournament);
