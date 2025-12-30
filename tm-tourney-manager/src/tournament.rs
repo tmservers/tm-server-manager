@@ -33,7 +33,11 @@ pub struct TournamentV1 {
     status: TournamentStatus,
 }
 
-impl TournamentV1 {}
+impl TournamentV1 {
+    pub fn has_started(&self) -> bool {
+        self.status == TournamentStatus::Ongoing || self.status == TournamentStatus::Ended
+    }
+}
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
@@ -135,6 +139,21 @@ fn tournament_edit_dates(
         return Err("Supplied tournament_id incorrect.".into());
     };
 
+    // Don't allow modifying starting_at if tournament already started
+    if tournament.starting_at != starting_at && tournament.has_started() {
+        return Err("Cannot modify start date of a tournament that has already started.".into());
+    }
+
+    // Don't allow modifying ending_at to before starting_at
+    if ending_at < starting_at {
+        return Err("Ending date cannot be before starting date.".into());
+    }
+
+    // Don't allow modifying ending_at if tournament already ended
+    if tournament.ending_at != ending_at && tournament.status == TournamentStatus::Ended {
+        return Err("Cannot modify end date of a tournament that has already ended.".into());
+    }
+
     tournament.starting_at = starting_at;
     tournament.ending_at = ending_at;
 
@@ -142,28 +161,15 @@ fn tournament_edit_dates(
     let current_time = ctx.timestamp;
     if tournament.status == TournamentStatus::Announced && current_time >= starting_at {
         // Announced and starting time passed
-        if current_time < ending_at {
-            // Ending time not yet passed
-            tournament.status = TournamentStatus::Ongoing;
-        } else {
+        tournament.status = TournamentStatus::Ongoing;
+
+        if current_time >= ending_at {
             // Ending time also passed
             tournament.status = TournamentStatus::Ended;
         }
     } else if tournament.status == TournamentStatus::Ongoing && current_time >= ending_at {
         // Ongoing and ending time passed
         tournament.status = TournamentStatus::Ended;
-    } else if tournament.status == TournamentStatus::Ongoing && current_time < starting_at {
-        // Ongoing but starting time is now in the future
-        tournament.status = TournamentStatus::Announced;
-    } else if tournament.status == TournamentStatus::Ended && current_time < ending_at {
-        // Ended but ending time is now in the future
-        if current_time >= starting_at {
-            // Starting time is in the past
-            tournament.status = TournamentStatus::Ongoing;
-        } else {
-            // Starting time is also in the future
-            tournament.status = TournamentStatus::Announced;
-        }
     }
 
     tournament = ctx.db.tab_tournament().id().update(tournament);
