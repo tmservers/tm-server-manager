@@ -1,7 +1,7 @@
 /// The configuration available in every game mode.
 /// Only usable parameters included (not shootmania stuff): [Docs](https://wiki.trackmania.io/en/dedicated-server/Usage/OfficialGameModesSettings#s_decoimageurl_checkpoint)
 /// Omitted:
-/// - Inifnte Laps: Reproducible with Force Laps Number
+/// - Infinite Laps: Reproducible with Force Laps Number
 /// - Script Environment: No dev support
 /// - Season Ids: Nobody knows what it does
 ///
@@ -13,6 +13,9 @@ pub struct Common {
     /// Chat time at the end of a map or match
     chat_time: u32,
     respawn_behaviour: RespawnBehaviour,
+
+    /// Minimal time before the server go to the next map in milliseconds.
+    delay_before_next_map: u32,
 
     /// Synchronize players at the launch of the map, to ensure that no one starts late.
     /// Can delay the start by a few seconds.
@@ -27,9 +30,6 @@ pub struct Common {
     /// The car position of other players is extrapolated less precisely, disabling it has a big impact on performance.
     /// This replaces the "S_UseDelayedVisuals" option by removing the delay with ghosts for the modes that need it (There may be a delay in TimeAttack).
     use_crude_extrapolation: bool,
-
-    /// Use “development” to make script more verbose
-    script_environment: String,
 
 
     warmup_duration: WarmupDuration,
@@ -56,9 +56,6 @@ pub struct Common {
     deco_image_url_who_am_i_url: String,
 
     force_laps_number: i32,
-
-    /// Never end a race in laps, equivalent of S_ForceLapsNb = 0
-    infinite_laps: bool,
 }
 
 impl Common {
@@ -66,11 +63,11 @@ impl Common {
         Self {
             chat_time: 10,
             respawn_behaviour: RespawnBehaviour::Default,
+            delay_before_next_map: 2000,
             synchronize_players_at_map_start: true,
             synchronize_players_at_round_start: true,
             trust_client_simulation: true,
             use_crude_extrapolation: true,
-            script_environment: "".into(),
             warmup_duration: WarmupDuration::BasedOnMedal,
             warmup_timeout: WarmupTimeout::BasedOnMedal,
             warmup_number: 0,
@@ -81,33 +78,46 @@ impl Common {
             deco_image_url_screen_8x1: "".into(),
             deco_image_url_who_am_i_url: "".into(),
             force_laps_number: -1, // Laps from map validation
-            infinite_laps: false,
         }
     }
 
     pub fn into_xml(&self) -> String {
         format!(
             r#"
-        <setting name="S_UseTieBreak" value="" type="boolean"/>
-    	<setting name="S_UseClublinks" value="" type="boolean"/>
-    	<setting name="S_UseClublinksSponsors" value="" type="boolean"/>
-    	<setting name="S_NeutralEmblemUrl" value="" type="text"/>
-    	<setting name="S_ScriptEnvironment" value="production" type="text"/>
-    	<setting name="S_IsChannelServer" value="" type="boolean"/>
-    	<setting name="S_HideOpponents" value="" type="boolean"/>
-    	<setting name="S_UseLegacyXmlRpcCallbacks" value="1" type="boolean"/>
-    	<setting name="S_UseAlternateRules" value="" type="boolean"/>
-    	<setting name="S_DisplayTimeDiff" value="" type="boolean"/>
     	<setting name="S_ChatTime" value="{}" type="integer"/>
-    	<setting name="S_WarmUpNb" value="{}" type="integer"/>
-    	<setting name="S_WarmUpDuration" value="{}" type="integer"/>
     	<setting name="S_RespawnBehaviour" value="{}" type="integer"/>
+        <setting name="S_DelayBeforeNextMap" value="{}" type="integer"/>
+        <setting name="S_SynchronizePlayersAtMapStart" value="{}" type="boolean"/>
+        <setting name="S_SynchronizePlayersAtRoundStart" value="{}" type="boolean"/>
+        <setting name="S_TrustClientSimu" value="{}" type="boolean"/>
+        <setting name="S_UseCrudeExtrapolation" value="{}" type="boolean"/>
+    	<setting name="S_WarmUpDuration" value="{}" type="integer"/>
+        <setting name="S_WarmUpTimeout" value="{}" type="integer"/>
+    	<setting name="S_WarmUpNb" value="{}" type="integer"/>
+        <setting name="S_DecoImageUrl_Checkpoint" value="{}" type="text"/>
+        <setting name="S_DecoImageUrl_DecalSponsor4x1" value="{}" type="text"/>
+        <setting name="S_DecoImageUrl_Screen16x1" value="{}" type="text"/>
+        <setting name="S_DecoImageUrl_Screen16x9" value="{}" type="text"/>
+        <setting name="S_DecoImageUrl_Screen8x1" value="{}" type="text"/>
+        <setting name="S_DecoImageUrl_WhoAmIUrl" value="{}" type="text"/>
     	<setting name="S_ForceLapsNb" value="{}" type="integer"/>
         "#,
             self.chat_time,
-            self.warmup_number,
-            Into::<i32>::into(self.warmup_duration),
             Into::<i32>::into(self.respawn_behaviour),
+            self.delay_before_next_map,
+            self.synchronize_players_at_map_start,
+            self.synchronize_players_at_round_start,
+            self.trust_client_simulation,
+            self.use_crude_extrapolation,
+            Into::<i32>::into(self.warmup_duration),
+            Into::<i32>::into(self.warmup_timeout),
+            self.warmup_number,
+            self.deco_image_url_checkpoint,
+            self.deco_image_url_decal_sponsor_4x1,
+            self.deco_image_url_screen_16x1,
+            self.deco_image_url_screen_16x9,
+            self.deco_image_url_screen_8x1,
+            self.deco_image_url_who_am_i_url,
             self.force_laps_number,
         )
     }

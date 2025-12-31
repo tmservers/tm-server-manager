@@ -4,20 +4,14 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::finish_timeout_type::FinishTimeout;
-
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct Rounds {
-    pub finish_timeout: FinishTimeout,
-    pub maps_per_match: i32,
-    pub points_limit: u32,
-    pub use_custom_points_repartition: bool,
-    pub points_repartition: Vec<u32>,
-    pub rounds_per_map: i32,
-    pub use_tie_breaker: bool,
+pub enum WarmupTimeout {
+    BasedOnMedal,
+
+    Seconds(u32),
 }
 
-impl __sdk::InModule for Rounds {
+impl __sdk::InModule for WarmupTimeout {
     type Module = super::RemoteModule;
 }

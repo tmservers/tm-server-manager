@@ -8,6 +8,9 @@ pub use common::*;
 mod options;
 pub use options::ServerOptions;
 
+mod enums;
+pub use enums::*;
+
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]

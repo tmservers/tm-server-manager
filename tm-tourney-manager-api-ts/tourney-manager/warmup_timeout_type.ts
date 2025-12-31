@@ -10,15 +10,11 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-// The tagged union or sum type for the algebraic type `RespawnBavaviour`.
-const RespawnBavaviour = __t.enum("RespawnBavaviour", {Default: __t.unit(),
-  TimeAttack: __t.unit(),
-  Ignore: __t.unit(),
-  GiveUpAtStart: __t.unit(),
-  GiveUpAlways: __t.unit(),
-  GiveUpNever: __t.unit(),
+// The tagged union or sum type for the algebraic type `WarmupTimeout`.
+const WarmupTimeout = __t.enum("WarmupTimeout", {BasedOnMedal: __t.unit(),
+  Seconds: __t.u32(),
 });
 
-export default RespawnBavaviour;
+export default WarmupTimeout;
 
 
