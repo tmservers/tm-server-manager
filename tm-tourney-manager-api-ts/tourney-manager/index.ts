@@ -49,6 +49,8 @@ import CreateEventTemplateReducer from "./create_event_template_reducer";
 export { CreateEventTemplateReducer };
 import CreateMatchReducer from "./create_match_reducer";
 export { CreateMatchReducer };
+import CreateMatchTemplateReducer from "./create_match_template_reducer";
+export { CreateMatchTemplateReducer };
 import CreateMonitorReducer from "./create_monitor_reducer";
 export { CreateMonitorReducer };
 import CreateScheduleReducer from "./create_schedule_reducer";
@@ -424,6 +426,9 @@ const tablesSchema = __schema(
   __table({
     name: 'match_template',
     indexes: [
+      { name: 'creator', algorithm: 'btree', columns: [
+        'creator',
+      ] },
       { name: 'id', algorithm: 'btree', columns: [
         'id',
       ] },
@@ -889,6 +894,7 @@ const reducersSchema = __reducers(
   __reducerSchema("create_env_var", CreateEnvVarReducer),
   __reducerSchema("create_event_template", CreateEventTemplateReducer),
   __reducerSchema("create_match", CreateMatchReducer),
+  __reducerSchema("create_match_template", CreateMatchTemplateReducer),
   __reducerSchema("create_monitor", CreateMonitorReducer),
   __reducerSchema("create_schedule", CreateScheduleReducer),
   __reducerSchema("create_server_config", CreateServerConfigReducer),

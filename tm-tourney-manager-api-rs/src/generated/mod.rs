@@ -26,6 +26,7 @@ pub mod create_connection_reducer;
 pub mod create_env_var_reducer;
 pub mod create_event_template_reducer;
 pub mod create_match_reducer;
+pub mod create_match_template_reducer;
 pub mod create_monitor_reducer;
 pub mod create_schedule_reducer;
 pub mod create_server_config_reducer;
@@ -222,6 +223,9 @@ pub use create_event_template_reducer::{
     create_event_template, set_flags_for_create_event_template, CreateEventTemplateCallbackId,
 };
 pub use create_match_reducer::{create_match, set_flags_for_create_match, CreateMatchCallbackId};
+pub use create_match_template_reducer::{
+    create_match_template, set_flags_for_create_match_template, CreateMatchTemplateCallbackId,
+};
 pub use create_monitor_reducer::{
     create_monitor, set_flags_for_create_monitor, CreateMonitorCallbackId,
 };
@@ -464,6 +468,7 @@ pub enum Reducer {
         competition_id: u32,
         with_template: Option<u32>,
     },
+    CreateMatchTemplate,
     CreateMonitor {
         competition: u32,
         settings: MonitoringSettings,
@@ -570,6 +575,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::CreateEnvVar { .. } => "create_env_var",
             Reducer::CreateEventTemplate { .. } => "create_event_template",
             Reducer::CreateMatch { .. } => "create_match",
+            Reducer::CreateMatchTemplate => "create_match_template",
             Reducer::CreateMonitor { .. } => "create_monitor",
             Reducer::CreateSchedule { .. } => "create_schedule",
             Reducer::CreateServerConfig { .. } => "create_server_config",
@@ -614,6 +620,7 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "create_env_var" => Ok(__sdk::parse_reducer_args::<create_env_var_reducer::CreateEnvVarArgs>("create_env_var", &value.args)?.into()),
             "create_event_template" => Ok(__sdk::parse_reducer_args::<create_event_template_reducer::CreateEventTemplateArgs>("create_event_template", &value.args)?.into()),
             "create_match" => Ok(__sdk::parse_reducer_args::<create_match_reducer::CreateMatchArgs>("create_match", &value.args)?.into()),
+            "create_match_template" => Ok(__sdk::parse_reducer_args::<create_match_template_reducer::CreateMatchTemplateArgs>("create_match_template", &value.args)?.into()),
             "create_monitor" => Ok(__sdk::parse_reducer_args::<create_monitor_reducer::CreateMonitorArgs>("create_monitor", &value.args)?.into()),
             "create_schedule" => Ok(__sdk::parse_reducer_args::<create_schedule_reducer::CreateScheduleArgs>("create_schedule", &value.args)?.into()),
             "create_server_config" => Ok(__sdk::parse_reducer_args::<create_server_config_reducer::CreateServerConfigArgs>("create_server_config", &value.args)?.into()),

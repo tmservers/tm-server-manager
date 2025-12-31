@@ -11,8 +11,8 @@ use crate::{
 pub mod event;
 pub mod match_state;
 pub mod players;
+pub mod template;
 
-// The table name needs to be plural since match is a rust keyword
 /// # Match
 /// Fullfills the role of providing configuration to the associated server and
 /// executes the match on a Trackmania Server.
@@ -22,7 +22,7 @@ pub mod players;
 /// Is represented and can be queried via the [MatchStatus]
 /// and consists of:
 /// - *Created.* In order to advance to the next stage a valid configuration for
-///  match_config need to be present. Tthe same config will be used for pre_match if not overridden.
+///  match_config need to be present. The same config will be used for pre_match if not overridden.
 ///  Advances to [MatchStatus::Configuring].
 /// - *Configured.* Advances to [MatchStatus::Upcoming].
 /// - *Captured Server.* Capturing describes the process of assigning a
@@ -235,15 +235,6 @@ pub fn try_start_match(ctx: &ReducerContext, match_id: u32) -> Result<(), String
         ctx.db.tab_raw_server_online().tm_login().update(server);
     }
     Ok(())
-}
-
-#[cfg_attr(feature = "spacetime", spacetimedb::table(name = match_template,public))]
-pub struct MatchTemplate {
-    #[auto_inc]
-    #[primary_key]
-    id: u32,
-
-    creator: String,
 }
 
 #[view(name=tm_match,public)]
