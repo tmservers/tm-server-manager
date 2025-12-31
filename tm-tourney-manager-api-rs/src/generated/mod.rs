@@ -468,7 +468,9 @@ pub enum Reducer {
         competition_id: u32,
         with_template: Option<u32>,
     },
-    CreateMatchTemplate,
+    CreateMatchTemplate {
+        config: Option<ServerConfig>,
+    },
     CreateMonitor {
         competition: u32,
         settings: MonitoringSettings,
@@ -575,7 +577,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::CreateEnvVar { .. } => "create_env_var",
             Reducer::CreateEventTemplate { .. } => "create_event_template",
             Reducer::CreateMatch { .. } => "create_match",
-            Reducer::CreateMatchTemplate => "create_match_template",
+            Reducer::CreateMatchTemplate { .. } => "create_match_template",
             Reducer::CreateMonitor { .. } => "create_monitor",
             Reducer::CreateSchedule { .. } => "create_schedule",
             Reducer::CreateServerConfig { .. } => "create_server_config",

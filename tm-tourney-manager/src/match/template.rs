@@ -23,7 +23,7 @@ impl MatchTemplate {}
 #[reducer]
 fn create_match_template(
 	ctx: &ReducerContext,
-	// config: Option<ServerConfig>
+	config: Option<ServerConfig>
 ) -> Result<(), String> {
 	let user = ctx.get_user()? else {
 		return Err("User not found".to_string());
@@ -32,7 +32,7 @@ fn create_match_template(
 	let match_template = ctx.db.match_template().try_insert(MatchTemplate {
 		id: 0,
 		creator: user,
-		config: None,
+		config: config,
 	});
 
 	Ok(())
