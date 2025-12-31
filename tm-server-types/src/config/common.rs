@@ -1,3 +1,5 @@
+use crate::config::enums::{RespawnBehaviour, WarmupDuration, WarmupTimeout};
+
 /// The configuration available in every game mode.
 /// Only usable parameters included (not shootmania stuff): [Docs](https://wiki.trackmania.io/en/dedicated-server/Usage/OfficialGameModesSettings#s_decoimageurl_checkpoint)
 /// Omitted:
@@ -30,7 +32,6 @@ pub struct Common {
     /// The car position of other players is extrapolated less precisely, disabling it has a big impact on performance.
     /// This replaces the "S_UseDelayedVisuals" option by removing the delay with ghosts for the modes that need it (There may be a delay in TimeAttack).
     use_crude_extrapolation: bool,
-
 
     warmup_duration: WarmupDuration,
     warmup_timeout: WarmupTimeout,
@@ -120,102 +121,5 @@ impl Common {
             self.deco_image_url_who_am_i_url,
             self.force_laps_number,
         )
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
-#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
-pub enum RespawnBehaviour {
-    /// Use the default behavior of the gamemode
-    Default = 0,
-    /// Use the normal behavior like in TimeAttack.
-    TimeAttack = 1,
-    /// Do nothing.
-    Ignore = 2,
-    /// Give up before first checkpoint.
-    GiveUpAtStart = 3,
-    /// Always give up.
-    GiveUpAlways = 4,
-    /// Never give up.
-    GiveUpNever = 5,
-}
-
-impl From<RespawnBehaviour> for i32 {
-    fn from(value: RespawnBehaviour) -> Self {
-        match value {
-            RespawnBehaviour::Default => 0,
-            RespawnBehaviour::TimeAttack => 1,
-            RespawnBehaviour::Ignore => 2,
-            RespawnBehaviour::GiveUpAtStart => 3,
-            RespawnBehaviour::GiveUpAlways => 4,
-            RespawnBehaviour::GiveUpNever => 5,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
-#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
-#[cfg_attr(feature = "serde", serde(from = "i32", into = "i32"))]
-pub enum WarmupDuration {
-    /// Only one try like a round
-    OneTry,
-    // Time based on the Author medal ( 5 seconds + Author Time on 1 lap + ( Author Time on 1 lap / 6 ) )
-    BasedOnMedal,
-    /// Time in seconds
-    Seconds(u32),
-}
-
-impl From<i32> for WarmupDuration {
-    fn from(value: i32) -> Self {
-        match value {
-            -1 => WarmupDuration::OneTry,
-            0 => WarmupDuration::BasedOnMedal,
-            _ => WarmupDuration::Seconds(value as u32),
-        }
-    }
-}
-
-impl From<WarmupDuration> for i32 {
-    fn from(value: WarmupDuration) -> Self {
-        match value {
-            WarmupDuration::OneTry => -1,
-            WarmupDuration::BasedOnMedal => 0,
-            WarmupDuration::Seconds(s) => s as i32,
-        }
-    }
-}
-
-
-#[derive(Debug, Clone, Copy)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
-#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
-#[cfg_attr(feature = "serde", serde(from = "i32", into = "i32"))]
-pub enum WarmupTimeout {
-    /// Time based on the Author medal ( 5 seconds + Author time / 6 )
-    BasedOnMedal,
-    /// Time in seconds
-    Seconds(u32),
-}
-
-impl From<i32> for WarmupTimeout {
-    fn from(value: i32) -> Self {
-        match value {
-            -1 => WarmupTimeout::BasedOnMedal,
-            _ => WarmupTimeout::Seconds(value as u32),
-        }
-    }
-}
-
-impl From<WarmupTimeout> for i32 {
-    fn from(value: WarmupTimeout) -> Self {
-        match value {
-            WarmupTimeout::BasedOnMedal => -1,
-            WarmupTimeout::Seconds(s) => s as i32,
-        }
     }
 }
