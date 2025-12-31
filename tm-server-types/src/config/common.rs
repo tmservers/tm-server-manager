@@ -12,7 +12,7 @@
 pub struct Common {
     /// Chat time at the end of a map or match
     chat_time: u32,
-    respawn_behaviour: RespawnBavaviour,
+    respawn_behaviour: RespawnBehaviour,
 
     /// Synchronize players at the launch of the map, to ensure that no one starts late.
     /// Can delay the start by a few seconds.
@@ -28,8 +28,12 @@ pub struct Common {
     /// This replaces the "S_UseDelayedVisuals" option by removing the delay with ghosts for the modes that need it (There may be a delay in TimeAttack).
     use_crude_extrapolation: bool,
 
+    /// Use “development” to make script more verbose
+    script_environment: String,
+
+
     warmup_duration: WarmupDuration,
-    //warmup_timeout: ,
+    warmup_timeout: WarmupTimeout,
     warmup_number: u32,
 
     /// Url of the image displayed on the checkpoints ground.
@@ -43,35 +47,41 @@ pub struct Common {
     deco_image_url_screen_16x1: String,
     /// Url of the image displayed on the two big screens.
     /// Override the image set in the Club.
-    deco_image_url_screen_19x9: String,
+    deco_image_url_screen_16x9: String,
     /// Url of the image displayed on the bleachers.
     /// Override the image set in the Club.
     deco_image_url_screen_8x1: String,
     /// Url of the API route to get the deco image url.
     /// You can replace ":ServerLogin" with a login from a server in another club to use its images.
-    deco_image_url_who_am_i: String,
+    deco_image_url_who_am_i_url: String,
 
     force_laps_number: i32,
+
+    /// Never end a race in laps, equivalent of S_ForceLapsNb = 0
+    infinite_laps: bool,
 }
 
 impl Common {
     pub fn default_rounds() -> Self {
         Self {
             chat_time: 10,
-            respawn_behaviour: RespawnBavaviour::Default,
+            respawn_behaviour: RespawnBehaviour::Default,
             synchronize_players_at_map_start: true,
             synchronize_players_at_round_start: true,
             trust_client_simulation: true,
             use_crude_extrapolation: true,
+            script_environment: "".into(),
             warmup_duration: WarmupDuration::BasedOnMedal,
+            warmup_timeout: WarmupTimeout::BasedOnMedal,
             warmup_number: 0,
             deco_image_url_checkpoint: "".into(),
             deco_image_url_decal_sponsor_4x1: "".into(),
             deco_image_url_screen_16x1: "".into(),
-            deco_image_url_screen_19x9: "".into(),
+            deco_image_url_screen_16x9: "".into(),
             deco_image_url_screen_8x1: "".into(),
-            deco_image_url_who_am_i: "".into(),
+            deco_image_url_who_am_i_url: "".into(),
             force_laps_number: -1, // Laps from map validation
+            infinite_laps: false,
         }
     }
 
@@ -107,7 +117,7 @@ impl Common {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
-pub enum RespawnBavaviour {
+pub enum RespawnBehaviour {
     /// Use the default behavior of the gamemode
     Default = 0,
     /// Use the normal behavior like in TimeAttack.
@@ -122,15 +132,15 @@ pub enum RespawnBavaviour {
     GiveUpNever = 5,
 }
 
-impl From<RespawnBavaviour> for i32 {
-    fn from(value: RespawnBavaviour) -> Self {
+impl From<RespawnBehaviour> for i32 {
+    fn from(value: RespawnBehaviour) -> Self {
         match value {
-            RespawnBavaviour::Default => 0,
-            RespawnBavaviour::TimeAttack => 1,
-            RespawnBavaviour::Ignore => 2,
-            RespawnBavaviour::GiveUpAtStart => 3,
-            RespawnBavaviour::GiveUpAlways => 4,
-            RespawnBavaviour::GiveUpNever => 5,
+            RespawnBehaviour::Default => 0,
+            RespawnBehaviour::TimeAttack => 1,
+            RespawnBehaviour::Ignore => 2,
+            RespawnBehaviour::GiveUpAtStart => 3,
+            RespawnBehaviour::GiveUpAlways => 4,
+            RespawnBehaviour::GiveUpNever => 5,
         }
     }
 }
@@ -165,6 +175,37 @@ impl From<WarmupDuration> for i32 {
             WarmupDuration::OneTry => -1,
             WarmupDuration::BasedOnMedal => 0,
             WarmupDuration::Seconds(s) => s as i32,
+        }
+    }
+}
+
+
+#[derive(Debug, Clone, Copy)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
+#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
+#[cfg_attr(feature = "serde", serde(from = "i32", into = "i32"))]
+pub enum WarmupTimeout {
+    /// Time based on the Author medal ( 5 seconds + Author time / 6 )
+    BasedOnMedal,
+    /// Time in seconds
+    Seconds(u32),
+}
+
+impl From<i32> for WarmupTimeout {
+    fn from(value: i32) -> Self {
+        match value {
+            -1 => WarmupTimeout::BasedOnMedal,
+            _ => WarmupTimeout::Seconds(value as u32),
+        }
+    }
+}
+
+impl From<WarmupTimeout> for i32 {
+    fn from(value: WarmupTimeout) -> Self {
+        match value {
+            WarmupTimeout::BasedOnMedal => -1,
+            WarmupTimeout::Seconds(s) => s as i32,
         }
     }
 }
