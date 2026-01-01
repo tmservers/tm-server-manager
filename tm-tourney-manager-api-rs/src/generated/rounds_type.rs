@@ -6,13 +6,14 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 use super::finish_timeout_type::FinishTimeout;
 use super::maps_per_match_type::MapsPerMatch;
+use super::points_limit_type::PointsLimit;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct Rounds {
     pub finish_timeout: FinishTimeout,
     pub maps_per_match: MapsPerMatch,
-    pub points_limit: u32,
+    pub points_limit: PointsLimit,
     pub use_custom_points_repartition: bool,
     pub points_repartition: Vec<u32>,
     pub rounds_per_map: i32,

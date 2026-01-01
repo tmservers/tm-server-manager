@@ -305,6 +305,8 @@ import PlayerDisconnect from "./player_disconnect_type";
 export { PlayerDisconnect };
 import Podium from "./podium_type";
 export { Podium };
+import PointsLimit from "./points_limit_type";
+export { PointsLimit };
 import RawServerV1 from "./raw_server_v_1_type";
 export { RawServerV1 };
 import RegisteredPlayer from "./registered_player_type";

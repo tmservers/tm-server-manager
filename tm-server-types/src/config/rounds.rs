@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::config::{enums::FinishTimeout, MapsPerMatch};
+use crate::config::{enums::FinishTimeout, MapsPerMatch, PointsLimit};
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -9,7 +9,7 @@ use crate::config::{enums::FinishTimeout, MapsPerMatch};
 pub struct Rounds {
     pub finish_timeout: FinishTimeout,
     pub maps_per_match: MapsPerMatch,
-    pub points_limit: u32,
+    pub points_limit: PointsLimit,
     pub use_custom_points_repartition: bool,
     pub points_repartition: Vec<u32>,
     pub rounds_per_map: i32,
@@ -28,7 +28,7 @@ impl Rounds {
         <setting name="S_FinishTimeout" value="{}" type="integer"/>
         <setting name="S_UseTieBreak" value="{}" type="boolean"/>
             "#,
-            self.points_limit,
+            Into::<i32>::into(self.points_limit),
             self.rounds_per_map,
             Into::<i32>::into(self.maps_per_match),
             points_repartition_format(&self.points_repartition),
@@ -53,7 +53,7 @@ impl Default for Rounds {
         Self {
             finish_timeout: FinishTimeout::BasedOnMedal,
             maps_per_match: MapsPerMatch::One,
-            points_limit: 50,
+            points_limit: PointsLimit::PointsLimit(50),
             points_repartition: vec![10, 6, 4, 3, 2, 1],
             rounds_per_map: -1,
             use_custom_points_repartition: false,

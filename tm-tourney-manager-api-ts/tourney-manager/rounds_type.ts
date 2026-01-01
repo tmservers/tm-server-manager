@@ -11,6 +11,7 @@ import {
 } from "spacetimedb";
 import FinishTimeout from "./finish_timeout_type";
 import MapsPerMatch from "./maps_per_match_type";
+import PointsLimit from "./points_limit_type";
 
 
 export default __t.object("Rounds", {
@@ -20,7 +21,9 @@ export default __t.object("Rounds", {
   get mapsPerMatch() {
     return MapsPerMatch;
   },
-  pointsLimit: __t.u32(),
+  get pointsLimit() {
+    return PointsLimit;
+  },
   useCustomPointsRepartition: __t.bool(),
   pointsRepartition: __t.array(__t.u32()),
   roundsPerMap: __t.i32(),

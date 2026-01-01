@@ -12,3 +12,6 @@ pub use laps_number::*;
 
 pub mod maps;
 pub use maps::*;
+
+pub mod points_limit;
+pub use points_limit::*;
