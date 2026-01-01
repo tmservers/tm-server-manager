@@ -59,6 +59,7 @@ pub mod login_as_worker_procedure;
 pub mod map_pool_config_type;
 pub mod map_record_table;
 pub mod map_type;
+pub mod maps_per_match_type;
 pub mod match_assign_server_reducer;
 pub mod match_configured_reducer;
 pub mod match_ghost_table;
@@ -271,6 +272,7 @@ pub use login_as_worker_procedure::login_as_worker;
 pub use map_pool_config_type::MapPoolConfig;
 pub use map_record_table::*;
 pub use map_type::Map;
+pub use maps_per_match_type::MapsPerMatch;
 pub use match_assign_server_reducer::{
     match_assign_server, set_flags_for_match_assign_server, MatchAssignServerCallbackId,
 };

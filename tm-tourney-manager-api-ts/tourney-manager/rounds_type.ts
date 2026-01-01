@@ -10,13 +10,16 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 import FinishTimeout from "./finish_timeout_type";
+import MapsPerMatch from "./maps_per_match_type";
 
 
 export default __t.object("Rounds", {
   get finishTimeout() {
     return FinishTimeout;
   },
-  mapsPerMatch: __t.i32(),
+  get mapsPerMatch() {
+    return MapsPerMatch;
+  },
   pointsLimit: __t.u32(),
   useCustomPointsRepartition: __t.bool(),
   pointsRepartition: __t.array(__t.u32()),

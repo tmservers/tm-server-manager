@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::config::enums::FinishTimeout;
+use crate::config::{enums::FinishTimeout, MapsPerMatch};
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -8,7 +8,7 @@ use crate::config::enums::FinishTimeout;
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub struct Rounds {
     pub finish_timeout: FinishTimeout,
-    pub maps_per_match: i32,
+    pub maps_per_match: MapsPerMatch,
     pub points_limit: u32,
     pub use_custom_points_repartition: bool,
     pub points_repartition: Vec<u32>,
@@ -30,7 +30,7 @@ impl Rounds {
             "#,
             self.points_limit,
             self.rounds_per_map,
-            self.maps_per_match,
+            Into::<i32>::into(self.maps_per_match),
             points_repartition_format(&self.points_repartition),
             self.use_custom_points_repartition,
             Into::<i32>::into(self.finish_timeout),
@@ -52,7 +52,7 @@ impl Default for Rounds {
     fn default() -> Self {
         Self {
             finish_timeout: FinishTimeout::BasedOnMedal,
-            maps_per_match: -1,
+            maps_per_match: MapsPerMatch::One,
             points_limit: 50,
             points_repartition: vec![10, 6, 4, 3, 2, 1],
             rounds_per_map: -1,

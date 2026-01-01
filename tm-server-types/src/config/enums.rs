@@ -9,3 +9,6 @@ pub use warmup::*;
 
 pub mod laps_number;
 pub use laps_number::*;
+
+pub mod maps;
+pub use maps::*;

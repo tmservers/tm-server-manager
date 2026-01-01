@@ -263,6 +263,8 @@ import Map from "./map_type";
 export { Map };
 import MapPoolConfig from "./map_pool_config_type";
 export { MapPoolConfig };
+import MapsPerMatch from "./maps_per_match_type";
+export { MapsPerMatch };
 import MatchGhost from "./match_ghost_type";
 export { MatchGhost };
 import MatchStatus from "./match_status_type";
