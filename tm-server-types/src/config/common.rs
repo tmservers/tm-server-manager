@@ -1,4 +1,7 @@
-use crate::config::enums::{RespawnBehaviour, WarmupDuration, WarmupTimeout};
+use crate::config::{
+    enums::{RespawnBehaviour, WarmupDuration, WarmupTimeout},
+    LapsNumber,
+};
 
 /// The configuration available in every game mode.
 /// Only usable parameters included (not shootmania stuff): [Docs](https://wiki.trackmania.io/en/dedicated-server/Usage/OfficialGameModesSettings#s_decoimageurl_checkpoint)
@@ -56,7 +59,7 @@ pub struct Common {
     /// You can replace ":ServerLogin" with a login from a server in another club to use its images.
     deco_image_url_who_am_i_url: String,
 
-    force_laps_number: i32,
+    force_laps_number: LapsNumber,
 }
 
 impl Common {
@@ -78,7 +81,7 @@ impl Common {
             deco_image_url_screen_16x9: "".into(),
             deco_image_url_screen_8x1: "".into(),
             deco_image_url_who_am_i_url: "".into(),
-            force_laps_number: -1, // Laps from map validation
+            force_laps_number: LapsNumber::Validation,
         }
     }
 
@@ -119,7 +122,7 @@ impl Common {
             self.deco_image_url_screen_16x9,
             self.deco_image_url_screen_8x1,
             self.deco_image_url_who_am_i_url,
-            self.force_laps_number,
+            Into::<i32>::into(self.force_laps_number),
         )
     }
 }

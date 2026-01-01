@@ -50,6 +50,7 @@ pub mod generator_type;
 pub mod give_up_type;
 pub mod internal_graph_resolution_node_finished_reducer;
 pub mod kick_args_type;
+pub mod laps_number_type;
 pub mod leaderboard_entry_type;
 pub mod loading_map_end_type;
 pub mod loading_map_start_type;
@@ -261,6 +262,7 @@ pub use internal_graph_resolution_node_finished_reducer::{
     InternalGraphResolutionNodeFinishedCallbackId,
 };
 pub use kick_args_type::KickArgs;
+pub use laps_number_type::LapsNumber;
 pub use leaderboard_entry_type::LeaderboardEntry;
 pub use loading_map_end_type::LoadingMapEnd;
 pub use loading_map_start_type::LoadingMapStart;

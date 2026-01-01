@@ -4,6 +4,7 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
+use super::laps_number_type::LapsNumber;
 use super::respawn_behaviour_type::RespawnBehaviour;
 use super::warmup_duration_type::WarmupDuration;
 use super::warmup_timeout_type::WarmupTimeout;
@@ -27,7 +28,7 @@ pub struct Common {
     pub deco_image_url_screen_16_x_9: String,
     pub deco_image_url_screen_8_x_1: String,
     pub deco_image_url_who_am_i_url: String,
-    pub force_laps_number: i32,
+    pub force_laps_number: LapsNumber,
 }
 
 impl __sdk::InModule for Common {
