@@ -106,14 +106,9 @@ pub fn create_match(
     };
 
     // Try to load template if provided
-    let config = if let Some(template_id) = with_template {
-        match ctx.db.match_template().id().find(template_id) {
-            Some(template) => Some(template.config.clone()),
-            None => None,
-        }
-    } else {
-        None
-    };
+    let config = with_template
+        .and_then(|id| ctx.db.match_template().id().find(id))
+        .map(|t| t.config.clone());
 
     // Create an uncommitted match
     let tm_match = TmMatchV1 {
@@ -122,7 +117,7 @@ pub fn create_match(
         tournament_id: parent_competition.get_tournament(),
         status: MatchStatus::Configuring,
         server_id: None,
-        pre_match_config: config,
+        pre_match_config: config.clone(),
         match_config: config,
         post_match_config: None,
     };
