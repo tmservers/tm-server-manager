@@ -133,6 +133,8 @@ import MatchTemplateRow from "./match_template_table";
 export { MatchTemplateRow };
 import MyJobsRow from "./my_jobs_table";
 export { MyJobsRow };
+import MyMatchTemplateRow from "./my_match_template_table";
+export { MyMatchTemplateRow };
 import MyTournamentRow from "./my_tournament_table";
 export { MyTournamentRow };
 import RawServerRow from "./raw_server_table";
@@ -813,6 +815,13 @@ const tablesSchema = __schema(
     constraints: [
     ],
   }, MyJobsRow),
+  __table({
+    name: 'my_match_template',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyMatchTemplateRow),
   __table({
     name: 'my_tournament',
     indexes: [

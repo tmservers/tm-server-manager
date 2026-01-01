@@ -16,7 +16,7 @@ export default __t.object("MatchTemplate", {
   id: __t.u32(),
   creator: __t.string(),
   get config() {
-    return __t.option(ServerConfig);
+    return ServerConfig;
   },
 });
 

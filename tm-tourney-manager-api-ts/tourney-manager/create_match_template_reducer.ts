@@ -14,6 +14,6 @@ import ServerConfig from "./server_config_type";
 
 export default {
   get config() {
-    return __t.option(ServerConfig);
+    return ServerConfig;
   },
 };

@@ -78,6 +78,7 @@ pub mod monitoring_settings_club_type;
 pub mod monitoring_settings_map_type;
 pub mod monitoring_settings_type;
 pub mod my_jobs_table;
+pub mod my_match_template_table;
 pub mod my_tournament_table;
 pub mod my_tournament_v_1_type;
 pub mod node_kind_handle_type;
@@ -292,6 +293,7 @@ pub use monitoring_settings_club_type::MonitoringSettingsClub;
 pub use monitoring_settings_map_type::MonitoringSettingsMap;
 pub use monitoring_settings_type::MonitoringSettings;
 pub use my_jobs_table::*;
+pub use my_match_template_table::*;
 pub use my_tournament_table::*;
 pub use my_tournament_v_1_type::MyTournamentV1;
 pub use node_kind_handle_type::NodeKindHandle;
@@ -469,7 +471,7 @@ pub enum Reducer {
         with_template: Option<u32>,
     },
     CreateMatchTemplate {
-        config: Option<ServerConfig>,
+        config: ServerConfig,
     },
     CreateMonitor {
         competition: u32,
@@ -668,6 +670,7 @@ pub struct DbUpdate {
     match_round: __sdk::TableUpdate<RoundStandings>,
     match_template: __sdk::TableUpdate<MatchTemplate>,
     my_jobs: __sdk::TableUpdate<TmWorkerJobs>,
+    my_match_template: __sdk::TableUpdate<MatchTemplate>,
     my_tournament: __sdk::TableUpdate<MyTournamentV1>,
     raw_server: __sdk::TableUpdate<RawServerV1>,
     raw_server_current_players: __sdk::TableUpdate<RawServerV1>,
@@ -749,6 +752,9 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "my_jobs" => db_update
                     .my_jobs
                     .append(my_jobs_table::parse_table_update(table_update)?),
+                "my_match_template" => db_update
+                    .my_match_template
+                    .append(my_match_template_table::parse_table_update(table_update)?),
                 "my_tournament" => db_update
                     .my_tournament
                     .append(my_tournament_table::parse_table_update(table_update)?),
@@ -995,6 +1001,8 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.match_round =
             cache.apply_diff_to_table::<RoundStandings>("match_round", &self.match_round);
         diff.my_jobs = cache.apply_diff_to_table::<TmWorkerJobs>("my_jobs", &self.my_jobs);
+        diff.my_match_template = cache
+            .apply_diff_to_table::<MatchTemplate>("my_match_template", &self.my_match_template);
         diff.my_tournament =
             cache.apply_diff_to_table::<MyTournamentV1>("my_tournament", &self.my_tournament);
         diff.raw_server = cache.apply_diff_to_table::<RawServerV1>("raw_server", &self.raw_server);
@@ -1036,6 +1044,7 @@ pub struct AppliedDiff<'r> {
     match_round: __sdk::TableAppliedDiff<'r, RoundStandings>,
     match_template: __sdk::TableAppliedDiff<'r, MatchTemplate>,
     my_jobs: __sdk::TableAppliedDiff<'r, TmWorkerJobs>,
+    my_match_template: __sdk::TableAppliedDiff<'r, MatchTemplate>,
     my_tournament: __sdk::TableAppliedDiff<'r, MyTournamentV1>,
     raw_server: __sdk::TableAppliedDiff<'r, RawServerV1>,
     raw_server_current_players: __sdk::TableAppliedDiff<'r, RawServerV1>,
@@ -1124,6 +1133,11 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             event,
         );
         callbacks.invoke_table_row_callbacks::<TmWorkerJobs>("my_jobs", &self.my_jobs, event);
+        callbacks.invoke_table_row_callbacks::<MatchTemplate>(
+            "my_match_template",
+            &self.my_match_template,
+            event,
+        );
         callbacks.invoke_table_row_callbacks::<MyTournamentV1>(
             "my_tournament",
             &self.my_tournament,
@@ -1998,6 +2012,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
         match_round_table::register_table(client_cache);
         match_template_table::register_table(client_cache);
         my_jobs_table::register_table(client_cache);
+        my_match_template_table::register_table(client_cache);
         my_tournament_table::register_table(client_cache);
         raw_server_table::register_table(client_cache);
         raw_server_current_players_table::register_table(client_cache);

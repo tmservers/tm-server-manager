@@ -11,7 +11,7 @@ use super::server_config_type::ServerConfig;
 pub struct MatchTemplate {
     pub id: u32,
     pub creator: String,
-    pub config: Option<ServerConfig>,
+    pub config: ServerConfig,
 }
 
 impl __sdk::InModule for MatchTemplate {
