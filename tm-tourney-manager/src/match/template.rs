@@ -10,14 +10,14 @@ use crate::{
 pub struct MatchTemplate {
     #[auto_inc]
     #[primary_key]
-    id: u32,
+    pub id: u32,
 
     #[index(btree)]
     creator: String,
 
     name: String,
 
-    config: ServerConfig,
+    pub config: ServerConfig,
 }
 
 impl MatchTemplate {}

@@ -4,7 +4,7 @@ use tm_server_types::{config::ServerConfig, event::Event};
 use crate::{
     auth::Authorization,
     competition::tab_competition,
-    r#match::match_state::{TmMatchState, tab_tm_match_state},
+    r#match::{match_state::{TmMatchState, tab_tm_match_state}, template::match_template},
     raw_server::tab_raw_server_online,
 };
 
@@ -105,6 +105,16 @@ pub fn create_match(
         return Err("Invalid competition".into());
     };
 
+    // Try to load template if provided
+    let config = if let Some(template_id) = with_template {
+        match ctx.db.match_template().id().find(template_id) {
+            Some(template) => Some(template.config.clone()),
+            None => None,
+        }
+    } else {
+        None
+    };
+
     // Create an uncommitted match
     let tm_match = TmMatchV1 {
         id: 0,
@@ -112,8 +122,8 @@ pub fn create_match(
         tournament_id: parent_competition.get_tournament(),
         status: MatchStatus::Configuring,
         server_id: None,
-        pre_match_config: None,
-        match_config: None,
+        pre_match_config: config,
+        match_config: config,
         post_match_config: None,
     };
 
