@@ -32,12 +32,12 @@ fn create_match_template(
         return Err("User not found".to_string());
     };
 
-    let match_template = ctx.db.match_template().try_insert(MatchTemplate {
+    ctx.db.match_template().try_insert(MatchTemplate {
         id: 0,
         creator: user,
         name: name,
         config: config,
-    });
+    })?;
 
     Ok(())
 }
