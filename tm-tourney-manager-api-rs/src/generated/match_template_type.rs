@@ -11,6 +11,7 @@ use super::server_config_type::ServerConfig;
 pub struct MatchTemplate {
     pub id: u32,
     pub creator: String,
+    pub name: String,
     pub config: ServerConfig,
 }
 

@@ -1,4 +1,4 @@
-use spacetimedb::{Query, ReducerContext, Table, ViewContext, rand::seq::index, reducer, view};
+use spacetimedb::{rand::seq::index, reducer, view, Query, ReducerContext, Table, ViewContext};
 use tm_server_types::config::ServerConfig;
 
 use crate::{
@@ -15,13 +15,19 @@ pub struct MatchTemplate {
     #[index(btree)]
     creator: String,
 
+    name: String,
+
     config: ServerConfig,
 }
 
 impl MatchTemplate {}
 
 #[reducer]
-fn create_match_template(ctx: &ReducerContext, config: ServerConfig) -> Result<(), String> {
+fn create_match_template(
+    ctx: &ReducerContext,
+    name: String,
+    config: ServerConfig,
+) -> Result<(), String> {
     let user = ctx.get_user()? else {
         return Err("User not found".to_string());
     };
@@ -29,6 +35,7 @@ fn create_match_template(ctx: &ReducerContext, config: ServerConfig) -> Result<(
     let match_template = ctx.db.match_template().try_insert(MatchTemplate {
         id: 0,
         creator: user,
+        name: name,
         config: config,
     });
 

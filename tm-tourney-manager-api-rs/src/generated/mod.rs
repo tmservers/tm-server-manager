@@ -471,6 +471,7 @@ pub enum Reducer {
         with_template: Option<u32>,
     },
     CreateMatchTemplate {
+        name: String,
         config: ServerConfig,
     },
     CreateMonitor {

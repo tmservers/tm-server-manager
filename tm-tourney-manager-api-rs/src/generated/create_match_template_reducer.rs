@@ -9,12 +9,14 @@ use super::server_config_type::ServerConfig;
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct CreateMatchTemplateArgs {
+    pub name: String,
     pub config: ServerConfig,
 }
 
 impl From<CreateMatchTemplateArgs> for super::Reducer {
     fn from(args: CreateMatchTemplateArgs) -> Self {
         Self::CreateMatchTemplate {
+            name: args.name,
             config: args.config,
         }
     }
@@ -36,7 +38,7 @@ pub trait create_match_template {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_create_match_template`] callbacks.
-    fn create_match_template(&self, config: ServerConfig) -> __sdk::Result<()>;
+    fn create_match_template(&self, name: String, config: ServerConfig) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `create_match_template`.
     ///
     /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
@@ -46,7 +48,7 @@ pub trait create_match_template {
     /// to cancel the callback.
     fn on_create_match_template(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &ServerConfig) + Send + 'static,
+        callback: impl FnMut(&super::ReducerEventContext, &String, &ServerConfig) + Send + 'static,
     ) -> CreateMatchTemplateCallbackId;
     /// Cancel a callback previously registered by [`Self::on_create_match_template`],
     /// causing it not to run in the future.
@@ -54,13 +56,15 @@ pub trait create_match_template {
 }
 
 impl create_match_template for super::RemoteReducers {
-    fn create_match_template(&self, config: ServerConfig) -> __sdk::Result<()> {
-        self.imp
-            .call_reducer("create_match_template", CreateMatchTemplateArgs { config })
+    fn create_match_template(&self, name: String, config: ServerConfig) -> __sdk::Result<()> {
+        self.imp.call_reducer(
+            "create_match_template",
+            CreateMatchTemplateArgs { name, config },
+        )
     }
     fn on_create_match_template(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &ServerConfig) + Send + 'static,
+        mut callback: impl FnMut(&super::ReducerEventContext, &String, &ServerConfig) + Send + 'static,
     ) -> CreateMatchTemplateCallbackId {
         CreateMatchTemplateCallbackId(self.imp.on_reducer(
             "create_match_template",
@@ -69,7 +73,7 @@ impl create_match_template for super::RemoteReducers {
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {
-                            reducer: super::Reducer::CreateMatchTemplate { config },
+                            reducer: super::Reducer::CreateMatchTemplate { name, config },
                             ..
                         },
                     ..
@@ -77,7 +81,7 @@ impl create_match_template for super::RemoteReducers {
                 else {
                     unreachable!()
                 };
-                callback(ctx, config)
+                callback(ctx, name, config)
             }),
         ))
     }

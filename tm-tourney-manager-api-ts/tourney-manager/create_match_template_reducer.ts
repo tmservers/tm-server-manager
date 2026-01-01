@@ -13,6 +13,7 @@ import {
 import ServerConfig from "./server_config_type";
 
 export default {
+  name: __t.string(),
   get config() {
     return ServerConfig;
   },
