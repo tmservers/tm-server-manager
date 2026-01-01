@@ -137,16 +137,20 @@ fn tournament_edit_dates(
 
     let current_time = ctx.timestamp;
 
-    // Don't allow modifying starting_at if tournament already started
-    if tournament.starting_at != starting_at && current_time >= tournament.starting_at {
-        return Err("Cannot modify start date of a tournament that has already started.".into());
-    }
+    if tournament.status != TournamentStatus::Planning {
+        // Don't allow modifying starting_at if tournament already started
+        if tournament.starting_at != starting_at && current_time >= tournament.starting_at {
+            return Err(
+                "Cannot modify start date of a tournament that has already started.".into(),
+            );
+        }
 
-    // Don't allow modifying ending_at if tournament already ended
-    if tournament.ending_at != ending_at && current_time >= tournament.ending_at {
-        return Err("Cannot modify end date of a tournament that has already ended.".into());
+        // Don't allow modifying ending_at if tournament already ended
+        if tournament.ending_at != ending_at && current_time >= tournament.ending_at {
+            return Err("Cannot modify end date of a tournament that has already ended.".into());
+        }
     }
-
+    
     // Don't allow modifying ending_at to before starting_at
     if ending_at < starting_at {
         return Err("Ending date cannot be before starting date.".into());
