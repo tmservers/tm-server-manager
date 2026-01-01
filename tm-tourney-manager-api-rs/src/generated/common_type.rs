@@ -4,27 +4,31 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::respawn_bavaviour_type::RespawnBavaviour;
+use super::laps_number_type::LapsNumber;
+use super::respawn_behaviour_type::RespawnBehaviour;
 use super::warmup_duration_type::WarmupDuration;
+use super::warmup_timeout_type::WarmupTimeout;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct Common {
     pub chat_time: u32,
-    pub respawn_behaviour: RespawnBavaviour,
+    pub respawn_behaviour: RespawnBehaviour,
+    pub delay_before_next_map: u32,
     pub synchronize_players_at_map_start: bool,
     pub synchronize_players_at_round_start: bool,
     pub trust_client_simulation: bool,
     pub use_crude_extrapolation: bool,
     pub warmup_duration: WarmupDuration,
+    pub warmup_timeout: WarmupTimeout,
     pub warmup_number: u32,
     pub deco_image_url_checkpoint: String,
     pub deco_image_url_decal_sponsor_4_x_1: String,
     pub deco_image_url_screen_16_x_1: String,
-    pub deco_image_url_screen_19_x_9: String,
+    pub deco_image_url_screen_16_x_9: String,
     pub deco_image_url_screen_8_x_1: String,
-    pub deco_image_url_who_am_i: String,
-    pub force_laps_number: i32,
+    pub deco_image_url_who_am_i_url: String,
+    pub force_laps_number: LapsNumber,
 }
 
 impl __sdk::InModule for Common {

@@ -1,7 +1,12 @@
+use crate::config::{
+    enums::{RespawnBehaviour, WarmupDuration, WarmupTimeout},
+    LapsNumber,
+};
+
 /// The configuration available in every game mode.
 /// Only usable parameters included (not shootmania stuff): [Docs](https://wiki.trackmania.io/en/dedicated-server/Usage/OfficialGameModesSettings#s_decoimageurl_checkpoint)
 /// Omitted:
-/// - Inifnte Laps: Reproducible with Force Laps Number
+/// - Infinite Laps: Reproducible with Force Laps Number
 /// - Script Environment: No dev support
 /// - Season Ids: Nobody knows what it does
 ///
@@ -12,7 +17,10 @@
 pub struct Common {
     /// Chat time at the end of a map or match
     chat_time: u32,
-    respawn_behaviour: RespawnBavaviour,
+    respawn_behaviour: RespawnBehaviour,
+
+    /// Minimal time before the server go to the next map in milliseconds.
+    delay_before_next_map: u32,
 
     /// Synchronize players at the launch of the map, to ensure that no one starts late.
     /// Can delay the start by a few seconds.
@@ -29,7 +37,7 @@ pub struct Common {
     use_crude_extrapolation: bool,
 
     warmup_duration: WarmupDuration,
-    //warmup_timeout: ,
+    warmup_timeout: WarmupTimeout,
     warmup_number: u32,
 
     /// Url of the image displayed on the checkpoints ground.
@@ -43,128 +51,78 @@ pub struct Common {
     deco_image_url_screen_16x1: String,
     /// Url of the image displayed on the two big screens.
     /// Override the image set in the Club.
-    deco_image_url_screen_19x9: String,
+    deco_image_url_screen_16x9: String,
     /// Url of the image displayed on the bleachers.
     /// Override the image set in the Club.
     deco_image_url_screen_8x1: String,
     /// Url of the API route to get the deco image url.
     /// You can replace ":ServerLogin" with a login from a server in another club to use its images.
-    deco_image_url_who_am_i: String,
+    deco_image_url_who_am_i_url: String,
 
-    force_laps_number: i32,
+    force_laps_number: LapsNumber,
 }
 
 impl Common {
     pub fn default_rounds() -> Self {
         Self {
             chat_time: 10,
-            respawn_behaviour: RespawnBavaviour::Default,
+            respawn_behaviour: RespawnBehaviour::Default,
+            delay_before_next_map: 2000,
             synchronize_players_at_map_start: true,
             synchronize_players_at_round_start: true,
             trust_client_simulation: true,
             use_crude_extrapolation: true,
             warmup_duration: WarmupDuration::BasedOnMedal,
+            warmup_timeout: WarmupTimeout::BasedOnMedal,
             warmup_number: 0,
             deco_image_url_checkpoint: "".into(),
             deco_image_url_decal_sponsor_4x1: "".into(),
             deco_image_url_screen_16x1: "".into(),
-            deco_image_url_screen_19x9: "".into(),
+            deco_image_url_screen_16x9: "".into(),
             deco_image_url_screen_8x1: "".into(),
-            deco_image_url_who_am_i: "".into(),
-            force_laps_number: -1, // Laps from map validation
+            deco_image_url_who_am_i_url: "".into(),
+            force_laps_number: LapsNumber::Validation,
         }
     }
 
     pub fn into_xml(&self) -> String {
         format!(
             r#"
-        <setting name="S_UseTieBreak" value="" type="boolean"/>
-    	<setting name="S_UseClublinks" value="" type="boolean"/>
-    	<setting name="S_UseClublinksSponsors" value="" type="boolean"/>
-    	<setting name="S_NeutralEmblemUrl" value="" type="text"/>
-    	<setting name="S_ScriptEnvironment" value="production" type="text"/>
-    	<setting name="S_IsChannelServer" value="" type="boolean"/>
-    	<setting name="S_HideOpponents" value="" type="boolean"/>
-    	<setting name="S_UseLegacyXmlRpcCallbacks" value="1" type="boolean"/>
-    	<setting name="S_UseAlternateRules" value="" type="boolean"/>
-    	<setting name="S_DisplayTimeDiff" value="" type="boolean"/>
     	<setting name="S_ChatTime" value="{}" type="integer"/>
-    	<setting name="S_WarmUpNb" value="{}" type="integer"/>
-    	<setting name="S_WarmUpDuration" value="{}" type="integer"/>
     	<setting name="S_RespawnBehaviour" value="{}" type="integer"/>
+        <setting name="S_DelayBeforeNextMap" value="{}" type="integer"/>
+        <setting name="S_SynchronizePlayersAtMapStart" value="{}" type="boolean"/>
+        <setting name="S_SynchronizePlayersAtRoundStart" value="{}" type="boolean"/>
+        <setting name="S_TrustClientSimu" value="{}" type="boolean"/>
+        <setting name="S_UseCrudeExtrapolation" value="{}" type="boolean"/>
+    	<setting name="S_WarmUpDuration" value="{}" type="integer"/>
+        <setting name="S_WarmUpTimeout" value="{}" type="integer"/>
+    	<setting name="S_WarmUpNb" value="{}" type="integer"/>
+        <setting name="S_DecoImageUrl_Checkpoint" value="{}" type="text"/>
+        <setting name="S_DecoImageUrl_DecalSponsor4x1" value="{}" type="text"/>
+        <setting name="S_DecoImageUrl_Screen16x1" value="{}" type="text"/>
+        <setting name="S_DecoImageUrl_Screen16x9" value="{}" type="text"/>
+        <setting name="S_DecoImageUrl_Screen8x1" value="{}" type="text"/>
+        <setting name="S_DecoImageUrl_WhoAmIUrl" value="{}" type="text"/>
     	<setting name="S_ForceLapsNb" value="{}" type="integer"/>
         "#,
             self.chat_time,
-            self.warmup_number,
-            Into::<i32>::into(self.warmup_duration),
             Into::<i32>::into(self.respawn_behaviour),
-            self.force_laps_number,
+            self.delay_before_next_map,
+            self.synchronize_players_at_map_start,
+            self.synchronize_players_at_round_start,
+            self.trust_client_simulation,
+            self.use_crude_extrapolation,
+            Into::<i32>::into(self.warmup_duration),
+            Into::<i32>::into(self.warmup_timeout),
+            self.warmup_number,
+            self.deco_image_url_checkpoint,
+            self.deco_image_url_decal_sponsor_4x1,
+            self.deco_image_url_screen_16x1,
+            self.deco_image_url_screen_16x9,
+            self.deco_image_url_screen_8x1,
+            self.deco_image_url_who_am_i_url,
+            Into::<i32>::into(self.force_laps_number),
         )
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
-#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
-pub enum RespawnBavaviour {
-    /// Use the default behavior of the gamemode
-    Default = 0,
-    /// Use the normal behavior like in TimeAttack.
-    TimeAttack = 1,
-    /// Do nothing.
-    Ignore = 2,
-    /// Give up before first checkpoint.
-    GiveUpAtStart = 3,
-    /// Always give up.
-    GiveUpAlways = 4,
-    /// Never give up.
-    GiveUpNever = 5,
-}
-
-impl From<RespawnBavaviour> for i32 {
-    fn from(value: RespawnBavaviour) -> Self {
-        match value {
-            RespawnBavaviour::Default => 0,
-            RespawnBavaviour::TimeAttack => 1,
-            RespawnBavaviour::Ignore => 2,
-            RespawnBavaviour::GiveUpAtStart => 3,
-            RespawnBavaviour::GiveUpAlways => 4,
-            RespawnBavaviour::GiveUpNever => 5,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
-#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
-#[cfg_attr(feature = "serde", serde(from = "i32", into = "i32"))]
-pub enum WarmupDuration {
-    /// Only one try like a round
-    OneTry,
-    // Time based on the Author medal ( 5 seconds + Author Time on 1 lap + ( Author Time on 1 lap / 6 ) )
-    BasedOnMedal,
-    /// Time in seconds
-    Seconds(u32),
-}
-
-impl From<i32> for WarmupDuration {
-    fn from(value: i32) -> Self {
-        match value {
-            -1 => WarmupDuration::OneTry,
-            0 => WarmupDuration::BasedOnMedal,
-            _ => WarmupDuration::Seconds(value as u32),
-        }
-    }
-}
-
-impl From<WarmupDuration> for i32 {
-    fn from(value: WarmupDuration) -> Self {
-        match value {
-            WarmupDuration::OneTry => -1,
-            WarmupDuration::BasedOnMedal => 0,
-            WarmupDuration::Seconds(s) => s as i32,
-        }
     }
 }

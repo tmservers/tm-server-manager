@@ -26,6 +26,7 @@ pub mod create_connection_reducer;
 pub mod create_env_var_reducer;
 pub mod create_event_template_reducer;
 pub mod create_match_reducer;
+pub mod create_match_template_reducer;
 pub mod create_monitor_reducer;
 pub mod create_schedule_reducer;
 pub mod create_server_config_reducer;
@@ -43,11 +44,13 @@ pub mod end_turn_start_type;
 pub mod env_table;
 pub mod env_type;
 pub mod event_type;
+pub mod finish_timeout_type;
 pub mod generator_table;
 pub mod generator_type;
 pub mod give_up_type;
 pub mod internal_graph_resolution_node_finished_reducer;
 pub mod kick_args_type;
+pub mod laps_number_type;
 pub mod leaderboard_entry_type;
 pub mod loading_map_end_type;
 pub mod loading_map_start_type;
@@ -56,6 +59,7 @@ pub mod login_as_worker_procedure;
 pub mod map_pool_config_type;
 pub mod map_record_table;
 pub mod map_type;
+pub mod maps_per_match_type;
 pub mod match_assign_server_reducer;
 pub mod match_configured_reducer;
 pub mod match_ghost_table;
@@ -76,6 +80,7 @@ pub mod monitoring_settings_club_type;
 pub mod monitoring_settings_map_type;
 pub mod monitoring_settings_type;
 pub mod my_jobs_table;
+pub mod my_match_template_table;
 pub mod my_tournament_table;
 pub mod my_tournament_v_1_type;
 pub mod node_kind_handle_type;
@@ -88,6 +93,7 @@ pub mod player_connect_type;
 pub mod player_disconnect_type;
 pub mod player_type;
 pub mod podium_type;
+pub mod points_limit_type;
 pub mod post_event_reducer;
 pub mod post_record_reducer;
 pub mod post_round_replay_procedure;
@@ -102,10 +108,11 @@ pub mod registered_team_type;
 pub mod registration_player_settings_type;
 pub mod registration_settings_type;
 pub mod registration_team_settings_type;
-pub mod respawn_bavaviour_type;
+pub mod respawn_behaviour_type;
 pub mod respawn_type;
 pub mod round_standings_type;
 pub mod round_time_type;
+pub mod rounds_per_map_type;
 pub mod rounds_type;
 pub mod schedule_table;
 pub mod schedule_v_1_type;
@@ -181,6 +188,7 @@ pub mod user_table;
 pub mod user_type;
 pub mod warmup_duration_type;
 pub mod warmup_round_type;
+pub mod warmup_timeout_type;
 pub mod way_point_type;
 
 pub use ban_args_type::BanArgs;
@@ -220,6 +228,9 @@ pub use create_event_template_reducer::{
     create_event_template, set_flags_for_create_event_template, CreateEventTemplateCallbackId,
 };
 pub use create_match_reducer::{create_match, set_flags_for_create_match, CreateMatchCallbackId};
+pub use create_match_template_reducer::{
+    create_match_template, set_flags_for_create_match_template, CreateMatchTemplateCallbackId,
+};
 pub use create_monitor_reducer::{
     create_monitor, set_flags_for_create_monitor, CreateMonitorCallbackId,
 };
@@ -245,6 +256,7 @@ pub use end_turn_start_type::EndTurnStart;
 pub use env_table::*;
 pub use env_type::Env;
 pub use event_type::Event;
+pub use finish_timeout_type::FinishTimeout;
 pub use generator_table::*;
 pub use generator_type::Generator;
 pub use give_up_type::GiveUp;
@@ -253,6 +265,7 @@ pub use internal_graph_resolution_node_finished_reducer::{
     InternalGraphResolutionNodeFinishedCallbackId,
 };
 pub use kick_args_type::KickArgs;
+pub use laps_number_type::LapsNumber;
 pub use leaderboard_entry_type::LeaderboardEntry;
 pub use loading_map_end_type::LoadingMapEnd;
 pub use loading_map_start_type::LoadingMapStart;
@@ -261,6 +274,7 @@ pub use login_as_worker_procedure::login_as_worker;
 pub use map_pool_config_type::MapPoolConfig;
 pub use map_record_table::*;
 pub use map_type::Map;
+pub use maps_per_match_type::MapsPerMatch;
 pub use match_assign_server_reducer::{
     match_assign_server, set_flags_for_match_assign_server, MatchAssignServerCallbackId,
 };
@@ -285,6 +299,7 @@ pub use monitoring_settings_club_type::MonitoringSettingsClub;
 pub use monitoring_settings_map_type::MonitoringSettingsMap;
 pub use monitoring_settings_type::MonitoringSettings;
 pub use my_jobs_table::*;
+pub use my_match_template_table::*;
 pub use my_tournament_table::*;
 pub use my_tournament_v_1_type::MyTournamentV1;
 pub use node_kind_handle_type::NodeKindHandle;
@@ -302,6 +317,7 @@ pub use player_connect_type::PlayerConnect;
 pub use player_disconnect_type::PlayerDisconnect;
 pub use player_type::Player;
 pub use podium_type::Podium;
+pub use points_limit_type::PointsLimit;
 pub use post_event_reducer::{post_event, set_flags_for_post_event, PostEventCallbackId};
 pub use post_record_reducer::{post_record, set_flags_for_post_record, PostRecordCallbackId};
 pub use post_round_replay_procedure::post_round_replay;
@@ -318,10 +334,11 @@ pub use registered_team_type::RegisteredTeam;
 pub use registration_player_settings_type::RegistrationPlayerSettings;
 pub use registration_settings_type::RegistrationSettings;
 pub use registration_team_settings_type::RegistrationTeamSettings;
-pub use respawn_bavaviour_type::RespawnBavaviour;
+pub use respawn_behaviour_type::RespawnBehaviour;
 pub use respawn_type::Respawn;
 pub use round_standings_type::RoundStandings;
 pub use round_time_type::RoundTime;
+pub use rounds_per_map_type::RoundsPerMap;
 pub use rounds_type::Rounds;
 pub use schedule_table::*;
 pub use schedule_v_1_type::ScheduleV1;
@@ -419,6 +436,7 @@ pub use user_table::*;
 pub use user_type::User;
 pub use warmup_duration_type::WarmupDuration;
 pub use warmup_round_type::WarmupRound;
+pub use warmup_timeout_type::WarmupTimeout;
 pub use way_point_type::WayPoint;
 
 #[derive(Clone, PartialEq, Debug)]
@@ -459,6 +477,10 @@ pub enum Reducer {
     CreateMatch {
         competition_id: u32,
         with_template: Option<u32>,
+    },
+    CreateMatchTemplate {
+        name: String,
+        config: ServerConfig,
     },
     CreateMonitor {
         competition: u32,
@@ -566,6 +588,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::CreateEnvVar { .. } => "create_env_var",
             Reducer::CreateEventTemplate { .. } => "create_event_template",
             Reducer::CreateMatch { .. } => "create_match",
+            Reducer::CreateMatchTemplate { .. } => "create_match_template",
             Reducer::CreateMonitor { .. } => "create_monitor",
             Reducer::CreateSchedule { .. } => "create_schedule",
             Reducer::CreateServerConfig { .. } => "create_server_config",
@@ -610,6 +633,7 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "create_env_var" => Ok(__sdk::parse_reducer_args::<create_env_var_reducer::CreateEnvVarArgs>("create_env_var", &value.args)?.into()),
             "create_event_template" => Ok(__sdk::parse_reducer_args::<create_event_template_reducer::CreateEventTemplateArgs>("create_event_template", &value.args)?.into()),
             "create_match" => Ok(__sdk::parse_reducer_args::<create_match_reducer::CreateMatchArgs>("create_match", &value.args)?.into()),
+            "create_match_template" => Ok(__sdk::parse_reducer_args::<create_match_template_reducer::CreateMatchTemplateArgs>("create_match_template", &value.args)?.into()),
             "create_monitor" => Ok(__sdk::parse_reducer_args::<create_monitor_reducer::CreateMonitorArgs>("create_monitor", &value.args)?.into()),
             "create_schedule" => Ok(__sdk::parse_reducer_args::<create_schedule_reducer::CreateScheduleArgs>("create_schedule", &value.args)?.into()),
             "create_server_config" => Ok(__sdk::parse_reducer_args::<create_server_config_reducer::CreateServerConfigArgs>("create_server_config", &value.args)?.into()),
@@ -655,6 +679,7 @@ pub struct DbUpdate {
     match_round: __sdk::TableUpdate<RoundStandings>,
     match_template: __sdk::TableUpdate<MatchTemplate>,
     my_jobs: __sdk::TableUpdate<TmWorkerJobs>,
+    my_match_template: __sdk::TableUpdate<MatchTemplate>,
     my_tournament: __sdk::TableUpdate<MyTournamentV1>,
     raw_server: __sdk::TableUpdate<RawServerV1>,
     raw_server_current_players: __sdk::TableUpdate<RawServerV1>,
@@ -736,6 +761,9 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "my_jobs" => db_update
                     .my_jobs
                     .append(my_jobs_table::parse_table_update(table_update)?),
+                "my_match_template" => db_update
+                    .my_match_template
+                    .append(my_match_template_table::parse_table_update(table_update)?),
                 "my_tournament" => db_update
                     .my_tournament
                     .append(my_tournament_table::parse_table_update(table_update)?),
@@ -982,6 +1010,8 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.match_round =
             cache.apply_diff_to_table::<RoundStandings>("match_round", &self.match_round);
         diff.my_jobs = cache.apply_diff_to_table::<TmWorkerJobs>("my_jobs", &self.my_jobs);
+        diff.my_match_template = cache
+            .apply_diff_to_table::<MatchTemplate>("my_match_template", &self.my_match_template);
         diff.my_tournament =
             cache.apply_diff_to_table::<MyTournamentV1>("my_tournament", &self.my_tournament);
         diff.raw_server = cache.apply_diff_to_table::<RawServerV1>("raw_server", &self.raw_server);
@@ -1023,6 +1053,7 @@ pub struct AppliedDiff<'r> {
     match_round: __sdk::TableAppliedDiff<'r, RoundStandings>,
     match_template: __sdk::TableAppliedDiff<'r, MatchTemplate>,
     my_jobs: __sdk::TableAppliedDiff<'r, TmWorkerJobs>,
+    my_match_template: __sdk::TableAppliedDiff<'r, MatchTemplate>,
     my_tournament: __sdk::TableAppliedDiff<'r, MyTournamentV1>,
     raw_server: __sdk::TableAppliedDiff<'r, RawServerV1>,
     raw_server_current_players: __sdk::TableAppliedDiff<'r, RawServerV1>,
@@ -1111,6 +1142,11 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             event,
         );
         callbacks.invoke_table_row_callbacks::<TmWorkerJobs>("my_jobs", &self.my_jobs, event);
+        callbacks.invoke_table_row_callbacks::<MatchTemplate>(
+            "my_match_template",
+            &self.my_match_template,
+            event,
+        );
         callbacks.invoke_table_row_callbacks::<MyTournamentV1>(
             "my_tournament",
             &self.my_tournament,
@@ -1985,6 +2021,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
         match_round_table::register_table(client_cache);
         match_template_table::register_table(client_cache);
         my_jobs_table::register_table(client_cache);
+        my_match_template_table::register_table(client_cache);
         my_tournament_table::register_table(client_cache);
         raw_server_table::register_table(client_cache);
         raw_server_current_players_table::register_table(client_cache);

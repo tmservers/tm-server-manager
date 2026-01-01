@@ -4,17 +4,23 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::server_config_type::ServerConfig;
-
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct MatchTemplate {
-    pub id: u32,
-    pub creator: String,
-    pub name: String,
-    pub config: ServerConfig,
+#[derive(Copy, Eq, Hash)]
+pub enum RespawnBehaviour {
+    Default,
+
+    TimeAttack,
+
+    Ignore,
+
+    GiveUpAtStart,
+
+    GiveUpAlways,
+
+    GiveUpNever,
 }
 
-impl __sdk::InModule for MatchTemplate {
+impl __sdk::InModule for RespawnBehaviour {
     type Module = super::RemoteModule;
 }

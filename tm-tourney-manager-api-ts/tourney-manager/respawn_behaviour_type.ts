@@ -9,14 +9,16 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
-import ServerConfig from "./server_config_type";
 
-
-export default __t.row({
-  id: __t.u32().primaryKey(),
-  creator: __t.string(),
-  name: __t.string(),
-  get config() {
-    return ServerConfig;
-  },
+// The tagged union or sum type for the algebraic type `RespawnBehaviour`.
+const RespawnBehaviour = __t.enum("RespawnBehaviour", {Default: __t.unit(),
+  TimeAttack: __t.unit(),
+  Ignore: __t.unit(),
+  GiveUpAtStart: __t.unit(),
+  GiveUpAlways: __t.unit(),
+  GiveUpNever: __t.unit(),
 });
+
+export default RespawnBehaviour;
+
+

@@ -9,14 +9,13 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
-import ServerConfig from "./server_config_type";
 
-
-export default __t.row({
-  id: __t.u32().primaryKey(),
-  creator: __t.string(),
-  name: __t.string(),
-  get config() {
-    return ServerConfig;
-  },
+// The tagged union or sum type for the algebraic type `LapsNumber`.
+const LapsNumber = __t.enum("LapsNumber", {Validation: __t.unit(),
+  Independent: __t.unit(),
+  Laps: __t.u32(),
 });
+
+export default LapsNumber;
+
+

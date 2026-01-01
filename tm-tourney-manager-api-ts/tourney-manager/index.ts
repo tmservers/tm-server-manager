@@ -49,6 +49,8 @@ import CreateEventTemplateReducer from "./create_event_template_reducer";
 export { CreateEventTemplateReducer };
 import CreateMatchReducer from "./create_match_reducer";
 export { CreateMatchReducer };
+import CreateMatchTemplateReducer from "./create_match_template_reducer";
+export { CreateMatchTemplateReducer };
 import CreateMonitorReducer from "./create_monitor_reducer";
 export { CreateMonitorReducer };
 import CreateScheduleReducer from "./create_schedule_reducer";
@@ -131,6 +133,8 @@ import MatchTemplateRow from "./match_template_table";
 export { MatchTemplateRow };
 import MyJobsRow from "./my_jobs_table";
 export { MyJobsRow };
+import MyMatchTemplateRow from "./my_match_template_table";
+export { MyMatchTemplateRow };
 import MyTournamentRow from "./my_tournament_table";
 export { MyTournamentRow };
 import RawServerRow from "./raw_server_table";
@@ -239,12 +243,16 @@ import Env from "./env_type";
 export { Env };
 import Event from "./event_type";
 export { Event };
+import FinishTimeout from "./finish_timeout_type";
+export { FinishTimeout };
 import Generator from "./generator_type";
 export { Generator };
 import GiveUp from "./give_up_type";
 export { GiveUp };
 import KickArgs from "./kick_args_type";
 export { KickArgs };
+import LapsNumber from "./laps_number_type";
+export { LapsNumber };
 import LeaderboardEntry from "./leaderboard_entry_type";
 export { LeaderboardEntry };
 import LoadingMapEnd from "./loading_map_end_type";
@@ -255,6 +263,8 @@ import Map from "./map_type";
 export { Map };
 import MapPoolConfig from "./map_pool_config_type";
 export { MapPoolConfig };
+import MapsPerMatch from "./maps_per_match_type";
+export { MapsPerMatch };
 import MatchGhost from "./match_ghost_type";
 export { MatchGhost };
 import MatchStatus from "./match_status_type";
@@ -295,6 +305,8 @@ import PlayerDisconnect from "./player_disconnect_type";
 export { PlayerDisconnect };
 import Podium from "./podium_type";
 export { Podium };
+import PointsLimit from "./points_limit_type";
+export { PointsLimit };
 import RawServerV1 from "./raw_server_v_1_type";
 export { RawServerV1 };
 import RegisteredPlayer from "./registered_player_type";
@@ -309,14 +321,16 @@ import RegistrationTeamSettings from "./registration_team_settings_type";
 export { RegistrationTeamSettings };
 import Respawn from "./respawn_type";
 export { Respawn };
-import RespawnBavaviour from "./respawn_bavaviour_type";
-export { RespawnBavaviour };
+import RespawnBehaviour from "./respawn_behaviour_type";
+export { RespawnBehaviour };
 import RoundStandings from "./round_standings_type";
 export { RoundStandings };
 import RoundTime from "./round_time_type";
 export { RoundTime };
 import Rounds from "./rounds_type";
 export { Rounds };
+import RoundsPerMap from "./rounds_per_map_type";
+export { RoundsPerMap };
 import ScheduleV1 from "./schedule_v_1_type";
 export { ScheduleV1 };
 import Scores from "./scores_type";
@@ -387,6 +401,8 @@ import WarmupDuration from "./warmup_duration_type";
 export { WarmupDuration };
 import WarmupRound from "./warmup_round_type";
 export { WarmupRound };
+import WarmupTimeout from "./warmup_timeout_type";
+export { WarmupTimeout };
 import WayPoint from "./way_point_type";
 export { WayPoint };
 
@@ -420,6 +436,9 @@ const tablesSchema = __schema(
   __table({
     name: 'match_template',
     indexes: [
+      { name: 'creator', algorithm: 'btree', columns: [
+        'creator',
+      ] },
       { name: 'id', algorithm: 'btree', columns: [
         'id',
       ] },
@@ -805,6 +824,13 @@ const tablesSchema = __schema(
     ],
   }, MyJobsRow),
   __table({
+    name: 'my_match_template',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyMatchTemplateRow),
+  __table({
     name: 'my_tournament',
     indexes: [
     ],
@@ -885,6 +911,7 @@ const reducersSchema = __reducers(
   __reducerSchema("create_env_var", CreateEnvVarReducer),
   __reducerSchema("create_event_template", CreateEventTemplateReducer),
   __reducerSchema("create_match", CreateMatchReducer),
+  __reducerSchema("create_match_template", CreateMatchTemplateReducer),
   __reducerSchema("create_monitor", CreateMonitorReducer),
   __reducerSchema("create_schedule", CreateScheduleReducer),
   __reducerSchema("create_server_config", CreateServerConfigReducer),

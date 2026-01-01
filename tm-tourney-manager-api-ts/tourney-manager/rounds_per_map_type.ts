@@ -9,14 +9,12 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
-import ServerConfig from "./server_config_type";
 
-
-export default __t.row({
-  id: __t.u32().primaryKey(),
-  creator: __t.string(),
-  name: __t.string(),
-  get config() {
-    return ServerConfig;
-  },
+// The tagged union or sum type for the algebraic type `RoundsPerMap`.
+const RoundsPerMap = __t.enum("RoundsPerMap", {Unlimited: __t.unit(),
+  Rounds: __t.u32(),
 });
+
+export default RoundsPerMap;
+
+
