@@ -43,12 +43,7 @@ fn create_match_template(
 }
 
 #[view(name=my_match_template,public)]
-fn my_match_template(ctx: &ViewContext) -> Vec<MatchTemplate> {
-    let id = if let Some(user) = ctx.db.user_identity().identity().find(ctx.sender) {
-        user.account_id
-    } else {
-        return Vec::new();
-    };
-
-    ctx.db.match_template().creator().filter(&id).collect()
+fn my_match_template(ctx: &ViewContext) -> Query<MatchTemplate> {
+    // TODO: return only users own templates
+    ctx.from.match_template().build()
 }
