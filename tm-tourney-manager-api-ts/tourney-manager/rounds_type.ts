@@ -12,6 +12,7 @@ import {
 import FinishTimeout from "./finish_timeout_type";
 import MapsPerMatch from "./maps_per_match_type";
 import PointsLimit from "./points_limit_type";
+import RoundsPerMap from "./rounds_per_map_type";
 
 
 export default __t.object("Rounds", {
@@ -26,7 +27,9 @@ export default __t.object("Rounds", {
   },
   useCustomPointsRepartition: __t.bool(),
   pointsRepartition: __t.array(__t.u32()),
-  roundsPerMap: __t.i32(),
+  get roundsPerMap() {
+    return RoundsPerMap;
+  },
   useTieBreaker: __t.bool(),
 });
 

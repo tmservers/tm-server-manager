@@ -329,6 +329,8 @@ import RoundTime from "./round_time_type";
 export { RoundTime };
 import Rounds from "./rounds_type";
 export { Rounds };
+import RoundsPerMap from "./rounds_per_map_type";
+export { RoundsPerMap };
 import ScheduleV1 from "./schedule_v_1_type";
 export { ScheduleV1 };
 import Scores from "./scores_type";
