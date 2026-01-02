@@ -1,6 +1,4 @@
-use std::fmt::Display;
-
-use crate::config::{enums::FinishTimeout, MapsPerMatch, PointsLimit, RoundsPerMap};
+use crate::config::{MapsPerMatch, PointsLimit, RoundsPerMap, helper::FinishTimeout};
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

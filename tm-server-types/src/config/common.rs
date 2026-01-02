@@ -1,5 +1,5 @@
 use crate::config::{
-    enums::{RespawnBehaviour, WarmupDuration, WarmupTimeout},
+    helper::{RespawnBehaviour, WarmupDuration, WarmupTimeout},
     LapsNumber,
 };
 

@@ -8,8 +8,8 @@ pub use common::*;
 mod options;
 pub use options::ServerOptions;
 
-mod enums;
-pub use enums::*;
+mod helper;
+pub use helper::*;
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -34,25 +34,9 @@ impl ServerConfig {
 		<script_name>Trackmania/TM_Rounds_Online</script_name>
 	</gameinfos>
 
-  	<script_settings>"#.to_string()
-    	/* <setting name="S_UseTieBreak" value="" type="boolean"/>
-    	<setting name="S_WarmUpNb" value="0" type="integer"/>
-    	<setting name="S_WarmUpDuration" value="60" type="integer"/>
-    	<setting name="S_ChatTime" value="10" type="integer"/>
-    	<setting name="S_UseClublinks" value="" type="boolean"/>
-    	<setting name="S_UseClublinksSponsors" value="" type="boolean"/>
-    	<setting name="S_NeutralEmblemUrl" value="" type="text"/>
-    	<setting name="S_ScriptEnvironment" value="production" type="text"/>
-    	<setting name="S_IsChannelServer" value="" type="boolean"/>
-    	<setting name="S_RespawnBehaviour" value="-1" type="integer"/>
-    	<setting name="S_HideOpponents" value="" type="boolean"/>
-    	<setting name="S_UseLegacyXmlRpcCallbacks" value="1" type="boolean"/>
-    	<setting name="S_UseAlternateRules" value="" type="boolean"/>
-    	<setting name="S_ForceLapsNb" value="-1" type="integer"/>
-    	<setting name="S_DisplayTimeDiff" value="" type="boolean"/> */
-		/* "#
-        .to_string() */
-        +&self.common.into_xml()
+  	<script_settings>"#
+            .to_string()
+            + &self.common.into_xml()
             + &self.mode.into_xml()
             + r#"
 	</script_settings>

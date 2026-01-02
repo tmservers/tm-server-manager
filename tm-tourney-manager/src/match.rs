@@ -4,7 +4,10 @@ use tm_server_types::{config::ServerConfig, event::Event};
 use crate::{
     auth::Authorization,
     competition::tab_competition,
-    r#match::{match_state::{TmMatchState, tab_tm_match_state}, template::match_template},
+    r#match::{
+        match_state::{TmMatchState, tab_tm_match_state},
+        template::match_template,
+    },
     raw_server::tab_raw_server_online,
 };
 
@@ -108,7 +111,7 @@ pub fn create_match(
     // Try to load template if provided
     let config = with_template
         .and_then(|id| ctx.db.match_template().id().find(id))
-        .map(|t| t.config.clone());
+        .map(|t| t.config);
 
     // Create an uncommitted match
     let tm_match = TmMatchV1 {

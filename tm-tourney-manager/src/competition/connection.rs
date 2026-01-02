@@ -211,7 +211,7 @@ pub fn create_connection(
             connection_to,
             connection_from_variant,
             connection_to_variant,
-            connection_settings: ConnectionSettings::Waiting,
+            connection_settings: setting,
             resolved: false,
         })?;
 
