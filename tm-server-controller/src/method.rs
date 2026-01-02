@@ -195,7 +195,7 @@ pub trait XmlRpcMethods {
 
     // Make receivers more generic with: <T: Iterator<Item = impl for<'a> Into<&'a str>>>
     // Because its option there is a type inference issue sadly
-    async fn chat_forward_to_login(
+    async fn chat_forward_to_account(
         &self,
         message: impl Into<String>,
         sender: impl Into<String>,
@@ -287,7 +287,7 @@ impl XmlRpcMethods for TrackmaniaServer {
             .await
     }
 
-    async fn chat_forward_to_login(
+    async fn chat_forward_to_account(
         &self,
         message: impl Into<String>,
         sender: impl Into<String>,

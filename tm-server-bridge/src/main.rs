@@ -144,7 +144,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                     tm_server_controller::types::event::Event::PlayerChat(chat) => {
                         tracing::warn!("{}", chat.text);
                         if let Err(error) = server
-                            .chat_forward_to_login(&chat.text, &chat.account_id, None)
+                            .chat_forward_to_account(&chat.text, &chat.account_id, None)
                             .await
                         {
                             tracing::warn!("{error}")
