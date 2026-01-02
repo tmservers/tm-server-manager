@@ -246,12 +246,6 @@ pub fn competition_connection(ctx: &ViewContext) -> Vec<CompetitionConnection> {
         .collect()
 }
 
-/* trait NodeBehaviour {
-    fn is_finished(&self) -> bool;
-
-    fn try_start(&self);
-} */
-
 #[reducer]
 pub fn internal_graph_resolution_node_finished(
     ctx: &ReducerContext,

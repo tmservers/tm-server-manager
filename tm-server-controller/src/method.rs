@@ -7,7 +7,7 @@ use crate::{ClientError, TrackmaniaServer};
 
 #[allow(async_fn_in_trait)]
 pub trait ModeScriptMethodsXmlRpc {
-    async fn enable_callbacks(&self, enable: bool) -> Result<bool, ClientError>;
+    async fn enable_mode_script_callbacks(&self, enable: bool) -> Result<bool, ClientError>;
     async fn get_callbacks_list(&self) -> Result<bool, ClientError>;
     async fn get_callbacks_list_enabled(&self) -> Result<bool, ClientError>;
     async fn get_callbacks_list_disabled(&self) -> Result<bool, ClientError>;
@@ -33,7 +33,7 @@ pub trait ModeScriptMethodsXmlRpc {
 
 impl ModeScriptMethodsXmlRpc for TrackmaniaServer {
     ///Enable or disable mode script callbacks.
-    async fn enable_callbacks(&self, enable: bool) -> Result<bool, ClientError> {
+    async fn enable_mode_script_callbacks(&self, enable: bool) -> Result<bool, ClientError> {
         self.call(
             "TriggerModeScriptEventArray",
             (
@@ -154,6 +154,14 @@ pub trait XmlRpcMethods {
 
     async fn add_guest(&self, player: &str) -> Result<bool, ClientError>;
 
+    async fn enable_callbacks(&self, enable: bool) -> Result<bool, ClientError>;
+
+    async fn authenticate(
+        &self,
+        username: impl Into<String>,
+        password: impl Into<String>,
+    ) -> Result<bool, ClientError>;
+
     async fn auto_save_replays(&self, enable: bool) -> Result<bool, ClientError>;
 
     async fn is_auto_save_replays_enabled(&self) -> Result<bool, ClientError>;
@@ -183,6 +191,15 @@ pub trait XmlRpcMethods {
         content: &str,
         timeout: i32,
         hide_on_click: bool,
+    ) -> Result<bool, ClientError>;
+
+    // Make receivers more generic with: <T: Iterator<Item = impl for<'a> Into<&'a str>>>
+    // Because its option there is a type inference issue sadly
+    async fn chat_forward_to_login(
+        &self,
+        message: impl Into<String>,
+        sender: impl Into<String>,
+        receivers: Option<Vec<String>>,
     ) -> Result<bool, ClientError>;
 }
 
@@ -267,6 +284,46 @@ impl XmlRpcMethods for TrackmaniaServer {
         auto_forward: bool,
     ) -> Result<bool, ClientError> {
         self.call("ChatEnableManualRouting", (enable, auto_forward))
+            .await
+    }
+
+    async fn chat_forward_to_login(
+        &self,
+        message: impl Into<String>,
+        sender: impl Into<String>,
+        receivers: Option<Vec<String>>,
+    ) -> Result<bool, ClientError> {
+        self.call(
+            "ChatForwardToLogin",
+            (
+                message.into(),
+                account_id_to_login(&sender.into()),
+                match receivers {
+                    Some(dest) => {
+                        let mut players = String::new();
+                        for player in dest {
+                            players += &account_id_to_login(&player);
+                            players += ",";
+                        }
+                        players
+                    }
+                    None => String::new(),
+                },
+            ),
+        )
+        .await
+    }
+
+    async fn enable_callbacks(&self, enable: bool) -> Result<bool, ClientError> {
+        self.call("EnableCallbacks", enable).await
+    }
+
+    async fn authenticate(
+        &self,
+        username: impl Into<String>,
+        password: impl Into<String>,
+    ) -> Result<bool, ClientError> {
+        self.call("Authenticate", (username.into(), password.into()))
             .await
     }
 }

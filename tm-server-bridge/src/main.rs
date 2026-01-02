@@ -99,33 +99,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     {
         let server = TRACKMANIA.wait();
 
-        let _: Result<bool, ClientError> = server.call("SetApiVersion", "2025-07-04").await;
+        let _: bool = server.call("SetApiVersion", "2025-07-04").await?;
 
-        let _: Result<bool, ClientError> = server
-            .call("Authenticate", ("SuperAdmin", "SuperAdmin"))
-            .await;
+        server.authenticate("SuperAdmin", "SuperAdmin").await?;
 
-        let _: Result<bool, ClientError> = server.enable_callbacks(true).await;
-
-        let _: Result<bool, ClientError> = server
+        let _: bool = server
             .call(
                 "TriggerModeScriptEventArray",
                 ("XmlRpc.SetApiVersion", ["3.11"]),
             )
-            .await;
+            .await?;
 
-        let _: Result<bool, ClientError> = server
-            .call(
-                "TriggerModeScriptEventArray",
-                ("XmlRpc.EnableCallbacks", ["true"]),
-            )
-            .await;
+        server.enable_callbacks(true).await?;
+        server.enable_mode_script_callbacks(true).await?;
 
-        _ = server.chat_manual_routing(true, false).await;
+        server.chat_manual_routing(true, false).await?;
 
         //TODO remove
-        _ = server.get_callbacks_list_disabled().await;
-        _ = server.get_callbacks_list().await;
+        _ = server.get_callbacks_list_disabled().await?;
+        _ = server.get_callbacks_list().await?;
 
         // Emit all events
         server.event(move |event| {
@@ -146,6 +138,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         .await;
                     tracing::error!("player successfully kicked {}", &player.account_id);
                 }; */
+
+                #[allow(clippy::single_match)]
+                match &event {
+                    tm_server_controller::types::event::Event::PlayerChat(chat) => {
+                        tracing::warn!("{}", chat.text);
+                        if let Err(error) = server
+                            .chat_forward_to_login(&chat.text, &chat.account_id, None)
+                            .await
+                        {
+                            tracing::warn!("{error}")
+                        }
+                        tracing::info!("Should be routed");
+                    }
+                    _ => (),
+                }
 
                 if let tm_server_controller::types::event::Event::EndRoundStart(info) = &event {
                     let file_name = format!("{}{}", info.count, info.time);
