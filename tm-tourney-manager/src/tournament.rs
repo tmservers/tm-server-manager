@@ -72,9 +72,9 @@ fn create_tournament(
         name: name.clone(),
         creator_account_id: user,
         status: TournamentStatus::Planning,
-        description: description,
-        starting_at: starting_at,
-        ending_at: ending_at,
+        description,
+        starting_at,
+        ending_at,
     })?;
 
     //SAFETY: Comitted afterwards
@@ -242,7 +242,7 @@ pub fn my_tournament(ctx: &ViewContext) -> Vec<MyTournamentV1> {
     let id = if let Some(user) = ctx.db.user_identity().identity().find(ctx.sender) {
         user.account_id
     } else {
-        Uuid::NIL
+        return Vec::new();
     };
 
     let Some(user) = ctx.db.tab_user().account_id().find(id) else {
@@ -252,7 +252,7 @@ pub fn my_tournament(ctx: &ViewContext) -> Vec<MyTournamentV1> {
     ctx.db
         .tab_tournament()
         .creator_account_id()
-        .filter(&id)
+        .filter(id)
         .map(|t| MyTournamentV1 {
             id: t.id,
             creator_account_id: t.creator_account_id,

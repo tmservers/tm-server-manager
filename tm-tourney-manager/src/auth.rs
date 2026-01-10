@@ -10,7 +10,7 @@ pub trait Authorization {
 
 impl Authorization for ReducerContext {
     fn get_user(&self) -> Result<Uuid, String> {
-        let Some(user) = self.db.user_identity().identity().find(self.identity()) else {
+        let Some(user) = self.db.user_identity().identity().find(self.sender) else {
             return Err("Identity not associated with a user account.".into());
         };
 
@@ -18,12 +18,7 @@ impl Authorization for ReducerContext {
     }
 
     fn get_server(&self) -> Result<String, String> {
-        if let Some(server) = self
-            .db
-            .tab_raw_server_online()
-            .identity()
-            .find(self.identity())
-        {
+        if let Some(server) = self.db.tab_raw_server_online().identity().find(self.sender) {
             return Ok(server.tm_login.clone());
         }
 
@@ -32,7 +27,7 @@ impl Authorization for ReducerContext {
     }
 
     fn get_worker(&self) -> Result<String, String> {
-        if let Some(worker) = self.db.tm_worker().identity().find(self.identity()) {
+        if let Some(worker) = self.db.tm_worker().identity().find(self.sender) {
             return Ok(worker.tm_login.clone());
         }
 

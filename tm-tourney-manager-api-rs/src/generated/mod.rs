@@ -71,6 +71,9 @@ pub mod match_round_table;
 pub mod match_status_type;
 pub mod match_template_table;
 pub mod match_template_type;
+pub mod match_try_start_reducer;
+pub mod match_update_config_reducer;
+pub mod match_update_pre_config_reducer;
 pub mod method_call_type;
 pub mod method_error_type;
 pub mod method_response_type;
@@ -176,12 +179,9 @@ pub mod tournament_status_type;
 pub mod tournament_table;
 pub mod tournament_update_status_reducer;
 pub mod tournament_v_1_type;
-pub mod try_start_match_reducer;
 pub mod unloading_map_end_type;
 pub mod unloading_map_start_type;
 pub mod unregister_player_reducer;
-pub mod update_match_config_reducer;
-pub mod update_pre_match_config_reducer;
 pub mod user_identity_table;
 pub mod user_identity_type;
 pub mod user_table;
@@ -290,6 +290,15 @@ pub use match_round_table::*;
 pub use match_status_type::MatchStatus;
 pub use match_template_table::*;
 pub use match_template_type::MatchTemplate;
+pub use match_try_start_reducer::{
+    match_try_start, set_flags_for_match_try_start, MatchTryStartCallbackId,
+};
+pub use match_update_config_reducer::{
+    match_update_config, set_flags_for_match_update_config, MatchUpdateConfigCallbackId,
+};
+pub use match_update_pre_config_reducer::{
+    match_update_pre_config, set_flags_for_match_update_pre_config, MatchUpdatePreConfigCallbackId,
+};
 pub use method_call_type::MethodCall;
 pub use method_error_type::MethodError;
 pub use method_response_type::MethodResponse;
@@ -416,19 +425,10 @@ pub use tournament_update_status_reducer::{
     TournamentUpdateStatusCallbackId,
 };
 pub use tournament_v_1_type::TournamentV1;
-pub use try_start_match_reducer::{
-    set_flags_for_try_start_match, try_start_match, TryStartMatchCallbackId,
-};
 pub use unloading_map_end_type::UnloadingMapEnd;
 pub use unloading_map_start_type::UnloadingMapStart;
 pub use unregister_player_reducer::{
     set_flags_for_unregister_player, unregister_player, UnregisterPlayerCallbackId,
-};
-pub use update_match_config_reducer::{
-    set_flags_for_update_match_config, update_match_config, UpdateMatchConfigCallbackId,
-};
-pub use update_pre_match_config_reducer::{
-    set_flags_for_update_pre_match_config, update_pre_match_config, UpdatePreMatchConfigCallbackId,
 };
 pub use user_identity_table::*;
 pub use user_identity_type::UserIdentity;
@@ -515,6 +515,17 @@ pub enum Reducer {
     MatchConfigured {
         id: u32,
     },
+    MatchTryStart {
+        match_id: u32,
+    },
+    MatchUpdateConfig {
+        id: u32,
+        config: ServerConfig,
+    },
+    MatchUpdatePreConfig {
+        id: u32,
+        config: ServerConfig,
+    },
     OnScheduleTriggered {
         arg: ScheduleV1,
     },
@@ -556,19 +567,8 @@ pub enum Reducer {
     TournamentUpdateStatus {
         tournament_id: u32,
     },
-    TryStartMatch {
-        match_id: u32,
-    },
     UnregisterPlayer {
         competition_id: u32,
-    },
-    UpdateMatchConfig {
-        id: u32,
-        config: ServerConfig,
-    },
-    UpdatePreMatchConfig {
-        id: u32,
-        config: ServerConfig,
     },
 }
 
@@ -599,6 +599,9 @@ impl __sdk::Reducer for Reducer {
             }
             Reducer::MatchAssignServer { .. } => "match_assign_server",
             Reducer::MatchConfigured { .. } => "match_configured",
+            Reducer::MatchTryStart { .. } => "match_try_start",
+            Reducer::MatchUpdateConfig { .. } => "match_update_config",
+            Reducer::MatchUpdatePreConfig { .. } => "match_update_pre_config",
             Reducer::OnScheduleTriggered { .. } => "on_schedule_triggered",
             Reducer::OnTournamentStatusScheduleTriggered { .. } => {
                 "on_tournament_status_schedule_triggered"
@@ -612,10 +615,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::TournamentEditDescription { .. } => "tournament_edit_description",
             Reducer::TournamentEditName { .. } => "tournament_edit_name",
             Reducer::TournamentUpdateStatus { .. } => "tournament_update_status",
-            Reducer::TryStartMatch { .. } => "try_start_match",
             Reducer::UnregisterPlayer { .. } => "unregister_player",
-            Reducer::UpdateMatchConfig { .. } => "update_match_config",
-            Reducer::UpdatePreMatchConfig { .. } => "update_pre_match_config",
             _ => unreachable!(),
         }
     }
@@ -642,6 +642,9 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "internal_graph_resolution_node_finished" => Ok(__sdk::parse_reducer_args::<internal_graph_resolution_node_finished_reducer::InternalGraphResolutionNodeFinishedArgs>("internal_graph_resolution_node_finished", &value.args)?.into()),
             "match_assign_server" => Ok(__sdk::parse_reducer_args::<match_assign_server_reducer::MatchAssignServerArgs>("match_assign_server", &value.args)?.into()),
             "match_configured" => Ok(__sdk::parse_reducer_args::<match_configured_reducer::MatchConfiguredArgs>("match_configured", &value.args)?.into()),
+            "match_try_start" => Ok(__sdk::parse_reducer_args::<match_try_start_reducer::MatchTryStartArgs>("match_try_start", &value.args)?.into()),
+            "match_update_config" => Ok(__sdk::parse_reducer_args::<match_update_config_reducer::MatchUpdateConfigArgs>("match_update_config", &value.args)?.into()),
+            "match_update_pre_config" => Ok(__sdk::parse_reducer_args::<match_update_pre_config_reducer::MatchUpdatePreConfigArgs>("match_update_pre_config", &value.args)?.into()),
             "on_schedule_triggered" => Ok(__sdk::parse_reducer_args::<on_schedule_triggered_reducer::OnScheduleTriggeredArgs>("on_schedule_triggered", &value.args)?.into()),
             "on_tournament_status_schedule_triggered" => Ok(__sdk::parse_reducer_args::<on_tournament_status_schedule_triggered_reducer::OnTournamentStatusScheduleTriggeredArgs>("on_tournament_status_schedule_triggered", &value.args)?.into()),
             "post_event" => Ok(__sdk::parse_reducer_args::<post_event_reducer::PostEventArgs>("post_event", &value.args)?.into()),
@@ -653,10 +656,7 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "tournament_edit_description" => Ok(__sdk::parse_reducer_args::<tournament_edit_description_reducer::TournamentEditDescriptionArgs>("tournament_edit_description", &value.args)?.into()),
             "tournament_edit_name" => Ok(__sdk::parse_reducer_args::<tournament_edit_name_reducer::TournamentEditNameArgs>("tournament_edit_name", &value.args)?.into()),
             "tournament_update_status" => Ok(__sdk::parse_reducer_args::<tournament_update_status_reducer::TournamentUpdateStatusArgs>("tournament_update_status", &value.args)?.into()),
-            "try_start_match" => Ok(__sdk::parse_reducer_args::<try_start_match_reducer::TryStartMatchArgs>("try_start_match", &value.args)?.into()),
             "unregister_player" => Ok(__sdk::parse_reducer_args::<unregister_player_reducer::UnregisterPlayerArgs>("unregister_player", &value.args)?.into()),
-            "update_match_config" => Ok(__sdk::parse_reducer_args::<update_match_config_reducer::UpdateMatchConfigArgs>("update_match_config", &value.args)?.into()),
-            "update_pre_match_config" => Ok(__sdk::parse_reducer_args::<update_pre_match_config_reducer::UpdatePreMatchConfigArgs>("update_pre_match_config", &value.args)?.into()),
             unknown => Err(__sdk::InternalError::unknown_name("reducer", unknown, "ReducerCallInfo").into()),
 }
     }

@@ -68,6 +68,12 @@ import MatchAssignServerReducer from "./match_assign_server_reducer";
 export { MatchAssignServerReducer };
 import MatchConfiguredReducer from "./match_configured_reducer";
 export { MatchConfiguredReducer };
+import MatchTryStartReducer from "./match_try_start_reducer";
+export { MatchTryStartReducer };
+import MatchUpdateConfigReducer from "./match_update_config_reducer";
+export { MatchUpdateConfigReducer };
+import MatchUpdatePreConfigReducer from "./match_update_pre_config_reducer";
+export { MatchUpdatePreConfigReducer };
 import OnScheduleTriggeredReducer from "./on_schedule_triggered_reducer";
 export { OnScheduleTriggeredReducer };
 import OnTournamentStatusScheduleTriggeredReducer from "./on_tournament_status_schedule_triggered_reducer";
@@ -90,14 +96,8 @@ import TournamentEditNameReducer from "./tournament_edit_name_reducer";
 export { TournamentEditNameReducer };
 import TournamentUpdateStatusReducer from "./tournament_update_status_reducer";
 export { TournamentUpdateStatusReducer };
-import TryStartMatchReducer from "./try_start_match_reducer";
-export { TryStartMatchReducer };
 import UnregisterPlayerReducer from "./unregister_player_reducer";
 export { UnregisterPlayerReducer };
-import UpdateMatchConfigReducer from "./update_match_config_reducer";
-export { UpdateMatchConfigReducer };
-import UpdatePreMatchConfigReducer from "./update_pre_match_config_reducer";
-export { UpdatePreMatchConfigReducer };
 
 // Import and reexport all procedure arg types
 import * as LoginAsServerProcedure from "./login_as_server_procedure";
@@ -921,6 +921,9 @@ const reducersSchema = __reducers(
   __reducerSchema("internal_graph_resolution_node_finished", InternalGraphResolutionNodeFinishedReducer),
   __reducerSchema("match_assign_server", MatchAssignServerReducer),
   __reducerSchema("match_configured", MatchConfiguredReducer),
+  __reducerSchema("match_try_start", MatchTryStartReducer),
+  __reducerSchema("match_update_config", MatchUpdateConfigReducer),
+  __reducerSchema("match_update_pre_config", MatchUpdatePreConfigReducer),
   __reducerSchema("on_schedule_triggered", OnScheduleTriggeredReducer),
   __reducerSchema("on_tournament_status_schedule_triggered", OnTournamentStatusScheduleTriggeredReducer),
   __reducerSchema("post_event", PostEventReducer),
@@ -932,10 +935,7 @@ const reducersSchema = __reducers(
   __reducerSchema("tournament_edit_description", TournamentEditDescriptionReducer),
   __reducerSchema("tournament_edit_name", TournamentEditNameReducer),
   __reducerSchema("tournament_update_status", TournamentUpdateStatusReducer),
-  __reducerSchema("try_start_match", TryStartMatchReducer),
   __reducerSchema("unregister_player", UnregisterPlayerReducer),
-  __reducerSchema("update_match_config", UpdateMatchConfigReducer),
-  __reducerSchema("update_pre_match_config", UpdatePreMatchConfigReducer),
 );
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */

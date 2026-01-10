@@ -189,7 +189,7 @@ pub fn match_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> {
 }
 
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn update_pre_match_config(
+pub fn match_update_pre_config(
     ctx: &ReducerContext,
     id: u32,
     config: ServerConfig,
@@ -207,7 +207,7 @@ pub fn update_pre_match_config(
 }
 
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn update_match_config(
+pub fn match_update_config(
     ctx: &ReducerContext,
     id: u32,
     config: ServerConfig,
@@ -227,7 +227,7 @@ pub fn update_match_config(
 /// If the match is fully configured and ready start.
 /// This can also serve as a manual override for scheduled matches.
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn try_start_match(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
+pub fn match_try_start(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
     ctx.get_user()?;
     if let Some(mut tm_match) = ctx.db.tab_tm_match().id().find(match_id)
         // Match needs an assigned server

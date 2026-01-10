@@ -37,7 +37,6 @@ pub fn user(ctx: &AnonymousViewContext) -> Query<User> {
 pub struct UserIdentity {
     #[primary_key]
     pub identity: Identity,
-    //ubisoft if of the user
     pub account_id: Uuid,
 }
 

@@ -35,10 +35,10 @@ fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
 
         ctx.db
             .tab_user()
-            .try_insert(UserStruct::new(account_id.clone(), preferred_username))?;
+            .try_insert(UserStruct::new(account_id, preferred_username))?;
         ctx.db
             .user_identity()
-            .try_insert(UserIdentity::new(account_id, ctx.identity()))?;
+            .try_insert(UserIdentity::new(account_id, ctx.sender))?;
 
         Ok(())
     } else {
