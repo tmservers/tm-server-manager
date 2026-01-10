@@ -4,8 +4,8 @@ use nadeo_api_rs::{
     auth::{NadeoClient, UserAgentDetails},
     live::LiveApiClient,
 };
-use spacetimedb_sdk::Table;
 use spacetimedb_sdk::db_context::DbContext;
+use spacetimedb_sdk::{Table, Uuid};
 use tm_tourney_manager_api_rs::{DbConnection, MyJobsTableAccess, login_as_worker, post_record};
 use tokio::{
     signal,
@@ -130,11 +130,12 @@ async fn main() {
                 .unwrap();
             println!("{lb:?}");
             for pos in lb.top.into_iter() {
+                let account_id = Uuid::parse_str(&pos.accountId).unwrap();
                 println!("{pos:?}");
                 SPACETIME
                     .wait()
                     .reducers
-                    .post_record(map.clone(), pos.accountId, pos.score as u32)
+                    .post_record(map.clone(), account_id, pos.score as u32)
                     .unwrap();
             }
         }
