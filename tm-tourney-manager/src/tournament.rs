@@ -1,11 +1,11 @@
 use spacetimedb::{
-    reducer, table, view, AnonymousViewContext, Query, ReducerContext, SpacetimeType, Table,
-    Timestamp, ViewContext,
+    AnonymousViewContext, Query, ReducerContext, SpacetimeType, Table, Timestamp, Uuid,
+    ViewContext, reducer, table, view,
 };
 
 use crate::{
     auth::Authorization,
-    competition::{tab_competition, CompetitionV1},
+    competition::{CompetitionV1, tab_competition},
     user::{tab_user__view, user_identity__view},
 };
 
@@ -20,7 +20,7 @@ pub struct TournamentV1 {
     pub id: u32,
 
     #[index(btree)]
-    creator: String,
+    creator_account_id: Uuid,
 
     #[unique]
     name: String,
@@ -70,7 +70,7 @@ fn create_tournament(
     let tournament = ctx.db.tab_tournament().try_insert(TournamentV1 {
         id: 0,
         name: name.clone(),
-        creator: user,
+        creator_account_id: user,
         status: TournamentStatus::Planning,
         description: description,
         starting_at: starting_at,
@@ -150,7 +150,7 @@ fn tournament_edit_dates(
             return Err("Cannot modify end date of a tournament that has already ended.".into());
         }
     }
-    
+
     // Don't allow modifying ending_at to before starting_at
     if ending_at < starting_at {
         return Err("Ending date cannot be before starting date.".into());
@@ -224,7 +224,7 @@ pub fn tournament(ctx: &AnonymousViewContext) -> Query<TournamentV1> {
 pub struct MyTournamentV1 {
     id: u32,
 
-    creator: String,
+    creator_account_id: Uuid,
     creator_name: String,
 
     name: String,
@@ -242,20 +242,20 @@ pub fn my_tournament(ctx: &ViewContext) -> Vec<MyTournamentV1> {
     let id = if let Some(user) = ctx.db.user_identity().identity().find(ctx.sender) {
         user.account_id
     } else {
-        String::new()
+        Uuid::NIL
     };
 
-    let Some(user) = ctx.db.tab_user().account_id().find(&id) else {
+    let Some(user) = ctx.db.tab_user().account_id().find(id) else {
         return Vec::new();
     };
 
     ctx.db
         .tab_tournament()
-        .creator()
+        .creator_account_id()
         .filter(&id)
         .map(|t| MyTournamentV1 {
             id: t.id,
-            creator: t.creator,
+            creator_account_id: t.creator_account_id,
             creator_name: user.get_name().to_string(),
             name: t.name,
             starting_at: t.starting_at,

@@ -10,7 +10,7 @@ use super::server_config_type::ServerConfig;
 #[sats(crate = __lib)]
 pub struct MatchTemplate {
     pub id: u32,
-    pub creator: String,
+    pub creator: __sdk::Uuid,
     pub name: String,
     pub config: ServerConfig,
 }

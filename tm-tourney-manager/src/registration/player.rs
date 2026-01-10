@@ -1,5 +1,5 @@
 use spacetimedb::{
-    reducer, table, view, AnonymousViewContext, Query, ReducerContext, Table, Timestamp,
+    AnonymousViewContext, Query, ReducerContext, Table, Timestamp, Uuid, reducer, table, view,
 };
 
 use crate::{auth::Authorization, competition::tab_competition};
@@ -8,7 +8,7 @@ use crate::{auth::Authorization, competition::tab_competition};
 pub struct RegisteredPlayer {
     #[index(btree)]
     competition_id: u32,
-    account_id: String,
+    account_id: Uuid,
     registered_at: Timestamp,
 }
 

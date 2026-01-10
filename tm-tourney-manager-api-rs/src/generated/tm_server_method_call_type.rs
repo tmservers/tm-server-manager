@@ -11,7 +11,7 @@ use super::method_call_type::MethodCall;
 pub struct TmServerMethodCall {
     pub id: u32,
     pub server_id: String,
-    pub account_id: String,
+    pub account_id: __sdk::Uuid,
     pub method: MethodCall,
 }
 

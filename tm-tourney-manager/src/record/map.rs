@@ -1,4 +1,6 @@
-use spacetimedb::{AnonymousViewContext, ReducerContext, Table, Timestamp, reducer, table, view};
+use spacetimedb::{
+    AnonymousViewContext, ReducerContext, Table, Timestamp, Uuid, reducer, table, view,
+};
 
 use crate::{
     auth::Authorization,
@@ -10,7 +12,7 @@ use crate::{
     name = tm_map_record,
     index(
         name = record_id,
-        btree(columns = [map_uid, player_uid]))
+        btree(columns = [map_uid, account_id]))
     ,public)] //TODO make private
 pub struct TmMapRecord {
     #[auto_inc]
@@ -18,7 +20,7 @@ pub struct TmMapRecord {
     pub id: u32,
 
     map_uid: String,
-    player_uid: String,
+    account_id: Uuid,
 
     timestamp: Timestamp,
 
@@ -29,7 +31,7 @@ impl TmMapRecord {
     pub(crate) fn with_player_info(self, player: User) -> TmRecord {
         TmRecord {
             map_uid: self.map_uid,
-            player_uid: self.player_uid,
+            account_id: self.account_id,
             timestamp: self.timestamp,
             time: self.time,
             //TODO
@@ -40,8 +42,8 @@ impl TmMapRecord {
         }
     }
 
-    pub(crate) fn player(&self) -> &String {
-        &self.player_uid
+    pub(crate) fn player(&self) -> Uuid {
+        self.account_id
     }
 }
 
@@ -63,7 +65,7 @@ pub fn map_record(ctx: &AnonymousViewContext) -> Vec<TmRecord> {
 pub fn post_record(
     ctx: &ReducerContext,
     map_uid: String,
-    player_uid: String,
+    account_id: Uuid,
     time: u32,
 ) -> Result<(), String> {
     //TODO
@@ -73,7 +75,7 @@ pub fn post_record(
         .db
         .tm_map_record()
         .record_id()
-        .filter((&map_uid, &player_uid))
+        .filter((&map_uid, &account_id))
         .next()
     {
         if record.time > time {
@@ -89,7 +91,7 @@ pub fn post_record(
     ctx.db.tm_map_record().insert(TmMapRecord {
         id: 0,
         map_uid,
-        player_uid,
+        account_id,
         timestamp: ctx.timestamp,
         time,
     });

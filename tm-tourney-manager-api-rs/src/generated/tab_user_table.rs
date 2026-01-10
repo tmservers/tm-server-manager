@@ -81,7 +81,6 @@ impl<'ctx> __sdk::Table for TabUserTableHandle<'ctx> {
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
     let _table = client_cache.get_or_make_table::<User>("tab_user");
-    _table.add_unique_constraint::<String>("account_id", |row| &row.account_id);
 }
 pub struct TabUserUpdateCallbackId(__sdk::CallbackId);
 
@@ -109,34 +108,4 @@ pub(super) fn parse_table_update(
             .with_cause(e)
             .into()
     })
-}
-
-/// Access to the `account_id` unique index on the table `tab_user`,
-/// which allows point queries on the field of the same name
-/// via the [`TabUserAccountIdUnique::find`] method.
-///
-/// Users are encouraged not to explicitly reference this type,
-/// but to directly chain method calls,
-/// like `ctx.db.tab_user().account_id().find(...)`.
-pub struct TabUserAccountIdUnique<'ctx> {
-    imp: __sdk::UniqueConstraintHandle<User, String>,
-    phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
-}
-
-impl<'ctx> TabUserTableHandle<'ctx> {
-    /// Get a handle on the `account_id` unique index on the table `tab_user`.
-    pub fn account_id(&self) -> TabUserAccountIdUnique<'ctx> {
-        TabUserAccountIdUnique {
-            imp: self.imp.get_unique_constraint::<String>("account_id"),
-            phantom: std::marker::PhantomData,
-        }
-    }
-}
-
-impl<'ctx> TabUserAccountIdUnique<'ctx> {
-    /// Find the subscribed row whose `account_id` column value is equal to `col_val`,
-    /// if such a row is present in the client cache.
-    pub fn find(&self, col_val: &String) -> Option<User> {
-        self.imp.find(col_val)
-    }
 }

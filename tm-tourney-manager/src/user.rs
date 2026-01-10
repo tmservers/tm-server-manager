@@ -1,10 +1,10 @@
-use spacetimedb::{AnonymousViewContext, Identity, Query, view};
+use spacetimedb::{AnonymousViewContext, Identity, Query, Uuid, view};
 
 #[cfg_attr(feature = "spacetime", spacetimedb::table(name = tab_user))]
 pub struct User {
     //ubisoft id of the user
     #[primary_key]
-    pub account_id: String,
+    pub account_id: Uuid,
 
     name: String,
 
@@ -14,7 +14,7 @@ pub struct User {
 }
 
 impl User {
-    pub fn new(account_id: String, name: String) -> Self {
+    pub fn new(account_id: Uuid, name: String) -> Self {
         User {
             account_id,
             name,
@@ -38,11 +38,11 @@ pub struct UserIdentity {
     #[primary_key]
     pub identity: Identity,
     //ubisoft if of the user
-    pub account_id: String,
+    pub account_id: Uuid,
 }
 
 impl UserIdentity {
-    pub fn new(account_id: String, identity: Identity) -> Self {
+    pub fn new(account_id: Uuid, identity: Identity) -> Self {
         Self {
             identity,
             account_id,

@@ -8,7 +8,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[sats(crate = __lib)]
 pub struct UserIdentity {
     pub identity: __sdk::Identity,
-    pub account_id: String,
+    pub account_id: __sdk::Uuid,
 }
 
 impl __sdk::InModule for UserIdentity {

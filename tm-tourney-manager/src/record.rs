@@ -1,4 +1,4 @@
-use spacetimedb::{SpacetimeType, Timestamp};
+use spacetimedb::{SpacetimeType, Timestamp, Uuid};
 
 mod competition;
 mod map;
@@ -9,7 +9,7 @@ mod r#match;
 #[derive(Debug, SpacetimeType)]
 pub struct TmRecord {
     pub map_uid: String,
-    pub player_uid: String,
+    pub account_id: Uuid,
 
     pub timestamp: Timestamp,
 

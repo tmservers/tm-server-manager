@@ -44,9 +44,11 @@ petgraph = { version = "0.8" }
 #============
 # SpacetimeDB
 #============
-spacetimedb = { version = "=1.11.0", features = ["unstable"] }
-spacetimedb-lib = "=1.11.0"
-spacetimedb-sdk = "=1.11.0"
+spacetimedb = { version = "1.11.2", features = [
+    "unstable",
+], git = "https://github.com/kistz/SpacetimeDB.git", branch = "uuid-as-filter" }
+spacetimedb-lib = { version = "1.11.2", git = "https://github.com/kistz/SpacetimeDB.git", branch = "uuid-as-filter" }
+spacetimedb-sdk = { version = "1.11.2", git = "https://github.com/kistz/SpacetimeDB.git", branch = "uuid-as-filter" }
 
 
 #==============

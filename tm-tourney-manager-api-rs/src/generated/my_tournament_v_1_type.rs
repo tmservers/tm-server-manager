@@ -10,7 +10,7 @@ use super::tournament_status_type::TournamentStatus;
 #[sats(crate = __lib)]
 pub struct MyTournamentV1 {
     pub id: u32,
-    pub creator: String,
+    pub creator_account_id: __sdk::Uuid,
     pub creator_name: String,
     pub name: String,
     pub starting_at: __sdk::Timestamp,

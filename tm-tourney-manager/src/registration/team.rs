@@ -1,4 +1,4 @@
-use spacetimedb::{ReducerContext, Table, Timestamp, reducer, table};
+use spacetimedb::{ReducerContext, Table, Timestamp, Uuid, reducer, table};
 
 use crate::{auth::Authorization, competition::tab_competition};
 
@@ -6,7 +6,7 @@ use crate::{auth::Authorization, competition::tab_competition};
 pub struct RegisteredTeam {
     #[index(btree)]
     competition_id: u32,
-    account_id: String,
+    account_id: Uuid,
     registered_at: Timestamp,
 }
 

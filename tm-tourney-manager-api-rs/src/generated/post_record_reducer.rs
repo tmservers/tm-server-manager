@@ -8,7 +8,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[sats(crate = __lib)]
 pub(super) struct PostRecordArgs {
     pub map_uid: String,
-    pub player_uid: String,
+    pub account_id: __sdk::Uuid,
     pub time: u32,
 }
 
@@ -16,7 +16,7 @@ impl From<PostRecordArgs> for super::Reducer {
     fn from(args: PostRecordArgs) -> Self {
         Self::PostRecord {
             map_uid: args.map_uid,
-            player_uid: args.player_uid,
+            account_id: args.account_id,
             time: args.time,
         }
     }
@@ -38,7 +38,8 @@ pub trait post_record {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_post_record`] callbacks.
-    fn post_record(&self, map_uid: String, player_uid: String, time: u32) -> __sdk::Result<()>;
+    fn post_record(&self, map_uid: String, account_id: __sdk::Uuid, time: u32)
+        -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `post_record`.
     ///
     /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
@@ -48,7 +49,7 @@ pub trait post_record {
     /// to cancel the callback.
     fn on_post_record(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &String, &String, &u32) + Send + 'static,
+        callback: impl FnMut(&super::ReducerEventContext, &String, &__sdk::Uuid, &u32) + Send + 'static,
     ) -> PostRecordCallbackId;
     /// Cancel a callback previously registered by [`Self::on_post_record`],
     /// causing it not to run in the future.
@@ -56,19 +57,26 @@ pub trait post_record {
 }
 
 impl post_record for super::RemoteReducers {
-    fn post_record(&self, map_uid: String, player_uid: String, time: u32) -> __sdk::Result<()> {
+    fn post_record(
+        &self,
+        map_uid: String,
+        account_id: __sdk::Uuid,
+        time: u32,
+    ) -> __sdk::Result<()> {
         self.imp.call_reducer(
             "post_record",
             PostRecordArgs {
                 map_uid,
-                player_uid,
+                account_id,
                 time,
             },
         )
     }
     fn on_post_record(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &String, &String, &u32) + Send + 'static,
+        mut callback: impl FnMut(&super::ReducerEventContext, &String, &__sdk::Uuid, &u32)
+            + Send
+            + 'static,
     ) -> PostRecordCallbackId {
         PostRecordCallbackId(self.imp.on_reducer(
             "post_record",
@@ -80,7 +88,7 @@ impl post_record for super::RemoteReducers {
                             reducer:
                                 super::Reducer::PostRecord {
                                     map_uid,
-                                    player_uid,
+                                    account_id,
                                     time,
                                 },
                             ..
@@ -90,7 +98,7 @@ impl post_record for super::RemoteReducers {
                 else {
                     unreachable!()
                 };
-                callback(ctx, map_uid, player_uid, time)
+                callback(ctx, map_uid, account_id, time)
             }),
         ))
     }

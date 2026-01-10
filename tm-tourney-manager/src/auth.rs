@@ -1,15 +1,15 @@
-use spacetimedb::{JwtClaims, ReducerContext};
+use spacetimedb::{JwtClaims, ReducerContext, Uuid};
 
 use crate::{raw_server::tab_raw_server_online, user::user_identity, worker::tm_worker};
 
 pub trait Authorization {
-    fn get_user(&self) -> Result<String, String>;
+    fn get_user(&self) -> Result<Uuid, String>;
     fn get_server(&self) -> Result<String, String>;
     fn get_worker(&self) -> Result<String, String>;
 }
 
 impl Authorization for ReducerContext {
-    fn get_user(&self) -> Result<String, String> {
+    fn get_user(&self) -> Result<Uuid, String> {
         let Some(user) = self.db.user_identity().identity().find(self.identity()) else {
             return Err("Identity not associated with a user account.".into());
         };
@@ -18,7 +18,12 @@ impl Authorization for ReducerContext {
     }
 
     fn get_server(&self) -> Result<String, String> {
-        if let Some(server) = self.db.tab_raw_server_online().identity().find(self.identity()) {
+        if let Some(server) = self
+            .db
+            .tab_raw_server_online()
+            .identity()
+            .find(self.identity())
+        {
             return Ok(server.tm_login.clone());
         }
 

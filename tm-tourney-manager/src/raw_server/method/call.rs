@@ -1,4 +1,4 @@
-use spacetimedb::{ReducerContext, Table, reducer};
+use spacetimedb::{ReducerContext, Table, Uuid, reducer};
 use tm_server_types::method::MethodCall;
 
 use crate::{auth::Authorization, raw_server::tab_raw_server_online};
@@ -11,7 +11,7 @@ pub struct TmServerMethodCall {
 
     server_id: String,
 
-    account_id: String,
+    account_id: Uuid,
 
     method: MethodCall,
 }

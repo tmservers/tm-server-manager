@@ -1,4 +1,4 @@
-use spacetimedb::{ReducerContext, Table};
+use spacetimedb::{ReducerContext, Table, Uuid};
 
 use crate::{
     raw_server::{tab_raw_server_offline, tab_raw_server_online},
@@ -28,7 +28,9 @@ fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
         log::warn!("Tried to connect with jwt {}", jwt.raw_payload());
 
         //TODO get trackmania id claim.
-        let account_id = String::from("3467014a-c1cc-4aae-99fe-6beb5eca232a");
+        let account_id: Uuid = Uuid::parse_str("3467014a-c1cc-4aae-99fe-6beb5eca232a").unwrap();
+        log::warn!("{account_id}");
+
         let preferred_username = String::from("Mr.Joermungandr");
 
         ctx.db

@@ -8,7 +8,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[sats(crate = __lib)]
 pub struct TmRecord {
     pub map_uid: String,
-    pub player_uid: String,
+    pub account_id: __sdk::Uuid,
     pub timestamp: __sdk::Timestamp,
     pub time: u32,
     pub zone: String,

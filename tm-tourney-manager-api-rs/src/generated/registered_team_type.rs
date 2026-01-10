@@ -8,7 +8,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[sats(crate = __lib)]
 pub struct RegisteredTeam {
     pub competition_id: u32,
-    pub account_id: String,
+    pub account_id: __sdk::Uuid,
     pub registered_at: __sdk::Timestamp,
 }
 
