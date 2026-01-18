@@ -19,6 +19,9 @@ pub mod competition_connection_data_update_reducer;
 pub mod competition_connection_table;
 pub mod competition_connection_type;
 pub mod competition_edit_name_reducer;
+pub mod competition_node_position_table;
+pub mod competition_node_position_type;
+pub mod competition_node_position_update_reducer;
 pub mod competition_record_table;
 pub mod competition_registration_settings_reducer;
 pub mod competition_status_type;
@@ -37,6 +40,7 @@ pub mod create_server_config_reducer;
 pub mod create_team_reducer;
 pub mod create_tournament_reducer;
 pub mod custom_type;
+pub mod delete_match_reducer;
 pub mod end_map_end_type;
 pub mod end_map_start_type;
 pub mod end_match_type;
@@ -135,6 +139,8 @@ pub mod start_turn_type;
 pub mod tab_competition_connection_data_table;
 pub mod tab_competition_connection_table;
 pub mod tab_competition_connection_type;
+pub mod tab_competition_node_position_table;
+pub mod tab_competition_node_position_type;
 pub mod tab_competition_table;
 pub mod tab_raw_server_offline_table;
 pub mod tab_raw_server_online_table;
@@ -188,6 +194,7 @@ pub mod user_identity_table;
 pub mod user_identity_type;
 pub mod user_table;
 pub mod user_type;
+pub mod vec_2_type;
 pub mod warmup_duration_type;
 pub mod warmup_round_type;
 pub mod warmup_timeout_type;
@@ -214,6 +221,12 @@ pub use competition_connection_table::*;
 pub use competition_connection_type::CompetitionConnection;
 pub use competition_edit_name_reducer::{
     competition_edit_name, set_flags_for_competition_edit_name, CompetitionEditNameCallbackId,
+};
+pub use competition_node_position_table::*;
+pub use competition_node_position_type::CompetitionNodePosition;
+pub use competition_node_position_update_reducer::{
+    competition_node_position_update, set_flags_for_competition_node_position_update,
+    CompetitionNodePositionUpdateCallbackId,
 };
 pub use competition_record_table::*;
 pub use competition_registration_settings_reducer::{
@@ -254,6 +267,7 @@ pub use create_tournament_reducer::{
     create_tournament, set_flags_for_create_tournament, CreateTournamentCallbackId,
 };
 pub use custom_type::Custom;
+pub use delete_match_reducer::{delete_match, set_flags_for_delete_match, DeleteMatchCallbackId};
 pub use end_map_end_type::EndMapEnd;
 pub use end_map_start_type::EndMapStart;
 pub use end_match_type::EndMatch;
@@ -376,6 +390,8 @@ pub use start_turn_type::StartTurn;
 pub use tab_competition_connection_data_table::*;
 pub use tab_competition_connection_table::*;
 pub use tab_competition_connection_type::TabCompetitionConnection;
+pub use tab_competition_node_position_table::*;
+pub use tab_competition_node_position_type::TabCompetitionNodePosition;
 pub use tab_competition_table::*;
 pub use tab_raw_server_offline_table::*;
 pub use tab_raw_server_online_table::*;
@@ -441,6 +457,7 @@ pub use user_identity_table::*;
 pub use user_identity_type::UserIdentity;
 pub use user_table::*;
 pub use user_type::User;
+pub use vec_2_type::Vec2;
 pub use warmup_duration_type::WarmupDuration;
 pub use warmup_round_type::WarmupRound;
 pub use warmup_timeout_type::WarmupTimeout;
@@ -462,6 +479,10 @@ pub enum Reducer {
     CompetitionEditName {
         competition_id: u32,
         name: String,
+    },
+    CompetitionNodePositionUpdate {
+        node: NodeKindHandle,
+        position: Vec2,
     },
     CompetitionRegistrationSettings {
         competition_id: u32,
@@ -485,6 +506,7 @@ pub enum Reducer {
         name: String,
     },
     CreateMatch {
+        name: String,
         competition_id: u32,
         with_template: Option<u32>,
     },
@@ -512,6 +534,9 @@ pub enum Reducer {
         description: String,
         starting_at: __sdk::Timestamp,
         ending_at: __sdk::Timestamp,
+    },
+    DeleteMatch {
+        match_id: u32,
     },
     InternalGraphResolutionNodeFinished {
         competition_id: u32,
@@ -592,6 +617,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::ClientDisconnected => "client_disconnected",
             Reducer::CompetitionConnectionDataUpdate { .. } => "competition_connection_data_update",
             Reducer::CompetitionEditName { .. } => "competition_edit_name",
+            Reducer::CompetitionNodePositionUpdate { .. } => "competition_node_position_update",
             Reducer::CompetitionRegistrationSettings { .. } => "competition_registration_settings",
             Reducer::CreateCompetition { .. } => "create_competition",
             Reducer::CreateConnection { .. } => "create_connection",
@@ -604,6 +630,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::CreateServerConfig { .. } => "create_server_config",
             Reducer::CreateTeam { .. } => "create_team",
             Reducer::CreateTournament { .. } => "create_tournament",
+            Reducer::DeleteMatch { .. } => "delete_match",
             Reducer::InternalGraphResolutionNodeFinished { .. } => {
                 "internal_graph_resolution_node_finished"
             }
@@ -638,6 +665,7 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "client_disconnected" => Ok(__sdk::parse_reducer_args::<client_disconnected_reducer::ClientDisconnectedArgs>("client_disconnected", &value.args)?.into()),
             "competition_connection_data_update" => Ok(__sdk::parse_reducer_args::<competition_connection_data_update_reducer::CompetitionConnectionDataUpdateArgs>("competition_connection_data_update", &value.args)?.into()),
             "competition_edit_name" => Ok(__sdk::parse_reducer_args::<competition_edit_name_reducer::CompetitionEditNameArgs>("competition_edit_name", &value.args)?.into()),
+            "competition_node_position_update" => Ok(__sdk::parse_reducer_args::<competition_node_position_update_reducer::CompetitionNodePositionUpdateArgs>("competition_node_position_update", &value.args)?.into()),
             "competition_registration_settings" => Ok(__sdk::parse_reducer_args::<competition_registration_settings_reducer::CompetitionRegistrationSettingsArgs>("competition_registration_settings", &value.args)?.into()),
             "create_competition" => Ok(__sdk::parse_reducer_args::<create_competition_reducer::CreateCompetitionArgs>("create_competition", &value.args)?.into()),
             "create_connection" => Ok(__sdk::parse_reducer_args::<create_connection_reducer::CreateConnectionArgs>("create_connection", &value.args)?.into()),
@@ -650,6 +678,7 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "create_server_config" => Ok(__sdk::parse_reducer_args::<create_server_config_reducer::CreateServerConfigArgs>("create_server_config", &value.args)?.into()),
             "create_team" => Ok(__sdk::parse_reducer_args::<create_team_reducer::CreateTeamArgs>("create_team", &value.args)?.into()),
             "create_tournament" => Ok(__sdk::parse_reducer_args::<create_tournament_reducer::CreateTournamentArgs>("create_tournament", &value.args)?.into()),
+            "delete_match" => Ok(__sdk::parse_reducer_args::<delete_match_reducer::DeleteMatchArgs>("delete_match", &value.args)?.into()),
             "internal_graph_resolution_node_finished" => Ok(__sdk::parse_reducer_args::<internal_graph_resolution_node_finished_reducer::InternalGraphResolutionNodeFinishedArgs>("internal_graph_resolution_node_finished", &value.args)?.into()),
             "match_assign_server" => Ok(__sdk::parse_reducer_args::<match_assign_server_reducer::MatchAssignServerArgs>("match_assign_server", &value.args)?.into()),
             "match_configured" => Ok(__sdk::parse_reducer_args::<match_configured_reducer::MatchConfiguredArgs>("match_configured", &value.args)?.into()),
@@ -680,6 +709,7 @@ pub struct DbUpdate {
     competition: __sdk::TableUpdate<CompetitionV1>,
     competition_connection: __sdk::TableUpdate<CompetitionConnection>,
     competition_connection_data: __sdk::TableUpdate<CompetitionConnectionData>,
+    competition_node_position: __sdk::TableUpdate<CompetitionNodePosition>,
     competition_record: __sdk::TableUpdate<TmRecord>,
     env: __sdk::TableUpdate<Env>,
     map_record: __sdk::TableUpdate<TmRecord>,
@@ -700,6 +730,7 @@ pub struct DbUpdate {
     tab_competition: __sdk::TableUpdate<CompetitionV1>,
     tab_competition_connection: __sdk::TableUpdate<TabCompetitionConnection>,
     tab_competition_connection_data: __sdk::TableUpdate<CompetitionConnectionData>,
+    tab_competition_node_position: __sdk::TableUpdate<TabCompetitionNodePosition>,
     tab_raw_server_offline: __sdk::TableUpdate<RawServerV1>,
     tab_raw_server_online: __sdk::TableUpdate<RawServerV1>,
     tab_registered_player: __sdk::TableUpdate<RegisteredPlayer>,
@@ -742,6 +773,9 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 ),
                 "competition_connection_data" => db_update.competition_connection_data.append(
                     competition_connection_data_table::parse_table_update(table_update)?,
+                ),
+                "competition_node_position" => db_update.competition_node_position.append(
+                    competition_node_position_table::parse_table_update(table_update)?,
                 ),
                 "competition_record" => db_update
                     .competition_record
@@ -805,6 +839,9 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                         tab_competition_connection_data_table::parse_table_update(table_update)?,
                     )
                 }
+                "tab_competition_node_position" => db_update.tab_competition_node_position.append(
+                    tab_competition_node_position_table::parse_table_update(table_update)?,
+                ),
                 "tab_raw_server_offline" => db_update.tab_raw_server_offline.append(
                     tab_raw_server_offline_table::parse_table_update(table_update)?,
                 ),
@@ -934,6 +971,12 @@ impl __sdk::DbUpdate for DbUpdate {
                 &self.tab_competition_connection_data,
             )
             .with_updates_by_pk(|row| &row.connection_id);
+        diff.tab_competition_node_position = cache
+            .apply_diff_to_table::<TabCompetitionNodePosition>(
+                "tab_competition_node_position",
+                &self.tab_competition_node_position,
+            )
+            .with_updates_by_pk(|row| &row.id);
         diff.tab_raw_server_offline = cache
             .apply_diff_to_table::<RawServerV1>(
                 "tab_raw_server_offline",
@@ -1026,6 +1069,10 @@ impl __sdk::DbUpdate for DbUpdate {
             "competition_connection_data",
             &self.competition_connection_data,
         );
+        diff.competition_node_position = cache.apply_diff_to_table::<CompetitionNodePosition>(
+            "competition_node_position",
+            &self.competition_node_position,
+        );
         diff.competition_record =
             cache.apply_diff_to_table::<TmRecord>("competition_record", &self.competition_record);
         diff.map_record = cache.apply_diff_to_table::<TmRecord>("map_record", &self.map_record);
@@ -1071,6 +1118,7 @@ pub struct AppliedDiff<'r> {
     competition: __sdk::TableAppliedDiff<'r, CompetitionV1>,
     competition_connection: __sdk::TableAppliedDiff<'r, CompetitionConnection>,
     competition_connection_data: __sdk::TableAppliedDiff<'r, CompetitionConnectionData>,
+    competition_node_position: __sdk::TableAppliedDiff<'r, CompetitionNodePosition>,
     competition_record: __sdk::TableAppliedDiff<'r, TmRecord>,
     env: __sdk::TableAppliedDiff<'r, Env>,
     map_record: __sdk::TableAppliedDiff<'r, TmRecord>,
@@ -1091,6 +1139,7 @@ pub struct AppliedDiff<'r> {
     tab_competition: __sdk::TableAppliedDiff<'r, CompetitionV1>,
     tab_competition_connection: __sdk::TableAppliedDiff<'r, TabCompetitionConnection>,
     tab_competition_connection_data: __sdk::TableAppliedDiff<'r, CompetitionConnectionData>,
+    tab_competition_node_position: __sdk::TableAppliedDiff<'r, TabCompetitionNodePosition>,
     tab_raw_server_offline: __sdk::TableAppliedDiff<'r, RawServerV1>,
     tab_raw_server_online: __sdk::TableAppliedDiff<'r, RawServerV1>,
     tab_registered_player: __sdk::TableAppliedDiff<'r, RegisteredPlayer>,
@@ -1143,6 +1192,11 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
         callbacks.invoke_table_row_callbacks::<CompetitionConnectionData>(
             "competition_connection_data",
             &self.competition_connection_data,
+            event,
+        );
+        callbacks.invoke_table_row_callbacks::<CompetitionNodePosition>(
+            "competition_node_position",
+            &self.competition_node_position,
             event,
         );
         callbacks.invoke_table_row_callbacks::<TmRecord>(
@@ -1215,6 +1269,11 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
         callbacks.invoke_table_row_callbacks::<CompetitionConnectionData>(
             "tab_competition_connection_data",
             &self.tab_competition_connection_data,
+            event,
+        );
+        callbacks.invoke_table_row_callbacks::<TabCompetitionNodePosition>(
+            "tab_competition_node_position",
+            &self.tab_competition_node_position,
             event,
         );
         callbacks.invoke_table_row_callbacks::<RawServerV1>(
@@ -2049,6 +2108,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
         competition_table::register_table(client_cache);
         competition_connection_table::register_table(client_cache);
         competition_connection_data_table::register_table(client_cache);
+        competition_node_position_table::register_table(client_cache);
         competition_record_table::register_table(client_cache);
         env_table::register_table(client_cache);
         map_record_table::register_table(client_cache);
@@ -2069,6 +2129,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
         tab_competition_table::register_table(client_cache);
         tab_competition_connection_table::register_table(client_cache);
         tab_competition_connection_data_table::register_table(client_cache);
+        tab_competition_node_position_table::register_table(client_cache);
         tab_raw_server_offline_table::register_table(client_cache);
         tab_raw_server_online_table::register_table(client_cache);
         tab_registered_player_table::register_table(client_cache);

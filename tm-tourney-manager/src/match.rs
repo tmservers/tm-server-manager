@@ -51,6 +51,8 @@ pub struct TmMatchV1 {
     tournament_id: u32,
     competition_id: u32,
 
+    name: String,
+
     /// The assigned server that is currently used by this match.
     server_id: Option<String>,
 
@@ -101,6 +103,7 @@ pub enum MatchStatus {
 #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
 pub fn create_match(
     ctx: &ReducerContext,
+    name: String,
     competition_id: u32,
     with_template: Option<u32>,
     //TODO: how to auto provision good?
@@ -124,6 +127,7 @@ pub fn create_match(
         id: 0,
         competition_id,
         tournament_id: parent_competition.get_tournament(),
+        name,
         status: MatchStatus::Configuring,
         server_id: None,
         pre_match_config: config.clone(),
@@ -256,6 +260,18 @@ pub fn match_try_start(ctx: &ReducerContext, match_id: u32) -> Result<(), String
         ctx.db.tab_raw_server_online().tm_login().update(server);
     }
     Ok(())
+}
+
+// Delete a match
+#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
+pub fn delete_match(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
+    ctx.get_user()?;
+
+    if ctx.db.tab_tm_match().id().delete(match_id) {
+        Ok(())
+    } else {
+        Err(format!("Match with id: {match_id} not found."))
+    }
 }
 
 #[view(name=tm_match,public)]

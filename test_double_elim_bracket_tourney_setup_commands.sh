@@ -20,25 +20,31 @@ spacetime call tm-tourney-manager create_competition "Double Elimination Bracket
 # Upper R1
 # 8 matches, Match IDs 1-8
 for i in {1..8}; do
-  spacetime call tm-tourney-manager create_match 2 null
+  spacetime call tm-tourney-manager create_match "Upper R1 M$i" 2 null
 done
 
 # Upper R2
 # 4 matches, Match IDs 9-12
 for i in {1..4}; do
-  spacetime call tm-tourney-manager create_match 2 null
+  spacetime call tm-tourney-manager create_match "Upper R2 M$i" 2 null
 done
 
 # Upper R2 connections
 # Winners of Upper R1 to Upper R2
-# Upper R2 M1 gets winners of Upper R1 matches 1 and 2, etc.
+# Upper R2 M1 gets winners of Upper R1 matches 1, 2, 7, 8
+# Upper R2 M2 gets winners of Upper R1 matches 3, 4, 5, 6
+# Upper R2 M3 gets winners of Upper R1 matches 3, 4, 5, 6
+# Upper R2 M4 gets winners of Upper R1 matches 1, 2, 7, 8
 for match in {9..12}; do
-  winner1=$(( (match - 9) * 2 + 1 ))
-  winner2=$(( (match - 9) * 2 + 2 ))
+  if [ $match -eq 9 ] || [ $match -eq 12 ]; then
+    winners=(1 2 7 8)
+  else
+    winners=(3 4 5 6)
+  fi
 
   for target in {1..8}; do
-    # If target is one of the two winners for this match, create Data connection
-    if [ $target -eq $winner1 ] || [ $target -eq $winner2 ]; then
+    # If target is one of the winners for this match, create Data connection
+    if [[ " ${winners[@]} " =~ " ${target} " ]]; then
       spacetime call tm-tourney-manager create_connection \
         "{\"MatchV1\": $match }" \
         "{\"MatchV1\": $target }" \
@@ -50,14 +56,13 @@ for match in {9..12}; do
         "{\"MatchV1\": $target }" \
         '{"Waiting": {}}'
     fi
-
   done
 done
 
 # Lower R1
 # 4 matches, Match IDs 13-16
 for i in {1..4}; do
-  spacetime call tm-tourney-manager create_match 2 null
+  spacetime call tm-tourney-manager create_match "Lower R1 M$i" 2 null
 done
 
 # Lower R1 connections
@@ -94,7 +99,7 @@ done
 # Lower R2
 # 4 matches, Match IDs 17-20
 for i in {1..4}; do
-  spacetime call tm-tourney-manager create_match 2 null
+  spacetime call tm-tourney-manager create_match "Lower R2 M$i" 2 null
 done
 
 # Lower R2 connections
@@ -133,7 +138,7 @@ done
 # Upper R3
 # 2 matches, Match IDs 21-22
 for i in {1..2}; do
-  spacetime call tm-tourney-manager create_match 2 null
+  spacetime call tm-tourney-manager create_match "Upper R3 M$i" 2 null
 done
 
 # Upper R3 connections
@@ -162,7 +167,7 @@ done
 # Lower R3
 # 2 matches, Match IDs 23-24
 for i in {1..2}; do
-  spacetime call tm-tourney-manager create_match 2 null
+  spacetime call tm-tourney-manager create_match "Lower R3 M$i" 2 null
 done
 
 # Lower R3 connections
@@ -181,7 +186,7 @@ done
 # Lower R4
 # 2 matches, Match IDs 25-26
 for i in {1..2}; do
-  spacetime call tm-tourney-manager create_match 2 null
+  spacetime call tm-tourney-manager create_match "Lower R4 M$i" 2 null
 done
 
 # Lower R4 connections
@@ -199,7 +204,7 @@ done
 
 # Upper Final
 # 1 match, Match ID 27
-spacetime call tm-tourney-manager create_match 2 null
+spacetime call tm-tourney-manager create_match "Upper Final" 2 null
 
 # Upper Final connections
 # Winners of Upper R3 to Upper Final
@@ -221,7 +226,7 @@ done
 
 # Lower Final
 # 1 match, Match ID 28
-spacetime call tm-tourney-manager create_match 2 null
+spacetime call tm-tourney-manager create_match "Lower Final" 2 null
 
 # Lower Final connections
 # Winners of Lower R4 to Lower Final
@@ -235,7 +240,7 @@ done
 
 # Consolidation Final
 # 1 match, Match ID 29
-spacetime call tm-tourney-manager create_match 2 null
+spacetime call tm-tourney-manager create_match "Consolidation Final" 2 null
 
 # Consolidation Final connections
 # Losers of Upper Final and Winners of Lower Final to Consolidation Final
@@ -249,7 +254,7 @@ done
 
 # Grand Final
 # 1 match, Match ID 30
-spacetime call tm-tourney-manager create_match 2 null
+spacetime call tm-tourney-manager create_match "Grand Final" 2 null
 
 # Grand Final connections
 # Winners of Upper Final and Winners of Consolidation Final to Grand Final

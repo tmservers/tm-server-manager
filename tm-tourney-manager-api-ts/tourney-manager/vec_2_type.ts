@@ -10,8 +10,9 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-export default {
-  name: __t.string(),
-  competitionId: __t.u32(),
-  withTemplate: __t.option(__t.u32()),
-};
+export default __t.object("Vec2", {
+  x: __t.f32(),
+  y: __t.f32(),
+});
+
+
