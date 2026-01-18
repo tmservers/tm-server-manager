@@ -39,6 +39,7 @@ dxr = "0.8"
 json = { package = "serde_json", version = "*" }
 serde = { version = "1" }
 petgraph = { version = "0.8" }
+uuid = { version = "1.12", features = ["serde"] }
 
 
 #============

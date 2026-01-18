@@ -270,7 +270,7 @@ pub fn internal_graph_resolution_node_finished(
         );
     }
 
-    let nodes = ctx
+    let affected_connections = ctx
         .db
         .tab_competition_connection()
         .competition_id()
@@ -284,7 +284,7 @@ pub fn internal_graph_resolution_node_finished(
             connection_settings: t.connection_settings,
         });
 
-    for affected_connection in nodes
+    for affected_connection in affected_connections
         .filter(|n| n.connection_from == trigger)
         .map(|c| c.connection_to)
     {

@@ -6,9 +6,14 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-#[derive(Copy, Eq, Hash)]
-pub enum ModeRules {}
+pub enum CompetitionConnectionDataOption {
+    First(u8),
 
-impl __sdk::InModule for ModeRules {
+    Last(u8),
+
+    Custom(Vec<u8>),
+}
+
+impl __sdk::InModule for CompetitionConnectionDataOption {
     type Module = super::RemoteModule;
 }

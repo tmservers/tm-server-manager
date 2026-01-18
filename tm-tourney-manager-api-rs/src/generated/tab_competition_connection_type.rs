@@ -9,6 +9,7 @@ use super::connection_settings_type::ConnectionSettings;
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct TabCompetitionConnection {
+    pub id: u32,
     pub competition_id: u32,
     pub tournament_id: u32,
     pub connection_from: u32,

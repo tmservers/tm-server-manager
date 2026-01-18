@@ -4,15 +4,16 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::mode_rules_type::ModeRules;
-
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct Generator {
-    pub rules: bool,
-    pub mode_rules: ModeRules,
+pub struct CompetitionConnectionData {
+    pub competition_id: u32,
+    pub connection_id: u32,
+    pub count_top: Option<u8>,
+    pub count_bottom: Option<u8>,
+    pub custom_list: Vec<u8>,
 }
 
-impl __sdk::InModule for Generator {
+impl __sdk::InModule for CompetitionConnectionData {
     type Module = super::RemoteModule;
 }

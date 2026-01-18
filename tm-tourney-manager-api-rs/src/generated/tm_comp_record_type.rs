@@ -9,7 +9,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 pub struct TmCompRecord {
     pub match_id: u32,
     pub map_uid: String,
-    pub player_uid: String,
+    pub account_id: __sdk::Uuid,
     pub timestamp: __sdk::Timestamp,
     pub time: u32,
 }

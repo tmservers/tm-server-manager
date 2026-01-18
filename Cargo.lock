@@ -4123,9 +4123,9 @@ dependencies = [
 
 [[package]]
 name = "takumi"
-version = "0.63.1"
+version = "0.63.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d19aa35688c3cfca64e2ae885af6b9e1f3a3666bbf23de36f69884fe923e0fd"
+checksum = "c8230c1c5275b1c0aede6f2013a6c985ad9fd286035f63c8e0eec630a69df57b"
 dependencies = [
  "color",
  "cssparser",
@@ -4383,6 +4383,7 @@ dependencies = [
  "serde",
  "serde_json",
  "spacetimedb-lib",
+ "uuid",
 ]
 
 [[package]]
@@ -4845,6 +4846,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2e054861b4bd027cd373e18e8d8d8e6548085000e41290d95ce0c373a654b4a"
 dependencies = [
  "getrandom 0.3.4",
+ "js-sys",
+ "serde_core",
+ "wasm-bindgen",
 ]
 
 [[package]]

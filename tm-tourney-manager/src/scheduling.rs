@@ -2,7 +2,10 @@ use spacetimedb::{
     Query, ReducerContext, ScheduleAt, Table, Timestamp, ViewContext, reducer, table, view,
 };
 
-use crate::competition::tab_competition;
+use crate::competition::{
+    connection::{NodeKindHandle, internal_graph_resolution_node_finished},
+    tab_competition,
+};
 
 #[table(name = tab_schedule, scheduled(on_schedule_triggered))]
 pub struct ScheduleV1 {
@@ -26,14 +29,17 @@ impl ScheduleV1 {
     }
 }
 
-#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-fn on_schedule_triggered(ctx: &ReducerContext, arg: ScheduleV1) -> Result<(), String> {
+#[spacetimedb::reducer]
+pub(crate) fn on_schedule_triggered(ctx: &ReducerContext, arg: ScheduleV1) -> Result<(), String> {
     if !ctx.sender_auth().is_internal() {
         return Err("Only the Databse is permitted to call this reducer.".into());
     }
-    /* let message_to_send = arg.text;
 
-    _ = send_message(ctx, message_to_send); */
+    internal_graph_resolution_node_finished(
+        ctx,
+        arg.competition_id,
+        NodeKindHandle::SchedulingV1(arg.scheduled_id as u32),
+    )?;
 
     Ok(())
 }

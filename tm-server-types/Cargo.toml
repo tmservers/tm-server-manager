@@ -19,6 +19,7 @@ serde = { workspace = true, optional = true }
 json.workspace = true
 dxr = { workspace = true, features = ["derive"] }
 base64.workspace = true
+uuid.workspace = true
 
 
 [features]

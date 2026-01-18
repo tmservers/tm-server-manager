@@ -8,7 +8,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[sats(crate = __lib)]
 pub struct TmMatchPlayer {
     pub match_id: u32,
-    pub account_id: String,
+    pub account_id: __sdk::Uuid,
 }
 
 impl __sdk::InModule for TmMatchPlayer {

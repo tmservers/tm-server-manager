@@ -1,4 +1,6 @@
-use spacetimedb::{ViewContext, table, view};
+use spacetimedb::{ReducerContext, SpacetimeType, ViewContext, reducer, table, view};
+
+use crate::auth::Authorization;
 
 #[derive(Debug)]
 #[table(name=tab_competition_connection_data)]
@@ -17,12 +19,19 @@ impl CompetitionConnectionData {
     pub(crate) fn new(connection_id: u32, competition_id: u32) -> Self {
         CompetitionConnectionData {
             competition_id,
-            count_top: None,
-            count_bottom: None,
             connection_id,
+            count_top: Some(1),
+            count_bottom: None,
             custom_list: Vec::new(),
         }
     }
+}
+
+#[derive(Debug, SpacetimeType)]
+pub enum CompetitionConnectionDataOption {
+    First(u8),
+    Last(u8),
+    Custom(Vec<u8>),
 }
 
 #[view(name=competition_connection_data,public)]
@@ -33,4 +42,15 @@ pub fn competition_connection_data(ctx: &ViewContext) -> Vec<CompetitionConnecti
         //TODO actually make a view arg to filter not return everything.
         .filter(1u32..u32::MAX)
         .collect()
+}
+
+#[reducer]
+fn competition_connection_data_update(
+    ctx: &ReducerContext,
+    option: CompetitionConnectionDataOption,
+) -> Result<(), String> {
+    let user = ctx.get_user()?;
+
+    //ctx.db.tab_competition_connection_data().
+    Ok(())
 }

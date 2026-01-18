@@ -1,5 +1,7 @@
-use spacetimedb::{ReducerContext, Table, reducer, table};
+use spacetimedb::{ReducerContext, Table, Uuid, reducer, table};
 use tm_server_types::config::ServerConfig;
+
+use crate::auth::Authorization;
 
 #[table(name=tm_server_config, public)]
 pub struct TmServerConfig {
@@ -7,8 +9,8 @@ pub struct TmServerConfig {
     #[primary_key]
     pub id: u32,
 
-    /// Ubi id of the creator
-    creator: String,
+    // Creator of the Config
+    account_id: Uuid,
 
     config: ServerConfig,
 }
@@ -19,11 +21,15 @@ impl TmServerConfig {
     }
 }
 
-#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn create_server_config(ctx: &ReducerContext, id: String, config: ServerConfig) {
-    ctx.db.tm_server_config().insert(TmServerConfig {
+#[spacetimedb::reducer]
+pub fn create_server_config(ctx: &ReducerContext, config: ServerConfig) -> Result<(), String> {
+    let user = ctx.get_user()?;
+
+    ctx.db.tm_server_config().try_insert(TmServerConfig {
         id: 0,
-        creator: id,
+        account_id: user,
         config,
-    });
+    })?;
+
+    Ok(())
 }

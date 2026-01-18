@@ -1,4 +1,4 @@
-use spacetimedb::{AnonymousViewContext, SpacetimeType, rand::seq::index, table, view};
+use spacetimedb::{AnonymousViewContext, SpacetimeType, Uuid, rand::seq::index, table, view};
 use tm_server_types::event::Event;
 
 #[derive(Debug)]
@@ -9,7 +9,7 @@ pub struct TmMatchPlayer {
     pub(crate) match_id: u32,
 
     #[unique]
-    pub(crate) account_id: String,
+    pub(crate) account_id: Uuid,
 }
 
 #[view(name= match_players,public)]

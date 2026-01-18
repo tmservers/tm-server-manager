@@ -10,7 +10,7 @@ use super::server_config_type::ServerConfig;
 #[sats(crate = __lib)]
 pub struct TmServerConfig {
     pub id: u32,
-    pub creator: String,
+    pub account_id: __sdk::Uuid,
     pub config: ServerConfig,
 }
 

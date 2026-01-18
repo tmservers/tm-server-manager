@@ -9,14 +9,12 @@ use super::server_config_type::ServerConfig;
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct CreateServerConfigArgs {
-    pub id: String,
     pub config: ServerConfig,
 }
 
 impl From<CreateServerConfigArgs> for super::Reducer {
     fn from(args: CreateServerConfigArgs) -> Self {
         Self::CreateServerConfig {
-            id: args.id,
             config: args.config,
         }
     }
@@ -38,7 +36,7 @@ pub trait create_server_config {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_create_server_config`] callbacks.
-    fn create_server_config(&self, id: String, config: ServerConfig) -> __sdk::Result<()>;
+    fn create_server_config(&self, config: ServerConfig) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `create_server_config`.
     ///
     /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
@@ -48,7 +46,7 @@ pub trait create_server_config {
     /// to cancel the callback.
     fn on_create_server_config(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &String, &ServerConfig) + Send + 'static,
+        callback: impl FnMut(&super::ReducerEventContext, &ServerConfig) + Send + 'static,
     ) -> CreateServerConfigCallbackId;
     /// Cancel a callback previously registered by [`Self::on_create_server_config`],
     /// causing it not to run in the future.
@@ -56,15 +54,13 @@ pub trait create_server_config {
 }
 
 impl create_server_config for super::RemoteReducers {
-    fn create_server_config(&self, id: String, config: ServerConfig) -> __sdk::Result<()> {
-        self.imp.call_reducer(
-            "create_server_config",
-            CreateServerConfigArgs { id, config },
-        )
+    fn create_server_config(&self, config: ServerConfig) -> __sdk::Result<()> {
+        self.imp
+            .call_reducer("create_server_config", CreateServerConfigArgs { config })
     }
     fn on_create_server_config(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &String, &ServerConfig) + Send + 'static,
+        mut callback: impl FnMut(&super::ReducerEventContext, &ServerConfig) + Send + 'static,
     ) -> CreateServerConfigCallbackId {
         CreateServerConfigCallbackId(self.imp.on_reducer(
             "create_server_config",
@@ -73,7 +69,7 @@ impl create_server_config for super::RemoteReducers {
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {
-                            reducer: super::Reducer::CreateServerConfig { id, config },
+                            reducer: super::Reducer::CreateServerConfig { config },
                             ..
                         },
                     ..
@@ -81,7 +77,7 @@ impl create_server_config for super::RemoteReducers {
                 else {
                     unreachable!()
                 };
-                callback(ctx, id, config)
+                callback(ctx, config)
             }),
         ))
     }

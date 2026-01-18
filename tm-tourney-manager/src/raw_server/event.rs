@@ -1,8 +1,9 @@
-use spacetimedb::{ReducerContext, Table, table};
+use spacetimedb::{ReducerContext, Table, Uuid, reducer, table};
 use tm_server_types::event::Event;
 
 use crate::{
     auth::Authorization,
+    competition::connection::{NodeKindHandle, internal_graph_resolution_node_finished},
     r#match::{
         event::{TmMatchEvent, tab_tm_match_event},
         match_state::{TmMatchState, tab_tm_match_state},
@@ -13,7 +14,7 @@ use crate::{
 };
 
 /// Servers call this to post the event stream.
-#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
+#[reducer]
 pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
     let login = ctx.get_server()?;
 
@@ -32,7 +33,14 @@ pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
             log::error!("MATCH ENDED");
 
             tm_match.end_match();
-            ctx.db.tab_tm_match().id().update(tm_match);
+            let tm_match = ctx.db.tab_tm_match().id().update(tm_match);
+
+            internal_graph_resolution_node_finished(
+                ctx,
+                tm_match.get_comp_id(),
+                NodeKindHandle::MatchV1(tm_match.id),
+            )?;
+
             tm_server.release();
             true
         } else {
@@ -48,7 +56,7 @@ pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
                         .account_id()
                         .try_insert_or_update(TmMatchPlayer {
                             match_id,
-                            account_id: player.account_id.clone(),
+                            account_id: Uuid::parse_str(&player.account_id).unwrap(),
                         })?,
                     false => ctx
                         .db
@@ -56,7 +64,7 @@ pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
                         .account_id()
                         .try_insert_or_update(TmMatchPlayer {
                             match_id,
-                            account_id: player.account_id.clone(),
+                            account_id: Uuid::parse_str(&player.account_id).unwrap(),
                         })?,
                 };
             }
@@ -65,12 +73,12 @@ pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
                     .db
                     .tab_tm_match_players()
                     .account_id()
-                    .delete(player.account_id.clone())
+                    .delete(Uuid::parse_str(&player.account_id).unwrap())
                 {
                     ctx.db
                         .tab_tm_match_spectators()
                         .account_id()
-                        .delete(player.account_id.clone());
+                        .delete(Uuid::parse_str(&player.account_id).unwrap());
                 }
             }
             _ => (),
