@@ -1,4 +1,4 @@
-use spacetimedb::{AnonymousViewContext, Timestamp, table, view};
+use spacetimedb::{AnonymousViewContext, Timestamp, Uuid, table, view};
 
 use crate::record::TmRecord;
 
@@ -6,12 +6,12 @@ use crate::record::TmRecord;
     name = tm_match_record,
     index(
         name = record_id,
-        btree(columns = [match_id,map_uid, player_uid]))
+        btree(columns = [match_id,map_uid, account_id]))
     )]
 pub struct TmCompRecord {
     match_id: u32,
     map_uid: String,
-    player_uid: String,
+    account_id: Uuid,
 
     timestamp: Timestamp,
 
@@ -29,11 +29,11 @@ pub struct TmCompRecord {
 pub fn match_record(ctx: &AnonymousViewContext /* TODO: match_id arg */) -> Vec<TmRecord> {
     //TODO the problem is that even with a btree filtering for records is probably expensive.
     //Maybe it is better if we ammortize that cost by dupllicatiing the local_records data on event insertion
-    /*  ctx.db
-    .tm_server_event()
-    .event()
-    .filter()
-    .map(|r| {
+    /*     let iter1 = ctx.db.tm_match_record().time().filter(0u32..5u32);
+
+    let iter2 = ctx.db.tm_match_record().test().filter(0u32..5u32); */
+    //.filter()
+    /* .map(|r| {
         let player = ctx.db.user().id().find(r.player()).unwrap();
         r.with_player_info(player)
     })

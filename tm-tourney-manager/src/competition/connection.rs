@@ -1,14 +1,25 @@
-use petgraph::{Directed, Graph, acyclic::Acyclic, csr::Csr, data::FromElements};
 use spacetimedb::{ReducerContext, SpacetimeType, Table, ViewContext, reducer, view};
 
 use crate::{
-    auth::Authorization, competition::tab_competition, r#match::tab_tm_match,
+    auth::Authorization,
+    competition::{
+        connection::connection_data::{CompetitionConnectionData, tab_competition_connection_data},
+        tab_competition,
+    },
+    r#match::tab_tm_match,
     scheduling::tab_schedule,
 };
 
-#[spacetimedb::table(name = tab_competition_connection,index(name=connection_exists,btree(columns=[connection_from_variant,connection_from,connection_to_variant,connection_to])))]
+pub(super) mod connection_data;
+
+#[spacetimedb::table(name = tab_competition_connection,index(name=connection_exists,hash(columns=[connection_from_variant,connection_to_variant,connection_from,connection_to])))]
 #[derive(Debug, Clone, Copy)]
 pub struct TabCompetitionConnection {
+    // We need this that the Data variant can reference this.
+    #[auto_inc]
+    #[primary_key]
+    id: u32,
+
     #[index(btree)]
     competition_id: u32,
 
@@ -26,24 +37,10 @@ pub struct TabCompetitionConnection {
     resolved: bool,
 }
 
-/* #[derive(Debug, SpacetimeType)]
-pub enum ConnectionSettings {
-    Waiting,
-    Data(DataConnectionSettings),
-} */
-
 #[derive(Debug, SpacetimeType, Clone, Copy)]
 pub enum ConnectionSettings {
     Waiting,
     Data,
-}
-
-///TODO this could probably be a table and give the CompetitionConnection a primary_key.
-/// Very much a placeholder at the moment.
-#[derive(Debug, SpacetimeType)]
-pub struct DataConnectionSettings {
-    count_top: Option<u8>,
-    count_bottom: Option<u8>,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -192,8 +189,8 @@ pub fn create_connection(
         .connection_exists()
         .filter((
             connection_from_variant,
-            connection_from,
             connection_to_variant,
+            connection_from,
             connection_to,
         ))
         .next()
@@ -202,9 +199,11 @@ pub fn create_connection(
         return Err("Parallel edges not allowed.".into());
     };
 
-    ctx.db
+    let connection = ctx
+        .db
         .tab_competition_connection()
         .try_insert(TabCompetitionConnection {
+            id: 0,
             tournament_id,
             competition_id: from_comp,
             connection_from,
@@ -214,6 +213,19 @@ pub fn create_connection(
             connection_settings: setting,
             resolved: false,
         })?;
+
+    //If we insert Data Settings we also need to add a row in the data table.
+    match connection.connection_settings {
+        ConnectionSettings::Waiting => (),
+        ConnectionSettings::Data => {
+            ctx.db
+                .tab_competition_connection_data()
+                .try_insert(CompetitionConnectionData::new(
+                    connection.id,
+                    connection.competition_id,
+                ))?;
+        }
+    }
 
     Ok(())
 }
