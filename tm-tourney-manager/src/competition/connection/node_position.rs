@@ -49,7 +49,7 @@ pub struct CompetitionNodePosition {
     competition_id: u32,
     node: NodeKindHandle,
 
-    postition: Vec2,
+    position: Vec2,
 }
 
 #[view(name=competition_node_position,public)]
@@ -62,7 +62,7 @@ pub fn competition_node_position(ctx: &ViewContext) -> Vec<CompetitionNodePositi
         .map(|v| CompetitionNodePosition {
             competition_id: v.competition_id,
             node: NodeKindHandle::combine(v.node_variant, v.node_id),
-            postition: v.position,
+            position: v.position,
         })
         .collect()
 }
