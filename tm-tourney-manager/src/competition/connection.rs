@@ -13,7 +13,9 @@ use crate::{
 pub(super) mod connection_data;
 pub(crate) mod node_position;
 
-#[spacetimedb::table(name = tab_competition_connection,index(name=connection_exists,hash(columns=[connection_from_variant,connection_to_variant,connection_from,connection_to])))]
+#[spacetimedb::table(name = tab_competition_connection,
+    index(name=connection_exists,hash(columns=[connection_from_variant,connection_to_variant,connection_from,connection_to])),
+)]
 #[derive(Debug, Clone, Copy)]
 pub struct TabCompetitionConnection {
     // We need this that the Data variant can reference this.
@@ -36,6 +38,16 @@ pub struct TabCompetitionConnection {
 
     //Wheter the connection has served its purpose and can be skipped.
     resolved: bool,
+}
+
+impl TabCompetitionConnection {
+    pub(crate) fn node_from(&self) -> NodeKindHandle {
+        NodeKindHandle::combine(self.connection_from_variant, self.connection_from)
+    }
+
+    pub(crate) fn node_to(&self) -> NodeKindHandle {
+        NodeKindHandle::combine(self.connection_to_variant, self.connection_to)
+    }
 }
 
 #[derive(Debug, SpacetimeType, Clone, Copy)]
@@ -116,7 +128,7 @@ impl NodeKindHandle {
         }
     }
 
-    fn split(self) -> (u8, u32) {
+    pub(crate) fn split(self) -> (u8, u32) {
         match self {
             NodeKindHandle::MatchV1(m) => (1, m),
             NodeKindHandle::CompetitionV1(c) => (2, c),
@@ -126,7 +138,7 @@ impl NodeKindHandle {
         }
     }
 
-    fn combine(variant: u8, value: u32) -> Self {
+    pub(crate) fn combine(variant: u8, value: u32) -> Self {
         match variant {
             1 => Self::MatchV1(value),
             2 => Self::CompetitionV1(value),

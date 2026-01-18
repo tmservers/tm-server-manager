@@ -12,7 +12,7 @@ pub struct TabCompetitionNodePosition {
     // Rework if multi col unique indices are there.
     #[auto_inc]
     #[primary_key]
-    id: u32,
+    pub id: u32,
 
     #[index(btree)]
     competition_id: u32,

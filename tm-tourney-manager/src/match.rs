@@ -7,6 +7,7 @@ use crate::{
         connection::{
             NodeKindHandle,
             node_position::{TabCompetitionNodePosition, tab_competition_node_position},
+            tab_competition_connection,
         },
         tab_competition,
     },
@@ -267,11 +268,37 @@ pub fn match_try_start(ctx: &ReducerContext, match_id: u32) -> Result<(), String
 pub fn delete_match(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
     ctx.get_user()?;
 
-    if ctx.db.tab_tm_match().id().delete(match_id) {
-        Ok(())
-    } else {
-        Err(format!("Match with id: {match_id} not found."))
+    let Some(tm_match) = ctx.db.tab_tm_match().id().find(match_id) else {
+        return Err(format!("Match with id: {match_id} not found."));
+    };
+    if !ctx.db.tab_tm_match().id().delete(match_id) {
+        return Err(format!("Match with id: {match_id} not found."));
     }
+
+    let node_ref = NodeKindHandle::MatchV1(match_id);
+
+    // This should only ever delete one but we dont have muulti col unique index for now
+    for node in ctx
+        .db
+        .tab_competition_node_position()
+        .node_position()
+        .filter(node_ref.split())
+    {
+        ctx.db.tab_competition_node_position().id().delete(node.id);
+    }
+
+    for node in ctx
+        .db
+        .tab_competition_connection()
+        .competition_id()
+        .filter(tm_match.competition_id)
+    {
+        if node.node_from() == node_ref || node.node_to() == node_ref {
+            ctx.db.tab_competition_connection().delete(node);
+        }
+    }
+
+    Ok(())
 }
 
 #[view(name=tm_match,public)]
