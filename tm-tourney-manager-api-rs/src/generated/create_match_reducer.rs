@@ -7,6 +7,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct CreateMatchArgs {
+    pub name: String,
     pub competition_id: u32,
     pub with_template: Option<u32>,
 }
@@ -14,6 +15,7 @@ pub(super) struct CreateMatchArgs {
 impl From<CreateMatchArgs> for super::Reducer {
     fn from(args: CreateMatchArgs) -> Self {
         Self::CreateMatch {
+            name: args.name,
             competition_id: args.competition_id,
             with_template: args.with_template,
         }
@@ -36,7 +38,12 @@ pub trait create_match {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_create_match`] callbacks.
-    fn create_match(&self, competition_id: u32, with_template: Option<u32>) -> __sdk::Result<()>;
+    fn create_match(
+        &self,
+        name: String,
+        competition_id: u32,
+        with_template: Option<u32>,
+    ) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `create_match`.
     ///
     /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
@@ -46,7 +53,7 @@ pub trait create_match {
     /// to cancel the callback.
     fn on_create_match(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &u32, &Option<u32>) + Send + 'static,
+        callback: impl FnMut(&super::ReducerEventContext, &String, &u32, &Option<u32>) + Send + 'static,
     ) -> CreateMatchCallbackId;
     /// Cancel a callback previously registered by [`Self::on_create_match`],
     /// causing it not to run in the future.
@@ -54,10 +61,16 @@ pub trait create_match {
 }
 
 impl create_match for super::RemoteReducers {
-    fn create_match(&self, competition_id: u32, with_template: Option<u32>) -> __sdk::Result<()> {
+    fn create_match(
+        &self,
+        name: String,
+        competition_id: u32,
+        with_template: Option<u32>,
+    ) -> __sdk::Result<()> {
         self.imp.call_reducer(
             "create_match",
             CreateMatchArgs {
+                name,
                 competition_id,
                 with_template,
             },
@@ -65,7 +78,9 @@ impl create_match for super::RemoteReducers {
     }
     fn on_create_match(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &u32, &Option<u32>) + Send + 'static,
+        mut callback: impl FnMut(&super::ReducerEventContext, &String, &u32, &Option<u32>)
+            + Send
+            + 'static,
     ) -> CreateMatchCallbackId {
         CreateMatchCallbackId(self.imp.on_reducer(
             "create_match",
@@ -76,6 +91,7 @@ impl create_match for super::RemoteReducers {
                         __sdk::ReducerEvent {
                             reducer:
                                 super::Reducer::CreateMatch {
+                                    name,
                                     competition_id,
                                     with_template,
                                 },
@@ -86,7 +102,7 @@ impl create_match for super::RemoteReducers {
                 else {
                     unreachable!()
                 };
-                callback(ctx, competition_id, with_template)
+                callback(ctx, name, competition_id, with_template)
             }),
         ))
     }

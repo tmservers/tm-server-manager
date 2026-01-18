@@ -13,6 +13,7 @@ pub struct TmMatchV1 {
     pub id: u32,
     pub tournament_id: u32,
     pub competition_id: u32,
+    pub name: String,
     pub server_id: Option<String>,
     pub pre_match_config: Option<ServerConfig>,
     pub match_config: Option<ServerConfig>,

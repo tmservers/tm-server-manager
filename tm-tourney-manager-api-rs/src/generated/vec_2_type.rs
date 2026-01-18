@@ -6,13 +6,11 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct RegisteredTeam {
-    pub account_id: __sdk::Uuid,
-    pub registered_at: __sdk::Timestamp,
-    pub competition_id: u32,
-    pub name: String,
+pub struct Vec2 {
+    pub x: f32,
+    pub y: f32,
 }
 
-impl __sdk::InModule for RegisteredTeam {
+impl __sdk::InModule for Vec2 {
     type Module = super::RemoteModule;
 }

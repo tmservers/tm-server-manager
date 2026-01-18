@@ -4,15 +4,18 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
+use super::vec_2_type::Vec2;
+
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct RegisteredTeam {
-    pub account_id: __sdk::Uuid,
-    pub registered_at: __sdk::Timestamp,
+pub struct TabCompetitionNodePosition {
+    pub id: u32,
     pub competition_id: u32,
-    pub name: String,
+    pub node_id: u32,
+    pub node_variant: u8,
+    pub position: Vec2,
 }
 
-impl __sdk::InModule for RegisteredTeam {
+impl __sdk::InModule for TabCompetitionNodePosition {
     type Module = super::RemoteModule;
 }

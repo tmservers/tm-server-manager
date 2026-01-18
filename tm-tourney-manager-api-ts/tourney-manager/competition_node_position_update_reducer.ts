@@ -10,8 +10,14 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
+import NodeKindHandle from "./node_kind_handle_type";
+import Vec2 from "./vec_2_type";
+
 export default {
-  name: __t.string(),
-  competitionId: __t.u32(),
-  withTemplate: __t.option(__t.u32()),
+  get node() {
+    return NodeKindHandle;
+  },
+  get position() {
+    return Vec2;
+  },
 };
