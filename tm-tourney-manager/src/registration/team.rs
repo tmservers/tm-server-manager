@@ -4,10 +4,11 @@ use crate::{auth::Authorization, competition::tab_competition};
 
 #[table(name=tab_registered_team)]
 pub struct RegisteredTeam {
-    #[index(btree)]
-    competition_id: u32,
     account_id: Uuid,
     registered_at: Timestamp,
+    #[index(btree)]
+    competition_id: u32,
+    name: String,
 }
 
 #[reducer]
@@ -36,6 +37,7 @@ pub fn create_team(ctx: &ReducerContext, competition_id: u32, name: String) -> R
     ctx.db.tab_registered_team().try_insert(RegisteredTeam {
         competition_id,
         account_id: user,
+        name,
         registered_at: ctx.timestamp,
     })?;
 

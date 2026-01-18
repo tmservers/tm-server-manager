@@ -11,6 +11,7 @@ use crate::{
 };
 
 pub(super) mod connection_data;
+pub(crate) mod node_position;
 
 #[spacetimedb::table(name = tab_competition_connection,index(name=connection_exists,hash(columns=[connection_from_variant,connection_to_variant,connection_from,connection_to])))]
 #[derive(Debug, Clone, Copy)]

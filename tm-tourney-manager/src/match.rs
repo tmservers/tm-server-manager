@@ -3,7 +3,13 @@ use tm_server_types::{config::ServerConfig, event::Event};
 
 use crate::{
     auth::Authorization,
-    competition::tab_competition,
+    competition::{
+        connection::{
+            NodeKindHandle,
+            node_position::{TabCompetitionNodePosition, tab_competition_node_position},
+        },
+        tab_competition,
+    },
     r#match::{
         match_state::{TmMatchState, tab_tm_match_state},
         template::match_template,
@@ -126,6 +132,13 @@ pub fn create_match(
     };
 
     let tm_match = ctx.db.tab_tm_match().try_insert(tm_match)?;
+
+    ctx.db
+        .tab_competition_node_position()
+        .try_insert(TabCompetitionNodePosition::new(
+            NodeKindHandle::MatchV1(tm_match.id),
+            tm_match.competition_id,
+        ))?;
 
     ctx.db.tab_tm_match_state().try_insert(TmMatchState {
         id: tm_match.id,
