@@ -42,6 +42,8 @@ import CompetitionEditNameReducer from "./competition_edit_name_reducer";
 export { CompetitionEditNameReducer };
 import CompetitionNodePositionUpdateReducer from "./competition_node_position_update_reducer";
 export { CompetitionNodePositionUpdateReducer };
+import CompetitionNodePositionsUpdateReducer from "./competition_node_positions_update_reducer";
+export { CompetitionNodePositionsUpdateReducer };
 import CompetitionRegistrationSettingsReducer from "./competition_registration_settings_reducer";
 export { CompetitionRegistrationSettingsReducer };
 import CreateCompetitionReducer from "./create_competition_reducer";
@@ -306,6 +308,8 @@ import MyTournamentV1 from "./my_tournament_v_1_type";
 export { MyTournamentV1 };
 import NodeKindHandle from "./node_kind_handle_type";
 export { NodeKindHandle };
+import NodePositionUpdate from "./node_position_update_type";
+export { NodePositionUpdate };
 import PlayLoopEnd from "./play_loop_end_type";
 export { PlayLoopEnd };
 import PlayLoopStart from "./play_loop_start_type";
@@ -969,6 +973,7 @@ const reducersSchema = __reducers(
   __reducerSchema("competition_connection_data_update", CompetitionConnectionDataUpdateReducer),
   __reducerSchema("competition_edit_name", CompetitionEditNameReducer),
   __reducerSchema("competition_node_position_update", CompetitionNodePositionUpdateReducer),
+  __reducerSchema("competition_node_positions_update", CompetitionNodePositionsUpdateReducer),
   __reducerSchema("competition_registration_settings", CompetitionRegistrationSettingsReducer),
   __reducerSchema("create_competition", CreateCompetitionReducer),
   __reducerSchema("create_connection", CreateConnectionReducer),

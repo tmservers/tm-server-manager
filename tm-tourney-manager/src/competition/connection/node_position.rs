@@ -1,4 +1,4 @@
-use spacetimedb::{ReducerContext, SpacetimeType, ViewContext, reducer, view};
+use spacetimedb::{reducer, view, ReducerContext, SpacetimeType, ViewContext};
 
 use crate::{
     auth::Authorization,
@@ -52,6 +52,12 @@ pub struct CompetitionNodePosition {
     position: Vec2,
 }
 
+#[derive(Debug, SpacetimeType, Clone, Copy)]
+pub struct NodePositionUpdate {
+    node: NodeKindHandle,
+    position: Vec2,
+}
+
 #[view(name=competition_node_position,public)]
 pub fn competition_node_position(ctx: &ViewContext) -> Vec<CompetitionNodePosition> {
     ctx.db
@@ -88,6 +94,33 @@ fn competition_node_position_update(
     node.position = position;
 
     ctx.db.tab_competition_node_position().id().update(node);
+
+    Ok(())
+}
+
+// Update multiple node positions at once.
+#[reducer]
+fn competition_node_positions_update(
+    ctx: &ReducerContext,
+    positions: Vec<NodePositionUpdate>,
+) -> Result<(), String> {
+    let user = ctx.get_user()?;
+
+    for update in positions {
+        let Some(mut node) = ctx
+            .db
+            .tab_competition_node_position()
+            .node_position()
+            .filter(update.node.split())
+            .next()
+        else {
+            return Err(format!("Couldnt find node {:?}", update.node));
+        };
+
+        node.position = update.position;
+
+        ctx.db.tab_competition_node_position().id().update(node);
+    }
 
     Ok(())
 }
