@@ -22,6 +22,7 @@ pub mod competition_edit_name_reducer;
 pub mod competition_node_position_table;
 pub mod competition_node_position_type;
 pub mod competition_node_position_update_reducer;
+pub mod competition_node_positions_update_reducer;
 pub mod competition_record_table;
 pub mod competition_registration_settings_reducer;
 pub mod competition_status_type;
@@ -92,6 +93,7 @@ pub mod my_match_template_table;
 pub mod my_tournament_table;
 pub mod my_tournament_v_1_type;
 pub mod node_kind_handle_type;
+pub mod node_position_update_type;
 pub mod on_schedule_triggered_reducer;
 pub mod on_tournament_status_schedule_triggered_reducer;
 pub mod play_loop_end_type;
@@ -228,6 +230,10 @@ pub use competition_node_position_update_reducer::{
     competition_node_position_update, set_flags_for_competition_node_position_update,
     CompetitionNodePositionUpdateCallbackId,
 };
+pub use competition_node_positions_update_reducer::{
+    competition_node_positions_update, set_flags_for_competition_node_positions_update,
+    CompetitionNodePositionsUpdateCallbackId,
+};
 pub use competition_record_table::*;
 pub use competition_registration_settings_reducer::{
     competition_registration_settings, set_flags_for_competition_registration_settings,
@@ -332,6 +338,7 @@ pub use my_match_template_table::*;
 pub use my_tournament_table::*;
 pub use my_tournament_v_1_type::MyTournamentV1;
 pub use node_kind_handle_type::NodeKindHandle;
+pub use node_position_update_type::NodePositionUpdate;
 pub use on_schedule_triggered_reducer::{
     on_schedule_triggered, set_flags_for_on_schedule_triggered, OnScheduleTriggeredCallbackId,
 };
@@ -484,6 +491,9 @@ pub enum Reducer {
         node: NodeKindHandle,
         position: Vec2,
     },
+    CompetitionNodePositionsUpdate {
+        positions: Vec<NodePositionUpdate>,
+    },
     CompetitionRegistrationSettings {
         competition_id: u32,
         registration_settings: RegistrationSettings,
@@ -618,6 +628,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::CompetitionConnectionDataUpdate { .. } => "competition_connection_data_update",
             Reducer::CompetitionEditName { .. } => "competition_edit_name",
             Reducer::CompetitionNodePositionUpdate { .. } => "competition_node_position_update",
+            Reducer::CompetitionNodePositionsUpdate { .. } => "competition_node_positions_update",
             Reducer::CompetitionRegistrationSettings { .. } => "competition_registration_settings",
             Reducer::CreateCompetition { .. } => "create_competition",
             Reducer::CreateConnection { .. } => "create_connection",
@@ -666,6 +677,7 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "competition_connection_data_update" => Ok(__sdk::parse_reducer_args::<competition_connection_data_update_reducer::CompetitionConnectionDataUpdateArgs>("competition_connection_data_update", &value.args)?.into()),
             "competition_edit_name" => Ok(__sdk::parse_reducer_args::<competition_edit_name_reducer::CompetitionEditNameArgs>("competition_edit_name", &value.args)?.into()),
             "competition_node_position_update" => Ok(__sdk::parse_reducer_args::<competition_node_position_update_reducer::CompetitionNodePositionUpdateArgs>("competition_node_position_update", &value.args)?.into()),
+            "competition_node_positions_update" => Ok(__sdk::parse_reducer_args::<competition_node_positions_update_reducer::CompetitionNodePositionsUpdateArgs>("competition_node_positions_update", &value.args)?.into()),
             "competition_registration_settings" => Ok(__sdk::parse_reducer_args::<competition_registration_settings_reducer::CompetitionRegistrationSettingsArgs>("competition_registration_settings", &value.args)?.into()),
             "create_competition" => Ok(__sdk::parse_reducer_args::<create_competition_reducer::CreateCompetitionArgs>("create_competition", &value.args)?.into()),
             "create_connection" => Ok(__sdk::parse_reducer_args::<create_connection_reducer::CreateConnectionArgs>("create_connection", &value.args)?.into()),
