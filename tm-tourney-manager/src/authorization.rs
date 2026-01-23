@@ -1,4 +1,7 @@
-use std::{marker::PhantomData, ops::Add};
+use std::{
+    marker::PhantomData,
+    ops::{Add, BitAnd, Neg, Not},
+};
 
 use spacetimedb::{JwtClaims, ReducerContext, Uuid};
 
@@ -21,7 +24,7 @@ pub(crate) trait Authorization {
         &self,
         tournament_id: u32,
         user: &UserV1,
-    ) -> Result<AuthBuilder<TournamentPermissionV1, TournamentPermissionsV1>, String>;
+    ) -> Result<AuthBuilder<TournamentPermissionsV1>, String>;
 }
 
 impl Authorization for ReducerContext {
@@ -59,7 +62,7 @@ impl Authorization for ReducerContext {
         &self,
         tournament_id: u32,
         user: &UserV1,
-    ) -> Result<AuthBuilder<TournamentPermissionV1, TournamentPermissionsV1>, String> {
+    ) -> Result<AuthBuilder<TournamentPermissionsV1>, String> {
         let Some(tournament) = self
             .db
             .tab_tournament_permission()
@@ -69,30 +72,40 @@ impl Authorization for ReducerContext {
         else {
             return Err("Tournament Permission entry could not be found!".into());
         };
-        Ok(AuthBuilder::new(tournament))
+        Ok(AuthBuilder::new(tournament.get_permissions()))
     }
 }
 
 pub(crate) trait PermissionType:
-    Add<Output = Self> + std::marker::Sized + Eq + Copy
+    Add<Output = Self> + std::marker::Sized + Eq + Copy + BitAnd<Output = Self> + Not<Output = Self>
 {
     fn initial() -> Self;
 
-    fn evaluate(self) -> Result<(), String>;
+    fn passed(self) -> bool;
 }
-pub(crate) struct AuthBuilder<Base, Item: PermissionType>(Base, Item);
+pub(crate) struct AuthBuilder<Item: PermissionType> {
+    got: Item,
+    expected: Item,
+}
 
-impl<Base, Item: PermissionType> AuthBuilder<Base, Item> {
-    fn new(base: Base) -> Self {
-        AuthBuilder(base, Item::initial())
+impl<Item: PermissionType> AuthBuilder<Item> {
+    fn new(got: Item) -> Self {
+        AuthBuilder {
+            got,
+            expected: Item::initial(),
+        }
     }
 
     pub(crate) fn permission(mut self, permission: Item) -> Self {
-        self.1 = self.1 + permission;
+        self.expected = self.expected + permission;
         self
     }
 
     pub(crate) fn check(self) -> Result<(), String> {
-        self.1.evaluate()
+        if (self.got & !self.expected).passed() {
+            Ok(())
+        } else {
+            Err("Not sufficient permissions to perform this action.".into())
+        }
     }
 }

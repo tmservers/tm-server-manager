@@ -1,4 +1,4 @@
-use std::ops::Add;
+use std::ops::{Add, BitAnd, Not};
 
 use spacetimedb::Uuid;
 
@@ -16,6 +16,12 @@ pub struct TournamentPermissionV1 {
     account_id: Uuid,
 }
 
+impl TournamentPermissionV1 {
+    pub(crate) fn get_permissions(&self) -> TournamentPermissionsV1 {
+        TournamentPermissionsV1(self.permission_bucket)
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub(crate) struct TournamentPermissionsV1(u64);
 
@@ -31,14 +37,8 @@ impl PermissionType for TournamentPermissionsV1 {
         Self(0)
     }
 
-    fn evaluate(self) -> Result<(), String> {
-        /* match self {
-            Self::CREATOR => Ok(()),
-
-            _ => Err("TODO".into()),
-        } */
-
-        Ok(())
+    fn passed(self) -> bool {
+        self.0 == 0
     }
 }
 
@@ -50,9 +50,18 @@ impl Add for TournamentPermissionsV1 {
     }
 }
 
-/* impl TournamentPermissionV1 {
-    const CREATOR: u32 = 0b1;
+impl BitAnd for TournamentPermissionsV1 {
+    type Output = Self;
 
-    //pub(crate) fn authorize(&self, user: &UserV1) -> AuthBuilder<TournamentPermissionsV1> {};
+    fn bitand(self, rhs: Self) -> Self::Output {
+        TournamentPermissionsV1(self.0 & rhs.0)
+    }
 }
- */
+
+impl Not for TournamentPermissionsV1 {
+    type Output = Self;
+
+    fn not(self) -> Self::Output {
+        TournamentPermissionsV1(!self.0)
+    }
+}
