@@ -1,11 +1,12 @@
-use std::marker::PhantomData;
+use std::{marker::PhantomData, ops::Add};
 
 use spacetimedb::{JwtClaims, ReducerContext, Uuid};
 
 use crate::{
     raw_server::tab_raw_server_online,
-    tournament::permissions::{
-        TournamentPermissionV1, TournamentPermissionsV1, tab_tournament_permission,
+    tournament::{
+        permissions::{TournamentPermissionV1, TournamentPermissionsV1, tab_tournament_permission},
+        tournament,
     },
     user::{UserV1, tab_user, user_identity},
     worker::tm_worker,
@@ -18,8 +19,9 @@ pub(crate) trait Authorization {
 
     fn tournament_permissions(
         &self,
+        tournament_id: u32,
         user: &UserV1,
-    ) -> AuthBuilder<TournamentPermissionV1, TournamentPermissionsV1>;
+    ) -> Result<AuthBuilder<TournamentPermissionV1, TournamentPermissionsV1>, String>;
 }
 
 impl Authorization for ReducerContext {
@@ -55,27 +57,38 @@ impl Authorization for ReducerContext {
 
     fn tournament_permissions(
         &self,
+        tournament_id: u32,
         user: &UserV1,
-    ) -> AuthBuilder<TournamentPermissionV1, TournamentPermissionsV1> {
-        //self.db.tab_tournament_permission()
-        todo!()
+    ) -> Result<AuthBuilder<TournamentPermissionV1, TournamentPermissionsV1>, String> {
+        let Some(tournament) = self
+            .db
+            .tab_tournament_permission()
+            .account_and_tournament()
+            .filter((user.account_id, tournament_id))
+            .next()
+        else {
+            return Err("Tournament Permission entry could not be found!".into());
+        };
+        Ok(AuthBuilder::new(tournament))
     }
 }
 
-pub(crate) trait PermissionType {
+pub(crate) trait PermissionType:
+    Add<Output = Self> + std::marker::Sized + Eq + Copy
+{
     fn initial() -> Self;
 
     fn evaluate(self) -> Result<(), String>;
 }
-pub(crate) struct AuthBuilder<'a, Base, Item: PermissionType>(&'a Base, Item);
+pub(crate) struct AuthBuilder<Base, Item: PermissionType>(Base, Item);
 
-impl<'a, Base, Item: PermissionType> AuthBuilder<'a, Base, Item> {
-    fn new(base: &'a Base) -> Self {
+impl<Base, Item: PermissionType> AuthBuilder<Base, Item> {
+    fn new(base: Base) -> Self {
         AuthBuilder(base, Item::initial())
     }
 
-    pub(crate) fn permission(self, permission: Item) -> Self {
-        //TODO
+    pub(crate) fn permission(mut self, permission: Item) -> Self {
+        self.1 = self.1 + permission;
         self
     }
 
