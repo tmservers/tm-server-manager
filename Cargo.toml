@@ -49,7 +49,8 @@ spacetimedb = { version = "1.11.3", features = [
     "unstable",
 ], git = "https://github.com/kistz/SpacetimeDB.git", branch = "uuid-as-filter-updated" }
 spacetimedb-lib = { version = "1.11.3", git = "https://github.com/kistz/SpacetimeDB.git", branch = "uuid-as-filter-updated" }
-spacetimedb-sdk = { version = "1.11.3", git = "https://github.com/kistz/SpacetimeDB.git", branch = "uuid-as-filter-updated" }
+#spacetimedb-sdk = { version = "1.11.3", git = "https://github.com/kistz/SpacetimeDB.git", branch = "uuid-as-filter-updated" }
+spacetimedb-sdk = { version = "1.11.3", git = "https://github.com/kistz/SpacetimeDB.git", branch = "rust-web-sdk-updated" }
 
 
 #==============

@@ -1,6 +1,6 @@
 use spacetimedb::{ReducerContext, SpacetimeType, ViewContext, reducer, table, view};
 
-use crate::auth::Authorization;
+use crate::authorization::Authorization;
 
 #[derive(Debug)]
 #[table(name=tab_competition_connection_data)]

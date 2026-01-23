@@ -2,10 +2,10 @@ use spacetimedb::{ReducerContext, Table, Uuid};
 
 use crate::{
     raw_server::{tab_raw_server_offline, tab_raw_server_online},
-    user::{User as UserStruct, UserIdentity, tab_user as db_user, user_identity},
+    user::{UserIdentity, UserV1 as UserStruct, tab_user as db_user, user_identity},
 };
 
-pub mod auth;
+pub mod authorization;
 pub mod competition;
 pub mod emulator;
 pub mod environment;

@@ -3,9 +3,9 @@ use spacetimedb::{
 };
 
 use crate::{
-    auth::Authorization,
+    authorization::Authorization,
     record::TmRecord,
-    user::{User, tab_user__view},
+    user::{UserV1, tab_user__view},
 };
 
 #[table(
@@ -28,7 +28,7 @@ pub struct TmMapRecord {
 }
 
 impl TmMapRecord {
-    pub(crate) fn with_player_info(self, player: User) -> TmRecord {
+    pub(crate) fn with_player_info(self, player: UserV1) -> TmRecord {
         TmRecord {
             map_uid: self.map_uid,
             account_id: self.account_id,

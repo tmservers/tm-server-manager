@@ -4,11 +4,13 @@ use spacetimedb::{
 };
 
 use crate::{
-    auth::Authorization,
+    authorization::Authorization,
     competition::{CompetitionV1, tab_competition},
+    tournament::permissions::{TournamentPermissionsV1, tab_tournament_permission},
     user::{tab_user__view, user_identity__view},
 };
 
+pub(crate) mod permissions;
 mod status_schedule;
 
 /// A tournament is a logical grouping of competitions and also the only way to obtain a competition in the first place.
@@ -70,7 +72,7 @@ fn create_tournament(
     let tournament = ctx.db.tab_tournament().try_insert(TournamentV1 {
         id: 0,
         name: name.clone(),
-        creator_account_id: user,
+        creator_account_id: user.account_id,
         status: TournamentStatus::Planning,
         description,
         starting_at,
@@ -91,6 +93,9 @@ fn tournament_edit_name(
     name: String,
 ) -> Result<(), String> {
     let user = ctx.get_user()?;
+    ctx.tournament_permissions(&user)
+        .permission(TournamentPermissionsV1::EDIT_NAME)
+        .check()?;
 
     let Some(mut tournament) = ctx.db.tab_tournament().id().find(tournament_id) else {
         return Err("Supplied tournament_id incorrect.".into());

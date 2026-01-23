@@ -4,7 +4,7 @@ use spacetimedb::{
 use tm_server_types::config::ServerConfig;
 
 use crate::{
-    auth::Authorization,
+    authorization::Authorization,
     user::{tab_user__view, user_identity__view},
 };
 
@@ -34,7 +34,7 @@ fn create_match_template(
 
     ctx.db.match_template().try_insert(MatchTemplate {
         id: 0,
-        creator: user,
+        creator: user.account_id,
         name,
         config,
     })?;

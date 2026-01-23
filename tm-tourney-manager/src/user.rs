@@ -1,7 +1,7 @@
 use spacetimedb::{AnonymousViewContext, Identity, Query, Uuid, view};
 
 #[cfg_attr(feature = "spacetime", spacetimedb::table(name = tab_user))]
-pub struct User {
+pub struct UserV1 {
     //ubisoft id of the user
     #[primary_key]
     pub account_id: Uuid,
@@ -13,9 +13,9 @@ pub struct User {
     online: bool,
 }
 
-impl User {
+impl UserV1 {
     pub fn new(account_id: Uuid, name: String) -> Self {
-        User {
+        UserV1 {
             account_id,
             name,
             club_tag: "".into(),
@@ -29,7 +29,7 @@ impl User {
 }
 
 #[view(name=user,public)]
-pub fn user(ctx: &AnonymousViewContext) -> Query<User> {
+pub fn user(ctx: &AnonymousViewContext) -> Query<UserV1> {
     ctx.from.tab_user().build()
 }
 

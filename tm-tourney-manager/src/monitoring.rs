@@ -1,7 +1,7 @@
 use spacetimedb::{ReducerContext, SpacetimeType, Table, reducer};
 
 use crate::{
-    auth::Authorization,
+    authorization::Authorization,
     worker::jobs::{TmWorkerJobs, tm_worker_jobs},
 };
 

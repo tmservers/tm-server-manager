@@ -206,74 +206,74 @@ pub use ban_args_type::BanArgs;
 pub use chat_send_server_message_to_user_args_type::ChatSendServerMessageToUserArgs;
 pub use chat_send_to_user_args_type::ChatSendToUserArgs;
 pub use client_connected_reducer::{
-    client_connected, set_flags_for_client_connected, ClientConnectedCallbackId,
+    ClientConnectedCallbackId, client_connected, set_flags_for_client_connected,
 };
 pub use client_disconnected_reducer::{
-    client_disconnected, set_flags_for_client_disconnected, ClientDisconnectedCallbackId,
+    ClientDisconnectedCallbackId, client_disconnected, set_flags_for_client_disconnected,
 };
 pub use common_type::Common;
 pub use competition_connection_data_option_type::CompetitionConnectionDataOption;
 pub use competition_connection_data_table::*;
 pub use competition_connection_data_type::CompetitionConnectionData;
 pub use competition_connection_data_update_reducer::{
-    competition_connection_data_update, set_flags_for_competition_connection_data_update,
-    CompetitionConnectionDataUpdateCallbackId,
+    CompetitionConnectionDataUpdateCallbackId, competition_connection_data_update,
+    set_flags_for_competition_connection_data_update,
 };
 pub use competition_connection_table::*;
 pub use competition_connection_type::CompetitionConnection;
 pub use competition_edit_name_reducer::{
-    competition_edit_name, set_flags_for_competition_edit_name, CompetitionEditNameCallbackId,
+    CompetitionEditNameCallbackId, competition_edit_name, set_flags_for_competition_edit_name,
 };
 pub use competition_node_position_table::*;
 pub use competition_node_position_type::CompetitionNodePosition;
 pub use competition_node_position_update_reducer::{
-    competition_node_position_update, set_flags_for_competition_node_position_update,
-    CompetitionNodePositionUpdateCallbackId,
+    CompetitionNodePositionUpdateCallbackId, competition_node_position_update,
+    set_flags_for_competition_node_position_update,
 };
 pub use competition_node_positions_update_reducer::{
-    competition_node_positions_update, set_flags_for_competition_node_positions_update,
-    CompetitionNodePositionsUpdateCallbackId,
+    CompetitionNodePositionsUpdateCallbackId, competition_node_positions_update,
+    set_flags_for_competition_node_positions_update,
 };
 pub use competition_record_table::*;
 pub use competition_registration_settings_reducer::{
-    competition_registration_settings, set_flags_for_competition_registration_settings,
-    CompetitionRegistrationSettingsCallbackId,
+    CompetitionRegistrationSettingsCallbackId, competition_registration_settings,
+    set_flags_for_competition_registration_settings,
 };
 pub use competition_status_type::CompetitionStatus;
 pub use competition_table::*;
 pub use competition_v_1_type::CompetitionV1;
 pub use connection_settings_type::ConnectionSettings;
 pub use create_competition_reducer::{
-    create_competition, set_flags_for_create_competition, CreateCompetitionCallbackId,
+    CreateCompetitionCallbackId, create_competition, set_flags_for_create_competition,
 };
 pub use create_connection_reducer::{
-    create_connection, set_flags_for_create_connection, CreateConnectionCallbackId,
+    CreateConnectionCallbackId, create_connection, set_flags_for_create_connection,
 };
 pub use create_env_var_reducer::{
-    create_env_var, set_flags_for_create_env_var, CreateEnvVarCallbackId,
+    CreateEnvVarCallbackId, create_env_var, set_flags_for_create_env_var,
 };
 pub use create_event_template_reducer::{
-    create_event_template, set_flags_for_create_event_template, CreateEventTemplateCallbackId,
+    CreateEventTemplateCallbackId, create_event_template, set_flags_for_create_event_template,
 };
-pub use create_match_reducer::{create_match, set_flags_for_create_match, CreateMatchCallbackId};
+pub use create_match_reducer::{CreateMatchCallbackId, create_match, set_flags_for_create_match};
 pub use create_match_template_reducer::{
-    create_match_template, set_flags_for_create_match_template, CreateMatchTemplateCallbackId,
+    CreateMatchTemplateCallbackId, create_match_template, set_flags_for_create_match_template,
 };
 pub use create_monitor_reducer::{
-    create_monitor, set_flags_for_create_monitor, CreateMonitorCallbackId,
+    CreateMonitorCallbackId, create_monitor, set_flags_for_create_monitor,
 };
 pub use create_schedule_reducer::{
-    create_schedule, set_flags_for_create_schedule, CreateScheduleCallbackId,
+    CreateScheduleCallbackId, create_schedule, set_flags_for_create_schedule,
 };
 pub use create_server_config_reducer::{
-    create_server_config, set_flags_for_create_server_config, CreateServerConfigCallbackId,
+    CreateServerConfigCallbackId, create_server_config, set_flags_for_create_server_config,
 };
-pub use create_team_reducer::{create_team, set_flags_for_create_team, CreateTeamCallbackId};
+pub use create_team_reducer::{CreateTeamCallbackId, create_team, set_flags_for_create_team};
 pub use create_tournament_reducer::{
-    create_tournament, set_flags_for_create_tournament, CreateTournamentCallbackId,
+    CreateTournamentCallbackId, create_tournament, set_flags_for_create_tournament,
 };
 pub use custom_type::Custom;
-pub use delete_match_reducer::{delete_match, set_flags_for_delete_match, DeleteMatchCallbackId};
+pub use delete_match_reducer::{DeleteMatchCallbackId, delete_match, set_flags_for_delete_match};
 pub use end_map_end_type::EndMapEnd;
 pub use end_map_start_type::EndMapStart;
 pub use end_match_type::EndMatch;
@@ -288,8 +288,8 @@ pub use event_type::Event;
 pub use finish_timeout_type::FinishTimeout;
 pub use give_up_type::GiveUp;
 pub use internal_graph_resolution_node_finished_reducer::{
-    internal_graph_resolution_node_finished, set_flags_for_internal_graph_resolution_node_finished,
-    InternalGraphResolutionNodeFinishedCallbackId,
+    InternalGraphResolutionNodeFinishedCallbackId, internal_graph_resolution_node_finished,
+    set_flags_for_internal_graph_resolution_node_finished,
 };
 pub use kick_args_type::KickArgs;
 pub use laps_number_type::LapsNumber;
@@ -303,10 +303,10 @@ pub use map_record_table::*;
 pub use map_type::Map;
 pub use maps_per_match_type::MapsPerMatch;
 pub use match_assign_server_reducer::{
-    match_assign_server, set_flags_for_match_assign_server, MatchAssignServerCallbackId,
+    MatchAssignServerCallbackId, match_assign_server, set_flags_for_match_assign_server,
 };
 pub use match_configured_reducer::{
-    match_configured, set_flags_for_match_configured, MatchConfiguredCallbackId,
+    MatchConfiguredCallbackId, match_configured, set_flags_for_match_configured,
 };
 pub use match_ghost_table::*;
 pub use match_ghost_type::MatchGhost;
@@ -318,13 +318,13 @@ pub use match_status_type::MatchStatus;
 pub use match_template_table::*;
 pub use match_template_type::MatchTemplate;
 pub use match_try_start_reducer::{
-    match_try_start, set_flags_for_match_try_start, MatchTryStartCallbackId,
+    MatchTryStartCallbackId, match_try_start, set_flags_for_match_try_start,
 };
 pub use match_update_config_reducer::{
-    match_update_config, set_flags_for_match_update_config, MatchUpdateConfigCallbackId,
+    MatchUpdateConfigCallbackId, match_update_config, set_flags_for_match_update_config,
 };
 pub use match_update_pre_config_reducer::{
-    match_update_pre_config, set_flags_for_match_update_pre_config, MatchUpdatePreConfigCallbackId,
+    MatchUpdatePreConfigCallbackId, match_update_pre_config, set_flags_for_match_update_pre_config,
 };
 pub use method_call_type::MethodCall;
 pub use method_error_type::MethodError;
@@ -340,11 +340,11 @@ pub use my_tournament_v_1_type::MyTournamentV1;
 pub use node_kind_handle_type::NodeKindHandle;
 pub use node_position_update_type::NodePositionUpdate;
 pub use on_schedule_triggered_reducer::{
-    on_schedule_triggered, set_flags_for_on_schedule_triggered, OnScheduleTriggeredCallbackId,
+    OnScheduleTriggeredCallbackId, on_schedule_triggered, set_flags_for_on_schedule_triggered,
 };
 pub use on_tournament_status_schedule_triggered_reducer::{
-    on_tournament_status_schedule_triggered, set_flags_for_on_tournament_status_schedule_triggered,
-    OnTournamentStatusScheduleTriggeredCallbackId,
+    OnTournamentStatusScheduleTriggeredCallbackId, on_tournament_status_schedule_triggered,
+    set_flags_for_on_tournament_status_schedule_triggered,
 };
 pub use play_loop_end_type::PlayLoopEnd;
 pub use play_loop_start_type::PlayLoopStart;
@@ -354,15 +354,15 @@ pub use player_disconnect_type::PlayerDisconnect;
 pub use player_type::Player;
 pub use podium_type::Podium;
 pub use points_limit_type::PointsLimit;
-pub use post_event_reducer::{post_event, set_flags_for_post_event, PostEventCallbackId};
-pub use post_record_reducer::{post_record, set_flags_for_post_record, PostRecordCallbackId};
+pub use post_event_reducer::{PostEventCallbackId, post_event, set_flags_for_post_event};
+pub use post_record_reducer::{PostRecordCallbackId, post_record, set_flags_for_post_record};
 pub use post_round_replay_procedure::post_round_replay;
 pub use raw_server_current_players_table::*;
 pub use raw_server_expected_players_table::*;
 pub use raw_server_table::*;
 pub use raw_server_v_1_type::RawServerV1;
 pub use register_player_reducer::{
-    register_player, set_flags_for_register_player, RegisterPlayerCallbackId,
+    RegisterPlayerCallbackId, register_player, set_flags_for_register_player,
 };
 pub use registered_player_table::*;
 pub use registered_player_type::RegisteredPlayer;
@@ -381,10 +381,10 @@ pub use schedule_v_1_type::ScheduleV1;
 pub use scores_type::Scores;
 pub use server_config_type::ServerConfig;
 pub use server_method_call_reducer::{
-    server_method_call, set_flags_for_server_method_call, ServerMethodCallCallbackId,
+    ServerMethodCallCallbackId, server_method_call, set_flags_for_server_method_call,
 };
 pub use server_method_response_reducer::{
-    server_method_response, set_flags_for_server_method_response, ServerMethodResponseCallbackId,
+    ServerMethodResponseCallbackId, server_method_response, set_flags_for_server_method_response,
 };
 pub use server_options_type::ServerOptions;
 pub use server_state_type::ServerState;
@@ -438,27 +438,27 @@ pub use tm_worker_jobs_type::TmWorkerJobs;
 pub use tm_worker_table::*;
 pub use tm_worker_type::TmWorker;
 pub use tournament_edit_dates_reducer::{
-    set_flags_for_tournament_edit_dates, tournament_edit_dates, TournamentEditDatesCallbackId,
+    TournamentEditDatesCallbackId, set_flags_for_tournament_edit_dates, tournament_edit_dates,
 };
 pub use tournament_edit_description_reducer::{
-    set_flags_for_tournament_edit_description, tournament_edit_description,
-    TournamentEditDescriptionCallbackId,
+    TournamentEditDescriptionCallbackId, set_flags_for_tournament_edit_description,
+    tournament_edit_description,
 };
 pub use tournament_edit_name_reducer::{
-    set_flags_for_tournament_edit_name, tournament_edit_name, TournamentEditNameCallbackId,
+    TournamentEditNameCallbackId, set_flags_for_tournament_edit_name, tournament_edit_name,
 };
 pub use tournament_status_schedule_v_1_type::TournamentStatusScheduleV1;
 pub use tournament_status_type::TournamentStatus;
 pub use tournament_table::*;
 pub use tournament_update_status_reducer::{
-    set_flags_for_tournament_update_status, tournament_update_status,
-    TournamentUpdateStatusCallbackId,
+    TournamentUpdateStatusCallbackId, set_flags_for_tournament_update_status,
+    tournament_update_status,
 };
 pub use tournament_v_1_type::TournamentV1;
 pub use unloading_map_end_type::UnloadingMapEnd;
 pub use unloading_map_start_type::UnloadingMapStart;
 pub use unregister_player_reducer::{
-    set_flags_for_unregister_player, unregister_player, UnregisterPlayerCallbackId,
+    UnregisterPlayerCallbackId, set_flags_for_unregister_player, unregister_player,
 };
 pub use user_identity_table::*;
 pub use user_identity_type::UserIdentity;
@@ -1570,6 +1570,7 @@ impl DbConnection {
     /// This is a low-level primitive exposed for power users who need significant control over scheduling.
     /// Most applications should call [`Self::run_threaded`] to spawn a thread
     /// which advances the connection automatically.
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn advance_one_message_blocking(&self) -> __sdk::Result<()> {
         self.imp.advance_one_message_blocking()
     }
@@ -1595,8 +1596,15 @@ impl DbConnection {
     }
 
     /// Spawn a thread which processes WebSocket messages as they are received.
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn run_threaded(&self) -> std::thread::JoinHandle<()> {
         self.imp.run_threaded()
+    }
+
+    /// Spawn a background task which processes WebSocket messages as they are received.
+    #[cfg(target_arch = "wasm32")]
+    pub fn run_background_task(&self) {
+        { self.imp.run_background_task() }
     }
 
     /// Run an `async` loop which processes WebSocket messages when polled.
@@ -1661,21 +1669,21 @@ impl __sdk::SubscriptionHandle for SubscriptionHandle {
 /// either a [`DbConnection`] or an [`EventContext`] and operate on either.
 pub trait RemoteDbContext:
     __sdk::DbContext<
-    DbView = RemoteTables,
-    Reducers = RemoteReducers,
-    SetReducerFlags = SetReducerFlags,
-    SubscriptionBuilder = __sdk::SubscriptionBuilder<RemoteModule>,
->
+        DbView = RemoteTables,
+        Reducers = RemoteReducers,
+        SetReducerFlags = SetReducerFlags,
+        SubscriptionBuilder = __sdk::SubscriptionBuilder<RemoteModule>,
+    >
 {
 }
 impl<
-        Ctx: __sdk::DbContext<
+    Ctx: __sdk::DbContext<
             DbView = RemoteTables,
             Reducers = RemoteReducers,
             SetReducerFlags = SetReducerFlags,
             SubscriptionBuilder = __sdk::SubscriptionBuilder<RemoteModule>,
         >,
-    > RemoteDbContext for Ctx
+> RemoteDbContext for Ctx
 {
 }
 

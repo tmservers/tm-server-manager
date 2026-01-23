@@ -2,7 +2,7 @@ use spacetimedb::{ReducerContext, Table, Uuid, reducer, table};
 use tm_server_types::event::Event;
 
 use crate::{
-    auth::Authorization,
+    authorization::Authorization,
     competition::connection::{NodeKindHandle, internal_graph_resolution_node_finished},
     r#match::{
         event::{TmMatchEvent, tab_tm_match_event},

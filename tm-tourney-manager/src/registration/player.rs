@@ -2,7 +2,7 @@ use spacetimedb::{
     AnonymousViewContext, Query, ReducerContext, Table, Timestamp, Uuid, reducer, table, view,
 };
 
-use crate::{auth::Authorization, competition::tab_competition};
+use crate::{authorization::Authorization, competition::tab_competition};
 
 #[table(name=tab_registered_player)]
 pub struct RegisteredPlayer {
@@ -32,7 +32,7 @@ pub fn register_player(ctx: &ReducerContext, competition_id: u32) -> Result<(), 
         .tab_registered_player()
         .competition_id()
         .filter(competition_id)
-        .any(|p| p.account_id == user)
+        .any(|p| p.account_id == user.account_id)
     {
         return Err(format!(
             "User is already registered for competition {} ({competition_id})",
@@ -44,7 +44,7 @@ pub fn register_player(ctx: &ReducerContext, competition_id: u32) -> Result<(), 
         .tab_registered_player()
         .try_insert(RegisteredPlayer {
             competition_id,
-            account_id: user,
+            account_id: user.account_id,
             registered_at: ctx.timestamp,
         })?;
 
@@ -66,7 +66,7 @@ pub fn unregister_player(ctx: &ReducerContext, competition_id: u32) -> Result<()
         .tab_registered_player()
         .competition_id()
         .filter(competition_id)
-        .find(|p| p.account_id == user)
+        .find(|p| p.account_id == user.account_id)
     else {
         return Err(format!(
             "User is already registered for competition {} ({competition_id})",
@@ -77,7 +77,7 @@ pub fn unregister_player(ctx: &ReducerContext, competition_id: u32) -> Result<()
     if !ctx.db.tab_registered_player().delete(registred_user) {
         return Err(format!(
             "Unexpected error occured deleting the user {} from {}",
-            user, competition_id
+            user.account_id, competition_id
         ));
     };
 

@@ -12,3 +12,6 @@ publish = true
 
 [dependencies]
 spacetimedb-sdk = { workspace = true }
+
+[features]
+web = ["spacetimedb-sdk/web"]

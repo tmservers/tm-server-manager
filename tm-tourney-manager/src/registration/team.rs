@@ -1,6 +1,6 @@
 use spacetimedb::{ReducerContext, Table, Timestamp, Uuid, reducer, table};
 
-use crate::{auth::Authorization, competition::tab_competition};
+use crate::{authorization::Authorization, competition::tab_competition};
 
 #[table(name=tab_registered_team)]
 pub struct RegisteredTeam {
@@ -26,7 +26,7 @@ pub fn create_team(ctx: &ReducerContext, competition_id: u32, name: String) -> R
         .tab_registered_team()
         .competition_id()
         .filter(competition_id)
-        .any(|p| p.account_id == user)
+        .any(|p| p.account_id == user.account_id)
     {
         return Err(format!(
             "User is already registered for competition {} ({competition_id})",
@@ -36,7 +36,7 @@ pub fn create_team(ctx: &ReducerContext, competition_id: u32, name: String) -> R
 
     ctx.db.tab_registered_team().try_insert(RegisteredTeam {
         competition_id,
-        account_id: user,
+        account_id: user.account_id,
         name,
         registered_at: ctx.timestamp,
     })?;

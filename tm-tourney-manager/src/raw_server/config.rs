@@ -1,7 +1,7 @@
 use spacetimedb::{ReducerContext, Table, Uuid, reducer, table};
 use tm_server_types::config::ServerConfig;
 
-use crate::auth::Authorization;
+use crate::authorization::Authorization;
 
 #[table(name=tm_server_config, public)]
 pub struct TmServerConfig {
@@ -27,7 +27,7 @@ pub fn create_server_config(ctx: &ReducerContext, config: ServerConfig) -> Resul
 
     ctx.db.tm_server_config().try_insert(TmServerConfig {
         id: 0,
-        account_id: user,
+        account_id: user.account_id,
         config,
     })?;
 

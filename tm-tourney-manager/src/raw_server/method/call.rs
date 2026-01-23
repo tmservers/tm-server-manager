@@ -1,7 +1,7 @@
 use spacetimedb::{ReducerContext, Table, Uuid, reducer};
 use tm_server_types::method::MethodCall;
 
-use crate::{auth::Authorization, raw_server::tab_raw_server_online};
+use crate::{authorization::Authorization, raw_server::tab_raw_server_online};
 
 #[cfg_attr(feature = "spacetime", spacetimedb::table(name=tm_server_method_call, public))]
 pub struct TmServerMethodCall {
@@ -28,7 +28,7 @@ pub fn server_method_call(
     server_id: String,
     method: MethodCall,
 ) -> Result<(), String> {
-    let account_id = ctx.get_user()?;
+    let account_id = ctx.get_user()?.account_id;
 
     if ctx
         .db

@@ -1,7 +1,7 @@
 use spacetimedb::{ReducerContext, SpacetimeType, Table, ViewContext, reducer, view};
 
 use crate::{
-    auth::Authorization,
+    authorization::Authorization,
     competition::{
         connection::connection_data::{CompetitionConnectionData, tab_competition_connection_data},
         tab_competition,

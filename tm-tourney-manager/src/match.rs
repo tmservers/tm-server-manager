@@ -2,7 +2,7 @@ use spacetimedb::{Query, ReducerContext, SpacetimeType, Table, ViewContext, view
 use tm_server_types::{config::ServerConfig, event::Event};
 
 use crate::{
-    auth::Authorization,
+    authorization::Authorization,
     competition::{
         connection::{
             NodeKindHandle,

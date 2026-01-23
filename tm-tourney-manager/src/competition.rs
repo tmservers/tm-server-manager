@@ -1,6 +1,6 @@
 use spacetimedb::{reducer, view, AnonymousViewContext, Query, ReducerContext, Table, Timestamp};
 
-use crate::{auth::Authorization, registration::RegistrationSettings};
+use crate::{authorization::Authorization, registration::RegistrationSettings};
 
 pub mod connection;
 
