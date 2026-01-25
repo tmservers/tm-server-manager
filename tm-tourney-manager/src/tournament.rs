@@ -94,7 +94,7 @@ fn tournament_edit_name(
 ) -> Result<(), String> {
     let user = ctx.get_user()?;
     ctx.tournament_permissions(tournament_id, &user)?
-        .permission(TournamentPermissionsV1::EDIT_NAME)
+        .permission(TournamentPermissionsV1::TOURNAMENT_EDIT_NAME)
         .check()?;
 
     let Some(mut tournament) = ctx.db.tab_tournament().id().find(tournament_id) else {
