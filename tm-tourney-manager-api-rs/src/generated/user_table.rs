@@ -2,7 +2,7 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN YOUR MODULE SOURCE CODE INSTEAD.
 
 #![allow(unused, clippy::all)]
-use super::user_type::User;
+use super::user_v_1_type::UserV1;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 /// Table handle for the table `user`.
@@ -14,7 +14,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 /// but to directly chain method calls,
 /// like `ctx.db.user().on_insert(...)`.
 pub struct UserTableHandle<'ctx> {
-    imp: __sdk::TableHandle<User>,
+    imp: __sdk::TableHandle<UserV1>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -31,7 +31,7 @@ pub trait UserTableAccess {
 impl UserTableAccess for super::RemoteTables {
     fn user(&self) -> UserTableHandle<'_> {
         UserTableHandle {
-            imp: self.imp.get_table::<User>("user"),
+            imp: self.imp.get_table::<UserV1>("user"),
             ctx: std::marker::PhantomData,
         }
     }
@@ -41,13 +41,13 @@ pub struct UserInsertCallbackId(__sdk::CallbackId);
 pub struct UserDeleteCallbackId(__sdk::CallbackId);
 
 impl<'ctx> __sdk::Table for UserTableHandle<'ctx> {
-    type Row = User;
+    type Row = UserV1;
     type EventContext = super::EventContext;
 
     fn count(&self) -> u64 {
         self.imp.count()
     }
-    fn iter(&self) -> impl Iterator<Item = User> + '_ {
+    fn iter(&self) -> impl Iterator<Item = UserV1> + '_ {
         self.imp.iter()
     }
 
@@ -80,15 +80,15 @@ impl<'ctx> __sdk::Table for UserTableHandle<'ctx> {
 
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
-    let _table = client_cache.get_or_make_table::<User>("user");
+    let _table = client_cache.get_or_make_table::<UserV1>("user");
 }
 
 #[doc(hidden)]
 pub(super) fn parse_table_update(
     raw_updates: __ws::TableUpdate<__ws::BsatnFormat>,
-) -> __sdk::Result<__sdk::TableUpdate<User>> {
+) -> __sdk::Result<__sdk::TableUpdate<UserV1>> {
     __sdk::TableUpdate::parse_table_update(raw_updates).map_err(|e| {
-        __sdk::InternalError::failed_parse("TableUpdate<User>", "TableUpdate")
+        __sdk::InternalError::failed_parse("TableUpdate<UserV1>", "TableUpdate")
             .with_cause(e)
             .into()
     })

@@ -10,9 +10,9 @@ use crate::{
 #[spacetimedb::table(name = tab_tournament_permission, index(name= account_and_tournament, hash(columns=[account_id,tournament_id])))]
 pub struct TournamentPermissionV1 {
     pub tournament_id: u32,
-    
+
     bucket1: u64,
-    
+
     account_id: Uuid,
 }
 
@@ -22,6 +22,7 @@ impl TournamentPermissionV1 {
     }
 }
 
+/// Permissions which has associated constants for specific ones.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub(crate) struct TournamentPermissionsV1(u64);
 

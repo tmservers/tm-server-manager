@@ -188,6 +188,8 @@ import TabTmMatchStateRow from "./tab_tm_match_state_table";
 export { TabTmMatchStateRow };
 import TabTournamentRow from "./tab_tournament_table";
 export { TabTournamentRow };
+import TabTournamentPermissionRow from "./tab_tournament_permission_table";
+export { TabTournamentPermissionRow };
 import TabTournamentStatusScheduleRow from "./tab_tournament_status_schedule_table";
 export { TabTournamentStatusScheduleRow };
 import TabUserRow from "./tab_user_table";
@@ -404,6 +406,8 @@ import TmWorker from "./tm_worker_type";
 export { TmWorker };
 import TmWorkerJobs from "./tm_worker_jobs_type";
 export { TmWorkerJobs };
+import TournamentPermissionV1 from "./tournament_permission_v_1_type";
+export { TournamentPermissionV1 };
 import TournamentStatus from "./tournament_status_type";
 export { TournamentStatus };
 import TournamentStatusScheduleV1 from "./tournament_status_schedule_v_1_type";
@@ -414,10 +418,10 @@ import UnloadingMapEnd from "./unloading_map_end_type";
 export { UnloadingMapEnd };
 import UnloadingMapStart from "./unloading_map_start_type";
 export { UnloadingMapStart };
-import User from "./user_type";
-export { User };
 import UserIdentity from "./user_identity_type";
 export { UserIdentity };
+import UserV1 from "./user_v_1_type";
+export { UserV1 };
 import Vec2 from "./vec_2_type";
 export { Vec2 };
 import WarmupDuration from "./warmup_duration_type";
@@ -679,6 +683,17 @@ const tablesSchema = __schema(
       { name: 'tab_tournament_name_key', constraint: 'unique', columns: ['name'] },
     ],
   }, TabTournamentRow),
+  __table({
+    name: 'tab_tournament_permission',
+    indexes: [
+      { name: 'account_and_tournament', algorithm: 'btree', columns: [
+        'accountId',
+        'tournamentId',
+      ] },
+    ],
+    constraints: [
+    ],
+  }, TabTournamentPermissionRow),
   __table({
     name: 'tab_tournament_status_schedule',
     indexes: [

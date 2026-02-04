@@ -154,6 +154,7 @@ pub mod tab_tm_match_players_table;
 pub mod tab_tm_match_spectators_table;
 pub mod tab_tm_match_state_table;
 pub mod tab_tm_match_table;
+pub mod tab_tournament_permission_table;
 pub mod tab_tournament_status_schedule_table;
 pub mod tab_tournament_table;
 pub mod tab_user_table;
@@ -184,6 +185,7 @@ pub mod tm_worker_type;
 pub mod tournament_edit_dates_reducer;
 pub mod tournament_edit_description_reducer;
 pub mod tournament_edit_name_reducer;
+pub mod tournament_permission_v_1_type;
 pub mod tournament_status_schedule_v_1_type;
 pub mod tournament_status_type;
 pub mod tournament_table;
@@ -195,7 +197,7 @@ pub mod unregister_player_reducer;
 pub mod user_identity_table;
 pub mod user_identity_type;
 pub mod user_table;
-pub mod user_type;
+pub mod user_v_1_type;
 pub mod vec_2_type;
 pub mod warmup_duration_type;
 pub mod warmup_round_type;
@@ -206,74 +208,74 @@ pub use ban_args_type::BanArgs;
 pub use chat_send_server_message_to_user_args_type::ChatSendServerMessageToUserArgs;
 pub use chat_send_to_user_args_type::ChatSendToUserArgs;
 pub use client_connected_reducer::{
-    ClientConnectedCallbackId, client_connected, set_flags_for_client_connected,
+    client_connected, set_flags_for_client_connected, ClientConnectedCallbackId,
 };
 pub use client_disconnected_reducer::{
-    ClientDisconnectedCallbackId, client_disconnected, set_flags_for_client_disconnected,
+    client_disconnected, set_flags_for_client_disconnected, ClientDisconnectedCallbackId,
 };
 pub use common_type::Common;
 pub use competition_connection_data_option_type::CompetitionConnectionDataOption;
 pub use competition_connection_data_table::*;
 pub use competition_connection_data_type::CompetitionConnectionData;
 pub use competition_connection_data_update_reducer::{
-    CompetitionConnectionDataUpdateCallbackId, competition_connection_data_update,
-    set_flags_for_competition_connection_data_update,
+    competition_connection_data_update, set_flags_for_competition_connection_data_update,
+    CompetitionConnectionDataUpdateCallbackId,
 };
 pub use competition_connection_table::*;
 pub use competition_connection_type::CompetitionConnection;
 pub use competition_edit_name_reducer::{
-    CompetitionEditNameCallbackId, competition_edit_name, set_flags_for_competition_edit_name,
+    competition_edit_name, set_flags_for_competition_edit_name, CompetitionEditNameCallbackId,
 };
 pub use competition_node_position_table::*;
 pub use competition_node_position_type::CompetitionNodePosition;
 pub use competition_node_position_update_reducer::{
-    CompetitionNodePositionUpdateCallbackId, competition_node_position_update,
-    set_flags_for_competition_node_position_update,
+    competition_node_position_update, set_flags_for_competition_node_position_update,
+    CompetitionNodePositionUpdateCallbackId,
 };
 pub use competition_node_positions_update_reducer::{
-    CompetitionNodePositionsUpdateCallbackId, competition_node_positions_update,
-    set_flags_for_competition_node_positions_update,
+    competition_node_positions_update, set_flags_for_competition_node_positions_update,
+    CompetitionNodePositionsUpdateCallbackId,
 };
 pub use competition_record_table::*;
 pub use competition_registration_settings_reducer::{
-    CompetitionRegistrationSettingsCallbackId, competition_registration_settings,
-    set_flags_for_competition_registration_settings,
+    competition_registration_settings, set_flags_for_competition_registration_settings,
+    CompetitionRegistrationSettingsCallbackId,
 };
 pub use competition_status_type::CompetitionStatus;
 pub use competition_table::*;
 pub use competition_v_1_type::CompetitionV1;
 pub use connection_settings_type::ConnectionSettings;
 pub use create_competition_reducer::{
-    CreateCompetitionCallbackId, create_competition, set_flags_for_create_competition,
+    create_competition, set_flags_for_create_competition, CreateCompetitionCallbackId,
 };
 pub use create_connection_reducer::{
-    CreateConnectionCallbackId, create_connection, set_flags_for_create_connection,
+    create_connection, set_flags_for_create_connection, CreateConnectionCallbackId,
 };
 pub use create_env_var_reducer::{
-    CreateEnvVarCallbackId, create_env_var, set_flags_for_create_env_var,
+    create_env_var, set_flags_for_create_env_var, CreateEnvVarCallbackId,
 };
 pub use create_event_template_reducer::{
-    CreateEventTemplateCallbackId, create_event_template, set_flags_for_create_event_template,
+    create_event_template, set_flags_for_create_event_template, CreateEventTemplateCallbackId,
 };
-pub use create_match_reducer::{CreateMatchCallbackId, create_match, set_flags_for_create_match};
+pub use create_match_reducer::{create_match, set_flags_for_create_match, CreateMatchCallbackId};
 pub use create_match_template_reducer::{
-    CreateMatchTemplateCallbackId, create_match_template, set_flags_for_create_match_template,
+    create_match_template, set_flags_for_create_match_template, CreateMatchTemplateCallbackId,
 };
 pub use create_monitor_reducer::{
-    CreateMonitorCallbackId, create_monitor, set_flags_for_create_monitor,
+    create_monitor, set_flags_for_create_monitor, CreateMonitorCallbackId,
 };
 pub use create_schedule_reducer::{
-    CreateScheduleCallbackId, create_schedule, set_flags_for_create_schedule,
+    create_schedule, set_flags_for_create_schedule, CreateScheduleCallbackId,
 };
 pub use create_server_config_reducer::{
-    CreateServerConfigCallbackId, create_server_config, set_flags_for_create_server_config,
+    create_server_config, set_flags_for_create_server_config, CreateServerConfigCallbackId,
 };
-pub use create_team_reducer::{CreateTeamCallbackId, create_team, set_flags_for_create_team};
+pub use create_team_reducer::{create_team, set_flags_for_create_team, CreateTeamCallbackId};
 pub use create_tournament_reducer::{
-    CreateTournamentCallbackId, create_tournament, set_flags_for_create_tournament,
+    create_tournament, set_flags_for_create_tournament, CreateTournamentCallbackId,
 };
 pub use custom_type::Custom;
-pub use delete_match_reducer::{DeleteMatchCallbackId, delete_match, set_flags_for_delete_match};
+pub use delete_match_reducer::{delete_match, set_flags_for_delete_match, DeleteMatchCallbackId};
 pub use end_map_end_type::EndMapEnd;
 pub use end_map_start_type::EndMapStart;
 pub use end_match_type::EndMatch;
@@ -288,8 +290,8 @@ pub use event_type::Event;
 pub use finish_timeout_type::FinishTimeout;
 pub use give_up_type::GiveUp;
 pub use internal_graph_resolution_node_finished_reducer::{
-    InternalGraphResolutionNodeFinishedCallbackId, internal_graph_resolution_node_finished,
-    set_flags_for_internal_graph_resolution_node_finished,
+    internal_graph_resolution_node_finished, set_flags_for_internal_graph_resolution_node_finished,
+    InternalGraphResolutionNodeFinishedCallbackId,
 };
 pub use kick_args_type::KickArgs;
 pub use laps_number_type::LapsNumber;
@@ -303,10 +305,10 @@ pub use map_record_table::*;
 pub use map_type::Map;
 pub use maps_per_match_type::MapsPerMatch;
 pub use match_assign_server_reducer::{
-    MatchAssignServerCallbackId, match_assign_server, set_flags_for_match_assign_server,
+    match_assign_server, set_flags_for_match_assign_server, MatchAssignServerCallbackId,
 };
 pub use match_configured_reducer::{
-    MatchConfiguredCallbackId, match_configured, set_flags_for_match_configured,
+    match_configured, set_flags_for_match_configured, MatchConfiguredCallbackId,
 };
 pub use match_ghost_table::*;
 pub use match_ghost_type::MatchGhost;
@@ -318,13 +320,13 @@ pub use match_status_type::MatchStatus;
 pub use match_template_table::*;
 pub use match_template_type::MatchTemplate;
 pub use match_try_start_reducer::{
-    MatchTryStartCallbackId, match_try_start, set_flags_for_match_try_start,
+    match_try_start, set_flags_for_match_try_start, MatchTryStartCallbackId,
 };
 pub use match_update_config_reducer::{
-    MatchUpdateConfigCallbackId, match_update_config, set_flags_for_match_update_config,
+    match_update_config, set_flags_for_match_update_config, MatchUpdateConfigCallbackId,
 };
 pub use match_update_pre_config_reducer::{
-    MatchUpdatePreConfigCallbackId, match_update_pre_config, set_flags_for_match_update_pre_config,
+    match_update_pre_config, set_flags_for_match_update_pre_config, MatchUpdatePreConfigCallbackId,
 };
 pub use method_call_type::MethodCall;
 pub use method_error_type::MethodError;
@@ -340,11 +342,11 @@ pub use my_tournament_v_1_type::MyTournamentV1;
 pub use node_kind_handle_type::NodeKindHandle;
 pub use node_position_update_type::NodePositionUpdate;
 pub use on_schedule_triggered_reducer::{
-    OnScheduleTriggeredCallbackId, on_schedule_triggered, set_flags_for_on_schedule_triggered,
+    on_schedule_triggered, set_flags_for_on_schedule_triggered, OnScheduleTriggeredCallbackId,
 };
 pub use on_tournament_status_schedule_triggered_reducer::{
-    OnTournamentStatusScheduleTriggeredCallbackId, on_tournament_status_schedule_triggered,
-    set_flags_for_on_tournament_status_schedule_triggered,
+    on_tournament_status_schedule_triggered, set_flags_for_on_tournament_status_schedule_triggered,
+    OnTournamentStatusScheduleTriggeredCallbackId,
 };
 pub use play_loop_end_type::PlayLoopEnd;
 pub use play_loop_start_type::PlayLoopStart;
@@ -354,15 +356,15 @@ pub use player_disconnect_type::PlayerDisconnect;
 pub use player_type::Player;
 pub use podium_type::Podium;
 pub use points_limit_type::PointsLimit;
-pub use post_event_reducer::{PostEventCallbackId, post_event, set_flags_for_post_event};
-pub use post_record_reducer::{PostRecordCallbackId, post_record, set_flags_for_post_record};
+pub use post_event_reducer::{post_event, set_flags_for_post_event, PostEventCallbackId};
+pub use post_record_reducer::{post_record, set_flags_for_post_record, PostRecordCallbackId};
 pub use post_round_replay_procedure::post_round_replay;
 pub use raw_server_current_players_table::*;
 pub use raw_server_expected_players_table::*;
 pub use raw_server_table::*;
 pub use raw_server_v_1_type::RawServerV1;
 pub use register_player_reducer::{
-    RegisterPlayerCallbackId, register_player, set_flags_for_register_player,
+    register_player, set_flags_for_register_player, RegisterPlayerCallbackId,
 };
 pub use registered_player_table::*;
 pub use registered_player_type::RegisteredPlayer;
@@ -381,10 +383,10 @@ pub use schedule_v_1_type::ScheduleV1;
 pub use scores_type::Scores;
 pub use server_config_type::ServerConfig;
 pub use server_method_call_reducer::{
-    ServerMethodCallCallbackId, server_method_call, set_flags_for_server_method_call,
+    server_method_call, set_flags_for_server_method_call, ServerMethodCallCallbackId,
 };
 pub use server_method_response_reducer::{
-    ServerMethodResponseCallbackId, server_method_response, set_flags_for_server_method_response,
+    server_method_response, set_flags_for_server_method_response, ServerMethodResponseCallbackId,
 };
 pub use server_options_type::ServerOptions;
 pub use server_state_type::ServerState;
@@ -410,6 +412,7 @@ pub use tab_tm_match_players_table::*;
 pub use tab_tm_match_spectators_table::*;
 pub use tab_tm_match_state_table::*;
 pub use tab_tm_match_table::*;
+pub use tab_tournament_permission_table::*;
 pub use tab_tournament_status_schedule_table::*;
 pub use tab_tournament_table::*;
 pub use tab_user_table::*;
@@ -438,32 +441,33 @@ pub use tm_worker_jobs_type::TmWorkerJobs;
 pub use tm_worker_table::*;
 pub use tm_worker_type::TmWorker;
 pub use tournament_edit_dates_reducer::{
-    TournamentEditDatesCallbackId, set_flags_for_tournament_edit_dates, tournament_edit_dates,
+    set_flags_for_tournament_edit_dates, tournament_edit_dates, TournamentEditDatesCallbackId,
 };
 pub use tournament_edit_description_reducer::{
-    TournamentEditDescriptionCallbackId, set_flags_for_tournament_edit_description,
-    tournament_edit_description,
+    set_flags_for_tournament_edit_description, tournament_edit_description,
+    TournamentEditDescriptionCallbackId,
 };
 pub use tournament_edit_name_reducer::{
-    TournamentEditNameCallbackId, set_flags_for_tournament_edit_name, tournament_edit_name,
+    set_flags_for_tournament_edit_name, tournament_edit_name, TournamentEditNameCallbackId,
 };
+pub use tournament_permission_v_1_type::TournamentPermissionV1;
 pub use tournament_status_schedule_v_1_type::TournamentStatusScheduleV1;
 pub use tournament_status_type::TournamentStatus;
 pub use tournament_table::*;
 pub use tournament_update_status_reducer::{
-    TournamentUpdateStatusCallbackId, set_flags_for_tournament_update_status,
-    tournament_update_status,
+    set_flags_for_tournament_update_status, tournament_update_status,
+    TournamentUpdateStatusCallbackId,
 };
 pub use tournament_v_1_type::TournamentV1;
 pub use unloading_map_end_type::UnloadingMapEnd;
 pub use unloading_map_start_type::UnloadingMapStart;
 pub use unregister_player_reducer::{
-    UnregisterPlayerCallbackId, set_flags_for_unregister_player, unregister_player,
+    set_flags_for_unregister_player, unregister_player, UnregisterPlayerCallbackId,
 };
 pub use user_identity_table::*;
 pub use user_identity_type::UserIdentity;
 pub use user_table::*;
-pub use user_type::User;
+pub use user_v_1_type::UserV1;
 pub use vec_2_type::Vec2;
 pub use warmup_duration_type::WarmupDuration;
 pub use warmup_round_type::WarmupRound;
@@ -754,8 +758,9 @@ pub struct DbUpdate {
     tab_tm_match_spectators: __sdk::TableUpdate<TmMatchPlayer>,
     tab_tm_match_state: __sdk::TableUpdate<TmMatchState>,
     tab_tournament: __sdk::TableUpdate<TournamentV1>,
+    tab_tournament_permission: __sdk::TableUpdate<TournamentPermissionV1>,
     tab_tournament_status_schedule: __sdk::TableUpdate<TournamentStatusScheduleV1>,
-    tab_user: __sdk::TableUpdate<User>,
+    tab_user: __sdk::TableUpdate<UserV1>,
     this_raw_server: __sdk::TableUpdate<RawServerV1>,
     tm_map_record: __sdk::TableUpdate<TmMapRecord>,
     tm_match: __sdk::TableUpdate<TmMatchV1>,
@@ -767,7 +772,7 @@ pub struct DbUpdate {
     tm_worker: __sdk::TableUpdate<TmWorker>,
     tm_worker_jobs: __sdk::TableUpdate<TmWorkerJobs>,
     tournament: __sdk::TableUpdate<TournamentV1>,
-    user: __sdk::TableUpdate<User>,
+    user: __sdk::TableUpdate<UserV1>,
     user_identity: __sdk::TableUpdate<UserIdentity>,
 }
 
@@ -887,6 +892,9 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "tab_tournament" => db_update
                     .tab_tournament
                     .append(tab_tournament_table::parse_table_update(table_update)?),
+                "tab_tournament_permission" => db_update.tab_tournament_permission.append(
+                    tab_tournament_permission_table::parse_table_update(table_update)?,
+                ),
                 "tab_tournament_status_schedule" => {
                     db_update.tab_tournament_status_schedule.append(
                         tab_tournament_status_schedule_table::parse_table_update(table_update)?,
@@ -1031,6 +1039,10 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.tab_tournament = cache
             .apply_diff_to_table::<TournamentV1>("tab_tournament", &self.tab_tournament)
             .with_updates_by_pk(|row| &row.id);
+        diff.tab_tournament_permission = cache.apply_diff_to_table::<TournamentPermissionV1>(
+            "tab_tournament_permission",
+            &self.tab_tournament_permission,
+        );
         diff.tab_tournament_status_schedule = cache
             .apply_diff_to_table::<TournamentStatusScheduleV1>(
                 "tab_tournament_status_schedule",
@@ -1038,7 +1050,7 @@ impl __sdk::DbUpdate for DbUpdate {
             )
             .with_updates_by_pk(|row| &row.scheduled_id);
         diff.tab_user = cache
-            .apply_diff_to_table::<User>("tab_user", &self.tab_user)
+            .apply_diff_to_table::<UserV1>("tab_user", &self.tab_user)
             .with_updates_by_pk(|row| &row.account_id);
         diff.tm_map_record = cache
             .apply_diff_to_table::<TmMapRecord>("tm_map_record", &self.tm_map_record)
@@ -1117,7 +1129,7 @@ impl __sdk::DbUpdate for DbUpdate {
             cache.apply_diff_to_table::<RawServerV1>("this_raw_server", &self.this_raw_server);
         diff.tm_match = cache.apply_diff_to_table::<TmMatchV1>("tm_match", &self.tm_match);
         diff.tournament = cache.apply_diff_to_table::<TournamentV1>("tournament", &self.tournament);
-        diff.user = cache.apply_diff_to_table::<User>("user", &self.user);
+        diff.user = cache.apply_diff_to_table::<UserV1>("user", &self.user);
 
         diff
     }
@@ -1163,8 +1175,9 @@ pub struct AppliedDiff<'r> {
     tab_tm_match_spectators: __sdk::TableAppliedDiff<'r, TmMatchPlayer>,
     tab_tm_match_state: __sdk::TableAppliedDiff<'r, TmMatchState>,
     tab_tournament: __sdk::TableAppliedDiff<'r, TournamentV1>,
+    tab_tournament_permission: __sdk::TableAppliedDiff<'r, TournamentPermissionV1>,
     tab_tournament_status_schedule: __sdk::TableAppliedDiff<'r, TournamentStatusScheduleV1>,
-    tab_user: __sdk::TableAppliedDiff<'r, User>,
+    tab_user: __sdk::TableAppliedDiff<'r, UserV1>,
     this_raw_server: __sdk::TableAppliedDiff<'r, RawServerV1>,
     tm_map_record: __sdk::TableAppliedDiff<'r, TmMapRecord>,
     tm_match: __sdk::TableAppliedDiff<'r, TmMatchV1>,
@@ -1176,7 +1189,7 @@ pub struct AppliedDiff<'r> {
     tm_worker: __sdk::TableAppliedDiff<'r, TmWorker>,
     tm_worker_jobs: __sdk::TableAppliedDiff<'r, TmWorkerJobs>,
     tournament: __sdk::TableAppliedDiff<'r, TournamentV1>,
-    user: __sdk::TableAppliedDiff<'r, User>,
+    user: __sdk::TableAppliedDiff<'r, UserV1>,
     user_identity: __sdk::TableAppliedDiff<'r, UserIdentity>,
     __unused: std::marker::PhantomData<&'r ()>,
 }
@@ -1343,12 +1356,17 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             &self.tab_tournament,
             event,
         );
+        callbacks.invoke_table_row_callbacks::<TournamentPermissionV1>(
+            "tab_tournament_permission",
+            &self.tab_tournament_permission,
+            event,
+        );
         callbacks.invoke_table_row_callbacks::<TournamentStatusScheduleV1>(
             "tab_tournament_status_schedule",
             &self.tab_tournament_status_schedule,
             event,
         );
-        callbacks.invoke_table_row_callbacks::<User>("tab_user", &self.tab_user, event);
+        callbacks.invoke_table_row_callbacks::<UserV1>("tab_user", &self.tab_user, event);
         callbacks.invoke_table_row_callbacks::<RawServerV1>(
             "this_raw_server",
             &self.this_raw_server,
@@ -1392,7 +1410,7 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             event,
         );
         callbacks.invoke_table_row_callbacks::<TournamentV1>("tournament", &self.tournament, event);
-        callbacks.invoke_table_row_callbacks::<User>("user", &self.user, event);
+        callbacks.invoke_table_row_callbacks::<UserV1>("user", &self.user, event);
         callbacks.invoke_table_row_callbacks::<UserIdentity>(
             "user_identity",
             &self.user_identity,
@@ -1570,7 +1588,6 @@ impl DbConnection {
     /// This is a low-level primitive exposed for power users who need significant control over scheduling.
     /// Most applications should call [`Self::run_threaded`] to spawn a thread
     /// which advances the connection automatically.
-    #[cfg(not(target_arch = "wasm32"))]
     pub fn advance_one_message_blocking(&self) -> __sdk::Result<()> {
         self.imp.advance_one_message_blocking()
     }
@@ -1596,15 +1613,8 @@ impl DbConnection {
     }
 
     /// Spawn a thread which processes WebSocket messages as they are received.
-    #[cfg(not(target_arch = "wasm32"))]
     pub fn run_threaded(&self) -> std::thread::JoinHandle<()> {
         self.imp.run_threaded()
-    }
-
-    /// Spawn a background task which processes WebSocket messages as they are received.
-    #[cfg(target_arch = "wasm32")]
-    pub fn run_background_task(&self) {
-        { self.imp.run_background_task() }
     }
 
     /// Run an `async` loop which processes WebSocket messages when polled.
@@ -1669,21 +1679,21 @@ impl __sdk::SubscriptionHandle for SubscriptionHandle {
 /// either a [`DbConnection`] or an [`EventContext`] and operate on either.
 pub trait RemoteDbContext:
     __sdk::DbContext<
-        DbView = RemoteTables,
-        Reducers = RemoteReducers,
-        SetReducerFlags = SetReducerFlags,
-        SubscriptionBuilder = __sdk::SubscriptionBuilder<RemoteModule>,
-    >
+    DbView = RemoteTables,
+    Reducers = RemoteReducers,
+    SetReducerFlags = SetReducerFlags,
+    SubscriptionBuilder = __sdk::SubscriptionBuilder<RemoteModule>,
+>
 {
 }
 impl<
-    Ctx: __sdk::DbContext<
+        Ctx: __sdk::DbContext<
             DbView = RemoteTables,
             Reducers = RemoteReducers,
             SetReducerFlags = SetReducerFlags,
             SubscriptionBuilder = __sdk::SubscriptionBuilder<RemoteModule>,
         >,
-> RemoteDbContext for Ctx
+    > RemoteDbContext for Ctx
 {
 }
 
@@ -2161,6 +2171,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
         tab_tm_match_spectators_table::register_table(client_cache);
         tab_tm_match_state_table::register_table(client_cache);
         tab_tournament_table::register_table(client_cache);
+        tab_tournament_permission_table::register_table(client_cache);
         tab_tournament_status_schedule_table::register_table(client_cache);
         tab_user_table::register_table(client_cache);
         this_raw_server_table::register_table(client_cache);
