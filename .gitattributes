@@ -1,2 +1,2 @@
-tm-tourney-manager-api-rs/src/** linguist-generated
-tm-tourney-manager-api-ts/tourney-manager/** linguist-generated
+tm-tourney-manager-api-rs/src/** linguist-generated=true
+tm-tourney-manager-api-ts/tourney-manager/** linguist-generated=true
