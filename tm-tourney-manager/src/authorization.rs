@@ -6,7 +6,7 @@ use std::{
 use spacetimedb::{JwtClaims, ReducerContext, Uuid};
 
 use crate::{
-    raw_server::tab_raw_server_online,
+    raw_server::tab_raw_server,
     tournament::{
         permissions::{TournamentPermissionV1, TournamentPermissionsV1, tab_tournament_permission},
         tournament,
@@ -41,8 +41,8 @@ impl Authorization for ReducerContext {
     }
 
     fn get_server(&self) -> Result<String, String> {
-        if let Some(server) = self.db.tab_raw_server_online().identity().find(self.sender) {
-            return Ok(server.tm_login.clone());
+        if let Some(server) = self.db.tab_raw_server().identity().find(self.sender) {
+            return Ok(server.server_login.clone());
         }
 
         //TODO

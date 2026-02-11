@@ -10,7 +10,7 @@ use crate::{
         players::{TmMatchPlayer, tab_tm_match_players, tab_tm_match_spectators},
         tab_tm_match,
     },
-    raw_server::tab_raw_server_online,
+    raw_server::tab_raw_server,
 };
 
 /// Servers call this to post the event stream.
@@ -18,7 +18,7 @@ use crate::{
 pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
     let login = ctx.get_server()?;
 
-    if let Some(mut tm_server) = ctx.db.tab_raw_server_online().tm_login().find(login)
+    if let Some(mut tm_server) = ctx.db.tab_raw_server().server_login().find(login)
         && let Some(match_id) = tm_server.active_match()
         && let Some(mut tm_match) = ctx.db.tab_tm_match().id().find(match_id)
         && tm_match.is_live()
@@ -27,7 +27,7 @@ pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
         // TODO maybe move this whole thing in a function for TmMatch to handle it there.
 
         let match_state_changed = match_state.add_server_event(&event);
-        let server_changed = tm_server.add_server_event(&event);
+        //let server_changed = tm_server.add_server_event(&event);
 
         let match_ended = if let Event::EndMatchEnd(_) = &event {
             log::error!("MATCH ENDED");
@@ -99,8 +99,8 @@ pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
         if match_state_changed || match_ended {
             ctx.db.tab_tm_match_state().id().update(match_state);
         }
-        if server_changed || match_ended {
-            ctx.db.tab_raw_server_online().tm_login().update(tm_server);
+        if match_ended {
+            ctx.db.tab_raw_server().server_login().update(tm_server);
         }
     }
     Ok(())
