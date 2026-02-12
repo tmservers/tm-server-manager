@@ -4,22 +4,66 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::server_config_type::ServerConfig;
-use super::server_state_type::ServerState;
-
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct RawServerV1 {
-    pub tm_login: String,
     pub identity: __sdk::Identity,
-    pub owner_id: String,
-    pub config: ServerConfig,
-    pub state: ServerState,
+    pub account_id: __sdk::Uuid,
+    pub server_login: String,
+    pub active_match: Option<u32>,
+    pub online: bool,
     pub capturable: bool,
     pub verified: bool,
-    pub active_match: Option<u32>,
 }
 
 impl __sdk::InModule for RawServerV1 {
     type Module = super::RemoteModule;
+}
+
+/// Column accessor struct for the table `RawServerV1`.
+///
+/// Provides typed access to columns for query building.
+pub struct RawServerV1Cols {
+    pub identity: __sdk::__query_builder::Col<RawServerV1, __sdk::Identity>,
+    pub account_id: __sdk::__query_builder::Col<RawServerV1, __sdk::Uuid>,
+    pub server_login: __sdk::__query_builder::Col<RawServerV1, String>,
+    pub active_match: __sdk::__query_builder::Col<RawServerV1, Option<u32>>,
+    pub online: __sdk::__query_builder::Col<RawServerV1, bool>,
+    pub capturable: __sdk::__query_builder::Col<RawServerV1, bool>,
+    pub verified: __sdk::__query_builder::Col<RawServerV1, bool>,
+}
+
+impl __sdk::__query_builder::HasCols for RawServerV1 {
+    type Cols = RawServerV1Cols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        RawServerV1Cols {
+            identity: __sdk::__query_builder::Col::new(table_name, "identity"),
+            account_id: __sdk::__query_builder::Col::new(table_name, "account_id"),
+            server_login: __sdk::__query_builder::Col::new(table_name, "server_login"),
+            active_match: __sdk::__query_builder::Col::new(table_name, "active_match"),
+            online: __sdk::__query_builder::Col::new(table_name, "online"),
+            capturable: __sdk::__query_builder::Col::new(table_name, "capturable"),
+            verified: __sdk::__query_builder::Col::new(table_name, "verified"),
+        }
+    }
+}
+
+/// Indexed column accessor struct for the table `RawServerV1`.
+///
+/// Provides typed access to indexed columns for query building.
+pub struct RawServerV1IxCols {
+    pub account_id: __sdk::__query_builder::IxCol<RawServerV1, __sdk::Uuid>,
+    pub identity: __sdk::__query_builder::IxCol<RawServerV1, __sdk::Identity>,
+    pub server_login: __sdk::__query_builder::IxCol<RawServerV1, String>,
+}
+
+impl __sdk::__query_builder::HasIxCols for RawServerV1 {
+    type IxCols = RawServerV1IxCols;
+    fn ix_cols(table_name: &'static str) -> Self::IxCols {
+        RawServerV1IxCols {
+            account_id: __sdk::__query_builder::IxCol::new(table_name, "account_id"),
+            identity: __sdk::__query_builder::IxCol::new(table_name, "identity"),
+            server_login: __sdk::__query_builder::IxCol::new(table_name, "server_login"),
+        }
+    }
 }

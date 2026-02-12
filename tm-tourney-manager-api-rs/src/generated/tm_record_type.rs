@@ -19,3 +19,31 @@ pub struct TmRecord {
 impl __sdk::InModule for TmRecord {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `TmRecord`.
+///
+/// Provides typed access to columns for query building.
+pub struct TmRecordCols {
+    pub map_uid: __sdk::__query_builder::Col<TmRecord, String>,
+    pub account_id: __sdk::__query_builder::Col<TmRecord, __sdk::Uuid>,
+    pub timestamp: __sdk::__query_builder::Col<TmRecord, __sdk::Timestamp>,
+    pub time: __sdk::__query_builder::Col<TmRecord, u32>,
+    pub zone: __sdk::__query_builder::Col<TmRecord, String>,
+    pub player_name: __sdk::__query_builder::Col<TmRecord, String>,
+    pub ghost: __sdk::__query_builder::Col<TmRecord, String>,
+}
+
+impl __sdk::__query_builder::HasCols for TmRecord {
+    type Cols = TmRecordCols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        TmRecordCols {
+            map_uid: __sdk::__query_builder::Col::new(table_name, "map_uid"),
+            account_id: __sdk::__query_builder::Col::new(table_name, "account_id"),
+            timestamp: __sdk::__query_builder::Col::new(table_name, "timestamp"),
+            time: __sdk::__query_builder::Col::new(table_name, "time"),
+            zone: __sdk::__query_builder::Col::new(table_name, "zone"),
+            player_name: __sdk::__query_builder::Col::new(table_name, "player_name"),
+            ghost: __sdk::__query_builder::Col::new(table_name, "ghost"),
+        }
+    }
+}

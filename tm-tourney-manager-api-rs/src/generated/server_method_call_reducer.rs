@@ -9,14 +9,14 @@ use super::method_call_type::MethodCall;
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct ServerMethodCallArgs {
-    pub server_id: String,
+    pub server_login: String,
     pub method: MethodCall,
 }
 
 impl From<ServerMethodCallArgs> for super::Reducer {
     fn from(args: ServerMethodCallArgs) -> Self {
         Self::ServerMethodCall {
-            server_id: args.server_id,
+            server_login: args.server_login,
             method: args.method,
         }
     }
@@ -38,7 +38,7 @@ pub trait server_method_call {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_server_method_call`] callbacks.
-    fn server_method_call(&self, server_id: String, method: MethodCall) -> __sdk::Result<()>;
+    fn server_method_call(&self, server_login: String, method: MethodCall) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `server_method_call`.
     ///
     /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
@@ -56,10 +56,13 @@ pub trait server_method_call {
 }
 
 impl server_method_call for super::RemoteReducers {
-    fn server_method_call(&self, server_id: String, method: MethodCall) -> __sdk::Result<()> {
+    fn server_method_call(&self, server_login: String, method: MethodCall) -> __sdk::Result<()> {
         self.imp.call_reducer(
             "server_method_call",
-            ServerMethodCallArgs { server_id, method },
+            ServerMethodCallArgs {
+                server_login,
+                method,
+            },
         )
     }
     fn on_server_method_call(
@@ -73,7 +76,11 @@ impl server_method_call for super::RemoteReducers {
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {
-                            reducer: super::Reducer::ServerMethodCall { server_id, method },
+                            reducer:
+                                super::Reducer::ServerMethodCall {
+                                    server_login,
+                                    method,
+                                },
                             ..
                         },
                     ..
@@ -81,7 +88,7 @@ impl server_method_call for super::RemoteReducers {
                 else {
                     unreachable!()
                 };
-                callback(ctx, server_id, method)
+                callback(ctx, server_login, method)
             }),
         ))
     }

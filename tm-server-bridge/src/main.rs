@@ -2,13 +2,14 @@ use std::sync::OnceLock;
 
 use nadeo_api::NadeoClient;
 
-use spacetimedb_sdk::{DbContext, Error, Table, TableWithPrimaryKey};
+use spacetimedb_sdk::{DbContext, Error, Table, TableWithPrimaryKey, Uuid};
 
 use tm_tourney_manager_api_rs::*;
 
 use tm_server_controller::{
     ClientError, TrackmaniaServer,
     method::{ModeScriptMethodsXmlRpc, XmlRpcMethods},
+    types::base::{account_id_to_login, login_to_account_id},
 };
 use tokio::{signal, sync::Mutex};
 use tracing::{info, instrument, warn};
@@ -54,7 +55,7 @@ fn connect_to_db() -> DbConnection {
 }
 
 /* struct State {
-    nadeo: NadeoClient,
+nadeo: NadeoClient,
 } */
 
 #[tokio::main]
@@ -232,11 +233,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             .subscription_builder()
             .on_applied(|_| tracing::debug!("Subscription successfully applied!"))
             .on_error(|_, mhm| tracing::error!("Subscription failed: {mhm:?}"))
-            .subscribe([
+            .add_query(|ctx| ctx.from.raw_server_method_call().build())
+            .subscribe(/* [
                 format!("SELECT * FROM tab_raw_server_online WHERE tm_login = '{tm_server_login}'"), //TODO replace with views
                 "SELECT * FROM tm_server_method_call".into(), //TODO this should be possible with views since you should only be able to query the server as a server.
                                                               //"SELECT * FROM raw_server_expected_players",
-            ]);
+            ] */);
+
+        _ = spacetime
+            .subscription_builder()
+            .add_query(|ctx| ctx.from.raw_server_config().build())
+            .subscribe();
+
+        let tm_account_id = Uuid::parse_str(&tm_account_id)?;
 
         //TODO check if connecting has succeeded
         spacetime
@@ -244,18 +253,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             .login_as_server(tm_server_login, tm_server_password, tm_account_id);
 
         //TODO switch to this_server if on_update callbacks are there
-        spacetime
-            .db
-            .tab_raw_server_online()
-            .on_insert(server_bootstrap);
-        spacetime
-            .db
-            .tab_raw_server_online()
-            .on_update(server_update);
+        spacetime.db.raw_server_config().on_insert(server_bootstrap);
+        //spacetime.db.tab_raw_server().on_update(server_update);
 
         spacetime
             .db
-            .tm_server_method_call()
+            .raw_server_method_call()
             .on_insert(method_call_received);
     }
 
@@ -293,7 +296,7 @@ fn on_disconnected(_ctx: &ErrorContext, err: Option<Error>) {
     }
 }
 
-fn server_update(_: &EventContext, old: &RawServerV1, new: &RawServerV1) {
+/* fn server_update(_: &EventContext, old: &RawServerV1, new: &RawServerV1) {
     //TODO check for match status change aswell!
 
     if old.config != new.config {
@@ -302,9 +305,9 @@ fn server_update(_: &EventContext, old: &RawServerV1, new: &RawServerV1) {
             configure(new).await;
         });
     }
-}
+} */
 
-fn server_bootstrap(ctx: &EventContext, new: &RawServerV1) {
+fn server_bootstrap(ctx: &EventContext, new: &ServerConfig) {
     let local_server = TRACKMANIA.wait();
     let new = new.clone();
     tokio::spawn(async move {

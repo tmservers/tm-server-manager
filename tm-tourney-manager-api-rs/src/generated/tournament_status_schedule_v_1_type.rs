@@ -18,3 +18,43 @@ pub struct TournamentStatusScheduleV1 {
 impl __sdk::InModule for TournamentStatusScheduleV1 {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `TournamentStatusScheduleV1`.
+///
+/// Provides typed access to columns for query building.
+pub struct TournamentStatusScheduleV1Cols {
+    pub scheduled_id: __sdk::__query_builder::Col<TournamentStatusScheduleV1, u64>,
+    pub scheduled_at: __sdk::__query_builder::Col<TournamentStatusScheduleV1, __sdk::ScheduleAt>,
+    pub tournament_id: __sdk::__query_builder::Col<TournamentStatusScheduleV1, u32>,
+    pub new_status: __sdk::__query_builder::Col<TournamentStatusScheduleV1, TournamentStatus>,
+}
+
+impl __sdk::__query_builder::HasCols for TournamentStatusScheduleV1 {
+    type Cols = TournamentStatusScheduleV1Cols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        TournamentStatusScheduleV1Cols {
+            scheduled_id: __sdk::__query_builder::Col::new(table_name, "scheduled_id"),
+            scheduled_at: __sdk::__query_builder::Col::new(table_name, "scheduled_at"),
+            tournament_id: __sdk::__query_builder::Col::new(table_name, "tournament_id"),
+            new_status: __sdk::__query_builder::Col::new(table_name, "new_status"),
+        }
+    }
+}
+
+/// Indexed column accessor struct for the table `TournamentStatusScheduleV1`.
+///
+/// Provides typed access to indexed columns for query building.
+pub struct TournamentStatusScheduleV1IxCols {
+    pub scheduled_id: __sdk::__query_builder::IxCol<TournamentStatusScheduleV1, u64>,
+    pub tournament_id: __sdk::__query_builder::IxCol<TournamentStatusScheduleV1, u32>,
+}
+
+impl __sdk::__query_builder::HasIxCols for TournamentStatusScheduleV1 {
+    type IxCols = TournamentStatusScheduleV1IxCols;
+    fn ix_cols(table_name: &'static str) -> Self::IxCols {
+        TournamentStatusScheduleV1IxCols {
+            scheduled_id: __sdk::__query_builder::IxCol::new(table_name, "scheduled_id"),
+            tournament_id: __sdk::__query_builder::IxCol::new(table_name, "tournament_id"),
+        }
+    }
+}

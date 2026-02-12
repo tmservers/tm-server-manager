@@ -9,14 +9,10 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
-import MethodCall from "./method_call_type";
 
-
-export default __t.row({
-  id: __t.u32().primaryKey(),
-  serverId: __t.string().name("server_id"),
-  accountId: __t.uuid().name("account_id"),
-  get method() {
-    return MethodCall;
-  },
+export default __t.object("TmRawServerEntity", {
+  matchId: __t.u32(),
+  accountId: __t.uuid(),
 });
+
+

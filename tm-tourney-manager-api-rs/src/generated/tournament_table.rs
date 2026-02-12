@@ -94,3 +94,19 @@ pub(super) fn parse_table_update(
             .into()
     })
 }
+
+#[allow(non_camel_case_types)]
+/// Extension trait for query builder access to the table `TournamentV1`.
+///
+/// Implemented for [`__sdk::QueryTableAccessor`].
+pub trait tournamentQueryTableAccess {
+    #[allow(non_snake_case)]
+    /// Get a query builder for the table `TournamentV1`.
+    fn tournament(&self) -> __sdk::__query_builder::Table<TournamentV1>;
+}
+
+impl tournamentQueryTableAccess for __sdk::QueryTableAccessor {
+    fn tournament(&self) -> __sdk::__query_builder::Table<TournamentV1> {
+        __sdk::__query_builder::Table::new("tournament")
+    }
+}

@@ -16,3 +16,43 @@ pub struct TmWorker {
 impl __sdk::InModule for TmWorker {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `TmWorker`.
+///
+/// Provides typed access to columns for query building.
+pub struct TmWorkerCols {
+    pub tm_login: __sdk::__query_builder::Col<TmWorker, String>,
+    pub identity: __sdk::__query_builder::Col<TmWorker, __sdk::Identity>,
+    pub owner_id: __sdk::__query_builder::Col<TmWorker, String>,
+    pub online: __sdk::__query_builder::Col<TmWorker, bool>,
+}
+
+impl __sdk::__query_builder::HasCols for TmWorker {
+    type Cols = TmWorkerCols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        TmWorkerCols {
+            tm_login: __sdk::__query_builder::Col::new(table_name, "tm_login"),
+            identity: __sdk::__query_builder::Col::new(table_name, "identity"),
+            owner_id: __sdk::__query_builder::Col::new(table_name, "owner_id"),
+            online: __sdk::__query_builder::Col::new(table_name, "online"),
+        }
+    }
+}
+
+/// Indexed column accessor struct for the table `TmWorker`.
+///
+/// Provides typed access to indexed columns for query building.
+pub struct TmWorkerIxCols {
+    pub identity: __sdk::__query_builder::IxCol<TmWorker, __sdk::Identity>,
+    pub tm_login: __sdk::__query_builder::IxCol<TmWorker, String>,
+}
+
+impl __sdk::__query_builder::HasIxCols for TmWorker {
+    type IxCols = TmWorkerIxCols;
+    fn ix_cols(table_name: &'static str) -> Self::IxCols {
+        TmWorkerIxCols {
+            identity: __sdk::__query_builder::IxCol::new(table_name, "identity"),
+            tm_login: __sdk::__query_builder::IxCol::new(table_name, "tm_login"),
+        }
+    }
+}

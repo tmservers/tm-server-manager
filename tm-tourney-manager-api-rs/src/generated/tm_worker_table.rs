@@ -173,3 +173,19 @@ impl<'ctx> TmWorkerIdentityUnique<'ctx> {
         self.imp.find(col_val)
     }
 }
+
+#[allow(non_camel_case_types)]
+/// Extension trait for query builder access to the table `TmWorker`.
+///
+/// Implemented for [`__sdk::QueryTableAccessor`].
+pub trait tm_workerQueryTableAccess {
+    #[allow(non_snake_case)]
+    /// Get a query builder for the table `TmWorker`.
+    fn tm_worker(&self) -> __sdk::__query_builder::Table<TmWorker>;
+}
+
+impl tm_workerQueryTableAccess for __sdk::QueryTableAccessor {
+    fn tm_worker(&self) -> __sdk::__query_builder::Table<TmWorker> {
+        __sdk::__query_builder::Table::new("tm_worker")
+    }
+}

@@ -21,3 +21,54 @@ pub struct TournamentV1 {
 impl __sdk::InModule for TournamentV1 {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `TournamentV1`.
+///
+/// Provides typed access to columns for query building.
+pub struct TournamentV1Cols {
+    pub id: __sdk::__query_builder::Col<TournamentV1, u32>,
+    pub creator_account_id: __sdk::__query_builder::Col<TournamentV1, __sdk::Uuid>,
+    pub name: __sdk::__query_builder::Col<TournamentV1, String>,
+    pub starting_at: __sdk::__query_builder::Col<TournamentV1, __sdk::Timestamp>,
+    pub ending_at: __sdk::__query_builder::Col<TournamentV1, __sdk::Timestamp>,
+    pub description: __sdk::__query_builder::Col<TournamentV1, String>,
+    pub status: __sdk::__query_builder::Col<TournamentV1, TournamentStatus>,
+}
+
+impl __sdk::__query_builder::HasCols for TournamentV1 {
+    type Cols = TournamentV1Cols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        TournamentV1Cols {
+            id: __sdk::__query_builder::Col::new(table_name, "id"),
+            creator_account_id: __sdk::__query_builder::Col::new(table_name, "creator_account_id"),
+            name: __sdk::__query_builder::Col::new(table_name, "name"),
+            starting_at: __sdk::__query_builder::Col::new(table_name, "starting_at"),
+            ending_at: __sdk::__query_builder::Col::new(table_name, "ending_at"),
+            description: __sdk::__query_builder::Col::new(table_name, "description"),
+            status: __sdk::__query_builder::Col::new(table_name, "status"),
+        }
+    }
+}
+
+/// Indexed column accessor struct for the table `TournamentV1`.
+///
+/// Provides typed access to indexed columns for query building.
+pub struct TournamentV1IxCols {
+    pub creator_account_id: __sdk::__query_builder::IxCol<TournamentV1, __sdk::Uuid>,
+    pub id: __sdk::__query_builder::IxCol<TournamentV1, u32>,
+    pub name: __sdk::__query_builder::IxCol<TournamentV1, String>,
+}
+
+impl __sdk::__query_builder::HasIxCols for TournamentV1 {
+    type IxCols = TournamentV1IxCols;
+    fn ix_cols(table_name: &'static str) -> Self::IxCols {
+        TournamentV1IxCols {
+            creator_account_id: __sdk::__query_builder::IxCol::new(
+                table_name,
+                "creator_account_id",
+            ),
+            id: __sdk::__query_builder::IxCol::new(table_name, "id"),
+            name: __sdk::__query_builder::IxCol::new(table_name, "name"),
+        }
+    }
+}

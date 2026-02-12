@@ -19,3 +19,45 @@ pub struct TabCompetitionNodePosition {
 impl __sdk::InModule for TabCompetitionNodePosition {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `TabCompetitionNodePosition`.
+///
+/// Provides typed access to columns for query building.
+pub struct TabCompetitionNodePositionCols {
+    pub id: __sdk::__query_builder::Col<TabCompetitionNodePosition, u32>,
+    pub competition_id: __sdk::__query_builder::Col<TabCompetitionNodePosition, u32>,
+    pub node_id: __sdk::__query_builder::Col<TabCompetitionNodePosition, u32>,
+    pub node_variant: __sdk::__query_builder::Col<TabCompetitionNodePosition, u8>,
+    pub position: __sdk::__query_builder::Col<TabCompetitionNodePosition, Vec2>,
+}
+
+impl __sdk::__query_builder::HasCols for TabCompetitionNodePosition {
+    type Cols = TabCompetitionNodePositionCols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        TabCompetitionNodePositionCols {
+            id: __sdk::__query_builder::Col::new(table_name, "id"),
+            competition_id: __sdk::__query_builder::Col::new(table_name, "competition_id"),
+            node_id: __sdk::__query_builder::Col::new(table_name, "node_id"),
+            node_variant: __sdk::__query_builder::Col::new(table_name, "node_variant"),
+            position: __sdk::__query_builder::Col::new(table_name, "position"),
+        }
+    }
+}
+
+/// Indexed column accessor struct for the table `TabCompetitionNodePosition`.
+///
+/// Provides typed access to indexed columns for query building.
+pub struct TabCompetitionNodePositionIxCols {
+    pub competition_id: __sdk::__query_builder::IxCol<TabCompetitionNodePosition, u32>,
+    pub id: __sdk::__query_builder::IxCol<TabCompetitionNodePosition, u32>,
+}
+
+impl __sdk::__query_builder::HasIxCols for TabCompetitionNodePosition {
+    type IxCols = TabCompetitionNodePositionIxCols;
+    fn ix_cols(table_name: &'static str) -> Self::IxCols {
+        TabCompetitionNodePositionIxCols {
+            competition_id: __sdk::__query_builder::IxCol::new(table_name, "competition_id"),
+            id: __sdk::__query_builder::IxCol::new(table_name, "id"),
+        }
+    }
+}

@@ -17,3 +17,39 @@ pub struct TmCompRecord {
 impl __sdk::InModule for TmCompRecord {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `TmCompRecord`.
+///
+/// Provides typed access to columns for query building.
+pub struct TmCompRecordCols {
+    pub match_id: __sdk::__query_builder::Col<TmCompRecord, u32>,
+    pub map_uid: __sdk::__query_builder::Col<TmCompRecord, String>,
+    pub account_id: __sdk::__query_builder::Col<TmCompRecord, __sdk::Uuid>,
+    pub timestamp: __sdk::__query_builder::Col<TmCompRecord, __sdk::Timestamp>,
+    pub time: __sdk::__query_builder::Col<TmCompRecord, u32>,
+}
+
+impl __sdk::__query_builder::HasCols for TmCompRecord {
+    type Cols = TmCompRecordCols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        TmCompRecordCols {
+            match_id: __sdk::__query_builder::Col::new(table_name, "match_id"),
+            map_uid: __sdk::__query_builder::Col::new(table_name, "map_uid"),
+            account_id: __sdk::__query_builder::Col::new(table_name, "account_id"),
+            timestamp: __sdk::__query_builder::Col::new(table_name, "timestamp"),
+            time: __sdk::__query_builder::Col::new(table_name, "time"),
+        }
+    }
+}
+
+/// Indexed column accessor struct for the table `TmCompRecord`.
+///
+/// Provides typed access to indexed columns for query building.
+pub struct TmCompRecordIxCols {}
+
+impl __sdk::__query_builder::HasIxCols for TmCompRecord {
+    type IxCols = TmCompRecordIxCols;
+    fn ix_cols(table_name: &'static str) -> Self::IxCols {
+        TmCompRecordIxCols {}
+    }
+}

@@ -1,9 +1,12 @@
-use spacetimedb::{ReducerContext, Table, reducer};
+use spacetimedb::{ReducerContext, Table, reducer, table};
 use tm_server_types::method::{self, MethodResponse};
 
-use crate::{authorization::Authorization, raw_server::method::call::tm_server_method_call};
+use crate::{
+    authorization::Authorization,
+    raw_server::method::call::{tab_raw_server_method_call, tab_raw_server_method_call_resolved},
+};
 
-#[cfg_attr(feature = "spacetime", spacetimedb::table(name=tm_server_method_response, public))]
+#[table(name=tab_raw_server_method_response)]
 pub struct TmServerMethodResponse {
     #[primary_key]
     pub id: u32,
@@ -22,7 +25,7 @@ pub fn server_method_response(
 
     let server_id = ctx.get_server()?;
 
-    let Some(method_call) = ctx.db.tm_server_method_call().id().find(call_id) else {
+    let Some(method_call) = ctx.db.tab_raw_server_method_call().id().find(call_id) else {
         return Err(format!(
             "Cannot respond to nen existent MethodCall. id: {call_id} was not found."
         ));
@@ -33,11 +36,21 @@ pub fn server_method_response(
     }
 
     ctx.db
-        .tm_server_method_response()
+        .tab_raw_server_method_response()
         .try_insert(TmServerMethodResponse {
             id: call_id,
             response,
         })?;
+
+    if !ctx.db.tab_raw_server_method_call().id().delete(call_id) {
+        return Err(format!(
+            "Deletion of the method call failed respond to nen existent MethodCall. id: {call_id} was not found."
+        ));
+    };
+
+    ctx.db
+        .tab_raw_server_method_call_resolved()
+        .try_insert(method_call)?;
 
     Ok(())
 }

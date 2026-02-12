@@ -94,3 +94,19 @@ pub(super) fn parse_table_update(
             .into()
     })
 }
+
+#[allow(non_camel_case_types)]
+/// Extension trait for query builder access to the table `TmMatchEvent`.
+///
+/// Implemented for [`__sdk::QueryTableAccessor`].
+pub trait tab_tm_match_eventQueryTableAccess {
+    #[allow(non_snake_case)]
+    /// Get a query builder for the table `TmMatchEvent`.
+    fn tab_tm_match_event(&self) -> __sdk::__query_builder::Table<TmMatchEvent>;
+}
+
+impl tab_tm_match_eventQueryTableAccess for __sdk::QueryTableAccessor {
+    fn tab_tm_match_event(&self) -> __sdk::__query_builder::Table<TmMatchEvent> {
+        __sdk::__query_builder::Table::new("tab_tm_match_event")
+    }
+}

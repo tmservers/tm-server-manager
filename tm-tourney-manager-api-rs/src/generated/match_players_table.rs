@@ -93,3 +93,19 @@ pub(super) fn parse_table_update(
             .into()
     })
 }
+
+#[allow(non_camel_case_types)]
+/// Extension trait for query builder access to the table `TmMatchPlayer`.
+///
+/// Implemented for [`__sdk::QueryTableAccessor`].
+pub trait match_playersQueryTableAccess {
+    #[allow(non_snake_case)]
+    /// Get a query builder for the table `TmMatchPlayer`.
+    fn match_players(&self) -> __sdk::__query_builder::Table<TmMatchPlayer>;
+}
+
+impl match_playersQueryTableAccess for __sdk::QueryTableAccessor {
+    fn match_players(&self) -> __sdk::__query_builder::Table<TmMatchPlayer> {
+        __sdk::__query_builder::Table::new("match_players")
+    }
+}

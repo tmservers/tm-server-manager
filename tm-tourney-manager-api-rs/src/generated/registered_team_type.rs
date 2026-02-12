@@ -16,3 +16,41 @@ pub struct RegisteredTeam {
 impl __sdk::InModule for RegisteredTeam {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `RegisteredTeam`.
+///
+/// Provides typed access to columns for query building.
+pub struct RegisteredTeamCols {
+    pub account_id: __sdk::__query_builder::Col<RegisteredTeam, __sdk::Uuid>,
+    pub registered_at: __sdk::__query_builder::Col<RegisteredTeam, __sdk::Timestamp>,
+    pub competition_id: __sdk::__query_builder::Col<RegisteredTeam, u32>,
+    pub name: __sdk::__query_builder::Col<RegisteredTeam, String>,
+}
+
+impl __sdk::__query_builder::HasCols for RegisteredTeam {
+    type Cols = RegisteredTeamCols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        RegisteredTeamCols {
+            account_id: __sdk::__query_builder::Col::new(table_name, "account_id"),
+            registered_at: __sdk::__query_builder::Col::new(table_name, "registered_at"),
+            competition_id: __sdk::__query_builder::Col::new(table_name, "competition_id"),
+            name: __sdk::__query_builder::Col::new(table_name, "name"),
+        }
+    }
+}
+
+/// Indexed column accessor struct for the table `RegisteredTeam`.
+///
+/// Provides typed access to indexed columns for query building.
+pub struct RegisteredTeamIxCols {
+    pub competition_id: __sdk::__query_builder::IxCol<RegisteredTeam, u32>,
+}
+
+impl __sdk::__query_builder::HasIxCols for RegisteredTeam {
+    type IxCols = RegisteredTeamIxCols;
+    fn ix_cols(table_name: &'static str) -> Self::IxCols {
+        RegisteredTeamIxCols {
+            competition_id: __sdk::__query_builder::IxCol::new(table_name, "competition_id"),
+        }
+    }
+}

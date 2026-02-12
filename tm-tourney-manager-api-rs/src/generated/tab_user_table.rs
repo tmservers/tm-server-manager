@@ -2,7 +2,7 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN YOUR MODULE SOURCE CODE INSTEAD.
 
 #![allow(unused, clippy::all)]
-use super::user_type::User;
+use super::user_v_1_type::UserV1;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 /// Table handle for the table `tab_user`.
@@ -14,7 +14,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 /// but to directly chain method calls,
 /// like `ctx.db.tab_user().on_insert(...)`.
 pub struct TabUserTableHandle<'ctx> {
-    imp: __sdk::TableHandle<User>,
+    imp: __sdk::TableHandle<UserV1>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -31,7 +31,7 @@ pub trait TabUserTableAccess {
 impl TabUserTableAccess for super::RemoteTables {
     fn tab_user(&self) -> TabUserTableHandle<'_> {
         TabUserTableHandle {
-            imp: self.imp.get_table::<User>("tab_user"),
+            imp: self.imp.get_table::<UserV1>("tab_user"),
             ctx: std::marker::PhantomData,
         }
     }
@@ -41,13 +41,13 @@ pub struct TabUserInsertCallbackId(__sdk::CallbackId);
 pub struct TabUserDeleteCallbackId(__sdk::CallbackId);
 
 impl<'ctx> __sdk::Table for TabUserTableHandle<'ctx> {
-    type Row = User;
+    type Row = UserV1;
     type EventContext = super::EventContext;
 
     fn count(&self) -> u64 {
         self.imp.count()
     }
-    fn iter(&self) -> impl Iterator<Item = User> + '_ {
+    fn iter(&self) -> impl Iterator<Item = UserV1> + '_ {
         self.imp.iter()
     }
 
@@ -80,7 +80,7 @@ impl<'ctx> __sdk::Table for TabUserTableHandle<'ctx> {
 
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
-    let _table = client_cache.get_or_make_table::<User>("tab_user");
+    let _table = client_cache.get_or_make_table::<UserV1>("tab_user");
 }
 pub struct TabUserUpdateCallbackId(__sdk::CallbackId);
 
@@ -102,10 +102,26 @@ impl<'ctx> __sdk::TableWithPrimaryKey for TabUserTableHandle<'ctx> {
 #[doc(hidden)]
 pub(super) fn parse_table_update(
     raw_updates: __ws::TableUpdate<__ws::BsatnFormat>,
-) -> __sdk::Result<__sdk::TableUpdate<User>> {
+) -> __sdk::Result<__sdk::TableUpdate<UserV1>> {
     __sdk::TableUpdate::parse_table_update(raw_updates).map_err(|e| {
-        __sdk::InternalError::failed_parse("TableUpdate<User>", "TableUpdate")
+        __sdk::InternalError::failed_parse("TableUpdate<UserV1>", "TableUpdate")
             .with_cause(e)
             .into()
     })
+}
+
+#[allow(non_camel_case_types)]
+/// Extension trait for query builder access to the table `UserV1`.
+///
+/// Implemented for [`__sdk::QueryTableAccessor`].
+pub trait tab_userQueryTableAccess {
+    #[allow(non_snake_case)]
+    /// Get a query builder for the table `UserV1`.
+    fn tab_user(&self) -> __sdk::__query_builder::Table<UserV1>;
+}
+
+impl tab_userQueryTableAccess for __sdk::QueryTableAccessor {
+    fn tab_user(&self) -> __sdk::__query_builder::Table<UserV1> {
+        __sdk::__query_builder::Table::new("tab_user")
+    }
 }

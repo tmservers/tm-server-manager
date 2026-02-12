@@ -21,3 +21,49 @@ pub struct TmMatchEvent {
 impl __sdk::InModule for TmMatchEvent {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `TmMatchEvent`.
+///
+/// Provides typed access to columns for query building.
+pub struct TmMatchEventCols {
+    pub match_id: __sdk::__query_builder::Col<TmMatchEvent, u32>,
+    pub restarted: __sdk::__query_builder::Col<TmMatchEvent, u16>,
+    pub round: __sdk::__query_builder::Col<TmMatchEvent, u16>,
+    pub warmup: __sdk::__query_builder::Col<TmMatchEvent, u16>,
+    pub is_warmup: __sdk::__query_builder::Col<TmMatchEvent, bool>,
+    pub paused: __sdk::__query_builder::Col<TmMatchEvent, bool>,
+    pub event: __sdk::__query_builder::Col<TmMatchEvent, Event>,
+}
+
+impl __sdk::__query_builder::HasCols for TmMatchEvent {
+    type Cols = TmMatchEventCols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        TmMatchEventCols {
+            match_id: __sdk::__query_builder::Col::new(table_name, "match_id"),
+            restarted: __sdk::__query_builder::Col::new(table_name, "restarted"),
+            round: __sdk::__query_builder::Col::new(table_name, "round"),
+            warmup: __sdk::__query_builder::Col::new(table_name, "warmup"),
+            is_warmup: __sdk::__query_builder::Col::new(table_name, "is_warmup"),
+            paused: __sdk::__query_builder::Col::new(table_name, "paused"),
+            event: __sdk::__query_builder::Col::new(table_name, "event"),
+        }
+    }
+}
+
+/// Indexed column accessor struct for the table `TmMatchEvent`.
+///
+/// Provides typed access to indexed columns for query building.
+pub struct TmMatchEventIxCols {
+    pub event: __sdk::__query_builder::IxCol<TmMatchEvent, Event>,
+    pub match_id: __sdk::__query_builder::IxCol<TmMatchEvent, u32>,
+}
+
+impl __sdk::__query_builder::HasIxCols for TmMatchEvent {
+    type IxCols = TmMatchEventIxCols;
+    fn ix_cols(table_name: &'static str) -> Self::IxCols {
+        TmMatchEventIxCols {
+            event: __sdk::__query_builder::IxCol::new(table_name, "event"),
+            match_id: __sdk::__query_builder::IxCol::new(table_name, "match_id"),
+        }
+    }
+}

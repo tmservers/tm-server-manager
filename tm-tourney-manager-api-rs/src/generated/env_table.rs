@@ -140,3 +140,19 @@ impl<'ctx> EnvKeyUnique<'ctx> {
         self.imp.find(col_val)
     }
 }
+
+#[allow(non_camel_case_types)]
+/// Extension trait for query builder access to the table `Env`.
+///
+/// Implemented for [`__sdk::QueryTableAccessor`].
+pub trait envQueryTableAccess {
+    #[allow(non_snake_case)]
+    /// Get a query builder for the table `Env`.
+    fn env(&self) -> __sdk::__query_builder::Table<Env>;
+}
+
+impl envQueryTableAccess for __sdk::QueryTableAccessor {
+    fn env(&self) -> __sdk::__query_builder::Table<Env> {
+        __sdk::__query_builder::Table::new("env")
+    }
+}

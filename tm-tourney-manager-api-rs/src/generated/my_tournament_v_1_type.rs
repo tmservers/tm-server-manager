@@ -22,3 +22,33 @@ pub struct MyTournamentV1 {
 impl __sdk::InModule for MyTournamentV1 {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `MyTournamentV1`.
+///
+/// Provides typed access to columns for query building.
+pub struct MyTournamentV1Cols {
+    pub id: __sdk::__query_builder::Col<MyTournamentV1, u32>,
+    pub creator_account_id: __sdk::__query_builder::Col<MyTournamentV1, __sdk::Uuid>,
+    pub creator_name: __sdk::__query_builder::Col<MyTournamentV1, String>,
+    pub name: __sdk::__query_builder::Col<MyTournamentV1, String>,
+    pub starting_at: __sdk::__query_builder::Col<MyTournamentV1, __sdk::Timestamp>,
+    pub ending_at: __sdk::__query_builder::Col<MyTournamentV1, __sdk::Timestamp>,
+    pub description: __sdk::__query_builder::Col<MyTournamentV1, String>,
+    pub status: __sdk::__query_builder::Col<MyTournamentV1, TournamentStatus>,
+}
+
+impl __sdk::__query_builder::HasCols for MyTournamentV1 {
+    type Cols = MyTournamentV1Cols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        MyTournamentV1Cols {
+            id: __sdk::__query_builder::Col::new(table_name, "id"),
+            creator_account_id: __sdk::__query_builder::Col::new(table_name, "creator_account_id"),
+            creator_name: __sdk::__query_builder::Col::new(table_name, "creator_name"),
+            name: __sdk::__query_builder::Col::new(table_name, "name"),
+            starting_at: __sdk::__query_builder::Col::new(table_name, "starting_at"),
+            ending_at: __sdk::__query_builder::Col::new(table_name, "ending_at"),
+            description: __sdk::__query_builder::Col::new(table_name, "description"),
+            status: __sdk::__query_builder::Col::new(table_name, "status"),
+        }
+    }
+}

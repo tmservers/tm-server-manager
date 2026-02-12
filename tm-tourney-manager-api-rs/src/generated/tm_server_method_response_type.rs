@@ -16,3 +16,37 @@ pub struct TmServerMethodResponse {
 impl __sdk::InModule for TmServerMethodResponse {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `TmServerMethodResponse`.
+///
+/// Provides typed access to columns for query building.
+pub struct TmServerMethodResponseCols {
+    pub id: __sdk::__query_builder::Col<TmServerMethodResponse, u32>,
+    pub response: __sdk::__query_builder::Col<TmServerMethodResponse, MethodResponse>,
+}
+
+impl __sdk::__query_builder::HasCols for TmServerMethodResponse {
+    type Cols = TmServerMethodResponseCols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        TmServerMethodResponseCols {
+            id: __sdk::__query_builder::Col::new(table_name, "id"),
+            response: __sdk::__query_builder::Col::new(table_name, "response"),
+        }
+    }
+}
+
+/// Indexed column accessor struct for the table `TmServerMethodResponse`.
+///
+/// Provides typed access to indexed columns for query building.
+pub struct TmServerMethodResponseIxCols {
+    pub id: __sdk::__query_builder::IxCol<TmServerMethodResponse, u32>,
+}
+
+impl __sdk::__query_builder::HasIxCols for TmServerMethodResponse {
+    type IxCols = TmServerMethodResponseIxCols;
+    fn ix_cols(table_name: &'static str) -> Self::IxCols {
+        TmServerMethodResponseIxCols {
+            id: __sdk::__query_builder::IxCol::new(table_name, "id"),
+        }
+    }
+}

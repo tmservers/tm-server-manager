@@ -14,3 +14,37 @@ pub struct TmWorkerJobs {
 impl __sdk::InModule for TmWorkerJobs {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `TmWorkerJobs`.
+///
+/// Provides typed access to columns for query building.
+pub struct TmWorkerJobsCols {
+    pub tm_login: __sdk::__query_builder::Col<TmWorkerJobs, String>,
+    pub map_uid: __sdk::__query_builder::Col<TmWorkerJobs, String>,
+}
+
+impl __sdk::__query_builder::HasCols for TmWorkerJobs {
+    type Cols = TmWorkerJobsCols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        TmWorkerJobsCols {
+            tm_login: __sdk::__query_builder::Col::new(table_name, "tm_login"),
+            map_uid: __sdk::__query_builder::Col::new(table_name, "map_uid"),
+        }
+    }
+}
+
+/// Indexed column accessor struct for the table `TmWorkerJobs`.
+///
+/// Provides typed access to indexed columns for query building.
+pub struct TmWorkerJobsIxCols {
+    pub tm_login: __sdk::__query_builder::IxCol<TmWorkerJobs, String>,
+}
+
+impl __sdk::__query_builder::HasIxCols for TmWorkerJobs {
+    type IxCols = TmWorkerJobsIxCols;
+    fn ix_cols(table_name: &'static str) -> Self::IxCols {
+        TmWorkerJobsIxCols {
+            tm_login: __sdk::__query_builder::IxCol::new(table_name, "tm_login"),
+        }
+    }
+}

@@ -20,3 +20,30 @@ pub struct CompetitionConnection {
 impl __sdk::InModule for CompetitionConnection {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `CompetitionConnection`.
+///
+/// Provides typed access to columns for query building.
+pub struct CompetitionConnectionCols {
+    pub tournament_id: __sdk::__query_builder::Col<CompetitionConnection, u32>,
+    pub competition_id: __sdk::__query_builder::Col<CompetitionConnection, u32>,
+    pub connection_from: __sdk::__query_builder::Col<CompetitionConnection, NodeKindHandle>,
+    pub connection_to: __sdk::__query_builder::Col<CompetitionConnection, NodeKindHandle>,
+    pub connection_settings: __sdk::__query_builder::Col<CompetitionConnection, ConnectionSettings>,
+}
+
+impl __sdk::__query_builder::HasCols for CompetitionConnection {
+    type Cols = CompetitionConnectionCols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        CompetitionConnectionCols {
+            tournament_id: __sdk::__query_builder::Col::new(table_name, "tournament_id"),
+            competition_id: __sdk::__query_builder::Col::new(table_name, "competition_id"),
+            connection_from: __sdk::__query_builder::Col::new(table_name, "connection_from"),
+            connection_to: __sdk::__query_builder::Col::new(table_name, "connection_to"),
+            connection_settings: __sdk::__query_builder::Col::new(
+                table_name,
+                "connection_settings",
+            ),
+        }
+    }
+}

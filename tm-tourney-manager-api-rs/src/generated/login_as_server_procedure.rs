@@ -9,7 +9,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 struct LoginAsServerArgs {
     pub login: String,
     pub password: String,
-    pub account_id: String,
+    pub account_id: __sdk::Uuid,
 }
 
 impl __sdk::InModule for LoginAsServerArgs {
@@ -21,7 +21,7 @@ impl __sdk::InModule for LoginAsServerArgs {
 ///
 /// Implemented for [`super::RemoteProcedures`].
 pub trait login_as_server {
-    fn login_as_server(&self, login: String, password: String, account_id: String) {
+    fn login_as_server(&self, login: String, password: String, account_id: __sdk::Uuid) {
         self.login_as_server_then(login, password, account_id, |_, _| {});
     }
 
@@ -29,9 +29,9 @@ pub trait login_as_server {
         &self,
         login: String,
         password: String,
-        account_id: String,
+        account_id: __sdk::Uuid,
 
-        __callback: impl FnOnce(&super::ProcedureEventContext, Result<(), __sdk::InternalError>)
+        __callback: impl FnOnce(&super::ProcedureEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     );
@@ -42,20 +42,21 @@ impl login_as_server for super::RemoteProcedures {
         &self,
         login: String,
         password: String,
-        account_id: String,
+        account_id: __sdk::Uuid,
 
-        __callback: impl FnOnce(&super::ProcedureEventContext, Result<(), __sdk::InternalError>)
+        __callback: impl FnOnce(&super::ProcedureEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     ) {
-        self.imp.invoke_procedure_with_callback::<_, ()>(
-            "login_as_server",
-            LoginAsServerArgs {
-                login,
-                password,
-                account_id,
-            },
-            __callback,
-        );
+        self.imp
+            .invoke_procedure_with_callback::<_, Result<(), String>>(
+                "login_as_server",
+                LoginAsServerArgs {
+                    login,
+                    password,
+                    account_id,
+                },
+                __callback,
+            );
     }
 }

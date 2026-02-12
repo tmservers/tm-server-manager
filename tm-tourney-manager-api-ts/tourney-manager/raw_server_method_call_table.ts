@@ -12,13 +12,12 @@ import {
 import MethodCall from "./method_call_type";
 
 
-export default __t.object("TmServerMethodCall", {
+export default __t.row({
   id: __t.u32(),
-  serverId: __t.string(),
-  accountId: __t.uuid(),
+  serverLogin: __t.string().name("server_login"),
+  accountId: __t.uuid().name("account_id"),
+  timestamp: __t.timestamp(),
   get method() {
     return MethodCall;
   },
 });
-
-

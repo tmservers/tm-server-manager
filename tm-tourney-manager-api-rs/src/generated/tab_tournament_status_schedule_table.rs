@@ -175,3 +175,23 @@ impl<'ctx> TabTournamentStatusScheduleTournamentIdUnique<'ctx> {
         self.imp.find(col_val)
     }
 }
+
+#[allow(non_camel_case_types)]
+/// Extension trait for query builder access to the table `TournamentStatusScheduleV1`.
+///
+/// Implemented for [`__sdk::QueryTableAccessor`].
+pub trait tab_tournament_status_scheduleQueryTableAccess {
+    #[allow(non_snake_case)]
+    /// Get a query builder for the table `TournamentStatusScheduleV1`.
+    fn tab_tournament_status_schedule(
+        &self,
+    ) -> __sdk::__query_builder::Table<TournamentStatusScheduleV1>;
+}
+
+impl tab_tournament_status_scheduleQueryTableAccess for __sdk::QueryTableAccessor {
+    fn tab_tournament_status_schedule(
+        &self,
+    ) -> __sdk::__query_builder::Table<TournamentStatusScheduleV1> {
+        __sdk::__query_builder::Table::new("tab_tournament_status_schedule")
+    }
+}

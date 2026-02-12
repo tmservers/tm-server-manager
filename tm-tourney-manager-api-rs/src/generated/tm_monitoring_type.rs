@@ -20,3 +20,45 @@ pub struct TmMonitoring {
 impl __sdk::InModule for TmMonitoring {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `TmMonitoring`.
+///
+/// Provides typed access to columns for query building.
+pub struct TmMonitoringCols {
+    pub id: __sdk::__query_builder::Col<TmMonitoring, u32>,
+    pub tournament: __sdk::__query_builder::Col<TmMonitoring, u32>,
+    pub competition: __sdk::__query_builder::Col<TmMonitoring, u32>,
+    pub settings: __sdk::__query_builder::Col<TmMonitoring, MonitoringSettings>,
+    pub name: __sdk::__query_builder::Col<TmMonitoring, Option<String>>,
+    pub active: __sdk::__query_builder::Col<TmMonitoring, bool>,
+}
+
+impl __sdk::__query_builder::HasCols for TmMonitoring {
+    type Cols = TmMonitoringCols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        TmMonitoringCols {
+            id: __sdk::__query_builder::Col::new(table_name, "id"),
+            tournament: __sdk::__query_builder::Col::new(table_name, "tournament"),
+            competition: __sdk::__query_builder::Col::new(table_name, "competition"),
+            settings: __sdk::__query_builder::Col::new(table_name, "settings"),
+            name: __sdk::__query_builder::Col::new(table_name, "name"),
+            active: __sdk::__query_builder::Col::new(table_name, "active"),
+        }
+    }
+}
+
+/// Indexed column accessor struct for the table `TmMonitoring`.
+///
+/// Provides typed access to indexed columns for query building.
+pub struct TmMonitoringIxCols {
+    pub id: __sdk::__query_builder::IxCol<TmMonitoring, u32>,
+}
+
+impl __sdk::__query_builder::HasIxCols for TmMonitoring {
+    type IxCols = TmMonitoringIxCols;
+    fn ix_cols(table_name: &'static str) -> Self::IxCols {
+        TmMonitoringIxCols {
+            id: __sdk::__query_builder::IxCol::new(table_name, "id"),
+        }
+    }
+}

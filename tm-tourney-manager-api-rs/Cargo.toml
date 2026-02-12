@@ -14,4 +14,4 @@ publish = true
 spacetimedb-sdk = { workspace = true }
 
 [features]
-web = ["spacetimedb-sdk/web"]
+#web = ["spacetimedb-sdk/web"]

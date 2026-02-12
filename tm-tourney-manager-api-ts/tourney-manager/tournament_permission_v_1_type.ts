@@ -10,9 +10,10 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-export default __t.object("ServerState", {
-  players: __t.array(__t.string()),
-  paused: __t.bool(),
+export default __t.object("TournamentPermissionV1", {
+  tournamentId: __t.u32(),
+  bucket1: __t.u64(),
+  accountId: __t.uuid(),
 });
 
 

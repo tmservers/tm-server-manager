@@ -23,3 +23,63 @@ pub struct TabCompetitionConnection {
 impl __sdk::InModule for TabCompetitionConnection {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `TabCompetitionConnection`.
+///
+/// Provides typed access to columns for query building.
+pub struct TabCompetitionConnectionCols {
+    pub id: __sdk::__query_builder::Col<TabCompetitionConnection, u32>,
+    pub competition_id: __sdk::__query_builder::Col<TabCompetitionConnection, u32>,
+    pub tournament_id: __sdk::__query_builder::Col<TabCompetitionConnection, u32>,
+    pub connection_from: __sdk::__query_builder::Col<TabCompetitionConnection, u32>,
+    pub connection_to: __sdk::__query_builder::Col<TabCompetitionConnection, u32>,
+    pub connection_from_variant: __sdk::__query_builder::Col<TabCompetitionConnection, u8>,
+    pub connection_to_variant: __sdk::__query_builder::Col<TabCompetitionConnection, u8>,
+    pub connection_settings:
+        __sdk::__query_builder::Col<TabCompetitionConnection, ConnectionSettings>,
+    pub resolved: __sdk::__query_builder::Col<TabCompetitionConnection, bool>,
+}
+
+impl __sdk::__query_builder::HasCols for TabCompetitionConnection {
+    type Cols = TabCompetitionConnectionCols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        TabCompetitionConnectionCols {
+            id: __sdk::__query_builder::Col::new(table_name, "id"),
+            competition_id: __sdk::__query_builder::Col::new(table_name, "competition_id"),
+            tournament_id: __sdk::__query_builder::Col::new(table_name, "tournament_id"),
+            connection_from: __sdk::__query_builder::Col::new(table_name, "connection_from"),
+            connection_to: __sdk::__query_builder::Col::new(table_name, "connection_to"),
+            connection_from_variant: __sdk::__query_builder::Col::new(
+                table_name,
+                "connection_from_variant",
+            ),
+            connection_to_variant: __sdk::__query_builder::Col::new(
+                table_name,
+                "connection_to_variant",
+            ),
+            connection_settings: __sdk::__query_builder::Col::new(
+                table_name,
+                "connection_settings",
+            ),
+            resolved: __sdk::__query_builder::Col::new(table_name, "resolved"),
+        }
+    }
+}
+
+/// Indexed column accessor struct for the table `TabCompetitionConnection`.
+///
+/// Provides typed access to indexed columns for query building.
+pub struct TabCompetitionConnectionIxCols {
+    pub competition_id: __sdk::__query_builder::IxCol<TabCompetitionConnection, u32>,
+    pub id: __sdk::__query_builder::IxCol<TabCompetitionConnection, u32>,
+}
+
+impl __sdk::__query_builder::HasIxCols for TabCompetitionConnection {
+    type IxCols = TabCompetitionConnectionIxCols;
+    fn ix_cols(table_name: &'static str) -> Self::IxCols {
+        TabCompetitionConnectionIxCols {
+            competition_id: __sdk::__query_builder::IxCol::new(table_name, "competition_id"),
+            id: __sdk::__query_builder::IxCol::new(table_name, "id"),
+        }
+    }
+}

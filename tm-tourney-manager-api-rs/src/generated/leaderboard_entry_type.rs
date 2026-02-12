@@ -15,3 +15,23 @@ pub struct LeaderboardEntry {
 impl __sdk::InModule for LeaderboardEntry {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `LeaderboardEntry`.
+///
+/// Provides typed access to columns for query building.
+pub struct LeaderboardEntryCols {
+    pub account_id: __sdk::__query_builder::Col<LeaderboardEntry, String>,
+    pub account_name: __sdk::__query_builder::Col<LeaderboardEntry, String>,
+    pub score: __sdk::__query_builder::Col<LeaderboardEntry, i32>,
+}
+
+impl __sdk::__query_builder::HasCols for LeaderboardEntry {
+    type Cols = LeaderboardEntryCols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        LeaderboardEntryCols {
+            account_id: __sdk::__query_builder::Col::new(table_name, "account_id"),
+            account_name: __sdk::__query_builder::Col::new(table_name, "account_name"),
+            score: __sdk::__query_builder::Col::new(table_name, "score"),
+        }
+    }
+}

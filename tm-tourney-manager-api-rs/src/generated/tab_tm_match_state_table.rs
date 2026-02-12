@@ -140,3 +140,19 @@ impl<'ctx> TabTmMatchStateIdUnique<'ctx> {
         self.imp.find(col_val)
     }
 }
+
+#[allow(non_camel_case_types)]
+/// Extension trait for query builder access to the table `TmMatchState`.
+///
+/// Implemented for [`__sdk::QueryTableAccessor`].
+pub trait tab_tm_match_stateQueryTableAccess {
+    #[allow(non_snake_case)]
+    /// Get a query builder for the table `TmMatchState`.
+    fn tab_tm_match_state(&self) -> __sdk::__query_builder::Table<TmMatchState>;
+}
+
+impl tab_tm_match_stateQueryTableAccess for __sdk::QueryTableAccessor {
+    fn tab_tm_match_state(&self) -> __sdk::__query_builder::Table<TmMatchState> {
+        __sdk::__query_builder::Table::new("tab_tm_match_state")
+    }
+}

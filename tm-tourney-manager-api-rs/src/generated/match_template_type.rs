@@ -18,3 +18,43 @@ pub struct MatchTemplate {
 impl __sdk::InModule for MatchTemplate {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `MatchTemplate`.
+///
+/// Provides typed access to columns for query building.
+pub struct MatchTemplateCols {
+    pub id: __sdk::__query_builder::Col<MatchTemplate, u32>,
+    pub creator: __sdk::__query_builder::Col<MatchTemplate, __sdk::Uuid>,
+    pub name: __sdk::__query_builder::Col<MatchTemplate, String>,
+    pub config: __sdk::__query_builder::Col<MatchTemplate, ServerConfig>,
+}
+
+impl __sdk::__query_builder::HasCols for MatchTemplate {
+    type Cols = MatchTemplateCols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        MatchTemplateCols {
+            id: __sdk::__query_builder::Col::new(table_name, "id"),
+            creator: __sdk::__query_builder::Col::new(table_name, "creator"),
+            name: __sdk::__query_builder::Col::new(table_name, "name"),
+            config: __sdk::__query_builder::Col::new(table_name, "config"),
+        }
+    }
+}
+
+/// Indexed column accessor struct for the table `MatchTemplate`.
+///
+/// Provides typed access to indexed columns for query building.
+pub struct MatchTemplateIxCols {
+    pub creator: __sdk::__query_builder::IxCol<MatchTemplate, __sdk::Uuid>,
+    pub id: __sdk::__query_builder::IxCol<MatchTemplate, u32>,
+}
+
+impl __sdk::__query_builder::HasIxCols for MatchTemplate {
+    type IxCols = MatchTemplateIxCols;
+    fn ix_cols(table_name: &'static str) -> Self::IxCols {
+        MatchTemplateIxCols {
+            creator: __sdk::__query_builder::IxCol::new(table_name, "creator"),
+            id: __sdk::__query_builder::IxCol::new(table_name, "id"),
+        }
+    }
+}

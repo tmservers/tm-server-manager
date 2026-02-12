@@ -10,20 +10,14 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 import ServerConfig from "./server_config_type";
-import ServerState from "./server_state_type";
 
 
-export default __t.row({
-  tmLogin: __t.string().primaryKey().name("tm_login"),
-  identity: __t.identity(),
-  ownerId: __t.string().name("owner_id"),
+export default __t.object("TmRawServerConfig", {
+  id: __t.u32(),
+  accountId: __t.uuid(),
   get config() {
     return ServerConfig;
   },
-  get state() {
-    return ServerState;
-  },
-  capturable: __t.bool(),
-  verified: __t.bool(),
-  activeMatch: __t.option(__t.u32()).name("active_match"),
 });
+
+

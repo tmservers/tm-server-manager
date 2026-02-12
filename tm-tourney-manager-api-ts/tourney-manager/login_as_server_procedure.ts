@@ -13,6 +13,6 @@ import {
 export const params = {
   login: __t.string(),
   password: __t.string(),
-  accountId: __t.string(),
+  accountId: __t.uuid(),
 };
-export const returnType = __t.unit()
+export const returnType = __t.result(__t.unit(), __t.string())

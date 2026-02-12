@@ -141,3 +141,19 @@ impl<'ctx> MatchTemplateIdUnique<'ctx> {
         self.imp.find(col_val)
     }
 }
+
+#[allow(non_camel_case_types)]
+/// Extension trait for query builder access to the table `MatchTemplate`.
+///
+/// Implemented for [`__sdk::QueryTableAccessor`].
+pub trait match_templateQueryTableAccess {
+    #[allow(non_snake_case)]
+    /// Get a query builder for the table `MatchTemplate`.
+    fn match_template(&self) -> __sdk::__query_builder::Table<MatchTemplate>;
+}
+
+impl match_templateQueryTableAccess for __sdk::QueryTableAccessor {
+    fn match_template(&self) -> __sdk::__query_builder::Table<MatchTemplate> {
+        __sdk::__query_builder::Table::new("match_template")
+    }
+}

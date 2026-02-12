@@ -140,3 +140,19 @@ impl<'ctx> TmMapRecordIdUnique<'ctx> {
         self.imp.find(col_val)
     }
 }
+
+#[allow(non_camel_case_types)]
+/// Extension trait for query builder access to the table `TmMapRecord`.
+///
+/// Implemented for [`__sdk::QueryTableAccessor`].
+pub trait tm_map_recordQueryTableAccess {
+    #[allow(non_snake_case)]
+    /// Get a query builder for the table `TmMapRecord`.
+    fn tm_map_record(&self) -> __sdk::__query_builder::Table<TmMapRecord>;
+}
+
+impl tm_map_recordQueryTableAccess for __sdk::QueryTableAccessor {
+    fn tm_map_record(&self) -> __sdk::__query_builder::Table<TmMapRecord> {
+        __sdk::__query_builder::Table::new("tm_map_record")
+    }
+}

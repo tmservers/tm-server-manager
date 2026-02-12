@@ -16,3 +16,37 @@ pub struct MatchGhost {
 impl __sdk::InModule for MatchGhost {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `MatchGhost`.
+///
+/// Provides typed access to columns for query building.
+pub struct MatchGhostCols {
+    pub tournament_id: __sdk::__query_builder::Col<MatchGhost, u32>,
+    pub match_id: __sdk::__query_builder::Col<MatchGhost, u32>,
+    pub player_id: __sdk::__query_builder::Col<MatchGhost, String>,
+    pub uid: __sdk::__query_builder::Col<MatchGhost, String>,
+}
+
+impl __sdk::__query_builder::HasCols for MatchGhost {
+    type Cols = MatchGhostCols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        MatchGhostCols {
+            tournament_id: __sdk::__query_builder::Col::new(table_name, "tournament_id"),
+            match_id: __sdk::__query_builder::Col::new(table_name, "match_id"),
+            player_id: __sdk::__query_builder::Col::new(table_name, "player_id"),
+            uid: __sdk::__query_builder::Col::new(table_name, "uid"),
+        }
+    }
+}
+
+/// Indexed column accessor struct for the table `MatchGhost`.
+///
+/// Provides typed access to indexed columns for query building.
+pub struct MatchGhostIxCols {}
+
+impl __sdk::__query_builder::HasIxCols for MatchGhost {
+    type IxCols = MatchGhostIxCols;
+    fn ix_cols(table_name: &'static str) -> Self::IxCols {
+        MatchGhostIxCols {}
+    }
+}

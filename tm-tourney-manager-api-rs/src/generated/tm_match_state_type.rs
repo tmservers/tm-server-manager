@@ -18,3 +18,45 @@ pub struct TmMatchState {
 impl __sdk::InModule for TmMatchState {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `TmMatchState`.
+///
+/// Provides typed access to columns for query building.
+pub struct TmMatchStateCols {
+    pub id: __sdk::__query_builder::Col<TmMatchState, u32>,
+    pub restarted: __sdk::__query_builder::Col<TmMatchState, u16>,
+    pub round: __sdk::__query_builder::Col<TmMatchState, u16>,
+    pub warmup: __sdk::__query_builder::Col<TmMatchState, u16>,
+    pub is_warmup: __sdk::__query_builder::Col<TmMatchState, bool>,
+    pub paused: __sdk::__query_builder::Col<TmMatchState, bool>,
+}
+
+impl __sdk::__query_builder::HasCols for TmMatchState {
+    type Cols = TmMatchStateCols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        TmMatchStateCols {
+            id: __sdk::__query_builder::Col::new(table_name, "id"),
+            restarted: __sdk::__query_builder::Col::new(table_name, "restarted"),
+            round: __sdk::__query_builder::Col::new(table_name, "round"),
+            warmup: __sdk::__query_builder::Col::new(table_name, "warmup"),
+            is_warmup: __sdk::__query_builder::Col::new(table_name, "is_warmup"),
+            paused: __sdk::__query_builder::Col::new(table_name, "paused"),
+        }
+    }
+}
+
+/// Indexed column accessor struct for the table `TmMatchState`.
+///
+/// Provides typed access to indexed columns for query building.
+pub struct TmMatchStateIxCols {
+    pub id: __sdk::__query_builder::IxCol<TmMatchState, u32>,
+}
+
+impl __sdk::__query_builder::HasIxCols for TmMatchState {
+    type IxCols = TmMatchStateIxCols;
+    fn ix_cols(table_name: &'static str) -> Self::IxCols {
+        TmMatchStateIxCols {
+            id: __sdk::__query_builder::IxCol::new(table_name, "id"),
+        }
+    }
+}

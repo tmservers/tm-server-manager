@@ -24,3 +24,51 @@ pub struct TmMatchV1 {
 impl __sdk::InModule for TmMatchV1 {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `TmMatchV1`.
+///
+/// Provides typed access to columns for query building.
+pub struct TmMatchV1Cols {
+    pub id: __sdk::__query_builder::Col<TmMatchV1, u32>,
+    pub tournament_id: __sdk::__query_builder::Col<TmMatchV1, u32>,
+    pub competition_id: __sdk::__query_builder::Col<TmMatchV1, u32>,
+    pub name: __sdk::__query_builder::Col<TmMatchV1, String>,
+    pub server_id: __sdk::__query_builder::Col<TmMatchV1, Option<String>>,
+    pub pre_match_config: __sdk::__query_builder::Col<TmMatchV1, Option<ServerConfig>>,
+    pub match_config: __sdk::__query_builder::Col<TmMatchV1, Option<ServerConfig>>,
+    pub post_match_config: __sdk::__query_builder::Col<TmMatchV1, Option<ServerConfig>>,
+    pub status: __sdk::__query_builder::Col<TmMatchV1, MatchStatus>,
+}
+
+impl __sdk::__query_builder::HasCols for TmMatchV1 {
+    type Cols = TmMatchV1Cols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        TmMatchV1Cols {
+            id: __sdk::__query_builder::Col::new(table_name, "id"),
+            tournament_id: __sdk::__query_builder::Col::new(table_name, "tournament_id"),
+            competition_id: __sdk::__query_builder::Col::new(table_name, "competition_id"),
+            name: __sdk::__query_builder::Col::new(table_name, "name"),
+            server_id: __sdk::__query_builder::Col::new(table_name, "server_id"),
+            pre_match_config: __sdk::__query_builder::Col::new(table_name, "pre_match_config"),
+            match_config: __sdk::__query_builder::Col::new(table_name, "match_config"),
+            post_match_config: __sdk::__query_builder::Col::new(table_name, "post_match_config"),
+            status: __sdk::__query_builder::Col::new(table_name, "status"),
+        }
+    }
+}
+
+/// Indexed column accessor struct for the table `TmMatchV1`.
+///
+/// Provides typed access to indexed columns for query building.
+pub struct TmMatchV1IxCols {
+    pub id: __sdk::__query_builder::IxCol<TmMatchV1, u32>,
+}
+
+impl __sdk::__query_builder::HasIxCols for TmMatchV1 {
+    type IxCols = TmMatchV1IxCols;
+    fn ix_cols(table_name: &'static str) -> Self::IxCols {
+        TmMatchV1IxCols {
+            id: __sdk::__query_builder::IxCol::new(table_name, "id"),
+        }
+    }
+}

@@ -93,3 +93,19 @@ pub(super) fn parse_table_update(
             .into()
     })
 }
+
+#[allow(non_camel_case_types)]
+/// Extension trait for query builder access to the table `TmCompRecord`.
+///
+/// Implemented for [`__sdk::QueryTableAccessor`].
+pub trait tm_match_recordQueryTableAccess {
+    #[allow(non_snake_case)]
+    /// Get a query builder for the table `TmCompRecord`.
+    fn tm_match_record(&self) -> __sdk::__query_builder::Table<TmCompRecord>;
+}
+
+impl tm_match_recordQueryTableAccess for __sdk::QueryTableAccessor {
+    fn tm_match_record(&self) -> __sdk::__query_builder::Table<TmCompRecord> {
+        __sdk::__query_builder::Table::new("tm_match_record")
+    }
+}

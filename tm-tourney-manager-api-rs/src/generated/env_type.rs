@@ -14,3 +14,37 @@ pub struct Env {
 impl __sdk::InModule for Env {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `Env`.
+///
+/// Provides typed access to columns for query building.
+pub struct EnvCols {
+    pub key: __sdk::__query_builder::Col<Env, String>,
+    pub value: __sdk::__query_builder::Col<Env, String>,
+}
+
+impl __sdk::__query_builder::HasCols for Env {
+    type Cols = EnvCols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        EnvCols {
+            key: __sdk::__query_builder::Col::new(table_name, "key"),
+            value: __sdk::__query_builder::Col::new(table_name, "value"),
+        }
+    }
+}
+
+/// Indexed column accessor struct for the table `Env`.
+///
+/// Provides typed access to indexed columns for query building.
+pub struct EnvIxCols {
+    pub key: __sdk::__query_builder::IxCol<Env, String>,
+}
+
+impl __sdk::__query_builder::HasIxCols for Env {
+    type IxCols = EnvIxCols;
+    fn ix_cols(table_name: &'static str) -> Self::IxCols {
+        EnvIxCols {
+            key: __sdk::__query_builder::IxCol::new(table_name, "key"),
+        }
+    }
+}

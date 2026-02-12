@@ -95,3 +95,19 @@ pub(super) fn parse_table_update(
             .into()
     })
 }
+
+#[allow(non_camel_case_types)]
+/// Extension trait for query builder access to the table `RegisteredPlayer`.
+///
+/// Implemented for [`__sdk::QueryTableAccessor`].
+pub trait tab_registered_playerQueryTableAccess {
+    #[allow(non_snake_case)]
+    /// Get a query builder for the table `RegisteredPlayer`.
+    fn tab_registered_player(&self) -> __sdk::__query_builder::Table<RegisteredPlayer>;
+}
+
+impl tab_registered_playerQueryTableAccess for __sdk::QueryTableAccessor {
+    fn tab_registered_player(&self) -> __sdk::__query_builder::Table<RegisteredPlayer> {
+        __sdk::__query_builder::Table::new("tab_registered_player")
+    }
+}

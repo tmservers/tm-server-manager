@@ -144,3 +144,23 @@ impl<'ctx> TabCompetitionNodePositionIdUnique<'ctx> {
         self.imp.find(col_val)
     }
 }
+
+#[allow(non_camel_case_types)]
+/// Extension trait for query builder access to the table `TabCompetitionNodePosition`.
+///
+/// Implemented for [`__sdk::QueryTableAccessor`].
+pub trait tab_competition_node_positionQueryTableAccess {
+    #[allow(non_snake_case)]
+    /// Get a query builder for the table `TabCompetitionNodePosition`.
+    fn tab_competition_node_position(
+        &self,
+    ) -> __sdk::__query_builder::Table<TabCompetitionNodePosition>;
+}
+
+impl tab_competition_node_positionQueryTableAccess for __sdk::QueryTableAccessor {
+    fn tab_competition_node_position(
+        &self,
+    ) -> __sdk::__query_builder::Table<TabCompetitionNodePosition> {
+        __sdk::__query_builder::Table::new("tab_competition_node_position")
+    }
+}

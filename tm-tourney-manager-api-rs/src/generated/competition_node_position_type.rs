@@ -18,3 +18,23 @@ pub struct CompetitionNodePosition {
 impl __sdk::InModule for CompetitionNodePosition {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `CompetitionNodePosition`.
+///
+/// Provides typed access to columns for query building.
+pub struct CompetitionNodePositionCols {
+    pub competition_id: __sdk::__query_builder::Col<CompetitionNodePosition, u32>,
+    pub node: __sdk::__query_builder::Col<CompetitionNodePosition, NodeKindHandle>,
+    pub position: __sdk::__query_builder::Col<CompetitionNodePosition, Vec2>,
+}
+
+impl __sdk::__query_builder::HasCols for CompetitionNodePosition {
+    type Cols = CompetitionNodePositionCols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        CompetitionNodePositionCols {
+            competition_id: __sdk::__query_builder::Col::new(table_name, "competition_id"),
+            node: __sdk::__query_builder::Col::new(table_name, "node"),
+            position: __sdk::__query_builder::Col::new(table_name, "position"),
+        }
+    }
+}

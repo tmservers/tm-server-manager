@@ -93,3 +93,19 @@ pub(super) fn parse_table_update(
             .into()
     })
 }
+
+#[allow(non_camel_case_types)]
+/// Extension trait for query builder access to the table `TmWorkerJobs`.
+///
+/// Implemented for [`__sdk::QueryTableAccessor`].
+pub trait my_jobsQueryTableAccess {
+    #[allow(non_snake_case)]
+    /// Get a query builder for the table `TmWorkerJobs`.
+    fn my_jobs(&self) -> __sdk::__query_builder::Table<TmWorkerJobs>;
+}
+
+impl my_jobsQueryTableAccess for __sdk::QueryTableAccessor {
+    fn my_jobs(&self) -> __sdk::__query_builder::Table<TmWorkerJobs> {
+        __sdk::__query_builder::Table::new("my_jobs")
+    }
+}

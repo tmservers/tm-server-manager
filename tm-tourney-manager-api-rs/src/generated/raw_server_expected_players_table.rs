@@ -3,8 +3,6 @@
 
 #![allow(unused, clippy::all)]
 use super::raw_server_v_1_type::RawServerV1;
-use super::server_config_type::ServerConfig;
-use super::server_state_type::ServerState;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 /// Table handle for the table `raw_server_expected_players`.
@@ -96,4 +94,20 @@ pub(super) fn parse_table_update(
             .with_cause(e)
             .into()
     })
+}
+
+#[allow(non_camel_case_types)]
+/// Extension trait for query builder access to the table `RawServerV1`.
+///
+/// Implemented for [`__sdk::QueryTableAccessor`].
+pub trait raw_server_expected_playersQueryTableAccess {
+    #[allow(non_snake_case)]
+    /// Get a query builder for the table `RawServerV1`.
+    fn raw_server_expected_players(&self) -> __sdk::__query_builder::Table<RawServerV1>;
+}
+
+impl raw_server_expected_playersQueryTableAccess for __sdk::QueryTableAccessor {
+    fn raw_server_expected_players(&self) -> __sdk::__query_builder::Table<RawServerV1> {
+        __sdk::__query_builder::Table::new("raw_server_expected_players")
+    }
 }

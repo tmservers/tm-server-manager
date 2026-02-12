@@ -23,3 +23,52 @@ pub struct CompetitionV1 {
 impl __sdk::InModule for CompetitionV1 {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `CompetitionV1`.
+///
+/// Provides typed access to columns for query building.
+pub struct CompetitionV1Cols {
+    pub id: __sdk::__query_builder::Col<CompetitionV1, u32>,
+    pub tournament_id: __sdk::__query_builder::Col<CompetitionV1, u32>,
+    pub parent_id: __sdk::__query_builder::Col<CompetitionV1, Option<u32>>,
+    pub name: __sdk::__query_builder::Col<CompetitionV1, String>,
+    pub status: __sdk::__query_builder::Col<CompetitionV1, CompetitionStatus>,
+    pub starting_at: __sdk::__query_builder::Col<CompetitionV1, Option<__sdk::Timestamp>>,
+    pub ending_at: __sdk::__query_builder::Col<CompetitionV1, Option<__sdk::Timestamp>>,
+    pub registration_settings: __sdk::__query_builder::Col<CompetitionV1, RegistrationSettings>,
+}
+
+impl __sdk::__query_builder::HasCols for CompetitionV1 {
+    type Cols = CompetitionV1Cols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        CompetitionV1Cols {
+            id: __sdk::__query_builder::Col::new(table_name, "id"),
+            tournament_id: __sdk::__query_builder::Col::new(table_name, "tournament_id"),
+            parent_id: __sdk::__query_builder::Col::new(table_name, "parent_id"),
+            name: __sdk::__query_builder::Col::new(table_name, "name"),
+            status: __sdk::__query_builder::Col::new(table_name, "status"),
+            starting_at: __sdk::__query_builder::Col::new(table_name, "starting_at"),
+            ending_at: __sdk::__query_builder::Col::new(table_name, "ending_at"),
+            registration_settings: __sdk::__query_builder::Col::new(
+                table_name,
+                "registration_settings",
+            ),
+        }
+    }
+}
+
+/// Indexed column accessor struct for the table `CompetitionV1`.
+///
+/// Provides typed access to indexed columns for query building.
+pub struct CompetitionV1IxCols {
+    pub id: __sdk::__query_builder::IxCol<CompetitionV1, u32>,
+}
+
+impl __sdk::__query_builder::HasIxCols for CompetitionV1 {
+    type IxCols = CompetitionV1IxCols;
+    fn ix_cols(table_name: &'static str) -> Self::IxCols {
+        CompetitionV1IxCols {
+            id: __sdk::__query_builder::IxCol::new(table_name, "id"),
+        }
+    }
+}

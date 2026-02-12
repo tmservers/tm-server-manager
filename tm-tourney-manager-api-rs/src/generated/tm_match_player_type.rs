@@ -14,3 +14,39 @@ pub struct TmMatchPlayer {
 impl __sdk::InModule for TmMatchPlayer {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `TmMatchPlayer`.
+///
+/// Provides typed access to columns for query building.
+pub struct TmMatchPlayerCols {
+    pub match_id: __sdk::__query_builder::Col<TmMatchPlayer, u32>,
+    pub account_id: __sdk::__query_builder::Col<TmMatchPlayer, __sdk::Uuid>,
+}
+
+impl __sdk::__query_builder::HasCols for TmMatchPlayer {
+    type Cols = TmMatchPlayerCols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        TmMatchPlayerCols {
+            match_id: __sdk::__query_builder::Col::new(table_name, "match_id"),
+            account_id: __sdk::__query_builder::Col::new(table_name, "account_id"),
+        }
+    }
+}
+
+/// Indexed column accessor struct for the table `TmMatchPlayer`.
+///
+/// Provides typed access to indexed columns for query building.
+pub struct TmMatchPlayerIxCols {
+    pub account_id: __sdk::__query_builder::IxCol<TmMatchPlayer, __sdk::Uuid>,
+    pub match_id: __sdk::__query_builder::IxCol<TmMatchPlayer, u32>,
+}
+
+impl __sdk::__query_builder::HasIxCols for TmMatchPlayer {
+    type IxCols = TmMatchPlayerIxCols;
+    fn ix_cols(table_name: &'static str) -> Self::IxCols {
+        TmMatchPlayerIxCols {
+            account_id: __sdk::__query_builder::IxCol::new(table_name, "account_id"),
+            match_id: __sdk::__query_builder::IxCol::new(table_name, "match_id"),
+        }
+    }
+}

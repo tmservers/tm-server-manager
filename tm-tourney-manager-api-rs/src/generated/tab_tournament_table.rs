@@ -172,3 +172,19 @@ impl<'ctx> TabTournamentNameUnique<'ctx> {
         self.imp.find(col_val)
     }
 }
+
+#[allow(non_camel_case_types)]
+/// Extension trait for query builder access to the table `TournamentV1`.
+///
+/// Implemented for [`__sdk::QueryTableAccessor`].
+pub trait tab_tournamentQueryTableAccess {
+    #[allow(non_snake_case)]
+    /// Get a query builder for the table `TournamentV1`.
+    fn tab_tournament(&self) -> __sdk::__query_builder::Table<TournamentV1>;
+}
+
+impl tab_tournamentQueryTableAccess for __sdk::QueryTableAccessor {
+    fn tab_tournament(&self) -> __sdk::__query_builder::Table<TournamentV1> {
+        __sdk::__query_builder::Table::new("tab_tournament")
+    }
+}

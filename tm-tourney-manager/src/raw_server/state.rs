@@ -28,7 +28,7 @@ use spacetimedb::{Uuid, table};
 #[derive(Debug)]
 #[table(name = tab_raw_server_players)]
 #[table(name = tab_raw_server_spectators)]
-pub struct TmMatchPlayer {
+pub struct TmRawServerEntity {
     #[index(btree)]
     pub(crate) match_id: u32,
 

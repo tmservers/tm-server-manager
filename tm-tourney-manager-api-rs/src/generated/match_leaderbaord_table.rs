@@ -93,3 +93,19 @@ pub(super) fn parse_table_update(
             .into()
     })
 }
+
+#[allow(non_camel_case_types)]
+/// Extension trait for query builder access to the table `LeaderboardEntry`.
+///
+/// Implemented for [`__sdk::QueryTableAccessor`].
+pub trait match_leaderbaordQueryTableAccess {
+    #[allow(non_snake_case)]
+    /// Get a query builder for the table `LeaderboardEntry`.
+    fn match_leaderbaord(&self) -> __sdk::__query_builder::Table<LeaderboardEntry>;
+}
+
+impl match_leaderbaordQueryTableAccess for __sdk::QueryTableAccessor {
+    fn match_leaderbaord(&self) -> __sdk::__query_builder::Table<LeaderboardEntry> {
+        __sdk::__query_builder::Table::new("match_leaderbaord")
+    }
+}

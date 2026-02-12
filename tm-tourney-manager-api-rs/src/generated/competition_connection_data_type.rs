@@ -17,3 +17,45 @@ pub struct CompetitionConnectionData {
 impl __sdk::InModule for CompetitionConnectionData {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `CompetitionConnectionData`.
+///
+/// Provides typed access to columns for query building.
+pub struct CompetitionConnectionDataCols {
+    pub competition_id: __sdk::__query_builder::Col<CompetitionConnectionData, u32>,
+    pub connection_id: __sdk::__query_builder::Col<CompetitionConnectionData, u32>,
+    pub count_top: __sdk::__query_builder::Col<CompetitionConnectionData, Option<u8>>,
+    pub count_bottom: __sdk::__query_builder::Col<CompetitionConnectionData, Option<u8>>,
+    pub custom_list: __sdk::__query_builder::Col<CompetitionConnectionData, Vec<u8>>,
+}
+
+impl __sdk::__query_builder::HasCols for CompetitionConnectionData {
+    type Cols = CompetitionConnectionDataCols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        CompetitionConnectionDataCols {
+            competition_id: __sdk::__query_builder::Col::new(table_name, "competition_id"),
+            connection_id: __sdk::__query_builder::Col::new(table_name, "connection_id"),
+            count_top: __sdk::__query_builder::Col::new(table_name, "count_top"),
+            count_bottom: __sdk::__query_builder::Col::new(table_name, "count_bottom"),
+            custom_list: __sdk::__query_builder::Col::new(table_name, "custom_list"),
+        }
+    }
+}
+
+/// Indexed column accessor struct for the table `CompetitionConnectionData`.
+///
+/// Provides typed access to indexed columns for query building.
+pub struct CompetitionConnectionDataIxCols {
+    pub competition_id: __sdk::__query_builder::IxCol<CompetitionConnectionData, u32>,
+    pub connection_id: __sdk::__query_builder::IxCol<CompetitionConnectionData, u32>,
+}
+
+impl __sdk::__query_builder::HasIxCols for CompetitionConnectionData {
+    type IxCols = CompetitionConnectionDataIxCols;
+    fn ix_cols(table_name: &'static str) -> Self::IxCols {
+        CompetitionConnectionDataIxCols {
+            competition_id: __sdk::__query_builder::IxCol::new(table_name, "competition_id"),
+            connection_id: __sdk::__query_builder::IxCol::new(table_name, "connection_id"),
+        }
+    }
+}

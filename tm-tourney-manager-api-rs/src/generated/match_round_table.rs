@@ -93,3 +93,19 @@ pub(super) fn parse_table_update(
             .into()
     })
 }
+
+#[allow(non_camel_case_types)]
+/// Extension trait for query builder access to the table `RoundStandings`.
+///
+/// Implemented for [`__sdk::QueryTableAccessor`].
+pub trait match_roundQueryTableAccess {
+    #[allow(non_snake_case)]
+    /// Get a query builder for the table `RoundStandings`.
+    fn match_round(&self) -> __sdk::__query_builder::Table<RoundStandings>;
+}
+
+impl match_roundQueryTableAccess for __sdk::QueryTableAccessor {
+    fn match_round(&self) -> __sdk::__query_builder::Table<RoundStandings> {
+        __sdk::__query_builder::Table::new("match_round")
+    }
+}

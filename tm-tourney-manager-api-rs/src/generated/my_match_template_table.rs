@@ -94,3 +94,19 @@ pub(super) fn parse_table_update(
             .into()
     })
 }
+
+#[allow(non_camel_case_types)]
+/// Extension trait for query builder access to the table `MatchTemplate`.
+///
+/// Implemented for [`__sdk::QueryTableAccessor`].
+pub trait my_match_templateQueryTableAccess {
+    #[allow(non_snake_case)]
+    /// Get a query builder for the table `MatchTemplate`.
+    fn my_match_template(&self) -> __sdk::__query_builder::Table<MatchTemplate>;
+}
+
+impl my_match_templateQueryTableAccess for __sdk::QueryTableAccessor {
+    fn my_match_template(&self) -> __sdk::__query_builder::Table<MatchTemplate> {
+        __sdk::__query_builder::Table::new("my_match_template")
+    }
+}

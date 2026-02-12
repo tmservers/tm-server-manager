@@ -5,6 +5,10 @@ use spacetimedb::{Identity, Query, ReducerContext, Table, Uuid, ViewContext};
 use spacetimedb::{ProcedureContext, view};
 use tm_server_types::{config::ServerConfig, event::Event};
 
+use crate::raw_server::config::{
+    TmRawServerConfig, TmRawServerConfigOwned, tab_raw_server_config, tab_raw_server_config_owned,
+};
+
 pub mod config;
 pub mod event;
 pub mod method;
@@ -91,9 +95,7 @@ pub fn login_as_server(
     login: String,
     password: String,
     account_id: Uuid,
-)
-/* -> Result<(), String> */
-{
+) -> Result<(), String> {
     let request = Request::builder()
         .method("POST")
         .uri("https://prod.trackmania.core.nadeo.online/v2/authentication/token/basic")
@@ -107,22 +109,20 @@ pub fn login_as_server(
         .header("Content-Type", "application/json")
         .header("User-Agent", "tm-tourney-manager | central")
         .body(r#"{ "audience": "NadeoServices" }"#)
-        .unwrap();
+        //TODO see what would be a good error message
+        .map_err(|e| e.to_string())?;
     let result = ctx.http.send(request).unwrap();
 
     let status = result.status();
 
     if !status.is_success() {
         log::error!("API request was not a success");
-        //TODO remove panic once we can return Result
-        // return Err("Server registration failed because credential were wrong".into());
-
-        panic!()
+        return Err("Server registration failed because credential were wrong".into());
     }
 
     let identity = ctx.sender;
 
-    ctx.with_tx(|ctx| {
+    ctx.try_with_tx::<(), String>(|ctx| {
         /* if ctx
             .db
             .tab_raw_server_online()
@@ -137,24 +137,27 @@ pub fn login_as_server(
             // The new identity is assigned to the server.
             server.set_identity(ctx.identity());
             ctx.db.tab_raw_server().server_login().update(server);
-            //Ok(())
         } else {
             // Server has never been seen before so create a new one.
-            ctx.db.tab_raw_server().insert(RawServerV1 {
+
+            let server = ctx.db.tab_raw_server().try_insert(RawServerV1 {
                 //online: true,
                 server_login: login.clone(),
                 active_match: None,
                 account_id,
-                //config: ServerConfig::default(),
-                //state: ServerState::default(),
                 identity,
                 capturable: true,
                 verified: false,
                 online: true,
-            });
-            //Ok(())
+            })?;
+            ctx.db
+                .tab_raw_server_config_owned()
+                .try_insert(TmRawServerConfigOwned::new(server.server_login))?;
         }
-    });
+        Ok(())
+    })?;
+
+    Ok(())
 }
 
 /* #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]

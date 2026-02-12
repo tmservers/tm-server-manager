@@ -15,3 +15,23 @@ pub struct RoundStandings {
 impl __sdk::InModule for RoundStandings {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `RoundStandings`.
+///
+/// Provides typed access to columns for query building.
+pub struct RoundStandingsCols {
+    pub account_id: __sdk::__query_builder::Col<RoundStandings, String>,
+    pub account_name: __sdk::__query_builder::Col<RoundStandings, String>,
+    pub score: __sdk::__query_builder::Col<RoundStandings, i32>,
+}
+
+impl __sdk::__query_builder::HasCols for RoundStandings {
+    type Cols = RoundStandingsCols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        RoundStandingsCols {
+            account_id: __sdk::__query_builder::Col::new(table_name, "account_id"),
+            account_name: __sdk::__query_builder::Col::new(table_name, "account_name"),
+            score: __sdk::__query_builder::Col::new(table_name, "score"),
+        }
+    }
+}

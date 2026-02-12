@@ -13,7 +13,7 @@ import {
 import MethodCall from "./method_call_type";
 
 export default {
-  serverId: __t.string(),
+  serverLogin: __t.string(),
   get method() {
     return MethodCall;
   },

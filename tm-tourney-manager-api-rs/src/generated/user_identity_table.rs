@@ -142,3 +142,19 @@ impl<'ctx> UserIdentityIdentityUnique<'ctx> {
         self.imp.find(col_val)
     }
 }
+
+#[allow(non_camel_case_types)]
+/// Extension trait for query builder access to the table `UserIdentity`.
+///
+/// Implemented for [`__sdk::QueryTableAccessor`].
+pub trait user_identityQueryTableAccess {
+    #[allow(non_snake_case)]
+    /// Get a query builder for the table `UserIdentity`.
+    fn user_identity(&self) -> __sdk::__query_builder::Table<UserIdentity>;
+}
+
+impl user_identityQueryTableAccess for __sdk::QueryTableAccessor {
+    fn user_identity(&self) -> __sdk::__query_builder::Table<UserIdentity> {
+        __sdk::__query_builder::Table::new("user_identity")
+    }
+}

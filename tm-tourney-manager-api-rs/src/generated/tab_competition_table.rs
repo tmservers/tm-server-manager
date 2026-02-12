@@ -142,3 +142,19 @@ impl<'ctx> TabCompetitionIdUnique<'ctx> {
         self.imp.find(col_val)
     }
 }
+
+#[allow(non_camel_case_types)]
+/// Extension trait for query builder access to the table `CompetitionV1`.
+///
+/// Implemented for [`__sdk::QueryTableAccessor`].
+pub trait tab_competitionQueryTableAccess {
+    #[allow(non_snake_case)]
+    /// Get a query builder for the table `CompetitionV1`.
+    fn tab_competition(&self) -> __sdk::__query_builder::Table<CompetitionV1>;
+}
+
+impl tab_competitionQueryTableAccess for __sdk::QueryTableAccessor {
+    fn tab_competition(&self) -> __sdk::__query_builder::Table<CompetitionV1> {
+        __sdk::__query_builder::Table::new("tab_competition")
+    }
+}

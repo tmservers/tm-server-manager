@@ -9,21 +9,13 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
-import ServerConfig from "./server_config_type";
-import ServerState from "./server_state_type";
-
 
 export default __t.row({
-  tmLogin: __t.string().name("tm_login"),
   identity: __t.identity(),
-  ownerId: __t.string().name("owner_id"),
-  get config() {
-    return ServerConfig;
-  },
-  get state() {
-    return ServerState;
-  },
+  accountId: __t.uuid().name("account_id"),
+  serverLogin: __t.string().name("server_login"),
+  activeMatch: __t.option(__t.u32()).name("active_match"),
+  online: __t.bool(),
   capturable: __t.bool(),
   verified: __t.bool(),
-  activeMatch: __t.option(__t.u32()).name("active_match"),
 });

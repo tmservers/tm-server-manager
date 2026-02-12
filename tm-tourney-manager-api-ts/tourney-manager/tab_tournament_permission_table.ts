@@ -9,15 +9,9 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
-import ServerConfig from "./server_config_type";
 
-
-export default __t.object("TmServerConfig", {
-  id: __t.u32(),
-  accountId: __t.uuid(),
-  get config() {
-    return ServerConfig;
-  },
+export default __t.row({
+  tournamentId: __t.u32().name("tournament_id"),
+  bucket1: __t.u64(),
+  accountId: __t.uuid().name("account_id"),
 });
-
-
