@@ -1,37 +1,85 @@
-/// Makinig the server completly stateless and only a shell for physics calculation and managing the players.
-/* #[derive(Debug)]
-#[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
-pub struct ServerState {
-    players: Vec<String>,
-    paused: bool,
-}
+use spacetimedb::{ReducerContext, Table, Uuid, reducer, table};
 
-impl Default for ServerState {
-    fn default() -> Self {
-        Self {
-            players: Default::default(),
-            paused: false,
-        }
-    }
-} */
-
-/* #[derive(Debug)]
-#[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
-struct ModeState {} */
-// Time Attack rows only need match uid, time, player uid player name and ghost uuid
-// can be sorted client side after all
-// This would mean that its completly separate from the tournament system which is pretty nice.
-// Also could snapsot it probably to build a custom leaderboard.
-//Open question is how to do proper auth for polling clients.
-use spacetimedb::{Uuid, table};
+use crate::authorization::Authorization;
 
 #[derive(Debug)]
-#[table(name = tab_raw_server_players)]
-#[table(name = tab_raw_server_spectators)]
-pub struct TmRawServerEntity {
-    #[index(btree)]
-    pub(crate) match_id: u32,
+#[table(name = tab_raw_server_player)]
+pub struct RawServerPlayer {
+    #[index(hash)]
+    pub(crate) server_login: String,
 
-    #[unique]
+    #[primary_key]
     pub(crate) account_id: Uuid,
+
+    spectating: bool,
+}
+
+#[reducer]
+fn raw_server_player_add(
+    ctx: &ReducerContext,
+    account_id: Uuid,
+    spectator: bool,
+) -> Result<(), String> {
+    let server = ctx.get_server()?;
+
+    // Player is already present on the network.
+    if let Some(mut player) = ctx.db.tab_raw_server_player().account_id().find(account_id) {
+        if player.server_login == server.server_login {
+            if player.spectating && spectator || !player.spectating && !spectator {
+                return Err("Player was already in the state before the request.".into());
+            }
+            player.spectating = spectator;
+            ctx.db.tab_raw_server_player().account_id().update(player);
+            Ok(())
+        } else {
+            log::error!(
+                "Server {} supposedly owned by {} attempted to modify a player which was on server {}. Sus",
+                server.server_login,
+                server.account_id,
+                player.server_login
+            );
+
+            //TODO should we correct our mistake then because this should not be possible.
+            //On the one hand wwe should trust us more because all servers could be sending malicious request displacing the player.
+            //On the other hand every server can crash or disconnect failing to send the disconnection messages.
+            //I guess we should trust the server but do more validation if it makes sense that the player is actually there or not.
+            Err("Player was already connected to a server on the network.".into())
+        }
+    } else {
+        ctx.db.tab_raw_server_player().try_insert(RawServerPlayer {
+            server_login: server.server_login,
+            account_id,
+            spectating: spectator,
+        })?;
+
+        Ok(())
+    }
+}
+
+#[reducer]
+fn raw_server_player_remove(ctx: &ReducerContext, account_id: Uuid) -> Result<(), String> {
+    let server = ctx.get_server()?;
+
+    if let Some(player) = ctx.db.tab_raw_server_player().account_id().find(account_id) {
+        // Only the current server has permission to disconnect the player.
+        if player.server_login == server.server_login {
+            if !ctx.db.tab_raw_server_player().delete(player) {
+                return Err("Could not delete player!".into());
+            };
+        } else {
+            log::error!(
+                "Server {} supposedly owned by {} attempted to remove a player which was on server {}. Sus",
+                server.server_login,
+                server.account_id,
+                player.server_login
+            );
+            return Err(
+                "Attempted to remove player from another server than he is currently on!".into(),
+            );
+        }
+    } else {
+        return Err("Player was not connected to a server.".into());
+    }
+
+    Ok(())
 }

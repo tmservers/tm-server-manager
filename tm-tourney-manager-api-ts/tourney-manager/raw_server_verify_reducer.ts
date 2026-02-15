@@ -10,7 +10,6 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-export default __t.row({
-  matchId: __t.u32().name("match_id"),
-  accountId: __t.uuid().name("account_id"),
-});
+export default {
+  serverLogin: __t.string(),
+};

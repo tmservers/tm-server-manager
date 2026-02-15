@@ -101,6 +101,7 @@ pub mod play_loop_start_type;
 pub mod player_chat_type;
 pub mod player_connect_type;
 pub mod player_disconnect_type;
+pub mod player_info_type;
 pub mod player_type;
 pub mod podium_type;
 pub mod points_limit_type;
@@ -112,8 +113,13 @@ pub mod raw_server_current_players_table;
 pub mod raw_server_expected_players_table;
 pub mod raw_server_method_call_table;
 pub mod raw_server_method_call_type;
-pub mod raw_server_table;
+pub mod raw_server_player_add_reducer;
+pub mod raw_server_player_remove_reducer;
+pub mod raw_server_player_type;
+pub mod raw_server_pool_table;
+pub mod raw_server_pool_unverified_table;
 pub mod raw_server_v_1_type;
+pub mod raw_server_verify_reducer;
 pub mod register_player_reducer;
 pub mod registered_player_table;
 pub mod registered_player_type;
@@ -151,8 +157,7 @@ pub mod tab_raw_server_config_table;
 pub mod tab_raw_server_method_call_resolved_table;
 pub mod tab_raw_server_method_call_table;
 pub mod tab_raw_server_method_response_table;
-pub mod tab_raw_server_players_table;
-pub mod tab_raw_server_spectators_table;
+pub mod tab_raw_server_player_table;
 pub mod tab_raw_server_table;
 pub mod tab_registered_player_table;
 pub mod tab_registered_team_table;
@@ -181,7 +186,6 @@ pub mod tm_monitoring_table;
 pub mod tm_monitoring_type;
 pub mod tm_raw_server_config_owned_type;
 pub mod tm_raw_server_config_type;
-pub mod tm_raw_server_entity_type;
 pub mod tm_record_type;
 pub mod tm_server_method_response_type;
 pub mod tm_worker_jobs_table;
@@ -359,6 +363,7 @@ pub use play_loop_start_type::PlayLoopStart;
 pub use player_chat_type::PlayerChat;
 pub use player_connect_type::PlayerConnect;
 pub use player_disconnect_type::PlayerDisconnect;
+pub use player_info_type::PlayerInfo;
 pub use player_type::Player;
 pub use podium_type::Podium;
 pub use points_limit_type::PointsLimit;
@@ -370,8 +375,20 @@ pub use raw_server_current_players_table::*;
 pub use raw_server_expected_players_table::*;
 pub use raw_server_method_call_table::*;
 pub use raw_server_method_call_type::RawServerMethodCall;
-pub use raw_server_table::*;
+pub use raw_server_player_add_reducer::{
+    raw_server_player_add, set_flags_for_raw_server_player_add, RawServerPlayerAddCallbackId,
+};
+pub use raw_server_player_remove_reducer::{
+    raw_server_player_remove, set_flags_for_raw_server_player_remove,
+    RawServerPlayerRemoveCallbackId,
+};
+pub use raw_server_player_type::RawServerPlayer;
+pub use raw_server_pool_table::*;
+pub use raw_server_pool_unverified_table::*;
 pub use raw_server_v_1_type::RawServerV1;
+pub use raw_server_verify_reducer::{
+    raw_server_verify, set_flags_for_raw_server_verify, RawServerVerifyCallbackId,
+};
 pub use register_player_reducer::{
     register_player, set_flags_for_register_player, RegisterPlayerCallbackId,
 };
@@ -415,8 +432,7 @@ pub use tab_raw_server_config_table::*;
 pub use tab_raw_server_method_call_resolved_table::*;
 pub use tab_raw_server_method_call_table::*;
 pub use tab_raw_server_method_response_table::*;
-pub use tab_raw_server_players_table::*;
-pub use tab_raw_server_spectators_table::*;
+pub use tab_raw_server_player_table::*;
 pub use tab_raw_server_table::*;
 pub use tab_registered_player_table::*;
 pub use tab_registered_team_table::*;
@@ -445,7 +461,6 @@ pub use tm_monitoring_table::*;
 pub use tm_monitoring_type::TmMonitoring;
 pub use tm_raw_server_config_owned_type::TmRawServerConfigOwned;
 pub use tm_raw_server_config_type::TmRawServerConfig;
-pub use tm_raw_server_entity_type::TmRawServerEntity;
 pub use tm_record_type::TmRecord;
 pub use tm_server_method_response_type::TmServerMethodResponse;
 pub use tm_worker_jobs_table::*;
@@ -600,6 +615,16 @@ pub enum Reducer {
         account_id: __sdk::Uuid,
         time: u32,
     },
+    RawServerPlayerAdd {
+        account_id: __sdk::Uuid,
+        spectator: bool,
+    },
+    RawServerPlayerRemove {
+        account_id: __sdk::Uuid,
+    },
+    RawServerVerify {
+        server_login: String,
+    },
     RegisterPlayer {
         competition_id: u32,
     },
@@ -672,6 +697,9 @@ impl __sdk::Reducer for Reducer {
             }
             Reducer::PostEvent { .. } => "post_event",
             Reducer::PostRecord { .. } => "post_record",
+            Reducer::RawServerPlayerAdd { .. } => "raw_server_player_add",
+            Reducer::RawServerPlayerRemove { .. } => "raw_server_player_remove",
+            Reducer::RawServerVerify { .. } => "raw_server_verify",
             Reducer::RegisterPlayer { .. } => "register_player",
             Reducer::ServerMethodCall { .. } => "server_method_call",
             Reducer::ServerMethodResponse { .. } => "server_method_response",
@@ -717,6 +745,9 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "on_tournament_status_schedule_triggered" => Ok(__sdk::parse_reducer_args::<on_tournament_status_schedule_triggered_reducer::OnTournamentStatusScheduleTriggeredArgs>("on_tournament_status_schedule_triggered", &value.args)?.into()),
             "post_event" => Ok(__sdk::parse_reducer_args::<post_event_reducer::PostEventArgs>("post_event", &value.args)?.into()),
             "post_record" => Ok(__sdk::parse_reducer_args::<post_record_reducer::PostRecordArgs>("post_record", &value.args)?.into()),
+            "raw_server_player_add" => Ok(__sdk::parse_reducer_args::<raw_server_player_add_reducer::RawServerPlayerAddArgs>("raw_server_player_add", &value.args)?.into()),
+            "raw_server_player_remove" => Ok(__sdk::parse_reducer_args::<raw_server_player_remove_reducer::RawServerPlayerRemoveArgs>("raw_server_player_remove", &value.args)?.into()),
+            "raw_server_verify" => Ok(__sdk::parse_reducer_args::<raw_server_verify_reducer::RawServerVerifyArgs>("raw_server_verify", &value.args)?.into()),
             "register_player" => Ok(__sdk::parse_reducer_args::<register_player_reducer::RegisterPlayerArgs>("register_player", &value.args)?.into()),
             "server_method_call" => Ok(__sdk::parse_reducer_args::<server_method_call_reducer::ServerMethodCallArgs>("server_method_call", &value.args)?.into()),
             "server_method_response" => Ok(__sdk::parse_reducer_args::<server_method_response_reducer::ServerMethodResponseArgs>("server_method_response", &value.args)?.into()),
@@ -750,11 +781,12 @@ pub struct DbUpdate {
     my_jobs: __sdk::TableUpdate<TmWorkerJobs>,
     my_match_template: __sdk::TableUpdate<MatchTemplate>,
     my_tournament: __sdk::TableUpdate<MyTournamentV1>,
-    raw_server: __sdk::TableUpdate<RawServerV1>,
     raw_server_config: __sdk::TableUpdate<ServerConfig>,
     raw_server_current_players: __sdk::TableUpdate<RawServerV1>,
     raw_server_expected_players: __sdk::TableUpdate<RawServerV1>,
     raw_server_method_call: __sdk::TableUpdate<RawServerMethodCall>,
+    raw_server_pool: __sdk::TableUpdate<RawServerV1>,
+    raw_server_pool_unverified: __sdk::TableUpdate<RawServerV1>,
     registered_player: __sdk::TableUpdate<RegisteredPlayer>,
     schedule: __sdk::TableUpdate<ScheduleV1>,
     tab_competition: __sdk::TableUpdate<CompetitionV1>,
@@ -767,8 +799,7 @@ pub struct DbUpdate {
     tab_raw_server_method_call: __sdk::TableUpdate<RawServerMethodCall>,
     tab_raw_server_method_call_resolved: __sdk::TableUpdate<RawServerMethodCall>,
     tab_raw_server_method_response: __sdk::TableUpdate<TmServerMethodResponse>,
-    tab_raw_server_players: __sdk::TableUpdate<TmRawServerEntity>,
-    tab_raw_server_spectators: __sdk::TableUpdate<TmRawServerEntity>,
+    tab_raw_server_player: __sdk::TableUpdate<RawServerPlayer>,
     tab_registered_player: __sdk::TableUpdate<RegisteredPlayer>,
     tab_registered_team: __sdk::TableUpdate<RegisteredTeam>,
     tab_schedule: __sdk::TableUpdate<ScheduleV1>,
@@ -847,9 +878,6 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "my_tournament" => db_update
                     .my_tournament
                     .append(my_tournament_table::parse_table_update(table_update)?),
-                "raw_server" => db_update
-                    .raw_server
-                    .append(raw_server_table::parse_table_update(table_update)?),
                 "raw_server_config" => db_update
                     .raw_server_config
                     .append(raw_server_config_table::parse_table_update(table_update)?),
@@ -861,6 +889,12 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 ),
                 "raw_server_method_call" => db_update.raw_server_method_call.append(
                     raw_server_method_call_table::parse_table_update(table_update)?,
+                ),
+                "raw_server_pool" => db_update
+                    .raw_server_pool
+                    .append(raw_server_pool_table::parse_table_update(table_update)?),
+                "raw_server_pool_unverified" => db_update.raw_server_pool_unverified.append(
+                    raw_server_pool_unverified_table::parse_table_update(table_update)?,
                 ),
                 "registered_player" => db_update
                     .registered_player
@@ -906,11 +940,8 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                         tab_raw_server_method_response_table::parse_table_update(table_update)?,
                     )
                 }
-                "tab_raw_server_players" => db_update.tab_raw_server_players.append(
-                    tab_raw_server_players_table::parse_table_update(table_update)?,
-                ),
-                "tab_raw_server_spectators" => db_update.tab_raw_server_spectators.append(
-                    tab_raw_server_spectators_table::parse_table_update(table_update)?,
+                "tab_raw_server_player" => db_update.tab_raw_server_player.append(
+                    tab_raw_server_player_table::parse_table_update(table_update)?,
                 ),
                 "tab_registered_player" => db_update.tab_registered_player.append(
                     tab_registered_player_table::parse_table_update(table_update)?,
@@ -1068,14 +1099,12 @@ impl __sdk::DbUpdate for DbUpdate {
                 &self.tab_raw_server_method_response,
             )
             .with_updates_by_pk(|row| &row.id);
-        diff.tab_raw_server_players = cache.apply_diff_to_table::<TmRawServerEntity>(
-            "tab_raw_server_players",
-            &self.tab_raw_server_players,
-        );
-        diff.tab_raw_server_spectators = cache.apply_diff_to_table::<TmRawServerEntity>(
-            "tab_raw_server_spectators",
-            &self.tab_raw_server_spectators,
-        );
+        diff.tab_raw_server_player = cache
+            .apply_diff_to_table::<RawServerPlayer>(
+                "tab_raw_server_player",
+                &self.tab_raw_server_player,
+            )
+            .with_updates_by_pk(|row| &row.account_id);
         diff.tab_registered_player = cache.apply_diff_to_table::<RegisteredPlayer>(
             "tab_registered_player",
             &self.tab_registered_player,
@@ -1165,7 +1194,6 @@ impl __sdk::DbUpdate for DbUpdate {
             .apply_diff_to_table::<MatchTemplate>("my_match_template", &self.my_match_template);
         diff.my_tournament =
             cache.apply_diff_to_table::<MyTournamentV1>("my_tournament", &self.my_tournament);
-        diff.raw_server = cache.apply_diff_to_table::<RawServerV1>("raw_server", &self.raw_server);
         diff.raw_server_config =
             cache.apply_diff_to_table::<ServerConfig>("raw_server_config", &self.raw_server_config);
         diff.raw_server_current_players = cache.apply_diff_to_table::<RawServerV1>(
@@ -1179,6 +1207,12 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.raw_server_method_call = cache.apply_diff_to_table::<RawServerMethodCall>(
             "raw_server_method_call",
             &self.raw_server_method_call,
+        );
+        diff.raw_server_pool =
+            cache.apply_diff_to_table::<RawServerV1>("raw_server_pool", &self.raw_server_pool);
+        diff.raw_server_pool_unverified = cache.apply_diff_to_table::<RawServerV1>(
+            "raw_server_pool_unverified",
+            &self.raw_server_pool_unverified,
         );
         diff.registered_player = cache
             .apply_diff_to_table::<RegisteredPlayer>("registered_player", &self.registered_player);
@@ -1213,11 +1247,12 @@ pub struct AppliedDiff<'r> {
     my_jobs: __sdk::TableAppliedDiff<'r, TmWorkerJobs>,
     my_match_template: __sdk::TableAppliedDiff<'r, MatchTemplate>,
     my_tournament: __sdk::TableAppliedDiff<'r, MyTournamentV1>,
-    raw_server: __sdk::TableAppliedDiff<'r, RawServerV1>,
     raw_server_config: __sdk::TableAppliedDiff<'r, ServerConfig>,
     raw_server_current_players: __sdk::TableAppliedDiff<'r, RawServerV1>,
     raw_server_expected_players: __sdk::TableAppliedDiff<'r, RawServerV1>,
     raw_server_method_call: __sdk::TableAppliedDiff<'r, RawServerMethodCall>,
+    raw_server_pool: __sdk::TableAppliedDiff<'r, RawServerV1>,
+    raw_server_pool_unverified: __sdk::TableAppliedDiff<'r, RawServerV1>,
     registered_player: __sdk::TableAppliedDiff<'r, RegisteredPlayer>,
     schedule: __sdk::TableAppliedDiff<'r, ScheduleV1>,
     tab_competition: __sdk::TableAppliedDiff<'r, CompetitionV1>,
@@ -1230,8 +1265,7 @@ pub struct AppliedDiff<'r> {
     tab_raw_server_method_call: __sdk::TableAppliedDiff<'r, RawServerMethodCall>,
     tab_raw_server_method_call_resolved: __sdk::TableAppliedDiff<'r, RawServerMethodCall>,
     tab_raw_server_method_response: __sdk::TableAppliedDiff<'r, TmServerMethodResponse>,
-    tab_raw_server_players: __sdk::TableAppliedDiff<'r, TmRawServerEntity>,
-    tab_raw_server_spectators: __sdk::TableAppliedDiff<'r, TmRawServerEntity>,
+    tab_raw_server_player: __sdk::TableAppliedDiff<'r, RawServerPlayer>,
     tab_registered_player: __sdk::TableAppliedDiff<'r, RegisteredPlayer>,
     tab_registered_team: __sdk::TableAppliedDiff<'r, RegisteredTeam>,
     tab_schedule: __sdk::TableAppliedDiff<'r, ScheduleV1>,
@@ -1327,7 +1361,6 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             &self.my_tournament,
             event,
         );
-        callbacks.invoke_table_row_callbacks::<RawServerV1>("raw_server", &self.raw_server, event);
         callbacks.invoke_table_row_callbacks::<ServerConfig>(
             "raw_server_config",
             &self.raw_server_config,
@@ -1346,6 +1379,16 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
         callbacks.invoke_table_row_callbacks::<RawServerMethodCall>(
             "raw_server_method_call",
             &self.raw_server_method_call,
+            event,
+        );
+        callbacks.invoke_table_row_callbacks::<RawServerV1>(
+            "raw_server_pool",
+            &self.raw_server_pool,
+            event,
+        );
+        callbacks.invoke_table_row_callbacks::<RawServerV1>(
+            "raw_server_pool_unverified",
+            &self.raw_server_pool_unverified,
             event,
         );
         callbacks.invoke_table_row_callbacks::<RegisteredPlayer>(
@@ -1404,14 +1447,9 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             &self.tab_raw_server_method_response,
             event,
         );
-        callbacks.invoke_table_row_callbacks::<TmRawServerEntity>(
-            "tab_raw_server_players",
-            &self.tab_raw_server_players,
-            event,
-        );
-        callbacks.invoke_table_row_callbacks::<TmRawServerEntity>(
-            "tab_raw_server_spectators",
-            &self.tab_raw_server_spectators,
+        callbacks.invoke_table_row_callbacks::<RawServerPlayer>(
+            "tab_raw_server_player",
+            &self.tab_raw_server_player,
             event,
         );
         callbacks.invoke_table_row_callbacks::<RegisteredPlayer>(
@@ -2240,11 +2278,12 @@ impl __sdk::SpacetimeModule for RemoteModule {
         my_jobs_table::register_table(client_cache);
         my_match_template_table::register_table(client_cache);
         my_tournament_table::register_table(client_cache);
-        raw_server_table::register_table(client_cache);
         raw_server_config_table::register_table(client_cache);
         raw_server_current_players_table::register_table(client_cache);
         raw_server_expected_players_table::register_table(client_cache);
         raw_server_method_call_table::register_table(client_cache);
+        raw_server_pool_table::register_table(client_cache);
+        raw_server_pool_unverified_table::register_table(client_cache);
         registered_player_table::register_table(client_cache);
         schedule_table::register_table(client_cache);
         tab_competition_table::register_table(client_cache);
@@ -2257,8 +2296,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
         tab_raw_server_method_call_table::register_table(client_cache);
         tab_raw_server_method_call_resolved_table::register_table(client_cache);
         tab_raw_server_method_response_table::register_table(client_cache);
-        tab_raw_server_players_table::register_table(client_cache);
-        tab_raw_server_spectators_table::register_table(client_cache);
+        tab_raw_server_player_table::register_table(client_cache);
         tab_registered_player_table::register_table(client_cache);
         tab_registered_team_table::register_table(client_cache);
         tab_schedule_table::register_table(client_cache);

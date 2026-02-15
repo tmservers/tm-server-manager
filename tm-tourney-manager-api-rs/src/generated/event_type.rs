@@ -21,6 +21,7 @@ use super::play_loop_start_type::PlayLoopStart;
 use super::player_chat_type::PlayerChat;
 use super::player_connect_type::PlayerConnect;
 use super::player_disconnect_type::PlayerDisconnect;
+use super::player_info_type::PlayerInfo;
 use super::podium_type::Podium;
 use super::respawn_type::Respawn;
 use super::scores_type::Scores;
@@ -69,6 +70,8 @@ pub enum Event {
     PlayerDisconnect(PlayerDisconnect),
 
     PlayerChat(PlayerChat),
+
+    PlayerInfoChanged(PlayerInfo),
 
     StartTurnStart(StartTurn),
 

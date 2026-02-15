@@ -10,9 +10,10 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-export default __t.object("TmRawServerEntity", {
-  matchId: __t.u32(),
+export default __t.object("RawServerPlayer", {
+  serverLogin: __t.string(),
   accountId: __t.uuid(),
+  spectating: __t.bool(),
 });
 
 

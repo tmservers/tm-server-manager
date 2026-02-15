@@ -12,7 +12,7 @@ pub async fn configure(server_config: ServerConfig) {
     let configuration = unsafe {
         std::mem::transmute::<
             tm_tourney_manager_api_rs::ServerConfig,
-            tm_server_controller::types::config::ServerConfig,
+            tm_server_controller::config::ServerConfig,
         >(server_config)
     };
 

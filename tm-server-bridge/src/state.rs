@@ -1,7 +1,29 @@
-use tm_server_controller::method::{ModeScriptMethodsXmlRpc, XmlRpcMethods};
-use tracing::{info, warn};
+use spacetimedb_sdk::Uuid;
+use tm_server_controller::{
+    callbacks::TypedCallbacks,
+    method::{ModeScriptMethodsXmlRpc, XmlRpcMethods},
+};
+use tm_tourney_manager_api_rs::{raw_server_player_add, raw_server_player_remove};
 
 use crate::{SPACETIME, TRACKMANIA};
+
+pub async fn setup_state_synchronization() {
+    let server = TRACKMANIA.wait();
+
+    server.on_player_connect(|player| {
+        _ = SPACETIME.wait().reducers.raw_server_player_add(
+            Uuid::parse_str(&player.account_id).unwrap(),
+            player.is_spectator,
+        )
+    });
+
+    server.on_player_disconnect(|player| {
+        _ = SPACETIME
+            .wait()
+            .reducers
+            .raw_server_player_remove(Uuid::parse_str(&player.account_id).unwrap())
+    });
+}
 
 /// Synchronizes all the state already present on the server with spacetime db.
 pub async fn sync() {
@@ -9,9 +31,17 @@ pub async fn sync() {
     let spacetime = SPACETIME.wait();
     if let Ok(players) = local_server.get_player_list().await {
         for player in players {
-            if player.SpectatorStatus == 0 {}
+            //TODO investigate spectator status return again.
+            if player.spectator_status == 0 {
+                _ = spacetime
+                    .reducers
+                    .raw_server_player_add(Uuid::parse_str(&player.account_id).unwrap(), false);
+            } else {
+                _ = spacetime
+                    .reducers
+                    .raw_server_player_add(Uuid::parse_str(&player.account_id).unwrap(), true);
+            }
         }
-        //spacetime.reducers.set_tm_server_state()
     } else {
         tracing::error!(
             "Failed to fetch the player list and thus could not syncronize server state! Aborting.."

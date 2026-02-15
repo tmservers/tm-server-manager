@@ -5,42 +5,42 @@
 use super::raw_server_v_1_type::RawServerV1;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-/// Table handle for the table `raw_server`.
+/// Table handle for the table `raw_server_pool`.
 ///
-/// Obtain a handle from the [`RawServerTableAccess::raw_server`] method on [`super::RemoteTables`],
-/// like `ctx.db.raw_server()`.
+/// Obtain a handle from the [`RawServerPoolTableAccess::raw_server_pool`] method on [`super::RemoteTables`],
+/// like `ctx.db.raw_server_pool()`.
 ///
 /// Users are encouraged not to explicitly reference this type,
 /// but to directly chain method calls,
-/// like `ctx.db.raw_server().on_insert(...)`.
-pub struct RawServerTableHandle<'ctx> {
+/// like `ctx.db.raw_server_pool().on_insert(...)`.
+pub struct RawServerPoolTableHandle<'ctx> {
     imp: __sdk::TableHandle<RawServerV1>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the table `raw_server`.
+/// Extension trait for access to the table `raw_server_pool`.
 ///
 /// Implemented for [`super::RemoteTables`].
-pub trait RawServerTableAccess {
+pub trait RawServerPoolTableAccess {
     #[allow(non_snake_case)]
-    /// Obtain a [`RawServerTableHandle`], which mediates access to the table `raw_server`.
-    fn raw_server(&self) -> RawServerTableHandle<'_>;
+    /// Obtain a [`RawServerPoolTableHandle`], which mediates access to the table `raw_server_pool`.
+    fn raw_server_pool(&self) -> RawServerPoolTableHandle<'_>;
 }
 
-impl RawServerTableAccess for super::RemoteTables {
-    fn raw_server(&self) -> RawServerTableHandle<'_> {
-        RawServerTableHandle {
-            imp: self.imp.get_table::<RawServerV1>("raw_server"),
+impl RawServerPoolTableAccess for super::RemoteTables {
+    fn raw_server_pool(&self) -> RawServerPoolTableHandle<'_> {
+        RawServerPoolTableHandle {
+            imp: self.imp.get_table::<RawServerV1>("raw_server_pool"),
             ctx: std::marker::PhantomData,
         }
     }
 }
 
-pub struct RawServerInsertCallbackId(__sdk::CallbackId);
-pub struct RawServerDeleteCallbackId(__sdk::CallbackId);
+pub struct RawServerPoolInsertCallbackId(__sdk::CallbackId);
+pub struct RawServerPoolDeleteCallbackId(__sdk::CallbackId);
 
-impl<'ctx> __sdk::Table for RawServerTableHandle<'ctx> {
+impl<'ctx> __sdk::Table for RawServerPoolTableHandle<'ctx> {
     type Row = RawServerV1;
     type EventContext = super::EventContext;
 
@@ -51,36 +51,36 @@ impl<'ctx> __sdk::Table for RawServerTableHandle<'ctx> {
         self.imp.iter()
     }
 
-    type InsertCallbackId = RawServerInsertCallbackId;
+    type InsertCallbackId = RawServerPoolInsertCallbackId;
 
     fn on_insert(
         &self,
         callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
-    ) -> RawServerInsertCallbackId {
-        RawServerInsertCallbackId(self.imp.on_insert(Box::new(callback)))
+    ) -> RawServerPoolInsertCallbackId {
+        RawServerPoolInsertCallbackId(self.imp.on_insert(Box::new(callback)))
     }
 
-    fn remove_on_insert(&self, callback: RawServerInsertCallbackId) {
+    fn remove_on_insert(&self, callback: RawServerPoolInsertCallbackId) {
         self.imp.remove_on_insert(callback.0)
     }
 
-    type DeleteCallbackId = RawServerDeleteCallbackId;
+    type DeleteCallbackId = RawServerPoolDeleteCallbackId;
 
     fn on_delete(
         &self,
         callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
-    ) -> RawServerDeleteCallbackId {
-        RawServerDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
+    ) -> RawServerPoolDeleteCallbackId {
+        RawServerPoolDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
     }
 
-    fn remove_on_delete(&self, callback: RawServerDeleteCallbackId) {
+    fn remove_on_delete(&self, callback: RawServerPoolDeleteCallbackId) {
         self.imp.remove_on_delete(callback.0)
     }
 }
 
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
-    let _table = client_cache.get_or_make_table::<RawServerV1>("raw_server");
+    let _table = client_cache.get_or_make_table::<RawServerV1>("raw_server_pool");
 }
 
 #[doc(hidden)]
@@ -98,14 +98,14 @@ pub(super) fn parse_table_update(
 /// Extension trait for query builder access to the table `RawServerV1`.
 ///
 /// Implemented for [`__sdk::QueryTableAccessor`].
-pub trait raw_serverQueryTableAccess {
+pub trait raw_server_poolQueryTableAccess {
     #[allow(non_snake_case)]
     /// Get a query builder for the table `RawServerV1`.
-    fn raw_server(&self) -> __sdk::__query_builder::Table<RawServerV1>;
+    fn raw_server_pool(&self) -> __sdk::__query_builder::Table<RawServerV1>;
 }
 
-impl raw_serverQueryTableAccess for __sdk::QueryTableAccessor {
-    fn raw_server(&self) -> __sdk::__query_builder::Table<RawServerV1> {
-        __sdk::__query_builder::Table::new("raw_server")
+impl raw_server_poolQueryTableAccess for __sdk::QueryTableAccessor {
+    fn raw_server_pool(&self) -> __sdk::__query_builder::Table<RawServerV1> {
+        __sdk::__query_builder::Table::new("raw_server_pool")
     }
 }

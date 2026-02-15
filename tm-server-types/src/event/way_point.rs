@@ -36,7 +36,7 @@ impl<'a> From<&'a Event> for &'a WayPoint {
     fn from(value: &'a Event) -> Self {
         match value {
             Event::WayPoint(event) => event,
-            _ => panic!("Wrong argument for this"),
+            _ => unreachable!(),
         }
     }
 }

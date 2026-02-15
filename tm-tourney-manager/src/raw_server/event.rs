@@ -16,10 +16,9 @@ use crate::{
 /// Servers call this to post the event stream.
 #[reducer]
 pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
-    let login = ctx.get_server()?;
+    let mut server = ctx.get_server()?;
 
-    if let Some(mut tm_server) = ctx.db.tab_raw_server().server_login().find(login)
-        && let Some(match_id) = tm_server.active_match()
+    if let Some(match_id) = server.active_match()
         && let Some(mut tm_match) = ctx.db.tab_tm_match().id().find(match_id)
         && tm_match.is_live()
         && let Some(mut match_state) = ctx.db.tab_tm_match_state().id().find(match_id)
@@ -41,7 +40,7 @@ pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
                 NodeKindHandle::MatchV1(tm_match.id),
             )?;
 
-            tm_server.release();
+            server.release();
             true
         } else {
             false
@@ -100,7 +99,7 @@ pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
             ctx.db.tab_tm_match_state().id().update(match_state);
         }
         if match_ended {
-            ctx.db.tab_raw_server().server_login().update(tm_server);
+            ctx.db.tab_raw_server().server_login().update(server);
         }
     }
     Ok(())

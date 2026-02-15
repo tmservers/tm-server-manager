@@ -1,6 +1,6 @@
 use dxr::{TryFromParams, TryFromValue};
 
-use crate::base::login_to_account_id;
+use crate::{base::login_to_account_id, event::Event};
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -28,6 +28,16 @@ impl TryFromParams for PlayerChat {
     }
 }
 
+impl<'a> From<&'a Event> for &'a PlayerChat {
+    #[inline]
+    fn from(value: &'a Event) -> Self {
+        match value {
+            Event::PlayerChat(event) => event,
+            _ => unreachable!(),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
@@ -48,6 +58,16 @@ impl TryFromParams for PlayerConnect {
     }
 }
 
+impl<'a> From<&'a Event> for &'a PlayerConnect {
+    #[inline]
+    fn from(value: &'a Event) -> Self {
+        match value {
+            Event::PlayerConenct(event) => event,
+            _ => unreachable!(),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
@@ -65,5 +85,15 @@ impl TryFromParams for PlayerDisconnect {
             account_id: login_to_account_id(&String::try_from_value(&values[0])?),
             disconnect_reason: String::try_from_value(&values[1])?,
         })
+    }
+}
+
+impl<'a> From<&'a Event> for &'a PlayerDisconnect {
+    #[inline]
+    fn from(value: &'a Event) -> Self {
+        match value {
+            Event::PlayerDisconnect(event) => event,
+            _ => unreachable!(),
+        }
     }
 }

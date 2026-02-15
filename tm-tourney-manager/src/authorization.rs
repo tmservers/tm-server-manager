@@ -6,7 +6,7 @@ use std::{
 use spacetimedb::{JwtClaims, ReducerContext, TxContext, Uuid, ViewContext};
 
 use crate::{
-    raw_server::{tab_raw_server, tab_raw_server__view},
+    raw_server::{RawServerV1, tab_raw_server, tab_raw_server__view},
     tournament::{
         permissions::{
             TournamentPermissionV1, TournamentPermissionsV1, tab_tournament_permission,
@@ -15,13 +15,13 @@ use crate::{
         tournament,
     },
     user::{UserV1, tab_user, tab_user__view, user_identity, user_identity__view},
-    worker::{tm_worker, tm_worker__view},
+    worker::{TmWorker, tm_worker, tm_worker__view},
 };
 
 pub(crate) trait Authorization {
     fn get_user(&self) -> Result<UserV1, String>;
-    fn get_server(&self) -> Result<String, String>;
-    fn get_worker(&self) -> Result<String, String>;
+    fn get_server(&self) -> Result<RawServerV1, String>;
+    fn get_worker(&self) -> Result<TmWorker, String>;
 
     fn tournament_permissions(
         &self,
@@ -43,18 +43,18 @@ impl Authorization for ReducerContext {
         Ok(user)
     }
 
-    fn get_server(&self) -> Result<String, String> {
+    fn get_server(&self) -> Result<RawServerV1, String> {
         if let Some(server) = self.db.tab_raw_server().identity().find(self.sender) {
-            return Ok(server.server_login.clone());
+            return Ok(server);
         }
 
         //TODO
         Err("Tried to use a reducer meant for Servers without the proper Authentication.".into())
     }
 
-    fn get_worker(&self) -> Result<String, String> {
+    fn get_worker(&self) -> Result<TmWorker, String> {
         if let Some(worker) = self.db.tm_worker().identity().find(self.sender) {
-            return Ok(worker.tm_login.clone());
+            return Ok(worker);
         }
 
         //TODO
@@ -92,18 +92,18 @@ impl Authorization for ViewContext {
         Ok(user)
     }
 
-    fn get_server(&self) -> Result<String, String> {
+    fn get_server(&self) -> Result<RawServerV1, String> {
         if let Some(server) = self.db.tab_raw_server().identity().find(self.sender) {
-            return Ok(server.server_login.clone());
+            return Ok(server);
         }
 
         //TODO
         Err("Tried to use a reducer meant for Servers without the proper Authentication.".into())
     }
 
-    fn get_worker(&self) -> Result<String, String> {
+    fn get_worker(&self) -> Result<TmWorker, String> {
         if let Some(worker) = self.db.tm_worker().identity().find(self.sender) {
-            return Ok(worker.tm_login.clone());
+            return Ok(worker);
         }
 
         //TODO

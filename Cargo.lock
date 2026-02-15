@@ -4513,6 +4513,7 @@ dependencies = [
  "takumi",
  "testcontainers",
  "tm-server-controller",
+ "tm-server-types",
  "tm-tourney-manager-api-rs",
  "tokio",
  "tracing",

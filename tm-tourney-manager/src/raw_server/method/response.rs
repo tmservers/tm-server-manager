@@ -23,7 +23,7 @@ pub fn server_method_response(
     //TODO do the proper auth
     // the challenge is who is able to access the server? not only owner i guess
 
-    let server_id = ctx.get_server()?;
+    let server = ctx.get_server()?;
 
     let Some(method_call) = ctx.db.tab_raw_server_method_call().id().find(call_id) else {
         return Err(format!(
@@ -31,7 +31,7 @@ pub fn server_method_response(
         ));
     };
 
-    if &server_id != method_call.get_server() {
+    if &server.server_login != method_call.get_server() {
         return Err("Different server responded to the method call. Aborting".into());
     }
 

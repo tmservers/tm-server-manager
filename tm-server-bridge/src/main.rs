@@ -8,14 +8,16 @@ use tm_tourney_manager_api_rs::*;
 
 use tm_server_controller::{
     ClientError, TrackmaniaServer,
+    base::{account_id_to_login, login_to_account_id},
     method::{ModeScriptMethodsXmlRpc, XmlRpcMethods},
-    types::base::{account_id_to_login, login_to_account_id},
 };
 use tokio::{signal, sync::Mutex};
 use tracing::{info, instrument, warn};
 
 use crate::{
-    config::configure, methods::method_call_received, state::sync,
+    config::configure,
+    methods::method_call_received,
+    state::{setup_state_synchronization, sync},
     telemetry::init_tracing_subscriber,
 };
 
@@ -144,7 +146,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
                 #[allow(clippy::single_match)]
                 match &event {
-                    tm_server_controller::types::event::Event::PlayerChat(chat) => {
+                    tm_server_controller::event::Event::PlayerChat(chat) => {
                         tracing::warn!("{}", chat.text);
                         if let Err(error) = server
                             .chat_forward_to_account(&chat.text, &chat.account_id, None)
@@ -157,7 +159,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                     _ => (),
                 }
 
-                if let tm_server_controller::types::event::Event::EndRoundStart(info) = &event {
+                if let tm_server_controller::event::Event::EndRoundStart(info) = &event {
                     let file_name = format!("{}{}", info.count, info.time);
                     if let Err(error) = server.save_current_replay(&file_name).await {
                         tracing::error!(
@@ -208,7 +210,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         //SAFETY: Its the same type. Sadly Rust can not know that :< .
                         unsafe {
                             std::mem::transmute::<
-                                tm_server_controller::types::event::Event,
+                                tm_server_controller::event::Event,
                                 tm_tourney_manager_api_rs::Event,
                             >(event)
                         },
@@ -220,6 +222,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             });
         })
     }
+
+    setup_state_synchronization().await;
 
     // Connect to SpacetimeDB
     {

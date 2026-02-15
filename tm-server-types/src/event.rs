@@ -45,6 +45,8 @@ pub use r#match::*;
 mod server;
 pub use server::*;
 
+use crate::base::PlayerInfo;
+
 /// Can hold every Event trasmitted trough the ModeScript or vanilla events.
 #[derive(Debug, Clone)]
 #[non_exhaustive]
@@ -70,6 +72,7 @@ pub enum Event {
     PlayerConenct(PlayerConnect),
     PlayerDisconnect(PlayerDisconnect),
     PlayerChat(PlayerChat),
+    PlayerInfoChanged(PlayerInfo),
 
     StartTurnStart(StartTurn),
     StartTurnEnd(StartTurn),

@@ -92,6 +92,12 @@ import PostEventReducer from "./post_event_reducer";
 export { PostEventReducer };
 import PostRecordReducer from "./post_record_reducer";
 export { PostRecordReducer };
+import RawServerPlayerAddReducer from "./raw_server_player_add_reducer";
+export { RawServerPlayerAddReducer };
+import RawServerPlayerRemoveReducer from "./raw_server_player_remove_reducer";
+export { RawServerPlayerRemoveReducer };
+import RawServerVerifyReducer from "./raw_server_verify_reducer";
+export { RawServerVerifyReducer };
 import RegisterPlayerReducer from "./register_player_reducer";
 export { RegisterPlayerReducer };
 import ServerMethodCallReducer from "./server_method_call_reducer";
@@ -150,8 +156,6 @@ import MyMatchTemplateRow from "./my_match_template_table";
 export { MyMatchTemplateRow };
 import MyTournamentRow from "./my_tournament_table";
 export { MyTournamentRow };
-import RawServerRow from "./raw_server_table";
-export { RawServerRow };
 import RawServerConfigRow from "./raw_server_config_table";
 export { RawServerConfigRow };
 import RawServerCurrentPlayersRow from "./raw_server_current_players_table";
@@ -160,6 +164,10 @@ import RawServerExpectedPlayersRow from "./raw_server_expected_players_table";
 export { RawServerExpectedPlayersRow };
 import RawServerMethodCallRow from "./raw_server_method_call_table";
 export { RawServerMethodCallRow };
+import RawServerPoolRow from "./raw_server_pool_table";
+export { RawServerPoolRow };
+import RawServerPoolUnverifiedRow from "./raw_server_pool_unverified_table";
+export { RawServerPoolUnverifiedRow };
 import RegisteredPlayerRow from "./registered_player_table";
 export { RegisteredPlayerRow };
 import ScheduleRow from "./schedule_table";
@@ -184,10 +192,8 @@ import TabRawServerMethodCallResolvedRow from "./tab_raw_server_method_call_reso
 export { TabRawServerMethodCallResolvedRow };
 import TabRawServerMethodResponseRow from "./tab_raw_server_method_response_table";
 export { TabRawServerMethodResponseRow };
-import TabRawServerPlayersRow from "./tab_raw_server_players_table";
-export { TabRawServerPlayersRow };
-import TabRawServerSpectatorsRow from "./tab_raw_server_spectators_table";
-export { TabRawServerSpectatorsRow };
+import TabRawServerPlayerRow from "./tab_raw_server_player_table";
+export { TabRawServerPlayerRow };
 import TabRegisteredPlayerRow from "./tab_registered_player_table";
 export { TabRegisteredPlayerRow };
 import TabRegisteredTeamRow from "./tab_registered_team_table";
@@ -336,12 +342,16 @@ import PlayerConnect from "./player_connect_type";
 export { PlayerConnect };
 import PlayerDisconnect from "./player_disconnect_type";
 export { PlayerDisconnect };
+import PlayerInfo from "./player_info_type";
+export { PlayerInfo };
 import Podium from "./podium_type";
 export { Podium };
 import PointsLimit from "./points_limit_type";
 export { PointsLimit };
 import RawServerMethodCall from "./raw_server_method_call_type";
 export { RawServerMethodCall };
+import RawServerPlayer from "./raw_server_player_type";
+export { RawServerPlayer };
 import RawServerV1 from "./raw_server_v_1_type";
 export { RawServerV1 };
 import RegisteredPlayer from "./registered_player_type";
@@ -410,8 +420,6 @@ import TmRawServerConfig from "./tm_raw_server_config_type";
 export { TmRawServerConfig };
 import TmRawServerConfigOwned from "./tm_raw_server_config_owned_type";
 export { TmRawServerConfigOwned };
-import TmRawServerEntity from "./tm_raw_server_entity_type";
-export { TmRawServerEntity };
 import TmRecord from "./tm_record_type";
 export { TmRecord };
 import TmServerMethodResponse from "./tm_server_method_response_type";
@@ -624,33 +632,19 @@ const tablesSchema = __schema(
     ],
   }, TabRawServerMethodResponseRow),
   __table({
-    name: 'tab_raw_server_players',
+    name: 'tab_raw_server_player',
     indexes: [
       { name: 'account_id', algorithm: 'btree', columns: [
         'accountId',
       ] },
-      { name: 'match_id', algorithm: 'btree', columns: [
-        'matchId',
+      { name: 'server_login', algorithm: 'btree', columns: [
+        'serverLogin',
       ] },
     ],
     constraints: [
-      { name: 'tab_raw_server_players_account_id_key', constraint: 'unique', columns: ['accountId'] },
+      { name: 'tab_raw_server_player_account_id_key', constraint: 'unique', columns: ['accountId'] },
     ],
-  }, TabRawServerPlayersRow),
-  __table({
-    name: 'tab_raw_server_spectators',
-    indexes: [
-      { name: 'account_id', algorithm: 'btree', columns: [
-        'accountId',
-      ] },
-      { name: 'match_id', algorithm: 'btree', columns: [
-        'matchId',
-      ] },
-    ],
-    constraints: [
-      { name: 'tab_raw_server_spectators_account_id_key', constraint: 'unique', columns: ['accountId'] },
-    ],
-  }, TabRawServerSpectatorsRow),
+  }, TabRawServerPlayerRow),
   __table({
     name: 'tab_registered_player',
     indexes: [
@@ -971,13 +965,6 @@ const tablesSchema = __schema(
     ],
   }, MyTournamentRow),
   __table({
-    name: 'raw_server',
-    indexes: [
-    ],
-    constraints: [
-    ],
-  }, RawServerRow),
-  __table({
     name: 'raw_server_config',
     indexes: [
     ],
@@ -1005,6 +992,20 @@ const tablesSchema = __schema(
     constraints: [
     ],
   }, RawServerMethodCallRow),
+  __table({
+    name: 'raw_server_pool',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, RawServerPoolRow),
+  __table({
+    name: 'raw_server_pool_unverified',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, RawServerPoolUnverifiedRow),
   __table({
     name: 'registered_player',
     indexes: [
@@ -1078,6 +1079,9 @@ const reducersSchema = __reducers(
   __reducerSchema("on_tournament_status_schedule_triggered", OnTournamentStatusScheduleTriggeredReducer),
   __reducerSchema("post_event", PostEventReducer),
   __reducerSchema("post_record", PostRecordReducer),
+  __reducerSchema("raw_server_player_add", RawServerPlayerAddReducer),
+  __reducerSchema("raw_server_player_remove", RawServerPlayerRemoveReducer),
+  __reducerSchema("raw_server_verify", RawServerVerifyReducer),
   __reducerSchema("register_player", RegisterPlayerReducer),
   __reducerSchema("server_method_call", ServerMethodCallReducer),
   __reducerSchema("server_method_response", ServerMethodResponseReducer),

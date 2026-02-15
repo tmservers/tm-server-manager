@@ -47,6 +47,7 @@ fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
         // - Workers
         // - General purpose applications
         // And dont have the full access for features. (Mostly read perms)
+        log::warn!("Connected Annonymously");
         Ok(())
     }
 }

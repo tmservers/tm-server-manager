@@ -1,4 +1,3 @@
-use tm_server_controller::types::method::{MethodCall, MethodResponse};
 use tm_tourney_manager_api_rs::{EventContext, RawServerMethodCall, server_method_response};
 
 use crate::{SPACETIME, TRACKMANIA};
@@ -12,9 +11,10 @@ pub fn method_call_received(_: &EventContext, method: &RawServerMethodCall) {
             .method(
                 //SAFETY: Its the same type but rust cant know that.
                 unsafe {
-                    std::mem::transmute::<tm_tourney_manager_api_rs::MethodCall, MethodCall>(
-                        new.method,
-                    )
+                    std::mem::transmute::<
+                        tm_tourney_manager_api_rs::MethodCall,
+                        tm_server_types::method::MethodCall,
+                    >(new.method)
                 },
             )
             .await;
@@ -22,9 +22,10 @@ pub fn method_call_received(_: &EventContext, method: &RawServerMethodCall) {
         SPACETIME.wait().reducers.server_method_response(
             new.id, //SAFETY: Its the same type but rust cant know that.
             unsafe {
-                std::mem::transmute::<MethodResponse, tm_tourney_manager_api_rs::MethodResponse>(
-                    response,
-                )
+                std::mem::transmute::<
+                    tm_server_types::method::MethodResponse,
+                    tm_tourney_manager_api_rs::MethodResponse,
+                >(response)
             },
         )
     });

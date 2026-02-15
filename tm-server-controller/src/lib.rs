@@ -1,9 +1,11 @@
 mod core;
 pub mod method;
-pub mod types;
+pub mod callbacks;
 
 pub use core::ClientError;
 pub use core::TrackmaniaServer;
+
+pub use tm_server_types::*;
 
 #[tokio::test]
 async fn server_connect_and_authenticate() {

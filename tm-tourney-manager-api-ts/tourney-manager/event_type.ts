@@ -24,6 +24,7 @@ import UnloadingMapEnd from "./unloading_map_end_type";
 import PlayerConnect from "./player_connect_type";
 import PlayerDisconnect from "./player_disconnect_type";
 import PlayerChat from "./player_chat_type";
+import PlayerInfo from "./player_info_type";
 import StartTurn from "./start_turn_type";
 import EndTurnStart from "./end_turn_start_type";
 import EndTurnEnd from "./end_turn_end_type";
@@ -89,6 +90,9 @@ const Event = __t.enum("Event", {get WayPoint() {
   },
   get PlayerChat() {
     return PlayerChat;
+  },
+  get PlayerInfoChanged() {
+    return PlayerInfo;
   },
   get StartTurnStart() {
     return StartTurn;

@@ -15,6 +15,7 @@ tokio.workspace = true
 
 spacetimedb-sdk.workspace = true
 tm-server-controller.workspace = true
+tm-server-types.workspace = true
 tm-tourney-manager-api-rs.workspace = true
 
 dotenvy.workspace = true

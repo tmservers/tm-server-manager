@@ -10,7 +10,14 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-export default __t.row({
-  matchId: __t.u32().name("match_id"),
-  accountId: __t.uuid().name("account_id"),
+export default __t.object("PlayerInfo", {
+  accountId: __t.string(),
+  nickName: __t.string(),
+  playerId: __t.i32(),
+  teamId: __t.i32(),
+  spectatorStatus: __t.i32(),
+  ladderRanking: __t.i32(),
+  flags: __t.i32(),
 });
+
+
