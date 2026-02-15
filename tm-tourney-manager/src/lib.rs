@@ -20,7 +20,7 @@ pub mod tournament;
 pub mod user;
 pub mod worker;
 
-#[cfg_attr(feature = "spacetime", spacetimedb::reducer(client_connected))]
+#[spacetimedb::reducer(client_connected)]
 fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
     // Execute if one tries to connect authenticated.
     if let Some(jwt) = ctx.sender_auth().jwt() {
@@ -41,19 +41,17 @@ fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
 
         Ok(())
     } else {
-        // The server comes back online.
-        if let Some(mut server) = ctx.db.tab_raw_server().identity().find(ctx.sender) {
-            server.set_online();
-            ctx.db.tab_raw_server().server_login().update(server);
-            Ok(())
-        } else {
-            // Client connects annonymously.
-            Ok(())
-        }
+        // Client connects annonymously.
+        // Annonymous connections are used for:
+        // - Servers
+        // - Workers
+        // - General purpose applications
+        // And dont have the full access for features. (Mostly read perms)
+        Ok(())
     }
 }
 
-#[cfg_attr(feature = "spacetime", spacetimedb::reducer(client_disconnected))]
+#[spacetimedb::reducer(client_disconnected)]
 fn client_disconnected(ctx: &ReducerContext) {
     if let Some(mut server) = ctx.db.tab_raw_server().identity().find(ctx.sender) {
         server.set_offline();

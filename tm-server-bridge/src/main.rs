@@ -38,6 +38,8 @@ static NADEO: OnceLock<Mutex<NadeoClient>> = OnceLock::new();
 /// Path to the Filesystem of the trackmnia server UserData.
 static TRACKMANIA_FILES: OnceLock<String> = OnceLock::new();
 
+static SERVER_CONFIG: OnceLock<ServerConfig> = OnceLock::new();
+
 //static STATE: OnceLock<Mutex<State>> = OnceLock::new();
 
 /// Load credentials from a file and connect to the database.
@@ -229,31 +231,39 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     {
         let spacetime = SPACETIME.wait();
 
+        let tm_account_id = Uuid::parse_str(&tm_account_id)?;
+
+        //TODO proper error handling
+        spacetime.procedures.login_as_server_then(
+            tm_server_login,
+            tm_server_password,
+            tm_account_id,
+            |ctx, result| {
+                let Ok(Ok(dh)) = result else {
+                    std::process::exit(1)
+                };
+            },
+        );
+
         _ = spacetime
             .subscription_builder()
             .on_applied(|_| tracing::debug!("Subscription successfully applied!"))
             .on_error(|_, mhm| tracing::error!("Subscription failed: {mhm:?}"))
             .add_query(|ctx| ctx.from.raw_server_method_call().build())
-            .subscribe(/* [
-                format!("SELECT * FROM tab_raw_server_online WHERE tm_login = '{tm_server_login}'"), //TODO replace with views
-                "SELECT * FROM tm_server_method_call".into(), //TODO this should be possible with views since you should only be able to query the server as a server.
-                                                              //"SELECT * FROM raw_server_expected_players",
-            ] */);
+            .subscribe();
+        /* [
+            format!("SELECT * FROM tab_raw_server_online WHERE tm_login = '{tm_server_login}'"), //TODO replace with views
+            "SELECT * FROM tm_server_method_call".into(), //TODO this should be possible with views since you should only be able to query the server as a server.
+                                                          //"SELECT * FROM raw_server_expected_players",
+        ] */
 
         _ = spacetime
             .subscription_builder()
             .add_query(|ctx| ctx.from.raw_server_config().build())
             .subscribe();
 
-        let tm_account_id = Uuid::parse_str(&tm_account_id)?;
-
-        //TODO check if connecting has succeeded
-        spacetime
-            .procedures
-            .login_as_server(tm_server_login, tm_server_password, tm_account_id);
-
         //TODO switch to this_server if on_update callbacks are there
-        spacetime.db.raw_server_config().on_insert(server_bootstrap);
+        spacetime.db.raw_server_config().on_insert(config_bootstrap);
         //spacetime.db.tab_raw_server().on_update(server_update);
 
         spacetime
@@ -307,34 +317,28 @@ fn on_disconnected(_ctx: &ErrorContext, err: Option<Error>) {
     }
 } */
 
-fn server_bootstrap(ctx: &EventContext, new: &ServerConfig) {
+fn config_bootstrap(ctx: &EventContext, new: &ServerConfig) {
     let local_server = TRACKMANIA.wait();
     let new = new.clone();
     tokio::spawn(async move {
-        let _: Result<bool, ClientError> = local_server
-            .call(
-                "ChatSendServerMessage",
-                "[tm-server-bridge] Bootstrapping the server!",
-            )
+        _ = local_server
+            .chat_send_server_massage("[tm-server-bridge] Bootstrapping the server!")
             .await;
 
         configure(new).await;
         sync().await;
 
-        let _: Result<bool, ClientError> = local_server
-            .call(
-                "ChatSendServerMessage",
-                "[tm-server-bridge] Bootstrapping successfull :>",
-            )
+        _ = local_server
+            .chat_send_server_massage("[tm-server-bridge] Bootstrapping successfull :>")
             .await;
 
-        test_takumi_render_ui().await;
+        //test_takumi_render_ui().await;
 
         //local_server.ui_modules_get_properties().await
     });
 }
 
-async fn test_takumi_render_ui() {
+/* async fn test_takumi_render_ui() {
     /*  let node: NodeKind = NodeKind::Text(TextNode {
         style: None,
         text: "huh".into(),
@@ -367,4 +371,4 @@ async fn test_takumi_render_ui() {
                false,
            )
            .await; */
-}
+} */

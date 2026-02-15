@@ -1,10 +1,11 @@
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
 use spacetimedb::http::Request;
-use spacetimedb::{Identity, Query, ReducerContext, Table, Uuid, ViewContext};
+use spacetimedb::{Identity, Query, ReducerContext, Table, Uuid, ViewContext, reducer};
 use spacetimedb::{ProcedureContext, view};
 use tm_server_types::{config::ServerConfig, event::Event};
 
+use crate::authorization::Authorization;
 use crate::raw_server::config::{
     TmRawServerConfig, TmRawServerConfigOwned, tab_raw_server_config, tab_raw_server_config_owned,
 };
@@ -19,7 +20,7 @@ pub struct RawServerV1 {
     #[unique]
     pub identity: Identity,
     /// Each server also has a ubisoft account associated with it.
-    #[index(btree)]
+    #[index(hash)]
     account_id: Uuid,
 
     /// Trackmania server logins are unique.
@@ -89,7 +90,7 @@ impl RawServerV1 {
 
 /// Elevates an annonymous user to a trackmania server.
 /// password of the server doesn't get saved but rather verified for validity.
-#[cfg_attr(feature = "spacetime", spacetimedb::procedure)]
+#[spacetimedb::procedure]
 pub fn login_as_server(
     ctx: &mut ProcedureContext,
     login: String,
@@ -111,37 +112,29 @@ pub fn login_as_server(
         .body(r#"{ "audience": "NadeoServices" }"#)
         //TODO see what would be a good error message
         .map_err(|e| e.to_string())?;
-    let result = ctx.http.send(request).unwrap();
+    let result = ctx
+        .http
+        .send(request)
+        .map_err(|_| "Internal Error! The HTTP request could not be sent!")?;
 
     let status = result.status();
 
     if !status.is_success() {
-        log::error!("API request was not a success");
+        log::error!("Login attempt from server ({}) was not a success", login);
         return Err("Server registration failed because credential were wrong".into());
     }
 
     let identity = ctx.sender;
 
     ctx.try_with_tx::<(), String>(|ctx| {
-        /* if ctx
-            .db
-            .tab_raw_server_online()
-            .identity()
-            .find(ctx.sender)
-            .is_some()
-        {
-            // Server identity is already verified.
-            // return Ok(());
-        } */
         if let Some(mut server) = ctx.db.tab_raw_server().server_login().find(&login) {
             // The new identity is assigned to the server.
-            server.set_identity(ctx.identity());
+            server.set_identity(identity);
+            server.set_online();
             ctx.db.tab_raw_server().server_login().update(server);
         } else {
             // Server has never been seen before so create a new one.
-
             let server = ctx.db.tab_raw_server().try_insert(RawServerV1 {
-                //online: true,
                 server_login: login.clone(),
                 active_match: None,
                 account_id,
@@ -184,14 +177,58 @@ fn this_raw_server(ctx: &ViewContext) -> Option<RawServerV1> {
     ctx.db.tab_raw_server().identity().find(ctx.sender)
 }
 
-#[view(name = raw_server, public)]
-fn raw_server(ctx: &ViewContext) -> Query<RawServerV1> {
-    //ctx.db.tab_tm_server().identity().find(ctx.sender)
-    //TODO access control.
-    // User should see his servers.
-    // Server should see himself
-    // Worker should see nothing
-    ctx.from.tab_raw_server().build()
+/// The Raw server pool are all servers of an account which are verified.
+#[view(name = raw_server_pool, public)]
+fn raw_server_pool(ctx: &ViewContext) -> Vec<RawServerV1> {
+    let Ok(user) = ctx.get_user() else {
+        return Vec::new();
+    };
+    //TODO maybe switch to query builder if possible
+    ctx.db
+        .tab_raw_server()
+        .account_id()
+        .filter(user.account_id)
+        .filter(|s| s.verified)
+        .collect()
+}
+
+/// The unverified version of a server pool includes all servers of an account which are not vet verified.
+#[view(name = raw_server_pool_unverified, public)]
+fn raw_server_pool_unverified(ctx: &ViewContext) -> Vec<RawServerV1> {
+    let Ok(user) = ctx.get_user() else {
+        return Vec::new();
+    };
+    //TODO maybe switch to query builder if possible
+    ctx.db
+        .tab_raw_server()
+        .account_id()
+        .filter(user.account_id)
+        .filter(|s| !s.verified)
+        .collect()
+}
+
+#[reducer]
+fn raw_server_verify(ctx: &ReducerContext, server_login: String) -> Result<(), String> {
+    let user = ctx.get_user()?;
+
+    let mut server = ctx
+        .db
+        .tab_raw_server()
+        .server_login()
+        .find(server_login)
+        .ok_or("Couldnt find server with login")?;
+
+    if server.account_id == user.account_id {
+        if server.verified {
+            Err("Server was already verified.".into())
+        } else {
+            server.verified = true;
+            ctx.db.tab_raw_server().server_login().update(server);
+            Ok(())
+        }
+    } else {
+        Err("Not permitted to edit the server".into())
+    }
 }
 
 #[view(name = raw_server_expected_players, public)]
