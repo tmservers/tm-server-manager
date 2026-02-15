@@ -23,6 +23,19 @@ pub async fn setup_state_synchronization() {
             .reducers
             .raw_server_player_remove(Uuid::parse_str(&player.account_id).unwrap())
     });
+
+    server.on_player_info_changed(|player| {
+        let spacetime = SPACETIME.wait();
+        if player.spectator_status == 0 {
+            _ = spacetime
+                .reducers
+                .raw_server_player_add(Uuid::parse_str(&player.account_id).unwrap(), false)
+        } else {
+            _ = spacetime
+                .reducers
+                .raw_server_player_add(Uuid::parse_str(&player.account_id).unwrap(), true)
+        }
+    });
 }
 
 /// Synchronizes all the state already present on the server with spacetime db.

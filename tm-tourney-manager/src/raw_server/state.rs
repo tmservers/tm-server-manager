@@ -25,7 +25,7 @@ fn raw_server_player_add(
     // Player is already present on the network.
     if let Some(mut player) = ctx.db.tab_raw_server_player().account_id().find(account_id) {
         if player.server_login == server.server_login {
-            if player.spectating && spectator || !player.spectating && !spectator {
+            if (player.spectating && spectator) || (!player.spectating && !spectator) {
                 return Err("Player was already in the state before the request.".into());
             }
             player.spectating = spectator;

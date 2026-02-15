@@ -1,4 +1,7 @@
-use tm_server_types::event::{PlayerConnect, PlayerDisconnect, Scores, WayPoint};
+use tm_server_types::{
+    base::PlayerInfo,
+    event::{PlayerConnect, PlayerDisconnect, Scores, WayPoint},
+};
 
 use crate::TrackmaniaServer;
 
@@ -7,6 +10,7 @@ pub trait TypedCallbacks {
     fn on_scores(&self, execute: impl Fn(&Scores) + Send + Sync + 'static);
     fn on_player_connect(&self, execute: impl Fn(&PlayerConnect) + Send + Sync + 'static);
     fn on_player_disconnect(&self, execute: impl Fn(&PlayerDisconnect) + Send + Sync + 'static);
+    fn on_player_info_changed(&self, execute: impl Fn(&PlayerInfo) + Send + Sync + 'static);
 }
 
 impl TypedCallbacks for TrackmaniaServer {
@@ -24,5 +28,9 @@ impl TypedCallbacks for TrackmaniaServer {
 
     fn on_player_disconnect(&self, execute: impl Fn(&PlayerDisconnect) + Send + Sync + 'static) {
         self.on("ManiaPlanet.PlayerDisconnect", execute);
+    }
+
+    fn on_player_info_changed(&self, execute: impl Fn(&PlayerInfo) + Send + Sync + 'static) {
+        self.on("ManiaPlanet.PlayerInfoChanged", execute);
     }
 }

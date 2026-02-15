@@ -100,6 +100,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         _ = TRACKMANIA.set(server);
     }
 
+    // Connect to SpacetimeDB
+    {
+        let spacetime = connect_to_db();
+        _ = SPACETIME.set(spacetime);
+    }
+
     // Initial Configuration for the Trackmania server connection.
     {
         let server = TRACKMANIA.wait();
@@ -121,11 +127,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         server.chat_manual_routing(true, false).await?;
 
         //TODO remove
-        _ = server.get_callbacks_list_disabled().await?;
-        _ = server.get_callbacks_list().await?;
+        /*  _ = server.get_callbacks_list_disabled().await?;
+        _ = server.get_callbacks_list().await?; */
 
         // Emit all events
-        server.event(move |event| {
+        server.event(|event| {
             let event = event.clone();
             tokio::spawn(async move {
                 let server = TRACKMANIA.wait();
@@ -224,12 +230,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     }
 
     setup_state_synchronization().await;
-
-    // Connect to SpacetimeDB
-    {
-        let spacetime = connect_to_db();
-        _ = SPACETIME.set(spacetime);
-    }
 
     // Initialize state subscriptions for the server.
     {
