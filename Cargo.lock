@@ -206,6 +206,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "async_fn_traits"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bc58d489c5f2d2c5be31b9004cec7af25a70d23df4d8111715eee736234cf217"
+dependencies = [
+ "paste",
+]
+
+[[package]]
 name = "atomic-waker"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4525,6 +4534,7 @@ dependencies = [
 name = "tm-server-controller"
 version = "0.0.4-dev"
 dependencies = [
+ "async_fn_traits",
  "base64 0.22.1",
  "bytes",
  "dashmap",

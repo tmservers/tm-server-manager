@@ -15,16 +15,19 @@ use tokio::{signal, sync::Mutex};
 use tracing::{info, instrument, warn};
 
 use crate::{
+    chat::setup_chat,
     config::configure,
     methods::method_call_received,
     state::{setup_state_synchronization, sync},
     telemetry::init_tracing_subscriber,
 };
 
+mod chat;
 mod config;
 mod methods;
 mod state;
 mod telemetry;
+
 #[cfg(test)]
 mod test;
 
@@ -103,6 +106,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // Connect to SpacetimeDB
     {
         let spacetime = connect_to_db();
+        let tm_account_id = Uuid::parse_str(&tm_account_id)?;
+
+        //TODO proper error handling
+        spacetime.procedures.login_as_server_then(
+            tm_server_login,
+            tm_server_password,
+            tm_account_id,
+            |ctx, result| {
+                let Ok(Ok(dh)) = result else {
+                    std::process::exit(1)
+                };
+            },
+        );
         _ = SPACETIME.set(spacetime);
     }
 
@@ -131,7 +147,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         _ = server.get_callbacks_list().await?; */
 
         // Emit all events
-        server.event(|event| {
+        server.on_event(|event| {
             let event = event.clone();
             tokio::spawn(async move {
                 let server = TRACKMANIA.wait();
@@ -149,21 +165,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         .await;
                     tracing::error!("player successfully kicked {}", &player.account_id);
                 }; */
-
-                #[allow(clippy::single_match)]
-                match &event {
-                    tm_server_controller::event::Event::PlayerChat(chat) => {
-                        tracing::warn!("{}", chat.text);
-                        if let Err(error) = server
-                            .chat_forward_to_account(&chat.text, &chat.account_id, None)
-                            .await
-                        {
-                            tracing::warn!("{error}")
-                        }
-                        tracing::info!("Should be routed");
-                    }
-                    _ => (),
-                }
 
                 if let tm_server_controller::event::Event::EndRoundStart(info) = &event {
                     let file_name = format!("{}{}", info.count, info.time);
@@ -208,66 +209,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                             .await
                     ); */
                 }
-
-                let spacetime = SPACETIME.wait();
-                if spacetime
-                    .reducers
-                    .post_event(
-                        //SAFETY: Its the same type. Sadly Rust can not know that :< .
-                        unsafe {
-                            std::mem::transmute::<
-                                tm_server_controller::event::Event,
-                                tm_tourney_manager_api_rs::Event,
-                            >(event)
-                        },
-                    )
-                    .is_err()
-                {
-                    println!("Event failed to publish!")
-                }
             });
         })
     }
 
     setup_state_synchronization().await;
+    setup_chat().await;
 
     // Initialize state subscriptions for the server.
     {
         let spacetime = SPACETIME.wait();
-
-        let tm_account_id = Uuid::parse_str(&tm_account_id)?;
-
-        //TODO proper error handling
-        spacetime.procedures.login_as_server_then(
-            tm_server_login,
-            tm_server_password,
-            tm_account_id,
-            |ctx, result| {
-                let Ok(Ok(dh)) = result else {
-                    std::process::exit(1)
-                };
-            },
-        );
 
         _ = spacetime
             .subscription_builder()
             .on_applied(|_| tracing::debug!("Subscription successfully applied!"))
             .on_error(|_, mhm| tracing::error!("Subscription failed: {mhm:?}"))
             .add_query(|ctx| ctx.from.raw_server_method_call().build())
-            .subscribe();
-        /* [
-            format!("SELECT * FROM tab_raw_server_online WHERE tm_login = '{tm_server_login}'"), //TODO replace with views
-            "SELECT * FROM tm_server_method_call".into(), //TODO this should be possible with views since you should only be able to query the server as a server.
-                                                          //"SELECT * FROM raw_server_expected_players",
-        ] */
-
-        _ = spacetime
-            .subscription_builder()
             .add_query(|ctx| ctx.from.raw_server_config().build())
             .subscribe();
 
         //TODO switch to this_server if on_update callbacks are there
-        spacetime.db.raw_server_config().on_insert(config_bootstrap);
+        spacetime.db.raw_server_config().on_insert(config_update);
         //spacetime.db.tab_raw_server().on_update(server_update);
 
         spacetime
@@ -321,7 +283,7 @@ fn on_disconnected(_ctx: &ErrorContext, err: Option<Error>) {
     }
 } */
 
-fn config_bootstrap(ctx: &EventContext, new: &ServerConfig) {
+fn config_update(_: &EventContext, new: &ServerConfig) {
     let local_server = TRACKMANIA.wait();
     let new = new.clone();
     tokio::spawn(async move {

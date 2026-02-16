@@ -40,7 +40,8 @@ json = { package = "serde_json", version = "*" }
 serde = { version = "1" }
 petgraph = { version = "0.8" }
 uuid = { version = "1.12", features = ["serde"] }
-
+# This can be removed if we actualy have higher-ranked trait bounds for AsyncFnMuts Output type which is a supertrait of AsyncFn which is needed for event propagation in the trackmania server. 
+async_fn_traits = "*"
 
 #============
 # SpacetimeDB

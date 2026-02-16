@@ -3,28 +3,32 @@ use tm_server_controller::{
     callbacks::TypedCallbacks,
     method::{ModeScriptMethodsXmlRpc, XmlRpcMethods},
 };
-use tm_tourney_manager_api_rs::{raw_server_player_add, raw_server_player_remove};
+use tm_server_types::{
+    base::PlayerInfo,
+    event::{PlayerConnect, PlayerDisconnect},
+};
+use tm_tourney_manager_api_rs::{post_event, raw_server_player_add, raw_server_player_remove};
 
 use crate::{SPACETIME, TRACKMANIA};
 
 pub async fn setup_state_synchronization() {
     let server = TRACKMANIA.wait();
 
-    server.on_player_connect(|player| {
+    server.on_player_connect(async |player: &PlayerConnect| {
         _ = SPACETIME.wait().reducers.raw_server_player_add(
             Uuid::parse_str(&player.account_id).unwrap(),
             player.is_spectator,
         )
     });
 
-    server.on_player_disconnect(|player| {
+    server.on_player_disconnect(async |player: &PlayerDisconnect| {
         _ = SPACETIME
             .wait()
             .reducers
             .raw_server_player_remove(Uuid::parse_str(&player.account_id).unwrap())
     });
 
-    server.on_player_info_changed(|player| {
+    server.on_player_info_changed(async |player: &PlayerInfo| {
         let spacetime = SPACETIME.wait();
         if player.spectator_status == 0 {
             _ = spacetime
@@ -34,6 +38,25 @@ pub async fn setup_state_synchronization() {
             _ = spacetime
                 .reducers
                 .raw_server_player_add(Uuid::parse_str(&player.account_id).unwrap(), true)
+        }
+    });
+
+    server.on_event(|event| {
+        let spacetime = SPACETIME.wait();
+        if spacetime
+            .reducers
+            .post_event(
+                //SAFETY: Its the same type. Sadly Rust can not know that :< .
+                unsafe {
+                    std::mem::transmute::<
+                        tm_server_controller::event::Event,
+                        tm_tourney_manager_api_rs::Event,
+                    >(event.clone())
+                },
+            )
+            .is_err()
+        {
+            println!("Event failed to publish!")
         }
     });
 }

@@ -1,6 +1,6 @@
+pub mod callbacks;
 mod core;
 pub mod method;
-pub mod callbacks;
 
 pub use core::ClientError;
 pub use core::TrackmaniaServer;

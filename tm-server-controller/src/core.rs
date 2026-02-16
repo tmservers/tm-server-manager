@@ -299,23 +299,24 @@ impl TrackmaniaServer {
     }
 
     /// Executes the specified function whenever the specified event is triggered.
-    pub fn on<'b, T, F>(&self, event: impl Into<&'b str>, execute: F)
+    //TODO: maybe supply the trackmania server as a ref somehow but im not sure how to do that rn so whatever.
+    pub fn on<'b, T, F, R>(&self, event: impl Into<&'b str>, execute: F)
     where
         for<'a> &'a T: From<&'a Event>,
-        F: Fn(&T),
+        for<'a> F: async_fn_traits::AsyncFn1<&'a T, OutputFuture: Send, Output = R>,
         F: Send + Sync + 'static,
     {
         let mut receiver = self.registered_callbacks.get(event.into());
 
         tokio::spawn(async move {
             while let Ok(event) = receiver.recv().await {
-                execute(Into::<&T>::into(event.deref()));
+                execute(Into::<&T>::into(event.deref())).await;
             }
         });
     }
 
     /// The specified handler function gets called on every event that the server sends to us.
-    pub fn event(&self, handle: impl Fn(&Event) + Send + Sync + 'static) {
+    pub fn on_event(&self, handle: impl Fn(&Event) + Send + Sync + 'static) {
         let mut receiver = self.global_callback.resubscribe();
 
         tokio::spawn(async move {
