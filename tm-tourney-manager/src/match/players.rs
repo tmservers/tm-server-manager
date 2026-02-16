@@ -1,5 +1,4 @@
-use spacetimedb::{AnonymousViewContext, SpacetimeType, Uuid, rand::seq::index, table, view};
-use tm_server_types::event::Event;
+use spacetimedb::{AnonymousViewContext, Uuid, table, view};
 
 #[derive(Debug)]
 #[table(name = tab_tm_match_players)]

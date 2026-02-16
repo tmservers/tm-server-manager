@@ -1,6 +1,6 @@
-use spacetimedb::{AnonymousViewContext, Identity, Query, Uuid, view};
+use spacetimedb::{AnonymousViewContext, Identity, Query, Uuid, table, view};
 
-#[cfg_attr(feature = "spacetime", spacetimedb::table(name = tab_user))]
+#[table(name = tab_user)]
 pub struct UserV1 {
     //ubisoft id of the user
     #[primary_key]
@@ -33,7 +33,7 @@ pub fn user(ctx: &AnonymousViewContext) -> Query<UserV1> {
     ctx.from.tab_user().build()
 }
 
-#[cfg_attr(feature = "spacetime", spacetimedb::table(name = user_identity))]
+#[table(name = tab_user_identity)]
 pub struct UserIdentity {
     #[primary_key]
     pub identity: Identity,

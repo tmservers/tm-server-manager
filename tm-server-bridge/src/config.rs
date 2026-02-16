@@ -1,9 +1,40 @@
 use nadeo_api::{NadeoRequest, auth::AuthType, request::Method};
 use serde::{Deserialize, Serialize};
 use tm_server_controller::{ClientError, method::XmlRpcMethods};
-use tm_tourney_manager_api_rs::ServerConfig;
+use tm_tourney_manager_api_rs::{EventContext, ServerConfig};
 
-use crate::{NADEO, TRACKMANIA};
+use crate::{NADEO, SERVER_CONFIG, TRACKMANIA, state::sync};
+
+pub fn config_update(_: &EventContext, new_config: &ServerConfig) {
+    let new = new_config.clone();
+    let Some(old_config) = SERVER_CONFIG.get() else {
+        //The server has not been synced yet. Bootstrapping it.
+        tokio::task::block_in_place(move || {
+            tokio::runtime::Handle::current().block_on(async move {
+                let server = TRACKMANIA.wait();
+                _ = server
+                    .chat_send_server_massage("[tm-server-bridge] Bootstrapping the server!")
+                    .await;
+                sync().await;
+                configure(new).await;
+                _ = server
+                    .chat_send_server_massage("[tm-server-bridge] Bootstrapping successfull :>")
+                    .await;
+            });
+        });
+        return;
+    };
+
+    if old_config == new_config {
+        return;
+    }
+
+    tokio::task::block_in_place(move || {
+        tokio::runtime::Handle::current().block_on(async move {
+            configure(new).await;
+        });
+    });
+}
 
 pub async fn configure(server_config: ServerConfig) {
     let local_server = TRACKMANIA.wait();

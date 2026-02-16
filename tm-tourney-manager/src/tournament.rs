@@ -7,7 +7,7 @@ use crate::{
     authorization::Authorization,
     competition::{CompetitionV1, tab_competition},
     tournament::permissions::{TournamentPermissionsV1, tab_tournament_permission},
-    user::{tab_user__view, user_identity__view},
+    user::{tab_user__view, tab_user_identity__view},
 };
 
 pub(crate) mod permissions;
@@ -244,7 +244,7 @@ pub struct MyTournamentV1 {
 
 #[view(name=my_tournament,public)]
 pub fn my_tournament(ctx: &ViewContext) -> Vec<MyTournamentV1> {
-    let id = if let Some(user) = ctx.db.user_identity().identity().find(ctx.sender) {
+    let id = if let Some(user) = ctx.db.tab_user_identity().identity().find(ctx.sender) {
         user.account_id
     } else {
         return Vec::new();

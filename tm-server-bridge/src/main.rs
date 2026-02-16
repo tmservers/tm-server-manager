@@ -2,24 +2,20 @@ use std::sync::OnceLock;
 
 use nadeo_api::NadeoClient;
 
-use spacetimedb_sdk::{DbContext, Error, Table, TableWithPrimaryKey, Uuid};
+use spacetimedb_sdk::{DbContext, Error, Table, Uuid};
 
 use tm_tourney_manager_api_rs::*;
 
 use tm_server_controller::{
-    ClientError, TrackmaniaServer,
-    base::{account_id_to_login, login_to_account_id},
+    TrackmaniaServer,
     method::{ModeScriptMethodsXmlRpc, XmlRpcMethods},
 };
 use tokio::{signal, sync::Mutex};
-use tracing::{info, instrument, warn};
+use tracing::{instrument, warn};
 
 use crate::{
-    chat::setup_chat,
-    config::configure,
-    methods::method_call_received,
-    state::{setup_state_synchronization, sync},
-    telemetry::init_tracing_subscriber,
+    chat::setup_chat, config::config_update, methods::method_call_received,
+    state::setup_state_synchronization, telemetry::init_tracing_subscriber,
 };
 
 mod chat;
@@ -113,7 +109,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             tm_server_login,
             tm_server_password,
             tm_account_id,
-            |ctx, result| {
+            |_, result| {
                 let Ok(Ok(dh)) = result else {
                     std::process::exit(1)
                 };
@@ -230,7 +226,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
         //TODO switch to this_server if on_update callbacks are there
         spacetime.db.raw_server_config().on_insert(config_update);
-        //spacetime.db.tab_raw_server().on_update(server_update);
 
         spacetime
             .db
@@ -270,38 +265,6 @@ fn on_disconnected(_ctx: &ErrorContext, err: Option<Error>) {
         println!("Disconnected.");
         std::process::exit(0);
     }
-}
-
-/* fn server_update(_: &EventContext, old: &RawServerV1, new: &RawServerV1) {
-    //TODO check for match status change aswell!
-
-    if old.config != new.config {
-        let new = new.clone();
-        tokio::spawn(async move {
-            configure(new).await;
-        });
-    }
-} */
-
-fn config_update(_: &EventContext, new: &ServerConfig) {
-    let local_server = TRACKMANIA.wait();
-    let new = new.clone();
-    tokio::spawn(async move {
-        _ = local_server
-            .chat_send_server_massage("[tm-server-bridge] Bootstrapping the server!")
-            .await;
-
-        configure(new).await;
-        sync().await;
-
-        _ = local_server
-            .chat_send_server_massage("[tm-server-bridge] Bootstrapping successfull :>")
-            .await;
-
-        //test_takumi_render_ui().await;
-
-        //local_server.ui_modules_get_properties().await
-    });
 }
 
 /* async fn test_takumi_render_ui() {

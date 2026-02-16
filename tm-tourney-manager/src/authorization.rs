@@ -1,7 +1,4 @@
-use std::{
-    marker::PhantomData,
-    ops::{Add, BitAnd, Neg, Not},
-};
+use std::ops::{Add, BitAnd, Not};
 
 use spacetimedb::{JwtClaims, ReducerContext, TxContext, Uuid, ViewContext};
 
@@ -14,7 +11,7 @@ use crate::{
         },
         tournament,
     },
-    user::{UserV1, tab_user, tab_user__view, user_identity, user_identity__view},
+    user::{UserV1, tab_user, tab_user__view, tab_user_identity, tab_user_identity__view},
     worker::{TmWorker, tm_worker, tm_worker__view},
 };
 
@@ -32,7 +29,7 @@ pub(crate) trait Authorization {
 
 impl Authorization for ReducerContext {
     fn get_user(&self) -> Result<UserV1, String> {
-        let Some(user) = self.db.user_identity().identity().find(self.sender) else {
+        let Some(user) = self.db.tab_user_identity().identity().find(self.sender) else {
             return Err("Identity not associated with a user account.".into());
         };
 
@@ -81,7 +78,7 @@ impl Authorization for ReducerContext {
 
 impl Authorization for ViewContext {
     fn get_user(&self) -> Result<UserV1, String> {
-        let Some(user) = self.db.user_identity().identity().find(self.sender) else {
+        let Some(user) = self.db.tab_user_identity().identity().find(self.sender) else {
             return Err("Identity not associated with a user account.".into());
         };
 

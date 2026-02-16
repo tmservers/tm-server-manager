@@ -1,12 +1,7 @@
-use spacetimedb::{
-    Query, ReducerContext, Table, Uuid, ViewContext, rand::seq::index, reducer, view,
-};
+use spacetimedb::{Query, ReducerContext, Table, Uuid, ViewContext, reducer, view};
 use tm_server_types::config::ServerConfig;
 
-use crate::{
-    authorization::Authorization,
-    user::{tab_user__view, user_identity__view},
-};
+use crate::authorization::Authorization;
 
 #[cfg_attr(feature = "spacetime", spacetimedb::table(name = match_template))]
 pub struct MatchTemplate {
