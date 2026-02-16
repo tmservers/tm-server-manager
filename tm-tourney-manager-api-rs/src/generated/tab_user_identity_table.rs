@@ -5,42 +5,42 @@
 use super::user_identity_type::UserIdentity;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-/// Table handle for the table `user_identity`.
+/// Table handle for the table `tab_user_identity`.
 ///
-/// Obtain a handle from the [`UserIdentityTableAccess::user_identity`] method on [`super::RemoteTables`],
-/// like `ctx.db.user_identity()`.
+/// Obtain a handle from the [`TabUserIdentityTableAccess::tab_user_identity`] method on [`super::RemoteTables`],
+/// like `ctx.db.tab_user_identity()`.
 ///
 /// Users are encouraged not to explicitly reference this type,
 /// but to directly chain method calls,
-/// like `ctx.db.user_identity().on_insert(...)`.
-pub struct UserIdentityTableHandle<'ctx> {
+/// like `ctx.db.tab_user_identity().on_insert(...)`.
+pub struct TabUserIdentityTableHandle<'ctx> {
     imp: __sdk::TableHandle<UserIdentity>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the table `user_identity`.
+/// Extension trait for access to the table `tab_user_identity`.
 ///
 /// Implemented for [`super::RemoteTables`].
-pub trait UserIdentityTableAccess {
+pub trait TabUserIdentityTableAccess {
     #[allow(non_snake_case)]
-    /// Obtain a [`UserIdentityTableHandle`], which mediates access to the table `user_identity`.
-    fn user_identity(&self) -> UserIdentityTableHandle<'_>;
+    /// Obtain a [`TabUserIdentityTableHandle`], which mediates access to the table `tab_user_identity`.
+    fn tab_user_identity(&self) -> TabUserIdentityTableHandle<'_>;
 }
 
-impl UserIdentityTableAccess for super::RemoteTables {
-    fn user_identity(&self) -> UserIdentityTableHandle<'_> {
-        UserIdentityTableHandle {
-            imp: self.imp.get_table::<UserIdentity>("user_identity"),
+impl TabUserIdentityTableAccess for super::RemoteTables {
+    fn tab_user_identity(&self) -> TabUserIdentityTableHandle<'_> {
+        TabUserIdentityTableHandle {
+            imp: self.imp.get_table::<UserIdentity>("tab_user_identity"),
             ctx: std::marker::PhantomData,
         }
     }
 }
 
-pub struct UserIdentityInsertCallbackId(__sdk::CallbackId);
-pub struct UserIdentityDeleteCallbackId(__sdk::CallbackId);
+pub struct TabUserIdentityInsertCallbackId(__sdk::CallbackId);
+pub struct TabUserIdentityDeleteCallbackId(__sdk::CallbackId);
 
-impl<'ctx> __sdk::Table for UserIdentityTableHandle<'ctx> {
+impl<'ctx> __sdk::Table for TabUserIdentityTableHandle<'ctx> {
     type Row = UserIdentity;
     type EventContext = super::EventContext;
 
@@ -51,51 +51,51 @@ impl<'ctx> __sdk::Table for UserIdentityTableHandle<'ctx> {
         self.imp.iter()
     }
 
-    type InsertCallbackId = UserIdentityInsertCallbackId;
+    type InsertCallbackId = TabUserIdentityInsertCallbackId;
 
     fn on_insert(
         &self,
         callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
-    ) -> UserIdentityInsertCallbackId {
-        UserIdentityInsertCallbackId(self.imp.on_insert(Box::new(callback)))
+    ) -> TabUserIdentityInsertCallbackId {
+        TabUserIdentityInsertCallbackId(self.imp.on_insert(Box::new(callback)))
     }
 
-    fn remove_on_insert(&self, callback: UserIdentityInsertCallbackId) {
+    fn remove_on_insert(&self, callback: TabUserIdentityInsertCallbackId) {
         self.imp.remove_on_insert(callback.0)
     }
 
-    type DeleteCallbackId = UserIdentityDeleteCallbackId;
+    type DeleteCallbackId = TabUserIdentityDeleteCallbackId;
 
     fn on_delete(
         &self,
         callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
-    ) -> UserIdentityDeleteCallbackId {
-        UserIdentityDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
+    ) -> TabUserIdentityDeleteCallbackId {
+        TabUserIdentityDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
     }
 
-    fn remove_on_delete(&self, callback: UserIdentityDeleteCallbackId) {
+    fn remove_on_delete(&self, callback: TabUserIdentityDeleteCallbackId) {
         self.imp.remove_on_delete(callback.0)
     }
 }
 
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
-    let _table = client_cache.get_or_make_table::<UserIdentity>("user_identity");
+    let _table = client_cache.get_or_make_table::<UserIdentity>("tab_user_identity");
     _table.add_unique_constraint::<__sdk::Identity>("identity", |row| &row.identity);
 }
-pub struct UserIdentityUpdateCallbackId(__sdk::CallbackId);
+pub struct TabUserIdentityUpdateCallbackId(__sdk::CallbackId);
 
-impl<'ctx> __sdk::TableWithPrimaryKey for UserIdentityTableHandle<'ctx> {
-    type UpdateCallbackId = UserIdentityUpdateCallbackId;
+impl<'ctx> __sdk::TableWithPrimaryKey for TabUserIdentityTableHandle<'ctx> {
+    type UpdateCallbackId = TabUserIdentityUpdateCallbackId;
 
     fn on_update(
         &self,
         callback: impl FnMut(&Self::EventContext, &Self::Row, &Self::Row) + Send + 'static,
-    ) -> UserIdentityUpdateCallbackId {
-        UserIdentityUpdateCallbackId(self.imp.on_update(Box::new(callback)))
+    ) -> TabUserIdentityUpdateCallbackId {
+        TabUserIdentityUpdateCallbackId(self.imp.on_update(Box::new(callback)))
     }
 
-    fn remove_on_update(&self, callback: UserIdentityUpdateCallbackId) {
+    fn remove_on_update(&self, callback: TabUserIdentityUpdateCallbackId) {
         self.imp.remove_on_update(callback.0)
     }
 }
@@ -111,22 +111,22 @@ pub(super) fn parse_table_update(
     })
 }
 
-/// Access to the `identity` unique index on the table `user_identity`,
+/// Access to the `identity` unique index on the table `tab_user_identity`,
 /// which allows point queries on the field of the same name
-/// via the [`UserIdentityIdentityUnique::find`] method.
+/// via the [`TabUserIdentityIdentityUnique::find`] method.
 ///
 /// Users are encouraged not to explicitly reference this type,
 /// but to directly chain method calls,
-/// like `ctx.db.user_identity().identity().find(...)`.
-pub struct UserIdentityIdentityUnique<'ctx> {
+/// like `ctx.db.tab_user_identity().identity().find(...)`.
+pub struct TabUserIdentityIdentityUnique<'ctx> {
     imp: __sdk::UniqueConstraintHandle<UserIdentity, __sdk::Identity>,
     phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
-impl<'ctx> UserIdentityTableHandle<'ctx> {
-    /// Get a handle on the `identity` unique index on the table `user_identity`.
-    pub fn identity(&self) -> UserIdentityIdentityUnique<'ctx> {
-        UserIdentityIdentityUnique {
+impl<'ctx> TabUserIdentityTableHandle<'ctx> {
+    /// Get a handle on the `identity` unique index on the table `tab_user_identity`.
+    pub fn identity(&self) -> TabUserIdentityIdentityUnique<'ctx> {
+        TabUserIdentityIdentityUnique {
             imp: self
                 .imp
                 .get_unique_constraint::<__sdk::Identity>("identity"),
@@ -135,7 +135,7 @@ impl<'ctx> UserIdentityTableHandle<'ctx> {
     }
 }
 
-impl<'ctx> UserIdentityIdentityUnique<'ctx> {
+impl<'ctx> TabUserIdentityIdentityUnique<'ctx> {
     /// Find the subscribed row whose `identity` column value is equal to `col_val`,
     /// if such a row is present in the client cache.
     pub fn find(&self, col_val: &__sdk::Identity) -> Option<UserIdentity> {
@@ -147,14 +147,14 @@ impl<'ctx> UserIdentityIdentityUnique<'ctx> {
 /// Extension trait for query builder access to the table `UserIdentity`.
 ///
 /// Implemented for [`__sdk::QueryTableAccessor`].
-pub trait user_identityQueryTableAccess {
+pub trait tab_user_identityQueryTableAccess {
     #[allow(non_snake_case)]
     /// Get a query builder for the table `UserIdentity`.
-    fn user_identity(&self) -> __sdk::__query_builder::Table<UserIdentity>;
+    fn tab_user_identity(&self) -> __sdk::__query_builder::Table<UserIdentity>;
 }
 
-impl user_identityQueryTableAccess for __sdk::QueryTableAccessor {
-    fn user_identity(&self) -> __sdk::__query_builder::Table<UserIdentity> {
-        __sdk::__query_builder::Table::new("user_identity")
+impl tab_user_identityQueryTableAccess for __sdk::QueryTableAccessor {
+    fn tab_user_identity(&self) -> __sdk::__query_builder::Table<UserIdentity> {
+        __sdk::__query_builder::Table::new("tab_user_identity")
     }
 }

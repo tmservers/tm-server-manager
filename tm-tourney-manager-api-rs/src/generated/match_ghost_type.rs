@@ -9,8 +9,8 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 pub struct MatchGhost {
     pub tournament_id: u32,
     pub match_id: u32,
-    pub player_id: String,
-    pub uid: String,
+    pub player_id: __sdk::Uuid,
+    pub uid: __sdk::Uuid,
 }
 
 impl __sdk::InModule for MatchGhost {
@@ -23,8 +23,8 @@ impl __sdk::InModule for MatchGhost {
 pub struct MatchGhostCols {
     pub tournament_id: __sdk::__query_builder::Col<MatchGhost, u32>,
     pub match_id: __sdk::__query_builder::Col<MatchGhost, u32>,
-    pub player_id: __sdk::__query_builder::Col<MatchGhost, String>,
-    pub uid: __sdk::__query_builder::Col<MatchGhost, String>,
+    pub player_id: __sdk::__query_builder::Col<MatchGhost, __sdk::Uuid>,
+    pub uid: __sdk::__query_builder::Col<MatchGhost, __sdk::Uuid>,
 }
 
 impl __sdk::__query_builder::HasCols for MatchGhost {

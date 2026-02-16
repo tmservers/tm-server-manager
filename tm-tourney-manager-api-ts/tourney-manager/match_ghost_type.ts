@@ -13,8 +13,8 @@ import {
 export default __t.object("MatchGhost", {
   tournamentId: __t.u32(),
   matchId: __t.u32(),
-  playerId: __t.string(),
-  uid: __t.string(),
+  playerId: __t.uuid(),
+  uid: __t.uuid(),
 });
 
 

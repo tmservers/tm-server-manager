@@ -1,4 +1,4 @@
-use spacetimedb::{Query, ReducerContext, SpacetimeType, Table, ViewContext, view};
+use spacetimedb::{Query, ReducerContext, SpacetimeType, Table, ViewContext, table, view};
 use tm_server_types::{config::ServerConfig, event::Event};
 
 use crate::{
@@ -42,7 +42,7 @@ pub mod template;
 /// If the ephemeral state matches the desired state. Advances to [MatchStatus::Live].
 /// - *End.* The match has concluded. Loads the post_match_config if it is present. Releases
 /// the captured server. Advances to [MatchStatus::Ended].
-#[cfg_attr(feature = "spacetime", spacetimedb::table(name = tab_tm_match))]
+#[table(name = tab_tm_match)]
 pub struct TmMatchV1 {
     #[auto_inc]
     #[primary_key]

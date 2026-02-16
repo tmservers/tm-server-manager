@@ -13,6 +13,6 @@ import {
 export default __t.row({
   tournamentId: __t.u32().name("tournament_id"),
   matchId: __t.u32().name("match_id"),
-  playerId: __t.string().name("player_id"),
-  uid: __t.string(),
+  playerId: __t.uuid().name("player_id"),
+  uid: __t.uuid(),
 });

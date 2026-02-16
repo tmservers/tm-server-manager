@@ -138,8 +138,6 @@ import EnvRow from "./env_table";
 export { EnvRow };
 import MapRecordRow from "./map_record_table";
 export { MapRecordRow };
-import MatchGhostRow from "./match_ghost_table";
-export { MatchGhostRow };
 import MatchLeaderbaordRow from "./match_leaderbaord_table";
 export { MatchLeaderbaordRow };
 import MatchPlayersRow from "./match_players_table";
@@ -180,6 +178,8 @@ import TabCompetitionConnectionDataRow from "./tab_competition_connection_data_t
 export { TabCompetitionConnectionDataRow };
 import TabCompetitionNodePositionRow from "./tab_competition_node_position_table";
 export { TabCompetitionNodePositionRow };
+import TabMatchGhostRow from "./tab_match_ghost_table";
+export { TabMatchGhostRow };
 import TabRawServerRow from "./tab_raw_server_table";
 export { TabRawServerRow };
 import TabRawServerConfigRow from "./tab_raw_server_config_table";
@@ -218,6 +218,8 @@ import TabTournamentStatusScheduleRow from "./tab_tournament_status_schedule_tab
 export { TabTournamentStatusScheduleRow };
 import TabUserRow from "./tab_user_table";
 export { TabUserRow };
+import TabUserIdentityRow from "./tab_user_identity_table";
+export { TabUserIdentityRow };
 import ThisRawServerRow from "./this_raw_server_table";
 export { ThisRawServerRow };
 import TmMapRecordRow from "./tm_map_record_table";
@@ -236,8 +238,6 @@ import TournamentRow from "./tournament_table";
 export { TournamentRow };
 import UserRow from "./user_table";
 export { UserRow };
-import UserIdentityRow from "./user_identity_table";
-export { UserIdentityRow };
 
 // Import and reexport all types
 import BanArgs from "./ban_args_type";
@@ -469,13 +469,6 @@ const tablesSchema = __schema(
     ],
   }, EnvRow),
   __table({
-    name: 'match_ghost',
-    indexes: [
-    ],
-    constraints: [
-    ],
-  }, MatchGhostRow),
-  __table({
     name: 'match_template',
     indexes: [
       { name: 'creator', algorithm: 'btree', columns: [
@@ -552,6 +545,13 @@ const tablesSchema = __schema(
       { name: 'tab_competition_node_position_id_key', constraint: 'unique', columns: ['id'] },
     ],
   }, TabCompetitionNodePositionRow),
+  __table({
+    name: 'tab_match_ghost',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, TabMatchGhostRow),
   __table({
     name: 'tab_raw_server',
     indexes: [
@@ -800,6 +800,17 @@ const tablesSchema = __schema(
     ],
   }, TabUserRow),
   __table({
+    name: 'tab_user_identity',
+    indexes: [
+      { name: 'identity', algorithm: 'btree', columns: [
+        'identity',
+      ] },
+    ],
+    constraints: [
+      { name: 'tab_user_identity_identity_key', constraint: 'unique', columns: ['identity'] },
+    ],
+  }, TabUserIdentityRow),
+  __table({
     name: 'tm_map_record',
     indexes: [
       { name: 'id', algorithm: 'btree', columns: [
@@ -862,17 +873,6 @@ const tablesSchema = __schema(
     constraints: [
     ],
   }, TmWorkerJobsRow),
-  __table({
-    name: 'user_identity',
-    indexes: [
-      { name: 'identity', algorithm: 'btree', columns: [
-        'identity',
-      ] },
-    ],
-    constraints: [
-      { name: 'user_identity_identity_key', constraint: 'unique', columns: ['identity'] },
-    ],
-  }, UserIdentityRow),
   __table({
     name: 'competition',
     indexes: [

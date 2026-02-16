@@ -27,7 +27,7 @@ pub trait post_round_replay {
         &self,
         replay: Vec<u8>,
 
-        __callback: impl FnOnce(&super::ProcedureEventContext, Result<(), __sdk::InternalError>)
+        __callback: impl FnOnce(&super::ProcedureEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     );
@@ -38,14 +38,15 @@ impl post_round_replay for super::RemoteProcedures {
         &self,
         replay: Vec<u8>,
 
-        __callback: impl FnOnce(&super::ProcedureEventContext, Result<(), __sdk::InternalError>)
+        __callback: impl FnOnce(&super::ProcedureEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     ) {
-        self.imp.invoke_procedure_with_callback::<_, ()>(
-            "post_round_replay",
-            PostRoundReplayArgs { replay },
-            __callback,
-        );
+        self.imp
+            .invoke_procedure_with_callback::<_, Result<(), String>>(
+                "post_round_replay",
+                PostRoundReplayArgs { replay },
+                __callback,
+            );
     }
 }

@@ -5,42 +5,42 @@
 use super::match_ghost_type::MatchGhost;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-/// Table handle for the table `match_ghost`.
+/// Table handle for the table `tab_match_ghost`.
 ///
-/// Obtain a handle from the [`MatchGhostTableAccess::match_ghost`] method on [`super::RemoteTables`],
-/// like `ctx.db.match_ghost()`.
+/// Obtain a handle from the [`TabMatchGhostTableAccess::tab_match_ghost`] method on [`super::RemoteTables`],
+/// like `ctx.db.tab_match_ghost()`.
 ///
 /// Users are encouraged not to explicitly reference this type,
 /// but to directly chain method calls,
-/// like `ctx.db.match_ghost().on_insert(...)`.
-pub struct MatchGhostTableHandle<'ctx> {
+/// like `ctx.db.tab_match_ghost().on_insert(...)`.
+pub struct TabMatchGhostTableHandle<'ctx> {
     imp: __sdk::TableHandle<MatchGhost>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the table `match_ghost`.
+/// Extension trait for access to the table `tab_match_ghost`.
 ///
 /// Implemented for [`super::RemoteTables`].
-pub trait MatchGhostTableAccess {
+pub trait TabMatchGhostTableAccess {
     #[allow(non_snake_case)]
-    /// Obtain a [`MatchGhostTableHandle`], which mediates access to the table `match_ghost`.
-    fn match_ghost(&self) -> MatchGhostTableHandle<'_>;
+    /// Obtain a [`TabMatchGhostTableHandle`], which mediates access to the table `tab_match_ghost`.
+    fn tab_match_ghost(&self) -> TabMatchGhostTableHandle<'_>;
 }
 
-impl MatchGhostTableAccess for super::RemoteTables {
-    fn match_ghost(&self) -> MatchGhostTableHandle<'_> {
-        MatchGhostTableHandle {
-            imp: self.imp.get_table::<MatchGhost>("match_ghost"),
+impl TabMatchGhostTableAccess for super::RemoteTables {
+    fn tab_match_ghost(&self) -> TabMatchGhostTableHandle<'_> {
+        TabMatchGhostTableHandle {
+            imp: self.imp.get_table::<MatchGhost>("tab_match_ghost"),
             ctx: std::marker::PhantomData,
         }
     }
 }
 
-pub struct MatchGhostInsertCallbackId(__sdk::CallbackId);
-pub struct MatchGhostDeleteCallbackId(__sdk::CallbackId);
+pub struct TabMatchGhostInsertCallbackId(__sdk::CallbackId);
+pub struct TabMatchGhostDeleteCallbackId(__sdk::CallbackId);
 
-impl<'ctx> __sdk::Table for MatchGhostTableHandle<'ctx> {
+impl<'ctx> __sdk::Table for TabMatchGhostTableHandle<'ctx> {
     type Row = MatchGhost;
     type EventContext = super::EventContext;
 
@@ -51,36 +51,36 @@ impl<'ctx> __sdk::Table for MatchGhostTableHandle<'ctx> {
         self.imp.iter()
     }
 
-    type InsertCallbackId = MatchGhostInsertCallbackId;
+    type InsertCallbackId = TabMatchGhostInsertCallbackId;
 
     fn on_insert(
         &self,
         callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
-    ) -> MatchGhostInsertCallbackId {
-        MatchGhostInsertCallbackId(self.imp.on_insert(Box::new(callback)))
+    ) -> TabMatchGhostInsertCallbackId {
+        TabMatchGhostInsertCallbackId(self.imp.on_insert(Box::new(callback)))
     }
 
-    fn remove_on_insert(&self, callback: MatchGhostInsertCallbackId) {
+    fn remove_on_insert(&self, callback: TabMatchGhostInsertCallbackId) {
         self.imp.remove_on_insert(callback.0)
     }
 
-    type DeleteCallbackId = MatchGhostDeleteCallbackId;
+    type DeleteCallbackId = TabMatchGhostDeleteCallbackId;
 
     fn on_delete(
         &self,
         callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
-    ) -> MatchGhostDeleteCallbackId {
-        MatchGhostDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
+    ) -> TabMatchGhostDeleteCallbackId {
+        TabMatchGhostDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
     }
 
-    fn remove_on_delete(&self, callback: MatchGhostDeleteCallbackId) {
+    fn remove_on_delete(&self, callback: TabMatchGhostDeleteCallbackId) {
         self.imp.remove_on_delete(callback.0)
     }
 }
 
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
-    let _table = client_cache.get_or_make_table::<MatchGhost>("match_ghost");
+    let _table = client_cache.get_or_make_table::<MatchGhost>("tab_match_ghost");
 }
 
 #[doc(hidden)]
@@ -98,14 +98,14 @@ pub(super) fn parse_table_update(
 /// Extension trait for query builder access to the table `MatchGhost`.
 ///
 /// Implemented for [`__sdk::QueryTableAccessor`].
-pub trait match_ghostQueryTableAccess {
+pub trait tab_match_ghostQueryTableAccess {
     #[allow(non_snake_case)]
     /// Get a query builder for the table `MatchGhost`.
-    fn match_ghost(&self) -> __sdk::__query_builder::Table<MatchGhost>;
+    fn tab_match_ghost(&self) -> __sdk::__query_builder::Table<MatchGhost>;
 }
 
-impl match_ghostQueryTableAccess for __sdk::QueryTableAccessor {
-    fn match_ghost(&self) -> __sdk::__query_builder::Table<MatchGhost> {
-        __sdk::__query_builder::Table::new("match_ghost")
+impl tab_match_ghostQueryTableAccess for __sdk::QueryTableAccessor {
+    fn tab_match_ghost(&self) -> __sdk::__query_builder::Table<MatchGhost> {
+        __sdk::__query_builder::Table::new("tab_match_ghost")
     }
 }
