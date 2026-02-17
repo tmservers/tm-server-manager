@@ -1,4 +1,4 @@
-use spacetimedb::{AnonymousViewContext, Uuid, table, view};
+/* use spacetimedb::{AnonymousViewContext, Uuid, table, view};
 
 #[derive(Debug)]
 #[table(name = tab_tm_match_players)]
@@ -14,4 +14,4 @@ pub struct TmMatchPlayer {
 #[view(name= match_players,public)]
 pub fn match_players(ctx: &AnonymousViewContext) -> Vec<TmMatchPlayer> {
     Vec::new()
-}
+} */

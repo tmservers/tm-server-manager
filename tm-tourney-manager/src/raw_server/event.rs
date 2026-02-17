@@ -7,7 +7,6 @@ use crate::{
     r#match::{
         event::{TmMatchEvent, tab_tm_match_event},
         match_state::{TmMatchState, tab_tm_match_state},
-        players::{TmMatchPlayer, tab_tm_match_players, tab_tm_match_spectators},
         tab_tm_match,
     },
     raw_server::tab_raw_server,
@@ -46,7 +45,8 @@ pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
             false
         };
 
-        match &event {
+        //TODO derive the state from off of that.
+        /* match &event {
             Event::PlayerConenct(player) => {
                 match player.is_spectator {
                     true => ctx
@@ -81,7 +81,7 @@ pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
                 }
             }
             _ => (),
-        }
+        } */
 
         //let tournament_id = tm_match.get_tournament();
         ctx.db.tab_tm_match_event().insert(TmMatchEvent {

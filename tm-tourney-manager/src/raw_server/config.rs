@@ -6,7 +6,7 @@ use crate::{
 };
 
 #[table(name=tab_raw_server_config)]
-pub struct TmRawServerConfig {
+pub struct RawServerConfig {
     #[auto_inc]
     #[primary_key]
     pub id: u32,
@@ -17,7 +17,7 @@ pub struct TmRawServerConfig {
     config: ServerConfig,
 }
 
-impl TmRawServerConfig {
+impl RawServerConfig {
     pub fn get_config(self) -> ServerConfig {
         self.config
     }
@@ -25,14 +25,14 @@ impl TmRawServerConfig {
 
 // The configuration that is owned by a server.
 #[table(name=tab_raw_server_config_owned)]
-pub struct TmRawServerConfigOwned {
+pub struct RawServerConfigOwned {
     config: ServerConfig,
 
     #[primary_key]
     pub server_login: String,
 }
 
-impl TmRawServerConfigOwned {
+impl RawServerConfigOwned {
     /// Returns a new defualt config
     pub(crate) fn new(server_login: String) -> Self {
         Self {
@@ -46,13 +46,11 @@ impl TmRawServerConfigOwned {
 pub fn create_server_config(ctx: &ReducerContext, config: ServerConfig) -> Result<(), String> {
     let user = ctx.get_user()?;
 
-    ctx.db
-        .tab_raw_server_config()
-        .try_insert(TmRawServerConfig {
-            id: 0,
-            account_id: user.account_id,
-            config,
-        })?;
+    ctx.db.tab_raw_server_config().try_insert(RawServerConfig {
+        id: 0,
+        account_id: user.account_id,
+        config,
+    })?;
 
     Ok(())
 }

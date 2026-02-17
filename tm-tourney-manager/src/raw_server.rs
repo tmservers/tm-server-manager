@@ -7,7 +7,7 @@ use tm_server_types::{config::ServerConfig, event::Event};
 
 use crate::authorization::Authorization;
 use crate::raw_server::config::{
-    TmRawServerConfig, TmRawServerConfigOwned, tab_raw_server_config, tab_raw_server_config_owned,
+    RawServerConfig, RawServerConfigOwned, tab_raw_server_config, tab_raw_server_config_owned,
 };
 
 pub mod config;
@@ -15,7 +15,7 @@ pub mod event;
 pub mod method;
 pub mod state;
 
-#[spacetimedb::table(name=tab_raw_server,public)]
+#[spacetimedb::table(name=tab_raw_server)]
 pub struct RawServerV1 {
     #[unique]
     pub identity: Identity,
@@ -145,7 +145,7 @@ pub fn login_as_server(
             })?;
             ctx.db
                 .tab_raw_server_config_owned()
-                .try_insert(TmRawServerConfigOwned::new(server.server_login))?;
+                .try_insert(RawServerConfigOwned::new(server.server_login))?;
         }
         Ok(())
     })?;
