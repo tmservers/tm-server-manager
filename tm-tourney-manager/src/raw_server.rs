@@ -7,7 +7,7 @@ use tm_server_types::{config::ServerConfig, event::Event};
 
 use crate::authorization::Authorization;
 use crate::raw_server::config::{
-    RawServerConfig, RawServerConfigOwned, tab_raw_server_config, tab_raw_server_config_owned,
+    RawServerConfig, RawServerConfigActive, tab_raw_server_config, tab_raw_server_config_active,
 };
 
 pub mod config;
@@ -144,8 +144,8 @@ pub fn login_as_server(
                 online: true,
             })?;
             ctx.db
-                .tab_raw_server_config_owned()
-                .try_insert(RawServerConfigOwned::new(server.server_login))?;
+                .tab_raw_server_config_active()
+                .try_insert(RawServerConfigActive::new(server.server_login))?;
         }
         Ok(())
     })?;

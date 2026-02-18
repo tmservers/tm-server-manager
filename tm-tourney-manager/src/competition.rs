@@ -1,11 +1,13 @@
-use spacetimedb::{reducer, view, AnonymousViewContext, Query, ReducerContext, Table, Timestamp};
+use spacetimedb::{
+    AnonymousViewContext, Query, ReducerContext, Table, Timestamp, reducer, table, view,
+};
 
 use crate::{authorization::Authorization, registration::RegistrationSettings};
 
 pub mod connection;
 
 /// Always
-#[cfg_attr(feature = "spacetime",spacetimedb::table(name = tab_competition))]
+#[table(name = tab_competition)]
 pub struct CompetitionV1 {
     #[auto_inc]
     #[primary_key]

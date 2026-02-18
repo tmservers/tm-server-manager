@@ -11,6 +11,7 @@ pub struct RawServerConfig {
     #[primary_key]
     pub id: u32,
 
+    //TODO probably remove that and add it as a component table.
     // Creator of the Config
     account_id: Uuid,
 
@@ -24,19 +25,20 @@ impl RawServerConfig {
 }
 
 // The configuration that is owned by a server.
-#[table(name=tab_raw_server_config_owned)]
-pub struct RawServerConfigOwned {
-    config: ServerConfig,
+#[table(name=tab_raw_server_config_active)]
+pub struct RawServerConfigActive {
+    config: u32,
 
     #[primary_key]
     pub server_login: String,
 }
 
-impl RawServerConfigOwned {
+impl RawServerConfigActive {
     /// Returns a new defualt config
     pub(crate) fn new(server_login: String) -> Self {
         Self {
-            config: ServerConfig::default(),
+            //TODO
+            config: 0,
             server_login,
         }
     }
@@ -65,7 +67,7 @@ fn raw_server_config(ctx: &ViewContext) -> Option<ServerConfig> {
     //TODO override if match is happening i guess.
 
     ctx.db
-        .tab_raw_server_config_owned()
+        .tab_raw_server_config_active()
         .server_login()
         .find(&server.server_login)
         .map(|v| v.config)
