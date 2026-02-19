@@ -1,14 +1,11 @@
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
 use spacetimedb::http::Request;
-use spacetimedb::{Identity, Query, ReducerContext, Table, Uuid, ViewContext, reducer};
+use spacetimedb::{Identity, Query, ReducerContext, Table, Uuid, ViewContext, reducer, table};
 use spacetimedb::{ProcedureContext, view};
 use tm_server_types::{config::ServerConfig, event::Event};
 
 use crate::authorization::Authorization;
-use crate::raw_server::config::{
-    RawServerConfig, RawServerConfigActive, tab_raw_server_config, tab_raw_server_config_active,
-};
 
 pub mod config;
 pub mod event;
@@ -17,6 +14,10 @@ pub mod state;
 
 #[spacetimedb::table(name=tab_raw_server)]
 pub struct RawServerV1 {
+    #[auto_inc]
+    #[primary_key]
+    pub(crate) id: u32,
+
     #[unique]
     pub identity: Identity,
     /// Each server also has a ubisoft account associated with it.
@@ -24,10 +25,9 @@ pub struct RawServerV1 {
     account_id: Uuid,
 
     /// Trackmania server logins are unique.
-    #[primary_key]
+    #[unique]
     pub server_login: String,
 
-    active_match: Option<u32>,
     // Whether the server can be reached with a bridge active.
     online: bool,
 
@@ -41,16 +41,6 @@ pub struct RawServerV1 {
 }
 
 impl RawServerV1 {
-    pub fn active_match(&self) -> Option<u32> {
-        self.active_match
-    }
-
-    pub fn set_active_match(&mut self, match_id: u32) {
-        if self.active_match.is_none() {
-            self.active_match = Some(match_id)
-        }
-    }
-
     /* pub fn set_config(&mut self, config: ServerConfig) {
         self.config = config
     } */
@@ -58,10 +48,6 @@ impl RawServerV1 {
     /* pub fn set_state(&mut self, state: ServerState) {
         self.state = state
     } */
-
-    pub(crate) fn release(&mut self) {
-        self.active_match = None;
-    }
 
     pub fn set_online(&mut self) {
         self.online = true;
@@ -86,6 +72,15 @@ impl RawServerV1 {
     /* pub fn set_command(&mut self, command: Method) {
     self.server_method = command
     } */
+}
+
+#[table(name=tab_raw_server_occupation)]
+pub struct RawServerOccupation {
+    #[primary_key]
+    pub(crate) server_id: u32,
+
+    #[index(hash)]
+    match_id: u32,
 }
 
 /// Elevates an annonymous user to a trackmania server.
@@ -135,17 +130,18 @@ pub fn login_as_server(
         } else {
             // Server has never been seen before so create a new one.
             let server = ctx.db.tab_raw_server().try_insert(RawServerV1 {
+                id: 0,
                 server_login: login.clone(),
-                active_match: None,
                 account_id,
                 identity,
                 capturable: true,
                 verified: false,
                 online: true,
             })?;
-            ctx.db
-                .tab_raw_server_config_active()
-                .try_insert(RawServerConfigActive::new(server.server_login))?;
+            //TODO which config should be active?
+            /* ctx.db
+            .tab_raw_server_config_active()
+            .try_insert(RawServerConfigActive::new(server.server_login))?; */
         }
         Ok(())
     })?;
@@ -238,12 +234,13 @@ fn raw_server_expected_players(ctx: &ViewContext) -> Vec</* PlayerEntry */ RawSe
         return Vec::new();
     };
 
-    if let Some(match_id) = server.active_match() {
+    /* if let Some(match_id) = server.active_match() {
         //TODO convert the match_id to the list with the connection filter
         Vec::new()
     } else {
         Vec::new()
-    }
+    } */
+    Vec::new()
 }
 
 #[view(name = raw_server_current_players, public)]

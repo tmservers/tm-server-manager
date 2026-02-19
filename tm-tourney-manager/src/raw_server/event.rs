@@ -9,7 +9,7 @@ use crate::{
         match_state::{TmMatchState, tab_tm_match_state},
         tab_tm_match,
     },
-    raw_server::tab_raw_server,
+    raw_server::{tab_raw_server, tab_raw_server_occupation},
 };
 
 /// Servers call this to post the event stream.
@@ -17,10 +17,14 @@ use crate::{
 pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
     let mut server = ctx.get_server()?;
 
-    if let Some(match_id) = server.active_match()
-        && let Some(mut tm_match) = ctx.db.tab_tm_match().id().find(match_id)
+    if let Some(occupation) = ctx
+        .db
+        .tab_raw_server_occupation()
+        .server_id()
+        .find(server.id)
+        && let Some(mut tm_match) = ctx.db.tab_tm_match().id().find(occupation.match_id)
         && tm_match.is_live()
-        && let Some(mut match_state) = ctx.db.tab_tm_match_state().id().find(match_id)
+        && let Some(mut match_state) = ctx.db.tab_tm_match_state().id().find(occupation.match_id)
     {
         // TODO maybe move this whole thing in a function for TmMatch to handle it there.
 
@@ -39,7 +43,10 @@ pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
                 NodeKindHandle::MatchV1(tm_match.id),
             )?;
 
-            server.release();
+            ctx.db
+                .tab_raw_server_occupation()
+                .server_id()
+                .delete(server.id);
             true
         } else {
             false
@@ -86,7 +93,7 @@ pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
         //let tournament_id = tm_match.get_tournament();
         ctx.db.tab_tm_match_event().insert(TmMatchEvent {
             //tournament_id,
-            match_id,
+            match_id: occupation.match_id,
             event,
             restarted: match_state.restarted,
             round: match_state.round,

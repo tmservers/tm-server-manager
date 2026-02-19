@@ -2,7 +2,9 @@ use spacetimedb::{ReducerContext, Table, Uuid, ViewContext, reducer, table, view
 use tm_server_types::config::ServerConfig;
 
 use crate::{
-    authorization::Authorization, r#match::tab_tm_match__view, raw_server::tab_raw_server__view,
+    authorization::Authorization,
+    r#match::tab_tm_match__view,
+    raw_server::{tab_raw_server__view, tab_raw_server_occupation__view},
 };
 
 #[table(name=tab_raw_server_config)]
@@ -25,7 +27,7 @@ impl RawServerConfig {
 }
 
 // The configuration that is owned by a server.
-#[table(name=tab_raw_server_config_active)]
+/* #[table(name=tab_raw_server_config_active)]
 pub struct RawServerConfigActive {
     config: u32,
 
@@ -42,7 +44,7 @@ impl RawServerConfigActive {
             server_login,
         }
     }
-}
+} */
 
 #[spacetimedb::reducer]
 pub fn create_server_config(ctx: &ReducerContext, config: ServerConfig) -> Result<(), String> {
@@ -61,14 +63,23 @@ pub fn create_server_config(ctx: &ReducerContext, config: ServerConfig) -> Resul
 fn raw_server_config(ctx: &ViewContext) -> Option<ServerConfig> {
     let server = ctx.db.tab_raw_server().identity().find(ctx.sender)?;
 
-    /* let Some(tm_match) = ctx.db.tab_tm_match().id().find(server.active_match().unwrap()) else {
-        return None;
-    } */
-    //TODO override if match is happening i guess.
+    let server_occupation = ctx
+        .db
+        .tab_raw_server_occupation()
+        .server_id()
+        .find(server.id)?;
 
-    ctx.db
-        .tab_raw_server_config_active()
-        .server_login()
-        .find(&server.server_login)
-        .map(|v| v.config)
+    let tm_match = ctx
+        .db
+        .tab_tm_match()
+        .id()
+        .find(server_occupation.match_id)?;
+
+    let config = ctx
+        .db
+        .tab_raw_server_config()
+        .id()
+        .find(tm_match.get_config_id())?;
+
+    Some(config.config)
 }

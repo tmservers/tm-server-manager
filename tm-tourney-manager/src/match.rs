@@ -1,4 +1,4 @@
-use spacetimedb::{Query, ReducerContext, SpacetimeType, Table, ViewContext, table, view};
+use spacetimedb::{Query, ReducerContext, SpacetimeType, Table, ViewContext, reducer, table, view};
 use tm_server_types::{config::ServerConfig, event::Event};
 
 use crate::{
@@ -15,7 +15,7 @@ use crate::{
         match_state::{TmMatchState, tab_tm_match_state},
         template::match_template,
     },
-    raw_server::tab_raw_server,
+    raw_server::{tab_raw_server, tab_raw_server_occupation},
 };
 
 pub mod event;
@@ -44,6 +44,10 @@ pub mod template;
 /// the captured server. Advances to [MatchStatus::Ended].
 #[table(name = tab_tm_match)]
 pub struct TmMatchV1 {
+    /* /// The assigned server that is currently used by this match.
+    server_id: Option<String>, */
+    name: String,
+
     #[auto_inc]
     #[primary_key]
     pub(crate) id: u32,
@@ -52,23 +56,27 @@ pub struct TmMatchV1 {
     tournament_id: u32,
     competition_id: u32,
 
-    name: String,
-
-    /// The assigned server that is currently used by this match.
-    server_id: Option<String>,
-
     /// The moment the server is captured by the match the pre_match_config gets loaded in.
     /// Only if it is defined. Useful for hiding tournament maps till the actual start.
-    pre_match_config: Option<ServerConfig>,
+    pre_match_config: u32,
     /// If the match is started this config gets loaded.
     /// Has to be specified before your able to advance into Upcoming.
-    match_config: Option<ServerConfig>,
-    post_match_config: Option<ServerConfig>,
+    match_config: u32,
+    post_match_config: u32,
 
     status: MatchStatus,
 }
 
 impl TmMatchV1 {
+    pub fn get_config_id(&self) -> u32 {
+        match self.status {
+            MatchStatus::Configuring => 0,
+            MatchStatus::Upcoming => self.pre_match_config,
+            MatchStatus::Live => self.match_config,
+            MatchStatus::Ended => self.post_match_config,
+        }
+    }
+
     /// Evaluates is the Match is in the "Match" state of its lifecycle.
     pub fn is_live(&self) -> bool {
         self.status == MatchStatus::Live
@@ -130,10 +138,10 @@ pub fn create_match(
         tournament_id: parent_competition.get_tournament(),
         name,
         status: MatchStatus::Configuring,
-        server_id: None,
-        pre_match_config: config.clone(),
-        match_config: config,
-        post_match_config: None,
+        //server_id: None,
+        pre_match_config: 0,
+        match_config: 0,
+        post_match_config: 0,
     };
 
     let tm_match = ctx.db.tab_tm_match().try_insert(tm_match)?;
@@ -158,20 +166,29 @@ pub fn create_match(
 }
 
 /// Assigns a server to the selected match.
-#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn match_assign_server(ctx: &ReducerContext, to: u32, server_id: String) -> Result<(), String> {
+#[reducer]
+pub fn match_assign_server(
+    ctx: &ReducerContext,
+    to: u32,
+    server_login: String,
+) -> Result<(), String> {
     ctx.get_user()?;
-    if let Some(mut server) = ctx.db.tab_raw_server().server_login().find(&server_id)
-        && server.active_match().is_none()
+    if let Some(server) = ctx.db.tab_raw_server().server_login().find(&server_login)
+        && ctx
+            .db
+            .tab_raw_server_occupation()
+            .server_id()
+            .find(server.id)
+            .is_none()
         && let Some(stage_match) = ctx.db.tab_tm_match().id().find(to)
         && stage_match.status == MatchStatus::Configuring
     {
-        let tm_match = ctx.db.tab_tm_match().id().update(TmMatchV1 {
+        /* let tm_match = ctx.db.tab_tm_match().id().update(TmMatchV1 {
             server_id: Some(server_id),
             ..stage_match
-        });
+        }); */
 
-        server.set_active_match(tm_match.id);
+        //server.set_active_match(tm_match.id);
 
         ctx.db.tab_raw_server().server_login().update(server);
     }
@@ -183,24 +200,28 @@ pub fn match_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> {
     ctx.get_user()?;
     if let Some(mut tm_match) = ctx.db.tab_tm_match().id().find(id)
         && tm_match.status == MatchStatus::Configuring
-        && let Some(tm_server_id) = &tm_match.server_id
-        && tm_match.match_config.is_some()
+        && tm_match.match_config != 0
     {
         tm_match.status = MatchStatus::Upcoming;
 
         // Send the configuration of the corresponding match to the associated server.
-        let Some(mut tm_server) = ctx.db.tab_raw_server().server_login().find(tm_server_id) else {
+        /* let Some(mut tm_server) = ctx
+            .db
+            .tab_raw_server_occupation()
+            .match_id()
+            .find(tm_server_id)
+        else {
             return Err(format!("No server with id {tm_server_id} could be found"));
         };
         if tm_match.pre_match_config.is_some() {
             //tm_server.set_config(tm_match.pre_match_config.clone().unwrap());
         } else {
             //tm_server.set_config(tm_match.match_config.clone().unwrap());
-        }
+        } */
 
-        ctx.db.tab_tm_match().id().update(tm_match);
+        /* ctx.db.tab_tm_match().id().update(tm_match);
 
-        ctx.db.tab_raw_server().server_login().update(tm_server);
+        ctx.db.tab_raw_server().server_login().update(tm_server); */
     }
     Ok(())
 }
@@ -209,13 +230,13 @@ pub fn match_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> {
 pub fn match_update_pre_config(
     ctx: &ReducerContext,
     id: u32,
-    config: ServerConfig,
+    config_id: u32,
 ) -> Result<(), String> {
     ctx.get_user()?;
     if let Some(mut tm_match) = ctx.db.tab_tm_match().id().find(id)
         && tm_match.status == MatchStatus::Configuring
     {
-        tm_match.pre_match_config = Some(config);
+        tm_match.pre_match_config = config_id;
         ctx.db.tab_tm_match().id().update(tm_match);
         Ok(())
     } else {
@@ -233,7 +254,8 @@ pub fn match_update_config(
     if let Some(mut tm_match) = ctx.db.tab_tm_match().id().find(id)
         && tm_match.status == MatchStatus::Configuring
     {
-        tm_match.match_config = Some(config);
+        //TODO
+        //tm_match.match_config = Some(config);
         ctx.db.tab_tm_match().id().update(tm_match);
         Ok(())
     } else {
@@ -243,22 +265,23 @@ pub fn match_update_config(
 
 /// If the match is fully configured and ready start.
 /// This can also serve as a manual override for scheduled matches.
-#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
+#[reducer]
 pub fn match_try_start(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
     ctx.get_user()?;
-    if let Some(mut tm_match) = ctx.db.tab_tm_match().id().find(match_id)
+
+    /* if let Some(mut tm_match) = ctx.db.tab_tm_match().id().find(match_id)
         // Match needs an assigned server
-        && let Some(server) = &tm_match.server_id
+    && let Some(server) = ctx.db.tab_raw_server_occupation().match_id().filter(tm_match.id).next()
         //The assigned server needs to be valid
         && let Some(mut server) = ctx.db.tab_raw_server().server_login().find(server)
-        && let Some(config) = &tm_match.match_config
+        //&& let Some(config) = &tm_match.match_config
         && tm_match.status == MatchStatus::Upcoming
     {
         //server.set_config(config.clone());
         tm_match.status = MatchStatus::Live;
         ctx.db.tab_tm_match().id().update(tm_match);
         ctx.db.tab_raw_server().server_login().update(server);
-    }
+    } */
     Ok(())
 }
 
