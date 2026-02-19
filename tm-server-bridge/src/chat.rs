@@ -13,5 +13,11 @@ pub async fn setup_chat() {
             tracing::warn!("{error}")
         }
         tracing::info!("Should be routed");
-    })
+    });
+
+    _ = server
+        .chat_send_server_massage(
+            "[tmservers.live] Finished connecting the server to the tmservers.live backend.",
+        )
+        .await;
 }
