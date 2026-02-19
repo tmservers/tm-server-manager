@@ -1,7 +1,7 @@
 use spacetimedb::{AnonymousViewContext, SpacetimeType, ViewContext, view};
 use tm_server_types::event::Event;
 
-use crate::r#match::event::tab_tm_match_event__view;
+use crate::tm_match::event::tab_tm_match_event__view;
 
 //TODO probably factor out in own crate for proper support in client applications.
 pub struct LeaderboardEmulator {

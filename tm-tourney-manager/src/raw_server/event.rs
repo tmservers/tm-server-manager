@@ -4,7 +4,7 @@ use tm_server_types::event::Event;
 use crate::{
     authorization::Authorization,
     competition::connection::{NodeKindHandle, internal_graph_resolution_node_finished},
-    r#match::{
+    tm_match::{
         event::{TmMatchEvent, tab_tm_match_event},
         match_state::{TmMatchState, tab_tm_match_state},
         tab_tm_match,

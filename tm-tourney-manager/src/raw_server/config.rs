@@ -3,7 +3,7 @@ use tm_server_types::config::ServerConfig;
 
 use crate::{
     authorization::Authorization,
-    r#match::tab_tm_match__view,
+    tm_match::tab_tm_match__view,
     raw_server::{tab_raw_server__view, tab_raw_server_occupation__view},
 };
 

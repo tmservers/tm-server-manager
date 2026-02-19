@@ -1,7 +1,7 @@
 use spacetimedb::{AnonymousViewContext, SpacetimeType, rand::seq::index, table, view};
 use tm_server_types::event::Event;
 
-use crate::r#match::match_state::{TmMatchState, tab_tm_match_state__view};
+use crate::tm_match::match_state::{TmMatchState, tab_tm_match_state__view};
 
 #[derive(Debug)]
 #[table(

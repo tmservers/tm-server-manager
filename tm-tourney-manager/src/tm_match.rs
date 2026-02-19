@@ -11,11 +11,11 @@ use crate::{
         },
         tab_competition,
     },
-    r#match::{
+    raw_server::{tab_raw_server, tab_raw_server_occupation},
+    tm_match::{
         match_state::{TmMatchState, tab_tm_match_state},
         template::match_template,
     },
-    raw_server::{tab_raw_server, tab_raw_server_occupation},
 };
 
 pub mod event;

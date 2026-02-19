@@ -6,7 +6,7 @@ use crate::{
         connection::connection_data::{CompetitionConnectionData, tab_competition_connection_data},
         tab_competition,
     },
-    r#match::tab_tm_match,
+    tm_match::tab_tm_match,
     scheduling::tab_schedule,
 };
 
