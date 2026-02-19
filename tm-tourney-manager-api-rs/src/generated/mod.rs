@@ -71,7 +71,6 @@ pub mod match_assign_server_reducer;
 pub mod match_configured_reducer;
 pub mod match_ghost_type;
 pub mod match_leaderbaord_table;
-pub mod match_players_table;
 pub mod match_record_table;
 pub mod match_round_table;
 pub mod match_status_type;
@@ -108,10 +107,12 @@ pub mod post_event_reducer;
 pub mod post_record_reducer;
 pub mod post_round_replay_procedure;
 pub mod raw_server_config_table;
+pub mod raw_server_config_type;
 pub mod raw_server_current_players_table;
 pub mod raw_server_expected_players_table;
 pub mod raw_server_method_call_table;
 pub mod raw_server_method_call_type;
+pub mod raw_server_occupation_type;
 pub mod raw_server_player_add_reducer;
 pub mod raw_server_player_remove_reducer;
 pub mod raw_server_player_type;
@@ -152,19 +153,17 @@ pub mod tab_competition_node_position_table;
 pub mod tab_competition_node_position_type;
 pub mod tab_competition_table;
 pub mod tab_match_ghost_table;
-pub mod tab_raw_server_config_owned_table;
 pub mod tab_raw_server_config_table;
 pub mod tab_raw_server_method_call_resolved_table;
 pub mod tab_raw_server_method_call_table;
 pub mod tab_raw_server_method_response_table;
+pub mod tab_raw_server_occupation_table;
 pub mod tab_raw_server_player_table;
 pub mod tab_raw_server_table;
 pub mod tab_registered_player_table;
 pub mod tab_registered_team_table;
 pub mod tab_schedule_table;
 pub mod tab_tm_match_event_table;
-pub mod tab_tm_match_players_table;
-pub mod tab_tm_match_spectators_table;
 pub mod tab_tm_match_state_table;
 pub mod tab_tm_match_table;
 pub mod tab_tournament_permission_table;
@@ -178,15 +177,12 @@ pub mod tm_comp_record_type;
 pub mod tm_map_record_table;
 pub mod tm_map_record_type;
 pub mod tm_match_event_type;
-pub mod tm_match_player_type;
 pub mod tm_match_record_table;
 pub mod tm_match_state_type;
 pub mod tm_match_table;
 pub mod tm_match_v_1_type;
 pub mod tm_monitoring_table;
 pub mod tm_monitoring_type;
-pub mod tm_raw_server_config_owned_type;
-pub mod tm_raw_server_config_type;
 pub mod tm_record_type;
 pub mod tm_server_method_response_type;
 pub mod tm_worker_jobs_table;
@@ -322,7 +318,6 @@ pub use match_configured_reducer::{
 };
 pub use match_ghost_type::MatchGhost;
 pub use match_leaderbaord_table::*;
-pub use match_players_table::*;
 pub use match_record_table::*;
 pub use match_round_table::*;
 pub use match_status_type::MatchStatus;
@@ -370,10 +365,12 @@ pub use post_event_reducer::{post_event, set_flags_for_post_event, PostEventCall
 pub use post_record_reducer::{post_record, set_flags_for_post_record, PostRecordCallbackId};
 pub use post_round_replay_procedure::post_round_replay;
 pub use raw_server_config_table::*;
+pub use raw_server_config_type::RawServerConfig;
 pub use raw_server_current_players_table::*;
 pub use raw_server_expected_players_table::*;
 pub use raw_server_method_call_table::*;
 pub use raw_server_method_call_type::RawServerMethodCall;
+pub use raw_server_occupation_type::RawServerOccupation;
 pub use raw_server_player_add_reducer::{
     raw_server_player_add, set_flags_for_raw_server_player_add, RawServerPlayerAddCallbackId,
 };
@@ -427,19 +424,17 @@ pub use tab_competition_node_position_table::*;
 pub use tab_competition_node_position_type::TabCompetitionNodePosition;
 pub use tab_competition_table::*;
 pub use tab_match_ghost_table::*;
-pub use tab_raw_server_config_owned_table::*;
 pub use tab_raw_server_config_table::*;
 pub use tab_raw_server_method_call_resolved_table::*;
 pub use tab_raw_server_method_call_table::*;
 pub use tab_raw_server_method_response_table::*;
+pub use tab_raw_server_occupation_table::*;
 pub use tab_raw_server_player_table::*;
 pub use tab_raw_server_table::*;
 pub use tab_registered_player_table::*;
 pub use tab_registered_team_table::*;
 pub use tab_schedule_table::*;
 pub use tab_tm_match_event_table::*;
-pub use tab_tm_match_players_table::*;
-pub use tab_tm_match_spectators_table::*;
 pub use tab_tm_match_state_table::*;
 pub use tab_tm_match_table::*;
 pub use tab_tournament_permission_table::*;
@@ -453,15 +448,12 @@ pub use tm_comp_record_type::TmCompRecord;
 pub use tm_map_record_table::*;
 pub use tm_map_record_type::TmMapRecord;
 pub use tm_match_event_type::TmMatchEvent;
-pub use tm_match_player_type::TmMatchPlayer;
 pub use tm_match_record_table::*;
 pub use tm_match_state_type::TmMatchState;
 pub use tm_match_table::*;
 pub use tm_match_v_1_type::TmMatchV1;
 pub use tm_monitoring_table::*;
 pub use tm_monitoring_type::TmMonitoring;
-pub use tm_raw_server_config_owned_type::TmRawServerConfigOwned;
-pub use tm_raw_server_config_type::TmRawServerConfig;
 pub use tm_record_type::TmRecord;
 pub use tm_server_method_response_type::TmServerMethodResponse;
 pub use tm_worker_jobs_table::*;
@@ -585,7 +577,7 @@ pub enum Reducer {
     },
     MatchAssignServer {
         to: u32,
-        server_id: String,
+        server_login: String,
     },
     MatchConfigured {
         id: u32,
@@ -599,7 +591,7 @@ pub enum Reducer {
     },
     MatchUpdatePreConfig {
         id: u32,
-        config: ServerConfig,
+        config_id: u32,
     },
     OnScheduleTriggered {
         arg: ScheduleV1,
@@ -773,7 +765,6 @@ pub struct DbUpdate {
     env: __sdk::TableUpdate<Env>,
     map_record: __sdk::TableUpdate<TmRecord>,
     match_leaderbaord: __sdk::TableUpdate<LeaderboardEntry>,
-    match_players: __sdk::TableUpdate<TmMatchPlayer>,
     match_record: __sdk::TableUpdate<TmRecord>,
     match_round: __sdk::TableUpdate<RoundStandings>,
     match_template: __sdk::TableUpdate<MatchTemplate>,
@@ -794,19 +785,17 @@ pub struct DbUpdate {
     tab_competition_node_position: __sdk::TableUpdate<TabCompetitionNodePosition>,
     tab_match_ghost: __sdk::TableUpdate<MatchGhost>,
     tab_raw_server: __sdk::TableUpdate<RawServerV1>,
-    tab_raw_server_config: __sdk::TableUpdate<TmRawServerConfig>,
-    tab_raw_server_config_owned: __sdk::TableUpdate<TmRawServerConfigOwned>,
+    tab_raw_server_config: __sdk::TableUpdate<RawServerConfig>,
     tab_raw_server_method_call: __sdk::TableUpdate<RawServerMethodCall>,
     tab_raw_server_method_call_resolved: __sdk::TableUpdate<RawServerMethodCall>,
     tab_raw_server_method_response: __sdk::TableUpdate<TmServerMethodResponse>,
+    tab_raw_server_occupation: __sdk::TableUpdate<RawServerOccupation>,
     tab_raw_server_player: __sdk::TableUpdate<RawServerPlayer>,
     tab_registered_player: __sdk::TableUpdate<RegisteredPlayer>,
     tab_registered_team: __sdk::TableUpdate<RegisteredTeam>,
     tab_schedule: __sdk::TableUpdate<ScheduleV1>,
     tab_tm_match: __sdk::TableUpdate<TmMatchV1>,
     tab_tm_match_event: __sdk::TableUpdate<TmMatchEvent>,
-    tab_tm_match_players: __sdk::TableUpdate<TmMatchPlayer>,
-    tab_tm_match_spectators: __sdk::TableUpdate<TmMatchPlayer>,
     tab_tm_match_state: __sdk::TableUpdate<TmMatchState>,
     tab_tournament: __sdk::TableUpdate<TournamentV1>,
     tab_tournament_permission: __sdk::TableUpdate<TournamentPermissionV1>,
@@ -854,9 +843,6 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "match_leaderbaord" => db_update
                     .match_leaderbaord
                     .append(match_leaderbaord_table::parse_table_update(table_update)?),
-                "match_players" => db_update
-                    .match_players
-                    .append(match_players_table::parse_table_update(table_update)?),
                 "match_record" => db_update
                     .match_record
                     .append(match_record_table::parse_table_update(table_update)?),
@@ -922,9 +908,6 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "tab_raw_server_config" => db_update.tab_raw_server_config.append(
                     tab_raw_server_config_table::parse_table_update(table_update)?,
                 ),
-                "tab_raw_server_config_owned" => db_update.tab_raw_server_config_owned.append(
-                    tab_raw_server_config_owned_table::parse_table_update(table_update)?,
-                ),
                 "tab_raw_server_method_call" => db_update.tab_raw_server_method_call.append(
                     tab_raw_server_method_call_table::parse_table_update(table_update)?,
                 ),
@@ -940,6 +923,9 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                         tab_raw_server_method_response_table::parse_table_update(table_update)?,
                     )
                 }
+                "tab_raw_server_occupation" => db_update.tab_raw_server_occupation.append(
+                    tab_raw_server_occupation_table::parse_table_update(table_update)?,
+                ),
                 "tab_raw_server_player" => db_update.tab_raw_server_player.append(
                     tab_raw_server_player_table::parse_table_update(table_update)?,
                 ),
@@ -958,12 +944,6 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "tab_tm_match_event" => db_update
                     .tab_tm_match_event
                     .append(tab_tm_match_event_table::parse_table_update(table_update)?),
-                "tab_tm_match_players" => db_update.tab_tm_match_players.append(
-                    tab_tm_match_players_table::parse_table_update(table_update)?,
-                ),
-                "tab_tm_match_spectators" => db_update.tab_tm_match_spectators.append(
-                    tab_tm_match_spectators_table::parse_table_update(table_update)?,
-                ),
                 "tab_tm_match_state" => db_update
                     .tab_tm_match_state
                     .append(tab_tm_match_state_table::parse_table_update(table_update)?),
@@ -1068,19 +1048,13 @@ impl __sdk::DbUpdate for DbUpdate {
             cache.apply_diff_to_table::<MatchGhost>("tab_match_ghost", &self.tab_match_ghost);
         diff.tab_raw_server = cache
             .apply_diff_to_table::<RawServerV1>("tab_raw_server", &self.tab_raw_server)
-            .with_updates_by_pk(|row| &row.server_login);
+            .with_updates_by_pk(|row| &row.id);
         diff.tab_raw_server_config = cache
-            .apply_diff_to_table::<TmRawServerConfig>(
+            .apply_diff_to_table::<RawServerConfig>(
                 "tab_raw_server_config",
                 &self.tab_raw_server_config,
             )
             .with_updates_by_pk(|row| &row.id);
-        diff.tab_raw_server_config_owned = cache
-            .apply_diff_to_table::<TmRawServerConfigOwned>(
-                "tab_raw_server_config_owned",
-                &self.tab_raw_server_config_owned,
-            )
-            .with_updates_by_pk(|row| &row.server_login);
         diff.tab_raw_server_method_call = cache
             .apply_diff_to_table::<RawServerMethodCall>(
                 "tab_raw_server_method_call",
@@ -1099,6 +1073,12 @@ impl __sdk::DbUpdate for DbUpdate {
                 &self.tab_raw_server_method_response,
             )
             .with_updates_by_pk(|row| &row.id);
+        diff.tab_raw_server_occupation = cache
+            .apply_diff_to_table::<RawServerOccupation>(
+                "tab_raw_server_occupation",
+                &self.tab_raw_server_occupation,
+            )
+            .with_updates_by_pk(|row| &row.server_id);
         diff.tab_raw_server_player = cache
             .apply_diff_to_table::<RawServerPlayer>(
                 "tab_raw_server_player",
@@ -1121,14 +1101,6 @@ impl __sdk::DbUpdate for DbUpdate {
             .with_updates_by_pk(|row| &row.id);
         diff.tab_tm_match_event = cache
             .apply_diff_to_table::<TmMatchEvent>("tab_tm_match_event", &self.tab_tm_match_event);
-        diff.tab_tm_match_players = cache.apply_diff_to_table::<TmMatchPlayer>(
-            "tab_tm_match_players",
-            &self.tab_tm_match_players,
-        );
-        diff.tab_tm_match_spectators = cache.apply_diff_to_table::<TmMatchPlayer>(
-            "tab_tm_match_spectators",
-            &self.tab_tm_match_spectators,
-        );
         diff.tab_tm_match_state = cache
             .apply_diff_to_table::<TmMatchState>("tab_tm_match_state", &self.tab_tm_match_state)
             .with_updates_by_pk(|row| &row.id);
@@ -1183,8 +1155,6 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.map_record = cache.apply_diff_to_table::<TmRecord>("map_record", &self.map_record);
         diff.match_leaderbaord = cache
             .apply_diff_to_table::<LeaderboardEntry>("match_leaderbaord", &self.match_leaderbaord);
-        diff.match_players =
-            cache.apply_diff_to_table::<TmMatchPlayer>("match_players", &self.match_players);
         diff.match_record =
             cache.apply_diff_to_table::<TmRecord>("match_record", &self.match_record);
         diff.match_round =
@@ -1239,7 +1209,6 @@ pub struct AppliedDiff<'r> {
     env: __sdk::TableAppliedDiff<'r, Env>,
     map_record: __sdk::TableAppliedDiff<'r, TmRecord>,
     match_leaderbaord: __sdk::TableAppliedDiff<'r, LeaderboardEntry>,
-    match_players: __sdk::TableAppliedDiff<'r, TmMatchPlayer>,
     match_record: __sdk::TableAppliedDiff<'r, TmRecord>,
     match_round: __sdk::TableAppliedDiff<'r, RoundStandings>,
     match_template: __sdk::TableAppliedDiff<'r, MatchTemplate>,
@@ -1260,19 +1229,17 @@ pub struct AppliedDiff<'r> {
     tab_competition_node_position: __sdk::TableAppliedDiff<'r, TabCompetitionNodePosition>,
     tab_match_ghost: __sdk::TableAppliedDiff<'r, MatchGhost>,
     tab_raw_server: __sdk::TableAppliedDiff<'r, RawServerV1>,
-    tab_raw_server_config: __sdk::TableAppliedDiff<'r, TmRawServerConfig>,
-    tab_raw_server_config_owned: __sdk::TableAppliedDiff<'r, TmRawServerConfigOwned>,
+    tab_raw_server_config: __sdk::TableAppliedDiff<'r, RawServerConfig>,
     tab_raw_server_method_call: __sdk::TableAppliedDiff<'r, RawServerMethodCall>,
     tab_raw_server_method_call_resolved: __sdk::TableAppliedDiff<'r, RawServerMethodCall>,
     tab_raw_server_method_response: __sdk::TableAppliedDiff<'r, TmServerMethodResponse>,
+    tab_raw_server_occupation: __sdk::TableAppliedDiff<'r, RawServerOccupation>,
     tab_raw_server_player: __sdk::TableAppliedDiff<'r, RawServerPlayer>,
     tab_registered_player: __sdk::TableAppliedDiff<'r, RegisteredPlayer>,
     tab_registered_team: __sdk::TableAppliedDiff<'r, RegisteredTeam>,
     tab_schedule: __sdk::TableAppliedDiff<'r, ScheduleV1>,
     tab_tm_match: __sdk::TableAppliedDiff<'r, TmMatchV1>,
     tab_tm_match_event: __sdk::TableAppliedDiff<'r, TmMatchEvent>,
-    tab_tm_match_players: __sdk::TableAppliedDiff<'r, TmMatchPlayer>,
-    tab_tm_match_spectators: __sdk::TableAppliedDiff<'r, TmMatchPlayer>,
     tab_tm_match_state: __sdk::TableAppliedDiff<'r, TmMatchState>,
     tab_tournament: __sdk::TableAppliedDiff<'r, TournamentV1>,
     tab_tournament_permission: __sdk::TableAppliedDiff<'r, TournamentPermissionV1>,
@@ -1331,11 +1298,6 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
         callbacks.invoke_table_row_callbacks::<LeaderboardEntry>(
             "match_leaderbaord",
             &self.match_leaderbaord,
-            event,
-        );
-        callbacks.invoke_table_row_callbacks::<TmMatchPlayer>(
-            "match_players",
-            &self.match_players,
             event,
         );
         callbacks.invoke_table_row_callbacks::<TmRecord>("match_record", &self.match_record, event);
@@ -1426,14 +1388,9 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             &self.tab_raw_server,
             event,
         );
-        callbacks.invoke_table_row_callbacks::<TmRawServerConfig>(
+        callbacks.invoke_table_row_callbacks::<RawServerConfig>(
             "tab_raw_server_config",
             &self.tab_raw_server_config,
-            event,
-        );
-        callbacks.invoke_table_row_callbacks::<TmRawServerConfigOwned>(
-            "tab_raw_server_config_owned",
-            &self.tab_raw_server_config_owned,
             event,
         );
         callbacks.invoke_table_row_callbacks::<RawServerMethodCall>(
@@ -1449,6 +1406,11 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
         callbacks.invoke_table_row_callbacks::<TmServerMethodResponse>(
             "tab_raw_server_method_response",
             &self.tab_raw_server_method_response,
+            event,
+        );
+        callbacks.invoke_table_row_callbacks::<RawServerOccupation>(
+            "tab_raw_server_occupation",
+            &self.tab_raw_server_occupation,
             event,
         );
         callbacks.invoke_table_row_callbacks::<RawServerPlayer>(
@@ -1479,16 +1441,6 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
         callbacks.invoke_table_row_callbacks::<TmMatchEvent>(
             "tab_tm_match_event",
             &self.tab_tm_match_event,
-            event,
-        );
-        callbacks.invoke_table_row_callbacks::<TmMatchPlayer>(
-            "tab_tm_match_players",
-            &self.tab_tm_match_players,
-            event,
-        );
-        callbacks.invoke_table_row_callbacks::<TmMatchPlayer>(
-            "tab_tm_match_spectators",
-            &self.tab_tm_match_spectators,
             event,
         );
         callbacks.invoke_table_row_callbacks::<TmMatchState>(
@@ -2274,7 +2226,6 @@ impl __sdk::SpacetimeModule for RemoteModule {
         env_table::register_table(client_cache);
         map_record_table::register_table(client_cache);
         match_leaderbaord_table::register_table(client_cache);
-        match_players_table::register_table(client_cache);
         match_record_table::register_table(client_cache);
         match_round_table::register_table(client_cache);
         match_template_table::register_table(client_cache);
@@ -2296,18 +2247,16 @@ impl __sdk::SpacetimeModule for RemoteModule {
         tab_match_ghost_table::register_table(client_cache);
         tab_raw_server_table::register_table(client_cache);
         tab_raw_server_config_table::register_table(client_cache);
-        tab_raw_server_config_owned_table::register_table(client_cache);
         tab_raw_server_method_call_table::register_table(client_cache);
         tab_raw_server_method_call_resolved_table::register_table(client_cache);
         tab_raw_server_method_response_table::register_table(client_cache);
+        tab_raw_server_occupation_table::register_table(client_cache);
         tab_raw_server_player_table::register_table(client_cache);
         tab_registered_player_table::register_table(client_cache);
         tab_registered_team_table::register_table(client_cache);
         tab_schedule_table::register_table(client_cache);
         tab_tm_match_table::register_table(client_cache);
         tab_tm_match_event_table::register_table(client_cache);
-        tab_tm_match_players_table::register_table(client_cache);
-        tab_tm_match_spectators_table::register_table(client_cache);
         tab_tm_match_state_table::register_table(client_cache);
         tab_tournament_table::register_table(client_cache);
         tab_tournament_permission_table::register_table(client_cache);

@@ -9,25 +9,17 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
-import ServerConfig from "./server_config_type";
 import MatchStatus from "./match_status_type";
 
 
 export default __t.object("TmMatchV1", {
+  name: __t.string(),
   id: __t.u32(),
   tournamentId: __t.u32(),
   competitionId: __t.u32(),
-  name: __t.string(),
-  serverId: __t.option(__t.string()),
-  get preMatchConfig() {
-    return __t.option(ServerConfig);
-  },
-  get matchConfig() {
-    return __t.option(ServerConfig);
-  },
-  get postMatchConfig() {
-    return __t.option(ServerConfig);
-  },
+  preMatchConfig: __t.u32(),
+  matchConfig: __t.u32(),
+  postMatchConfig: __t.u32(),
   get status() {
     return MatchStatus;
   },

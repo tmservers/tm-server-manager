@@ -8,29 +8,29 @@ use super::server_config_type::ServerConfig;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct TmRawServerConfig {
+pub struct RawServerConfig {
     pub id: u32,
     pub account_id: __sdk::Uuid,
     pub config: ServerConfig,
 }
 
-impl __sdk::InModule for TmRawServerConfig {
+impl __sdk::InModule for RawServerConfig {
     type Module = super::RemoteModule;
 }
 
-/// Column accessor struct for the table `TmRawServerConfig`.
+/// Column accessor struct for the table `RawServerConfig`.
 ///
 /// Provides typed access to columns for query building.
-pub struct TmRawServerConfigCols {
-    pub id: __sdk::__query_builder::Col<TmRawServerConfig, u32>,
-    pub account_id: __sdk::__query_builder::Col<TmRawServerConfig, __sdk::Uuid>,
-    pub config: __sdk::__query_builder::Col<TmRawServerConfig, ServerConfig>,
+pub struct RawServerConfigCols {
+    pub id: __sdk::__query_builder::Col<RawServerConfig, u32>,
+    pub account_id: __sdk::__query_builder::Col<RawServerConfig, __sdk::Uuid>,
+    pub config: __sdk::__query_builder::Col<RawServerConfig, ServerConfig>,
 }
 
-impl __sdk::__query_builder::HasCols for TmRawServerConfig {
-    type Cols = TmRawServerConfigCols;
+impl __sdk::__query_builder::HasCols for RawServerConfig {
+    type Cols = RawServerConfigCols;
     fn cols(table_name: &'static str) -> Self::Cols {
-        TmRawServerConfigCols {
+        RawServerConfigCols {
             id: __sdk::__query_builder::Col::new(table_name, "id"),
             account_id: __sdk::__query_builder::Col::new(table_name, "account_id"),
             config: __sdk::__query_builder::Col::new(table_name, "config"),
@@ -38,17 +38,17 @@ impl __sdk::__query_builder::HasCols for TmRawServerConfig {
     }
 }
 
-/// Indexed column accessor struct for the table `TmRawServerConfig`.
+/// Indexed column accessor struct for the table `RawServerConfig`.
 ///
 /// Provides typed access to indexed columns for query building.
-pub struct TmRawServerConfigIxCols {
-    pub id: __sdk::__query_builder::IxCol<TmRawServerConfig, u32>,
+pub struct RawServerConfigIxCols {
+    pub id: __sdk::__query_builder::IxCol<RawServerConfig, u32>,
 }
 
-impl __sdk::__query_builder::HasIxCols for TmRawServerConfig {
-    type IxCols = TmRawServerConfigIxCols;
+impl __sdk::__query_builder::HasIxCols for RawServerConfig {
+    type IxCols = RawServerConfigIxCols;
     fn ix_cols(table_name: &'static str) -> Self::IxCols {
-        TmRawServerConfigIxCols {
+        RawServerConfigIxCols {
             id: __sdk::__query_builder::IxCol::new(table_name, "id"),
         }
     }

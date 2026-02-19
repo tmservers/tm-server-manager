@@ -57,10 +57,6 @@ fn connect_to_db() -> DbConnection {
         .expect("Failed to connect to SpacetimeDB. Aborting.")
 }
 
-/* struct State {
-nadeo: NadeoClient,
-} */
-
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     dotenvy::from_path(env!("CARGO_MANIFEST_DIR").to_string() + "/.env")
@@ -104,8 +100,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let spacetime = connect_to_db();
         let tm_account_id = Uuid::parse_str(&tm_account_id)?;
 
+        _ = SPACETIME.set(spacetime);
+
+        tokio::spawn(async move {
+            let connection = SPACETIME.wait();
+            loop {
+                _ = connection.run_async().await;
+            }
+        });
+
         //TODO proper error handling
-        spacetime.procedures.login_as_server_then(
+        SPACETIME.wait().procedures.login_as_server_then(
             tm_server_login,
             tm_server_password,
             tm_account_id,
@@ -115,7 +120,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 };
             },
         );
-        _ = SPACETIME.set(spacetime);
     }
 
     // Initial Configuration for the Trackmania server connection.
@@ -143,7 +147,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         _ = server.get_callbacks_list().await?; */
 
         // Emit all events
-        server.on_event(|event| {
+        /*  server.on_event(|event| {
             let event = event.clone();
             tokio::spawn(async move {
                 let server = TRACKMANIA.wait();
@@ -161,52 +165,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         .await;
                     tracing::error!("player successfully kicked {}", &player.account_id);
                 }; */
-
-                if let tm_server_controller::event::Event::EndRoundStart(info) = &event {
-                    let file_name = format!("{}{}", info.count, info.time);
-                    if let Err(error) = server.save_current_replay(&file_name).await {
-                        tracing::error!(
-                            "Failed to save Replay File after Round ended. Reason: {error}"
-                        );
-                        return;
-                    };
-                    let full_path = TRACKMANIA_FILES.wait().clone()
-                        + "/Replays/"
-                        + &std::env::var("TM_MASTERSERVER_LOGIN").unwrap()
-                        + "/Autosaves/"
-                        + &file_name
-                        + ".Replay.Gbx";
-
-                    match std::fs::read(&full_path) {
-                        Ok(file) => {
-                            SPACETIME.wait().procedures.post_round_replay(file);
-                        }
-                        Err(error) => {
-                            tracing::error!("Failed to read replay file. Reason: {error}")
-                        }
-                    };
-                    if let Err(error) = std::fs::remove_file(&full_path) {
-                        tracing::error!("Failed to delete the current replay file! Reason: {error}")
-                    };
-
-                    //TODO remove
-                    /* warn!(
-                        "{:?},",
-                        TRACKMANIA
-                            .wait()
-                            .set_player_points("NGcBSsHMSq6Z_mvrXsojKg".to_string(), 55)
-                            .await
-                    );
-                    warn!(
-                        "{:?},",
-                        TRACKMANIA
-                            .wait()
-                            .set_player_points("iyOlLqb7TMmlOwxGwIdo-g".to_string(), 65)
-                            .await
-                    ); */
-                }
             });
-        })
+        }) */
     }
 
     setup_state_synchronization().await;
@@ -232,12 +192,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             .raw_server_method_call()
             .on_insert(method_call_received);
     }
-
-    tokio::spawn(async move {
-        loop {
-            _ = SPACETIME.wait().run_async().await;
-        }
-    });
 
     match signal::ctrl_c().await {
         Ok(()) => {}
@@ -266,38 +220,3 @@ fn on_disconnected(_ctx: &ErrorContext, err: Option<Error>) {
         std::process::exit(0);
     }
 }
-
-/* async fn test_takumi_render_ui() {
-    /*  let node: NodeKind = NodeKind::Text(TextNode {
-        style: None,
-        text: "huh".into(),
-        tw: None,
-    });
-
-    let render_context = takumi::GlobalContext::default();
-    // Create a viewport
-    let viewport = Viewport::new(Some(1200), Some(630));
-
-    // Create render options
-    let options = RenderOptionsBuilder::default()
-        .viewport(viewport)
-        .node(node)
-        .global(&render_context)
-        .build()
-        .unwrap();
-
-    // Render the layout to an `RgbaImage`
-    let image = takumi::rendering::render(options).unwrap();
-
-    TRACKMANIA.wait()
-           .send_display_manialink_page(
-               r#"<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
-<manialink version="3">
-    <label text="Custom UI! owo" />
-    <quad image="https://www.waddensea-worldheritage.org/sites/default/files/styles/main_image_landscape_crop/public/20-11-09_habour%20seals%20report_TTF_5200_0.JPG?itok=W1eZAlLm" autoscale="1" size="80 45" keepration="Fit"/>
-</manialink>"#,
-               20000,
-               false,
-           )
-           .await; */
-} */

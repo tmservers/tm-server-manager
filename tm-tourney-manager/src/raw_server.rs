@@ -149,25 +149,6 @@ pub fn login_as_server(
     Ok(())
 }
 
-/* #[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn load_server_config(ctx: &ReducerContext, id: String, with_config: u32) {
-    if let Some(mut server) = ctx.db.tm_server().id().find(id)
-    && let Some(config) = ctx.db.tm_server_config().id().find(with_config)
-    {
-    server.set_config(config.get_config());
-    ctx.db.tm_server().id().update(server);
-    }
-}
-
-#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn set_tm_server_state(ctx: &ReducerContext, id: String, state: ServerState) {
-    if let Some(mut server) = ctx.db.tm_server().id().find(id) {
-        server.set_state(state);
-        ctx.db.tm_server().id().update(server);
-        }
-    }
-    */
-
 #[view(name = this_raw_server, public)]
 fn this_raw_server(ctx: &ViewContext) -> Option<RawServerV1> {
     ctx.db.tab_raw_server().identity().find(ctx.sender)

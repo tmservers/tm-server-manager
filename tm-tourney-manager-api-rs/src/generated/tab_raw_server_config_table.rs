@@ -2,8 +2,8 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN YOUR MODULE SOURCE CODE INSTEAD.
 
 #![allow(unused, clippy::all)]
+use super::raw_server_config_type::RawServerConfig;
 use super::server_config_type::ServerConfig;
-use super::tm_raw_server_config_type::TmRawServerConfig;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 /// Table handle for the table `tab_raw_server_config`.
@@ -15,7 +15,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 /// but to directly chain method calls,
 /// like `ctx.db.tab_raw_server_config().on_insert(...)`.
 pub struct TabRawServerConfigTableHandle<'ctx> {
-    imp: __sdk::TableHandle<TmRawServerConfig>,
+    imp: __sdk::TableHandle<RawServerConfig>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -34,7 +34,7 @@ impl TabRawServerConfigTableAccess for super::RemoteTables {
         TabRawServerConfigTableHandle {
             imp: self
                 .imp
-                .get_table::<TmRawServerConfig>("tab_raw_server_config"),
+                .get_table::<RawServerConfig>("tab_raw_server_config"),
             ctx: std::marker::PhantomData,
         }
     }
@@ -44,13 +44,13 @@ pub struct TabRawServerConfigInsertCallbackId(__sdk::CallbackId);
 pub struct TabRawServerConfigDeleteCallbackId(__sdk::CallbackId);
 
 impl<'ctx> __sdk::Table for TabRawServerConfigTableHandle<'ctx> {
-    type Row = TmRawServerConfig;
+    type Row = RawServerConfig;
     type EventContext = super::EventContext;
 
     fn count(&self) -> u64 {
         self.imp.count()
     }
-    fn iter(&self) -> impl Iterator<Item = TmRawServerConfig> + '_ {
+    fn iter(&self) -> impl Iterator<Item = RawServerConfig> + '_ {
         self.imp.iter()
     }
 
@@ -83,7 +83,7 @@ impl<'ctx> __sdk::Table for TabRawServerConfigTableHandle<'ctx> {
 
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
-    let _table = client_cache.get_or_make_table::<TmRawServerConfig>("tab_raw_server_config");
+    let _table = client_cache.get_or_make_table::<RawServerConfig>("tab_raw_server_config");
     _table.add_unique_constraint::<u32>("id", |row| &row.id);
 }
 pub struct TabRawServerConfigUpdateCallbackId(__sdk::CallbackId);
@@ -106,9 +106,9 @@ impl<'ctx> __sdk::TableWithPrimaryKey for TabRawServerConfigTableHandle<'ctx> {
 #[doc(hidden)]
 pub(super) fn parse_table_update(
     raw_updates: __ws::TableUpdate<__ws::BsatnFormat>,
-) -> __sdk::Result<__sdk::TableUpdate<TmRawServerConfig>> {
+) -> __sdk::Result<__sdk::TableUpdate<RawServerConfig>> {
     __sdk::TableUpdate::parse_table_update(raw_updates).map_err(|e| {
-        __sdk::InternalError::failed_parse("TableUpdate<TmRawServerConfig>", "TableUpdate")
+        __sdk::InternalError::failed_parse("TableUpdate<RawServerConfig>", "TableUpdate")
             .with_cause(e)
             .into()
     })
@@ -122,7 +122,7 @@ pub(super) fn parse_table_update(
 /// but to directly chain method calls,
 /// like `ctx.db.tab_raw_server_config().id().find(...)`.
 pub struct TabRawServerConfigIdUnique<'ctx> {
-    imp: __sdk::UniqueConstraintHandle<TmRawServerConfig, u32>,
+    imp: __sdk::UniqueConstraintHandle<RawServerConfig, u32>,
     phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -139,23 +139,23 @@ impl<'ctx> TabRawServerConfigTableHandle<'ctx> {
 impl<'ctx> TabRawServerConfigIdUnique<'ctx> {
     /// Find the subscribed row whose `id` column value is equal to `col_val`,
     /// if such a row is present in the client cache.
-    pub fn find(&self, col_val: &u32) -> Option<TmRawServerConfig> {
+    pub fn find(&self, col_val: &u32) -> Option<RawServerConfig> {
         self.imp.find(col_val)
     }
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for query builder access to the table `TmRawServerConfig`.
+/// Extension trait for query builder access to the table `RawServerConfig`.
 ///
 /// Implemented for [`__sdk::QueryTableAccessor`].
 pub trait tab_raw_server_configQueryTableAccess {
     #[allow(non_snake_case)]
-    /// Get a query builder for the table `TmRawServerConfig`.
-    fn tab_raw_server_config(&self) -> __sdk::__query_builder::Table<TmRawServerConfig>;
+    /// Get a query builder for the table `RawServerConfig`.
+    fn tab_raw_server_config(&self) -> __sdk::__query_builder::Table<RawServerConfig>;
 }
 
 impl tab_raw_server_configQueryTableAccess for __sdk::QueryTableAccessor {
-    fn tab_raw_server_config(&self) -> __sdk::__query_builder::Table<TmRawServerConfig> {
+    fn tab_raw_server_config(&self) -> __sdk::__query_builder::Table<RawServerConfig> {
         __sdk::__query_builder::Table::new("tab_raw_server_config")
     }
 }

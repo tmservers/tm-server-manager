@@ -7,7 +7,6 @@ use crate::{
 
 pub mod authorization;
 pub mod competition;
-pub mod emulator;
 pub mod environment;
 pub mod ghosts;
 pub mod monitoring;
@@ -23,7 +22,8 @@ pub mod worker;
 
 #[spacetimedb::reducer(client_connected)]
 fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
-    // Execute if one tries to connect authenticated.
+    // If someone tries to connect with a token it needs to be a token from SpacetimeAuth
+    // with the Trackmania provider. Otherwise you should connect annonymously.
     if let Some(jwt) = ctx.sender_auth().jwt() {
         log::warn!("Tried to connect with jwt {}", jwt.raw_payload());
 
@@ -48,7 +48,7 @@ fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
         // - Workers
         // - General purpose applications
         // And dont have the full access for features. (Mostly read perms)
-        log::warn!("Connected Annonymously");
+        log::info!("Connected Annonymously");
         Ok(())
     }
 }

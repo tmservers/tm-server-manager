@@ -4,12 +4,15 @@ use tm_server_types::event::Event;
 use crate::{
     authorization::Authorization,
     competition::connection::{NodeKindHandle, internal_graph_resolution_node_finished},
+    raw_server::{
+        state::{raw_server_player_add, raw_server_player_remove, tab_raw_server_player},
+        tab_raw_server, tab_raw_server_occupation,
+    },
     tm_match::{
         event::{TmMatchEvent, tab_tm_match_event},
         match_state::{TmMatchState, tab_tm_match_state},
         tab_tm_match,
     },
-    raw_server::{tab_raw_server, tab_raw_server_occupation},
 };
 
 /// Servers call this to post the event stream.
@@ -52,43 +55,17 @@ pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
             false
         };
 
-        //TODO derive the state from off of that.
-        /* match &event {
-            Event::PlayerConenct(player) => {
-                match player.is_spectator {
-                    true => ctx
-                        .db
-                        .tab_tm_match_players()
-                        .account_id()
-                        .try_insert_or_update(TmMatchPlayer {
-                            match_id,
-                            account_id: Uuid::parse_str(&player.account_id).unwrap(),
-                        })?,
-                    false => ctx
-                        .db
-                        .tab_tm_match_spectators()
-                        .account_id()
-                        .try_insert_or_update(TmMatchPlayer {
-                            match_id,
-                            account_id: Uuid::parse_str(&player.account_id).unwrap(),
-                        })?,
-                };
-            }
+        match &event {
+            Event::PlayerConenct(player) => raw_server_player_add(
+                ctx,
+                Uuid::parse_str(&player.account_id).unwrap(),
+                player.is_spectator,
+            )?,
             Event::PlayerDisconnect(player) => {
-                if !ctx
-                    .db
-                    .tab_tm_match_players()
-                    .account_id()
-                    .delete(Uuid::parse_str(&player.account_id).unwrap())
-                {
-                    ctx.db
-                        .tab_tm_match_spectators()
-                        .account_id()
-                        .delete(Uuid::parse_str(&player.account_id).unwrap());
-                }
+                raw_server_player_remove(ctx, Uuid::parse_str(&player.account_id).unwrap())?
             }
             _ => (),
-        } */
+        }
 
         //let tournament_id = tm_match.get_tournament();
         ctx.db.tab_tm_match_event().insert(TmMatchEvent {

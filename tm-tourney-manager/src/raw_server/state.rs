@@ -15,7 +15,7 @@ pub struct RawServerPlayer {
 }
 
 #[reducer]
-fn raw_server_player_add(
+pub(super) fn raw_server_player_add(
     ctx: &ReducerContext,
     account_id: Uuid,
     spectator: bool,
@@ -57,7 +57,10 @@ fn raw_server_player_add(
 }
 
 #[reducer]
-fn raw_server_player_remove(ctx: &ReducerContext, account_id: Uuid) -> Result<(), String> {
+pub(super) fn raw_server_player_remove(
+    ctx: &ReducerContext,
+    account_id: Uuid,
+) -> Result<(), String> {
     let server = ctx.get_server()?;
 
     if let Some(player) = ctx.db.tab_raw_server_player().account_id().find(account_id) {

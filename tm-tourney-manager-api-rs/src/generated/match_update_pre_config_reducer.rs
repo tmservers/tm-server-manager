@@ -4,20 +4,18 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::server_config_type::ServerConfig;
-
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct MatchUpdatePreConfigArgs {
     pub id: u32,
-    pub config: ServerConfig,
+    pub config_id: u32,
 }
 
 impl From<MatchUpdatePreConfigArgs> for super::Reducer {
     fn from(args: MatchUpdatePreConfigArgs) -> Self {
         Self::MatchUpdatePreConfig {
             id: args.id,
-            config: args.config,
+            config_id: args.config_id,
         }
     }
 }
@@ -38,7 +36,7 @@ pub trait match_update_pre_config {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_match_update_pre_config`] callbacks.
-    fn match_update_pre_config(&self, id: u32, config: ServerConfig) -> __sdk::Result<()>;
+    fn match_update_pre_config(&self, id: u32, config_id: u32) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `match_update_pre_config`.
     ///
     /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
@@ -48,7 +46,7 @@ pub trait match_update_pre_config {
     /// to cancel the callback.
     fn on_match_update_pre_config(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &u32, &ServerConfig) + Send + 'static,
+        callback: impl FnMut(&super::ReducerEventContext, &u32, &u32) + Send + 'static,
     ) -> MatchUpdatePreConfigCallbackId;
     /// Cancel a callback previously registered by [`Self::on_match_update_pre_config`],
     /// causing it not to run in the future.
@@ -56,15 +54,15 @@ pub trait match_update_pre_config {
 }
 
 impl match_update_pre_config for super::RemoteReducers {
-    fn match_update_pre_config(&self, id: u32, config: ServerConfig) -> __sdk::Result<()> {
+    fn match_update_pre_config(&self, id: u32, config_id: u32) -> __sdk::Result<()> {
         self.imp.call_reducer(
             "match_update_pre_config",
-            MatchUpdatePreConfigArgs { id, config },
+            MatchUpdatePreConfigArgs { id, config_id },
         )
     }
     fn on_match_update_pre_config(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &u32, &ServerConfig) + Send + 'static,
+        mut callback: impl FnMut(&super::ReducerEventContext, &u32, &u32) + Send + 'static,
     ) -> MatchUpdatePreConfigCallbackId {
         MatchUpdatePreConfigCallbackId(self.imp.on_reducer(
             "match_update_pre_config",
@@ -73,7 +71,7 @@ impl match_update_pre_config for super::RemoteReducers {
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {
-                            reducer: super::Reducer::MatchUpdatePreConfig { id, config },
+                            reducer: super::Reducer::MatchUpdatePreConfig { id, config_id },
                             ..
                         },
                     ..
@@ -81,7 +79,7 @@ impl match_update_pre_config for super::RemoteReducers {
                 else {
                     unreachable!()
                 };
-                callback(ctx, id, config)
+                callback(ctx, id, config_id)
             }),
         ))
     }

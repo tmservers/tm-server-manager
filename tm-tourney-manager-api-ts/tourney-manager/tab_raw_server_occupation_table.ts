@@ -11,6 +11,6 @@ import {
 } from "spacetimedb";
 
 export default __t.row({
+  serverId: __t.u32().primaryKey().name("server_id"),
   matchId: __t.u32().name("match_id"),
-  accountId: __t.uuid().name("account_id"),
 });

@@ -81,6 +81,7 @@ impl<'ctx> __sdk::Table for TabRawServerTableHandle<'ctx> {
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
     let _table = client_cache.get_or_make_table::<RawServerV1>("tab_raw_server");
+    _table.add_unique_constraint::<u32>("id", |row| &row.id);
     _table.add_unique_constraint::<__sdk::Identity>("identity", |row| &row.identity);
     _table.add_unique_constraint::<String>("server_login", |row| &row.server_login);
 }
@@ -110,6 +111,36 @@ pub(super) fn parse_table_update(
             .with_cause(e)
             .into()
     })
+}
+
+/// Access to the `id` unique index on the table `tab_raw_server`,
+/// which allows point queries on the field of the same name
+/// via the [`TabRawServerIdUnique::find`] method.
+///
+/// Users are encouraged not to explicitly reference this type,
+/// but to directly chain method calls,
+/// like `ctx.db.tab_raw_server().id().find(...)`.
+pub struct TabRawServerIdUnique<'ctx> {
+    imp: __sdk::UniqueConstraintHandle<RawServerV1, u32>,
+    phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
+}
+
+impl<'ctx> TabRawServerTableHandle<'ctx> {
+    /// Get a handle on the `id` unique index on the table `tab_raw_server`.
+    pub fn id(&self) -> TabRawServerIdUnique<'ctx> {
+        TabRawServerIdUnique {
+            imp: self.imp.get_unique_constraint::<u32>("id"),
+            phantom: std::marker::PhantomData,
+        }
+    }
+}
+
+impl<'ctx> TabRawServerIdUnique<'ctx> {
+    /// Find the subscribed row whose `id` column value is equal to `col_val`,
+    /// if such a row is present in the client cache.
+    pub fn find(&self, col_val: &u32) -> Option<RawServerV1> {
+        self.imp.find(col_val)
+    }
 }
 
 /// Access to the `identity` unique index on the table `tab_raw_server`,

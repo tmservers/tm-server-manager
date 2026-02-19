@@ -8,14 +8,14 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[sats(crate = __lib)]
 pub(super) struct MatchAssignServerArgs {
     pub to: u32,
-    pub server_id: String,
+    pub server_login: String,
 }
 
 impl From<MatchAssignServerArgs> for super::Reducer {
     fn from(args: MatchAssignServerArgs) -> Self {
         Self::MatchAssignServer {
             to: args.to,
-            server_id: args.server_id,
+            server_login: args.server_login,
         }
     }
 }
@@ -36,7 +36,7 @@ pub trait match_assign_server {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_match_assign_server`] callbacks.
-    fn match_assign_server(&self, to: u32, server_id: String) -> __sdk::Result<()>;
+    fn match_assign_server(&self, to: u32, server_login: String) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `match_assign_server`.
     ///
     /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
@@ -54,10 +54,10 @@ pub trait match_assign_server {
 }
 
 impl match_assign_server for super::RemoteReducers {
-    fn match_assign_server(&self, to: u32, server_id: String) -> __sdk::Result<()> {
+    fn match_assign_server(&self, to: u32, server_login: String) -> __sdk::Result<()> {
         self.imp.call_reducer(
             "match_assign_server",
-            MatchAssignServerArgs { to, server_id },
+            MatchAssignServerArgs { to, server_login },
         )
     }
     fn on_match_assign_server(
@@ -71,7 +71,7 @@ impl match_assign_server for super::RemoteReducers {
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {
-                            reducer: super::Reducer::MatchAssignServer { to, server_id },
+                            reducer: super::Reducer::MatchAssignServer { to, server_login },
                             ..
                         },
                     ..
@@ -79,7 +79,7 @@ impl match_assign_server for super::RemoteReducers {
                 else {
                     unreachable!()
                 };
-                callback(ctx, to, server_id)
+                callback(ctx, to, server_login)
             }),
         ))
     }

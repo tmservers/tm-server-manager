@@ -1,7 +1,7 @@
 use async_fn_traits::AsyncFn1;
 use tm_server_types::{
     base::PlayerInfo,
-    event::{PlayerChat, PlayerConnect, PlayerDisconnect, Scores, WayPoint},
+    event::{EndRoundStart, PlayerChat, PlayerConnect, PlayerDisconnect, Scores, WayPoint},
 };
 
 use crate::TrackmaniaServer;
@@ -45,6 +45,13 @@ pub trait TypedCallbacks {
     fn on_player_chat(
         &self,
         execute: impl for<'a> AsyncFn1<&'a PlayerChat, OutputFuture: Send, Output = ()>
+        + Send
+        + Sync
+        + 'static,
+    );
+    fn on_end_round_start(
+        &self,
+        execute: impl for<'a> AsyncFn1<&'a EndRoundStart, OutputFuture: Send, Output = ()>
         + Send
         + Sync
         + 'static,
@@ -110,5 +117,15 @@ impl TypedCallbacks for TrackmaniaServer {
         + 'static,
     ) {
         self.on("ManiaPlanet.PlayerChat", execute);
+    }
+    
+    fn on_end_round_start(
+        &self,
+        execute: impl for<'a> AsyncFn1<&'a EndRoundStart, OutputFuture: Send, Output = ()>
+        + Send
+        + Sync
+        + 'static,
+    ) {
+        self.on("event", execute);
     }
 }

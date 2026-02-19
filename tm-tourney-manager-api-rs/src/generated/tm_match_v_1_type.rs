@@ -5,19 +5,17 @@
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 use super::match_status_type::MatchStatus;
-use super::server_config_type::ServerConfig;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct TmMatchV1 {
+    pub name: String,
     pub id: u32,
     pub tournament_id: u32,
     pub competition_id: u32,
-    pub name: String,
-    pub server_id: Option<String>,
-    pub pre_match_config: Option<ServerConfig>,
-    pub match_config: Option<ServerConfig>,
-    pub post_match_config: Option<ServerConfig>,
+    pub pre_match_config: u32,
+    pub match_config: u32,
+    pub post_match_config: u32,
     pub status: MatchStatus,
 }
 
@@ -29,14 +27,13 @@ impl __sdk::InModule for TmMatchV1 {
 ///
 /// Provides typed access to columns for query building.
 pub struct TmMatchV1Cols {
+    pub name: __sdk::__query_builder::Col<TmMatchV1, String>,
     pub id: __sdk::__query_builder::Col<TmMatchV1, u32>,
     pub tournament_id: __sdk::__query_builder::Col<TmMatchV1, u32>,
     pub competition_id: __sdk::__query_builder::Col<TmMatchV1, u32>,
-    pub name: __sdk::__query_builder::Col<TmMatchV1, String>,
-    pub server_id: __sdk::__query_builder::Col<TmMatchV1, Option<String>>,
-    pub pre_match_config: __sdk::__query_builder::Col<TmMatchV1, Option<ServerConfig>>,
-    pub match_config: __sdk::__query_builder::Col<TmMatchV1, Option<ServerConfig>>,
-    pub post_match_config: __sdk::__query_builder::Col<TmMatchV1, Option<ServerConfig>>,
+    pub pre_match_config: __sdk::__query_builder::Col<TmMatchV1, u32>,
+    pub match_config: __sdk::__query_builder::Col<TmMatchV1, u32>,
+    pub post_match_config: __sdk::__query_builder::Col<TmMatchV1, u32>,
     pub status: __sdk::__query_builder::Col<TmMatchV1, MatchStatus>,
 }
 
@@ -44,11 +41,10 @@ impl __sdk::__query_builder::HasCols for TmMatchV1 {
     type Cols = TmMatchV1Cols;
     fn cols(table_name: &'static str) -> Self::Cols {
         TmMatchV1Cols {
+            name: __sdk::__query_builder::Col::new(table_name, "name"),
             id: __sdk::__query_builder::Col::new(table_name, "id"),
             tournament_id: __sdk::__query_builder::Col::new(table_name, "tournament_id"),
             competition_id: __sdk::__query_builder::Col::new(table_name, "competition_id"),
-            name: __sdk::__query_builder::Col::new(table_name, "name"),
-            server_id: __sdk::__query_builder::Col::new(table_name, "server_id"),
             pre_match_config: __sdk::__query_builder::Col::new(table_name, "pre_match_config"),
             match_config: __sdk::__query_builder::Col::new(table_name, "match_config"),
             post_match_config: __sdk::__query_builder::Col::new(table_name, "post_match_config"),

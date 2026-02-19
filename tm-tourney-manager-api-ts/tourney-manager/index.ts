@@ -140,8 +140,6 @@ import MapRecordRow from "./map_record_table";
 export { MapRecordRow };
 import MatchLeaderbaordRow from "./match_leaderbaord_table";
 export { MatchLeaderbaordRow };
-import MatchPlayersRow from "./match_players_table";
-export { MatchPlayersRow };
 import MatchRecordRow from "./match_record_table";
 export { MatchRecordRow };
 import MatchRoundRow from "./match_round_table";
@@ -184,14 +182,14 @@ import TabRawServerRow from "./tab_raw_server_table";
 export { TabRawServerRow };
 import TabRawServerConfigRow from "./tab_raw_server_config_table";
 export { TabRawServerConfigRow };
-import TabRawServerConfigOwnedRow from "./tab_raw_server_config_owned_table";
-export { TabRawServerConfigOwnedRow };
 import TabRawServerMethodCallRow from "./tab_raw_server_method_call_table";
 export { TabRawServerMethodCallRow };
 import TabRawServerMethodCallResolvedRow from "./tab_raw_server_method_call_resolved_table";
 export { TabRawServerMethodCallResolvedRow };
 import TabRawServerMethodResponseRow from "./tab_raw_server_method_response_table";
 export { TabRawServerMethodResponseRow };
+import TabRawServerOccupationRow from "./tab_raw_server_occupation_table";
+export { TabRawServerOccupationRow };
 import TabRawServerPlayerRow from "./tab_raw_server_player_table";
 export { TabRawServerPlayerRow };
 import TabRegisteredPlayerRow from "./tab_registered_player_table";
@@ -204,10 +202,6 @@ import TabTmMatchRow from "./tab_tm_match_table";
 export { TabTmMatchRow };
 import TabTmMatchEventRow from "./tab_tm_match_event_table";
 export { TabTmMatchEventRow };
-import TabTmMatchPlayersRow from "./tab_tm_match_players_table";
-export { TabTmMatchPlayersRow };
-import TabTmMatchSpectatorsRow from "./tab_tm_match_spectators_table";
-export { TabTmMatchSpectatorsRow };
 import TabTmMatchStateRow from "./tab_tm_match_state_table";
 export { TabTmMatchStateRow };
 import TabTournamentRow from "./tab_tournament_table";
@@ -348,8 +342,12 @@ import Podium from "./podium_type";
 export { Podium };
 import PointsLimit from "./points_limit_type";
 export { PointsLimit };
+import RawServerConfig from "./raw_server_config_type";
+export { RawServerConfig };
 import RawServerMethodCall from "./raw_server_method_call_type";
 export { RawServerMethodCall };
+import RawServerOccupation from "./raw_server_occupation_type";
+export { RawServerOccupation };
 import RawServerPlayer from "./raw_server_player_type";
 export { RawServerPlayer };
 import RawServerV1 from "./raw_server_v_1_type";
@@ -408,18 +406,12 @@ import TmMapRecord from "./tm_map_record_type";
 export { TmMapRecord };
 import TmMatchEvent from "./tm_match_event_type";
 export { TmMatchEvent };
-import TmMatchPlayer from "./tm_match_player_type";
-export { TmMatchPlayer };
 import TmMatchState from "./tm_match_state_type";
 export { TmMatchState };
 import TmMatchV1 from "./tm_match_v_1_type";
 export { TmMatchV1 };
 import TmMonitoring from "./tm_monitoring_type";
 export { TmMonitoring };
-import TmRawServerConfig from "./tm_raw_server_config_type";
-export { TmRawServerConfig };
-import TmRawServerConfigOwned from "./tm_raw_server_config_owned_type";
-export { TmRawServerConfigOwned };
 import TmRecord from "./tm_record_type";
 export { TmRecord };
 import TmServerMethodResponse from "./tm_server_method_response_type";
@@ -558,6 +550,9 @@ const tablesSchema = __schema(
       { name: 'account_id', algorithm: 'btree', columns: [
         'accountId',
       ] },
+      { name: 'id', algorithm: 'btree', columns: [
+        'id',
+      ] },
       { name: 'identity', algorithm: 'btree', columns: [
         'identity',
       ] },
@@ -566,6 +561,7 @@ const tablesSchema = __schema(
       ] },
     ],
     constraints: [
+      { name: 'tab_raw_server_id_key', constraint: 'unique', columns: ['id'] },
       { name: 'tab_raw_server_identity_key', constraint: 'unique', columns: ['identity'] },
       { name: 'tab_raw_server_server_login_key', constraint: 'unique', columns: ['serverLogin'] },
     ],
@@ -581,17 +577,6 @@ const tablesSchema = __schema(
       { name: 'tab_raw_server_config_id_key', constraint: 'unique', columns: ['id'] },
     ],
   }, TabRawServerConfigRow),
-  __table({
-    name: 'tab_raw_server_config_owned',
-    indexes: [
-      { name: 'server_login', algorithm: 'btree', columns: [
-        'serverLogin',
-      ] },
-    ],
-    constraints: [
-      { name: 'tab_raw_server_config_owned_server_login_key', constraint: 'unique', columns: ['serverLogin'] },
-    ],
-  }, TabRawServerConfigOwnedRow),
   __table({
     name: 'tab_raw_server_method_call',
     indexes: [
@@ -631,6 +616,20 @@ const tablesSchema = __schema(
       { name: 'tab_raw_server_method_response_id_key', constraint: 'unique', columns: ['id'] },
     ],
   }, TabRawServerMethodResponseRow),
+  __table({
+    name: 'tab_raw_server_occupation',
+    indexes: [
+      { name: 'match_id', algorithm: 'btree', columns: [
+        'matchId',
+      ] },
+      { name: 'server_id', algorithm: 'btree', columns: [
+        'serverId',
+      ] },
+    ],
+    constraints: [
+      { name: 'tab_raw_server_occupation_server_id_key', constraint: 'unique', columns: ['serverId'] },
+    ],
+  }, TabRawServerOccupationRow),
   __table({
     name: 'tab_raw_server_player',
     indexes: [
@@ -705,34 +704,6 @@ const tablesSchema = __schema(
     constraints: [
     ],
   }, TabTmMatchEventRow),
-  __table({
-    name: 'tab_tm_match_players',
-    indexes: [
-      { name: 'account_id', algorithm: 'btree', columns: [
-        'accountId',
-      ] },
-      { name: 'match_id', algorithm: 'btree', columns: [
-        'matchId',
-      ] },
-    ],
-    constraints: [
-      { name: 'tab_tm_match_players_account_id_key', constraint: 'unique', columns: ['accountId'] },
-    ],
-  }, TabTmMatchPlayersRow),
-  __table({
-    name: 'tab_tm_match_spectators',
-    indexes: [
-      { name: 'account_id', algorithm: 'btree', columns: [
-        'accountId',
-      ] },
-      { name: 'match_id', algorithm: 'btree', columns: [
-        'matchId',
-      ] },
-    ],
-    constraints: [
-      { name: 'tab_tm_match_spectators_account_id_key', constraint: 'unique', columns: ['accountId'] },
-    ],
-  }, TabTmMatchSpectatorsRow),
   __table({
     name: 'tab_tm_match_state',
     indexes: [
@@ -922,13 +893,6 @@ const tablesSchema = __schema(
     constraints: [
     ],
   }, MatchLeaderbaordRow),
-  __table({
-    name: 'match_players',
-    indexes: [
-    ],
-    constraints: [
-    ],
-  }, MatchPlayersRow),
   __table({
     name: 'match_record',
     indexes: [
