@@ -11,10 +11,13 @@ use crate::{
         },
         tab_competition,
     },
-    raw_server::{tab_raw_server, tab_raw_server_occupation},
+    raw_server::{
+        RawServerOccupation, available_server_pool, raw_server_pool, tab_raw_server,
+        tab_raw_server_occupation,
+    },
     tm_match::{
         match_state::{TmMatchState, tab_tm_match_state},
-        template::match_template,
+        template::tab_match_template,
     },
 };
 
@@ -65,6 +68,8 @@ pub struct TmMatchV1 {
     post_match_config: u32,
 
     status: MatchStatus,
+
+    auto_provision_server: bool,
 }
 
 impl TmMatchV1 {
@@ -95,8 +100,7 @@ impl TmMatchV1 {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
-#[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
+#[derive(Debug, PartialEq, Eq, SpacetimeType)]
 pub enum MatchStatus {
     /// Allows to change all associated configurations of the Match.
     Configuring,
@@ -109,8 +113,8 @@ pub enum MatchStatus {
     Ended,
 }
 
-#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn create_match(
+#[reducer]
+pub fn match_create(
     ctx: &ReducerContext,
     name: String,
     competition_id: u32,
@@ -120,19 +124,18 @@ pub fn create_match(
     // THis would be done when switching to upcoming.
     //auto_provisioning_server: bool,
 ) -> Result<(), String> {
-    ctx.get_user()?;
+    let user = ctx.get_user()?;
+
+    /* ctx.tournament_permissions(tournament_id, &user)?
+    .permission(TournamentPermissionsV1::TOURNAMENT_EDIT_NAME)
+    .check()?; */
 
     let Some(parent_competition) = ctx.db.tab_competition().id().find(competition_id) else {
         return Err("Invalid competition".into());
     };
 
-    // Try to load template if provided
-    let config = with_template
-        .and_then(|id| ctx.db.match_template().id().find(id))
-        .map(|t| t.config);
-
     // Create an uncommitted match
-    let tm_match = TmMatchV1 {
+    let mut tm_match = TmMatchV1 {
         id: 0,
         competition_id,
         tournament_id: parent_competition.get_tournament(),
@@ -142,7 +145,16 @@ pub fn create_match(
         pre_match_config: 0,
         match_config: 0,
         post_match_config: 0,
+        auto_provision_server: true,
     };
+
+    // Try to load template if provided
+    if let Some(template) = with_template {
+        let Some(template) = ctx.db.tab_match_template().id().find(template) else {
+            return Err("Template not found.".into());
+        };
+        tm_match.match_config = template.get_config_id()
+    }
 
     let tm_match = ctx.db.tab_tm_match().try_insert(tm_match)?;
 
@@ -167,35 +179,31 @@ pub fn create_match(
 
 /// Assigns a server to the selected match.
 #[reducer]
-pub fn match_assign_server(
-    ctx: &ReducerContext,
-    to: u32,
-    server_login: String,
-) -> Result<(), String> {
-    ctx.get_user()?;
-    if let Some(server) = ctx.db.tab_raw_server().server_login().find(&server_login)
-        && ctx
+pub fn match_assign_server(ctx: &ReducerContext, to: u32, server_id: u32) -> Result<(), String> {
+    //TODO permissions
+    let user = ctx.get_user()?;
+    if let Some(server) = ctx.db.tab_raw_server().id().find(server_id)
+        && server.account_id == user.account_id
+        && server.is_verified()
+        && let Some(tm_match) = ctx.db.tab_tm_match().id().find(to)
+        && tm_match.status == MatchStatus::Configuring
+    {
+        /* if let Some(mut occupation) = ctx
             .db
             .tab_raw_server_occupation()
             .server_id()
             .find(server.id)
-            .is_none()
-        && let Some(stage_match) = ctx.db.tab_tm_match().id().find(to)
-        && stage_match.status == MatchStatus::Configuring
-    {
-        /* let tm_match = ctx.db.tab_tm_match().id().update(TmMatchV1 {
-            server_id: Some(server_id),
-            ..stage_match
-        }); */
-
-        //server.set_active_match(tm_match.id);
-
-        ctx.db.tab_raw_server().server_login().update(server);
+        {} */
+        //TODO check permissions
+        ctx.db
+            .tab_raw_server_occupation()
+            .server_id()
+            .try_insert_or_update(RawServerOccupation::new(to, server_id))?;
     }
     Ok(())
 }
 
-#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
+#[reducer]
 pub fn match_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> {
     ctx.get_user()?;
     if let Some(mut tm_match) = ctx.db.tab_tm_match().id().find(id)
@@ -226,7 +234,7 @@ pub fn match_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> {
     Ok(())
 }
 
-#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
+#[reducer]
 pub fn match_update_pre_config(
     ctx: &ReducerContext,
     id: u32,
@@ -267,27 +275,45 @@ pub fn match_update_config(
 /// This can also serve as a manual override for scheduled matches.
 #[reducer]
 pub fn match_try_start(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
-    ctx.get_user()?;
+    let user = ctx.get_user()?;
 
-    /* if let Some(mut tm_match) = ctx.db.tab_tm_match().id().find(match_id)
-        // Match needs an assigned server
-    && let Some(server) = ctx.db.tab_raw_server_occupation().match_id().filter(tm_match.id).next()
-        //The assigned server needs to be valid
-        && let Some(mut server) = ctx.db.tab_raw_server().server_login().find(server)
-        //&& let Some(config) = &tm_match.match_config
-        && tm_match.status == MatchStatus::Upcoming
+    let Some(mut tm_match) = ctx.db.tab_tm_match().id().find(match_id) else {
+        return Err("Match not found!".into());
+    };
+
+    //TODO verify more things
+    if let Some(server) = ctx
+        .db
+        .tab_raw_server_occupation()
+        .match_id()
+        .filter(tm_match.id)
+        .next()
     {
-        //server.set_config(config.clone());
         tm_match.status = MatchStatus::Live;
         ctx.db.tab_tm_match().id().update(tm_match);
-        ctx.db.tab_raw_server().server_login().update(server);
-    } */
-    Ok(())
+
+        return Ok(());
+    }
+
+    if tm_match.auto_provision_server {
+        let available_servers = available_server_pool(&ctx.as_read_only());
+        if available_servers.is_empty() {
+            return Err("No server is assigned to the match and there are no servers left to auto provision. Cannot start the match!".into());
+        }
+
+        ctx.db
+            .tab_raw_server_occupation()
+            .try_insert(RawServerOccupation::new(match_id, available_servers[0].id))?;
+
+        Ok(())
+    } else {
+        Err("Match has auto provisioning turned off and no server assigned! Cannot start the match!".into())
+    }
 }
 
 // Delete a match
-#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn delete_match(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
+#[reducer]
+pub fn match_delete(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
     ctx.get_user()?;
 
     let Some(tm_match) = ctx.db.tab_tm_match().id().find(match_id) else {

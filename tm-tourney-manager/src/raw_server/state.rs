@@ -1,4 +1,4 @@
-use spacetimedb::{ReducerContext, Table, Uuid, reducer, table};
+use spacetimedb::{AnonymousViewContext, Query, ReducerContext, Table, Uuid, reducer, table, view};
 
 use crate::authorization::Authorization;
 
@@ -90,4 +90,15 @@ pub(super) fn raw_server_player_remove(
     }
 
     Ok(())
+}
+
+#[view(name = raw_server_current_players, public)]
+fn raw_server_current_players(
+    ctx: &AnonymousViewContext, /* TODO server_id */
+) -> Query<RawServerPlayer> {
+    let server_id = 1u32;
+    ctx.from
+        .tab_raw_server_player()
+        .r#where(|p| p.server_id.eq(server_id))
+        .build()
 }

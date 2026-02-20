@@ -10,10 +10,9 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-import ServerConfig from "./server_config_type";
-
-export default {
-  get config() {
-    return ServerConfig;
-  },
-};
+export default __t.row({
+  name: __t.string(),
+  creator: __t.uuid(),
+  id: __t.u32().primaryKey(),
+  configId: __t.u32().name("config_id"),
+});

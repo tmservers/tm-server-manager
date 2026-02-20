@@ -71,11 +71,9 @@ pub(super) async fn sync_players() {
     let server = TRACKMANIA.wait();
     let spacetime = SPACETIME.wait();
     if let Ok(players) = server.get_player_list().await {
-        tracing::error!("{players:?}");
         for player in players {
             // This is the server itself so skip the sync.
             if player.flags & 0b100000 != 0 {
-                tracing::error!("{player:?}");
                 continue;
             }
 
@@ -96,7 +94,4 @@ pub(super) async fn sync_players() {
         );
         std::process::exit(1)
     }
-    _ = server
-        .chat_send_server_massage("[tm-server-bridge]   Server state synchronized.")
-        .await;
 }

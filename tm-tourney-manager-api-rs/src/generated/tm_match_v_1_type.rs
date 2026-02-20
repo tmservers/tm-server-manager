@@ -17,6 +17,7 @@ pub struct TmMatchV1 {
     pub match_config: u32,
     pub post_match_config: u32,
     pub status: MatchStatus,
+    pub auto_provision_server: bool,
 }
 
 impl __sdk::InModule for TmMatchV1 {
@@ -35,6 +36,7 @@ pub struct TmMatchV1Cols {
     pub match_config: __sdk::__query_builder::Col<TmMatchV1, u32>,
     pub post_match_config: __sdk::__query_builder::Col<TmMatchV1, u32>,
     pub status: __sdk::__query_builder::Col<TmMatchV1, MatchStatus>,
+    pub auto_provision_server: __sdk::__query_builder::Col<TmMatchV1, bool>,
 }
 
 impl __sdk::__query_builder::HasCols for TmMatchV1 {
@@ -49,6 +51,10 @@ impl __sdk::__query_builder::HasCols for TmMatchV1 {
             match_config: __sdk::__query_builder::Col::new(table_name, "match_config"),
             post_match_config: __sdk::__query_builder::Col::new(table_name, "post_match_config"),
             status: __sdk::__query_builder::Col::new(table_name, "status"),
+            auto_provision_server: __sdk::__query_builder::Col::new(
+                table_name,
+                "auto_provision_server",
+            ),
         }
     }
 }

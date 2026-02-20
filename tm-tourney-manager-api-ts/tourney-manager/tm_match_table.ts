@@ -23,4 +23,5 @@ export default __t.row({
   get status() {
     return MatchStatus;
   },
+  autoProvisionServer: __t.bool().name("auto_provision_server"),
 });

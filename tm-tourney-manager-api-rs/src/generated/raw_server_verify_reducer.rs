@@ -7,13 +7,13 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct RawServerVerifyArgs {
-    pub server_login: String,
+    pub server_id: u32,
 }
 
 impl From<RawServerVerifyArgs> for super::Reducer {
     fn from(args: RawServerVerifyArgs) -> Self {
         Self::RawServerVerify {
-            server_login: args.server_login,
+            server_id: args.server_id,
         }
     }
 }
@@ -34,7 +34,7 @@ pub trait raw_server_verify {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_raw_server_verify`] callbacks.
-    fn raw_server_verify(&self, server_login: String) -> __sdk::Result<()>;
+    fn raw_server_verify(&self, server_id: u32) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `raw_server_verify`.
     ///
     /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
@@ -44,7 +44,7 @@ pub trait raw_server_verify {
     /// to cancel the callback.
     fn on_raw_server_verify(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &String) + Send + 'static,
+        callback: impl FnMut(&super::ReducerEventContext, &u32) + Send + 'static,
     ) -> RawServerVerifyCallbackId;
     /// Cancel a callback previously registered by [`Self::on_raw_server_verify`],
     /// causing it not to run in the future.
@@ -52,13 +52,13 @@ pub trait raw_server_verify {
 }
 
 impl raw_server_verify for super::RemoteReducers {
-    fn raw_server_verify(&self, server_login: String) -> __sdk::Result<()> {
+    fn raw_server_verify(&self, server_id: u32) -> __sdk::Result<()> {
         self.imp
-            .call_reducer("raw_server_verify", RawServerVerifyArgs { server_login })
+            .call_reducer("raw_server_verify", RawServerVerifyArgs { server_id })
     }
     fn on_raw_server_verify(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &String) + Send + 'static,
+        mut callback: impl FnMut(&super::ReducerEventContext, &u32) + Send + 'static,
     ) -> RawServerVerifyCallbackId {
         RawServerVerifyCallbackId(self.imp.on_reducer(
             "raw_server_verify",
@@ -67,7 +67,7 @@ impl raw_server_verify for super::RemoteReducers {
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {
-                            reducer: super::Reducer::RawServerVerify { server_login },
+                            reducer: super::Reducer::RawServerVerify { server_id },
                             ..
                         },
                     ..
@@ -75,7 +75,7 @@ impl raw_server_verify for super::RemoteReducers {
                 else {
                     unreachable!()
                 };
-                callback(ctx, server_login)
+                callback(ctx, server_id)
             }),
         ))
     }

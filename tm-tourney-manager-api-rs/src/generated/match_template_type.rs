@@ -4,15 +4,13 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::server_config_type::ServerConfig;
-
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct MatchTemplate {
-    pub id: u32,
-    pub creator: __sdk::Uuid,
     pub name: String,
-    pub config: ServerConfig,
+    pub creator: __sdk::Uuid,
+    pub id: u32,
+    pub config_id: u32,
 }
 
 impl __sdk::InModule for MatchTemplate {
@@ -23,20 +21,20 @@ impl __sdk::InModule for MatchTemplate {
 ///
 /// Provides typed access to columns for query building.
 pub struct MatchTemplateCols {
-    pub id: __sdk::__query_builder::Col<MatchTemplate, u32>,
-    pub creator: __sdk::__query_builder::Col<MatchTemplate, __sdk::Uuid>,
     pub name: __sdk::__query_builder::Col<MatchTemplate, String>,
-    pub config: __sdk::__query_builder::Col<MatchTemplate, ServerConfig>,
+    pub creator: __sdk::__query_builder::Col<MatchTemplate, __sdk::Uuid>,
+    pub id: __sdk::__query_builder::Col<MatchTemplate, u32>,
+    pub config_id: __sdk::__query_builder::Col<MatchTemplate, u32>,
 }
 
 impl __sdk::__query_builder::HasCols for MatchTemplate {
     type Cols = MatchTemplateCols;
     fn cols(table_name: &'static str) -> Self::Cols {
         MatchTemplateCols {
-            id: __sdk::__query_builder::Col::new(table_name, "id"),
-            creator: __sdk::__query_builder::Col::new(table_name, "creator"),
             name: __sdk::__query_builder::Col::new(table_name, "name"),
-            config: __sdk::__query_builder::Col::new(table_name, "config"),
+            creator: __sdk::__query_builder::Col::new(table_name, "creator"),
+            id: __sdk::__query_builder::Col::new(table_name, "id"),
+            config_id: __sdk::__query_builder::Col::new(table_name, "config_id"),
         }
     }
 }

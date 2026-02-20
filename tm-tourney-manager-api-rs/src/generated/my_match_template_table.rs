@@ -3,7 +3,6 @@
 
 #![allow(unused, clippy::all)]
 use super::match_template_type::MatchTemplate;
-use super::server_config_type::ServerConfig;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 /// Table handle for the table `my_match_template`.

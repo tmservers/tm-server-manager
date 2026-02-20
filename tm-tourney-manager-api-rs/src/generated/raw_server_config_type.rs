@@ -10,7 +10,6 @@ use super::server_config_type::ServerConfig;
 #[sats(crate = __lib)]
 pub struct RawServerConfig {
     pub id: u32,
-    pub account_id: __sdk::Uuid,
     pub config: ServerConfig,
 }
 
@@ -23,7 +22,6 @@ impl __sdk::InModule for RawServerConfig {
 /// Provides typed access to columns for query building.
 pub struct RawServerConfigCols {
     pub id: __sdk::__query_builder::Col<RawServerConfig, u32>,
-    pub account_id: __sdk::__query_builder::Col<RawServerConfig, __sdk::Uuid>,
     pub config: __sdk::__query_builder::Col<RawServerConfig, ServerConfig>,
 }
 
@@ -32,7 +30,6 @@ impl __sdk::__query_builder::HasCols for RawServerConfig {
     fn cols(table_name: &'static str) -> Self::Cols {
         RawServerConfigCols {
             id: __sdk::__query_builder::Col::new(table_name, "id"),
-            account_id: __sdk::__query_builder::Col::new(table_name, "account_id"),
             config: __sdk::__query_builder::Col::new(table_name, "config"),
         }
     }

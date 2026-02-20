@@ -12,5 +12,5 @@ import {
 
 export default {
   to: __t.u32(),
-  serverLogin: __t.string(),
+  serverId: __t.u32(),
 };

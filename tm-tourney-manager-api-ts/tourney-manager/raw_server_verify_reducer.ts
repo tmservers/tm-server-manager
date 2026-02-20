@@ -11,5 +11,5 @@ import {
 } from "spacetimedb";
 
 export default {
-  serverLogin: __t.string(),
+  serverId: __t.u32(),
 };

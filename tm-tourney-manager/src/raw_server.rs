@@ -22,7 +22,7 @@ pub struct RawServerV1 {
 
     /// Each server also has a ubisoft account associated with it.
     #[index(hash)]
-    account_id: Uuid,
+    pub(crate) account_id: Uuid,
 
     #[auto_inc]
     #[primary_key]
@@ -60,6 +60,9 @@ impl RawServerV1 {
         self.identity = identity;
     }
 
+    pub fn is_verified(&self) -> bool {
+        self.verified
+    }
     /* pub(crate) fn add_server_event(&mut self, event: &Event) -> bool {
         match event {
             Event::PlayerConenct(player) => log::error!("Player connected: {}", player.account_id),
@@ -81,6 +84,15 @@ pub struct RawServerOccupation {
 
     #[index(hash)]
     match_id: u32,
+}
+
+impl RawServerOccupation {
+    pub(crate) fn new(match_id: u32, server_id: u32) -> Self {
+        Self {
+            server_id,
+            match_id,
+        }
+    }
 }
 
 /// Elevates an annonymous user to a trackmania server.
@@ -156,7 +168,7 @@ fn this_raw_server(ctx: &ViewContext) -> Option<RawServerV1> {
 
 /// The Raw server pool are all servers of an account which are verified.
 #[view(name = raw_server_pool, public)]
-fn raw_server_pool(ctx: &ViewContext) -> Vec<RawServerV1> {
+pub(crate) fn raw_server_pool(ctx: &ViewContext) -> Vec<RawServerV1> {
     let Ok(user) = ctx.get_user() else {
         return Vec::new();
     };
@@ -166,6 +178,28 @@ fn raw_server_pool(ctx: &ViewContext) -> Vec<RawServerV1> {
         .account_id()
         .filter(user.account_id)
         .filter(|s| s.verified)
+        .collect()
+}
+
+/// The Raw server pool are all servers of an account which are verified.
+#[view(name = available_server_pool, public)]
+pub(crate) fn available_server_pool(ctx: &ViewContext) -> Vec<RawServerV1> {
+    let Ok(user) = ctx.get_user() else {
+        return Vec::new();
+    };
+
+    ctx.db
+        .tab_raw_server()
+        .account_id()
+        .filter(user.account_id)
+        .filter(|s| s.verified)
+        .filter(|s| {
+            ctx.db
+                .tab_raw_server_occupation()
+                .server_id()
+                .find(s.id)
+                .is_none()
+        })
         .collect()
 }
 
@@ -185,14 +219,14 @@ fn raw_server_pool_unverified(ctx: &ViewContext) -> Vec<RawServerV1> {
 }
 
 #[reducer]
-fn raw_server_verify(ctx: &ReducerContext, server_login: String) -> Result<(), String> {
+fn raw_server_verify(ctx: &ReducerContext, server_id: u32) -> Result<(), String> {
     let user = ctx.get_user()?;
 
     let mut server = ctx
         .db
         .tab_raw_server()
-        .server_login()
-        .find(server_login)
+        .id()
+        .find(server_id)
         .ok_or("Couldnt find server with login")?;
 
     if server.account_id == user.account_id {
@@ -221,15 +255,5 @@ fn raw_server_expected_players(ctx: &ViewContext) -> Vec</* PlayerEntry */ RawSe
     } else {
         Vec::new()
     } */
-    Vec::new()
-}
-
-#[view(name = raw_server_current_players, public)]
-fn raw_server_current_players(ctx: &ViewContext) -> Vec</* PlayerEntry */ RawServerV1> {
-    //TODO make player entry struct
-    let Some(server) = ctx.db.tab_raw_server().identity().find(ctx.sender) else {
-        return Vec::new();
-    };
-
     Vec::new()
 }

@@ -3,45 +3,44 @@
 
 #![allow(unused, clippy::all)]
 use super::match_template_type::MatchTemplate;
-use super::server_config_type::ServerConfig;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-/// Table handle for the table `match_template`.
+/// Table handle for the table `tab_match_template`.
 ///
-/// Obtain a handle from the [`MatchTemplateTableAccess::match_template`] method on [`super::RemoteTables`],
-/// like `ctx.db.match_template()`.
+/// Obtain a handle from the [`TabMatchTemplateTableAccess::tab_match_template`] method on [`super::RemoteTables`],
+/// like `ctx.db.tab_match_template()`.
 ///
 /// Users are encouraged not to explicitly reference this type,
 /// but to directly chain method calls,
-/// like `ctx.db.match_template().on_insert(...)`.
-pub struct MatchTemplateTableHandle<'ctx> {
+/// like `ctx.db.tab_match_template().on_insert(...)`.
+pub struct TabMatchTemplateTableHandle<'ctx> {
     imp: __sdk::TableHandle<MatchTemplate>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the table `match_template`.
+/// Extension trait for access to the table `tab_match_template`.
 ///
 /// Implemented for [`super::RemoteTables`].
-pub trait MatchTemplateTableAccess {
+pub trait TabMatchTemplateTableAccess {
     #[allow(non_snake_case)]
-    /// Obtain a [`MatchTemplateTableHandle`], which mediates access to the table `match_template`.
-    fn match_template(&self) -> MatchTemplateTableHandle<'_>;
+    /// Obtain a [`TabMatchTemplateTableHandle`], which mediates access to the table `tab_match_template`.
+    fn tab_match_template(&self) -> TabMatchTemplateTableHandle<'_>;
 }
 
-impl MatchTemplateTableAccess for super::RemoteTables {
-    fn match_template(&self) -> MatchTemplateTableHandle<'_> {
-        MatchTemplateTableHandle {
-            imp: self.imp.get_table::<MatchTemplate>("match_template"),
+impl TabMatchTemplateTableAccess for super::RemoteTables {
+    fn tab_match_template(&self) -> TabMatchTemplateTableHandle<'_> {
+        TabMatchTemplateTableHandle {
+            imp: self.imp.get_table::<MatchTemplate>("tab_match_template"),
             ctx: std::marker::PhantomData,
         }
     }
 }
 
-pub struct MatchTemplateInsertCallbackId(__sdk::CallbackId);
-pub struct MatchTemplateDeleteCallbackId(__sdk::CallbackId);
+pub struct TabMatchTemplateInsertCallbackId(__sdk::CallbackId);
+pub struct TabMatchTemplateDeleteCallbackId(__sdk::CallbackId);
 
-impl<'ctx> __sdk::Table for MatchTemplateTableHandle<'ctx> {
+impl<'ctx> __sdk::Table for TabMatchTemplateTableHandle<'ctx> {
     type Row = MatchTemplate;
     type EventContext = super::EventContext;
 
@@ -52,51 +51,51 @@ impl<'ctx> __sdk::Table for MatchTemplateTableHandle<'ctx> {
         self.imp.iter()
     }
 
-    type InsertCallbackId = MatchTemplateInsertCallbackId;
+    type InsertCallbackId = TabMatchTemplateInsertCallbackId;
 
     fn on_insert(
         &self,
         callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
-    ) -> MatchTemplateInsertCallbackId {
-        MatchTemplateInsertCallbackId(self.imp.on_insert(Box::new(callback)))
+    ) -> TabMatchTemplateInsertCallbackId {
+        TabMatchTemplateInsertCallbackId(self.imp.on_insert(Box::new(callback)))
     }
 
-    fn remove_on_insert(&self, callback: MatchTemplateInsertCallbackId) {
+    fn remove_on_insert(&self, callback: TabMatchTemplateInsertCallbackId) {
         self.imp.remove_on_insert(callback.0)
     }
 
-    type DeleteCallbackId = MatchTemplateDeleteCallbackId;
+    type DeleteCallbackId = TabMatchTemplateDeleteCallbackId;
 
     fn on_delete(
         &self,
         callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
-    ) -> MatchTemplateDeleteCallbackId {
-        MatchTemplateDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
+    ) -> TabMatchTemplateDeleteCallbackId {
+        TabMatchTemplateDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
     }
 
-    fn remove_on_delete(&self, callback: MatchTemplateDeleteCallbackId) {
+    fn remove_on_delete(&self, callback: TabMatchTemplateDeleteCallbackId) {
         self.imp.remove_on_delete(callback.0)
     }
 }
 
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
-    let _table = client_cache.get_or_make_table::<MatchTemplate>("match_template");
+    let _table = client_cache.get_or_make_table::<MatchTemplate>("tab_match_template");
     _table.add_unique_constraint::<u32>("id", |row| &row.id);
 }
-pub struct MatchTemplateUpdateCallbackId(__sdk::CallbackId);
+pub struct TabMatchTemplateUpdateCallbackId(__sdk::CallbackId);
 
-impl<'ctx> __sdk::TableWithPrimaryKey for MatchTemplateTableHandle<'ctx> {
-    type UpdateCallbackId = MatchTemplateUpdateCallbackId;
+impl<'ctx> __sdk::TableWithPrimaryKey for TabMatchTemplateTableHandle<'ctx> {
+    type UpdateCallbackId = TabMatchTemplateUpdateCallbackId;
 
     fn on_update(
         &self,
         callback: impl FnMut(&Self::EventContext, &Self::Row, &Self::Row) + Send + 'static,
-    ) -> MatchTemplateUpdateCallbackId {
-        MatchTemplateUpdateCallbackId(self.imp.on_update(Box::new(callback)))
+    ) -> TabMatchTemplateUpdateCallbackId {
+        TabMatchTemplateUpdateCallbackId(self.imp.on_update(Box::new(callback)))
     }
 
-    fn remove_on_update(&self, callback: MatchTemplateUpdateCallbackId) {
+    fn remove_on_update(&self, callback: TabMatchTemplateUpdateCallbackId) {
         self.imp.remove_on_update(callback.0)
     }
 }
@@ -112,29 +111,29 @@ pub(super) fn parse_table_update(
     })
 }
 
-/// Access to the `id` unique index on the table `match_template`,
+/// Access to the `id` unique index on the table `tab_match_template`,
 /// which allows point queries on the field of the same name
-/// via the [`MatchTemplateIdUnique::find`] method.
+/// via the [`TabMatchTemplateIdUnique::find`] method.
 ///
 /// Users are encouraged not to explicitly reference this type,
 /// but to directly chain method calls,
-/// like `ctx.db.match_template().id().find(...)`.
-pub struct MatchTemplateIdUnique<'ctx> {
+/// like `ctx.db.tab_match_template().id().find(...)`.
+pub struct TabMatchTemplateIdUnique<'ctx> {
     imp: __sdk::UniqueConstraintHandle<MatchTemplate, u32>,
     phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
-impl<'ctx> MatchTemplateTableHandle<'ctx> {
-    /// Get a handle on the `id` unique index on the table `match_template`.
-    pub fn id(&self) -> MatchTemplateIdUnique<'ctx> {
-        MatchTemplateIdUnique {
+impl<'ctx> TabMatchTemplateTableHandle<'ctx> {
+    /// Get a handle on the `id` unique index on the table `tab_match_template`.
+    pub fn id(&self) -> TabMatchTemplateIdUnique<'ctx> {
+        TabMatchTemplateIdUnique {
             imp: self.imp.get_unique_constraint::<u32>("id"),
             phantom: std::marker::PhantomData,
         }
     }
 }
 
-impl<'ctx> MatchTemplateIdUnique<'ctx> {
+impl<'ctx> TabMatchTemplateIdUnique<'ctx> {
     /// Find the subscribed row whose `id` column value is equal to `col_val`,
     /// if such a row is present in the client cache.
     pub fn find(&self, col_val: &u32) -> Option<MatchTemplate> {
@@ -146,14 +145,14 @@ impl<'ctx> MatchTemplateIdUnique<'ctx> {
 /// Extension trait for query builder access to the table `MatchTemplate`.
 ///
 /// Implemented for [`__sdk::QueryTableAccessor`].
-pub trait match_templateQueryTableAccess {
+pub trait tab_match_templateQueryTableAccess {
     #[allow(non_snake_case)]
     /// Get a query builder for the table `MatchTemplate`.
-    fn match_template(&self) -> __sdk::__query_builder::Table<MatchTemplate>;
+    fn tab_match_template(&self) -> __sdk::__query_builder::Table<MatchTemplate>;
 }
 
-impl match_templateQueryTableAccess for __sdk::QueryTableAccessor {
-    fn match_template(&self) -> __sdk::__query_builder::Table<MatchTemplate> {
-        __sdk::__query_builder::Table::new("match_template")
+impl tab_match_templateQueryTableAccess for __sdk::QueryTableAccessor {
+    fn tab_match_template(&self) -> __sdk::__query_builder::Table<MatchTemplate> {
+        __sdk::__query_builder::Table::new("tab_match_template")
     }
 }

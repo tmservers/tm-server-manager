@@ -56,28 +56,26 @@ import CreateEnvVarReducer from "./create_env_var_reducer";
 export { CreateEnvVarReducer };
 import CreateEventTemplateReducer from "./create_event_template_reducer";
 export { CreateEventTemplateReducer };
-import CreateMatchReducer from "./create_match_reducer";
-export { CreateMatchReducer };
-import CreateMatchTemplateReducer from "./create_match_template_reducer";
-export { CreateMatchTemplateReducer };
 import CreateMonitorReducer from "./create_monitor_reducer";
 export { CreateMonitorReducer };
 import CreateScheduleReducer from "./create_schedule_reducer";
 export { CreateScheduleReducer };
-import CreateServerConfigReducer from "./create_server_config_reducer";
-export { CreateServerConfigReducer };
 import CreateTeamReducer from "./create_team_reducer";
 export { CreateTeamReducer };
 import CreateTournamentReducer from "./create_tournament_reducer";
 export { CreateTournamentReducer };
-import DeleteMatchReducer from "./delete_match_reducer";
-export { DeleteMatchReducer };
 import InternalGraphResolutionNodeFinishedReducer from "./internal_graph_resolution_node_finished_reducer";
 export { InternalGraphResolutionNodeFinishedReducer };
 import MatchAssignServerReducer from "./match_assign_server_reducer";
 export { MatchAssignServerReducer };
 import MatchConfiguredReducer from "./match_configured_reducer";
 export { MatchConfiguredReducer };
+import MatchCreateReducer from "./match_create_reducer";
+export { MatchCreateReducer };
+import MatchDeleteReducer from "./match_delete_reducer";
+export { MatchDeleteReducer };
+import MatchTemplateCreateReducer from "./match_template_create_reducer";
+export { MatchTemplateCreateReducer };
 import MatchTryStartReducer from "./match_try_start_reducer";
 export { MatchTryStartReducer };
 import MatchUpdateConfigReducer from "./match_update_config_reducer";
@@ -124,6 +122,8 @@ import * as PostRoundReplayProcedure from "./post_round_replay_procedure";
 export { PostRoundReplayProcedure };
 
 // Import and reexport all table handle types
+import AvailableServerPoolRow from "./available_server_pool_table";
+export { AvailableServerPoolRow };
 import CompetitionRow from "./competition_table";
 export { CompetitionRow };
 import CompetitionConnectionRow from "./competition_connection_table";
@@ -144,8 +144,6 @@ import MatchRecordRow from "./match_record_table";
 export { MatchRecordRow };
 import MatchRoundRow from "./match_round_table";
 export { MatchRoundRow };
-import MatchTemplateRow from "./match_template_table";
-export { MatchTemplateRow };
 import MyJobsRow from "./my_jobs_table";
 export { MyJobsRow };
 import MyMatchTemplateRow from "./my_match_template_table";
@@ -178,6 +176,8 @@ import TabCompetitionNodePositionRow from "./tab_competition_node_position_table
 export { TabCompetitionNodePositionRow };
 import TabMatchGhostRow from "./tab_match_ghost_table";
 export { TabMatchGhostRow };
+import TabMatchTemplateRow from "./tab_match_template_table";
+export { TabMatchTemplateRow };
 import TabRawServerRow from "./tab_raw_server_table";
 export { TabRawServerRow };
 import TabRawServerConfigRow from "./tab_raw_server_config_table";
@@ -461,20 +461,6 @@ const tablesSchema = __schema(
     ],
   }, EnvRow),
   __table({
-    name: 'match_template',
-    indexes: [
-      { name: 'creator', algorithm: 'btree', columns: [
-        'creator',
-      ] },
-      { name: 'id', algorithm: 'btree', columns: [
-        'id',
-      ] },
-    ],
-    constraints: [
-      { name: 'match_template_id_key', constraint: 'unique', columns: ['id'] },
-    ],
-  }, MatchTemplateRow),
-  __table({
     name: 'tab_competition',
     indexes: [
       { name: 'id', algorithm: 'btree', columns: [
@@ -544,6 +530,20 @@ const tablesSchema = __schema(
     constraints: [
     ],
   }, TabMatchGhostRow),
+  __table({
+    name: 'tab_match_template',
+    indexes: [
+      { name: 'creator', algorithm: 'btree', columns: [
+        'creator',
+      ] },
+      { name: 'id', algorithm: 'btree', columns: [
+        'id',
+      ] },
+    ],
+    constraints: [
+      { name: 'tab_match_template_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, TabMatchTemplateRow),
   __table({
     name: 'tab_raw_server',
     indexes: [
@@ -845,6 +845,13 @@ const tablesSchema = __schema(
     ],
   }, TmWorkerJobsRow),
   __table({
+    name: 'available_server_pool',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, AvailableServerPoolRow),
+  __table({
     name: 'competition',
     indexes: [
     ],
@@ -1025,17 +1032,16 @@ const reducersSchema = __reducers(
   __reducerSchema("create_connection", CreateConnectionReducer),
   __reducerSchema("create_env_var", CreateEnvVarReducer),
   __reducerSchema("create_event_template", CreateEventTemplateReducer),
-  __reducerSchema("create_match", CreateMatchReducer),
-  __reducerSchema("create_match_template", CreateMatchTemplateReducer),
   __reducerSchema("create_monitor", CreateMonitorReducer),
   __reducerSchema("create_schedule", CreateScheduleReducer),
-  __reducerSchema("create_server_config", CreateServerConfigReducer),
   __reducerSchema("create_team", CreateTeamReducer),
   __reducerSchema("create_tournament", CreateTournamentReducer),
-  __reducerSchema("delete_match", DeleteMatchReducer),
   __reducerSchema("internal_graph_resolution_node_finished", InternalGraphResolutionNodeFinishedReducer),
   __reducerSchema("match_assign_server", MatchAssignServerReducer),
   __reducerSchema("match_configured", MatchConfiguredReducer),
+  __reducerSchema("match_create", MatchCreateReducer),
+  __reducerSchema("match_delete", MatchDeleteReducer),
+  __reducerSchema("match_template_create", MatchTemplateCreateReducer),
   __reducerSchema("match_try_start", MatchTryStartReducer),
   __reducerSchema("match_update_config", MatchUpdateConfigReducer),
   __reducerSchema("match_update_pre_config", MatchUpdatePreConfigReducer),

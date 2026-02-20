@@ -14,7 +14,6 @@ import ServerConfig from "./server_config_type";
 
 export default __t.object("RawServerConfig", {
   id: __t.u32(),
-  accountId: __t.uuid(),
   get config() {
     return ServerConfig;
   },

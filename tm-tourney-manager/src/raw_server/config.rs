@@ -3,8 +3,8 @@ use tm_server_types::config::ServerConfig;
 
 use crate::{
     authorization::Authorization,
-    tm_match::tab_tm_match__view,
     raw_server::{tab_raw_server__view, tab_raw_server_occupation__view},
+    tm_match::tab_tm_match__view,
 };
 
 #[table(name=tab_raw_server_config)]
@@ -13,16 +13,19 @@ pub struct RawServerConfig {
     #[primary_key]
     pub id: u32,
 
-    //TODO probably remove that and add it as a component table.
+    /*   //TODO probably remove that and add it as a component table.
     // Creator of the Config
-    account_id: Uuid,
-
+    account_id: Uuid, */
     config: ServerConfig,
 }
 
 impl RawServerConfig {
-    pub fn get_config(self) -> ServerConfig {
+    /* pub fn get_config(self) -> ServerConfig {
         self.config
+    } */
+
+    pub fn new(config: ServerConfig) -> Self {
+        Self { id: 0, config }
     }
 }
 
@@ -46,18 +49,18 @@ impl RawServerConfigActive {
     }
 } */
 
-#[spacetimedb::reducer]
+/* #[spacetimedb::reducer]
 pub fn create_server_config(ctx: &ReducerContext, config: ServerConfig) -> Result<(), String> {
     let user = ctx.get_user()?;
 
     ctx.db.tab_raw_server_config().try_insert(RawServerConfig {
         id: 0,
-        account_id: user.account_id,
+        //account_id: user.account_id,
         config,
     })?;
 
     Ok(())
-}
+} */
 
 #[view(name=raw_server_config,public)]
 fn raw_server_config(ctx: &ViewContext) -> Option<ServerConfig> {

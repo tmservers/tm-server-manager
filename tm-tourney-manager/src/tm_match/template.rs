@@ -1,37 +1,49 @@
-use spacetimedb::{Query, ReducerContext, Table, Uuid, ViewContext, reducer, view};
+use spacetimedb::{Query, ReducerContext, Table, Uuid, ViewContext, reducer, table, view};
 use tm_server_types::config::ServerConfig;
 
-use crate::authorization::Authorization;
+use crate::{
+    authorization::Authorization,
+    raw_server::config::{RawServerConfig, tab_raw_server_config},
+};
 
-#[cfg_attr(feature = "spacetime", spacetimedb::table(name = match_template))]
+#[table(name = tab_match_template)]
 pub struct MatchTemplate {
-    #[auto_inc]
-    #[primary_key]
-    pub id: u32,
+    name: String,
 
     #[index(btree)]
     creator: Uuid,
 
-    name: String,
+    #[auto_inc]
+    #[primary_key]
+    pub id: u32,
 
-    pub config: ServerConfig,
+    config_id: u32,
 }
 
-impl MatchTemplate {}
+impl MatchTemplate {
+    pub(crate) fn get_config_id(&self) -> u32 {
+        self.config_id
+    }
+}
 
 #[reducer]
-fn create_match_template(
+fn match_template_create(
     ctx: &ReducerContext,
     name: String,
     config: ServerConfig,
 ) -> Result<(), String> {
     let user = ctx.get_user()?;
 
-    ctx.db.match_template().try_insert(MatchTemplate {
+    let config = ctx
+        .db
+        .tab_raw_server_config()
+        .try_insert(RawServerConfig::new(config))?;
+
+    ctx.db.tab_match_template().try_insert(MatchTemplate {
         id: 0,
         creator: user.account_id,
         name,
-        config,
+        config_id: config.id,
     })?;
 
     Ok(())
@@ -40,5 +52,5 @@ fn create_match_template(
 #[view(name=my_match_template,public)]
 fn my_match_template(ctx: &ViewContext) -> Query<MatchTemplate> {
     // TODO: return only users own templates
-    ctx.from.match_template().build()
+    ctx.from.tab_match_template().build()
 }

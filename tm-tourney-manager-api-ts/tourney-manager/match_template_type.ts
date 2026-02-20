@@ -9,16 +9,12 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
-import ServerConfig from "./server_config_type";
-
 
 export default __t.object("MatchTemplate", {
-  id: __t.u32(),
-  creator: __t.uuid(),
   name: __t.string(),
-  get config() {
-    return ServerConfig;
-  },
+  creator: __t.uuid(),
+  id: __t.u32(),
+  configId: __t.u32(),
 });
 
 

@@ -6,68 +6,68 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub(super) struct DeleteMatchArgs {
+pub(super) struct MatchDeleteArgs {
     pub match_id: u32,
 }
 
-impl From<DeleteMatchArgs> for super::Reducer {
-    fn from(args: DeleteMatchArgs) -> Self {
-        Self::DeleteMatch {
+impl From<MatchDeleteArgs> for super::Reducer {
+    fn from(args: MatchDeleteArgs) -> Self {
+        Self::MatchDelete {
             match_id: args.match_id,
         }
     }
 }
 
-impl __sdk::InModule for DeleteMatchArgs {
+impl __sdk::InModule for MatchDeleteArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct DeleteMatchCallbackId(__sdk::CallbackId);
+pub struct MatchDeleteCallbackId(__sdk::CallbackId);
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the reducer `delete_match`.
+/// Extension trait for access to the reducer `match_delete`.
 ///
 /// Implemented for [`super::RemoteReducers`].
-pub trait delete_match {
-    /// Request that the remote module invoke the reducer `delete_match` to run as soon as possible.
+pub trait match_delete {
+    /// Request that the remote module invoke the reducer `match_delete` to run as soon as possible.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
-    ///  and its status can be observed by listening for [`Self::on_delete_match`] callbacks.
-    fn delete_match(&self, match_id: u32) -> __sdk::Result<()>;
-    /// Register a callback to run whenever we are notified of an invocation of the reducer `delete_match`.
+    ///  and its status can be observed by listening for [`Self::on_match_delete`] callbacks.
+    fn match_delete(&self, match_id: u32) -> __sdk::Result<()>;
+    /// Register a callback to run whenever we are notified of an invocation of the reducer `match_delete`.
     ///
     /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
     /// to determine the reducer's status.
     ///
-    /// The returned [`DeleteMatchCallbackId`] can be passed to [`Self::remove_on_delete_match`]
+    /// The returned [`MatchDeleteCallbackId`] can be passed to [`Self::remove_on_match_delete`]
     /// to cancel the callback.
-    fn on_delete_match(
+    fn on_match_delete(
         &self,
         callback: impl FnMut(&super::ReducerEventContext, &u32) + Send + 'static,
-    ) -> DeleteMatchCallbackId;
-    /// Cancel a callback previously registered by [`Self::on_delete_match`],
+    ) -> MatchDeleteCallbackId;
+    /// Cancel a callback previously registered by [`Self::on_match_delete`],
     /// causing it not to run in the future.
-    fn remove_on_delete_match(&self, callback: DeleteMatchCallbackId);
+    fn remove_on_match_delete(&self, callback: MatchDeleteCallbackId);
 }
 
-impl delete_match for super::RemoteReducers {
-    fn delete_match(&self, match_id: u32) -> __sdk::Result<()> {
+impl match_delete for super::RemoteReducers {
+    fn match_delete(&self, match_id: u32) -> __sdk::Result<()> {
         self.imp
-            .call_reducer("delete_match", DeleteMatchArgs { match_id })
+            .call_reducer("match_delete", MatchDeleteArgs { match_id })
     }
-    fn on_delete_match(
+    fn on_match_delete(
         &self,
         mut callback: impl FnMut(&super::ReducerEventContext, &u32) + Send + 'static,
-    ) -> DeleteMatchCallbackId {
-        DeleteMatchCallbackId(self.imp.on_reducer(
-            "delete_match",
+    ) -> MatchDeleteCallbackId {
+        MatchDeleteCallbackId(self.imp.on_reducer(
+            "match_delete",
             Box::new(move |ctx: &super::ReducerEventContext| {
                 #[allow(irrefutable_let_patterns)]
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {
-                            reducer: super::Reducer::DeleteMatch { match_id },
+                            reducer: super::Reducer::MatchDelete { match_id },
                             ..
                         },
                     ..
@@ -79,27 +79,27 @@ impl delete_match for super::RemoteReducers {
             }),
         ))
     }
-    fn remove_on_delete_match(&self, callback: DeleteMatchCallbackId) {
-        self.imp.remove_on_reducer("delete_match", callback.0)
+    fn remove_on_match_delete(&self, callback: MatchDeleteCallbackId) {
+        self.imp.remove_on_reducer("match_delete", callback.0)
     }
 }
 
 #[allow(non_camel_case_types)]
 #[doc(hidden)]
-/// Extension trait for setting the call-flags for the reducer `delete_match`.
+/// Extension trait for setting the call-flags for the reducer `match_delete`.
 ///
 /// Implemented for [`super::SetReducerFlags`].
 ///
 /// This type is currently unstable and may be removed without a major version bump.
-pub trait set_flags_for_delete_match {
-    /// Set the call-reducer flags for the reducer `delete_match` to `flags`.
+pub trait set_flags_for_match_delete {
+    /// Set the call-reducer flags for the reducer `match_delete` to `flags`.
     ///
     /// This type is currently unstable and may be removed without a major version bump.
-    fn delete_match(&self, flags: __ws::CallReducerFlags);
+    fn match_delete(&self, flags: __ws::CallReducerFlags);
 }
 
-impl set_flags_for_delete_match for super::SetReducerFlags {
-    fn delete_match(&self, flags: __ws::CallReducerFlags) {
-        self.imp.set_call_reducer_flags("delete_match", flags);
+impl set_flags_for_match_delete for super::SetReducerFlags {
+    fn match_delete(&self, flags: __ws::CallReducerFlags) {
+        self.imp.set_call_reducer_flags("match_delete", flags);
     }
 }

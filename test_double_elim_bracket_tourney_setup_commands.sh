@@ -20,13 +20,13 @@ spacetime call tm-tourney-manager create_competition "Double Elimination Bracket
 # Upper R1
 # 8 matches, Match IDs 1-8
 for i in {1..8}; do
-  spacetime call tm-tourney-manager create_match "Upper R1 M$i" 2 null
+  spacetime call tm-tourney-manager match_create "Upper R1 M$i" 2 null
 done
 
 # Upper R2
 # 4 matches, Match IDs 9-12
 for i in {1..4}; do
-  spacetime call tm-tourney-manager create_match "Upper R2 M$i" 2 null
+  spacetime call tm-tourney-manager match_create "Upper R2 M$i" 2 null
 done
 
 # Upper R2 connections
@@ -62,7 +62,7 @@ done
 # Lower R1
 # 4 matches, Match IDs 13-16
 for i in {1..4}; do
-  spacetime call tm-tourney-manager create_match "Lower R1 M$i" 2 null
+  spacetime call tm-tourney-manager match_create "Lower R1 M$i" 2 null
 done
 
 # Lower R1 connections
@@ -99,7 +99,7 @@ done
 # Lower R2
 # 4 matches, Match IDs 17-20
 for i in {1..4}; do
-  spacetime call tm-tourney-manager create_match "Lower R2 M$i" 2 null
+  spacetime call tm-tourney-manager match_create "Lower R2 M$i" 2 null
 done
 
 # Lower R2 connections
@@ -138,7 +138,7 @@ done
 # Upper R3
 # 2 matches, Match IDs 21-22
 for i in {1..2}; do
-  spacetime call tm-tourney-manager create_match "Upper R3 M$i" 2 null
+  spacetime call tm-tourney-manager match_create "Upper R3 M$i" 2 null
 done
 
 # Upper R3 connections
@@ -167,7 +167,7 @@ done
 # Lower R3
 # 2 matches, Match IDs 23-24
 for i in {1..2}; do
-  spacetime call tm-tourney-manager create_match "Lower R3 M$i" 2 null
+  spacetime call tm-tourney-manager match_create "Lower R3 M$i" 2 null
 done
 
 # Lower R3 connections
@@ -186,7 +186,7 @@ done
 # Lower R4
 # 2 matches, Match IDs 25-26
 for i in {1..2}; do
-  spacetime call tm-tourney-manager create_match "Lower R4 M$i" 2 null
+  spacetime call tm-tourney-manager match_create "Lower R4 M$i" 2 null
 done
 
 # Lower R4 connections
@@ -204,7 +204,7 @@ done
 
 # Upper Final
 # 1 match, Match ID 27
-spacetime call tm-tourney-manager create_match "Upper Final" 2 null
+spacetime call tm-tourney-manager match_create "Upper Final" 2 null
 
 # Upper Final connections
 # Winners of Upper R3 to Upper Final
@@ -226,7 +226,7 @@ done
 
 # Lower Final
 # 1 match, Match ID 28
-spacetime call tm-tourney-manager create_match "Lower Final" 2 null
+spacetime call tm-tourney-manager match_create "Lower Final" 2 null
 
 # Lower Final connections
 # Winners of Lower R4 to Lower Final
@@ -240,7 +240,7 @@ done
 
 # Consolidation Final
 # 1 match, Match ID 29
-spacetime call tm-tourney-manager create_match "Consolidation Final" 2 null
+spacetime call tm-tourney-manager match_create "Consolidation Final" 2 null
 
 # Consolidation Final connections
 # Losers of Upper Final and Winners of Lower Final to Consolidation Final
@@ -254,7 +254,7 @@ done
 
 # Grand Final
 # 1 match, Match ID 30
-spacetime call tm-tourney-manager create_match "Grand Final" 2 null
+spacetime call tm-tourney-manager match_create "Grand Final" 2 null
 
 # Grand Final connections
 # Winners of Upper Final and Winners of Consolidation Final to Grand Final
@@ -267,4 +267,4 @@ for target in {27,29}; do
 done
 
 # Create match template
-spacetime call tm-tourney-manager create_match_template "Rounds Template" '{ "options": {}, "common": { "chat_time": 10, "respawn_behaviour": { "Default": {} }, "delay_before_next_map": 2000, "synchronize_players_at_map_start": true, "synchronize_players_at_round_start": true, "trust_client_simulation": true, "use_crude_extrapolation": true, "warmup_duration": { "BasedOnMedal": {} }, "warmup_timeout": { "BasedOnMedal": {} }, "warmup_number": 0, "deco_image_url_checkpoint": "", "deco_image_url_decal_sponsor_4x1": "", "deco_image_url_screen_16x1": "", "deco_image_url_screen_16x9": "", "deco_image_url_screen_8x1": "", "deco_image_url_who_am_i_url": "", "force_laps_number": { "Validation": {} }}, "mode": { "Rounds": { "finish_timeout": { "BasedOnMedal": {} }, "maps_per_match": { "One": {} }, "points_limit": { "PointsLimit": 50 }, "use_custom_points_repartition": false, "points_repartition": [10, 6, 4, 3, 2, 1], "rounds_per_map": { "Unlimited": {} }, "use_tie_breaker": true }}, "maps": { "start": 0, "map_uids": ["olsKnq_qAghcVAnEkoeUnVHFZei"] }}'\
+spacetime call tm-tourney-manager match_create_template "Rounds Template" '{ "options": {}, "common": { "chat_time": 10, "respawn_behaviour": { "Default": {} }, "delay_before_next_map": 2000, "synchronize_players_at_map_start": true, "synchronize_players_at_round_start": true, "trust_client_simulation": true, "use_crude_extrapolation": true, "warmup_duration": { "BasedOnMedal": {} }, "warmup_timeout": { "BasedOnMedal": {} }, "warmup_number": 0, "deco_image_url_checkpoint": "", "deco_image_url_decal_sponsor_4x1": "", "deco_image_url_screen_16x1": "", "deco_image_url_screen_16x9": "", "deco_image_url_screen_8x1": "", "deco_image_url_who_am_i_url": "", "force_laps_number": { "Validation": {} }}, "mode": { "Rounds": { "finish_timeout": { "BasedOnMedal": {} }, "maps_per_match": { "One": {} }, "points_limit": { "PointsLimit": 50 }, "use_custom_points_repartition": false, "points_repartition": [10, 6, 4, 3, 2, 1], "rounds_per_map": { "Unlimited": {} }, "use_tie_breaker": true }}, "maps": { "start": 0, "map_uids": ["olsKnq_qAghcVAnEkoeUnVHFZei"] }}'\

@@ -23,6 +23,7 @@ export default __t.object("TmMatchV1", {
   get status() {
     return MatchStatus;
   },
+  autoProvisionServer: __t.bool(),
 });
 
 

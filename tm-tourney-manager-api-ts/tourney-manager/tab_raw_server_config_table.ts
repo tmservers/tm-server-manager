@@ -14,7 +14,6 @@ import ServerConfig from "./server_config_type";
 
 export default __t.row({
   id: __t.u32().primaryKey(),
-  accountId: __t.uuid().name("account_id"),
   get config() {
     return ServerConfig;
   },

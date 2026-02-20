@@ -11,11 +11,7 @@ import {
 } from "spacetimedb";
 
 export default __t.row({
-  identity: __t.identity(),
-  serverLogin: __t.string().name("server_login"),
   accountId: __t.uuid().name("account_id"),
-  id: __t.u32(),
-  online: __t.bool(),
-  capturable: __t.bool(),
-  verified: __t.bool(),
+  serverId: __t.u32().name("server_id"),
+  spectator: __t.bool(),
 });
