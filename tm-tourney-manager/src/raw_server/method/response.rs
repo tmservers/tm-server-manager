@@ -31,7 +31,7 @@ pub fn server_method_response(
         ));
     };
 
-    if &server.server_login != method_call.get_server() {
+    if server.id != method_call.get_server() {
         return Err("Different server responded to the method call. Aborting".into());
     }
 

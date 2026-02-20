@@ -7,10 +7,10 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct RawServerV1 {
-    pub id: u32,
     pub identity: __sdk::Identity,
-    pub account_id: __sdk::Uuid,
     pub server_login: String,
+    pub account_id: __sdk::Uuid,
+    pub id: u32,
     pub online: bool,
     pub capturable: bool,
     pub verified: bool,
@@ -24,10 +24,10 @@ impl __sdk::InModule for RawServerV1 {
 ///
 /// Provides typed access to columns for query building.
 pub struct RawServerV1Cols {
-    pub id: __sdk::__query_builder::Col<RawServerV1, u32>,
     pub identity: __sdk::__query_builder::Col<RawServerV1, __sdk::Identity>,
-    pub account_id: __sdk::__query_builder::Col<RawServerV1, __sdk::Uuid>,
     pub server_login: __sdk::__query_builder::Col<RawServerV1, String>,
+    pub account_id: __sdk::__query_builder::Col<RawServerV1, __sdk::Uuid>,
+    pub id: __sdk::__query_builder::Col<RawServerV1, u32>,
     pub online: __sdk::__query_builder::Col<RawServerV1, bool>,
     pub capturable: __sdk::__query_builder::Col<RawServerV1, bool>,
     pub verified: __sdk::__query_builder::Col<RawServerV1, bool>,
@@ -37,10 +37,10 @@ impl __sdk::__query_builder::HasCols for RawServerV1 {
     type Cols = RawServerV1Cols;
     fn cols(table_name: &'static str) -> Self::Cols {
         RawServerV1Cols {
-            id: __sdk::__query_builder::Col::new(table_name, "id"),
             identity: __sdk::__query_builder::Col::new(table_name, "identity"),
-            account_id: __sdk::__query_builder::Col::new(table_name, "account_id"),
             server_login: __sdk::__query_builder::Col::new(table_name, "server_login"),
+            account_id: __sdk::__query_builder::Col::new(table_name, "account_id"),
+            id: __sdk::__query_builder::Col::new(table_name, "id"),
             online: __sdk::__query_builder::Col::new(table_name, "online"),
             capturable: __sdk::__query_builder::Col::new(table_name, "capturable"),
             verified: __sdk::__query_builder::Col::new(table_name, "verified"),

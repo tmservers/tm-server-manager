@@ -11,10 +11,10 @@ import {
 } from "spacetimedb";
 
 export default __t.object("RawServerV1", {
-  id: __t.u32(),
   identity: __t.identity(),
-  accountId: __t.uuid(),
   serverLogin: __t.string(),
+  accountId: __t.uuid(),
+  id: __t.u32(),
   online: __t.bool(),
   capturable: __t.bool(),
   verified: __t.bool(),

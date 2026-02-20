@@ -57,7 +57,7 @@ pub struct PlayerInfo {
     pub flags: i32,
 }
 
-impl TryFromParams for PlayerInfo {
+/* impl TryFromParams for PlayerInfo {
     fn try_from_params(values: &[dxr::Value]) -> Result<Self, dxr::Error> {
         Ok(Self {
             account_id: login_to_account_id(&String::try_from_value(&values[0])?),
@@ -69,7 +69,7 @@ impl TryFromParams for PlayerInfo {
             flags: i32::try_from_value(&values[6])?,
         })
     }
-}
+} */
 
 impl dxr::TryFromValue for PlayerInfo {
     fn try_from_value(value: &dxr::Value) -> ::std::result::Result<PlayerInfo, dxr::Error> {

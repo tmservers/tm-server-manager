@@ -583,8 +583,8 @@ const tablesSchema = __schema(
       { name: 'id', algorithm: 'btree', columns: [
         'id',
       ] },
-      { name: 'server_login', algorithm: 'btree', columns: [
-        'serverLogin',
+      { name: 'server_id', algorithm: 'btree', columns: [
+        'serverId',
       ] },
     ],
     constraints: [
@@ -597,8 +597,8 @@ const tablesSchema = __schema(
       { name: 'id', algorithm: 'btree', columns: [
         'id',
       ] },
-      { name: 'server_login', algorithm: 'btree', columns: [
-        'serverLogin',
+      { name: 'server_id', algorithm: 'btree', columns: [
+        'serverId',
       ] },
     ],
     constraints: [
@@ -636,8 +636,8 @@ const tablesSchema = __schema(
       { name: 'account_id', algorithm: 'btree', columns: [
         'accountId',
       ] },
-      { name: 'server_login', algorithm: 'btree', columns: [
-        'serverLogin',
+      { name: 'server_id', algorithm: 'btree', columns: [
+        'serverId',
       ] },
     ],
     constraints: [

@@ -14,7 +14,7 @@ import MethodCall from "./method_call_type";
 
 export default __t.object("RawServerMethodCall", {
   id: __t.u32(),
-  serverLogin: __t.string(),
+  serverId: __t.u32(),
   accountId: __t.uuid(),
   timestamp: __t.timestamp(),
   get method() {

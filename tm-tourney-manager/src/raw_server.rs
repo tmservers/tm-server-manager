@@ -14,19 +14,19 @@ pub mod state;
 
 #[spacetimedb::table(name=tab_raw_server)]
 pub struct RawServerV1 {
-    #[auto_inc]
-    #[primary_key]
-    pub(crate) id: u32,
-
     #[unique]
     pub identity: Identity,
+    /// Trackmania server logins are unique.
+    #[unique]
+    pub server_login: String,
+
     /// Each server also has a ubisoft account associated with it.
     #[index(hash)]
     account_id: Uuid,
 
-    /// Trackmania server logins are unique.
-    #[unique]
-    pub server_login: String,
+    #[auto_inc]
+    #[primary_key]
+    pub(crate) id: u32,
 
     // Whether the server can be reached with a bridge active.
     online: bool,

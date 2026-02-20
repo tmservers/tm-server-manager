@@ -1,5 +1,5 @@
 mod way_point;
-use dxr::{Error as DxrError, TryFromParams, Value};
+use dxr::{Error as DxrError, TryFromParams, TryFromValue, Value};
 use json::Error;
 pub use way_point::WayPoint;
 
@@ -170,6 +170,9 @@ impl Event {
             }
             "ManiaPlanet.PlayerDisconnect" => Some(Event::PlayerDisconnect(
                 PlayerDisconnect::try_from_params(&body)?,
+            )),
+            "ManiaPlanet.PlayerInfoChanged" => Some(Event::PlayerInfoChanged(
+                PlayerInfo::try_from_value(&body[0])?,
             )),
             "ManiaPlanet.PlayerChat" => {
                 Some(Event::PlayerChat(PlayerChat::try_from_params(&body)?))

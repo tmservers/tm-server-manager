@@ -18,7 +18,23 @@ use crate::{
 /// Servers call this to post the event stream.
 #[reducer]
 pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
-    let mut server = ctx.get_server()?;
+    let server = ctx.get_server()?;
+
+    match &event {
+        Event::PlayerConenct(player) => raw_server_player_add(
+            ctx,
+            Uuid::parse_str(&player.account_id).unwrap(),
+            player.is_spectator,
+        )?,
+        Event::PlayerDisconnect(player) => {
+            raw_server_player_remove(ctx, Uuid::parse_str(&player.account_id).unwrap())?
+        }
+        Event::PlayerInfoChanged(player) => {
+            let spectator = player.spectator_status == 0;
+            raw_server_player_add(ctx, Uuid::parse_str(&player.account_id).unwrap(), spectator)?
+        }
+        _ => (),
+    }
 
     if let Some(occupation) = ctx
         .db
@@ -54,18 +70,6 @@ pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
         } else {
             false
         };
-
-        match &event {
-            Event::PlayerConenct(player) => raw_server_player_add(
-                ctx,
-                Uuid::parse_str(&player.account_id).unwrap(),
-                player.is_spectator,
-            )?,
-            Event::PlayerDisconnect(player) => {
-                raw_server_player_remove(ctx, Uuid::parse_str(&player.account_id).unwrap())?
-            }
-            _ => (),
-        }
 
         //let tournament_id = tm_match.get_tournament();
         ctx.db.tab_tm_match_event().insert(TmMatchEvent {

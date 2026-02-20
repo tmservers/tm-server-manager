@@ -16,6 +16,8 @@ use crate::{SPACETIME, TRACKMANIA, TRACKMANIA_FILES};
 pub async fn setup_state_synchronization() {
     let server = TRACKMANIA.wait();
 
+    sync_players().await;
+
     // Sync all events to spacetimedb.
     server.on_event(|event| {
         let spacetime = SPACETIME.wait();
@@ -32,7 +34,7 @@ pub async fn setup_state_synchronization() {
             )
             .is_err()
         {
-            println!("Event failed to publish!")
+            tracing::error!("Event failed to publish!")
         }
     });
 
@@ -65,12 +67,18 @@ pub async fn setup_state_synchronization() {
 }
 
 /// Synchronizes all the state already present on the server with spacetime db.
-pub async fn sync() {
-    let local_server = TRACKMANIA.wait();
+pub(super) async fn sync_players() {
+    let server = TRACKMANIA.wait();
     let spacetime = SPACETIME.wait();
-    if let Ok(players) = local_server.get_player_list().await {
+    if let Ok(players) = server.get_player_list().await {
         tracing::error!("{players:?}");
         for player in players {
+            // This is the server itself so skip the sync.
+            if player.flags & 0b100000 != 0 {
+                tracing::error!("{player:?}");
+                continue;
+            }
+
             //TODO investigate spectator status return again.
             if player.spectator_status == 0 {
                 _ = spacetime
@@ -88,7 +96,7 @@ pub async fn sync() {
         );
         std::process::exit(1)
     }
-    _ = local_server
+    _ = server
         .chat_send_server_massage("[tm-server-bridge]   Server state synchronized.")
         .await;
 }

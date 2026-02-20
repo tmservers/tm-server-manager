@@ -16,7 +16,7 @@ pub struct RawServerMethodCall {
     pub id: u32,
 
     #[index(hash)]
-    server_login: String,
+    server_id: u32,
 
     account_id: Uuid,
 
@@ -26,8 +26,8 @@ pub struct RawServerMethodCall {
 }
 
 impl RawServerMethodCall {
-    pub(crate) fn get_server(&self) -> &String {
-        &self.server_login
+    pub(crate) fn get_server(&self) -> u32 {
+        self.server_id
     }
 }
 
@@ -39,13 +39,7 @@ pub fn server_method_call(
 ) -> Result<(), String> {
     let account_id = ctx.get_user()?.account_id;
 
-    if ctx
-        .db
-        .tab_raw_server()
-        .server_login()
-        .find(&server_login)
-        .is_some()
-    {
+    let Some(server) = ctx.db.tab_raw_server().server_login().find(&server_login) else {
         return Err(format!(
             "Server with id {server_login} was not found or is not online."
         ));
@@ -57,7 +51,7 @@ pub fn server_method_call(
             id: 0,
             account_id,
             timestamp: ctx.timestamp,
-            server_login,
+            server_id: server.id,
             method,
         })?;
 
@@ -72,7 +66,7 @@ fn raw_server_method_call(ctx: &ViewContext) -> Vec<RawServerMethodCall> {
     };
     ctx.db
         .tab_raw_server_method_call()
-        .server_login()
+        .server_id()
         .filter(&server.server_login)
         //.map(|v| v.method)
         .collect()

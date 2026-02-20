@@ -7,9 +7,9 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct RawServerPlayer {
-    pub server_login: String,
     pub account_id: __sdk::Uuid,
-    pub spectating: bool,
+    pub server_id: u32,
+    pub spectator: bool,
 }
 
 impl __sdk::InModule for RawServerPlayer {
@@ -20,18 +20,18 @@ impl __sdk::InModule for RawServerPlayer {
 ///
 /// Provides typed access to columns for query building.
 pub struct RawServerPlayerCols {
-    pub server_login: __sdk::__query_builder::Col<RawServerPlayer, String>,
     pub account_id: __sdk::__query_builder::Col<RawServerPlayer, __sdk::Uuid>,
-    pub spectating: __sdk::__query_builder::Col<RawServerPlayer, bool>,
+    pub server_id: __sdk::__query_builder::Col<RawServerPlayer, u32>,
+    pub spectator: __sdk::__query_builder::Col<RawServerPlayer, bool>,
 }
 
 impl __sdk::__query_builder::HasCols for RawServerPlayer {
     type Cols = RawServerPlayerCols;
     fn cols(table_name: &'static str) -> Self::Cols {
         RawServerPlayerCols {
-            server_login: __sdk::__query_builder::Col::new(table_name, "server_login"),
             account_id: __sdk::__query_builder::Col::new(table_name, "account_id"),
-            spectating: __sdk::__query_builder::Col::new(table_name, "spectating"),
+            server_id: __sdk::__query_builder::Col::new(table_name, "server_id"),
+            spectator: __sdk::__query_builder::Col::new(table_name, "spectator"),
         }
     }
 }
@@ -41,7 +41,7 @@ impl __sdk::__query_builder::HasCols for RawServerPlayer {
 /// Provides typed access to indexed columns for query building.
 pub struct RawServerPlayerIxCols {
     pub account_id: __sdk::__query_builder::IxCol<RawServerPlayer, __sdk::Uuid>,
-    pub server_login: __sdk::__query_builder::IxCol<RawServerPlayer, String>,
+    pub server_id: __sdk::__query_builder::IxCol<RawServerPlayer, u32>,
 }
 
 impl __sdk::__query_builder::HasIxCols for RawServerPlayer {
@@ -49,7 +49,7 @@ impl __sdk::__query_builder::HasIxCols for RawServerPlayer {
     fn ix_cols(table_name: &'static str) -> Self::IxCols {
         RawServerPlayerIxCols {
             account_id: __sdk::__query_builder::IxCol::new(table_name, "account_id"),
-            server_login: __sdk::__query_builder::IxCol::new(table_name, "server_login"),
+            server_id: __sdk::__query_builder::IxCol::new(table_name, "server_id"),
         }
     }
 }

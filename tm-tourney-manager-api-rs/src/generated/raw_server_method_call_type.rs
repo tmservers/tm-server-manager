@@ -10,7 +10,7 @@ use super::method_call_type::MethodCall;
 #[sats(crate = __lib)]
 pub struct RawServerMethodCall {
     pub id: u32,
-    pub server_login: String,
+    pub server_id: u32,
     pub account_id: __sdk::Uuid,
     pub timestamp: __sdk::Timestamp,
     pub method: MethodCall,
@@ -25,7 +25,7 @@ impl __sdk::InModule for RawServerMethodCall {
 /// Provides typed access to columns for query building.
 pub struct RawServerMethodCallCols {
     pub id: __sdk::__query_builder::Col<RawServerMethodCall, u32>,
-    pub server_login: __sdk::__query_builder::Col<RawServerMethodCall, String>,
+    pub server_id: __sdk::__query_builder::Col<RawServerMethodCall, u32>,
     pub account_id: __sdk::__query_builder::Col<RawServerMethodCall, __sdk::Uuid>,
     pub timestamp: __sdk::__query_builder::Col<RawServerMethodCall, __sdk::Timestamp>,
     pub method: __sdk::__query_builder::Col<RawServerMethodCall, MethodCall>,
@@ -36,7 +36,7 @@ impl __sdk::__query_builder::HasCols for RawServerMethodCall {
     fn cols(table_name: &'static str) -> Self::Cols {
         RawServerMethodCallCols {
             id: __sdk::__query_builder::Col::new(table_name, "id"),
-            server_login: __sdk::__query_builder::Col::new(table_name, "server_login"),
+            server_id: __sdk::__query_builder::Col::new(table_name, "server_id"),
             account_id: __sdk::__query_builder::Col::new(table_name, "account_id"),
             timestamp: __sdk::__query_builder::Col::new(table_name, "timestamp"),
             method: __sdk::__query_builder::Col::new(table_name, "method"),
@@ -49,7 +49,7 @@ impl __sdk::__query_builder::HasCols for RawServerMethodCall {
 /// Provides typed access to indexed columns for query building.
 pub struct RawServerMethodCallIxCols {
     pub id: __sdk::__query_builder::IxCol<RawServerMethodCall, u32>,
-    pub server_login: __sdk::__query_builder::IxCol<RawServerMethodCall, String>,
+    pub server_id: __sdk::__query_builder::IxCol<RawServerMethodCall, u32>,
 }
 
 impl __sdk::__query_builder::HasIxCols for RawServerMethodCall {
@@ -57,7 +57,7 @@ impl __sdk::__query_builder::HasIxCols for RawServerMethodCall {
     fn ix_cols(table_name: &'static str) -> Self::IxCols {
         RawServerMethodCallIxCols {
             id: __sdk::__query_builder::IxCol::new(table_name, "id"),
-            server_login: __sdk::__query_builder::IxCol::new(table_name, "server_login"),
+            server_id: __sdk::__query_builder::IxCol::new(table_name, "server_id"),
         }
     }
 }

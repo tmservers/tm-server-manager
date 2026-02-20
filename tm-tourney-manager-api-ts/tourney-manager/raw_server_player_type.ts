@@ -11,9 +11,9 @@ import {
 } from "spacetimedb";
 
 export default __t.object("RawServerPlayer", {
-  serverLogin: __t.string(),
   accountId: __t.uuid(),
-  spectating: __t.bool(),
+  serverId: __t.u32(),
+  spectator: __t.bool(),
 });
 
 

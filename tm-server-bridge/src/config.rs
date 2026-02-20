@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use tm_server_controller::{ClientError, method::XmlRpcMethods};
 use tm_tourney_manager_api_rs::{EventContext, ServerConfig};
 
-use crate::{NADEO, SERVER_CONFIG, TRACKMANIA, state::sync};
+use crate::{NADEO, SERVER_CONFIG, TRACKMANIA};
 
 pub fn config_update(_: &EventContext, new_config: &ServerConfig) {
     let new = new_config.clone();
@@ -15,7 +15,6 @@ pub fn config_update(_: &EventContext, new_config: &ServerConfig) {
                 _ = server
                     .chat_send_server_massage("[tm-server-bridge] Bootstrapping the server!")
                     .await;
-                sync().await;
                 configure(new).await;
                 _ = server
                     .chat_send_server_massage("[tm-server-bridge] Bootstrapping successfull :>")
