@@ -48,14 +48,9 @@ impl GbxPacket {
 }
 
 #[derive(Debug)]
-enum GbxMethodCall {
-    MethodCall {
-        message: String,
-        responder: oneshot::Sender<Result<MethodResponse, dxr::Error>>,
-    },
-    /* Callback {
-        message: String,
-    }, */
+struct GbxMessage {
+    content: String,
+    responder: oneshot::Sender<Result<MethodResponse, dxr::Error>>,
 }
 
 /// Associates all events to a channel.
@@ -106,7 +101,7 @@ impl RegisiteredCallbacks {
 #[derive(Debug)]
 pub struct TrackmaniaServer {
     /// Handler to reach the write thread and pass a message to the server.
-    message_sender: Sender<GbxMethodCall>,
+    message_sender: Sender<GbxMessage>,
 
     /// Associates a handler value with a oneshot channel to correctly receive the response.
     response_mapping: Arc<DashMap<u32, oneshot::Sender<Result<MethodResponse, dxr::Error>>>>,
@@ -133,7 +128,7 @@ impl TrackmaniaServer {
 
         info!("Connected to: {call}");
 
-        let (sender, rx) = tachyonix::channel::<GbxMethodCall>(32);
+        let (sender, rx) = tachyonix::channel::<GbxMessage>(32);
 
         // With many players trackmania can dump a shitload of events so the capacity is very large to prevent overflows.
         let (global_callback_sender, global_callback) = broadcast::channel(222);
@@ -162,7 +157,7 @@ impl TrackmaniaServer {
 
     /// Internal helper to setup the thread which is responsible for sending messages to the server.
     fn setup_write_loop(
-        mut write_request: tachyonix::Receiver<GbxMethodCall>,
+        mut write_request: tachyonix::Receiver<GbxMessage>,
         mut writer: WriteHalf<BufWriter<TcpStream>>,
         writer_response: Arc<DashMap<u32, oneshot::Sender<Result<MethodResponse, dxr::Error>>>>,
     ) {
@@ -170,24 +165,23 @@ impl TrackmaniaServer {
             let mut handler = 0x80000000u32;
 
             // Start receiving messages and only stop when all senders get out of scope.
-            while let Ok(cmd) = write_request.recv().await {
-                match cmd {
-                    GbxMethodCall::MethodCall { message, responder } => {
-                        // Increment the handler before each method call
-                        handler += 1;
+            while let Ok(message) = write_request.recv().await {
+                // Increment the handler before each method call
+                handler += 1;
 
-                        // Since GbxRemote packets expect little endian write them out.
-                        writer.write_u32_le(message.len() as u32).await.unwrap();
-                        writer.write_u32_le(handler).await.unwrap();
+                // Since GbxRemote packets expect little endian write them out.
+                writer
+                    .write_u32_le(message.content.len() as u32)
+                    .await
+                    .unwrap();
+                writer.write_u32_le(handler).await.unwrap();
 
-                        // The body of the packet.
-                        writer.write_all(message.as_bytes()).await.unwrap();
+                // The body of the packet.
+                writer.write_all(message.content.as_bytes()).await.unwrap();
 
-                        let _ = writer.flush().await;
+                let _ = writer.flush().await;
 
-                        writer_response.insert(handler, responder);
-                    }
-                }
+                writer_response.insert(handler, message.responder);
             }
         });
     }
@@ -248,7 +242,7 @@ impl TrackmaniaServer {
                                 }
                             }
                         } else {
-                            println!(
+                            info!(
                                 "Old callback Name: {:?} , Body: {:?}",
                                 callback_name, callback.params
                             );
@@ -368,8 +362,8 @@ impl TrackmaniaServer {
             // Responsible to notify us when the method response is there.
             let (send_me_response, waiting) = oneshot::channel();
             if let Err(err) = message_sender
-                .send(GbxMethodCall::MethodCall {
-                    message: body,
+                .send(GbxMessage {
+                    content: body,
                     responder: send_me_response,
                 })
                 .await
