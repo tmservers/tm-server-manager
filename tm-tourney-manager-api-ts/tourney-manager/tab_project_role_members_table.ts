@@ -11,7 +11,6 @@ import {
 } from "spacetimedb";
 
 export default __t.row({
+  roleId: __t.u32().name("role_id"),
   accountId: __t.uuid().name("account_id"),
-  serverId: __t.u32().name("server_id"),
-  spectator: __t.bool(),
 });

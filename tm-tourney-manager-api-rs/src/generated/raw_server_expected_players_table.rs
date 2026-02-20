@@ -2,7 +2,7 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN YOUR MODULE SOURCE CODE INSTEAD.
 
 #![allow(unused, clippy::all)]
-use super::raw_server_v_1_type::RawServerV1;
+use super::raw_server_player_type::RawServerPlayer;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 /// Table handle for the table `raw_server_expected_players`.
@@ -14,7 +14,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 /// but to directly chain method calls,
 /// like `ctx.db.raw_server_expected_players().on_insert(...)`.
 pub struct RawServerExpectedPlayersTableHandle<'ctx> {
-    imp: __sdk::TableHandle<RawServerV1>,
+    imp: __sdk::TableHandle<RawServerPlayer>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -33,7 +33,7 @@ impl RawServerExpectedPlayersTableAccess for super::RemoteTables {
         RawServerExpectedPlayersTableHandle {
             imp: self
                 .imp
-                .get_table::<RawServerV1>("raw_server_expected_players"),
+                .get_table::<RawServerPlayer>("raw_server_expected_players"),
             ctx: std::marker::PhantomData,
         }
     }
@@ -43,13 +43,13 @@ pub struct RawServerExpectedPlayersInsertCallbackId(__sdk::CallbackId);
 pub struct RawServerExpectedPlayersDeleteCallbackId(__sdk::CallbackId);
 
 impl<'ctx> __sdk::Table for RawServerExpectedPlayersTableHandle<'ctx> {
-    type Row = RawServerV1;
+    type Row = RawServerPlayer;
     type EventContext = super::EventContext;
 
     fn count(&self) -> u64 {
         self.imp.count()
     }
-    fn iter(&self) -> impl Iterator<Item = RawServerV1> + '_ {
+    fn iter(&self) -> impl Iterator<Item = RawServerPlayer> + '_ {
         self.imp.iter()
     }
 
@@ -82,32 +82,32 @@ impl<'ctx> __sdk::Table for RawServerExpectedPlayersTableHandle<'ctx> {
 
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
-    let _table = client_cache.get_or_make_table::<RawServerV1>("raw_server_expected_players");
+    let _table = client_cache.get_or_make_table::<RawServerPlayer>("raw_server_expected_players");
 }
 
 #[doc(hidden)]
 pub(super) fn parse_table_update(
     raw_updates: __ws::TableUpdate<__ws::BsatnFormat>,
-) -> __sdk::Result<__sdk::TableUpdate<RawServerV1>> {
+) -> __sdk::Result<__sdk::TableUpdate<RawServerPlayer>> {
     __sdk::TableUpdate::parse_table_update(raw_updates).map_err(|e| {
-        __sdk::InternalError::failed_parse("TableUpdate<RawServerV1>", "TableUpdate")
+        __sdk::InternalError::failed_parse("TableUpdate<RawServerPlayer>", "TableUpdate")
             .with_cause(e)
             .into()
     })
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for query builder access to the table `RawServerV1`.
+/// Extension trait for query builder access to the table `RawServerPlayer`.
 ///
 /// Implemented for [`__sdk::QueryTableAccessor`].
 pub trait raw_server_expected_playersQueryTableAccess {
     #[allow(non_snake_case)]
-    /// Get a query builder for the table `RawServerV1`.
-    fn raw_server_expected_players(&self) -> __sdk::__query_builder::Table<RawServerV1>;
+    /// Get a query builder for the table `RawServerPlayer`.
+    fn raw_server_expected_players(&self) -> __sdk::__query_builder::Table<RawServerPlayer>;
 }
 
 impl raw_server_expected_playersQueryTableAccess for __sdk::QueryTableAccessor {
-    fn raw_server_expected_players(&self) -> __sdk::__query_builder::Table<RawServerV1> {
+    fn raw_server_expected_players(&self) -> __sdk::__query_builder::Table<RawServerPlayer> {
         __sdk::__query_builder::Table::new("raw_server_expected_players")
     }
 }

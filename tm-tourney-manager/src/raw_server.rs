@@ -241,19 +241,3 @@ fn raw_server_verify(ctx: &ReducerContext, server_id: u32) -> Result<(), String>
         Err("Not permitted to edit the server".into())
     }
 }
-
-#[view(name = raw_server_expected_players, public)]
-fn raw_server_expected_players(ctx: &ViewContext) -> Vec</* PlayerEntry */ RawServerV1> {
-    //TODO make player entry struct
-    let Some(server) = ctx.db.tab_raw_server().identity().find(ctx.sender) else {
-        return Vec::new();
-    };
-
-    /* if let Some(match_id) = server.active_match() {
-        //TODO convert the match_id to the list with the connection filter
-        Vec::new()
-    } else {
-        Vec::new()
-    } */
-    Vec::new()
-}

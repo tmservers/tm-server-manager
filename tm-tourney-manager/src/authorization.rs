@@ -1,15 +1,15 @@
-use std::ops::{Add, BitAnd, Not};
+use std::ops::{Add, BitAnd, BitOr, Not};
 
 use spacetimedb::{JwtClaims, ReducerContext, TxContext, Uuid, ViewContext};
 
 use crate::{
     raw_server::{RawServerV1, tab_raw_server, tab_raw_server__view},
     tournament::{
-        permissions::{
-            TournamentPermissionV1, TournamentPermissionsV1, tab_tournament_permission,
-            tab_tournament_permission__view,
+        permissions::TournamentPermissionsV1,
+        roles::{
+            tab_project_role, tab_project_role__view, tab_project_role_members,
+            tab_project_role_members__view,
         },
-        tournament,
     },
     user::{UserV1, tab_user, tab_user__view, tab_user_identity, tab_user_identity__view},
     worker::{TmWorker, tm_worker, tm_worker__view},
@@ -20,10 +20,10 @@ pub(crate) trait Authorization {
     fn get_server(&self) -> Result<RawServerV1, String>;
     fn get_worker(&self) -> Result<TmWorker, String>;
 
-    fn tournament_permissions(
+    fn project_permissions(
         &self,
         tournament_id: u32,
-        user: &UserV1,
+        account_id: Uuid,
     ) -> Result<AuthBuilder<TournamentPermissionsV1>, String>;
 }
 
@@ -58,21 +58,23 @@ impl Authorization for ReducerContext {
         Err("Tried to use a reducer meant for Workers without the proper Authentication.".into())
     }
 
-    fn tournament_permissions(
+    fn project_permissions(
         &self,
-        tournament_id: u32,
-        user: &UserV1,
+        project_id: u32,
+        account_id: Uuid,
     ) -> Result<AuthBuilder<TournamentPermissionsV1>, String> {
-        let Some(tournament) = self
+        let permissions = self
             .db
-            .tab_tournament_permission()
-            .account_and_tournament()
-            .filter((user.account_id, tournament_id))
-            .next()
-        else {
-            return Err("Tournament Permission entry could not be found!".into());
-        };
-        Ok(AuthBuilder::new(tournament.get_permissions()))
+            .tab_project_role_members()
+            .user_roles()
+            .filter((project_id, account_id))
+            .fold(TournamentPermissionsV1::default(), |acc, member| {
+                if let Some(role) = self.db.tab_project_role().id().find(member.get_role_id()) {
+                    return acc | role.get_permissions1();
+                }
+                acc
+            });
+        Ok(AuthBuilder::new(permissions))
     }
 }
 
@@ -107,26 +109,34 @@ impl Authorization for ViewContext {
         Err("Tried to use a reducer meant for Workers without the proper Authentication.".into())
     }
 
-    fn tournament_permissions(
+    fn project_permissions(
         &self,
-        tournament_id: u32,
-        user: &UserV1,
+        project_id: u32,
+        account_id: Uuid,
     ) -> Result<AuthBuilder<TournamentPermissionsV1>, String> {
-        let Some(tournament) = self
+        let permissions = self
             .db
-            .tab_tournament_permission()
-            .account_and_tournament()
-            .filter((user.account_id, tournament_id))
-            .next()
-        else {
-            return Err("Tournament Permission entry could not be found!".into());
-        };
-        Ok(AuthBuilder::new(tournament.get_permissions()))
+            .tab_project_role_members()
+            .user_roles()
+            .filter((project_id, account_id))
+            .fold(TournamentPermissionsV1::default(), |acc, member| {
+                if let Some(role) = self.db.tab_project_role().id().find(member.get_role_id()) {
+                    return acc | role.get_permissions1();
+                }
+                acc
+            });
+        Ok(AuthBuilder::new(permissions))
     }
 }
 
 pub(crate) trait PermissionType:
-    Add<Output = Self> + std::marker::Sized + Eq + Copy + BitAnd<Output = Self> + Not<Output = Self>
+    Add<Output = Self>
+    + std::marker::Sized
+    + Eq
+    + Copy
+    + BitAnd<Output = Self>
+    + Not<Output = Self>
+    + BitOr
 {
     fn initial() -> Self;
 

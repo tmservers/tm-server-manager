@@ -105,6 +105,8 @@ pub mod points_limit_type;
 pub mod post_event_reducer;
 pub mod post_record_reducer;
 pub mod post_round_replay_procedure;
+pub mod project_role_member_type;
+pub mod project_role_type;
 pub mod raw_server_config_table;
 pub mod raw_server_config_type;
 pub mod raw_server_current_players_table;
@@ -153,6 +155,8 @@ pub mod tab_competition_node_position_type;
 pub mod tab_competition_table;
 pub mod tab_match_ghost_table;
 pub mod tab_match_template_table;
+pub mod tab_project_role_members_table;
+pub mod tab_project_role_table;
 pub mod tab_raw_server_config_table;
 pub mod tab_raw_server_method_call_resolved_table;
 pub mod tab_raw_server_method_call_table;
@@ -166,7 +170,6 @@ pub mod tab_schedule_table;
 pub mod tab_tm_match_event_table;
 pub mod tab_tm_match_state_table;
 pub mod tab_tm_match_table;
-pub mod tab_tournament_permission_table;
 pub mod tab_tournament_status_schedule_table;
 pub mod tab_tournament_table;
 pub mod tab_user_identity_table;
@@ -192,7 +195,6 @@ pub mod tm_worker_type;
 pub mod tournament_edit_dates_reducer;
 pub mod tournament_edit_description_reducer;
 pub mod tournament_edit_name_reducer;
-pub mod tournament_permission_v_1_type;
 pub mod tournament_status_schedule_v_1_type;
 pub mod tournament_status_type;
 pub mod tournament_table;
@@ -361,6 +363,8 @@ pub use points_limit_type::PointsLimit;
 pub use post_event_reducer::{post_event, set_flags_for_post_event, PostEventCallbackId};
 pub use post_record_reducer::{post_record, set_flags_for_post_record, PostRecordCallbackId};
 pub use post_round_replay_procedure::post_round_replay;
+pub use project_role_member_type::ProjectRoleMember;
+pub use project_role_type::ProjectRole;
 pub use raw_server_config_table::*;
 pub use raw_server_config_type::RawServerConfig;
 pub use raw_server_current_players_table::*;
@@ -422,6 +426,8 @@ pub use tab_competition_node_position_type::TabCompetitionNodePosition;
 pub use tab_competition_table::*;
 pub use tab_match_ghost_table::*;
 pub use tab_match_template_table::*;
+pub use tab_project_role_members_table::*;
+pub use tab_project_role_table::*;
 pub use tab_raw_server_config_table::*;
 pub use tab_raw_server_method_call_resolved_table::*;
 pub use tab_raw_server_method_call_table::*;
@@ -435,7 +441,6 @@ pub use tab_schedule_table::*;
 pub use tab_tm_match_event_table::*;
 pub use tab_tm_match_state_table::*;
 pub use tab_tm_match_table::*;
-pub use tab_tournament_permission_table::*;
 pub use tab_tournament_status_schedule_table::*;
 pub use tab_tournament_table::*;
 pub use tab_user_identity_table::*;
@@ -468,7 +473,6 @@ pub use tournament_edit_description_reducer::{
 pub use tournament_edit_name_reducer::{
     set_flags_for_tournament_edit_name, tournament_edit_name, TournamentEditNameCallbackId,
 };
-pub use tournament_permission_v_1_type::TournamentPermissionV1;
 pub use tournament_status_schedule_v_1_type::TournamentStatusScheduleV1;
 pub use tournament_status_type::TournamentStatus;
 pub use tournament_table::*;
@@ -766,7 +770,7 @@ pub struct DbUpdate {
     my_tournament: __sdk::TableUpdate<MyTournamentV1>,
     raw_server_config: __sdk::TableUpdate<ServerConfig>,
     raw_server_current_players: __sdk::TableUpdate<RawServerPlayer>,
-    raw_server_expected_players: __sdk::TableUpdate<RawServerV1>,
+    raw_server_expected_players: __sdk::TableUpdate<RawServerPlayer>,
     raw_server_method_call: __sdk::TableUpdate<RawServerMethodCall>,
     raw_server_pool: __sdk::TableUpdate<RawServerV1>,
     raw_server_pool_unverified: __sdk::TableUpdate<RawServerV1>,
@@ -778,6 +782,8 @@ pub struct DbUpdate {
     tab_competition_node_position: __sdk::TableUpdate<TabCompetitionNodePosition>,
     tab_match_ghost: __sdk::TableUpdate<MatchGhost>,
     tab_match_template: __sdk::TableUpdate<MatchTemplate>,
+    tab_project_role: __sdk::TableUpdate<ProjectRole>,
+    tab_project_role_members: __sdk::TableUpdate<ProjectRoleMember>,
     tab_raw_server: __sdk::TableUpdate<RawServerV1>,
     tab_raw_server_config: __sdk::TableUpdate<RawServerConfig>,
     tab_raw_server_method_call: __sdk::TableUpdate<RawServerMethodCall>,
@@ -792,7 +798,6 @@ pub struct DbUpdate {
     tab_tm_match_event: __sdk::TableUpdate<TmMatchEvent>,
     tab_tm_match_state: __sdk::TableUpdate<TmMatchState>,
     tab_tournament: __sdk::TableUpdate<TournamentV1>,
-    tab_tournament_permission: __sdk::TableUpdate<TournamentPermissionV1>,
     tab_tournament_status_schedule: __sdk::TableUpdate<TournamentStatusScheduleV1>,
     tab_user: __sdk::TableUpdate<UserV1>,
     tab_user_identity: __sdk::TableUpdate<UserIdentity>,
@@ -899,6 +904,12 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "tab_match_template" => db_update
                     .tab_match_template
                     .append(tab_match_template_table::parse_table_update(table_update)?),
+                "tab_project_role" => db_update
+                    .tab_project_role
+                    .append(tab_project_role_table::parse_table_update(table_update)?),
+                "tab_project_role_members" => db_update.tab_project_role_members.append(
+                    tab_project_role_members_table::parse_table_update(table_update)?,
+                ),
                 "tab_raw_server" => db_update
                     .tab_raw_server
                     .append(tab_raw_server_table::parse_table_update(table_update)?),
@@ -947,9 +958,6 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "tab_tournament" => db_update
                     .tab_tournament
                     .append(tab_tournament_table::parse_table_update(table_update)?),
-                "tab_tournament_permission" => db_update.tab_tournament_permission.append(
-                    tab_tournament_permission_table::parse_table_update(table_update)?,
-                ),
                 "tab_tournament_status_schedule" => {
                     db_update.tab_tournament_status_schedule.append(
                         tab_tournament_status_schedule_table::parse_table_update(table_update)?,
@@ -1043,6 +1051,13 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.tab_match_template = cache
             .apply_diff_to_table::<MatchTemplate>("tab_match_template", &self.tab_match_template)
             .with_updates_by_pk(|row| &row.id);
+        diff.tab_project_role = cache
+            .apply_diff_to_table::<ProjectRole>("tab_project_role", &self.tab_project_role)
+            .with_updates_by_pk(|row| &row.id);
+        diff.tab_project_role_members = cache.apply_diff_to_table::<ProjectRoleMember>(
+            "tab_project_role_members",
+            &self.tab_project_role_members,
+        );
         diff.tab_raw_server = cache
             .apply_diff_to_table::<RawServerV1>("tab_raw_server", &self.tab_raw_server)
             .with_updates_by_pk(|row| &row.id);
@@ -1104,10 +1119,6 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.tab_tournament = cache
             .apply_diff_to_table::<TournamentV1>("tab_tournament", &self.tab_tournament)
             .with_updates_by_pk(|row| &row.id);
-        diff.tab_tournament_permission = cache.apply_diff_to_table::<TournamentPermissionV1>(
-            "tab_tournament_permission",
-            &self.tab_tournament_permission,
-        );
         diff.tab_tournament_status_schedule = cache
             .apply_diff_to_table::<TournamentStatusScheduleV1>(
                 "tab_tournament_status_schedule",
@@ -1171,7 +1182,7 @@ impl __sdk::DbUpdate for DbUpdate {
             "raw_server_current_players",
             &self.raw_server_current_players,
         );
-        diff.raw_server_expected_players = cache.apply_diff_to_table::<RawServerV1>(
+        diff.raw_server_expected_players = cache.apply_diff_to_table::<RawServerPlayer>(
             "raw_server_expected_players",
             &self.raw_server_expected_players,
         );
@@ -1218,7 +1229,7 @@ pub struct AppliedDiff<'r> {
     my_tournament: __sdk::TableAppliedDiff<'r, MyTournamentV1>,
     raw_server_config: __sdk::TableAppliedDiff<'r, ServerConfig>,
     raw_server_current_players: __sdk::TableAppliedDiff<'r, RawServerPlayer>,
-    raw_server_expected_players: __sdk::TableAppliedDiff<'r, RawServerV1>,
+    raw_server_expected_players: __sdk::TableAppliedDiff<'r, RawServerPlayer>,
     raw_server_method_call: __sdk::TableAppliedDiff<'r, RawServerMethodCall>,
     raw_server_pool: __sdk::TableAppliedDiff<'r, RawServerV1>,
     raw_server_pool_unverified: __sdk::TableAppliedDiff<'r, RawServerV1>,
@@ -1230,6 +1241,8 @@ pub struct AppliedDiff<'r> {
     tab_competition_node_position: __sdk::TableAppliedDiff<'r, TabCompetitionNodePosition>,
     tab_match_ghost: __sdk::TableAppliedDiff<'r, MatchGhost>,
     tab_match_template: __sdk::TableAppliedDiff<'r, MatchTemplate>,
+    tab_project_role: __sdk::TableAppliedDiff<'r, ProjectRole>,
+    tab_project_role_members: __sdk::TableAppliedDiff<'r, ProjectRoleMember>,
     tab_raw_server: __sdk::TableAppliedDiff<'r, RawServerV1>,
     tab_raw_server_config: __sdk::TableAppliedDiff<'r, RawServerConfig>,
     tab_raw_server_method_call: __sdk::TableAppliedDiff<'r, RawServerMethodCall>,
@@ -1244,7 +1257,6 @@ pub struct AppliedDiff<'r> {
     tab_tm_match_event: __sdk::TableAppliedDiff<'r, TmMatchEvent>,
     tab_tm_match_state: __sdk::TableAppliedDiff<'r, TmMatchState>,
     tab_tournament: __sdk::TableAppliedDiff<'r, TournamentV1>,
-    tab_tournament_permission: __sdk::TableAppliedDiff<'r, TournamentPermissionV1>,
     tab_tournament_status_schedule: __sdk::TableAppliedDiff<'r, TournamentStatusScheduleV1>,
     tab_user: __sdk::TableAppliedDiff<'r, UserV1>,
     tab_user_identity: __sdk::TableAppliedDiff<'r, UserIdentity>,
@@ -1334,7 +1346,7 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             &self.raw_server_current_players,
             event,
         );
-        callbacks.invoke_table_row_callbacks::<RawServerV1>(
+        callbacks.invoke_table_row_callbacks::<RawServerPlayer>(
             "raw_server_expected_players",
             &self.raw_server_expected_players,
             event,
@@ -1388,6 +1400,16 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
         callbacks.invoke_table_row_callbacks::<MatchTemplate>(
             "tab_match_template",
             &self.tab_match_template,
+            event,
+        );
+        callbacks.invoke_table_row_callbacks::<ProjectRole>(
+            "tab_project_role",
+            &self.tab_project_role,
+            event,
+        );
+        callbacks.invoke_table_row_callbacks::<ProjectRoleMember>(
+            "tab_project_role_members",
+            &self.tab_project_role_members,
             event,
         );
         callbacks.invoke_table_row_callbacks::<RawServerV1>(
@@ -1458,11 +1480,6 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
         callbacks.invoke_table_row_callbacks::<TournamentV1>(
             "tab_tournament",
             &self.tab_tournament,
-            event,
-        );
-        callbacks.invoke_table_row_callbacks::<TournamentPermissionV1>(
-            "tab_tournament_permission",
-            &self.tab_tournament_permission,
             event,
         );
         callbacks.invoke_table_row_callbacks::<TournamentStatusScheduleV1>(
@@ -2253,6 +2270,8 @@ impl __sdk::SpacetimeModule for RemoteModule {
         tab_competition_node_position_table::register_table(client_cache);
         tab_match_ghost_table::register_table(client_cache);
         tab_match_template_table::register_table(client_cache);
+        tab_project_role_table::register_table(client_cache);
+        tab_project_role_members_table::register_table(client_cache);
         tab_raw_server_table::register_table(client_cache);
         tab_raw_server_config_table::register_table(client_cache);
         tab_raw_server_method_call_table::register_table(client_cache);
@@ -2267,7 +2286,6 @@ impl __sdk::SpacetimeModule for RemoteModule {
         tab_tm_match_event_table::register_table(client_cache);
         tab_tm_match_state_table::register_table(client_cache);
         tab_tournament_table::register_table(client_cache);
-        tab_tournament_permission_table::register_table(client_cache);
         tab_tournament_status_schedule_table::register_table(client_cache);
         tab_user_table::register_table(client_cache);
         tab_user_identity_table::register_table(client_cache);

@@ -1,6 +1,8 @@
-use spacetimedb::{AnonymousViewContext, Query, ReducerContext, Table, Uuid, reducer, table, view};
+use spacetimedb::{
+    AnonymousViewContext, Query, ReducerContext, Table, Uuid, ViewContext, reducer, table, view,
+};
 
-use crate::authorization::Authorization;
+use crate::{authorization::Authorization, raw_server::tab_raw_server__view};
 
 #[derive(Debug)]
 #[table(name = tab_raw_server_player)]
@@ -22,13 +24,10 @@ pub(super) fn raw_server_player_add(
 ) -> Result<(), String> {
     let server = ctx.get_server()?;
 
-    log::error!("what");
-
     // Player is already present on the network.
     if let Some(mut player) = ctx.db.tab_raw_server_player().account_id().find(account_id) {
         if player.server_id == server.id {
             if (player.spectator && spectator) || (!player.spectator && !spectator) {
-                log::error!("hmmge");
                 return Err("Player was already in the state before the request.".into());
             }
             player.spectator = spectator;
@@ -101,4 +100,19 @@ fn raw_server_current_players(
         .tab_raw_server_player()
         .r#where(|p| p.server_id.eq(server_id))
         .build()
+}
+
+#[view(name = raw_server_expected_players, public)]
+fn raw_server_allowed_players(ctx: &ViewContext) -> Vec<RawServerPlayer> {
+    let Some(server) = ctx.db.tab_raw_server().identity().find(ctx.sender) else {
+        return Vec::new();
+    };
+
+    /* if let Some(match_id) = server.active_match() {
+        //TODO convert the match_id to the list with the connection filter
+        Vec::new()
+    } else {
+        Vec::new()
+    } */
+    Vec::new()
 }

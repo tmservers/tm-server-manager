@@ -178,6 +178,10 @@ import TabMatchGhostRow from "./tab_match_ghost_table";
 export { TabMatchGhostRow };
 import TabMatchTemplateRow from "./tab_match_template_table";
 export { TabMatchTemplateRow };
+import TabProjectRoleRow from "./tab_project_role_table";
+export { TabProjectRoleRow };
+import TabProjectRoleMembersRow from "./tab_project_role_members_table";
+export { TabProjectRoleMembersRow };
 import TabRawServerRow from "./tab_raw_server_table";
 export { TabRawServerRow };
 import TabRawServerConfigRow from "./tab_raw_server_config_table";
@@ -206,8 +210,6 @@ import TabTmMatchStateRow from "./tab_tm_match_state_table";
 export { TabTmMatchStateRow };
 import TabTournamentRow from "./tab_tournament_table";
 export { TabTournamentRow };
-import TabTournamentPermissionRow from "./tab_tournament_permission_table";
-export { TabTournamentPermissionRow };
 import TabTournamentStatusScheduleRow from "./tab_tournament_status_schedule_table";
 export { TabTournamentStatusScheduleRow };
 import TabUserRow from "./tab_user_table";
@@ -342,6 +344,10 @@ import Podium from "./podium_type";
 export { Podium };
 import PointsLimit from "./points_limit_type";
 export { PointsLimit };
+import ProjectRole from "./project_role_type";
+export { ProjectRole };
+import ProjectRoleMember from "./project_role_member_type";
+export { ProjectRoleMember };
 import RawServerConfig from "./raw_server_config_type";
 export { RawServerConfig };
 import RawServerMethodCall from "./raw_server_method_call_type";
@@ -420,8 +426,6 @@ import TmWorker from "./tm_worker_type";
 export { TmWorker };
 import TmWorkerJobs from "./tm_worker_jobs_type";
 export { TmWorkerJobs };
-import TournamentPermissionV1 from "./tournament_permission_v_1_type";
-export { TournamentPermissionV1 };
 import TournamentStatus from "./tournament_status_type";
 export { TournamentStatus };
 import TournamentStatusScheduleV1 from "./tournament_status_schedule_v_1_type";
@@ -544,6 +548,31 @@ const tablesSchema = __schema(
       { name: 'tab_match_template_id_key', constraint: 'unique', columns: ['id'] },
     ],
   }, TabMatchTemplateRow),
+  __table({
+    name: 'tab_project_role',
+    indexes: [
+      { name: 'id', algorithm: 'btree', columns: [
+        'id',
+      ] },
+      { name: 'project_id', algorithm: 'btree', columns: [
+        'projectId',
+      ] },
+    ],
+    constraints: [
+      { name: 'tab_project_role_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, TabProjectRoleRow),
+  __table({
+    name: 'tab_project_role_members',
+    indexes: [
+      { name: 'user_roles', algorithm: 'btree', columns: [
+        'roleId',
+        'accountId',
+      ] },
+    ],
+    constraints: [
+    ],
+  }, TabProjectRoleMembersRow),
   __table({
     name: 'tab_raw_server',
     indexes: [
@@ -733,17 +762,6 @@ const tablesSchema = __schema(
       { name: 'tab_tournament_name_key', constraint: 'unique', columns: ['name'] },
     ],
   }, TabTournamentRow),
-  __table({
-    name: 'tab_tournament_permission',
-    indexes: [
-      { name: 'account_and_tournament', algorithm: 'btree', columns: [
-        'accountId',
-        'tournamentId',
-      ] },
-    ],
-    constraints: [
-    ],
-  }, TabTournamentPermissionRow),
   __table({
     name: 'tab_tournament_status_schedule',
     indexes: [

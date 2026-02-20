@@ -6,11 +6,12 @@ use spacetimedb::{
 use crate::{
     authorization::Authorization,
     competition::{CompetitionV1, tab_competition},
-    tournament::permissions::{TournamentPermissionsV1, tab_tournament_permission},
+    tournament::permissions::TournamentPermissionsV1,
     user::{tab_user__view, tab_user_identity__view},
 };
 
 pub(crate) mod permissions;
+pub mod roles;
 mod status_schedule;
 
 /// A tournament is a logical grouping of competitions and also the only way to obtain a competition in the first place.
@@ -93,7 +94,7 @@ fn tournament_edit_name(
     name: String,
 ) -> Result<(), String> {
     let user = ctx.get_user()?;
-    ctx.tournament_permissions(tournament_id, &user)?
+    ctx.project_permissions(tournament_id, user.account_id)?
         .permission(TournamentPermissionsV1::TOURNAMENT_EDIT_NAME)
         .check()?;
 
