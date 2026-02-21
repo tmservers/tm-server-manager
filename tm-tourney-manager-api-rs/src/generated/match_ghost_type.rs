@@ -7,7 +7,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct MatchGhost {
-    pub tournament_id: u32,
+    pub project_id: u32,
     pub match_id: u32,
     pub player_id: __sdk::Uuid,
     pub uid: __sdk::Uuid,
@@ -21,7 +21,7 @@ impl __sdk::InModule for MatchGhost {
 ///
 /// Provides typed access to columns for query building.
 pub struct MatchGhostCols {
-    pub tournament_id: __sdk::__query_builder::Col<MatchGhost, u32>,
+    pub project_id: __sdk::__query_builder::Col<MatchGhost, u32>,
     pub match_id: __sdk::__query_builder::Col<MatchGhost, u32>,
     pub player_id: __sdk::__query_builder::Col<MatchGhost, __sdk::Uuid>,
     pub uid: __sdk::__query_builder::Col<MatchGhost, __sdk::Uuid>,
@@ -31,7 +31,7 @@ impl __sdk::__query_builder::HasCols for MatchGhost {
     type Cols = MatchGhostCols;
     fn cols(table_name: &'static str) -> Self::Cols {
         MatchGhostCols {
-            tournament_id: __sdk::__query_builder::Col::new(table_name, "tournament_id"),
+            project_id: __sdk::__query_builder::Col::new(table_name, "project_id"),
             match_id: __sdk::__query_builder::Col::new(table_name, "match_id"),
             player_id: __sdk::__query_builder::Col::new(table_name, "player_id"),
             uid: __sdk::__query_builder::Col::new(table_name, "uid"),

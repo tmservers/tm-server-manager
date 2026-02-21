@@ -10,7 +10,7 @@ use super::monitoring_settings_type::MonitoringSettings;
 #[sats(crate = __lib)]
 pub struct TmMonitoring {
     pub id: u32,
-    pub tournament: u32,
+    pub project: u32,
     pub competition: u32,
     pub settings: MonitoringSettings,
     pub name: Option<String>,
@@ -26,7 +26,7 @@ impl __sdk::InModule for TmMonitoring {
 /// Provides typed access to columns for query building.
 pub struct TmMonitoringCols {
     pub id: __sdk::__query_builder::Col<TmMonitoring, u32>,
-    pub tournament: __sdk::__query_builder::Col<TmMonitoring, u32>,
+    pub project: __sdk::__query_builder::Col<TmMonitoring, u32>,
     pub competition: __sdk::__query_builder::Col<TmMonitoring, u32>,
     pub settings: __sdk::__query_builder::Col<TmMonitoring, MonitoringSettings>,
     pub name: __sdk::__query_builder::Col<TmMonitoring, Option<String>>,
@@ -38,7 +38,7 @@ impl __sdk::__query_builder::HasCols for TmMonitoring {
     fn cols(table_name: &'static str) -> Self::Cols {
         TmMonitoringCols {
             id: __sdk::__query_builder::Col::new(table_name, "id"),
-            tournament: __sdk::__query_builder::Col::new(table_name, "tournament"),
+            project: __sdk::__query_builder::Col::new(table_name, "project"),
             competition: __sdk::__query_builder::Col::new(table_name, "competition"),
             settings: __sdk::__query_builder::Col::new(table_name, "settings"),
             name: __sdk::__query_builder::Col::new(table_name, "name"),

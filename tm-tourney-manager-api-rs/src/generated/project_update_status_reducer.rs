@@ -7,13 +7,13 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct ProjectUpdateStatusArgs {
-    pub tournament_id: u32,
+    pub project_id: u32,
 }
 
 impl From<ProjectUpdateStatusArgs> for super::Reducer {
     fn from(args: ProjectUpdateStatusArgs) -> Self {
         Self::ProjectUpdateStatus {
-            tournament_id: args.tournament_id,
+            project_id: args.project_id,
         }
     }
 }
@@ -33,8 +33,8 @@ pub trait project_update_status {
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
     /// /// Use [`project_update_status:project_update_status_then`] to run a callback after the reducer completes.
-    fn project_update_status(&self, tournament_id: u32) -> __sdk::Result<()> {
-        self.project_update_status_then(tournament_id, |_, _| {})
+    fn project_update_status(&self, project_id: u32) -> __sdk::Result<()> {
+        self.project_update_status_then(project_id, |_, _| {})
     }
 
     /// Request that the remote module invoke the reducer `project_update_status` to run as soon as possible,
@@ -45,7 +45,7 @@ pub trait project_update_status {
     ///  and its status can be observed with the `callback`.
     fn project_update_status_then(
         &self,
-        tournament_id: u32,
+        project_id: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -56,13 +56,13 @@ pub trait project_update_status {
 impl project_update_status for super::RemoteReducers {
     fn project_update_status_then(
         &self,
-        tournament_id: u32,
+        project_id: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     ) -> __sdk::Result<()> {
         self.imp
-            .invoke_reducer_with_callback(ProjectUpdateStatusArgs { tournament_id }, callback)
+            .invoke_reducer_with_callback(ProjectUpdateStatusArgs { project_id }, callback)
     }
 }

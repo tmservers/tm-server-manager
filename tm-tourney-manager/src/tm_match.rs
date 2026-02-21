@@ -59,12 +59,12 @@ pub struct TmMatchV1 {
     #[primary_key]
     pub(crate) id: u32,
 
-    /// The tournament this match is associated with.
+    /// The project this match is associated with.
     project_id: u32,
     competition_id: u32,
 
     /// The moment the server is captured by the match the pre_match_config gets loaded in.
-    /// Only if it is defined. Useful for hiding tournament maps till the actual start.
+    /// Only if it is defined. Useful for hiding project maps till the actual start.
     pre_match_config: u32,
     /// If the match is started this config gets loaded.
     /// Has to be specified before your able to advance into Upcoming.

@@ -81,8 +81,8 @@ pub mod monitoring_settings_map_type;
 pub mod monitoring_settings_type;
 pub mod my_jobs_table;
 pub mod my_match_template_table;
+pub mod my_project_table;
 pub mod my_project_v_1_type;
-pub mod my_tournament_table;
 pub mod node_kind_handle_type;
 pub mod node_position_update_type;
 pub mod play_loop_end_type;
@@ -104,6 +104,7 @@ pub mod project_role_member_type;
 pub mod project_role_type;
 pub mod project_status_schedule_v_1_type;
 pub mod project_status_type;
+pub mod project_table;
 pub mod project_update_status_reducer;
 pub mod project_v_1_type;
 pub mod raw_server_config_table;
@@ -164,7 +165,6 @@ pub mod tm_server_method_response_type;
 pub mod tm_worker_jobs_type;
 pub mod tm_worker_table;
 pub mod tm_worker_type;
-pub mod tournament_table;
 pub mod unloading_map_end_type;
 pub mod unloading_map_start_type;
 pub mod unregister_player_reducer;
@@ -252,8 +252,8 @@ pub use monitoring_settings_map_type::MonitoringSettingsMap;
 pub use monitoring_settings_type::MonitoringSettings;
 pub use my_jobs_table::*;
 pub use my_match_template_table::*;
+pub use my_project_table::*;
 pub use my_project_v_1_type::MyProjectV1;
-pub use my_tournament_table::*;
 pub use node_kind_handle_type::NodeKindHandle;
 pub use node_position_update_type::NodePositionUpdate;
 pub use play_loop_end_type::PlayLoopEnd;
@@ -275,6 +275,7 @@ pub use project_role_member_type::ProjectRoleMember;
 pub use project_role_type::ProjectRole;
 pub use project_status_schedule_v_1_type::ProjectStatusScheduleV1;
 pub use project_status_type::ProjectStatus;
+pub use project_table::*;
 pub use project_update_status_reducer::project_update_status;
 pub use project_v_1_type::ProjectV1;
 pub use raw_server_config_table::*;
@@ -335,7 +336,6 @@ pub use tm_server_method_response_type::TmServerMethodResponse;
 pub use tm_worker_jobs_type::TmWorkerJobs;
 pub use tm_worker_table::*;
 pub use tm_worker_type::TmWorker;
-pub use tournament_table::*;
 pub use unloading_map_end_type::UnloadingMapEnd;
 pub use unloading_map_start_type::UnloadingMapStart;
 pub use unregister_player_reducer::unregister_player;
@@ -445,20 +445,20 @@ pub enum Reducer {
         time: u32,
     },
     ProjectEditDates {
-        tournament_id: u32,
+        project_id: u32,
         starting_at: __sdk::Timestamp,
         ending_at: __sdk::Timestamp,
     },
     ProjectEditDescription {
-        tournament_id: u32,
+        project_id: u32,
         description: String,
     },
     ProjectEditName {
-        tournament_id: u32,
+        project_id: u32,
         name: String,
     },
     ProjectUpdateStatus {
-        tournament_id: u32,
+        project_id: u32,
     },
     RawServerPlayerAdd {
         account_id: __sdk::Uuid,
@@ -683,33 +683,32 @@ impl __sdk::Reducer for Reducer {
                 time: time.clone(),
             }),
             Reducer::ProjectEditDates {
-                tournament_id,
+                project_id,
                 starting_at,
                 ending_at,
             } => __sats::bsatn::to_vec(&project_edit_dates_reducer::ProjectEditDatesArgs {
-                tournament_id: tournament_id.clone(),
+                project_id: project_id.clone(),
                 starting_at: starting_at.clone(),
                 ending_at: ending_at.clone(),
             }),
             Reducer::ProjectEditDescription {
-                tournament_id,
+                project_id,
                 description,
             } => __sats::bsatn::to_vec(
                 &project_edit_description_reducer::ProjectEditDescriptionArgs {
-                    tournament_id: tournament_id.clone(),
+                    project_id: project_id.clone(),
                     description: description.clone(),
                 },
             ),
-            Reducer::ProjectEditName {
-                tournament_id,
-                name,
-            } => __sats::bsatn::to_vec(&project_edit_name_reducer::ProjectEditNameArgs {
-                tournament_id: tournament_id.clone(),
-                name: name.clone(),
-            }),
-            Reducer::ProjectUpdateStatus { tournament_id } => {
+            Reducer::ProjectEditName { project_id, name } => {
+                __sats::bsatn::to_vec(&project_edit_name_reducer::ProjectEditNameArgs {
+                    project_id: project_id.clone(),
+                    name: name.clone(),
+                })
+            }
+            Reducer::ProjectUpdateStatus { project_id } => {
                 __sats::bsatn::to_vec(&project_update_status_reducer::ProjectUpdateStatusArgs {
-                    tournament_id: tournament_id.clone(),
+                    project_id: project_id.clone(),
                 })
             }
             Reducer::RawServerPlayerAdd {
@@ -773,7 +772,8 @@ pub struct DbUpdate {
     match_round: __sdk::TableUpdate<TmMatchLeaderboardExt>,
     my_jobs: __sdk::TableUpdate<TmWorkerJobs>,
     my_match_template: __sdk::TableUpdate<MatchTemplate>,
-    my_tournament: __sdk::TableUpdate<MyProjectV1>,
+    my_project: __sdk::TableUpdate<MyProjectV1>,
+    project: __sdk::TableUpdate<ProjectV1>,
     raw_server_config: __sdk::TableUpdate<ServerConfig>,
     raw_server_current_players: __sdk::TableUpdate<RawServerPlayer>,
     raw_server_expected_players: __sdk::TableUpdate<RawServerPlayer>,
@@ -786,7 +786,6 @@ pub struct DbUpdate {
     tm_map_record: __sdk::TableUpdate<TmMapRecord>,
     tm_match: __sdk::TableUpdate<TmMatchV1>,
     tm_worker: __sdk::TableUpdate<TmWorker>,
-    tournament: __sdk::TableUpdate<ProjectV1>,
     user: __sdk::TableUpdate<UserV1>,
 }
 
@@ -832,9 +831,12 @@ impl TryFrom<__ws::v2::TransactionUpdate> for DbUpdate {
                 "my_match_template" => db_update
                     .my_match_template
                     .append(my_match_template_table::parse_table_update(table_update)?),
-                "my_tournament" => db_update
-                    .my_tournament
-                    .append(my_tournament_table::parse_table_update(table_update)?),
+                "my_project" => db_update
+                    .my_project
+                    .append(my_project_table::parse_table_update(table_update)?),
+                "project" => db_update
+                    .project
+                    .append(project_table::parse_table_update(table_update)?),
                 "raw_server_config" => db_update
                     .raw_server_config
                     .append(raw_server_config_table::parse_table_update(table_update)?),
@@ -871,9 +873,6 @@ impl TryFrom<__ws::v2::TransactionUpdate> for DbUpdate {
                 "tm_worker" => db_update
                     .tm_worker
                     .append(tm_worker_table::parse_table_update(table_update)?),
-                "tournament" => db_update
-                    .tournament
-                    .append(tournament_table::parse_table_update(table_update)?),
                 "user" => db_update
                     .user
                     .append(user_table::parse_table_update(table_update)?),
@@ -941,8 +940,8 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.my_jobs = cache.apply_diff_to_table::<TmWorkerJobs>("my_jobs", &self.my_jobs);
         diff.my_match_template = cache
             .apply_diff_to_table::<MatchTemplate>("my_match_template", &self.my_match_template);
-        diff.my_tournament =
-            cache.apply_diff_to_table::<MyProjectV1>("my_tournament", &self.my_tournament);
+        diff.my_project = cache.apply_diff_to_table::<MyProjectV1>("my_project", &self.my_project);
+        diff.project = cache.apply_diff_to_table::<ProjectV1>("project", &self.project);
         diff.raw_server_config =
             cache.apply_diff_to_table::<ServerConfig>("raw_server_config", &self.raw_server_config);
         diff.raw_server_current_players = cache.apply_diff_to_table::<RawServerPlayer>(
@@ -969,7 +968,6 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.this_raw_server =
             cache.apply_diff_to_table::<RawServerV1>("this_raw_server", &self.this_raw_server);
         diff.tm_match = cache.apply_diff_to_table::<TmMatchV1>("tm_match", &self.tm_match);
-        diff.tournament = cache.apply_diff_to_table::<ProjectV1>("tournament", &self.tournament);
         diff.user = cache.apply_diff_to_table::<UserV1>("user", &self.user);
 
         diff
@@ -1014,8 +1012,11 @@ impl __sdk::DbUpdate for DbUpdate {
                 "my_match_template" => db_update
                     .my_match_template
                     .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
-                "my_tournament" => db_update
-                    .my_tournament
+                "my_project" => db_update
+                    .my_project
+                    .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
+                "project" => db_update
+                    .project
                     .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
                 "raw_server_config" => db_update
                     .raw_server_config
@@ -1052,9 +1053,6 @@ impl __sdk::DbUpdate for DbUpdate {
                     .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
                 "tm_worker" => db_update
                     .tm_worker
-                    .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
-                "tournament" => db_update
-                    .tournament
                     .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
                 "user" => db_update
                     .user
@@ -1108,8 +1106,11 @@ impl __sdk::DbUpdate for DbUpdate {
                 "my_match_template" => db_update
                     .my_match_template
                     .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
-                "my_tournament" => db_update
-                    .my_tournament
+                "my_project" => db_update
+                    .my_project
+                    .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
+                "project" => db_update
+                    .project
                     .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
                 "raw_server_config" => db_update
                     .raw_server_config
@@ -1147,9 +1148,6 @@ impl __sdk::DbUpdate for DbUpdate {
                 "tm_worker" => db_update
                     .tm_worker
                     .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
-                "tournament" => db_update
-                    .tournament
-                    .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
                 "user" => db_update
                     .user
                     .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
@@ -1180,7 +1178,8 @@ pub struct AppliedDiff<'r> {
     match_round: __sdk::TableAppliedDiff<'r, TmMatchLeaderboardExt>,
     my_jobs: __sdk::TableAppliedDiff<'r, TmWorkerJobs>,
     my_match_template: __sdk::TableAppliedDiff<'r, MatchTemplate>,
-    my_tournament: __sdk::TableAppliedDiff<'r, MyProjectV1>,
+    my_project: __sdk::TableAppliedDiff<'r, MyProjectV1>,
+    project: __sdk::TableAppliedDiff<'r, ProjectV1>,
     raw_server_config: __sdk::TableAppliedDiff<'r, ServerConfig>,
     raw_server_current_players: __sdk::TableAppliedDiff<'r, RawServerPlayer>,
     raw_server_expected_players: __sdk::TableAppliedDiff<'r, RawServerPlayer>,
@@ -1193,7 +1192,6 @@ pub struct AppliedDiff<'r> {
     tm_map_record: __sdk::TableAppliedDiff<'r, TmMapRecord>,
     tm_match: __sdk::TableAppliedDiff<'r, TmMatchV1>,
     tm_worker: __sdk::TableAppliedDiff<'r, TmWorker>,
-    tournament: __sdk::TableAppliedDiff<'r, ProjectV1>,
     user: __sdk::TableAppliedDiff<'r, UserV1>,
     __unused: std::marker::PhantomData<&'r ()>,
 }
@@ -1256,11 +1254,8 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             &self.my_match_template,
             event,
         );
-        callbacks.invoke_table_row_callbacks::<MyProjectV1>(
-            "my_tournament",
-            &self.my_tournament,
-            event,
-        );
+        callbacks.invoke_table_row_callbacks::<MyProjectV1>("my_project", &self.my_project, event);
+        callbacks.invoke_table_row_callbacks::<ProjectV1>("project", &self.project, event);
         callbacks.invoke_table_row_callbacks::<ServerConfig>(
             "raw_server_config",
             &self.raw_server_config,
@@ -1309,7 +1304,6 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
         );
         callbacks.invoke_table_row_callbacks::<TmMatchV1>("tm_match", &self.tm_match, event);
         callbacks.invoke_table_row_callbacks::<TmWorker>("tm_worker", &self.tm_worker, event);
-        callbacks.invoke_table_row_callbacks::<ProjectV1>("tournament", &self.tournament, event);
         callbacks.invoke_table_row_callbacks::<UserV1>("user", &self.user, event);
     }
 }
@@ -1967,7 +1961,8 @@ impl __sdk::SpacetimeModule for RemoteModule {
         match_round_table::register_table(client_cache);
         my_jobs_table::register_table(client_cache);
         my_match_template_table::register_table(client_cache);
-        my_tournament_table::register_table(client_cache);
+        my_project_table::register_table(client_cache);
+        project_table::register_table(client_cache);
         raw_server_config_table::register_table(client_cache);
         raw_server_current_players_table::register_table(client_cache);
         raw_server_expected_players_table::register_table(client_cache);
@@ -1980,7 +1975,6 @@ impl __sdk::SpacetimeModule for RemoteModule {
         tm_map_record_table::register_table(client_cache);
         tm_match_table::register_table(client_cache);
         tm_worker_table::register_table(client_cache);
-        tournament_table::register_table(client_cache);
         user_table::register_table(client_cache);
     }
     const ALL_TABLE_NAMES: &'static [&'static str] = &[
@@ -1996,7 +1990,8 @@ impl __sdk::SpacetimeModule for RemoteModule {
         "match_round",
         "my_jobs",
         "my_match_template",
-        "my_tournament",
+        "my_project",
+        "project",
         "raw_server_config",
         "raw_server_current_players",
         "raw_server_expected_players",
@@ -2009,7 +2004,6 @@ impl __sdk::SpacetimeModule for RemoteModule {
         "tm_map_record",
         "tm_match",
         "tm_worker",
-        "tournament",
         "user",
     ];
 }

@@ -7,7 +7,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct ProjectEditDatesArgs {
-    pub tournament_id: u32,
+    pub project_id: u32,
     pub starting_at: __sdk::Timestamp,
     pub ending_at: __sdk::Timestamp,
 }
@@ -15,7 +15,7 @@ pub(super) struct ProjectEditDatesArgs {
 impl From<ProjectEditDatesArgs> for super::Reducer {
     fn from(args: ProjectEditDatesArgs) -> Self {
         Self::ProjectEditDates {
-            tournament_id: args.tournament_id,
+            project_id: args.project_id,
             starting_at: args.starting_at,
             ending_at: args.ending_at,
         }
@@ -39,11 +39,11 @@ pub trait project_edit_dates {
     /// /// Use [`project_edit_dates:project_edit_dates_then`] to run a callback after the reducer completes.
     fn project_edit_dates(
         &self,
-        tournament_id: u32,
+        project_id: u32,
         starting_at: __sdk::Timestamp,
         ending_at: __sdk::Timestamp,
     ) -> __sdk::Result<()> {
-        self.project_edit_dates_then(tournament_id, starting_at, ending_at, |_, _| {})
+        self.project_edit_dates_then(project_id, starting_at, ending_at, |_, _| {})
     }
 
     /// Request that the remote module invoke the reducer `project_edit_dates` to run as soon as possible,
@@ -54,7 +54,7 @@ pub trait project_edit_dates {
     ///  and its status can be observed with the `callback`.
     fn project_edit_dates_then(
         &self,
-        tournament_id: u32,
+        project_id: u32,
         starting_at: __sdk::Timestamp,
         ending_at: __sdk::Timestamp,
 
@@ -67,7 +67,7 @@ pub trait project_edit_dates {
 impl project_edit_dates for super::RemoteReducers {
     fn project_edit_dates_then(
         &self,
-        tournament_id: u32,
+        project_id: u32,
         starting_at: __sdk::Timestamp,
         ending_at: __sdk::Timestamp,
 
@@ -77,7 +77,7 @@ impl project_edit_dates for super::RemoteReducers {
     ) -> __sdk::Result<()> {
         self.imp.invoke_reducer_with_callback(
             ProjectEditDatesArgs {
-                tournament_id,
+                project_id,
                 starting_at,
                 ending_at,
             },

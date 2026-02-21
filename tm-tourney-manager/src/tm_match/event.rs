@@ -11,7 +11,7 @@ use crate::tm_match::match_state::{TmMatchState, tab_tm_match_state__view};
         btree(columns = [match_id,round,is_warmup]))
     )]
 pub struct TmMatchEvent {
-    //pub(crate) tournament_id: u32,
+    //pub(crate) project_id: u32,
     #[index(btree)]
     pub(crate) match_id: u32,
 

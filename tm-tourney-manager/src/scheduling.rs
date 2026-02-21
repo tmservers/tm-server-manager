@@ -16,7 +16,7 @@ pub struct ScheduleV1 {
     scheduled_at: ScheduleAt,
 
     competition_id: u32,
-    tournament_id: u32,
+    project_id: u32,
 }
 
 impl ScheduleV1 {
@@ -24,8 +24,8 @@ impl ScheduleV1 {
         self.competition_id
     }
 
-    pub(crate) fn get_tournament(&self) -> u32 {
-        self.tournament_id
+    pub(crate) fn get_project(&self) -> u32 {
+        self.project_id
     }
 }
 
@@ -58,7 +58,7 @@ pub fn create_schedule(
         scheduled_id: 0,
         scheduled_at: ScheduleAt::Time(scheduled_at),
         competition_id,
-        tournament_id: parent_competition.get_project(),
+        project_id: parent_competition.get_project(),
     };
 
     ctx.db.tab_schedule().try_insert(schedule)?;

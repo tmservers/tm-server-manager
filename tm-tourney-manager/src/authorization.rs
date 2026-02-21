@@ -23,7 +23,7 @@ pub(crate) trait Authorization {
 
     fn auth_builder(
         &self,
-        tournament_id: u32,
+        project_id: u32,
         account_id: Uuid,
     ) -> Result<AuthBuilder<ProjectPermissionsV1>, String>;
 }

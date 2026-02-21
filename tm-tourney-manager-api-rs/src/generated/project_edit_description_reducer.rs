@@ -7,14 +7,14 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct ProjectEditDescriptionArgs {
-    pub tournament_id: u32,
+    pub project_id: u32,
     pub description: String,
 }
 
 impl From<ProjectEditDescriptionArgs> for super::Reducer {
     fn from(args: ProjectEditDescriptionArgs) -> Self {
         Self::ProjectEditDescription {
-            tournament_id: args.tournament_id,
+            project_id: args.project_id,
             description: args.description,
         }
     }
@@ -35,12 +35,8 @@ pub trait project_edit_description {
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
     /// /// Use [`project_edit_description:project_edit_description_then`] to run a callback after the reducer completes.
-    fn project_edit_description(
-        &self,
-        tournament_id: u32,
-        description: String,
-    ) -> __sdk::Result<()> {
-        self.project_edit_description_then(tournament_id, description, |_, _| {})
+    fn project_edit_description(&self, project_id: u32, description: String) -> __sdk::Result<()> {
+        self.project_edit_description_then(project_id, description, |_, _| {})
     }
 
     /// Request that the remote module invoke the reducer `project_edit_description` to run as soon as possible,
@@ -51,7 +47,7 @@ pub trait project_edit_description {
     ///  and its status can be observed with the `callback`.
     fn project_edit_description_then(
         &self,
-        tournament_id: u32,
+        project_id: u32,
         description: String,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
@@ -63,7 +59,7 @@ pub trait project_edit_description {
 impl project_edit_description for super::RemoteReducers {
     fn project_edit_description_then(
         &self,
-        tournament_id: u32,
+        project_id: u32,
         description: String,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
@@ -72,7 +68,7 @@ impl project_edit_description for super::RemoteReducers {
     ) -> __sdk::Result<()> {
         self.imp.invoke_reducer_with_callback(
             ProjectEditDescriptionArgs {
-                tournament_id,
+                project_id,
                 description,
             },
             callback,

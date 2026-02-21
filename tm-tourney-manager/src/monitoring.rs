@@ -11,7 +11,7 @@ pub struct TmMonitoring {
     #[primary_key]
     pub id: u32,
 
-    tournament: u32,
+    project: u32,
     competition: u32,
 
     settings: MonitoringSettings,
@@ -50,7 +50,7 @@ pub fn create_monitor(
     let monitor = ctx.db.tm_monitoring().insert(TmMonitoring {
         id: 0,
         //TODO
-        tournament: 0,
+        project: 0,
         competition,
         settings,
         name: None,

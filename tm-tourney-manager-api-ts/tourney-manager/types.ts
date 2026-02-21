@@ -408,7 +408,7 @@ export const MapsPerMatch = __t.enum("MapsPerMatch", {
 export type MapsPerMatch = __Infer<typeof MapsPerMatch>;
 
 export const MatchGhost = __t.object("MatchGhost", {
-  tournamentId: __t.u32(),
+  projectId: __t.u32(),
   matchId: __t.u32(),
   playerId: __t.uuid(),
   uid: __t.uuid(),
@@ -648,7 +648,7 @@ export type ProjectStatus = __Infer<typeof ProjectStatus>;
 export const ProjectStatusScheduleV1 = __t.object("ProjectStatusScheduleV1", {
   scheduledId: __t.u64(),
   scheduledAt: __t.scheduleAt(),
-  tournamentId: __t.u32(),
+  projectId: __t.u32(),
   get newStatus() {
     return ProjectStatus;
   },
@@ -812,7 +812,7 @@ export const ScheduleV1 = __t.object("ScheduleV1", {
   scheduledId: __t.u64(),
   scheduledAt: __t.scheduleAt(),
   competitionId: __t.u32(),
-  tournamentId: __t.u32(),
+  projectId: __t.u32(),
 });
 export type ScheduleV1 = __Infer<typeof ScheduleV1>;
 
@@ -1000,7 +1000,7 @@ export type TmMatchV1 = __Infer<typeof TmMatchV1>;
 
 export const TmMonitoring = __t.object("TmMonitoring", {
   id: __t.u32(),
-  tournament: __t.u32(),
+  project: __t.u32(),
   competition: __t.u32(),
   get settings() {
     return MonitoringSettings;

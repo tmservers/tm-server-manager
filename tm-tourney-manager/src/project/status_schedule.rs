@@ -11,13 +11,13 @@ pub struct ProjectStatusScheduleV1 {
     pub scheduled_at: ScheduleAt,
 
     #[unique]
-    pub tournament_id: u32,
+    pub project_id: u32,
     pub new_status: ProjectStatus,
 }
 
 impl ProjectStatusScheduleV1 {
     pub(crate) fn get_project(&self) -> u32 {
-        self.tournament_id
+        self.project_id
     }
 
     pub(crate) fn get_new_status(&self) -> ProjectStatus {
@@ -34,21 +34,21 @@ fn on_project_status_schedule_triggered(
         return Err("Only the Databse is permitted to call this reducer.".into());
     }
 
-    let Some(mut tournament) = ctx.db.tab_project().id().find(arg.get_project()) else {
-        return Err("Invalid tournament".into());
+    let Some(mut project) = ctx.db.tab_project().id().find(arg.get_project()) else {
+        return Err("Invalid project".into());
     };
 
-    tournament.status = arg.get_new_status();
+    project.status = arg.get_new_status();
 
-    tournament = ctx.db.tab_project().id().update(tournament);
+    project = ctx.db.tab_project().id().update(project);
 
     // Schedule the next status change if applicable
-    schedule_project_status_change(ctx, &tournament)?;
+    schedule_project_status_change(ctx, &project)?;
 
     Ok(())
 }
 
-// Internal function to automatically schedule the next status change for a tournament
+// Internal function to automatically schedule the next status change for a project
 pub fn schedule_project_status_change(
     ctx: &ReducerContext,
     project: &ProjectV1,
@@ -65,15 +65,15 @@ pub fn schedule_project_status_change(
     let schedule = ProjectStatusScheduleV1 {
         scheduled_id: 0,
         scheduled_at: ScheduleAt::Time(scheduled_at),
-        tournament_id: project.id,
+        project_id: project.id,
         new_status,
     };
 
-    // If there is an existing scheduled status change for this tournament, remove it
+    // If there is an existing scheduled status change for this project, remove it
     ctx.db
         .tab_project_status_schedule()
-        .tournament_id()
-        .delete(schedule.tournament_id);
+        .project_id()
+        .delete(schedule.project_id);
 
     ctx.db.tab_project_status_schedule().try_insert(schedule)?;
 

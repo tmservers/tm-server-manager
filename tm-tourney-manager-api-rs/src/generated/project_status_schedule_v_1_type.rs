@@ -11,7 +11,7 @@ use super::project_status_type::ProjectStatus;
 pub struct ProjectStatusScheduleV1 {
     pub scheduled_id: u64,
     pub scheduled_at: __sdk::ScheduleAt,
-    pub tournament_id: u32,
+    pub project_id: u32,
     pub new_status: ProjectStatus,
 }
 
@@ -25,7 +25,7 @@ impl __sdk::InModule for ProjectStatusScheduleV1 {
 pub struct ProjectStatusScheduleV1Cols {
     pub scheduled_id: __sdk::__query_builder::Col<ProjectStatusScheduleV1, u64>,
     pub scheduled_at: __sdk::__query_builder::Col<ProjectStatusScheduleV1, __sdk::ScheduleAt>,
-    pub tournament_id: __sdk::__query_builder::Col<ProjectStatusScheduleV1, u32>,
+    pub project_id: __sdk::__query_builder::Col<ProjectStatusScheduleV1, u32>,
     pub new_status: __sdk::__query_builder::Col<ProjectStatusScheduleV1, ProjectStatus>,
 }
 
@@ -35,7 +35,7 @@ impl __sdk::__query_builder::HasCols for ProjectStatusScheduleV1 {
         ProjectStatusScheduleV1Cols {
             scheduled_id: __sdk::__query_builder::Col::new(table_name, "scheduled_id"),
             scheduled_at: __sdk::__query_builder::Col::new(table_name, "scheduled_at"),
-            tournament_id: __sdk::__query_builder::Col::new(table_name, "tournament_id"),
+            project_id: __sdk::__query_builder::Col::new(table_name, "project_id"),
             new_status: __sdk::__query_builder::Col::new(table_name, "new_status"),
         }
     }
@@ -45,16 +45,16 @@ impl __sdk::__query_builder::HasCols for ProjectStatusScheduleV1 {
 ///
 /// Provides typed access to indexed columns for query building.
 pub struct ProjectStatusScheduleV1IxCols {
+    pub project_id: __sdk::__query_builder::IxCol<ProjectStatusScheduleV1, u32>,
     pub scheduled_id: __sdk::__query_builder::IxCol<ProjectStatusScheduleV1, u64>,
-    pub tournament_id: __sdk::__query_builder::IxCol<ProjectStatusScheduleV1, u32>,
 }
 
 impl __sdk::__query_builder::HasIxCols for ProjectStatusScheduleV1 {
     type IxCols = ProjectStatusScheduleV1IxCols;
     fn ix_cols(table_name: &'static str) -> Self::IxCols {
         ProjectStatusScheduleV1IxCols {
+            project_id: __sdk::__query_builder::IxCol::new(table_name, "project_id"),
             scheduled_id: __sdk::__query_builder::IxCol::new(table_name, "scheduled_id"),
-            tournament_id: __sdk::__query_builder::IxCol::new(table_name, "tournament_id"),
         }
     }
 }

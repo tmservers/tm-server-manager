@@ -52,10 +52,10 @@ impl CompetitionV1 {
     /// # Safety
     /// The new competition has to be commited to spacetime db through the `create_competition` reducer.
     /// Otherwise the id is invalid.
-    pub unsafe fn new(name: String, parent_id: u32, tournament_id: u32) -> Self {
+    pub unsafe fn new(name: String, parent_id: u32, project_id: u32) -> Self {
         Self {
             id: 0,
-            project_id: tournament_id,
+            project_id: project_id,
             parent_id,
             name,
             status: CompetitionStatus::Planning,
@@ -84,7 +84,7 @@ pub enum CompetitionStatus {
     Completed,
 }
 
-/// Adds a new Competition to the specified Tournament.
+/// Adds a new Competition to the specified project.
 #[reducer]
 pub fn create_competition(
     ctx: &ReducerContext,
@@ -94,7 +94,7 @@ pub fn create_competition(
 ) -> Result<(), String> {
     let user = ctx.get_user()?;
 
-    // If parent is valid it is guaranteed that it has a valid tournament associated with it.
+    // If parent is valid it is guaranteed that it has a valid project associated with it.
     let Some(parent_competition) = ctx.db.tab_competition().id().find(parent_id) else {
         return Err("Invalid parent_id".into());
     };
@@ -142,7 +142,7 @@ pub fn competition_registration_settings(
 ) -> Result<(), String> {
     let user = ctx.get_user()?;
 
-    // If parent is valid it is guaranteed that it has a valid tournament associated with it.
+    // If parent is valid it is guaranteed that it has a valid project associated with it.
     let Some(mut competition) = ctx.db.tab_competition().id().find(competition_id) else {
         return Err("Invalid competition".into());
     };
@@ -163,6 +163,6 @@ pub fn competition(ctx: &AnonymousViewContext) -> impl Query<CompetitionV1> {
     ctx.from
         .tab_competition()
         //TODO this equality doesnt work atm because of enum
-        //.r#where(|t| t.status.ne(TournamentStatus::Planning))
+        //.r#where(|t| t.status.ne(projectStatus::Planning))
         .build()
 }

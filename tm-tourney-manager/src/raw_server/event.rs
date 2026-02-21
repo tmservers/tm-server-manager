@@ -71,9 +71,9 @@ pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
             false
         };
 
-        //let tournament_id = tm_match.get_tournament();
+        //let project_id = tm_match.get_project();
         ctx.db.tab_tm_match_event().insert(TmMatchEvent {
-            //tournament_id,
+            //project_id,
             match_id: occupation.match_id,
             event,
             restarted: match_state.restarted,

@@ -10,7 +10,7 @@ pub struct ScheduleV1 {
     pub scheduled_id: u64,
     pub scheduled_at: __sdk::ScheduleAt,
     pub competition_id: u32,
-    pub tournament_id: u32,
+    pub project_id: u32,
 }
 
 impl __sdk::InModule for ScheduleV1 {
@@ -24,7 +24,7 @@ pub struct ScheduleV1Cols {
     pub scheduled_id: __sdk::__query_builder::Col<ScheduleV1, u64>,
     pub scheduled_at: __sdk::__query_builder::Col<ScheduleV1, __sdk::ScheduleAt>,
     pub competition_id: __sdk::__query_builder::Col<ScheduleV1, u32>,
-    pub tournament_id: __sdk::__query_builder::Col<ScheduleV1, u32>,
+    pub project_id: __sdk::__query_builder::Col<ScheduleV1, u32>,
 }
 
 impl __sdk::__query_builder::HasCols for ScheduleV1 {
@@ -34,7 +34,7 @@ impl __sdk::__query_builder::HasCols for ScheduleV1 {
             scheduled_id: __sdk::__query_builder::Col::new(table_name, "scheduled_id"),
             scheduled_at: __sdk::__query_builder::Col::new(table_name, "scheduled_at"),
             competition_id: __sdk::__query_builder::Col::new(table_name, "competition_id"),
-            tournament_id: __sdk::__query_builder::Col::new(table_name, "tournament_id"),
+            project_id: __sdk::__query_builder::Col::new(table_name, "project_id"),
         }
     }
 }

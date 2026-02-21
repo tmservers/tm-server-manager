@@ -6,42 +6,42 @@ use super::project_status_type::ProjectStatus;
 use super::project_v_1_type::ProjectV1;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-/// Table handle for the table `tournament`.
+/// Table handle for the table `project`.
 ///
-/// Obtain a handle from the [`TournamentTableAccess::tournament`] method on [`super::RemoteTables`],
-/// like `ctx.db.tournament()`.
+/// Obtain a handle from the [`ProjectTableAccess::project`] method on [`super::RemoteTables`],
+/// like `ctx.db.project()`.
 ///
 /// Users are encouraged not to explicitly reference this type,
 /// but to directly chain method calls,
-/// like `ctx.db.tournament().on_insert(...)`.
-pub struct TournamentTableHandle<'ctx> {
+/// like `ctx.db.project().on_insert(...)`.
+pub struct ProjectTableHandle<'ctx> {
     imp: __sdk::TableHandle<ProjectV1>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the table `tournament`.
+/// Extension trait for access to the table `project`.
 ///
 /// Implemented for [`super::RemoteTables`].
-pub trait TournamentTableAccess {
+pub trait ProjectTableAccess {
     #[allow(non_snake_case)]
-    /// Obtain a [`TournamentTableHandle`], which mediates access to the table `tournament`.
-    fn tournament(&self) -> TournamentTableHandle<'_>;
+    /// Obtain a [`ProjectTableHandle`], which mediates access to the table `project`.
+    fn project(&self) -> ProjectTableHandle<'_>;
 }
 
-impl TournamentTableAccess for super::RemoteTables {
-    fn tournament(&self) -> TournamentTableHandle<'_> {
-        TournamentTableHandle {
-            imp: self.imp.get_table::<ProjectV1>("tournament"),
+impl ProjectTableAccess for super::RemoteTables {
+    fn project(&self) -> ProjectTableHandle<'_> {
+        ProjectTableHandle {
+            imp: self.imp.get_table::<ProjectV1>("project"),
             ctx: std::marker::PhantomData,
         }
     }
 }
 
-pub struct TournamentInsertCallbackId(__sdk::CallbackId);
-pub struct TournamentDeleteCallbackId(__sdk::CallbackId);
+pub struct ProjectInsertCallbackId(__sdk::CallbackId);
+pub struct ProjectDeleteCallbackId(__sdk::CallbackId);
 
-impl<'ctx> __sdk::Table for TournamentTableHandle<'ctx> {
+impl<'ctx> __sdk::Table for ProjectTableHandle<'ctx> {
     type Row = ProjectV1;
     type EventContext = super::EventContext;
 
@@ -52,36 +52,36 @@ impl<'ctx> __sdk::Table for TournamentTableHandle<'ctx> {
         self.imp.iter()
     }
 
-    type InsertCallbackId = TournamentInsertCallbackId;
+    type InsertCallbackId = ProjectInsertCallbackId;
 
     fn on_insert(
         &self,
         callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
-    ) -> TournamentInsertCallbackId {
-        TournamentInsertCallbackId(self.imp.on_insert(Box::new(callback)))
+    ) -> ProjectInsertCallbackId {
+        ProjectInsertCallbackId(self.imp.on_insert(Box::new(callback)))
     }
 
-    fn remove_on_insert(&self, callback: TournamentInsertCallbackId) {
+    fn remove_on_insert(&self, callback: ProjectInsertCallbackId) {
         self.imp.remove_on_insert(callback.0)
     }
 
-    type DeleteCallbackId = TournamentDeleteCallbackId;
+    type DeleteCallbackId = ProjectDeleteCallbackId;
 
     fn on_delete(
         &self,
         callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
-    ) -> TournamentDeleteCallbackId {
-        TournamentDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
+    ) -> ProjectDeleteCallbackId {
+        ProjectDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
     }
 
-    fn remove_on_delete(&self, callback: TournamentDeleteCallbackId) {
+    fn remove_on_delete(&self, callback: ProjectDeleteCallbackId) {
         self.imp.remove_on_delete(callback.0)
     }
 }
 
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
-    let _table = client_cache.get_or_make_table::<ProjectV1>("tournament");
+    let _table = client_cache.get_or_make_table::<ProjectV1>("project");
 }
 
 #[doc(hidden)]
@@ -99,14 +99,14 @@ pub(super) fn parse_table_update(
 /// Extension trait for query builder access to the table `ProjectV1`.
 ///
 /// Implemented for [`__sdk::QueryTableAccessor`].
-pub trait tournamentQueryTableAccess {
+pub trait projectQueryTableAccess {
     #[allow(non_snake_case)]
     /// Get a query builder for the table `ProjectV1`.
-    fn tournament(&self) -> __sdk::__query_builder::Table<ProjectV1>;
+    fn project(&self) -> __sdk::__query_builder::Table<ProjectV1>;
 }
 
-impl tournamentQueryTableAccess for __sdk::QueryTableAccessor {
-    fn tournament(&self) -> __sdk::__query_builder::Table<ProjectV1> {
-        __sdk::__query_builder::Table::new("tournament")
+impl projectQueryTableAccess for __sdk::QueryTableAccessor {
+    fn project(&self) -> __sdk::__query_builder::Table<ProjectV1> {
+        __sdk::__query_builder::Table::new("project")
     }
 }

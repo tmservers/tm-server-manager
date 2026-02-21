@@ -11,8 +11,8 @@ spacetime publish --break-clients --delete-data=on-conflict -y -p tm-tourney-man
 spacetime generate --yes --lang rust --out-dir tm-tourney-manager-api-rs/src/generated --module-path tm-tourney-manager
 spacetime generate --yes --lang typescript --out-dir tm-tourney-manager-api-ts/tourney-manager --module-path tm-tourney-manager
 
-# Create tournament
-spacetime call tm-tourney-manager create_tournament "Double Elimination" "This is a beautiful tournament" '{"__timestamp_micros_since_unix_epoch__": 1777132984000000}' '{"__timestamp_micros_since_unix_epoch__": 1777233084000000}'
+# Create project
+spacetime call tm-tourney-manager create_project "Double Elimination" "This is a beautiful project" '{"__timestamp_micros_since_unix_epoch__": 1777132984000000}' '{"__timestamp_micros_since_unix_epoch__": 1777233084000000}'
 
 # Double elimination bracket
 spacetime call tm-tourney-manager create_competition "Double Elimination Bracket" 1 null

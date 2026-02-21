@@ -86,7 +86,8 @@ import MatchRecordRow from "./match_record_table";
 import MatchRoundRow from "./match_round_table";
 import MyJobsRow from "./my_jobs_table";
 import MyMatchTemplateRow from "./my_match_template_table";
-import MyTournamentRow from "./my_tournament_table";
+import MyProjectRow from "./my_project_table";
+import ProjectRow from "./project_table";
 import RawServerConfigRow from "./raw_server_config_table";
 import RawServerCurrentPlayersRow from "./raw_server_current_players_table";
 import RawServerExpectedPlayersRow from "./raw_server_expected_players_table";
@@ -99,7 +100,6 @@ import ThisRawServerRow from "./this_raw_server_table";
 import TmMapRecordRow from "./tm_map_record_table";
 import TmMatchRow from "./tm_match_table";
 import TmWorkerRow from "./tm_worker_table";
-import TournamentRow from "./tournament_table";
 import UserRow from "./user_table";
 
 /** Type-only namespace exports for generated type groups. */
@@ -220,13 +220,20 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, MyMatchTemplateRow),
-  my_tournament: __table({
-    name: 'my_tournament',
+  my_project: __table({
+    name: 'my_project',
     indexes: [
     ],
     constraints: [
     ],
-  }, MyTournamentRow),
+  }, MyProjectRow),
+  project: __table({
+    name: 'project',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, ProjectRow),
   raw_server_config: __table({
     name: 'raw_server_config',
     indexes: [
@@ -297,13 +304,6 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, TmMatchRow),
-  tournament: __table({
-    name: 'tournament',
-    indexes: [
-    ],
-    constraints: [
-    ],
-  }, TournamentRow),
   user: __table({
     name: 'user',
     indexes: [

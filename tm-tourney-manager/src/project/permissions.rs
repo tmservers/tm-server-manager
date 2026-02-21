@@ -2,18 +2,18 @@ use std::ops::{Add, BitAnd, BitOr, Not};
 
 use crate::authorization::PermissionType;
 
-/* #[spacetimedb::table(accessor= tab_tournament_permission, index(name= account_and_tournament, hash(columns=[account_id,tournament_id])))]
-pub struct TournamentPermissionV1 {
-    pub tournament_id: u32,
+/* #[spacetimedb::table(accessor= tab_project_permission, index(name= account_and_project, hash(columns=[account_id,project_id])))]
+pub struct ProjectPermissionV1 {
+    pub project_id: u32,
 
     bucket1: u64,
 
     account_id: Uuid,
 }
 
-impl TournamentPermissionV1 {
-    pub(crate) fn get_permissions(&self) -> TournamentPermissionsV1 {
-        TournamentPermissionsV1(self.bucket1)
+impl ProjectPermissionV1 {
+    pub(crate) fn get_permissions(&self) -> ProjectPermissionsV1 {
+        ProjectPermissionsV1(self.bucket1)
     }
 } */
 
@@ -30,10 +30,8 @@ impl ProjectPermissionsV1 {
     pub const COMPETITION_CREATE: ProjectPermissionsV1 = ProjectPermissionsV1(0b100000);
     pub const COMPETITION_EDIT_NAME: ProjectPermissionsV1 = ProjectPermissionsV1(0b1000000);
     pub const COMPETITION_DELETE: ProjectPermissionsV1 = ProjectPermissionsV1(0b10000000);
-    pub const COMPETITION_CONNECTION_EDIT: ProjectPermissionsV1 =
-        ProjectPermissionsV1(0b100000000);
-    pub const COMPETITION_LAYOUT_EDIT: ProjectPermissionsV1 =
-        ProjectPermissionsV1(0b10000000000);
+    pub const COMPETITION_CONNECTION_EDIT: ProjectPermissionsV1 = ProjectPermissionsV1(0b100000000);
+    pub const COMPETITION_LAYOUT_EDIT: ProjectPermissionsV1 = ProjectPermissionsV1(0b10000000000);
     pub const COMPETITION_EDIT_REGISTRATION: ProjectPermissionsV1 =
         ProjectPermissionsV1(0b100000000000);
 

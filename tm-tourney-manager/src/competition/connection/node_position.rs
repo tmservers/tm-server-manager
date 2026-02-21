@@ -78,8 +78,8 @@ fn competition_node_position_update(
     position: Vec2,
 ) -> Result<(), String> {
     let user_account = ctx.get_user_account()?;
-    let tournament_id = node.get_tournament(ctx);
-    ctx.auth_builder(tournament_id, user_account)?
+    let project_id = node.get_project(ctx);
+    ctx.auth_builder(project_id, user_account)?
         .permission(ProjectPermissionsV1::COMPETITION_LAYOUT_EDIT)
         .authorize()?;
 
@@ -109,8 +109,8 @@ fn competition_node_positions_update(
     let user_account = ctx.get_user_account()?;
 
     for item in &positions {
-        let tournament_id = item.node.get_tournament(ctx);
-        ctx.auth_builder(tournament_id, user_account)?
+        let project_id = item.node.get_project(ctx);
+        ctx.auth_builder(project_id, user_account)?
             .permission(ProjectPermissionsV1::COMPETITION_LAYOUT_EDIT)
             .authorize()?;
     }

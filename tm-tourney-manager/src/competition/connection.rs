@@ -101,7 +101,7 @@ impl NodeKindHandle {
     }
 
     /// Safety: can only be called when you know the competiiton exists
-    fn get_tournament(&self, ctx: &ReducerContext) -> u32 {
+    fn get_project(&self, ctx: &ReducerContext) -> u32 {
         match self {
             NodeKindHandle::MatchV1(m) => {
                 if let Some(ma) = ctx.db.tab_tm_match().id().find(m) {
@@ -119,7 +119,7 @@ impl NodeKindHandle {
             }
             NodeKindHandle::SchedulingV1(sched) => {
                 if let Some(ma) = ctx.db.tab_schedule().scheduled_id().find(*sched as u64) {
-                    ma.get_tournament()
+                    ma.get_project()
                 } else {
                     u32::MAX
                 }
@@ -192,7 +192,7 @@ pub fn create_connection(
         );
     }
 
-    let project_id = connection_from.get_tournament(ctx);
+    let project_id = connection_from.get_project(ctx);
 
     ctx.auth_builder(project_id, account_id)?
         .permission(ProjectPermissionsV1::COMPETITION_CONNECTION_EDIT)

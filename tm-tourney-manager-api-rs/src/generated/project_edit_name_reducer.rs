@@ -7,14 +7,14 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct ProjectEditNameArgs {
-    pub tournament_id: u32,
+    pub project_id: u32,
     pub name: String,
 }
 
 impl From<ProjectEditNameArgs> for super::Reducer {
     fn from(args: ProjectEditNameArgs) -> Self {
         Self::ProjectEditName {
-            tournament_id: args.tournament_id,
+            project_id: args.project_id,
             name: args.name,
         }
     }
@@ -35,8 +35,8 @@ pub trait project_edit_name {
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
     /// /// Use [`project_edit_name:project_edit_name_then`] to run a callback after the reducer completes.
-    fn project_edit_name(&self, tournament_id: u32, name: String) -> __sdk::Result<()> {
-        self.project_edit_name_then(tournament_id, name, |_, _| {})
+    fn project_edit_name(&self, project_id: u32, name: String) -> __sdk::Result<()> {
+        self.project_edit_name_then(project_id, name, |_, _| {})
     }
 
     /// Request that the remote module invoke the reducer `project_edit_name` to run as soon as possible,
@@ -47,7 +47,7 @@ pub trait project_edit_name {
     ///  and its status can be observed with the `callback`.
     fn project_edit_name_then(
         &self,
-        tournament_id: u32,
+        project_id: u32,
         name: String,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
@@ -59,19 +59,14 @@ pub trait project_edit_name {
 impl project_edit_name for super::RemoteReducers {
     fn project_edit_name_then(
         &self,
-        tournament_id: u32,
+        project_id: u32,
         name: String,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     ) -> __sdk::Result<()> {
-        self.imp.invoke_reducer_with_callback(
-            ProjectEditNameArgs {
-                tournament_id,
-                name,
-            },
-            callback,
-        )
+        self.imp
+            .invoke_reducer_with_callback(ProjectEditNameArgs { project_id, name }, callback)
     }
 }

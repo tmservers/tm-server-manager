@@ -23,7 +23,7 @@ pub struct TmCompRecord {
 // and could save duplicating the data :thinking:
 // A downside is computational overhead but maybe the AnonymousViewContext handles that for me.
 // Would probably need to introduce the competition_id into the event table.
-// maybe it could also replace the tournament_id since a competition already has it as a foreign key.
+// maybe it could also replace the project_id since a competition already has it as a foreign key.
 
 #[view(accessor= match_record,public)]
 pub fn match_record(ctx: &AnonymousViewContext /* TODO: match_id arg */) -> Vec<TmRecord> {

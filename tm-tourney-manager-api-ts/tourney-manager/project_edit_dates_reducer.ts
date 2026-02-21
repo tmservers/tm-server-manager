@@ -11,7 +11,7 @@ import {
 } from "spacetimedb";
 
 export default {
-  tournamentId: __t.u32(),
+  projectId: __t.u32(),
   startingAt: __t.timestamp(),
   endingAt: __t.timestamp(),
 };

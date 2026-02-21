@@ -11,7 +11,7 @@ pub struct MatchGhost {
     //id: u32,
 
     //TODO
-    tournament_id: u32,
+    project_id: u32,
     match_id: u32,
     //map_uid
     player_id: Uuid,
@@ -65,7 +65,7 @@ pub fn post_round_replay(ctx: &mut ProcedureContext, replay: Vec<u8>) -> Result<
 
     /* ctx.db.match_ghost().insert(MatchGhost {
         uid: "TODO".into(),
-        tournament_id: 0,
+        project_id: 0,
         match_id: 0,
         player_id: "TODO".into(),
     }); */

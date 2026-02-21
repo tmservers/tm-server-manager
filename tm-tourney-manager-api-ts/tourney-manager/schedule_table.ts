@@ -14,5 +14,5 @@ export default __t.row({
   scheduledId: __t.u64().name("scheduled_id"),
   scheduledAt: __t.scheduleAt().name("scheduled_at"),
   competitionId: __t.u32().name("competition_id"),
-  tournamentId: __t.u32().name("tournament_id"),
+  projectId: __t.u32().name("project_id"),
 });
