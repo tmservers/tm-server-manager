@@ -1,6 +1,8 @@
 mod rounds;
-
 pub use rounds::Rounds;
+
+mod reverse_cup;
+pub use reverse_cup::ReverseCup;
 
 mod common;
 pub use common::*;
