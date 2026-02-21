@@ -17,15 +17,17 @@ pub struct ProjectRole {
 }
 
 impl ProjectRole {
-    pub fn get_permissions1(&self) -> TournamentPermissionsV1 {
+    pub(crate) fn get_permissions1(&self) -> TournamentPermissionsV1 {
         TournamentPermissionsV1(self.permissions1)
     }
 }
 
 #[table(accessor= tab_project_role_members,index(accessor= user_roles , hash(columns= [role_id,account_id])))]
 pub struct ProjectRoleMember {
+    #[index(hash)]
     role_id: u32,
 
+    #[index(hash)]
     account_id: Uuid,
 }
 

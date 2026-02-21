@@ -42,12 +42,10 @@ import CompetitionRegistrationSettingsReducer from "./competition_registration_s
 import CreateCompetitionReducer from "./create_competition_reducer";
 import CreateConnectionReducer from "./create_connection_reducer";
 import CreateEnvVarReducer from "./create_env_var_reducer";
-import CreateEventTemplateReducer from "./create_event_template_reducer";
 import CreateMonitorReducer from "./create_monitor_reducer";
 import CreateScheduleReducer from "./create_schedule_reducer";
 import CreateTeamReducer from "./create_team_reducer";
 import CreateTournamentReducer from "./create_tournament_reducer";
-import InternalGraphResolutionNodeFinishedReducer from "./internal_graph_resolution_node_finished_reducer";
 import MatchAssignServerReducer from "./match_assign_server_reducer";
 import MatchConfiguredReducer from "./match_configured_reducer";
 import MatchCreateReducer from "./match_create_reducer";
@@ -325,12 +323,10 @@ const reducersSchema = __reducers(
   __reducerSchema("create_competition", CreateCompetitionReducer),
   __reducerSchema("create_connection", CreateConnectionReducer),
   __reducerSchema("create_env_var", CreateEnvVarReducer),
-  __reducerSchema("create_event_template", CreateEventTemplateReducer),
   __reducerSchema("create_monitor", CreateMonitorReducer),
   __reducerSchema("create_schedule", CreateScheduleReducer),
   __reducerSchema("create_team", CreateTeamReducer),
   __reducerSchema("create_tournament", CreateTournamentReducer),
-  __reducerSchema("internal_graph_resolution_node_finished", InternalGraphResolutionNodeFinishedReducer),
   __reducerSchema("match_assign_server", MatchAssignServerReducer),
   __reducerSchema("match_configured", MatchConfiguredReducer),
   __reducerSchema("match_create", MatchCreateReducer),

@@ -36,12 +36,18 @@ impl __sdk::__query_builder::HasCols for ProjectRoleMember {
 /// Indexed column accessor struct for the table `ProjectRoleMember`.
 ///
 /// Provides typed access to indexed columns for query building.
-pub struct ProjectRoleMemberIxCols {}
+pub struct ProjectRoleMemberIxCols {
+    pub account_id: __sdk::__query_builder::IxCol<ProjectRoleMember, __sdk::Uuid>,
+    pub role_id: __sdk::__query_builder::IxCol<ProjectRoleMember, u32>,
+}
 
 impl __sdk::__query_builder::HasIxCols for ProjectRoleMember {
     type IxCols = ProjectRoleMemberIxCols;
     fn ix_cols(table_name: &'static str) -> Self::IxCols {
-        ProjectRoleMemberIxCols {}
+        ProjectRoleMemberIxCols {
+            account_id: __sdk::__query_builder::IxCol::new(table_name, "account_id"),
+            role_id: __sdk::__query_builder::IxCol::new(table_name, "role_id"),
+        }
     }
 }
 

@@ -16,30 +16,28 @@ mod status_schedule;
 
 /// A tournament is a logical grouping of competitions and also the only way to obtain a competition in the first place.
 /// It does not provide functionality in of itself but is responsible for all the metadata.
-#[cfg_attr(feature = "spacetime", spacetimedb::table(accessor= tab_tournament))]
+#[table(accessor= tab_tournament)]
 pub struct TournamentV1 {
-    #[auto_inc]
-    #[primary_key]
-    pub id: u32,
+    #[unique]
+    name: String,
+    description: String,
 
     #[index(btree)]
     creator_account_id: Uuid,
 
-    #[unique]
-    name: String,
-
     starting_at: Timestamp,
     ending_at: Timestamp,
 
-    description: String,
+    #[auto_inc]
+    #[primary_key]
+    pub id: u32,
 
     status: TournamentStatus,
 }
 
 impl TournamentV1 {}
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-#[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, SpacetimeType)]
 pub enum TournamentStatus {
     // public API cant query it
     Planning,
@@ -60,7 +58,7 @@ impl TournamentStatus {
 
 /// Requires name, description, starting and ending timestamps.
 /// Description can be empty.
-#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
+#[reducer]
 fn create_tournament(
     ctx: &ReducerContext,
     name: String,
@@ -81,7 +79,7 @@ fn create_tournament(
     })?;
 
     //SAFETY: Comitted afterwards
-    let competition = unsafe { CompetitionV1::new(name, None, tournament.id) };
+    let competition = unsafe { CompetitionV1::new(name, 0, tournament.id) };
     ctx.db.tab_competition().try_insert(competition)?;
 
     Ok(())
@@ -94,9 +92,9 @@ fn tournament_edit_name(
     name: String,
 ) -> Result<(), String> {
     let user = ctx.get_user()?;
-    ctx.project_permissions(tournament_id, user.account_id)?
-        .permission(TournamentPermissionsV1::TOURNAMENT_EDIT_NAME)
-        .check()?;
+    ctx.auth_builder(tournament_id, user.account_id)?
+        .permission(TournamentPermissionsV1::PROJECT_EDIT_NAME)
+        .authorize()?;
 
     let Some(mut tournament) = ctx.db.tab_tournament().id().find(tournament_id) else {
         return Err("Supplied tournament_id incorrect.".into());
@@ -116,6 +114,9 @@ fn tournament_edit_description(
     description: String,
 ) -> Result<(), String> {
     let user = ctx.get_user()?;
+    ctx.auth_builder(tournament_id, user.account_id)?
+        .permission(TournamentPermissionsV1::PROJECT_EDIT_DESCRIPTION)
+        .authorize()?;
 
     let Some(mut tournament) = ctx.db.tab_tournament().id().find(tournament_id) else {
         return Err("Supplied tournament_id incorrect.".into());
@@ -136,6 +137,9 @@ fn tournament_edit_dates(
     ending_at: Timestamp,
 ) -> Result<(), String> {
     let user = ctx.get_user()?;
+    ctx.auth_builder(tournament_id, user.account_id)?
+        .permission(TournamentPermissionsV1::PROJECT_EDIT_DATE)
+        .authorize()?;
 
     let Some(mut tournament) = ctx.db.tab_tournament().id().find(tournament_id) else {
         return Err("Supplied tournament_id incorrect.".into());

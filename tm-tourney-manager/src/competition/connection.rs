@@ -8,6 +8,7 @@ use crate::{
     },
     scheduling::tab_schedule,
     tm_match::tab_tm_match,
+    tournament::permissions::TournamentPermissionsV1,
 };
 
 pub(super) mod connection_data;
@@ -78,7 +79,8 @@ impl NodeKindHandle {
             }
             NodeKindHandle::CompetitionV1(c) => {
                 if let Some(co) = ctx.db.tab_competition().id().find(c) {
-                    if let Some(id) = co.get_comp_id() {
+                    let id = co.get_comp_id();
+                    if id != 0 {
                         Ok(id)
                     } else {
                         Err("Compeittion without Parent cannot be part of a connection".into())
@@ -176,7 +178,7 @@ pub fn create_connection(
     connection_to: NodeKindHandle,
     setting: ConnectionSettings,
 ) -> Result<(), String> {
-    let account_id = ctx.get_user()?;
+    let account_id = ctx.get_user()?.account_id;
 
     if connection_from == connection_to {
         return Err("Cannot connect a Node to itself.".into());
@@ -186,11 +188,16 @@ pub fn create_connection(
     let to_comp = connection_to.get_competition(ctx)?;
 
     if from_comp != to_comp {
-        return Err("Cannot add a connection where nodes are part of different parents!".into());
+        return Err(
+            "Cannot add a connection where nodes are part of different competitions!".into(),
+        );
     }
 
-    //TODO maybe this is not necessary but easier for now
     let tournament_id = connection_from.get_tournament(ctx);
+
+    ctx.auth_builder(tournament_id, account_id)?
+        .permission(TournamentPermissionsV1::COMPETITION_CONNECTION_EDIT)
+        .authorize()?;
 
     //TODO FIXME: Detect cycles and reject.
 
@@ -271,7 +278,6 @@ pub fn competition_connection(ctx: &ViewContext) -> Vec<CompetitionConnection> {
         .collect()
 }
 
-#[reducer]
 pub fn internal_graph_resolution_node_finished(
     ctx: &ReducerContext,
     competition_id: u32,

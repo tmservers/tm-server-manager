@@ -12,13 +12,16 @@ use crate::{
         tab_competition,
     },
     raw_server::{
-        RawServerOccupation, RawServerV1, available_server_pool, raw_server_pool, tab_raw_server,
-        tab_raw_server_occupation,
+        RawServerOccupation, RawServerV1, available_server_pool,
+        config::{RawServerConfig, tab_raw_server_config},
+        raw_server_pool, tab_raw_server, tab_raw_server_occupation,
     },
     tm_match::{
         match_state::{TmMatchState, tab_tm_match_state},
         template::tab_match_template,
     },
+    tournament::permissions::TournamentPermissionsV1,
+    user::user,
 };
 
 pub mod event;
@@ -76,9 +79,21 @@ impl TmMatchV1 {
     pub fn get_config_id(&self) -> u32 {
         match self.status {
             MatchStatus::Configuring => 0,
-            MatchStatus::Upcoming => self.pre_match_config,
+            MatchStatus::Upcoming => {
+                if self.pre_match_config != 0 {
+                    self.pre_match_config
+                } else {
+                    self.match_config
+                }
+            }
             MatchStatus::Live => self.match_config,
-            MatchStatus::Ended => self.post_match_config,
+            MatchStatus::Ended => {
+                if self.post_match_config != 0 {
+                    self.post_match_config
+                } else {
+                    self.match_config
+                }
+            }
         }
     }
 
@@ -119,20 +134,16 @@ pub fn match_create(
     name: String,
     competition_id: u32,
     with_template: Option<u32>,
-    //TODO: how to auto provision good?
-    // maybe remove it from here and always auto assign from owned servers if not done manually in time.
-    // THis would be done when switching to upcoming.
-    //auto_provisioning_server: bool,
 ) -> Result<(), String> {
-    let user = ctx.get_user()?;
-
-    /* ctx.tournament_permissions(tournament_id, &user)?
-    .permission(TournamentPermissionsV1::TOURNAMENT_EDIT_NAME)
-    .check()?; */
+    let user = ctx.get_user_account()?;
 
     let Some(parent_competition) = ctx.db.tab_competition().id().find(competition_id) else {
         return Err("Invalid competition".into());
     };
+
+    ctx.auth_builder(parent_competition.get_tournament(), user)?
+        .permission(TournamentPermissionsV1::MATCH_CREATE)
+        .authorize()?;
 
     // Create an uncommitted match
     let mut tm_match = TmMatchV1 {
@@ -141,7 +152,6 @@ pub fn match_create(
         tournament_id: parent_competition.get_tournament(),
         name,
         status: MatchStatus::Configuring,
-        //server_id: None,
         pre_match_config: 0,
         match_config: 0,
         post_match_config: 0,
@@ -180,7 +190,9 @@ pub fn match_create(
 /// Assigns a server to the selected match.
 #[reducer]
 pub fn match_assign_server(ctx: &ReducerContext, to: u32, server_id: u32) -> Result<(), String> {
-    //TODO permissions
+    //TODO permissions. The problem is which server should be available?
+    // Maybe we need to map the server pool to a project that you have a permission add server to pool.
+    // This way multiple users can contribute their servers.
     let user = ctx.get_user()?;
     if let Some(server) = ctx.db.tab_raw_server().id().find(server_id)
         && server.account_id == user.account_id
@@ -203,35 +215,28 @@ pub fn match_assign_server(ctx: &ReducerContext, to: u32, server_id: u32) -> Res
     Ok(())
 }
 
+//TODO reevaluate if this is necessary.
+// This is because maybe it just is automatically upcomoing if all conncetions resolve?
 #[reducer]
 pub fn match_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> {
-    ctx.get_user()?;
-    if let Some(mut tm_match) = ctx.db.tab_tm_match().id().find(id)
-        && tm_match.status == MatchStatus::Configuring
-        && tm_match.match_config != 0
-    {
+    let user_account = ctx.get_user_account()?;
+    let Some(mut tm_match) = ctx.db.tab_tm_match().id().find(id) else {
+        return Err("Match was mot found!".into());
+    };
+
+    ctx.auth_builder(tm_match.tournament_id, user_account)?
+        .permission(TournamentPermissionsV1::MATCH_CONFIGURE)
+        .authorize()?;
+
+    if tm_match.status == MatchStatus::Configuring && tm_match.match_config != 0 {
         tm_match.status = MatchStatus::Upcoming;
 
-        // Send the configuration of the corresponding match to the associated server.
-        /* let Some(mut tm_server) = ctx
-            .db
-            .tab_raw_server_occupation()
-            .match_id()
-            .find(tm_server_id)
-        else {
-            return Err(format!("No server with id {tm_server_id} could be found"));
-        };
-        if tm_match.pre_match_config.is_some() {
-            //tm_server.set_config(tm_match.pre_match_config.clone().unwrap());
-        } else {
-            //tm_server.set_config(tm_match.match_config.clone().unwrap());
-        } */
+        ctx.db.tab_tm_match().id().update(tm_match);
 
-        /* ctx.db.tab_tm_match().id().update(tm_match);
-
-        ctx.db.tab_raw_server().server_login().update(tm_server); */
+        Ok(())
+    } else {
+        Err("Not all condidiions were met".into())
     }
-    Ok(())
 }
 
 #[reducer]
@@ -252,7 +257,7 @@ pub fn match_update_pre_config(
     }
 }
 
-#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
+#[reducer]
 pub fn match_update_config(
     ctx: &ReducerContext,
     id: u32,
@@ -262,8 +267,13 @@ pub fn match_update_config(
     if let Some(mut tm_match) = ctx.db.tab_tm_match().id().find(id)
         && tm_match.status == MatchStatus::Configuring
     {
-        //TODO
-        //tm_match.match_config = Some(config);
+        //TODO cleanup old/orphaned configs. Should i do this with a mapping table or just always instantiate the config or keep track of this in the match?
+        //TODO also check if it is empty (0) or if smth was there before.
+        let cfg = ctx
+            .db
+            .tab_raw_server_config()
+            .try_insert(RawServerConfig::new(config))?;
+        tm_match.match_config = cfg.id;
         ctx.db.tab_tm_match().id().update(tm_match);
         Ok(())
     } else {
@@ -275,19 +285,27 @@ pub fn match_update_config(
 /// This can also serve as a manual override for scheduled matches.
 #[reducer]
 pub fn match_try_start(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
-    let user = ctx.get_user()?;
+    let user = ctx.get_user_account()?;
 
     let Some(mut tm_match) = ctx.db.tab_tm_match().id().find(match_id) else {
         return Err("Match not found!".into());
     };
 
-    //TODO verify more things
-    if let Some(server) = ctx
+    ctx.auth_builder(tm_match.tournament_id, user)?
+        .permission(TournamentPermissionsV1::MATCH_CONFIGURE)
+        .authorize()?;
+
+    if tm_match.match_config == 0 {
+        return Err("Match needs a configuration in order to be started.".into());
+    }
+
+    if ctx
         .db
         .tab_raw_server_occupation()
         .match_id()
         .filter(tm_match.id)
         .next()
+        .is_some()
     {
         tm_match.status = MatchStatus::Live;
         ctx.db.tab_tm_match().id().update(tm_match);
@@ -297,7 +315,6 @@ pub fn match_try_start(ctx: &ReducerContext, match_id: u32) -> Result<(), String
 
     if tm_match.auto_provision_server {
         let available_servers = available_server_pool(&ctx.as_read_only());
-        let available_servers: Vec<RawServerV1> = Vec::new();
         if available_servers.is_empty() {
             return Err("No server is assigned to the match and there are no servers left to auto provision. Cannot start the match!".into());
         }
@@ -306,20 +323,27 @@ pub fn match_try_start(ctx: &ReducerContext, match_id: u32) -> Result<(), String
             .tab_raw_server_occupation()
             .try_insert(RawServerOccupation::new(match_id, available_servers[0].id))?;
 
+        tm_match.status = MatchStatus::Live;
+        ctx.db.tab_tm_match().id().update(tm_match);
+
         Ok(())
     } else {
         Err("Match has auto provisioning turned off and no server assigned! Cannot start the match!".into())
     }
 }
 
-// Delete a match
 #[reducer]
 pub fn match_delete(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
-    ctx.get_user()?;
+    let user = ctx.get_user_account()?;
 
     let Some(tm_match) = ctx.db.tab_tm_match().id().find(match_id) else {
         return Err(format!("Match with id: {match_id} not found."));
     };
+
+    ctx.auth_builder(tm_match.tournament_id, user)?
+        .permission(TournamentPermissionsV1::MATCH_DELETE)
+        .authorize()?;
+
     if !ctx.db.tab_tm_match().id().delete(match_id) {
         return Err(format!("Match with id: {match_id} not found."));
     }

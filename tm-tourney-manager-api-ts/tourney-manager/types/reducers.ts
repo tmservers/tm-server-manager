@@ -14,12 +14,10 @@ import CompetitionRegistrationSettingsReducer from "../competition_registration_
 import CreateCompetitionReducer from "../create_competition_reducer";
 import CreateConnectionReducer from "../create_connection_reducer";
 import CreateEnvVarReducer from "../create_env_var_reducer";
-import CreateEventTemplateReducer from "../create_event_template_reducer";
 import CreateMonitorReducer from "../create_monitor_reducer";
 import CreateScheduleReducer from "../create_schedule_reducer";
 import CreateTeamReducer from "../create_team_reducer";
 import CreateTournamentReducer from "../create_tournament_reducer";
-import InternalGraphResolutionNodeFinishedReducer from "../internal_graph_resolution_node_finished_reducer";
 import MatchAssignServerReducer from "../match_assign_server_reducer";
 import MatchConfiguredReducer from "../match_configured_reducer";
 import MatchCreateReducer from "../match_create_reducer";
@@ -50,12 +48,10 @@ export type CompetitionRegistrationSettingsParams = __Infer<typeof CompetitionRe
 export type CreateCompetitionParams = __Infer<typeof CreateCompetitionReducer>;
 export type CreateConnectionParams = __Infer<typeof CreateConnectionReducer>;
 export type CreateEnvVarParams = __Infer<typeof CreateEnvVarReducer>;
-export type CreateEventTemplateParams = __Infer<typeof CreateEventTemplateReducer>;
 export type CreateMonitorParams = __Infer<typeof CreateMonitorReducer>;
 export type CreateScheduleParams = __Infer<typeof CreateScheduleReducer>;
 export type CreateTeamParams = __Infer<typeof CreateTeamReducer>;
 export type CreateTournamentParams = __Infer<typeof CreateTournamentReducer>;
-export type InternalGraphResolutionNodeFinishedParams = __Infer<typeof InternalGraphResolutionNodeFinishedReducer>;
 export type MatchAssignServerParams = __Infer<typeof MatchAssignServerReducer>;
 export type MatchConfiguredParams = __Infer<typeof MatchConfiguredReducer>;
 export type MatchCreateParams = __Infer<typeof MatchCreateReducer>;

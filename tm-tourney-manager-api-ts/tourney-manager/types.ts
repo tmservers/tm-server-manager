@@ -112,7 +112,7 @@ export type CompetitionStatus = __Infer<typeof CompetitionStatus>;
 export const CompetitionV1 = __t.object("CompetitionV1", {
   id: __t.u32(),
   tournamentId: __t.u32(),
-  parentId: __t.option(__t.u32()),
+  parentId: __t.u32(),
   name: __t.string(),
   get status() {
     return CompetitionStatus;
@@ -890,13 +890,13 @@ export const TabCompetitionConnection = __t.object("TabCompetitionConnection", {
 export type TabCompetitionConnection = __Infer<typeof TabCompetitionConnection>;
 
 export const TabCompetitionNodePosition = __t.object("TabCompetitionNodePosition", {
+  get position() {
+    return Vec2;
+  },
   id: __t.u32(),
   competitionId: __t.u32(),
   nodeId: __t.u32(),
   nodeVariant: __t.u8(),
-  get position() {
-    return Vec2;
-  },
 });
 export type TabCompetitionNodePosition = __Infer<typeof TabCompetitionNodePosition>;
 
@@ -1030,12 +1030,12 @@ export const TournamentStatusScheduleV1 = __t.object("TournamentStatusScheduleV1
 export type TournamentStatusScheduleV1 = __Infer<typeof TournamentStatusScheduleV1>;
 
 export const TournamentV1 = __t.object("TournamentV1", {
-  id: __t.u32(),
-  creatorAccountId: __t.uuid(),
   name: __t.string(),
+  description: __t.string(),
+  creatorAccountId: __t.uuid(),
   startingAt: __t.timestamp(),
   endingAt: __t.timestamp(),
-  description: __t.string(),
+  id: __t.u32(),
   get status() {
     return TournamentStatus;
   },

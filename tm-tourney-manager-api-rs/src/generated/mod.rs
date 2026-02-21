@@ -31,7 +31,6 @@ pub mod connection_settings_type;
 pub mod create_competition_reducer;
 pub mod create_connection_reducer;
 pub mod create_env_var_reducer;
-pub mod create_event_template_reducer;
 pub mod create_monitor_reducer;
 pub mod create_schedule_reducer;
 pub mod create_team_reducer;
@@ -49,7 +48,6 @@ pub mod env_type;
 pub mod event_type;
 pub mod finish_timeout_type;
 pub mod give_up_type;
-pub mod internal_graph_resolution_node_finished_reducer;
 pub mod kick_args_type;
 pub mod laps_number_type;
 pub mod leaderboard_entry_type;
@@ -204,7 +202,6 @@ pub use connection_settings_type::ConnectionSettings;
 pub use create_competition_reducer::create_competition;
 pub use create_connection_reducer::create_connection;
 pub use create_env_var_reducer::create_env_var;
-pub use create_event_template_reducer::create_event_template;
 pub use create_monitor_reducer::create_monitor;
 pub use create_schedule_reducer::create_schedule;
 pub use create_team_reducer::create_team;
@@ -222,7 +219,6 @@ pub use env_type::Env;
 pub use event_type::Event;
 pub use finish_timeout_type::FinishTimeout;
 pub use give_up_type::GiveUp;
-pub use internal_graph_resolution_node_finished_reducer::internal_graph_resolution_node_finished;
 pub use kick_args_type::KickArgs;
 pub use laps_number_type::LapsNumber;
 pub use leaderboard_entry_type::LeaderboardEntry;
@@ -392,9 +388,6 @@ pub enum Reducer {
         key: String,
         value: String,
     },
-    CreateEventTemplate {
-        name: String,
-    },
     CreateMonitor {
         competition: u32,
         settings: MonitoringSettings,
@@ -412,10 +405,6 @@ pub enum Reducer {
         description: String,
         starting_at: __sdk::Timestamp,
         ending_at: __sdk::Timestamp,
-    },
-    InternalGraphResolutionNodeFinished {
-        competition_id: u32,
-        trigger: NodeKindHandle,
     },
     MatchAssignServer {
         to: u32,
@@ -512,14 +501,10 @@ impl __sdk::Reducer for Reducer {
             Reducer::CreateCompetition { .. } => "create_competition",
             Reducer::CreateConnection { .. } => "create_connection",
             Reducer::CreateEnvVar { .. } => "create_env_var",
-            Reducer::CreateEventTemplate { .. } => "create_event_template",
             Reducer::CreateMonitor { .. } => "create_monitor",
             Reducer::CreateSchedule { .. } => "create_schedule",
             Reducer::CreateTeam { .. } => "create_team",
             Reducer::CreateTournament { .. } => "create_tournament",
-            Reducer::InternalGraphResolutionNodeFinished { .. } => {
-                "internal_graph_resolution_node_finished"
-            }
             Reducer::MatchAssignServer { .. } => "match_assign_server",
             Reducer::MatchConfigured { .. } => "match_configured",
             Reducer::MatchCreate { .. } => "match_create",
@@ -547,243 +532,228 @@ impl __sdk::Reducer for Reducer {
     #[allow(clippy::clone_on_copy)]
     fn args_bsatn(&self) -> Result<Vec<u8>, __sats::bsatn::EncodeError> {
         match self {
-                        Reducer::CompetitionConnectionDataUpdate{
-                option,
-}             => __sats::bsatn::to_vec(&competition_connection_data_update_reducer::CompetitionConnectionDataUpdateArgs {
-                option: option.clone(),
-}),
-            Reducer::CompetitionEditName{
+            Reducer::CompetitionConnectionDataUpdate { option } => __sats::bsatn::to_vec(
+                &competition_connection_data_update_reducer::CompetitionConnectionDataUpdateArgs {
+                    option: option.clone(),
+                },
+            ),
+            Reducer::CompetitionEditName {
                 competition_id,
                 name,
-}             => __sats::bsatn::to_vec(&competition_edit_name_reducer::CompetitionEditNameArgs {
+            } => __sats::bsatn::to_vec(&competition_edit_name_reducer::CompetitionEditNameArgs {
                 competition_id: competition_id.clone(),
                 name: name.clone(),
-}),
-            Reducer::CompetitionNodePositionUpdate{
-                node,
-                position,
-}             => __sats::bsatn::to_vec(&competition_node_position_update_reducer::CompetitionNodePositionUpdateArgs {
-                node: node.clone(),
-                position: position.clone(),
-}),
-            Reducer::CompetitionNodePositionsUpdate{
-                positions,
-}             => __sats::bsatn::to_vec(&competition_node_positions_update_reducer::CompetitionNodePositionsUpdateArgs {
-                positions: positions.clone(),
-}),
-            Reducer::CompetitionRegistrationSettings{
+            }),
+            Reducer::CompetitionNodePositionUpdate { node, position } => __sats::bsatn::to_vec(
+                &competition_node_position_update_reducer::CompetitionNodePositionUpdateArgs {
+                    node: node.clone(),
+                    position: position.clone(),
+                },
+            ),
+            Reducer::CompetitionNodePositionsUpdate { positions } => __sats::bsatn::to_vec(
+                &competition_node_positions_update_reducer::CompetitionNodePositionsUpdateArgs {
+                    positions: positions.clone(),
+                },
+            ),
+            Reducer::CompetitionRegistrationSettings {
                 competition_id,
                 registration_settings,
-}             => __sats::bsatn::to_vec(&competition_registration_settings_reducer::CompetitionRegistrationSettingsArgs {
-                competition_id: competition_id.clone(),
-                registration_settings: registration_settings.clone(),
-}),
-            Reducer::CreateCompetition{
+            } => __sats::bsatn::to_vec(
+                &competition_registration_settings_reducer::CompetitionRegistrationSettingsArgs {
+                    competition_id: competition_id.clone(),
+                    registration_settings: registration_settings.clone(),
+                },
+            ),
+            Reducer::CreateCompetition {
                 name,
                 parent_id,
                 with_template,
-}             => __sats::bsatn::to_vec(&create_competition_reducer::CreateCompetitionArgs {
+            } => __sats::bsatn::to_vec(&create_competition_reducer::CreateCompetitionArgs {
                 name: name.clone(),
                 parent_id: parent_id.clone(),
                 with_template: with_template.clone(),
-}),
-            Reducer::CreateConnection{
+            }),
+            Reducer::CreateConnection {
                 connection_from,
                 connection_to,
                 setting,
-}             => __sats::bsatn::to_vec(&create_connection_reducer::CreateConnectionArgs {
+            } => __sats::bsatn::to_vec(&create_connection_reducer::CreateConnectionArgs {
                 connection_from: connection_from.clone(),
                 connection_to: connection_to.clone(),
                 setting: setting.clone(),
-}),
-            Reducer::CreateEnvVar{
-                key,
-                value,
-}             => __sats::bsatn::to_vec(&create_env_var_reducer::CreateEnvVarArgs {
-                key: key.clone(),
-                value: value.clone(),
-}),
-            Reducer::CreateEventTemplate{
-                name,
-}             => __sats::bsatn::to_vec(&create_event_template_reducer::CreateEventTemplateArgs {
-                name: name.clone(),
-}),
-            Reducer::CreateMonitor{
+            }),
+            Reducer::CreateEnvVar { key, value } => {
+                __sats::bsatn::to_vec(&create_env_var_reducer::CreateEnvVarArgs {
+                    key: key.clone(),
+                    value: value.clone(),
+                })
+            }
+            Reducer::CreateMonitor {
                 competition,
                 settings,
-}             => __sats::bsatn::to_vec(&create_monitor_reducer::CreateMonitorArgs {
+            } => __sats::bsatn::to_vec(&create_monitor_reducer::CreateMonitorArgs {
                 competition: competition.clone(),
                 settings: settings.clone(),
-}),
-            Reducer::CreateSchedule{
+            }),
+            Reducer::CreateSchedule {
                 competition_id,
                 scheduled_at,
-}             => __sats::bsatn::to_vec(&create_schedule_reducer::CreateScheduleArgs {
+            } => __sats::bsatn::to_vec(&create_schedule_reducer::CreateScheduleArgs {
                 competition_id: competition_id.clone(),
                 scheduled_at: scheduled_at.clone(),
-}),
-            Reducer::CreateTeam{
+            }),
+            Reducer::CreateTeam {
                 competition_id,
                 name,
-}             => __sats::bsatn::to_vec(&create_team_reducer::CreateTeamArgs {
+            } => __sats::bsatn::to_vec(&create_team_reducer::CreateTeamArgs {
                 competition_id: competition_id.clone(),
                 name: name.clone(),
-}),
-            Reducer::CreateTournament{
+            }),
+            Reducer::CreateTournament {
                 name,
                 description,
                 starting_at,
                 ending_at,
-}             => __sats::bsatn::to_vec(&create_tournament_reducer::CreateTournamentArgs {
+            } => __sats::bsatn::to_vec(&create_tournament_reducer::CreateTournamentArgs {
                 name: name.clone(),
                 description: description.clone(),
                 starting_at: starting_at.clone(),
                 ending_at: ending_at.clone(),
-}),
-            Reducer::InternalGraphResolutionNodeFinished{
-                competition_id,
-                trigger,
-}             => __sats::bsatn::to_vec(&internal_graph_resolution_node_finished_reducer::InternalGraphResolutionNodeFinishedArgs {
-                competition_id: competition_id.clone(),
-                trigger: trigger.clone(),
-}),
-            Reducer::MatchAssignServer{
-                to,
-                server_id,
-}             => __sats::bsatn::to_vec(&match_assign_server_reducer::MatchAssignServerArgs {
-                to: to.clone(),
-                server_id: server_id.clone(),
-}),
-            Reducer::MatchConfigured{
-                id,
-}             => __sats::bsatn::to_vec(&match_configured_reducer::MatchConfiguredArgs {
-                id: id.clone(),
-}),
-            Reducer::MatchCreate{
+            }),
+            Reducer::MatchAssignServer { to, server_id } => {
+                __sats::bsatn::to_vec(&match_assign_server_reducer::MatchAssignServerArgs {
+                    to: to.clone(),
+                    server_id: server_id.clone(),
+                })
+            }
+            Reducer::MatchConfigured { id } => {
+                __sats::bsatn::to_vec(&match_configured_reducer::MatchConfiguredArgs {
+                    id: id.clone(),
+                })
+            }
+            Reducer::MatchCreate {
                 name,
                 competition_id,
                 with_template,
-}             => __sats::bsatn::to_vec(&match_create_reducer::MatchCreateArgs {
+            } => __sats::bsatn::to_vec(&match_create_reducer::MatchCreateArgs {
                 name: name.clone(),
                 competition_id: competition_id.clone(),
                 with_template: with_template.clone(),
-}),
-            Reducer::MatchDelete{
-                match_id,
-}             => __sats::bsatn::to_vec(&match_delete_reducer::MatchDeleteArgs {
-                match_id: match_id.clone(),
-}),
-            Reducer::MatchTemplateCreate{
-                name,
-                config,
-}             => __sats::bsatn::to_vec(&match_template_create_reducer::MatchTemplateCreateArgs {
-                name: name.clone(),
-                config: config.clone(),
-}),
-            Reducer::MatchTryStart{
-                match_id,
-}             => __sats::bsatn::to_vec(&match_try_start_reducer::MatchTryStartArgs {
-                match_id: match_id.clone(),
-}),
-            Reducer::MatchUpdateConfig{
-                id,
-                config,
-}             => __sats::bsatn::to_vec(&match_update_config_reducer::MatchUpdateConfigArgs {
-                id: id.clone(),
-                config: config.clone(),
-}),
-            Reducer::MatchUpdatePreConfig{
-                id,
-                config_id,
-}             => __sats::bsatn::to_vec(&match_update_pre_config_reducer::MatchUpdatePreConfigArgs {
-                id: id.clone(),
-                config_id: config_id.clone(),
-}),
-            Reducer::PostEvent{
-                event,
-}             => __sats::bsatn::to_vec(&post_event_reducer::PostEventArgs {
-                event: event.clone(),
-}),
-            Reducer::PostRecord{
+            }),
+            Reducer::MatchDelete { match_id } => {
+                __sats::bsatn::to_vec(&match_delete_reducer::MatchDeleteArgs {
+                    match_id: match_id.clone(),
+                })
+            }
+            Reducer::MatchTemplateCreate { name, config } => {
+                __sats::bsatn::to_vec(&match_template_create_reducer::MatchTemplateCreateArgs {
+                    name: name.clone(),
+                    config: config.clone(),
+                })
+            }
+            Reducer::MatchTryStart { match_id } => {
+                __sats::bsatn::to_vec(&match_try_start_reducer::MatchTryStartArgs {
+                    match_id: match_id.clone(),
+                })
+            }
+            Reducer::MatchUpdateConfig { id, config } => {
+                __sats::bsatn::to_vec(&match_update_config_reducer::MatchUpdateConfigArgs {
+                    id: id.clone(),
+                    config: config.clone(),
+                })
+            }
+            Reducer::MatchUpdatePreConfig { id, config_id } => {
+                __sats::bsatn::to_vec(&match_update_pre_config_reducer::MatchUpdatePreConfigArgs {
+                    id: id.clone(),
+                    config_id: config_id.clone(),
+                })
+            }
+            Reducer::PostEvent { event } => {
+                __sats::bsatn::to_vec(&post_event_reducer::PostEventArgs {
+                    event: event.clone(),
+                })
+            }
+            Reducer::PostRecord {
                 map_uid,
                 account_id,
                 time,
-}             => __sats::bsatn::to_vec(&post_record_reducer::PostRecordArgs {
+            } => __sats::bsatn::to_vec(&post_record_reducer::PostRecordArgs {
                 map_uid: map_uid.clone(),
                 account_id: account_id.clone(),
                 time: time.clone(),
-}),
-            Reducer::RawServerPlayerAdd{
+            }),
+            Reducer::RawServerPlayerAdd {
                 account_id,
                 spectator,
-}             => __sats::bsatn::to_vec(&raw_server_player_add_reducer::RawServerPlayerAddArgs {
+            } => __sats::bsatn::to_vec(&raw_server_player_add_reducer::RawServerPlayerAddArgs {
                 account_id: account_id.clone(),
                 spectator: spectator.clone(),
-}),
-            Reducer::RawServerPlayerRemove{
-                account_id,
-}             => __sats::bsatn::to_vec(&raw_server_player_remove_reducer::RawServerPlayerRemoveArgs {
-                account_id: account_id.clone(),
-}),
-            Reducer::RawServerVerify{
-                server_id,
-}             => __sats::bsatn::to_vec(&raw_server_verify_reducer::RawServerVerifyArgs {
-                server_id: server_id.clone(),
-}),
-            Reducer::RegisterPlayer{
-                competition_id,
-}             => __sats::bsatn::to_vec(&register_player_reducer::RegisterPlayerArgs {
-                competition_id: competition_id.clone(),
-}),
-            Reducer::ServerMethodCall{
+            }),
+            Reducer::RawServerPlayerRemove { account_id } => __sats::bsatn::to_vec(
+                &raw_server_player_remove_reducer::RawServerPlayerRemoveArgs {
+                    account_id: account_id.clone(),
+                },
+            ),
+            Reducer::RawServerVerify { server_id } => {
+                __sats::bsatn::to_vec(&raw_server_verify_reducer::RawServerVerifyArgs {
+                    server_id: server_id.clone(),
+                })
+            }
+            Reducer::RegisterPlayer { competition_id } => {
+                __sats::bsatn::to_vec(&register_player_reducer::RegisterPlayerArgs {
+                    competition_id: competition_id.clone(),
+                })
+            }
+            Reducer::ServerMethodCall {
                 server_login,
                 method,
-}             => __sats::bsatn::to_vec(&server_method_call_reducer::ServerMethodCallArgs {
+            } => __sats::bsatn::to_vec(&server_method_call_reducer::ServerMethodCallArgs {
                 server_login: server_login.clone(),
                 method: method.clone(),
-}),
-            Reducer::ServerMethodResponse{
-                call_id,
-                response,
-}             => __sats::bsatn::to_vec(&server_method_response_reducer::ServerMethodResponseArgs {
-                call_id: call_id.clone(),
-                response: response.clone(),
-}),
-            Reducer::TournamentEditDates{
+            }),
+            Reducer::ServerMethodResponse { call_id, response } => {
+                __sats::bsatn::to_vec(&server_method_response_reducer::ServerMethodResponseArgs {
+                    call_id: call_id.clone(),
+                    response: response.clone(),
+                })
+            }
+            Reducer::TournamentEditDates {
                 tournament_id,
                 starting_at,
                 ending_at,
-}             => __sats::bsatn::to_vec(&tournament_edit_dates_reducer::TournamentEditDatesArgs {
+            } => __sats::bsatn::to_vec(&tournament_edit_dates_reducer::TournamentEditDatesArgs {
                 tournament_id: tournament_id.clone(),
                 starting_at: starting_at.clone(),
                 ending_at: ending_at.clone(),
-}),
-            Reducer::TournamentEditDescription{
+            }),
+            Reducer::TournamentEditDescription {
                 tournament_id,
                 description,
-}             => __sats::bsatn::to_vec(&tournament_edit_description_reducer::TournamentEditDescriptionArgs {
-                tournament_id: tournament_id.clone(),
-                description: description.clone(),
-}),
-            Reducer::TournamentEditName{
+            } => __sats::bsatn::to_vec(
+                &tournament_edit_description_reducer::TournamentEditDescriptionArgs {
+                    tournament_id: tournament_id.clone(),
+                    description: description.clone(),
+                },
+            ),
+            Reducer::TournamentEditName {
                 tournament_id,
                 name,
-}             => __sats::bsatn::to_vec(&tournament_edit_name_reducer::TournamentEditNameArgs {
+            } => __sats::bsatn::to_vec(&tournament_edit_name_reducer::TournamentEditNameArgs {
                 tournament_id: tournament_id.clone(),
                 name: name.clone(),
-}),
-            Reducer::TournamentUpdateStatus{
-                tournament_id,
-}             => __sats::bsatn::to_vec(&tournament_update_status_reducer::TournamentUpdateStatusArgs {
-                tournament_id: tournament_id.clone(),
-}),
-            Reducer::UnregisterPlayer{
-                competition_id,
-}             => __sats::bsatn::to_vec(&unregister_player_reducer::UnregisterPlayerArgs {
-                competition_id: competition_id.clone(),
-}),
+            }),
+            Reducer::TournamentUpdateStatus { tournament_id } => __sats::bsatn::to_vec(
+                &tournament_update_status_reducer::TournamentUpdateStatusArgs {
+                    tournament_id: tournament_id.clone(),
+                },
+            ),
+            Reducer::UnregisterPlayer { competition_id } => {
+                __sats::bsatn::to_vec(&unregister_player_reducer::UnregisterPlayerArgs {
+                    competition_id: competition_id.clone(),
+                })
+            }
             _ => unreachable!(),
-}
+        }
     }
 }
 

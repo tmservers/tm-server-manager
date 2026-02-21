@@ -175,7 +175,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // Initialize state subscriptions for the server.
     {
         let spacetime = SPACETIME.wait();
-
         _ = spacetime
             .subscription_builder()
             .on_applied(|_| tracing::debug!("Subscription successfully applied!"))

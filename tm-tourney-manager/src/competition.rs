@@ -1,8 +1,12 @@
 use spacetimedb::{
-    AnonymousViewContext, Query, ReducerContext, Table, Timestamp, reducer, table, view,
+    AnonymousViewContext, Query, ReducerContext, SpacetimeType, Table, Timestamp, reducer, table,
+    view,
 };
 
-use crate::{authorization::Authorization, registration::RegistrationSettings};
+use crate::{
+    authorization::Authorization, registration::RegistrationSettings,
+    tournament::permissions::TournamentPermissionsV1,
+};
 
 pub mod connection;
 
@@ -14,7 +18,7 @@ pub struct CompetitionV1 {
     pub id: u32,
 
     tournament_id: u32,
-    parent_id: Option<u32>,
+    parent_id: u32,
 
     name: String,
 
@@ -37,7 +41,7 @@ impl CompetitionV1 {
         self.tournament_id
     }
 
-    pub(crate) fn get_comp_id(&self) -> Option<u32> {
+    pub(crate) fn get_comp_id(&self) -> u32 {
         self.parent_id
     }
 
@@ -48,7 +52,7 @@ impl CompetitionV1 {
     /// # Safety
     /// The new competition has to be commited to spacetime db through the `create_competition` reducer.
     /// Otherwise the id is invalid.
-    pub unsafe fn new(name: String, parent_id: Option<u32>, tournament_id: u32) -> Self {
+    pub unsafe fn new(name: String, parent_id: u32, tournament_id: u32) -> Self {
         Self {
             id: 0,
             tournament_id,
@@ -66,8 +70,7 @@ impl CompetitionV1 {
     }
 }
 
-#[derive(Debug)]
-#[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
+#[derive(Debug, SpacetimeType)]
 pub enum CompetitionStatus {
     /// If you just created the competition it will be in the planning phase.
     /// Here you can set everything up as you like.
@@ -82,7 +85,7 @@ pub enum CompetitionStatus {
 }
 
 /// Adds a new Competition to the specified Tournament.
-#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
+#[reducer]
 pub fn create_competition(
     ctx: &ReducerContext,
     name: String,
@@ -96,9 +99,13 @@ pub fn create_competition(
         return Err("Invalid parent_id".into());
     };
 
+    ctx.auth_builder(parent_competition.tournament_id, user.account_id)?
+        .permission(TournamentPermissionsV1::COMPETITION_CREATE)
+        .authorize()?;
+
     //SAFETY: The competition gets commnited afterwards.
     let new_competition =
-        unsafe { CompetitionV1::new(name, Some(parent_id), parent_competition.get_tournament()) };
+        unsafe { CompetitionV1::new(name, parent_id, parent_competition.get_tournament()) };
     ctx.db.tab_competition().try_insert(new_competition)?;
 
     Ok(())
@@ -115,6 +122,10 @@ pub fn competition_edit_name(
     let Some(mut competition) = ctx.db.tab_competition().id().find(competition_id) else {
         return Err("Invalid competition".into());
     };
+
+    ctx.auth_builder(competition.tournament_id, user.account_id)?
+        .permission(TournamentPermissionsV1::COMPETITION_EDIT_NAME)
+        .authorize()?;
 
     competition.name = name;
 
@@ -136,6 +147,10 @@ pub fn competition_registration_settings(
         return Err("Invalid competition".into());
     };
 
+    ctx.auth_builder(competition.tournament_id, user.account_id)?
+        .permission(TournamentPermissionsV1::COMPETITION_EDIT_REGISTRATION)
+        .authorize()?;
+
     competition.registration_settings = registration_settings;
 
     ctx.db.tab_competition().id().update(competition);
@@ -151,6 +166,3 @@ pub fn competition(ctx: &AnonymousViewContext) -> impl Query<CompetitionV1> {
         //.r#where(|t| t.status.ne(TournamentStatus::Planning))
         .build()
 }
-
-#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
-pub fn create_event_template(ctx: &ReducerContext, name: String /* config:  */) {}

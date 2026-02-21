@@ -21,23 +21,25 @@ impl TournamentPermissionV1 {
 pub(crate) struct TournamentPermissionsV1(pub(super) u64);
 
 impl TournamentPermissionsV1 {
-    pub const TOURNAMENT_EDIT_NAME: TournamentPermissionsV1 = TournamentPermissionsV1(0b10);
-    pub const TOURNAMENT_EDIT_DATE: TournamentPermissionsV1 = TournamentPermissionsV1(0b100);
-    pub const TOURNAMENT_EDIT_DESCRIPTION: TournamentPermissionsV1 =
-        TournamentPermissionsV1(0b1000);
+    pub const OWNER: TournamentPermissionsV1 = TournamentPermissionsV1(0b1);
+
+    pub const PROJECT_EDIT_NAME: TournamentPermissionsV1 = TournamentPermissionsV1(0b10);
+    pub const PROJECT_EDIT_DATE: TournamentPermissionsV1 = TournamentPermissionsV1(0b100);
+    pub const PROJECT_EDIT_DESCRIPTION: TournamentPermissionsV1 = TournamentPermissionsV1(0b1000);
 
     pub const COMPETITION_CREATE: TournamentPermissionsV1 = TournamentPermissionsV1(0b100000);
     pub const COMPETITION_EDIT_NAME: TournamentPermissionsV1 = TournamentPermissionsV1(0b1000000);
     pub const COMPETITION_DELETE: TournamentPermissionsV1 = TournamentPermissionsV1(0b10000000);
-    pub const COMPETITION_CONNECTION_CREATE: TournamentPermissionsV1 =
+    pub const COMPETITION_CONNECTION_EDIT: TournamentPermissionsV1 =
         TournamentPermissionsV1(0b100000000);
-    pub const COMPETITION_CONNECTION_DELETE: TournamentPermissionsV1 =
-        TournamentPermissionsV1(0b1000000000);
     pub const COMPETITION_LAYOUT_EDIT: TournamentPermissionsV1 =
         TournamentPermissionsV1(0b10000000000);
+    pub const COMPETITION_EDIT_REGISTRATION: TournamentPermissionsV1 =
+        TournamentPermissionsV1(0b100000000000);
 
     pub const MATCH_CREATE: TournamentPermissionsV1 = TournamentPermissionsV1(0b10000);
-    pub const MATCH_DELETE: TournamentPermissionsV1 = TournamentPermissionsV1(0b100000000);
+    pub const MATCH_DELETE: TournamentPermissionsV1 = TournamentPermissionsV1(0b1000000000);
+    pub const MATCH_CONFIGURE: TournamentPermissionsV1 = TournamentPermissionsV1(0b1000000000000);
 }
 
 impl PermissionType for TournamentPermissionsV1 {

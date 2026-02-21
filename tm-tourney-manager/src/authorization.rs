@@ -17,10 +17,11 @@ use crate::{
 
 pub(crate) trait Authorization {
     fn get_user(&self) -> Result<UserV1, String>;
+    fn get_user_account(&self) -> Result<Uuid, String>;
     fn get_server(&self) -> Result<RawServerV1, String>;
     fn get_worker(&self) -> Result<TmWorker, String>;
 
-    fn project_permissions(
+    fn auth_builder(
         &self,
         tournament_id: u32,
         account_id: Uuid,
@@ -38,6 +39,14 @@ impl Authorization for ReducerContext {
         };
 
         Ok(user)
+    }
+
+    fn get_user_account(&self) -> Result<Uuid, String> {
+        let Some(user) = self.db.tab_user_identity().identity().find(self.sender()) else {
+            return Err("Identity not associated with a user account.".into());
+        };
+
+        Ok(user.account_id)
     }
 
     fn get_server(&self) -> Result<RawServerV1, String> {
@@ -58,7 +67,7 @@ impl Authorization for ReducerContext {
         Err("Tried to use a reducer meant for Workers without the proper Authentication.".into())
     }
 
-    fn project_permissions(
+    fn auth_builder(
         &self,
         project_id: u32,
         account_id: Uuid,
@@ -91,6 +100,14 @@ impl Authorization for ViewContext {
         Ok(user)
     }
 
+    fn get_user_account(&self) -> Result<Uuid, String> {
+        let Some(user) = self.db.tab_user_identity().identity().find(self.sender()) else {
+            return Err("Identity not associated with a user account.".into());
+        };
+
+        Ok(user.account_id)
+    }
+
     fn get_server(&self) -> Result<RawServerV1, String> {
         if let Some(server) = self.db.tab_raw_server().identity().find(self.sender()) {
             return Ok(server);
@@ -109,7 +126,7 @@ impl Authorization for ViewContext {
         Err("Tried to use a reducer meant for Workers without the proper Authentication.".into())
     }
 
-    fn project_permissions(
+    fn auth_builder(
         &self,
         project_id: u32,
         account_id: Uuid,
@@ -160,7 +177,7 @@ impl<Item: PermissionType> AuthBuilder<Item> {
         self
     }
 
-    pub(crate) fn check(self) -> Result<(), String> {
+    pub(crate) fn authorize(self) -> Result<(), String> {
         if (self.got & !self.expected).passed() {
             Ok(())
         } else {

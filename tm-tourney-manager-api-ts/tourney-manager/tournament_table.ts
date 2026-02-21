@@ -15,12 +15,12 @@ import {
 
 
 export default __t.row({
-  id: __t.u32(),
-  creatorAccountId: __t.uuid().name("creator_account_id"),
   name: __t.string(),
+  description: __t.string(),
+  creatorAccountId: __t.uuid().name("creator_account_id"),
   startingAt: __t.timestamp().name("starting_at"),
   endingAt: __t.timestamp().name("ending_at"),
-  description: __t.string(),
+  id: __t.u32(),
   get status() {
     return TournamentStatus;
   },

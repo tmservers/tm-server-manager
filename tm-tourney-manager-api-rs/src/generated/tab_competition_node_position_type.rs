@@ -9,11 +9,11 @@ use super::vec_2_type::Vec2;
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct TabCompetitionNodePosition {
+    pub position: Vec2,
     pub id: u32,
     pub competition_id: u32,
     pub node_id: u32,
     pub node_variant: u8,
-    pub position: Vec2,
 }
 
 impl __sdk::InModule for TabCompetitionNodePosition {
@@ -24,22 +24,22 @@ impl __sdk::InModule for TabCompetitionNodePosition {
 ///
 /// Provides typed access to columns for query building.
 pub struct TabCompetitionNodePositionCols {
+    pub position: __sdk::__query_builder::Col<TabCompetitionNodePosition, Vec2>,
     pub id: __sdk::__query_builder::Col<TabCompetitionNodePosition, u32>,
     pub competition_id: __sdk::__query_builder::Col<TabCompetitionNodePosition, u32>,
     pub node_id: __sdk::__query_builder::Col<TabCompetitionNodePosition, u32>,
     pub node_variant: __sdk::__query_builder::Col<TabCompetitionNodePosition, u8>,
-    pub position: __sdk::__query_builder::Col<TabCompetitionNodePosition, Vec2>,
 }
 
 impl __sdk::__query_builder::HasCols for TabCompetitionNodePosition {
     type Cols = TabCompetitionNodePositionCols;
     fn cols(table_name: &'static str) -> Self::Cols {
         TabCompetitionNodePositionCols {
+            position: __sdk::__query_builder::Col::new(table_name, "position"),
             id: __sdk::__query_builder::Col::new(table_name, "id"),
             competition_id: __sdk::__query_builder::Col::new(table_name, "competition_id"),
             node_id: __sdk::__query_builder::Col::new(table_name, "node_id"),
             node_variant: __sdk::__query_builder::Col::new(table_name, "node_variant"),
-            position: __sdk::__query_builder::Col::new(table_name, "position"),
         }
     }
 }

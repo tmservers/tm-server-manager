@@ -1,4 +1,4 @@
-use spacetimedb::{ReducerContext, Table, Uuid};
+use spacetimedb::{CaseConversionPolicy, ReducerContext, Table, Uuid};
 
 use crate::{
     raw_server::tab_raw_server,
@@ -19,6 +19,10 @@ pub mod tm_server;
 pub mod tournament;
 pub mod user;
 pub mod worker;
+
+// This is to avoid the enum variants to become camelCase
+#[spacetimedb::settings]
+const CASE_CONVERSION_POLICY: CaseConversionPolicy = CaseConversionPolicy::None;
 
 #[spacetimedb::reducer(client_connected)]
 fn client_connected(ctx: &ReducerContext) -> Result<(), String> {

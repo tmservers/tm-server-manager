@@ -12,7 +12,7 @@ use super::registration_settings_type::RegistrationSettings;
 pub struct CompetitionV1 {
     pub id: u32,
     pub tournament_id: u32,
-    pub parent_id: Option<u32>,
+    pub parent_id: u32,
     pub name: String,
     pub status: CompetitionStatus,
     pub starting_at: Option<__sdk::Timestamp>,
@@ -30,7 +30,7 @@ impl __sdk::InModule for CompetitionV1 {
 pub struct CompetitionV1Cols {
     pub id: __sdk::__query_builder::Col<CompetitionV1, u32>,
     pub tournament_id: __sdk::__query_builder::Col<CompetitionV1, u32>,
-    pub parent_id: __sdk::__query_builder::Col<CompetitionV1, Option<u32>>,
+    pub parent_id: __sdk::__query_builder::Col<CompetitionV1, u32>,
     pub name: __sdk::__query_builder::Col<CompetitionV1, String>,
     pub status: __sdk::__query_builder::Col<CompetitionV1, CompetitionStatus>,
     pub starting_at: __sdk::__query_builder::Col<CompetitionV1, Option<__sdk::Timestamp>>,

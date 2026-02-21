@@ -18,7 +18,7 @@ import {
 export default __t.row({
   id: __t.u32(),
   tournamentId: __t.u32().name("tournament_id"),
-  parentId: __t.option(__t.u32()).name("parent_id"),
+  parentId: __t.u32().name("parent_id"),
   name: __t.string(),
   get status() {
     return CompetitionStatus;

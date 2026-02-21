@@ -3,11 +3,13 @@ use spacetimedb::{ReducerContext, SpacetimeType, ViewContext, reducer, view};
 use crate::{
     authorization::Authorization,
     competition::connection::{CompetitionConnection, NodeKindHandle},
+    tournament::permissions::TournamentPermissionsV1,
 };
 
 #[spacetimedb::table(accessor= tab_competition_node_position,index(accessor=node_position,hash(columns=[node_variant,node_id])))]
 #[derive(Debug, Clone, Copy)]
 pub struct TabCompetitionNodePosition {
+    position: Vec2,
     // This is just so that we can update it.
     // Rework if multi col unique indices are there.
     #[auto_inc]
@@ -17,12 +19,8 @@ pub struct TabCompetitionNodePosition {
     #[index(btree)]
     competition_id: u32,
 
-    //Maybe not necessary if we can expose another view with arg or something like that.
-    //tournament_id: u32,
     node_id: u32,
     node_variant: u8,
-
-    position: Vec2,
 }
 
 impl TabCompetitionNodePosition {
@@ -79,7 +77,11 @@ fn competition_node_position_update(
     node: NodeKindHandle,
     position: Vec2,
 ) -> Result<(), String> {
-    let user = ctx.get_user()?;
+    let user_account = ctx.get_user_account()?;
+    let tournament_id = node.get_tournament(ctx);
+    ctx.auth_builder(tournament_id, user_account)?
+        .permission(TournamentPermissionsV1::COMPETITION_LAYOUT_EDIT)
+        .authorize()?;
 
     let Some(mut node) = ctx
         .db
@@ -104,7 +106,14 @@ fn competition_node_positions_update(
     ctx: &ReducerContext,
     positions: Vec<NodePositionUpdate>,
 ) -> Result<(), String> {
-    let user = ctx.get_user()?;
+    let user_account = ctx.get_user_account()?;
+
+    for item in &positions {
+        let tournament_id = item.node.get_tournament(ctx);
+        ctx.auth_builder(tournament_id, user_account)?
+            .permission(TournamentPermissionsV1::COMPETITION_LAYOUT_EDIT)
+            .authorize()?;
+    }
 
     for update in positions {
         let Some(mut node) = ctx
