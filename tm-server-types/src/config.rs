@@ -33,11 +33,12 @@ impl ServerConfig {
 <playlist>
 	<gameinfos>
 		<game_mode>0</game_mode>
-		<script_name>Trackmania/TM_Rounds_Online</script_name>
-	</gameinfos>
+		"#
+        .to_string()
+            + &self.mode.mode_header()
+            + r#"</gameinfos>
 
   	<script_settings>"#
-            .to_string()
             + &self.common.into_xml()
             + &self.mode.into_xml()
             + r#"
@@ -81,12 +82,25 @@ impl Default for ServerConfig {
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub enum ModeConfig {
     Rounds(Rounds),
+    ReverseCup(ReverseCup),
 }
 
 impl ModeConfig {
     pub fn into_xml(&self) -> String {
         match self {
             ModeConfig::Rounds(rounds) => rounds.into_xml(),
+            ModeConfig::ReverseCup(reverse_cup) => reverse_cup.into_xml(),
+        }
+    }
+
+    pub fn mode_header(&self) -> String {
+        match self {
+            ModeConfig::Rounds(_) => {
+                "<script_name>Trackmania/TM_Rounds_Online</script_name>".into()
+            }
+            ModeConfig::ReverseCup(_) => {
+                "<script_name>Modes/Trackmania/ReverseCup</script_name>".into()
+            }
         }
     }
 }

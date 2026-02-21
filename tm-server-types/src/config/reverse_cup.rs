@@ -28,7 +28,7 @@ pub struct ReverseCup {
     pub dnf_points_loss: u32,
     pub last_chance_dnf_mode: LastChanceDnfMode,
     /// "Number of players awaited before starting the match (0 is automatic)"
-    pub number_of_player: u32,
+    pub number_of_players: u32,
     //TODO pub complex_points_repartition as described in https://git.virtit.fr/beu/TM2020-Gamemodes/src/branch/master/TM_ReverseCup.Script.txt
 }
 
@@ -43,15 +43,27 @@ impl ReverseCup {
         <setting name="S_FinishTimeout" value="{}" type="integer"/>
         <setting name="S_UseTieBreak" value="{}" type="boolean"/>
         <setting name="S_PointsStartup" value="{}" type="integer"/>
+        <setting name="S_DisableLastChance" value="{}" type="boolean"/>
+        <setting name="S_AllowFastForwardRounds" value="{}" type="boolean"/>
+        <setting name="S_FastForwardPointsRepartition" value="{}" type="boolean"/>
+        <setting name="S_DNF_LossPoints" value="{}" type="integer"/>
+        <setting name="S_LastChance_DNF_Mode" value="{}" type="integer"/>
+        <setting name="S_NbOfPlayers" value="{}" type="integer"/>
+        
             "#,
-            // Into::<i32>::into(self.points_limit),
             Into::<i32>::into(self.rounds_per_map),
             Into::<i32>::into(self.maps_per_match),
             points_repartition_format(&self.points_repartition),
             self.use_custom_points_repartition,
             Into::<i32>::into(self.finish_timeout),
             self.use_tie_breaker,
-            self.starting_points
+            self.starting_points,
+            self.disable_last_chance,
+            self.allow_fast_forward_rounds,
+            self.fast_forward_points_repartition,
+            self.dnf_points_loss,
+            Into::<i32>::into(self.last_chance_dnf_mode),
+            self.number_of_players
         )
     }
 }
@@ -80,16 +92,25 @@ impl Default for ReverseCup {
             fast_forward_points_repartition: true,
             dnf_points_loss: 20,
             last_chance_dnf_mode: LastChanceDnfMode::AllPlayers,
-            number_of_player: 0,
+            number_of_players: 0,
         }
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub enum LastChanceDnfMode {
     AllPlayers = 0,
     OnlyLeastCheckpoints = 1,
+}
+
+impl From<LastChanceDnfMode> for i32 {
+    fn from(value: LastChanceDnfMode) -> Self {
+        match value {
+            LastChanceDnfMode::AllPlayers => 0,
+            LastChanceDnfMode::OnlyLeastCheckpoints => 1,
+        }
+    }
 }

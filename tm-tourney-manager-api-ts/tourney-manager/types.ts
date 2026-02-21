@@ -359,6 +359,13 @@ export const LapsNumber = __t.enum("LapsNumber", {
 });
 export type LapsNumber = __Infer<typeof LapsNumber>;
 
+// The tagged union or sum type for the algebraic type `LastChanceDnfMode`.
+export const LastChanceDnfMode = __t.enum("LastChanceDnfMode", {
+  AllPlayers: __t.unit(),
+  OnlyLeastCheckpoints: __t.unit(),
+});
+export type LastChanceDnfMode = __Infer<typeof LastChanceDnfMode>;
+
 export const LoadingMapEnd = __t.object("LoadingMapEnd", {
   restarted: __t.bool(),
   time: __t.u32(),
@@ -482,6 +489,9 @@ export type MethodResponse = __Infer<typeof MethodResponse>;
 export const ModeConfig = __t.enum("ModeConfig", {
   get Rounds() {
     return Rounds;
+  },
+  get ReverseCup() {
+    return ReverseCup;
   },
 });
 export type ModeConfig = __Infer<typeof ModeConfig>;
@@ -774,6 +784,31 @@ export const RespawnBehaviour = __t.enum("RespawnBehaviour", {
   GiveUpNever: __t.unit(),
 });
 export type RespawnBehaviour = __Infer<typeof RespawnBehaviour>;
+
+export const ReverseCup = __t.object("ReverseCup", {
+  get finishTimeout() {
+    return FinishTimeout;
+  },
+  get mapsPerMatch() {
+    return MapsPerMatch;
+  },
+  useCustomPointsRepartition: __t.bool(),
+  pointsRepartition: __t.array(__t.u32()),
+  get roundsPerMap() {
+    return RoundsPerMap;
+  },
+  useTieBreaker: __t.bool(),
+  startingPoints: __t.u32(),
+  disableLastChance: __t.bool(),
+  allowFastForwardRounds: __t.bool(),
+  fastForwardPointsRepartition: __t.bool(),
+  dnfPointsLoss: __t.u32(),
+  get lastChanceDnfMode() {
+    return LastChanceDnfMode;
+  },
+  numberOfPlayers: __t.u32(),
+});
+export type ReverseCup = __Infer<typeof ReverseCup>;
 
 // The tagged union or sum type for the algebraic type `RoundTime`.
 export const RoundTime = __t.enum("RoundTime", {

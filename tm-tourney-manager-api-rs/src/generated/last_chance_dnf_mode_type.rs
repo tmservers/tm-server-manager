@@ -4,17 +4,15 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::reverse_cup_type::ReverseCup;
-use super::rounds_type::Rounds;
-
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub enum ModeConfig {
-    Rounds(Rounds),
+#[derive(Copy, Eq, Hash)]
+pub enum LastChanceDnfMode {
+    AllPlayers,
 
-    ReverseCup(ReverseCup),
+    OnlyLeastCheckpoints,
 }
 
-impl __sdk::InModule for ModeConfig {
+impl __sdk::InModule for LastChanceDnfMode {
     type Module = super::RemoteModule;
 }
