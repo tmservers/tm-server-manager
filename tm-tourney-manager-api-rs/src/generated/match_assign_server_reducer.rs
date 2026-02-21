@@ -24,8 +24,6 @@ impl __sdk::InModule for MatchAssignServerArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct MatchAssignServerCallbackId(__sdk::CallbackId);
-
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `match_assign_server`.
 ///
@@ -35,77 +33,40 @@ pub trait match_assign_server {
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
-    ///  and its status can be observed by listening for [`Self::on_match_assign_server`] callbacks.
-    fn match_assign_server(&self, to: u32, server_id: u32) -> __sdk::Result<()>;
-    /// Register a callback to run whenever we are notified of an invocation of the reducer `match_assign_server`.
+    ///  and this method provides no way to listen for its completion status.
+    /// /// Use [`match_assign_server:match_assign_server_then`] to run a callback after the reducer completes.
+    fn match_assign_server(&self, to: u32, server_id: u32) -> __sdk::Result<()> {
+        self.match_assign_server_then(to, server_id, |_, _| {})
+    }
+
+    /// Request that the remote module invoke the reducer `match_assign_server` to run as soon as possible,
+    /// registering `callback` to run when we are notified that the reducer completed.
     ///
-    /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
-    /// to determine the reducer's status.
-    ///
-    /// The returned [`MatchAssignServerCallbackId`] can be passed to [`Self::remove_on_match_assign_server`]
-    /// to cancel the callback.
-    fn on_match_assign_server(
+    /// This method returns immediately, and errors only if we are unable to send the request.
+    /// The reducer will run asynchronously in the future,
+    ///  and its status can be observed with the `callback`.
+    fn match_assign_server_then(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &u32, &u32) + Send + 'static,
-    ) -> MatchAssignServerCallbackId;
-    /// Cancel a callback previously registered by [`Self::on_match_assign_server`],
-    /// causing it not to run in the future.
-    fn remove_on_match_assign_server(&self, callback: MatchAssignServerCallbackId);
+        to: u32,
+        server_id: u32,
+
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()>;
 }
 
 impl match_assign_server for super::RemoteReducers {
-    fn match_assign_server(&self, to: u32, server_id: u32) -> __sdk::Result<()> {
-        self.imp.call_reducer(
-            "match_assign_server",
-            MatchAssignServerArgs { to, server_id },
-        )
-    }
-    fn on_match_assign_server(
+    fn match_assign_server_then(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &u32, &u32) + Send + 'static,
-    ) -> MatchAssignServerCallbackId {
-        MatchAssignServerCallbackId(self.imp.on_reducer(
-            "match_assign_server",
-            Box::new(move |ctx: &super::ReducerEventContext| {
-                #[allow(irrefutable_let_patterns)]
-                let super::ReducerEventContext {
-                    event:
-                        __sdk::ReducerEvent {
-                            reducer: super::Reducer::MatchAssignServer { to, server_id },
-                            ..
-                        },
-                    ..
-                } = ctx
-                else {
-                    unreachable!()
-                };
-                callback(ctx, to, server_id)
-            }),
-        ))
-    }
-    fn remove_on_match_assign_server(&self, callback: MatchAssignServerCallbackId) {
-        self.imp
-            .remove_on_reducer("match_assign_server", callback.0)
-    }
-}
+        to: u32,
+        server_id: u32,
 
-#[allow(non_camel_case_types)]
-#[doc(hidden)]
-/// Extension trait for setting the call-flags for the reducer `match_assign_server`.
-///
-/// Implemented for [`super::SetReducerFlags`].
-///
-/// This type is currently unstable and may be removed without a major version bump.
-pub trait set_flags_for_match_assign_server {
-    /// Set the call-reducer flags for the reducer `match_assign_server` to `flags`.
-    ///
-    /// This type is currently unstable and may be removed without a major version bump.
-    fn match_assign_server(&self, flags: __ws::CallReducerFlags);
-}
-
-impl set_flags_for_match_assign_server for super::SetReducerFlags {
-    fn match_assign_server(&self, flags: __ws::CallReducerFlags) {
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()> {
         self.imp
-            .set_call_reducer_flags("match_assign_server", flags);
+            .invoke_reducer_with_callback(MatchAssignServerArgs { to, server_id }, callback)
     }
 }

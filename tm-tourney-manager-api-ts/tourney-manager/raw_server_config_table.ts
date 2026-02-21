@@ -9,10 +9,12 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
-import ServerOptions from "./server_options_type";
-import Common from "./common_type";
-import ModeConfig from "./mode_config_type";
-import MapPoolConfig from "./map_pool_config_type";
+import {
+  ServerOptions,
+  Common,
+  ModeConfig,
+  MapPoolConfig,
+} from "./types";
 
 
 export default __t.row({

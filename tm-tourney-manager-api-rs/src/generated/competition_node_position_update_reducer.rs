@@ -27,8 +27,6 @@ impl __sdk::InModule for CompetitionNodePositionUpdateArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct CompetitionNodePositionUpdateCallbackId(__sdk::CallbackId);
-
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `competition_node_position_update`.
 ///
@@ -38,92 +36,46 @@ pub trait competition_node_position_update {
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
-    ///  and its status can be observed by listening for [`Self::on_competition_node_position_update`] callbacks.
-    fn competition_node_position_update(
-        &self,
-        node: NodeKindHandle,
-        position: Vec2,
-    ) -> __sdk::Result<()>;
-    /// Register a callback to run whenever we are notified of an invocation of the reducer `competition_node_position_update`.
-    ///
-    /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
-    /// to determine the reducer's status.
-    ///
-    /// The returned [`CompetitionNodePositionUpdateCallbackId`] can be passed to [`Self::remove_on_competition_node_position_update`]
-    /// to cancel the callback.
-    fn on_competition_node_position_update(
-        &self,
-        callback: impl FnMut(&super::ReducerEventContext, &NodeKindHandle, &Vec2) + Send + 'static,
-    ) -> CompetitionNodePositionUpdateCallbackId;
-    /// Cancel a callback previously registered by [`Self::on_competition_node_position_update`],
-    /// causing it not to run in the future.
-    fn remove_on_competition_node_position_update(
-        &self,
-        callback: CompetitionNodePositionUpdateCallbackId,
-    );
-}
-
-impl competition_node_position_update for super::RemoteReducers {
+    ///  and this method provides no way to listen for its completion status.
+    /// /// Use [`competition_node_position_update:competition_node_position_update_then`] to run a callback after the reducer completes.
     fn competition_node_position_update(
         &self,
         node: NodeKindHandle,
         position: Vec2,
     ) -> __sdk::Result<()> {
-        self.imp.call_reducer(
-            "competition_node_position_update",
-            CompetitionNodePositionUpdateArgs { node, position },
-        )
+        self.competition_node_position_update_then(node, position, |_, _| {})
     }
-    fn on_competition_node_position_update(
-        &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &NodeKindHandle, &Vec2) + Send + 'static,
-    ) -> CompetitionNodePositionUpdateCallbackId {
-        CompetitionNodePositionUpdateCallbackId(self.imp.on_reducer(
-            "competition_node_position_update",
-            Box::new(move |ctx: &super::ReducerEventContext| {
-                #[allow(irrefutable_let_patterns)]
-                let super::ReducerEventContext {
-                    event:
-                        __sdk::ReducerEvent {
-                            reducer:
-                                super::Reducer::CompetitionNodePositionUpdate { node, position },
-                            ..
-                        },
-                    ..
-                } = ctx
-                else {
-                    unreachable!()
-                };
-                callback(ctx, node, position)
-            }),
-        ))
-    }
-    fn remove_on_competition_node_position_update(
-        &self,
-        callback: CompetitionNodePositionUpdateCallbackId,
-    ) {
-        self.imp
-            .remove_on_reducer("competition_node_position_update", callback.0)
-    }
-}
 
-#[allow(non_camel_case_types)]
-#[doc(hidden)]
-/// Extension trait for setting the call-flags for the reducer `competition_node_position_update`.
-///
-/// Implemented for [`super::SetReducerFlags`].
-///
-/// This type is currently unstable and may be removed without a major version bump.
-pub trait set_flags_for_competition_node_position_update {
-    /// Set the call-reducer flags for the reducer `competition_node_position_update` to `flags`.
+    /// Request that the remote module invoke the reducer `competition_node_position_update` to run as soon as possible,
+    /// registering `callback` to run when we are notified that the reducer completed.
     ///
-    /// This type is currently unstable and may be removed without a major version bump.
-    fn competition_node_position_update(&self, flags: __ws::CallReducerFlags);
+    /// This method returns immediately, and errors only if we are unable to send the request.
+    /// The reducer will run asynchronously in the future,
+    ///  and its status can be observed with the `callback`.
+    fn competition_node_position_update_then(
+        &self,
+        node: NodeKindHandle,
+        position: Vec2,
+
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()>;
 }
 
-impl set_flags_for_competition_node_position_update for super::SetReducerFlags {
-    fn competition_node_position_update(&self, flags: __ws::CallReducerFlags) {
-        self.imp
-            .set_call_reducer_flags("competition_node_position_update", flags);
+impl competition_node_position_update for super::RemoteReducers {
+    fn competition_node_position_update_then(
+        &self,
+        node: NodeKindHandle,
+        position: Vec2,
+
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()> {
+        self.imp.invoke_reducer_with_callback(
+            CompetitionNodePositionUpdateArgs { node, position },
+            callback,
+        )
     }
 }

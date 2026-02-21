@@ -10,7 +10,9 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-import Event from "./event_type";
+import {
+  Event,
+} from "./types";
 
 export default {
   get event() {

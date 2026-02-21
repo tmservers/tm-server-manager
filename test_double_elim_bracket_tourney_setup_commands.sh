@@ -8,8 +8,8 @@ spacetime delete tm-tourney-manager || true
 spacetime publish --break-clients --delete-data=on-conflict -y -p tm-tourney-manager tm-tourney-manager
 
 # Generate Rust and TS client APIs
-spacetime generate --yes --lang rust --out-dir tm-tourney-manager-api-rs/src/generated --project-path tm-tourney-manager
-spacetime generate --yes --lang typescript --out-dir tm-tourney-manager-api-ts/tourney-manager --project-path tm-tourney-manager
+spacetime generate --yes --lang rust --out-dir tm-tourney-manager-api-rs/src/generated --module-path tm-tourney-manager
+spacetime generate --yes --lang typescript --out-dir tm-tourney-manager-api-ts/tourney-manager --module-path tm-tourney-manager
 
 # Create tournament
 spacetime call tm-tourney-manager create_tournament "Double Elimination" "This is a beautiful tournament" '{"__timestamp_micros_since_unix_epoch__": 1777132984000000}' '{"__timestamp_micros_since_unix_epoch__": 1777233084000000}'

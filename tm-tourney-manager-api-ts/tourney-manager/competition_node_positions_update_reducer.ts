@@ -10,7 +10,9 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-import NodePositionUpdate from "./node_position_update_type";
+import {
+  NodePositionUpdate,
+} from "./types";
 
 export default {
   get positions() {

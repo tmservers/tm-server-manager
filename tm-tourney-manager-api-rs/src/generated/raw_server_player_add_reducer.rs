@@ -24,8 +24,6 @@ impl __sdk::InModule for RawServerPlayerAddArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct RawServerPlayerAddCallbackId(__sdk::CallbackId);
-
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `raw_server_player_add`.
 ///
@@ -35,84 +33,45 @@ pub trait raw_server_player_add {
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
-    ///  and its status can be observed by listening for [`Self::on_raw_server_player_add`] callbacks.
-    fn raw_server_player_add(&self, account_id: __sdk::Uuid, spectator: bool) -> __sdk::Result<()>;
-    /// Register a callback to run whenever we are notified of an invocation of the reducer `raw_server_player_add`.
+    ///  and this method provides no way to listen for its completion status.
+    /// /// Use [`raw_server_player_add:raw_server_player_add_then`] to run a callback after the reducer completes.
+    fn raw_server_player_add(&self, account_id: __sdk::Uuid, spectator: bool) -> __sdk::Result<()> {
+        self.raw_server_player_add_then(account_id, spectator, |_, _| {})
+    }
+
+    /// Request that the remote module invoke the reducer `raw_server_player_add` to run as soon as possible,
+    /// registering `callback` to run when we are notified that the reducer completed.
     ///
-    /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
-    /// to determine the reducer's status.
-    ///
-    /// The returned [`RawServerPlayerAddCallbackId`] can be passed to [`Self::remove_on_raw_server_player_add`]
-    /// to cancel the callback.
-    fn on_raw_server_player_add(
+    /// This method returns immediately, and errors only if we are unable to send the request.
+    /// The reducer will run asynchronously in the future,
+    ///  and its status can be observed with the `callback`.
+    fn raw_server_player_add_then(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &__sdk::Uuid, &bool) + Send + 'static,
-    ) -> RawServerPlayerAddCallbackId;
-    /// Cancel a callback previously registered by [`Self::on_raw_server_player_add`],
-    /// causing it not to run in the future.
-    fn remove_on_raw_server_player_add(&self, callback: RawServerPlayerAddCallbackId);
+        account_id: __sdk::Uuid,
+        spectator: bool,
+
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()>;
 }
 
 impl raw_server_player_add for super::RemoteReducers {
-    fn raw_server_player_add(&self, account_id: __sdk::Uuid, spectator: bool) -> __sdk::Result<()> {
-        self.imp.call_reducer(
-            "raw_server_player_add",
+    fn raw_server_player_add_then(
+        &self,
+        account_id: __sdk::Uuid,
+        spectator: bool,
+
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()> {
+        self.imp.invoke_reducer_with_callback(
             RawServerPlayerAddArgs {
                 account_id,
                 spectator,
             },
+            callback,
         )
-    }
-    fn on_raw_server_player_add(
-        &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &__sdk::Uuid, &bool) + Send + 'static,
-    ) -> RawServerPlayerAddCallbackId {
-        RawServerPlayerAddCallbackId(self.imp.on_reducer(
-            "raw_server_player_add",
-            Box::new(move |ctx: &super::ReducerEventContext| {
-                #[allow(irrefutable_let_patterns)]
-                let super::ReducerEventContext {
-                    event:
-                        __sdk::ReducerEvent {
-                            reducer:
-                                super::Reducer::RawServerPlayerAdd {
-                                    account_id,
-                                    spectator,
-                                },
-                            ..
-                        },
-                    ..
-                } = ctx
-                else {
-                    unreachable!()
-                };
-                callback(ctx, account_id, spectator)
-            }),
-        ))
-    }
-    fn remove_on_raw_server_player_add(&self, callback: RawServerPlayerAddCallbackId) {
-        self.imp
-            .remove_on_reducer("raw_server_player_add", callback.0)
-    }
-}
-
-#[allow(non_camel_case_types)]
-#[doc(hidden)]
-/// Extension trait for setting the call-flags for the reducer `raw_server_player_add`.
-///
-/// Implemented for [`super::SetReducerFlags`].
-///
-/// This type is currently unstable and may be removed without a major version bump.
-pub trait set_flags_for_raw_server_player_add {
-    /// Set the call-reducer flags for the reducer `raw_server_player_add` to `flags`.
-    ///
-    /// This type is currently unstable and may be removed without a major version bump.
-    fn raw_server_player_add(&self, flags: __ws::CallReducerFlags);
-}
-
-impl set_flags_for_raw_server_player_add for super::SetReducerFlags {
-    fn raw_server_player_add(&self, flags: __ws::CallReducerFlags) {
-        self.imp
-            .set_call_reducer_flags("raw_server_player_add", flags);
     }
 }

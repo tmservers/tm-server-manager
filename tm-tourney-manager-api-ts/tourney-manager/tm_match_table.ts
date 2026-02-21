@@ -9,7 +9,9 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
-import MatchStatus from "./match_status_type";
+import {
+  MatchStatus,
+} from "./types";
 
 
 export default __t.row({

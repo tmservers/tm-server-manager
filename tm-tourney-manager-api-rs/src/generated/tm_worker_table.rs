@@ -78,12 +78,6 @@ impl<'ctx> __sdk::Table for TmWorkerTableHandle<'ctx> {
     }
 }
 
-#[doc(hidden)]
-pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
-    let _table = client_cache.get_or_make_table::<TmWorker>("tm_worker");
-    _table.add_unique_constraint::<String>("tm_login", |row| &row.tm_login);
-    _table.add_unique_constraint::<__sdk::Identity>("identity", |row| &row.identity);
-}
 pub struct TmWorkerUpdateCallbackId(__sdk::CallbackId);
 
 impl<'ctx> __sdk::TableWithPrimaryKey for TmWorkerTableHandle<'ctx> {
@@ -99,17 +93,6 @@ impl<'ctx> __sdk::TableWithPrimaryKey for TmWorkerTableHandle<'ctx> {
     fn remove_on_update(&self, callback: TmWorkerUpdateCallbackId) {
         self.imp.remove_on_update(callback.0)
     }
-}
-
-#[doc(hidden)]
-pub(super) fn parse_table_update(
-    raw_updates: __ws::TableUpdate<__ws::BsatnFormat>,
-) -> __sdk::Result<__sdk::TableUpdate<TmWorker>> {
-    __sdk::TableUpdate::parse_table_update(raw_updates).map_err(|e| {
-        __sdk::InternalError::failed_parse("TableUpdate<TmWorker>", "TableUpdate")
-            .with_cause(e)
-            .into()
-    })
 }
 
 /// Access to the `tm_login` unique index on the table `tm_worker`,
@@ -172,6 +155,24 @@ impl<'ctx> TmWorkerIdentityUnique<'ctx> {
     pub fn find(&self, col_val: &__sdk::Identity) -> Option<TmWorker> {
         self.imp.find(col_val)
     }
+}
+
+#[doc(hidden)]
+pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
+    let _table = client_cache.get_or_make_table::<TmWorker>("tm_worker");
+    _table.add_unique_constraint::<String>("tm_login", |row| &row.tm_login);
+    _table.add_unique_constraint::<__sdk::Identity>("identity", |row| &row.identity);
+}
+
+#[doc(hidden)]
+pub(super) fn parse_table_update(
+    raw_updates: __ws::v2::TableUpdate,
+) -> __sdk::Result<__sdk::TableUpdate<TmWorker>> {
+    __sdk::TableUpdate::parse_table_update(raw_updates).map_err(|e| {
+        __sdk::InternalError::failed_parse("TableUpdate<TmWorker>", "TableUpdate")
+            .with_cause(e)
+            .into()
+    })
 }
 
 #[allow(non_camel_case_types)]

@@ -22,8 +22,6 @@ impl __sdk::InModule for MatchTryStartArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct MatchTryStartCallbackId(__sdk::CallbackId);
-
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `match_try_start`.
 ///
@@ -33,73 +31,38 @@ pub trait match_try_start {
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
-    ///  and its status can be observed by listening for [`Self::on_match_try_start`] callbacks.
-    fn match_try_start(&self, match_id: u32) -> __sdk::Result<()>;
-    /// Register a callback to run whenever we are notified of an invocation of the reducer `match_try_start`.
+    ///  and this method provides no way to listen for its completion status.
+    /// /// Use [`match_try_start:match_try_start_then`] to run a callback after the reducer completes.
+    fn match_try_start(&self, match_id: u32) -> __sdk::Result<()> {
+        self.match_try_start_then(match_id, |_, _| {})
+    }
+
+    /// Request that the remote module invoke the reducer `match_try_start` to run as soon as possible,
+    /// registering `callback` to run when we are notified that the reducer completed.
     ///
-    /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
-    /// to determine the reducer's status.
-    ///
-    /// The returned [`MatchTryStartCallbackId`] can be passed to [`Self::remove_on_match_try_start`]
-    /// to cancel the callback.
-    fn on_match_try_start(
+    /// This method returns immediately, and errors only if we are unable to send the request.
+    /// The reducer will run asynchronously in the future,
+    ///  and its status can be observed with the `callback`.
+    fn match_try_start_then(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &u32) + Send + 'static,
-    ) -> MatchTryStartCallbackId;
-    /// Cancel a callback previously registered by [`Self::on_match_try_start`],
-    /// causing it not to run in the future.
-    fn remove_on_match_try_start(&self, callback: MatchTryStartCallbackId);
+        match_id: u32,
+
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()>;
 }
 
 impl match_try_start for super::RemoteReducers {
-    fn match_try_start(&self, match_id: u32) -> __sdk::Result<()> {
-        self.imp
-            .call_reducer("match_try_start", MatchTryStartArgs { match_id })
-    }
-    fn on_match_try_start(
+    fn match_try_start_then(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &u32) + Send + 'static,
-    ) -> MatchTryStartCallbackId {
-        MatchTryStartCallbackId(self.imp.on_reducer(
-            "match_try_start",
-            Box::new(move |ctx: &super::ReducerEventContext| {
-                #[allow(irrefutable_let_patterns)]
-                let super::ReducerEventContext {
-                    event:
-                        __sdk::ReducerEvent {
-                            reducer: super::Reducer::MatchTryStart { match_id },
-                            ..
-                        },
-                    ..
-                } = ctx
-                else {
-                    unreachable!()
-                };
-                callback(ctx, match_id)
-            }),
-        ))
-    }
-    fn remove_on_match_try_start(&self, callback: MatchTryStartCallbackId) {
-        self.imp.remove_on_reducer("match_try_start", callback.0)
-    }
-}
+        match_id: u32,
 
-#[allow(non_camel_case_types)]
-#[doc(hidden)]
-/// Extension trait for setting the call-flags for the reducer `match_try_start`.
-///
-/// Implemented for [`super::SetReducerFlags`].
-///
-/// This type is currently unstable and may be removed without a major version bump.
-pub trait set_flags_for_match_try_start {
-    /// Set the call-reducer flags for the reducer `match_try_start` to `flags`.
-    ///
-    /// This type is currently unstable and may be removed without a major version bump.
-    fn match_try_start(&self, flags: __ws::CallReducerFlags);
-}
-
-impl set_flags_for_match_try_start for super::SetReducerFlags {
-    fn match_try_start(&self, flags: __ws::CallReducerFlags) {
-        self.imp.set_call_reducer_flags("match_try_start", flags);
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()> {
+        self.imp
+            .invoke_reducer_with_callback(MatchTryStartArgs { match_id }, callback)
     }
 }

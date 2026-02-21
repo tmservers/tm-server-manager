@@ -10,7 +10,9 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-import MonitoringSettings from "./monitoring_settings_type";
+import {
+  MonitoringSettings,
+} from "./types";
 
 export default {
   competition: __t.u32(),

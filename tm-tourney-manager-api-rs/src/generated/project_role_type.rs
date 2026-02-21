@@ -24,7 +24,7 @@ pub struct ProjectRoleCols {
     pub name: __sdk::__query_builder::Col<ProjectRole, String>,
     pub id: __sdk::__query_builder::Col<ProjectRole, u32>,
     pub project_id: __sdk::__query_builder::Col<ProjectRole, u32>,
-    pub permissions1: __sdk::__query_builder::Col<ProjectRole, u64>,
+    pub permissions_1: __sdk::__query_builder::Col<ProjectRole, u64>,
 }
 
 impl __sdk::__query_builder::HasCols for ProjectRole {
@@ -34,7 +34,7 @@ impl __sdk::__query_builder::HasCols for ProjectRole {
             name: __sdk::__query_builder::Col::new(table_name, "name"),
             id: __sdk::__query_builder::Col::new(table_name, "id"),
             project_id: __sdk::__query_builder::Col::new(table_name, "project_id"),
-            permissions1: __sdk::__query_builder::Col::new(table_name, "permissions1"),
+            permissions_1: __sdk::__query_builder::Col::new(table_name, "permissions_1"),
         }
     }
 }
@@ -56,3 +56,5 @@ impl __sdk::__query_builder::HasIxCols for ProjectRole {
         }
     }
 }
+
+impl __sdk::__query_builder::CanBeLookupTable for ProjectRole {}

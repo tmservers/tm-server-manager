@@ -10,7 +10,9 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-import CompetitionConnectionDataOption from "./competition_connection_data_option_type";
+import {
+  CompetitionConnectionDataOption,
+} from "./types";
 
 export default {
   get option() {

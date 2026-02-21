@@ -26,8 +26,6 @@ impl __sdk::InModule for ServerMethodResponseArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct ServerMethodResponseCallbackId(__sdk::CallbackId);
-
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `server_method_response`.
 ///
@@ -37,77 +35,40 @@ pub trait server_method_response {
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
-    ///  and its status can be observed by listening for [`Self::on_server_method_response`] callbacks.
-    fn server_method_response(&self, call_id: u32, response: MethodResponse) -> __sdk::Result<()>;
-    /// Register a callback to run whenever we are notified of an invocation of the reducer `server_method_response`.
+    ///  and this method provides no way to listen for its completion status.
+    /// /// Use [`server_method_response:server_method_response_then`] to run a callback after the reducer completes.
+    fn server_method_response(&self, call_id: u32, response: MethodResponse) -> __sdk::Result<()> {
+        self.server_method_response_then(call_id, response, |_, _| {})
+    }
+
+    /// Request that the remote module invoke the reducer `server_method_response` to run as soon as possible,
+    /// registering `callback` to run when we are notified that the reducer completed.
     ///
-    /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
-    /// to determine the reducer's status.
-    ///
-    /// The returned [`ServerMethodResponseCallbackId`] can be passed to [`Self::remove_on_server_method_response`]
-    /// to cancel the callback.
-    fn on_server_method_response(
+    /// This method returns immediately, and errors only if we are unable to send the request.
+    /// The reducer will run asynchronously in the future,
+    ///  and its status can be observed with the `callback`.
+    fn server_method_response_then(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &u32, &MethodResponse) + Send + 'static,
-    ) -> ServerMethodResponseCallbackId;
-    /// Cancel a callback previously registered by [`Self::on_server_method_response`],
-    /// causing it not to run in the future.
-    fn remove_on_server_method_response(&self, callback: ServerMethodResponseCallbackId);
+        call_id: u32,
+        response: MethodResponse,
+
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()>;
 }
 
 impl server_method_response for super::RemoteReducers {
-    fn server_method_response(&self, call_id: u32, response: MethodResponse) -> __sdk::Result<()> {
-        self.imp.call_reducer(
-            "server_method_response",
-            ServerMethodResponseArgs { call_id, response },
-        )
-    }
-    fn on_server_method_response(
+    fn server_method_response_then(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &u32, &MethodResponse) + Send + 'static,
-    ) -> ServerMethodResponseCallbackId {
-        ServerMethodResponseCallbackId(self.imp.on_reducer(
-            "server_method_response",
-            Box::new(move |ctx: &super::ReducerEventContext| {
-                #[allow(irrefutable_let_patterns)]
-                let super::ReducerEventContext {
-                    event:
-                        __sdk::ReducerEvent {
-                            reducer: super::Reducer::ServerMethodResponse { call_id, response },
-                            ..
-                        },
-                    ..
-                } = ctx
-                else {
-                    unreachable!()
-                };
-                callback(ctx, call_id, response)
-            }),
-        ))
-    }
-    fn remove_on_server_method_response(&self, callback: ServerMethodResponseCallbackId) {
-        self.imp
-            .remove_on_reducer("server_method_response", callback.0)
-    }
-}
+        call_id: u32,
+        response: MethodResponse,
 
-#[allow(non_camel_case_types)]
-#[doc(hidden)]
-/// Extension trait for setting the call-flags for the reducer `server_method_response`.
-///
-/// Implemented for [`super::SetReducerFlags`].
-///
-/// This type is currently unstable and may be removed without a major version bump.
-pub trait set_flags_for_server_method_response {
-    /// Set the call-reducer flags for the reducer `server_method_response` to `flags`.
-    ///
-    /// This type is currently unstable and may be removed without a major version bump.
-    fn server_method_response(&self, flags: __ws::CallReducerFlags);
-}
-
-impl set_flags_for_server_method_response for super::SetReducerFlags {
-    fn server_method_response(&self, flags: __ws::CallReducerFlags) {
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()> {
         self.imp
-            .set_call_reducer_flags("server_method_response", flags);
+            .invoke_reducer_with_callback(ServerMethodResponseArgs { call_id, response }, callback)
     }
 }

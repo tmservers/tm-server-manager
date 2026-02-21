@@ -28,8 +28,6 @@ impl __sdk::InModule for CreateTournamentArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct CreateTournamentCallbackId(__sdk::CallbackId);
-
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `create_tournament`.
 ///
@@ -39,38 +37,8 @@ pub trait create_tournament {
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
-    ///  and its status can be observed by listening for [`Self::on_create_tournament`] callbacks.
-    fn create_tournament(
-        &self,
-        name: String,
-        description: String,
-        starting_at: __sdk::Timestamp,
-        ending_at: __sdk::Timestamp,
-    ) -> __sdk::Result<()>;
-    /// Register a callback to run whenever we are notified of an invocation of the reducer `create_tournament`.
-    ///
-    /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
-    /// to determine the reducer's status.
-    ///
-    /// The returned [`CreateTournamentCallbackId`] can be passed to [`Self::remove_on_create_tournament`]
-    /// to cancel the callback.
-    fn on_create_tournament(
-        &self,
-        callback: impl FnMut(
-                &super::ReducerEventContext,
-                &String,
-                &String,
-                &__sdk::Timestamp,
-                &__sdk::Timestamp,
-            ) + Send
-            + 'static,
-    ) -> CreateTournamentCallbackId;
-    /// Cancel a callback previously registered by [`Self::on_create_tournament`],
-    /// causing it not to run in the future.
-    fn remove_on_create_tournament(&self, callback: CreateTournamentCallbackId);
-}
-
-impl create_tournament for super::RemoteReducers {
+    ///  and this method provides no way to listen for its completion status.
+    /// /// Use [`create_tournament:create_tournament_then`] to run a callback after the reducer completes.
     fn create_tournament(
         &self,
         name: String,
@@ -78,73 +46,48 @@ impl create_tournament for super::RemoteReducers {
         starting_at: __sdk::Timestamp,
         ending_at: __sdk::Timestamp,
     ) -> __sdk::Result<()> {
-        self.imp.call_reducer(
-            "create_tournament",
+        self.create_tournament_then(name, description, starting_at, ending_at, |_, _| {})
+    }
+
+    /// Request that the remote module invoke the reducer `create_tournament` to run as soon as possible,
+    /// registering `callback` to run when we are notified that the reducer completed.
+    ///
+    /// This method returns immediately, and errors only if we are unable to send the request.
+    /// The reducer will run asynchronously in the future,
+    ///  and its status can be observed with the `callback`.
+    fn create_tournament_then(
+        &self,
+        name: String,
+        description: String,
+        starting_at: __sdk::Timestamp,
+        ending_at: __sdk::Timestamp,
+
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()>;
+}
+
+impl create_tournament for super::RemoteReducers {
+    fn create_tournament_then(
+        &self,
+        name: String,
+        description: String,
+        starting_at: __sdk::Timestamp,
+        ending_at: __sdk::Timestamp,
+
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()> {
+        self.imp.invoke_reducer_with_callback(
             CreateTournamentArgs {
                 name,
                 description,
                 starting_at,
                 ending_at,
             },
+            callback,
         )
-    }
-    fn on_create_tournament(
-        &self,
-        mut callback: impl FnMut(
-                &super::ReducerEventContext,
-                &String,
-                &String,
-                &__sdk::Timestamp,
-                &__sdk::Timestamp,
-            ) + Send
-            + 'static,
-    ) -> CreateTournamentCallbackId {
-        CreateTournamentCallbackId(self.imp.on_reducer(
-            "create_tournament",
-            Box::new(move |ctx: &super::ReducerEventContext| {
-                #[allow(irrefutable_let_patterns)]
-                let super::ReducerEventContext {
-                    event:
-                        __sdk::ReducerEvent {
-                            reducer:
-                                super::Reducer::CreateTournament {
-                                    name,
-                                    description,
-                                    starting_at,
-                                    ending_at,
-                                },
-                            ..
-                        },
-                    ..
-                } = ctx
-                else {
-                    unreachable!()
-                };
-                callback(ctx, name, description, starting_at, ending_at)
-            }),
-        ))
-    }
-    fn remove_on_create_tournament(&self, callback: CreateTournamentCallbackId) {
-        self.imp.remove_on_reducer("create_tournament", callback.0)
-    }
-}
-
-#[allow(non_camel_case_types)]
-#[doc(hidden)]
-/// Extension trait for setting the call-flags for the reducer `create_tournament`.
-///
-/// Implemented for [`super::SetReducerFlags`].
-///
-/// This type is currently unstable and may be removed without a major version bump.
-pub trait set_flags_for_create_tournament {
-    /// Set the call-reducer flags for the reducer `create_tournament` to `flags`.
-    ///
-    /// This type is currently unstable and may be removed without a major version bump.
-    fn create_tournament(&self, flags: __ws::CallReducerFlags);
-}
-
-impl set_flags_for_create_tournament for super::SetReducerFlags {
-    fn create_tournament(&self, flags: __ws::CallReducerFlags) {
-        self.imp.set_call_reducer_flags("create_tournament", flags);
     }
 }

@@ -48,3 +48,5 @@ impl __sdk::__query_builder::HasIxCols for UserIdentity {
         }
     }
 }
+
+impl __sdk::__query_builder::CanBeLookupTable for UserIdentity {}

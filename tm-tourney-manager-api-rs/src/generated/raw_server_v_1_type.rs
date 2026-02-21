@@ -69,3 +69,5 @@ impl __sdk::__query_builder::HasIxCols for RawServerV1 {
         }
     }
 }
+
+impl __sdk::__query_builder::CanBeLookupTable for RawServerV1 {}

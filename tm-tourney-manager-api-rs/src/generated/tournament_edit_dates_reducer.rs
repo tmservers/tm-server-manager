@@ -26,8 +26,6 @@ impl __sdk::InModule for TournamentEditDatesArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct TournamentEditDatesCallbackId(__sdk::CallbackId);
-
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `tournament_edit_dates`.
 ///
@@ -37,100 +35,53 @@ pub trait tournament_edit_dates {
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
-    ///  and its status can be observed by listening for [`Self::on_tournament_edit_dates`] callbacks.
-    fn tournament_edit_dates(
-        &self,
-        tournament_id: u32,
-        starting_at: __sdk::Timestamp,
-        ending_at: __sdk::Timestamp,
-    ) -> __sdk::Result<()>;
-    /// Register a callback to run whenever we are notified of an invocation of the reducer `tournament_edit_dates`.
-    ///
-    /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
-    /// to determine the reducer's status.
-    ///
-    /// The returned [`TournamentEditDatesCallbackId`] can be passed to [`Self::remove_on_tournament_edit_dates`]
-    /// to cancel the callback.
-    fn on_tournament_edit_dates(
-        &self,
-        callback: impl FnMut(&super::ReducerEventContext, &u32, &__sdk::Timestamp, &__sdk::Timestamp)
-            + Send
-            + 'static,
-    ) -> TournamentEditDatesCallbackId;
-    /// Cancel a callback previously registered by [`Self::on_tournament_edit_dates`],
-    /// causing it not to run in the future.
-    fn remove_on_tournament_edit_dates(&self, callback: TournamentEditDatesCallbackId);
-}
-
-impl tournament_edit_dates for super::RemoteReducers {
+    ///  and this method provides no way to listen for its completion status.
+    /// /// Use [`tournament_edit_dates:tournament_edit_dates_then`] to run a callback after the reducer completes.
     fn tournament_edit_dates(
         &self,
         tournament_id: u32,
         starting_at: __sdk::Timestamp,
         ending_at: __sdk::Timestamp,
     ) -> __sdk::Result<()> {
-        self.imp.call_reducer(
-            "tournament_edit_dates",
+        self.tournament_edit_dates_then(tournament_id, starting_at, ending_at, |_, _| {})
+    }
+
+    /// Request that the remote module invoke the reducer `tournament_edit_dates` to run as soon as possible,
+    /// registering `callback` to run when we are notified that the reducer completed.
+    ///
+    /// This method returns immediately, and errors only if we are unable to send the request.
+    /// The reducer will run asynchronously in the future,
+    ///  and its status can be observed with the `callback`.
+    fn tournament_edit_dates_then(
+        &self,
+        tournament_id: u32,
+        starting_at: __sdk::Timestamp,
+        ending_at: __sdk::Timestamp,
+
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()>;
+}
+
+impl tournament_edit_dates for super::RemoteReducers {
+    fn tournament_edit_dates_then(
+        &self,
+        tournament_id: u32,
+        starting_at: __sdk::Timestamp,
+        ending_at: __sdk::Timestamp,
+
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()> {
+        self.imp.invoke_reducer_with_callback(
             TournamentEditDatesArgs {
                 tournament_id,
                 starting_at,
                 ending_at,
             },
+            callback,
         )
-    }
-    fn on_tournament_edit_dates(
-        &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &u32, &__sdk::Timestamp, &__sdk::Timestamp)
-            + Send
-            + 'static,
-    ) -> TournamentEditDatesCallbackId {
-        TournamentEditDatesCallbackId(self.imp.on_reducer(
-            "tournament_edit_dates",
-            Box::new(move |ctx: &super::ReducerEventContext| {
-                #[allow(irrefutable_let_patterns)]
-                let super::ReducerEventContext {
-                    event:
-                        __sdk::ReducerEvent {
-                            reducer:
-                                super::Reducer::TournamentEditDates {
-                                    tournament_id,
-                                    starting_at,
-                                    ending_at,
-                                },
-                            ..
-                        },
-                    ..
-                } = ctx
-                else {
-                    unreachable!()
-                };
-                callback(ctx, tournament_id, starting_at, ending_at)
-            }),
-        ))
-    }
-    fn remove_on_tournament_edit_dates(&self, callback: TournamentEditDatesCallbackId) {
-        self.imp
-            .remove_on_reducer("tournament_edit_dates", callback.0)
-    }
-}
-
-#[allow(non_camel_case_types)]
-#[doc(hidden)]
-/// Extension trait for setting the call-flags for the reducer `tournament_edit_dates`.
-///
-/// Implemented for [`super::SetReducerFlags`].
-///
-/// This type is currently unstable and may be removed without a major version bump.
-pub trait set_flags_for_tournament_edit_dates {
-    /// Set the call-reducer flags for the reducer `tournament_edit_dates` to `flags`.
-    ///
-    /// This type is currently unstable and may be removed without a major version bump.
-    fn tournament_edit_dates(&self, flags: __ws::CallReducerFlags);
-}
-
-impl set_flags_for_tournament_edit_dates for super::SetReducerFlags {
-    fn tournament_edit_dates(&self, flags: __ws::CallReducerFlags) {
-        self.imp
-            .set_call_reducer_flags("tournament_edit_dates", flags);
     }
 }

@@ -10,8 +10,10 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-import NodeKindHandle from "./node_kind_handle_type";
-import ConnectionSettings from "./connection_settings_type";
+import {
+  NodeKindHandle,
+  ConnectionSettings,
+} from "./types";
 
 export default {
   get connectionFrom() {

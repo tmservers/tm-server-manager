@@ -24,8 +24,6 @@ impl __sdk::InModule for CompetitionConnectionDataUpdateArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct CompetitionConnectionDataUpdateCallbackId(__sdk::CallbackId);
-
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `competition_connection_data_update`.
 ///
@@ -35,93 +33,41 @@ pub trait competition_connection_data_update {
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
-    ///  and its status can be observed by listening for [`Self::on_competition_connection_data_update`] callbacks.
-    fn competition_connection_data_update(
-        &self,
-        option: CompetitionConnectionDataOption,
-    ) -> __sdk::Result<()>;
-    /// Register a callback to run whenever we are notified of an invocation of the reducer `competition_connection_data_update`.
-    ///
-    /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
-    /// to determine the reducer's status.
-    ///
-    /// The returned [`CompetitionConnectionDataUpdateCallbackId`] can be passed to [`Self::remove_on_competition_connection_data_update`]
-    /// to cancel the callback.
-    fn on_competition_connection_data_update(
-        &self,
-        callback: impl FnMut(&super::ReducerEventContext, &CompetitionConnectionDataOption)
-            + Send
-            + 'static,
-    ) -> CompetitionConnectionDataUpdateCallbackId;
-    /// Cancel a callback previously registered by [`Self::on_competition_connection_data_update`],
-    /// causing it not to run in the future.
-    fn remove_on_competition_connection_data_update(
-        &self,
-        callback: CompetitionConnectionDataUpdateCallbackId,
-    );
-}
-
-impl competition_connection_data_update for super::RemoteReducers {
+    ///  and this method provides no way to listen for its completion status.
+    /// /// Use [`competition_connection_data_update:competition_connection_data_update_then`] to run a callback after the reducer completes.
     fn competition_connection_data_update(
         &self,
         option: CompetitionConnectionDataOption,
     ) -> __sdk::Result<()> {
-        self.imp.call_reducer(
-            "competition_connection_data_update",
-            CompetitionConnectionDataUpdateArgs { option },
-        )
+        self.competition_connection_data_update_then(option, |_, _| {})
     }
-    fn on_competition_connection_data_update(
+
+    /// Request that the remote module invoke the reducer `competition_connection_data_update` to run as soon as possible,
+    /// registering `callback` to run when we are notified that the reducer completed.
+    ///
+    /// This method returns immediately, and errors only if we are unable to send the request.
+    /// The reducer will run asynchronously in the future,
+    ///  and its status can be observed with the `callback`.
+    fn competition_connection_data_update_then(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &CompetitionConnectionDataOption)
+        option: CompetitionConnectionDataOption,
+
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
-    ) -> CompetitionConnectionDataUpdateCallbackId {
-        CompetitionConnectionDataUpdateCallbackId(self.imp.on_reducer(
-            "competition_connection_data_update",
-            Box::new(move |ctx: &super::ReducerEventContext| {
-                #[allow(irrefutable_let_patterns)]
-                let super::ReducerEventContext {
-                    event:
-                        __sdk::ReducerEvent {
-                            reducer: super::Reducer::CompetitionConnectionDataUpdate { option },
-                            ..
-                        },
-                    ..
-                } = ctx
-                else {
-                    unreachable!()
-                };
-                callback(ctx, option)
-            }),
-        ))
-    }
-    fn remove_on_competition_connection_data_update(
+    ) -> __sdk::Result<()>;
+}
+
+impl competition_connection_data_update for super::RemoteReducers {
+    fn competition_connection_data_update_then(
         &self,
-        callback: CompetitionConnectionDataUpdateCallbackId,
-    ) {
-        self.imp
-            .remove_on_reducer("competition_connection_data_update", callback.0)
-    }
-}
+        option: CompetitionConnectionDataOption,
 
-#[allow(non_camel_case_types)]
-#[doc(hidden)]
-/// Extension trait for setting the call-flags for the reducer `competition_connection_data_update`.
-///
-/// Implemented for [`super::SetReducerFlags`].
-///
-/// This type is currently unstable and may be removed without a major version bump.
-pub trait set_flags_for_competition_connection_data_update {
-    /// Set the call-reducer flags for the reducer `competition_connection_data_update` to `flags`.
-    ///
-    /// This type is currently unstable and may be removed without a major version bump.
-    fn competition_connection_data_update(&self, flags: __ws::CallReducerFlags);
-}
-
-impl set_flags_for_competition_connection_data_update for super::SetReducerFlags {
-    fn competition_connection_data_update(&self, flags: __ws::CallReducerFlags) {
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()> {
         self.imp
-            .set_call_reducer_flags("competition_connection_data_update", flags);
+            .invoke_reducer_with_callback(CompetitionConnectionDataUpdateArgs { option }, callback)
     }
 }

@@ -24,8 +24,6 @@ impl __sdk::InModule for CompetitionEditNameArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct CompetitionEditNameCallbackId(__sdk::CallbackId);
-
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `competition_edit_name`.
 ///
@@ -35,84 +33,45 @@ pub trait competition_edit_name {
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
-    ///  and its status can be observed by listening for [`Self::on_competition_edit_name`] callbacks.
-    fn competition_edit_name(&self, competition_id: u32, name: String) -> __sdk::Result<()>;
-    /// Register a callback to run whenever we are notified of an invocation of the reducer `competition_edit_name`.
+    ///  and this method provides no way to listen for its completion status.
+    /// /// Use [`competition_edit_name:competition_edit_name_then`] to run a callback after the reducer completes.
+    fn competition_edit_name(&self, competition_id: u32, name: String) -> __sdk::Result<()> {
+        self.competition_edit_name_then(competition_id, name, |_, _| {})
+    }
+
+    /// Request that the remote module invoke the reducer `competition_edit_name` to run as soon as possible,
+    /// registering `callback` to run when we are notified that the reducer completed.
     ///
-    /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
-    /// to determine the reducer's status.
-    ///
-    /// The returned [`CompetitionEditNameCallbackId`] can be passed to [`Self::remove_on_competition_edit_name`]
-    /// to cancel the callback.
-    fn on_competition_edit_name(
+    /// This method returns immediately, and errors only if we are unable to send the request.
+    /// The reducer will run asynchronously in the future,
+    ///  and its status can be observed with the `callback`.
+    fn competition_edit_name_then(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &u32, &String) + Send + 'static,
-    ) -> CompetitionEditNameCallbackId;
-    /// Cancel a callback previously registered by [`Self::on_competition_edit_name`],
-    /// causing it not to run in the future.
-    fn remove_on_competition_edit_name(&self, callback: CompetitionEditNameCallbackId);
+        competition_id: u32,
+        name: String,
+
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()>;
 }
 
 impl competition_edit_name for super::RemoteReducers {
-    fn competition_edit_name(&self, competition_id: u32, name: String) -> __sdk::Result<()> {
-        self.imp.call_reducer(
-            "competition_edit_name",
+    fn competition_edit_name_then(
+        &self,
+        competition_id: u32,
+        name: String,
+
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()> {
+        self.imp.invoke_reducer_with_callback(
             CompetitionEditNameArgs {
                 competition_id,
                 name,
             },
+            callback,
         )
-    }
-    fn on_competition_edit_name(
-        &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &u32, &String) + Send + 'static,
-    ) -> CompetitionEditNameCallbackId {
-        CompetitionEditNameCallbackId(self.imp.on_reducer(
-            "competition_edit_name",
-            Box::new(move |ctx: &super::ReducerEventContext| {
-                #[allow(irrefutable_let_patterns)]
-                let super::ReducerEventContext {
-                    event:
-                        __sdk::ReducerEvent {
-                            reducer:
-                                super::Reducer::CompetitionEditName {
-                                    competition_id,
-                                    name,
-                                },
-                            ..
-                        },
-                    ..
-                } = ctx
-                else {
-                    unreachable!()
-                };
-                callback(ctx, competition_id, name)
-            }),
-        ))
-    }
-    fn remove_on_competition_edit_name(&self, callback: CompetitionEditNameCallbackId) {
-        self.imp
-            .remove_on_reducer("competition_edit_name", callback.0)
-    }
-}
-
-#[allow(non_camel_case_types)]
-#[doc(hidden)]
-/// Extension trait for setting the call-flags for the reducer `competition_edit_name`.
-///
-/// Implemented for [`super::SetReducerFlags`].
-///
-/// This type is currently unstable and may be removed without a major version bump.
-pub trait set_flags_for_competition_edit_name {
-    /// Set the call-reducer flags for the reducer `competition_edit_name` to `flags`.
-    ///
-    /// This type is currently unstable and may be removed without a major version bump.
-    fn competition_edit_name(&self, flags: __ws::CallReducerFlags);
-}
-
-impl set_flags_for_competition_edit_name for super::SetReducerFlags {
-    fn competition_edit_name(&self, flags: __ws::CallReducerFlags) {
-        self.imp
-            .set_call_reducer_flags("competition_edit_name", flags);
     }
 }

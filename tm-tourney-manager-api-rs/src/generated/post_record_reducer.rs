@@ -26,8 +26,6 @@ impl __sdk::InModule for PostRecordArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct PostRecordCallbackId(__sdk::CallbackId);
-
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `post_record`.
 ///
@@ -37,92 +35,53 @@ pub trait post_record {
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
-    ///  and its status can be observed by listening for [`Self::on_post_record`] callbacks.
-    fn post_record(&self, map_uid: String, account_id: __sdk::Uuid, time: u32)
-        -> __sdk::Result<()>;
-    /// Register a callback to run whenever we are notified of an invocation of the reducer `post_record`.
-    ///
-    /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
-    /// to determine the reducer's status.
-    ///
-    /// The returned [`PostRecordCallbackId`] can be passed to [`Self::remove_on_post_record`]
-    /// to cancel the callback.
-    fn on_post_record(
-        &self,
-        callback: impl FnMut(&super::ReducerEventContext, &String, &__sdk::Uuid, &u32) + Send + 'static,
-    ) -> PostRecordCallbackId;
-    /// Cancel a callback previously registered by [`Self::on_post_record`],
-    /// causing it not to run in the future.
-    fn remove_on_post_record(&self, callback: PostRecordCallbackId);
-}
-
-impl post_record for super::RemoteReducers {
+    ///  and this method provides no way to listen for its completion status.
+    /// /// Use [`post_record:post_record_then`] to run a callback after the reducer completes.
     fn post_record(
         &self,
         map_uid: String,
         account_id: __sdk::Uuid,
         time: u32,
     ) -> __sdk::Result<()> {
-        self.imp.call_reducer(
-            "post_record",
+        self.post_record_then(map_uid, account_id, time, |_, _| {})
+    }
+
+    /// Request that the remote module invoke the reducer `post_record` to run as soon as possible,
+    /// registering `callback` to run when we are notified that the reducer completed.
+    ///
+    /// This method returns immediately, and errors only if we are unable to send the request.
+    /// The reducer will run asynchronously in the future,
+    ///  and its status can be observed with the `callback`.
+    fn post_record_then(
+        &self,
+        map_uid: String,
+        account_id: __sdk::Uuid,
+        time: u32,
+
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()>;
+}
+
+impl post_record for super::RemoteReducers {
+    fn post_record_then(
+        &self,
+        map_uid: String,
+        account_id: __sdk::Uuid,
+        time: u32,
+
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()> {
+        self.imp.invoke_reducer_with_callback(
             PostRecordArgs {
                 map_uid,
                 account_id,
                 time,
             },
+            callback,
         )
-    }
-    fn on_post_record(
-        &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &String, &__sdk::Uuid, &u32)
-            + Send
-            + 'static,
-    ) -> PostRecordCallbackId {
-        PostRecordCallbackId(self.imp.on_reducer(
-            "post_record",
-            Box::new(move |ctx: &super::ReducerEventContext| {
-                #[allow(irrefutable_let_patterns)]
-                let super::ReducerEventContext {
-                    event:
-                        __sdk::ReducerEvent {
-                            reducer:
-                                super::Reducer::PostRecord {
-                                    map_uid,
-                                    account_id,
-                                    time,
-                                },
-                            ..
-                        },
-                    ..
-                } = ctx
-                else {
-                    unreachable!()
-                };
-                callback(ctx, map_uid, account_id, time)
-            }),
-        ))
-    }
-    fn remove_on_post_record(&self, callback: PostRecordCallbackId) {
-        self.imp.remove_on_reducer("post_record", callback.0)
-    }
-}
-
-#[allow(non_camel_case_types)]
-#[doc(hidden)]
-/// Extension trait for setting the call-flags for the reducer `post_record`.
-///
-/// Implemented for [`super::SetReducerFlags`].
-///
-/// This type is currently unstable and may be removed without a major version bump.
-pub trait set_flags_for_post_record {
-    /// Set the call-reducer flags for the reducer `post_record` to `flags`.
-    ///
-    /// This type is currently unstable and may be removed without a major version bump.
-    fn post_record(&self, flags: __ws::CallReducerFlags);
-}
-
-impl set_flags_for_post_record for super::SetReducerFlags {
-    fn post_record(&self, flags: __ws::CallReducerFlags) {
-        self.imp.set_call_reducer_flags("post_record", flags);
     }
 }

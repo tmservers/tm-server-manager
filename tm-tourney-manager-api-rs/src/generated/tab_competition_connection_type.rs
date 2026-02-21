@@ -83,3 +83,5 @@ impl __sdk::__query_builder::HasIxCols for TabCompetitionConnection {
         }
     }
 }
+
+impl __sdk::__query_builder::CanBeLookupTable for TabCompetitionConnection {}

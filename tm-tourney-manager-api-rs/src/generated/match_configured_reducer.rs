@@ -20,8 +20,6 @@ impl __sdk::InModule for MatchConfiguredArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct MatchConfiguredCallbackId(__sdk::CallbackId);
-
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `match_configured`.
 ///
@@ -31,73 +29,38 @@ pub trait match_configured {
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
-    ///  and its status can be observed by listening for [`Self::on_match_configured`] callbacks.
-    fn match_configured(&self, id: u32) -> __sdk::Result<()>;
-    /// Register a callback to run whenever we are notified of an invocation of the reducer `match_configured`.
+    ///  and this method provides no way to listen for its completion status.
+    /// /// Use [`match_configured:match_configured_then`] to run a callback after the reducer completes.
+    fn match_configured(&self, id: u32) -> __sdk::Result<()> {
+        self.match_configured_then(id, |_, _| {})
+    }
+
+    /// Request that the remote module invoke the reducer `match_configured` to run as soon as possible,
+    /// registering `callback` to run when we are notified that the reducer completed.
     ///
-    /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
-    /// to determine the reducer's status.
-    ///
-    /// The returned [`MatchConfiguredCallbackId`] can be passed to [`Self::remove_on_match_configured`]
-    /// to cancel the callback.
-    fn on_match_configured(
+    /// This method returns immediately, and errors only if we are unable to send the request.
+    /// The reducer will run asynchronously in the future,
+    ///  and its status can be observed with the `callback`.
+    fn match_configured_then(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &u32) + Send + 'static,
-    ) -> MatchConfiguredCallbackId;
-    /// Cancel a callback previously registered by [`Self::on_match_configured`],
-    /// causing it not to run in the future.
-    fn remove_on_match_configured(&self, callback: MatchConfiguredCallbackId);
+        id: u32,
+
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()>;
 }
 
 impl match_configured for super::RemoteReducers {
-    fn match_configured(&self, id: u32) -> __sdk::Result<()> {
-        self.imp
-            .call_reducer("match_configured", MatchConfiguredArgs { id })
-    }
-    fn on_match_configured(
+    fn match_configured_then(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &u32) + Send + 'static,
-    ) -> MatchConfiguredCallbackId {
-        MatchConfiguredCallbackId(self.imp.on_reducer(
-            "match_configured",
-            Box::new(move |ctx: &super::ReducerEventContext| {
-                #[allow(irrefutable_let_patterns)]
-                let super::ReducerEventContext {
-                    event:
-                        __sdk::ReducerEvent {
-                            reducer: super::Reducer::MatchConfigured { id },
-                            ..
-                        },
-                    ..
-                } = ctx
-                else {
-                    unreachable!()
-                };
-                callback(ctx, id)
-            }),
-        ))
-    }
-    fn remove_on_match_configured(&self, callback: MatchConfiguredCallbackId) {
-        self.imp.remove_on_reducer("match_configured", callback.0)
-    }
-}
+        id: u32,
 
-#[allow(non_camel_case_types)]
-#[doc(hidden)]
-/// Extension trait for setting the call-flags for the reducer `match_configured`.
-///
-/// Implemented for [`super::SetReducerFlags`].
-///
-/// This type is currently unstable and may be removed without a major version bump.
-pub trait set_flags_for_match_configured {
-    /// Set the call-reducer flags for the reducer `match_configured` to `flags`.
-    ///
-    /// This type is currently unstable and may be removed without a major version bump.
-    fn match_configured(&self, flags: __ws::CallReducerFlags);
-}
-
-impl set_flags_for_match_configured for super::SetReducerFlags {
-    fn match_configured(&self, flags: __ws::CallReducerFlags) {
-        self.imp.set_call_reducer_flags("match_configured", flags);
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()> {
+        self.imp
+            .invoke_reducer_with_callback(MatchConfiguredArgs { id }, callback)
     }
 }

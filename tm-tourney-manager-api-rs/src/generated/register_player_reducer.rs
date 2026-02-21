@@ -22,8 +22,6 @@ impl __sdk::InModule for RegisterPlayerArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct RegisterPlayerCallbackId(__sdk::CallbackId);
-
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `register_player`.
 ///
@@ -33,73 +31,38 @@ pub trait register_player {
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
-    ///  and its status can be observed by listening for [`Self::on_register_player`] callbacks.
-    fn register_player(&self, competition_id: u32) -> __sdk::Result<()>;
-    /// Register a callback to run whenever we are notified of an invocation of the reducer `register_player`.
+    ///  and this method provides no way to listen for its completion status.
+    /// /// Use [`register_player:register_player_then`] to run a callback after the reducer completes.
+    fn register_player(&self, competition_id: u32) -> __sdk::Result<()> {
+        self.register_player_then(competition_id, |_, _| {})
+    }
+
+    /// Request that the remote module invoke the reducer `register_player` to run as soon as possible,
+    /// registering `callback` to run when we are notified that the reducer completed.
     ///
-    /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
-    /// to determine the reducer's status.
-    ///
-    /// The returned [`RegisterPlayerCallbackId`] can be passed to [`Self::remove_on_register_player`]
-    /// to cancel the callback.
-    fn on_register_player(
+    /// This method returns immediately, and errors only if we are unable to send the request.
+    /// The reducer will run asynchronously in the future,
+    ///  and its status can be observed with the `callback`.
+    fn register_player_then(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &u32) + Send + 'static,
-    ) -> RegisterPlayerCallbackId;
-    /// Cancel a callback previously registered by [`Self::on_register_player`],
-    /// causing it not to run in the future.
-    fn remove_on_register_player(&self, callback: RegisterPlayerCallbackId);
+        competition_id: u32,
+
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()>;
 }
 
 impl register_player for super::RemoteReducers {
-    fn register_player(&self, competition_id: u32) -> __sdk::Result<()> {
-        self.imp
-            .call_reducer("register_player", RegisterPlayerArgs { competition_id })
-    }
-    fn on_register_player(
+    fn register_player_then(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &u32) + Send + 'static,
-    ) -> RegisterPlayerCallbackId {
-        RegisterPlayerCallbackId(self.imp.on_reducer(
-            "register_player",
-            Box::new(move |ctx: &super::ReducerEventContext| {
-                #[allow(irrefutable_let_patterns)]
-                let super::ReducerEventContext {
-                    event:
-                        __sdk::ReducerEvent {
-                            reducer: super::Reducer::RegisterPlayer { competition_id },
-                            ..
-                        },
-                    ..
-                } = ctx
-                else {
-                    unreachable!()
-                };
-                callback(ctx, competition_id)
-            }),
-        ))
-    }
-    fn remove_on_register_player(&self, callback: RegisterPlayerCallbackId) {
-        self.imp.remove_on_reducer("register_player", callback.0)
-    }
-}
+        competition_id: u32,
 
-#[allow(non_camel_case_types)]
-#[doc(hidden)]
-/// Extension trait for setting the call-flags for the reducer `register_player`.
-///
-/// Implemented for [`super::SetReducerFlags`].
-///
-/// This type is currently unstable and may be removed without a major version bump.
-pub trait set_flags_for_register_player {
-    /// Set the call-reducer flags for the reducer `register_player` to `flags`.
-    ///
-    /// This type is currently unstable and may be removed without a major version bump.
-    fn register_player(&self, flags: __ws::CallReducerFlags);
-}
-
-impl set_flags_for_register_player for super::SetReducerFlags {
-    fn register_player(&self, flags: __ws::CallReducerFlags) {
-        self.imp.set_call_reducer_flags("register_player", flags);
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()> {
+        self.imp
+            .invoke_reducer_with_callback(RegisterPlayerArgs { competition_id }, callback)
     }
 }

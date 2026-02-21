@@ -57,3 +57,5 @@ impl __sdk::__query_builder::HasIxCols for TmMapRecord {
         }
     }
 }
+
+impl __sdk::__query_builder::CanBeLookupTable for TmMapRecord {}

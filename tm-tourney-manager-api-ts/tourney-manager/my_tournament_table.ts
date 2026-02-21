@@ -9,7 +9,9 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
-import TournamentStatus from "./tournament_status_type";
+import {
+  TournamentStatus,
+} from "./types";
 
 
 export default __t.row({

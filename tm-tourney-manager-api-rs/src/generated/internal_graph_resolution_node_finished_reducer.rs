@@ -26,8 +26,6 @@ impl __sdk::InModule for InternalGraphResolutionNodeFinishedArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct InternalGraphResolutionNodeFinishedCallbackId(__sdk::CallbackId);
-
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `internal_graph_resolution_node_finished`.
 ///
@@ -37,98 +35,49 @@ pub trait internal_graph_resolution_node_finished {
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
-    ///  and its status can be observed by listening for [`Self::on_internal_graph_resolution_node_finished`] callbacks.
-    fn internal_graph_resolution_node_finished(
-        &self,
-        competition_id: u32,
-        trigger: NodeKindHandle,
-    ) -> __sdk::Result<()>;
-    /// Register a callback to run whenever we are notified of an invocation of the reducer `internal_graph_resolution_node_finished`.
-    ///
-    /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
-    /// to determine the reducer's status.
-    ///
-    /// The returned [`InternalGraphResolutionNodeFinishedCallbackId`] can be passed to [`Self::remove_on_internal_graph_resolution_node_finished`]
-    /// to cancel the callback.
-    fn on_internal_graph_resolution_node_finished(
-        &self,
-        callback: impl FnMut(&super::ReducerEventContext, &u32, &NodeKindHandle) + Send + 'static,
-    ) -> InternalGraphResolutionNodeFinishedCallbackId;
-    /// Cancel a callback previously registered by [`Self::on_internal_graph_resolution_node_finished`],
-    /// causing it not to run in the future.
-    fn remove_on_internal_graph_resolution_node_finished(
-        &self,
-        callback: InternalGraphResolutionNodeFinishedCallbackId,
-    );
-}
-
-impl internal_graph_resolution_node_finished for super::RemoteReducers {
+    ///  and this method provides no way to listen for its completion status.
+    /// /// Use [`internal_graph_resolution_node_finished:internal_graph_resolution_node_finished_then`] to run a callback after the reducer completes.
     fn internal_graph_resolution_node_finished(
         &self,
         competition_id: u32,
         trigger: NodeKindHandle,
     ) -> __sdk::Result<()> {
-        self.imp.call_reducer(
-            "internal_graph_resolution_node_finished",
+        self.internal_graph_resolution_node_finished_then(competition_id, trigger, |_, _| {})
+    }
+
+    /// Request that the remote module invoke the reducer `internal_graph_resolution_node_finished` to run as soon as possible,
+    /// registering `callback` to run when we are notified that the reducer completed.
+    ///
+    /// This method returns immediately, and errors only if we are unable to send the request.
+    /// The reducer will run asynchronously in the future,
+    ///  and its status can be observed with the `callback`.
+    fn internal_graph_resolution_node_finished_then(
+        &self,
+        competition_id: u32,
+        trigger: NodeKindHandle,
+
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()>;
+}
+
+impl internal_graph_resolution_node_finished for super::RemoteReducers {
+    fn internal_graph_resolution_node_finished_then(
+        &self,
+        competition_id: u32,
+        trigger: NodeKindHandle,
+
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()> {
+        self.imp.invoke_reducer_with_callback(
             InternalGraphResolutionNodeFinishedArgs {
                 competition_id,
                 trigger,
             },
+            callback,
         )
-    }
-    fn on_internal_graph_resolution_node_finished(
-        &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &u32, &NodeKindHandle) + Send + 'static,
-    ) -> InternalGraphResolutionNodeFinishedCallbackId {
-        InternalGraphResolutionNodeFinishedCallbackId(self.imp.on_reducer(
-            "internal_graph_resolution_node_finished",
-            Box::new(move |ctx: &super::ReducerEventContext| {
-                #[allow(irrefutable_let_patterns)]
-                let super::ReducerEventContext {
-                    event:
-                        __sdk::ReducerEvent {
-                            reducer:
-                                super::Reducer::InternalGraphResolutionNodeFinished {
-                                    competition_id,
-                                    trigger,
-                                },
-                            ..
-                        },
-                    ..
-                } = ctx
-                else {
-                    unreachable!()
-                };
-                callback(ctx, competition_id, trigger)
-            }),
-        ))
-    }
-    fn remove_on_internal_graph_resolution_node_finished(
-        &self,
-        callback: InternalGraphResolutionNodeFinishedCallbackId,
-    ) {
-        self.imp
-            .remove_on_reducer("internal_graph_resolution_node_finished", callback.0)
-    }
-}
-
-#[allow(non_camel_case_types)]
-#[doc(hidden)]
-/// Extension trait for setting the call-flags for the reducer `internal_graph_resolution_node_finished`.
-///
-/// Implemented for [`super::SetReducerFlags`].
-///
-/// This type is currently unstable and may be removed without a major version bump.
-pub trait set_flags_for_internal_graph_resolution_node_finished {
-    /// Set the call-reducer flags for the reducer `internal_graph_resolution_node_finished` to `flags`.
-    ///
-    /// This type is currently unstable and may be removed without a major version bump.
-    fn internal_graph_resolution_node_finished(&self, flags: __ws::CallReducerFlags);
-}
-
-impl set_flags_for_internal_graph_resolution_node_finished for super::SetReducerFlags {
-    fn internal_graph_resolution_node_finished(&self, flags: __ws::CallReducerFlags) {
-        self.imp
-            .set_call_reducer_flags("internal_graph_resolution_node_finished", flags);
     }
 }

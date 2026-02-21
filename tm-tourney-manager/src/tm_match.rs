@@ -296,8 +296,7 @@ pub fn match_try_start(ctx: &ReducerContext, match_id: u32) -> Result<(), String
     }
 
     if tm_match.auto_provision_server {
-        //TODO this is not working with 2.0
-        //let available_servers = available_server_pool(&ctx.as_read_only());
+        let available_servers = available_server_pool(&ctx.as_read_only());
         let available_servers: Vec<RawServerV1> = Vec::new();
         if available_servers.is_empty() {
             return Err("No server is assigned to the match and there are no servers left to auto provision. Cannot start the match!".into());

@@ -10,7 +10,9 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-import MethodResponse from "./method_response_type";
+import {
+  MethodResponse,
+} from "./types";
 
 export default {
   callId: __t.u32(),

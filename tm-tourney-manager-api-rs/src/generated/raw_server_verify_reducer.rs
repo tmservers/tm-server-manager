@@ -22,8 +22,6 @@ impl __sdk::InModule for RawServerVerifyArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct RawServerVerifyCallbackId(__sdk::CallbackId);
-
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `raw_server_verify`.
 ///
@@ -33,73 +31,38 @@ pub trait raw_server_verify {
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
-    ///  and its status can be observed by listening for [`Self::on_raw_server_verify`] callbacks.
-    fn raw_server_verify(&self, server_id: u32) -> __sdk::Result<()>;
-    /// Register a callback to run whenever we are notified of an invocation of the reducer `raw_server_verify`.
+    ///  and this method provides no way to listen for its completion status.
+    /// /// Use [`raw_server_verify:raw_server_verify_then`] to run a callback after the reducer completes.
+    fn raw_server_verify(&self, server_id: u32) -> __sdk::Result<()> {
+        self.raw_server_verify_then(server_id, |_, _| {})
+    }
+
+    /// Request that the remote module invoke the reducer `raw_server_verify` to run as soon as possible,
+    /// registering `callback` to run when we are notified that the reducer completed.
     ///
-    /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
-    /// to determine the reducer's status.
-    ///
-    /// The returned [`RawServerVerifyCallbackId`] can be passed to [`Self::remove_on_raw_server_verify`]
-    /// to cancel the callback.
-    fn on_raw_server_verify(
+    /// This method returns immediately, and errors only if we are unable to send the request.
+    /// The reducer will run asynchronously in the future,
+    ///  and its status can be observed with the `callback`.
+    fn raw_server_verify_then(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &u32) + Send + 'static,
-    ) -> RawServerVerifyCallbackId;
-    /// Cancel a callback previously registered by [`Self::on_raw_server_verify`],
-    /// causing it not to run in the future.
-    fn remove_on_raw_server_verify(&self, callback: RawServerVerifyCallbackId);
+        server_id: u32,
+
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()>;
 }
 
 impl raw_server_verify for super::RemoteReducers {
-    fn raw_server_verify(&self, server_id: u32) -> __sdk::Result<()> {
-        self.imp
-            .call_reducer("raw_server_verify", RawServerVerifyArgs { server_id })
-    }
-    fn on_raw_server_verify(
+    fn raw_server_verify_then(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &u32) + Send + 'static,
-    ) -> RawServerVerifyCallbackId {
-        RawServerVerifyCallbackId(self.imp.on_reducer(
-            "raw_server_verify",
-            Box::new(move |ctx: &super::ReducerEventContext| {
-                #[allow(irrefutable_let_patterns)]
-                let super::ReducerEventContext {
-                    event:
-                        __sdk::ReducerEvent {
-                            reducer: super::Reducer::RawServerVerify { server_id },
-                            ..
-                        },
-                    ..
-                } = ctx
-                else {
-                    unreachable!()
-                };
-                callback(ctx, server_id)
-            }),
-        ))
-    }
-    fn remove_on_raw_server_verify(&self, callback: RawServerVerifyCallbackId) {
-        self.imp.remove_on_reducer("raw_server_verify", callback.0)
-    }
-}
+        server_id: u32,
 
-#[allow(non_camel_case_types)]
-#[doc(hidden)]
-/// Extension trait for setting the call-flags for the reducer `raw_server_verify`.
-///
-/// Implemented for [`super::SetReducerFlags`].
-///
-/// This type is currently unstable and may be removed without a major version bump.
-pub trait set_flags_for_raw_server_verify {
-    /// Set the call-reducer flags for the reducer `raw_server_verify` to `flags`.
-    ///
-    /// This type is currently unstable and may be removed without a major version bump.
-    fn raw_server_verify(&self, flags: __ws::CallReducerFlags);
-}
-
-impl set_flags_for_raw_server_verify for super::SetReducerFlags {
-    fn raw_server_verify(&self, flags: __ws::CallReducerFlags) {
-        self.imp.set_call_reducer_flags("raw_server_verify", flags);
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()> {
+        self.imp
+            .invoke_reducer_with_callback(RawServerVerifyArgs { server_id }, callback)
     }
 }

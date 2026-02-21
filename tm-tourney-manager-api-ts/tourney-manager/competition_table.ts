@@ -9,8 +9,10 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
-import CompetitionStatus from "./competition_status_type";
-import RegistrationSettings from "./registration_settings_type";
+import {
+  CompetitionStatus,
+  RegistrationSettings,
+} from "./types";
 
 
 export default __t.row({

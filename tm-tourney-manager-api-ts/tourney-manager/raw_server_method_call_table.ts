@@ -9,7 +9,9 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
-import MethodCall from "./method_call_type";
+import {
+  MethodCall,
+} from "./types";
 
 
 export default __t.row({

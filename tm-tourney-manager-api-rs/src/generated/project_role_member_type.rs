@@ -44,3 +44,5 @@ impl __sdk::__query_builder::HasIxCols for ProjectRoleMember {
         ProjectRoleMemberIxCols {}
     }
 }
+
+impl __sdk::__query_builder::CanBeLookupTable for ProjectRoleMember {}

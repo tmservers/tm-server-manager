@@ -24,8 +24,6 @@ impl __sdk::InModule for CreateEnvVarArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct CreateEnvVarCallbackId(__sdk::CallbackId);
-
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `create_env_var`.
 ///
@@ -35,73 +33,40 @@ pub trait create_env_var {
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
-    ///  and its status can be observed by listening for [`Self::on_create_env_var`] callbacks.
-    fn create_env_var(&self, key: String, value: String) -> __sdk::Result<()>;
-    /// Register a callback to run whenever we are notified of an invocation of the reducer `create_env_var`.
+    ///  and this method provides no way to listen for its completion status.
+    /// /// Use [`create_env_var:create_env_var_then`] to run a callback after the reducer completes.
+    fn create_env_var(&self, key: String, value: String) -> __sdk::Result<()> {
+        self.create_env_var_then(key, value, |_, _| {})
+    }
+
+    /// Request that the remote module invoke the reducer `create_env_var` to run as soon as possible,
+    /// registering `callback` to run when we are notified that the reducer completed.
     ///
-    /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
-    /// to determine the reducer's status.
-    ///
-    /// The returned [`CreateEnvVarCallbackId`] can be passed to [`Self::remove_on_create_env_var`]
-    /// to cancel the callback.
-    fn on_create_env_var(
+    /// This method returns immediately, and errors only if we are unable to send the request.
+    /// The reducer will run asynchronously in the future,
+    ///  and its status can be observed with the `callback`.
+    fn create_env_var_then(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &String, &String) + Send + 'static,
-    ) -> CreateEnvVarCallbackId;
-    /// Cancel a callback previously registered by [`Self::on_create_env_var`],
-    /// causing it not to run in the future.
-    fn remove_on_create_env_var(&self, callback: CreateEnvVarCallbackId);
+        key: String,
+        value: String,
+
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()>;
 }
 
 impl create_env_var for super::RemoteReducers {
-    fn create_env_var(&self, key: String, value: String) -> __sdk::Result<()> {
-        self.imp
-            .call_reducer("create_env_var", CreateEnvVarArgs { key, value })
-    }
-    fn on_create_env_var(
+    fn create_env_var_then(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &String, &String) + Send + 'static,
-    ) -> CreateEnvVarCallbackId {
-        CreateEnvVarCallbackId(self.imp.on_reducer(
-            "create_env_var",
-            Box::new(move |ctx: &super::ReducerEventContext| {
-                #[allow(irrefutable_let_patterns)]
-                let super::ReducerEventContext {
-                    event:
-                        __sdk::ReducerEvent {
-                            reducer: super::Reducer::CreateEnvVar { key, value },
-                            ..
-                        },
-                    ..
-                } = ctx
-                else {
-                    unreachable!()
-                };
-                callback(ctx, key, value)
-            }),
-        ))
-    }
-    fn remove_on_create_env_var(&self, callback: CreateEnvVarCallbackId) {
-        self.imp.remove_on_reducer("create_env_var", callback.0)
-    }
-}
+        key: String,
+        value: String,
 
-#[allow(non_camel_case_types)]
-#[doc(hidden)]
-/// Extension trait for setting the call-flags for the reducer `create_env_var`.
-///
-/// Implemented for [`super::SetReducerFlags`].
-///
-/// This type is currently unstable and may be removed without a major version bump.
-pub trait set_flags_for_create_env_var {
-    /// Set the call-reducer flags for the reducer `create_env_var` to `flags`.
-    ///
-    /// This type is currently unstable and may be removed without a major version bump.
-    fn create_env_var(&self, flags: __ws::CallReducerFlags);
-}
-
-impl set_flags_for_create_env_var for super::SetReducerFlags {
-    fn create_env_var(&self, flags: __ws::CallReducerFlags) {
-        self.imp.set_call_reducer_flags("create_env_var", flags);
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()> {
+        self.imp
+            .invoke_reducer_with_callback(CreateEnvVarArgs { key, value }, callback)
     }
 }

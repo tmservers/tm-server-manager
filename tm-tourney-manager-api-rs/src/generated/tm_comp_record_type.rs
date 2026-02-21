@@ -53,3 +53,5 @@ impl __sdk::__query_builder::HasIxCols for TmCompRecord {
         TmCompRecordIxCols {}
     }
 }
+
+impl __sdk::__query_builder::CanBeLookupTable for TmCompRecord {}

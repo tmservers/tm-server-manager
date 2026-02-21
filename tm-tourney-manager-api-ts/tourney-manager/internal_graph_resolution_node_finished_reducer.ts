@@ -10,7 +10,9 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-import NodeKindHandle from "./node_kind_handle_type";
+import {
+  NodeKindHandle,
+} from "./types";
 
 export default {
   competitionId: __t.u32(),

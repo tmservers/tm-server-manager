@@ -20,8 +20,6 @@ impl __sdk::InModule for CreateEventTemplateArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct CreateEventTemplateCallbackId(__sdk::CallbackId);
-
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `create_event_template`.
 ///
@@ -31,75 +29,38 @@ pub trait create_event_template {
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
-    ///  and its status can be observed by listening for [`Self::on_create_event_template`] callbacks.
-    fn create_event_template(&self, name: String) -> __sdk::Result<()>;
-    /// Register a callback to run whenever we are notified of an invocation of the reducer `create_event_template`.
+    ///  and this method provides no way to listen for its completion status.
+    /// /// Use [`create_event_template:create_event_template_then`] to run a callback after the reducer completes.
+    fn create_event_template(&self, name: String) -> __sdk::Result<()> {
+        self.create_event_template_then(name, |_, _| {})
+    }
+
+    /// Request that the remote module invoke the reducer `create_event_template` to run as soon as possible,
+    /// registering `callback` to run when we are notified that the reducer completed.
     ///
-    /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
-    /// to determine the reducer's status.
-    ///
-    /// The returned [`CreateEventTemplateCallbackId`] can be passed to [`Self::remove_on_create_event_template`]
-    /// to cancel the callback.
-    fn on_create_event_template(
+    /// This method returns immediately, and errors only if we are unable to send the request.
+    /// The reducer will run asynchronously in the future,
+    ///  and its status can be observed with the `callback`.
+    fn create_event_template_then(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &String) + Send + 'static,
-    ) -> CreateEventTemplateCallbackId;
-    /// Cancel a callback previously registered by [`Self::on_create_event_template`],
-    /// causing it not to run in the future.
-    fn remove_on_create_event_template(&self, callback: CreateEventTemplateCallbackId);
+        name: String,
+
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()>;
 }
 
 impl create_event_template for super::RemoteReducers {
-    fn create_event_template(&self, name: String) -> __sdk::Result<()> {
-        self.imp
-            .call_reducer("create_event_template", CreateEventTemplateArgs { name })
-    }
-    fn on_create_event_template(
+    fn create_event_template_then(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &String) + Send + 'static,
-    ) -> CreateEventTemplateCallbackId {
-        CreateEventTemplateCallbackId(self.imp.on_reducer(
-            "create_event_template",
-            Box::new(move |ctx: &super::ReducerEventContext| {
-                #[allow(irrefutable_let_patterns)]
-                let super::ReducerEventContext {
-                    event:
-                        __sdk::ReducerEvent {
-                            reducer: super::Reducer::CreateEventTemplate { name },
-                            ..
-                        },
-                    ..
-                } = ctx
-                else {
-                    unreachable!()
-                };
-                callback(ctx, name)
-            }),
-        ))
-    }
-    fn remove_on_create_event_template(&self, callback: CreateEventTemplateCallbackId) {
-        self.imp
-            .remove_on_reducer("create_event_template", callback.0)
-    }
-}
+        name: String,
 
-#[allow(non_camel_case_types)]
-#[doc(hidden)]
-/// Extension trait for setting the call-flags for the reducer `create_event_template`.
-///
-/// Implemented for [`super::SetReducerFlags`].
-///
-/// This type is currently unstable and may be removed without a major version bump.
-pub trait set_flags_for_create_event_template {
-    /// Set the call-reducer flags for the reducer `create_event_template` to `flags`.
-    ///
-    /// This type is currently unstable and may be removed without a major version bump.
-    fn create_event_template(&self, flags: __ws::CallReducerFlags);
-}
-
-impl set_flags_for_create_event_template for super::SetReducerFlags {
-    fn create_event_template(&self, flags: __ws::CallReducerFlags) {
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()> {
         self.imp
-            .set_call_reducer_flags("create_event_template", flags);
+            .invoke_reducer_with_callback(CreateEventTemplateArgs { name }, callback)
     }
 }

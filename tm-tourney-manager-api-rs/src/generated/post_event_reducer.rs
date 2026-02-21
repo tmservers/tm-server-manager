@@ -22,8 +22,6 @@ impl __sdk::InModule for PostEventArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct PostEventCallbackId(__sdk::CallbackId);
-
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `post_event`.
 ///
@@ -33,72 +31,38 @@ pub trait post_event {
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
-    ///  and its status can be observed by listening for [`Self::on_post_event`] callbacks.
-    fn post_event(&self, event: Event) -> __sdk::Result<()>;
-    /// Register a callback to run whenever we are notified of an invocation of the reducer `post_event`.
+    ///  and this method provides no way to listen for its completion status.
+    /// /// Use [`post_event:post_event_then`] to run a callback after the reducer completes.
+    fn post_event(&self, event: Event) -> __sdk::Result<()> {
+        self.post_event_then(event, |_, _| {})
+    }
+
+    /// Request that the remote module invoke the reducer `post_event` to run as soon as possible,
+    /// registering `callback` to run when we are notified that the reducer completed.
     ///
-    /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
-    /// to determine the reducer's status.
-    ///
-    /// The returned [`PostEventCallbackId`] can be passed to [`Self::remove_on_post_event`]
-    /// to cancel the callback.
-    fn on_post_event(
+    /// This method returns immediately, and errors only if we are unable to send the request.
+    /// The reducer will run asynchronously in the future,
+    ///  and its status can be observed with the `callback`.
+    fn post_event_then(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &Event) + Send + 'static,
-    ) -> PostEventCallbackId;
-    /// Cancel a callback previously registered by [`Self::on_post_event`],
-    /// causing it not to run in the future.
-    fn remove_on_post_event(&self, callback: PostEventCallbackId);
+        event: Event,
+
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()>;
 }
 
 impl post_event for super::RemoteReducers {
-    fn post_event(&self, event: Event) -> __sdk::Result<()> {
-        self.imp.call_reducer("post_event", PostEventArgs { event })
-    }
-    fn on_post_event(
+    fn post_event_then(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &Event) + Send + 'static,
-    ) -> PostEventCallbackId {
-        PostEventCallbackId(self.imp.on_reducer(
-            "post_event",
-            Box::new(move |ctx: &super::ReducerEventContext| {
-                #[allow(irrefutable_let_patterns)]
-                let super::ReducerEventContext {
-                    event:
-                        __sdk::ReducerEvent {
-                            reducer: super::Reducer::PostEvent { event },
-                            ..
-                        },
-                    ..
-                } = ctx
-                else {
-                    unreachable!()
-                };
-                callback(ctx, event)
-            }),
-        ))
-    }
-    fn remove_on_post_event(&self, callback: PostEventCallbackId) {
-        self.imp.remove_on_reducer("post_event", callback.0)
-    }
-}
+        event: Event,
 
-#[allow(non_camel_case_types)]
-#[doc(hidden)]
-/// Extension trait for setting the call-flags for the reducer `post_event`.
-///
-/// Implemented for [`super::SetReducerFlags`].
-///
-/// This type is currently unstable and may be removed without a major version bump.
-pub trait set_flags_for_post_event {
-    /// Set the call-reducer flags for the reducer `post_event` to `flags`.
-    ///
-    /// This type is currently unstable and may be removed without a major version bump.
-    fn post_event(&self, flags: __ws::CallReducerFlags);
-}
-
-impl set_flags_for_post_event for super::SetReducerFlags {
-    fn post_event(&self, flags: __ws::CallReducerFlags) {
-        self.imp.set_call_reducer_flags("post_event", flags);
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()> {
+        self.imp
+            .invoke_reducer_with_callback(PostEventArgs { event }, callback)
     }
 }

@@ -26,8 +26,6 @@ impl __sdk::InModule for CreateCompetitionArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct CreateCompetitionCallbackId(__sdk::CallbackId);
-
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `create_competition`.
 ///
@@ -37,96 +35,53 @@ pub trait create_competition {
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
-    ///  and its status can be observed by listening for [`Self::on_create_competition`] callbacks.
-    fn create_competition(
-        &self,
-        name: String,
-        parent_id: u32,
-        with_template: Option<u32>,
-    ) -> __sdk::Result<()>;
-    /// Register a callback to run whenever we are notified of an invocation of the reducer `create_competition`.
-    ///
-    /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
-    /// to determine the reducer's status.
-    ///
-    /// The returned [`CreateCompetitionCallbackId`] can be passed to [`Self::remove_on_create_competition`]
-    /// to cancel the callback.
-    fn on_create_competition(
-        &self,
-        callback: impl FnMut(&super::ReducerEventContext, &String, &u32, &Option<u32>) + Send + 'static,
-    ) -> CreateCompetitionCallbackId;
-    /// Cancel a callback previously registered by [`Self::on_create_competition`],
-    /// causing it not to run in the future.
-    fn remove_on_create_competition(&self, callback: CreateCompetitionCallbackId);
-}
-
-impl create_competition for super::RemoteReducers {
+    ///  and this method provides no way to listen for its completion status.
+    /// /// Use [`create_competition:create_competition_then`] to run a callback after the reducer completes.
     fn create_competition(
         &self,
         name: String,
         parent_id: u32,
         with_template: Option<u32>,
     ) -> __sdk::Result<()> {
-        self.imp.call_reducer(
-            "create_competition",
+        self.create_competition_then(name, parent_id, with_template, |_, _| {})
+    }
+
+    /// Request that the remote module invoke the reducer `create_competition` to run as soon as possible,
+    /// registering `callback` to run when we are notified that the reducer completed.
+    ///
+    /// This method returns immediately, and errors only if we are unable to send the request.
+    /// The reducer will run asynchronously in the future,
+    ///  and its status can be observed with the `callback`.
+    fn create_competition_then(
+        &self,
+        name: String,
+        parent_id: u32,
+        with_template: Option<u32>,
+
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()>;
+}
+
+impl create_competition for super::RemoteReducers {
+    fn create_competition_then(
+        &self,
+        name: String,
+        parent_id: u32,
+        with_template: Option<u32>,
+
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()> {
+        self.imp.invoke_reducer_with_callback(
             CreateCompetitionArgs {
                 name,
                 parent_id,
                 with_template,
             },
+            callback,
         )
-    }
-    fn on_create_competition(
-        &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &String, &u32, &Option<u32>)
-            + Send
-            + 'static,
-    ) -> CreateCompetitionCallbackId {
-        CreateCompetitionCallbackId(self.imp.on_reducer(
-            "create_competition",
-            Box::new(move |ctx: &super::ReducerEventContext| {
-                #[allow(irrefutable_let_patterns)]
-                let super::ReducerEventContext {
-                    event:
-                        __sdk::ReducerEvent {
-                            reducer:
-                                super::Reducer::CreateCompetition {
-                                    name,
-                                    parent_id,
-                                    with_template,
-                                },
-                            ..
-                        },
-                    ..
-                } = ctx
-                else {
-                    unreachable!()
-                };
-                callback(ctx, name, parent_id, with_template)
-            }),
-        ))
-    }
-    fn remove_on_create_competition(&self, callback: CreateCompetitionCallbackId) {
-        self.imp.remove_on_reducer("create_competition", callback.0)
-    }
-}
-
-#[allow(non_camel_case_types)]
-#[doc(hidden)]
-/// Extension trait for setting the call-flags for the reducer `create_competition`.
-///
-/// Implemented for [`super::SetReducerFlags`].
-///
-/// This type is currently unstable and may be removed without a major version bump.
-pub trait set_flags_for_create_competition {
-    /// Set the call-reducer flags for the reducer `create_competition` to `flags`.
-    ///
-    /// This type is currently unstable and may be removed without a major version bump.
-    fn create_competition(&self, flags: __ws::CallReducerFlags);
-}
-
-impl set_flags_for_create_competition for super::SetReducerFlags {
-    fn create_competition(&self, flags: __ws::CallReducerFlags) {
-        self.imp.set_call_reducer_flags("create_competition", flags);
     }
 }
