@@ -2,7 +2,7 @@ use spacetimedb::{ReducerContext, Uuid, table};
 
 use crate::tournament::permissions::TournamentPermissionsV1;
 
-#[table(name= tab_project_role)]
+#[table(accessor= tab_project_role)]
 pub struct ProjectRole {
     name: String,
 
@@ -22,7 +22,7 @@ impl ProjectRole {
     }
 }
 
-#[table(name= tab_project_role_members,index(name= user_roles , hash(columns= [role_id,account_id])))]
+#[table(accessor= tab_project_role_members,index(accessor= user_roles , hash(columns= [role_id,account_id])))]
 pub struct ProjectRoleMember {
     role_id: u32,
 

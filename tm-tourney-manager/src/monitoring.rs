@@ -5,7 +5,7 @@ use crate::{
     worker::jobs::{TmWorkerJobs, tm_worker_jobs},
 };
 
-#[ spacetimedb::table(name=tm_monitoring)]
+#[ spacetimedb::table(accessor=tm_monitoring)]
 pub struct TmMonitoring {
     #[auto_inc]
     #[primary_key]

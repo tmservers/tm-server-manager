@@ -6,15 +6,15 @@ use crate::{
         connection::connection_data::{CompetitionConnectionData, tab_competition_connection_data},
         tab_competition,
     },
-    tm_match::tab_tm_match,
     scheduling::tab_schedule,
+    tm_match::tab_tm_match,
 };
 
 pub(super) mod connection_data;
 pub(crate) mod node_position;
 
-#[spacetimedb::table(name = tab_competition_connection,
-    index(name=connection_exists,hash(columns=[connection_from_variant,connection_to_variant,connection_from,connection_to])),
+#[spacetimedb::table(accessor= tab_competition_connection,
+    index(accessor=connection_exists,hash(columns=[connection_from_variant,connection_to_variant,connection_from,connection_to])),
 )]
 #[derive(Debug, Clone, Copy)]
 pub struct TabCompetitionConnection {
@@ -254,7 +254,7 @@ pub struct CompetitionConnection {
     connection_settings: ConnectionSettings,
 }
 
-#[view(name=competition_connection,public)]
+#[view(accessor=competition_connection,public)]
 pub fn competition_connection(ctx: &ViewContext) -> Vec<CompetitionConnection> {
     ctx.db
         .tab_competition_connection()

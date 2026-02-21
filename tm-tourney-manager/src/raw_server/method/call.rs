@@ -8,8 +8,8 @@ use crate::{
     raw_server::{tab_raw_server, tab_raw_server__view},
 };
 
-#[table(name=tab_raw_server_method_call)]
-#[table(name=tab_raw_server_method_call_resolved)]
+#[table(accessor=tab_raw_server_method_call)]
+#[table(accessor=tab_raw_server_method_call_resolved)]
 pub struct RawServerMethodCall {
     #[primary_key]
     #[auto_inc]
@@ -59,9 +59,9 @@ pub fn server_method_call(
 }
 
 //TODO eval if this can be done with event table
-#[view(name= raw_server_method_call,public)]
+#[view(accessor= raw_server_method_call,public)]
 fn raw_server_method_call(ctx: &ViewContext) -> Vec<RawServerMethodCall> {
-    let Some(server) = ctx.db.tab_raw_server().identity().find(ctx.sender) else {
+    let Some(server) = ctx.db.tab_raw_server().identity().find(ctx.sender()) else {
         return Vec::new();
     };
     ctx.db

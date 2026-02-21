@@ -2,7 +2,7 @@ use spacetimedb::{Identity, ProcedureContext, Table};
 
 pub mod jobs;
 
-#[cfg_attr(feature = "spacetime", spacetimedb::table(name=tm_worker, public))]
+#[cfg_attr(feature = "spacetime", spacetimedb::table(accessor=tm_worker, public))]
 pub struct TmWorker {
     /// Trackmania server logins are unique.
     #[primary_key]
@@ -63,7 +63,7 @@ pub fn login_as_worker(
         panic!()
     } */
 
-    let sender = ctx.sender;
+    let sender = ctx.sender();
 
     ctx.with_tx(|ctx| {
         if ctx.db.tm_worker().identity().find(sender).is_some() {

@@ -6,7 +6,7 @@ use crate::{
     raw_server::config::{RawServerConfig, tab_raw_server_config},
 };
 
-#[table(name = tab_match_template)]
+#[table(accessor= tab_match_template)]
 pub struct MatchTemplate {
     name: String,
 
@@ -49,8 +49,8 @@ fn match_template_create(
     Ok(())
 }
 
-#[view(name=my_match_template,public)]
-fn my_match_template(ctx: &ViewContext) -> Query<MatchTemplate> {
+#[view(accessor=my_match_template,public)]
+fn my_match_template(ctx: &ViewContext) -> impl Query<MatchTemplate> {
     // TODO: return only users own templates
     ctx.from.tab_match_template().build()
 }

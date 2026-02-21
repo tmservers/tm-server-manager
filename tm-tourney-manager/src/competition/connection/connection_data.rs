@@ -3,7 +3,7 @@ use spacetimedb::{ReducerContext, SpacetimeType, ViewContext, reducer, table, vi
 use crate::authorization::Authorization;
 
 #[derive(Debug)]
-#[table(name=tab_competition_connection_data)]
+#[table(accessor=tab_competition_connection_data)]
 pub struct CompetitionConnectionData {
     #[index(btree)]
     competition_id: u32,
@@ -34,7 +34,7 @@ pub enum CompetitionConnectionDataOption {
     Custom(Vec<u8>),
 }
 
-#[view(name=competition_connection_data,public)]
+#[view(accessor=competition_connection_data,public)]
 pub fn competition_connection_data(ctx: &ViewContext) -> Vec<CompetitionConnectionData> {
     ctx.db
         .tab_competition_connection_data()

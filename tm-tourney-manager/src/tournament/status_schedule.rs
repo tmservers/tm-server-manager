@@ -1,8 +1,8 @@
-use spacetimedb::{table, ReducerContext, ScheduleAt, Table};
+use spacetimedb::{ReducerContext, ScheduleAt, Table, table};
 
-use crate::tournament::{tab_tournament, TournamentStatus, TournamentV1};
+use crate::tournament::{TournamentStatus, TournamentV1, tab_tournament};
 
-#[table(name = tab_tournament_status_schedule, scheduled(on_tournament_status_schedule_triggered))]
+#[table(accessor= tab_tournament_status_schedule, scheduled(on_tournament_status_schedule_triggered))]
 pub struct TournamentStatusScheduleV1 {
     #[primary_key]
     #[auto_inc]

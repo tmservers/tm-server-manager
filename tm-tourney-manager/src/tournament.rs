@@ -16,7 +16,7 @@ mod status_schedule;
 
 /// A tournament is a logical grouping of competitions and also the only way to obtain a competition in the first place.
 /// It does not provide functionality in of itself but is responsible for all the metadata.
-#[cfg_attr(feature = "spacetime", spacetimedb::table(name = tab_tournament))]
+#[cfg_attr(feature = "spacetime", spacetimedb::table(accessor= tab_tournament))]
 pub struct TournamentV1 {
     #[auto_inc]
     #[primary_key]
@@ -217,8 +217,8 @@ fn tournament_update_status(ctx: &ReducerContext, tournament_id: u32) -> Result<
     Ok(())
 }
 
-#[view(name=tournament,public)]
-pub fn tournament(ctx: &AnonymousViewContext) -> Query<TournamentV1> {
+#[view(accessor=tournament,public)]
+pub fn tournament(ctx: &AnonymousViewContext) -> impl Query<TournamentV1> {
     ctx.from
         .tab_tournament()
         //TODO this equality doesnt work atm because of enum
@@ -243,9 +243,9 @@ pub struct MyTournamentV1 {
     status: TournamentStatus,
 }
 
-#[view(name=my_tournament,public)]
+#[view(accessor=my_tournament,public)]
 pub fn my_tournament(ctx: &ViewContext) -> Vec<MyTournamentV1> {
-    let id = if let Some(user) = ctx.db.tab_user_identity().identity().find(ctx.sender) {
+    let id = if let Some(user) = ctx.db.tab_user_identity().identity().find(ctx.sender()) {
         user.account_id
     } else {
         return Vec::new();

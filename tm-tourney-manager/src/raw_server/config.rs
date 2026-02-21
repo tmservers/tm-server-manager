@@ -7,7 +7,7 @@ use crate::{
     tm_match::tab_tm_match__view,
 };
 
-#[table(name=tab_raw_server_config)]
+#[table(accessor=tab_raw_server_config)]
 pub struct RawServerConfig {
     #[auto_inc]
     #[primary_key]
@@ -30,7 +30,7 @@ impl RawServerConfig {
 }
 
 // The configuration that is owned by a server.
-/* #[table(name=tab_raw_server_config_active)]
+/* #[table(accessor=tab_raw_server_config_active)]
 pub struct RawServerConfigActive {
     config: u32,
 
@@ -62,9 +62,9 @@ pub fn create_server_config(ctx: &ReducerContext, config: ServerConfig) -> Resul
     Ok(())
 } */
 
-#[view(name=raw_server_config,public)]
+#[view(accessor=raw_server_config,public)]
 fn raw_server_config(ctx: &ViewContext) -> Option<ServerConfig> {
-    let server = ctx.db.tab_raw_server().identity().find(ctx.sender)?;
+    let server = ctx.db.tab_raw_server().identity().find(ctx.sender())?;
 
     let server_occupation = ctx
         .db

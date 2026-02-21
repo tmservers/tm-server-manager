@@ -4,7 +4,7 @@ use spacetimedb::{
 
 use crate::{authorization::Authorization, competition::tab_competition};
 
-#[table(name=tab_registered_player)]
+#[table(accessor=tab_registered_player)]
 pub struct RegisteredPlayer {
     #[index(btree)]
     competition_id: u32,
@@ -12,8 +12,8 @@ pub struct RegisteredPlayer {
     registered_at: Timestamp,
 }
 
-#[view(name=registered_player,public)]
-pub fn registered_player(ctx: &AnonymousViewContext) -> Query<RegisteredPlayer> {
+#[view(accessor=registered_player,public)]
+pub fn registered_player(ctx: &AnonymousViewContext) -> impl Query<RegisteredPlayer> {
     ctx.from.tab_registered_player().build()
 }
 

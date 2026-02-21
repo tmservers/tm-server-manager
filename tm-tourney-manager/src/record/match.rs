@@ -3,9 +3,9 @@ use spacetimedb::{AnonymousViewContext, Timestamp, Uuid, table, view};
 use crate::record::TmRecord;
 
 #[table(
-    name = tm_match_record,
+    accessor = tm_match_record,
     index(
-        name = record_id,
+        accessor = record_id,
         btree(columns = [match_id,map_uid, account_id]))
     )]
 pub struct TmCompRecord {
@@ -25,7 +25,7 @@ pub struct TmCompRecord {
 // Would probably need to introduce the competition_id into the event table.
 // maybe it could also replace the tournament_id since a competition already has it as a foreign key.
 
-#[view(name= match_record,public)]
+#[view(accessor= match_record,public)]
 pub fn match_record(ctx: &AnonymousViewContext /* TODO: match_id arg */) -> Vec<TmRecord> {
     //TODO the problem is that even with a btree filtering for records is probably expensive.
     //Maybe it is better if we ammortize that cost by dupllicatiing the local_records data on event insertion

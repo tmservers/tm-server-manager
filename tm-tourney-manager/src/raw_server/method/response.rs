@@ -6,7 +6,7 @@ use crate::{
     raw_server::method::call::{tab_raw_server_method_call, tab_raw_server_method_call_resolved},
 };
 
-#[table(name=tab_raw_server_method_response)]
+#[table(accessor=tab_raw_server_method_response)]
 pub struct TmServerMethodResponse {
     #[primary_key]
     pub id: u32,

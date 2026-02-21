@@ -12,7 +12,7 @@ use crate::{
         tab_competition,
     },
     raw_server::{
-        RawServerOccupation, available_server_pool, raw_server_pool, tab_raw_server,
+        RawServerOccupation, RawServerV1, available_server_pool, raw_server_pool, tab_raw_server,
         tab_raw_server_occupation,
     },
     tm_match::{
@@ -45,7 +45,7 @@ pub mod template;
 /// If the ephemeral state matches the desired state. Advances to [MatchStatus::Live].
 /// - *End.* The match has concluded. Loads the post_match_config if it is present. Releases
 /// the captured server. Advances to [MatchStatus::Ended].
-#[table(name = tab_tm_match)]
+#[table(accessor= tab_tm_match)]
 pub struct TmMatchV1 {
     /* /// The assigned server that is currently used by this match.
     server_id: Option<String>, */
@@ -296,7 +296,9 @@ pub fn match_try_start(ctx: &ReducerContext, match_id: u32) -> Result<(), String
     }
 
     if tm_match.auto_provision_server {
-        let available_servers = available_server_pool(&ctx.as_read_only());
+        //TODO this is not working with 2.0
+        //let available_servers = available_server_pool(&ctx.as_read_only());
+        let available_servers: Vec<RawServerV1> = Vec::new();
         if available_servers.is_empty() {
             return Err("No server is assigned to the match and there are no servers left to auto provision. Cannot start the match!".into());
         }
@@ -349,7 +351,7 @@ pub fn match_delete(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
     Ok(())
 }
 
-#[view(name=tm_match,public)]
-fn tm_match(ctx: &ViewContext) -> Query<TmMatchV1> {
+#[view(accessor=tm_match,public)]
+fn tm_match(ctx: &ViewContext) -> impl Query<TmMatchV1> {
     ctx.from.tab_tm_match().build()
 }

@@ -1,11 +1,11 @@
-use spacetimedb::{reducer, view, ReducerContext, SpacetimeType, ViewContext};
+use spacetimedb::{ReducerContext, SpacetimeType, ViewContext, reducer, view};
 
 use crate::{
     authorization::Authorization,
     competition::connection::{CompetitionConnection, NodeKindHandle},
 };
 
-#[spacetimedb::table(name = tab_competition_node_position,index(name=node_position,hash(columns=[node_variant,node_id])))]
+#[spacetimedb::table(accessor= tab_competition_node_position,index(accessor=node_position,hash(columns=[node_variant,node_id])))]
 #[derive(Debug, Clone, Copy)]
 pub struct TabCompetitionNodePosition {
     // This is just so that we can update it.
@@ -58,7 +58,7 @@ pub struct NodePositionUpdate {
     position: Vec2,
 }
 
-#[view(name=competition_node_position,public)]
+#[view(accessor=competition_node_position,public)]
 pub fn competition_node_position(ctx: &ViewContext) -> Vec<CompetitionNodePosition> {
     ctx.db
         .tab_competition_node_position()

@@ -4,7 +4,7 @@ use spacetimedb::{
 
 use crate::{authorization::Authorization, environment::env};
 
-#[cfg_attr(feature="spacetime",spacetimedb::table(name = tab_match_ghost))]
+#[cfg_attr(feature="spacetime",spacetimedb::table(accessor= tab_match_ghost))]
 pub struct MatchGhost {
     //id doesnt tell me anything
     //#[cfg_attr(feature = "spacetime", auto_inc)]

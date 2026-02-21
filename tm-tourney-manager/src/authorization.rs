@@ -29,7 +29,7 @@ pub(crate) trait Authorization {
 
 impl Authorization for ReducerContext {
     fn get_user(&self) -> Result<UserV1, String> {
-        let Some(user) = self.db.tab_user_identity().identity().find(self.sender) else {
+        let Some(user) = self.db.tab_user_identity().identity().find(self.sender()) else {
             return Err("Identity not associated with a user account.".into());
         };
 
@@ -41,7 +41,7 @@ impl Authorization for ReducerContext {
     }
 
     fn get_server(&self) -> Result<RawServerV1, String> {
-        if let Some(server) = self.db.tab_raw_server().identity().find(self.sender) {
+        if let Some(server) = self.db.tab_raw_server().identity().find(self.sender()) {
             return Ok(server);
         }
 
@@ -50,7 +50,7 @@ impl Authorization for ReducerContext {
     }
 
     fn get_worker(&self) -> Result<TmWorker, String> {
-        if let Some(worker) = self.db.tm_worker().identity().find(self.sender) {
+        if let Some(worker) = self.db.tm_worker().identity().find(self.sender()) {
             return Ok(worker);
         }
 
@@ -80,7 +80,7 @@ impl Authorization for ReducerContext {
 
 impl Authorization for ViewContext {
     fn get_user(&self) -> Result<UserV1, String> {
-        let Some(user) = self.db.tab_user_identity().identity().find(self.sender) else {
+        let Some(user) = self.db.tab_user_identity().identity().find(self.sender()) else {
             return Err("Identity not associated with a user account.".into());
         };
 
@@ -92,7 +92,7 @@ impl Authorization for ViewContext {
     }
 
     fn get_server(&self) -> Result<RawServerV1, String> {
-        if let Some(server) = self.db.tab_raw_server().identity().find(self.sender) {
+        if let Some(server) = self.db.tab_raw_server().identity().find(self.sender()) {
             return Ok(server);
         }
 
@@ -101,7 +101,7 @@ impl Authorization for ViewContext {
     }
 
     fn get_worker(&self) -> Result<TmWorker, String> {
-        if let Some(worker) = self.db.tm_worker().identity().find(self.sender) {
+        if let Some(worker) = self.db.tm_worker().identity().find(self.sender()) {
             return Ok(worker);
         }
 

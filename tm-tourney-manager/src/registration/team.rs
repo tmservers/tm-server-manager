@@ -2,7 +2,7 @@ use spacetimedb::{ReducerContext, Table, Timestamp, Uuid, reducer, table};
 
 use crate::{authorization::Authorization, competition::tab_competition};
 
-#[table(name=tab_registered_team)]
+#[table(accessor=tab_registered_team)]
 pub struct RegisteredTeam {
     account_id: Uuid,
     registered_at: Timestamp,

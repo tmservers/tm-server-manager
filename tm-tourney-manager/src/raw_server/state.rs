@@ -5,7 +5,7 @@ use spacetimedb::{
 use crate::{authorization::Authorization, raw_server::tab_raw_server__view};
 
 #[derive(Debug)]
-#[table(name = tab_raw_server_player)]
+#[table(accessor= tab_raw_server_player)]
 pub struct RawServerPlayer {
     #[primary_key]
     pub(crate) account_id: Uuid,
@@ -91,10 +91,10 @@ pub(super) fn raw_server_player_remove(
     Ok(())
 }
 
-#[view(name = raw_server_current_players, public)]
+#[view(accessor= raw_server_current_players, public)]
 fn raw_server_current_players(
     ctx: &AnonymousViewContext, /* TODO server_id */
-) -> Query<RawServerPlayer> {
+) -> impl Query<RawServerPlayer> {
     let server_id = 1u32;
     ctx.from
         .tab_raw_server_player()
@@ -102,9 +102,9 @@ fn raw_server_current_players(
         .build()
 }
 
-#[view(name = raw_server_expected_players, public)]
+#[view(accessor= raw_server_expected_players, public)]
 fn raw_server_allowed_players(ctx: &ViewContext) -> Vec<RawServerPlayer> {
-    let Some(server) = ctx.db.tab_raw_server().identity().find(ctx.sender) else {
+    let Some(server) = ctx.db.tab_raw_server().identity().find(ctx.sender()) else {
         return Vec::new();
     };
 

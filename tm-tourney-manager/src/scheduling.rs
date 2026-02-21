@@ -7,7 +7,7 @@ use crate::competition::{
     tab_competition,
 };
 
-#[table(name = tab_schedule, scheduled(on_schedule_triggered))]
+#[table(accessor= tab_schedule, scheduled(on_schedule_triggered))]
 pub struct ScheduleV1 {
     #[primary_key]
     #[auto_inc]
@@ -66,7 +66,7 @@ pub fn create_schedule(
     Ok(())
 }
 
-#[view(name= schedule,public)]
-pub fn schedule(ctx: &ViewContext) -> Query<ScheduleV1> {
+#[view(accessor= schedule,public)]
+pub fn schedule(ctx: &ViewContext) -> impl Query<ScheduleV1> {
     ctx.from.tab_schedule().build()
 }

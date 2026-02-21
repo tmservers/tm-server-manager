@@ -7,7 +7,7 @@ use crate::{authorization::Authorization, registration::RegistrationSettings};
 pub mod connection;
 
 /// Always
-#[table(name = tab_competition)]
+#[table(accessor= tab_competition)]
 pub struct CompetitionV1 {
     #[auto_inc]
     #[primary_key]
@@ -143,8 +143,8 @@ pub fn competition_registration_settings(
     Ok(())
 }
 
-#[view(name=competition,public)]
-pub fn competition(ctx: &AnonymousViewContext) -> Query<CompetitionV1> {
+#[view(accessor=competition,public)]
+pub fn competition(ctx: &AnonymousViewContext) -> impl Query<CompetitionV1> {
     ctx.from
         .tab_competition()
         //TODO this equality doesnt work atm because of enum

@@ -2,7 +2,7 @@ use std::ops::{Add, BitAnd, BitOr, Not};
 
 use crate::authorization::PermissionType;
 
-/* #[spacetimedb::table(name = tab_tournament_permission, index(name= account_and_tournament, hash(columns=[account_id,tournament_id])))]
+/* #[spacetimedb::table(accessor= tab_tournament_permission, index(name= account_and_tournament, hash(columns=[account_id,tournament_id])))]
 pub struct TournamentPermissionV1 {
     pub tournament_id: u32,
 

@@ -12,7 +12,7 @@ pub mod event;
 pub mod method;
 pub mod state;
 
-#[spacetimedb::table(name=tab_raw_server)]
+#[spacetimedb::table(accessor=tab_raw_server)]
 pub struct RawServerV1 {
     #[unique]
     pub identity: Identity,
@@ -77,7 +77,7 @@ impl RawServerV1 {
     } */
 }
 
-#[table(name=tab_raw_server_occupation)]
+#[table(accessor=tab_raw_server_occupation)]
 pub struct RawServerOccupation {
     #[primary_key]
     pub(crate) server_id: u32,
@@ -131,14 +131,14 @@ pub fn login_as_server(
         return Err("Server registration failed because credential were wrong".into());
     }
 
-    let identity = ctx.sender;
+    let identity = ctx.sender();
 
     ctx.try_with_tx::<(), String>(|ctx| {
         if let Some(mut server) = ctx.db.tab_raw_server().server_login().find(&login) {
             // The new identity is assigned to the server.
             server.set_identity(identity);
             server.set_online();
-            ctx.db.tab_raw_server().server_login().update(server);
+            ctx.db.tab_raw_server().id().update(server);
         } else {
             // Server has never been seen before so create a new one.
             let server = ctx.db.tab_raw_server().try_insert(RawServerV1 {
@@ -161,13 +161,13 @@ pub fn login_as_server(
     Ok(())
 }
 
-#[view(name = this_raw_server, public)]
+#[view(accessor= this_raw_server, public)]
 fn this_raw_server(ctx: &ViewContext) -> Option<RawServerV1> {
-    ctx.db.tab_raw_server().identity().find(ctx.sender)
+    ctx.db.tab_raw_server().identity().find(ctx.sender())
 }
 
 /// The Raw server pool are all servers of an account which are verified.
-#[view(name = raw_server_pool, public)]
+#[view(accessor= raw_server_pool, public)]
 pub(crate) fn raw_server_pool(ctx: &ViewContext) -> Vec<RawServerV1> {
     let Ok(user) = ctx.get_user() else {
         return Vec::new();
@@ -182,7 +182,7 @@ pub(crate) fn raw_server_pool(ctx: &ViewContext) -> Vec<RawServerV1> {
 }
 
 /// The Raw server pool are all servers of an account which are verified.
-#[view(name = available_server_pool, public)]
+#[view(accessor= available_server_pool, public)]
 pub(crate) fn available_server_pool(ctx: &ViewContext) -> Vec<RawServerV1> {
     let Ok(user) = ctx.get_user() else {
         return Vec::new();
@@ -204,7 +204,7 @@ pub(crate) fn available_server_pool(ctx: &ViewContext) -> Vec<RawServerV1> {
 }
 
 /// The unverified version of a server pool includes all servers of an account which are not vet verified.
-#[view(name = raw_server_pool_unverified, public)]
+#[view(accessor= raw_server_pool_unverified, public)]
 fn raw_server_pool_unverified(ctx: &ViewContext) -> Vec<RawServerV1> {
     let Ok(user) = ctx.get_user() else {
         return Vec::new();
@@ -234,7 +234,7 @@ fn raw_server_verify(ctx: &ReducerContext, server_id: u32) -> Result<(), String>
             Err("Server was already verified.".into())
         } else {
             server.verified = true;
-            ctx.db.tab_raw_server().server_login().update(server);
+            ctx.db.tab_raw_server().id().update(server);
             Ok(())
         }
     } else {

@@ -9,9 +9,9 @@ use crate::{
 };
 
 #[table(
-    name = tm_map_record,
+    accessor = tm_map_record,
     index(
-        name = record_id,
+        accessor = record_id,
         btree(columns = [map_uid, account_id]))
     ,public)] //TODO make private
 pub struct TmMapRecord {
@@ -48,7 +48,7 @@ impl TmMapRecord {
 }
 
 //TODO we need a map_uid arg or so
-#[view(name= map_record,public)]
+#[view(accessor= map_record,public)]
 pub fn map_record(ctx: &AnonymousViewContext) -> Vec<TmRecord> {
     ctx.db
         .tm_map_record()

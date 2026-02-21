@@ -38,7 +38,7 @@ fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
             .try_insert(UserStruct::new(account_id, preferred_username))?;
         ctx.db
             .tab_user_identity()
-            .try_insert(UserIdentity::new(account_id, ctx.sender))?;
+            .try_insert(UserIdentity::new(account_id, ctx.sender()))?;
 
         Ok(())
     } else {
@@ -55,8 +55,8 @@ fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
 
 #[spacetimedb::reducer(client_disconnected)]
 fn client_disconnected(ctx: &ReducerContext) {
-    if let Some(mut server) = ctx.db.tab_raw_server().identity().find(ctx.sender) {
+    if let Some(mut server) = ctx.db.tab_raw_server().identity().find(ctx.sender()) {
         server.set_offline();
-        ctx.db.tab_raw_server().server_login().update(server);
+        ctx.db.tab_raw_server().id().update(server);
     }
 }

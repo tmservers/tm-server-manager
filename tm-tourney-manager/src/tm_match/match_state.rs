@@ -2,7 +2,7 @@ use spacetimedb::table;
 use tm_server_types::event::Event;
 
 #[derive(Debug, Clone, Copy, Default)]
-#[table(name=tab_tm_match_state)]
+#[table(accessor=tab_tm_match_state)]
 pub struct TmMatchState {
     #[primary_key]
     pub(crate) id: u32,

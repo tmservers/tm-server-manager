@@ -87,7 +87,7 @@ pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
             ctx.db.tab_tm_match_state().id().update(match_state);
         }
         if match_ended {
-            ctx.db.tab_raw_server().server_login().update(server);
+            ctx.db.tab_raw_server().id().update(server);
         }
     }
     Ok(())

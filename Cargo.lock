@@ -554,6 +554,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "castaway"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dec551ab6e7578819132c713a93c022a05d60159dc86e7a7050223577484c55a"
+dependencies = [
+ "rustversion",
+]
+
+[[package]]
 name = "cc"
 version = "1.2.53"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -629,6 +638,15 @@ name = "convert_case"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6245d59a3e82a7fc217c5828a6692dbc6dfb63a0c8c90495621f7b9d79704a0e"
+
+[[package]]
+name = "convert_case"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ec182b0ca2f35d8fc196cf3404988fd8b8c739a4d270ff118a398feb0cbec1ca"
+dependencies = [
+ "unicode-segmentation",
+]
 
 [[package]]
 name = "convert_case"
@@ -1066,12 +1084,6 @@ name = "dyn-clone"
 version = "1.0.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d0881ea181b1df73ff77ffaaf9c7544ecc11e82fba9b5f27b262a3c73a332555"
-
-[[package]]
-name = "ecow"
-version = "0.2.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "78e4f79b296fbaab6ce2e22d52cb4c7f010fe0ebe7a32e34fa25885fd797bd02"
 
 [[package]]
 name = "either"
@@ -2139,6 +2151,17 @@ name = "lazy_static"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
+
+[[package]]
+name = "lean_string"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "962df00ba70ac8d5ca5c064e17e5c3d090c087fd8d21aa45096c716b169da514"
+dependencies = [
+ "castaway",
+ "itoa",
+ "ryu",
+]
 
 [[package]]
 name = "lebe"
@@ -3798,9 +3821,9 @@ dependencies = [
 
 [[package]]
 name = "spacetimedb"
-version = "1.12.0"
+version = "2.0.0-rc1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "503ac8c991a76998d4ba699ef9b7f0085d3d7c363d1fcce4219314f909746bca"
+checksum = "f54ab1b74042f86c68f50d6226028e4eeb84f2f210cfcaa9f8f980c164ae012e"
 dependencies = [
  "anyhow",
  "bytemuck",
@@ -3821,9 +3844,9 @@ dependencies = [
 
 [[package]]
 name = "spacetimedb-bindings-macro"
-version = "1.12.0"
+version = "2.0.0-rc1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1214628a7c29ee58255d511b7c4dbaaa463bc5022dba9401f264c1c85b5a891c"
+checksum = "b3a6bcb222b384e832bab8029ac9c1735d70d2f0cf042c882ef5515a5f8ed036"
 dependencies = [
  "heck 0.4.1",
  "humantime",
@@ -3835,18 +3858,18 @@ dependencies = [
 
 [[package]]
 name = "spacetimedb-bindings-sys"
-version = "1.12.0"
+version = "2.0.0-rc1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d4777d90692bade6601887a21a074b71c157b34a92a5cfc8d5ecb46a0c571094"
+checksum = "870a4f19209a6d76ff9bafd4209f8bc4f5e3137355be0ac4d992c3df1b9acb27"
 dependencies = [
  "spacetimedb-primitives",
 ]
 
 [[package]]
 name = "spacetimedb-client-api-messages"
-version = "1.12.0"
+version = "2.0.0-rc1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "745d7ab0f81e3f6333d3ee353ce314b73841fbfe06adad69ab43efa791301da3"
+checksum = "362d9afa8c21de4c61627843b4b1c1120109c7d47996e7745b6055d52067aded"
 dependencies = [
  "bytes",
  "bytestring",
@@ -3866,9 +3889,9 @@ dependencies = [
 
 [[package]]
 name = "spacetimedb-data-structures"
-version = "1.12.0"
+version = "2.0.0-rc1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b5d85162537b1eeb6eac39383e34ca27aafcbf26987753172ca3de1de1e3a838"
+checksum = "8968021ddd7c0f3914b39f9a37367ce2e861dcb7451b8c9a94b3eb140a215c9b"
 dependencies = [
  "ahash",
  "crossbeam-queue",
@@ -3881,9 +3904,9 @@ dependencies = [
 
 [[package]]
 name = "spacetimedb-lib"
-version = "1.12.0"
+version = "2.0.0-rc1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c5e91c66b10dc38cce01928d3f77313276e34c635504e54afdec6f186a2fc9c"
+checksum = "084a2cbd7f4894be998d6189c490e9d5df1fb65181e9a59f75c1ab25ee6756fe"
 dependencies = [
  "anyhow",
  "bitflags 2.10.0",
@@ -3905,9 +3928,9 @@ dependencies = [
 
 [[package]]
 name = "spacetimedb-memory-usage"
-version = "1.12.0"
+version = "2.0.0-rc1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb9c081d3ffafa9c2fa11194b4ea3329773d979e342944b0128282bcbf5d3343"
+checksum = "481bbb12425d4134e3b1fa8b9fae75d502f7765eb8efdac2135f9dd89cfb5b6c"
 dependencies = [
  "decorum",
  "ethnum",
@@ -3915,9 +3938,9 @@ dependencies = [
 
 [[package]]
 name = "spacetimedb-metrics"
-version = "1.12.0"
+version = "2.0.0-rc1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "985858969f693529c8624ce195cb747a34f7c84f3097418f595f795c0559fbd1"
+checksum = "47a84f8463bc5b940f9c518b181bc40a58987103d18b335dc764eac3365c151d"
 dependencies = [
  "arrayvec",
  "itertools 0.12.1",
@@ -3927,9 +3950,9 @@ dependencies = [
 
 [[package]]
 name = "spacetimedb-primitives"
-version = "1.12.0"
+version = "2.0.0-rc1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f0321a161fa39f0937aceb436b47115cd811212799ddaf7996a8ecac3476d8d"
+checksum = "379ff61a96779d8c13fceb96010a90adcfb06b5b8e0ecd49062932fe80ef226d"
 dependencies = [
  "bitflags 2.10.0",
  "either",
@@ -3941,18 +3964,18 @@ dependencies = [
 
 [[package]]
 name = "spacetimedb-query-builder"
-version = "1.12.0"
+version = "2.0.0-rc1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9df8137b6dc2739d4efbc6218c5fb106f1e105a1345819a74053b677bd38c429"
+checksum = "94009ecf1b5ef28cf6f76c0aa3df97284d1b6504454fd61561787ce2befdd60f"
 dependencies = [
  "spacetimedb-lib",
 ]
 
 [[package]]
 name = "spacetimedb-sats"
-version = "1.12.0"
+version = "2.0.0-rc1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f4e07b1bc933156b0cbe6b6c759e57381ce95df52c4522d9c3d71df59c01cf20"
+checksum = "4b00242441dffa6c6f1f53ddae4ad999270ba920941c589333dd58ccc42c14b0"
 dependencies = [
  "anyhow",
  "arrayvec",
@@ -3967,6 +3990,7 @@ dependencies = [
  "ethnum",
  "hex",
  "itertools 0.12.1",
+ "lean_string",
  "rand 0.9.2",
  "second-stack",
  "serde",
@@ -3982,19 +4006,20 @@ dependencies = [
 
 [[package]]
 name = "spacetimedb-schema"
-version = "1.12.0"
+version = "2.0.0-rc1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2763b4769028f111032f00b35635f6cbb0562f54a59d05775f5ea66d7b8f8d2"
+checksum = "e7e6ed668573e2c7be689f6a22a3a6ae903038291c09511a28686c241d2b0f68"
 dependencies = [
  "anyhow",
+ "convert_case 0.6.0",
  "derive_more 0.99.20",
- "ecow",
  "enum-as-inner",
  "enum-map",
  "indexmap 2.13.0",
  "insta",
  "itertools 0.12.1",
  "lazy_static",
+ "lean_string",
  "petgraph 0.6.5",
  "serde_json",
  "smallvec",
@@ -4012,9 +4037,9 @@ dependencies = [
 
 [[package]]
 name = "spacetimedb-sdk"
-version = "1.12.0"
+version = "2.0.0-rc1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "243f7b433aa0ba1d665aeb9db397b9bd40698d80817840d8fa8d8bfe74e99f00"
+checksum = "91a17feb00134e2e05bf147a7a90d26dc19ba03325e083170d7317a45551188f"
 dependencies = [
  "anymap",
  "base64 0.21.7",
@@ -4026,6 +4051,7 @@ dependencies = [
  "home",
  "http",
  "log",
+ "native-tls",
  "once_cell",
  "prometheus",
  "rand 0.9.2",
@@ -4043,9 +4069,9 @@ dependencies = [
 
 [[package]]
 name = "spacetimedb-sql-parser"
-version = "1.12.0"
+version = "2.0.0-rc1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "98cd63f69d4d6b074771830d8f8d12ce52c253179940c1bd02a50adeba7a9485"
+checksum = "7378cff41b7f6e21f70c7922a75db5917c746f31a4d3677d4f70509f3e7bce6a"
 dependencies = [
  "derive_more 0.99.20",
  "spacetimedb-lib",

@@ -5,9 +5,9 @@ use crate::tm_match::match_state::{TmMatchState, tab_tm_match_state__view};
 
 #[derive(Debug)]
 #[table(
-    name = tab_tm_match_event,
+    accessor = tab_tm_match_event,
     index(
-        name = match_round_wu,
+        accessor = match_round_wu,
         btree(columns = [match_id,round,is_warmup]))
     )]
 pub struct TmMatchEvent {
@@ -36,7 +36,7 @@ pub struct LeaderboardEntry {
 }
 
 //TODO this would need a NodeKindeHandle as entry
-#[view(name=match_leaderbaord,public)]
+#[view(accessor=match_leaderbaord,public)]
 pub fn match_leaderboard(ctx: &AnonymousViewContext) -> Vec<LeaderboardEntry> {
     /* let entries = Vec::with_capacity(8);
     for event in ctx.db.tab_tm_match_event().match_id().filter(1) {
@@ -53,7 +53,7 @@ pub struct RoundStandings {
 }
 
 /// If round 0 is supplied we take the current round.
-#[view(name=match_round,public)]
+#[view(accessor=match_round,public)]
 pub fn match_round(ctx: &AnonymousViewContext) -> Vec<RoundStandings> {
     let match_id = 1u32;
     let mut round = 0u16;

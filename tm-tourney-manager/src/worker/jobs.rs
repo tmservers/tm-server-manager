@@ -2,7 +2,7 @@ use spacetimedb::{SpacetimeType, ViewContext, view};
 
 use crate::worker::tm_worker__view;
 
-#[cfg_attr(feature = "spacetime", spacetimedb::table(name=tm_worker_jobs,index(name= worker_id,btree(columns= [tm_login]))))]
+#[cfg_attr(feature = "spacetime", spacetimedb::table(accessor=tm_worker_jobs,index(accessor= worker_id,btree(columns= [tm_login]))))]
 #[derive(Debug)]
 pub struct TmWorkerJobs {
     // The
@@ -23,10 +23,10 @@ impl TmWorkerJobs {
 #[derive(Debug, SpacetimeType)]
 pub enum JobKind {}
 
-#[view(name= my_jobs,public)]
+#[view(accessor= my_jobs,public)]
 pub fn my_jobs(ctx: &ViewContext) -> Vec<TmWorkerJobs> {
-    log::error!("Identity: {}", ctx.sender);
-    let Some(worker) = ctx.db.tm_worker().identity().find(ctx.sender) else {
+    log::error!("Identity: {}", ctx.sender());
+    let Some(worker) = ctx.db.tm_worker().identity().find(ctx.sender()) else {
         log::error!("Worker not found");
         return Vec::new();
     };
