@@ -4,8 +4,8 @@ use spacetimedb::{
 };
 
 use crate::{
-    authorization::Authorization, registration::RegistrationSettings,
-    tournament::permissions::TournamentPermissionsV1,
+    authorization::Authorization, project::permissions::ProjectPermissionsV1,
+    registration::RegistrationSettings,
 };
 
 pub mod connection;
@@ -17,7 +17,7 @@ pub struct CompetitionV1 {
     #[primary_key]
     pub id: u32,
 
-    tournament_id: u32,
+    project_id: u32,
     parent_id: u32,
 
     name: String,
@@ -37,8 +37,8 @@ pub struct CompetitionV1 {
 }
 
 impl CompetitionV1 {
-    pub(crate) fn get_tournament(&self) -> u32 {
-        self.tournament_id
+    pub(crate) fn get_project(&self) -> u32 {
+        self.project_id
     }
 
     pub(crate) fn get_comp_id(&self) -> u32 {
@@ -55,7 +55,7 @@ impl CompetitionV1 {
     pub unsafe fn new(name: String, parent_id: u32, tournament_id: u32) -> Self {
         Self {
             id: 0,
-            tournament_id,
+            project_id: tournament_id,
             parent_id,
             name,
             status: CompetitionStatus::Planning,
@@ -99,13 +99,13 @@ pub fn create_competition(
         return Err("Invalid parent_id".into());
     };
 
-    ctx.auth_builder(parent_competition.tournament_id, user.account_id)?
-        .permission(TournamentPermissionsV1::COMPETITION_CREATE)
+    ctx.auth_builder(parent_competition.project_id, user.account_id)?
+        .permission(ProjectPermissionsV1::COMPETITION_CREATE)
         .authorize()?;
 
     //SAFETY: The competition gets commnited afterwards.
     let new_competition =
-        unsafe { CompetitionV1::new(name, parent_id, parent_competition.get_tournament()) };
+        unsafe { CompetitionV1::new(name, parent_id, parent_competition.get_project()) };
     ctx.db.tab_competition().try_insert(new_competition)?;
 
     Ok(())
@@ -123,8 +123,8 @@ pub fn competition_edit_name(
         return Err("Invalid competition".into());
     };
 
-    ctx.auth_builder(competition.tournament_id, user.account_id)?
-        .permission(TournamentPermissionsV1::COMPETITION_EDIT_NAME)
+    ctx.auth_builder(competition.project_id, user.account_id)?
+        .permission(ProjectPermissionsV1::COMPETITION_EDIT_NAME)
         .authorize()?;
 
     competition.name = name;
@@ -147,8 +147,8 @@ pub fn competition_registration_settings(
         return Err("Invalid competition".into());
     };
 
-    ctx.auth_builder(competition.tournament_id, user.account_id)?
-        .permission(TournamentPermissionsV1::COMPETITION_EDIT_REGISTRATION)
+    ctx.auth_builder(competition.project_id, user.account_id)?
+        .permission(ProjectPermissionsV1::COMPETITION_EDIT_REGISTRATION)
         .authorize()?;
 
     competition.registration_settings = registration_settings;

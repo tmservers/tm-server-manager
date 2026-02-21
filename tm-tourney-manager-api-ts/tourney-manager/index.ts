@@ -43,9 +43,9 @@ import CreateCompetitionReducer from "./create_competition_reducer";
 import CreateConnectionReducer from "./create_connection_reducer";
 import CreateEnvVarReducer from "./create_env_var_reducer";
 import CreateMonitorReducer from "./create_monitor_reducer";
+import CreateProjectReducer from "./create_project_reducer";
 import CreateScheduleReducer from "./create_schedule_reducer";
 import CreateTeamReducer from "./create_team_reducer";
-import CreateTournamentReducer from "./create_tournament_reducer";
 import MatchAssignServerReducer from "./match_assign_server_reducer";
 import MatchConfiguredReducer from "./match_configured_reducer";
 import MatchCreateReducer from "./match_create_reducer";
@@ -56,16 +56,16 @@ import MatchUpdateConfigReducer from "./match_update_config_reducer";
 import MatchUpdatePreConfigReducer from "./match_update_pre_config_reducer";
 import PostEventReducer from "./post_event_reducer";
 import PostRecordReducer from "./post_record_reducer";
+import ProjectEditDatesReducer from "./project_edit_dates_reducer";
+import ProjectEditDescriptionReducer from "./project_edit_description_reducer";
+import ProjectEditNameReducer from "./project_edit_name_reducer";
+import ProjectUpdateStatusReducer from "./project_update_status_reducer";
 import RawServerPlayerAddReducer from "./raw_server_player_add_reducer";
 import RawServerPlayerRemoveReducer from "./raw_server_player_remove_reducer";
 import RawServerVerifyReducer from "./raw_server_verify_reducer";
 import RegisterPlayerReducer from "./register_player_reducer";
 import ServerMethodCallReducer from "./server_method_call_reducer";
 import ServerMethodResponseReducer from "./server_method_response_reducer";
-import TournamentEditDatesReducer from "./tournament_edit_dates_reducer";
-import TournamentEditDescriptionReducer from "./tournament_edit_description_reducer";
-import TournamentEditNameReducer from "./tournament_edit_name_reducer";
-import TournamentUpdateStatusReducer from "./tournament_update_status_reducer";
 import UnregisterPlayerReducer from "./unregister_player_reducer";
 
 // Import all procedure arg schemas
@@ -324,9 +324,9 @@ const reducersSchema = __reducers(
   __reducerSchema("create_connection", CreateConnectionReducer),
   __reducerSchema("create_env_var", CreateEnvVarReducer),
   __reducerSchema("create_monitor", CreateMonitorReducer),
+  __reducerSchema("create_project", CreateProjectReducer),
   __reducerSchema("create_schedule", CreateScheduleReducer),
   __reducerSchema("create_team", CreateTeamReducer),
-  __reducerSchema("create_tournament", CreateTournamentReducer),
   __reducerSchema("match_assign_server", MatchAssignServerReducer),
   __reducerSchema("match_configured", MatchConfiguredReducer),
   __reducerSchema("match_create", MatchCreateReducer),
@@ -337,16 +337,16 @@ const reducersSchema = __reducers(
   __reducerSchema("match_update_pre_config", MatchUpdatePreConfigReducer),
   __reducerSchema("post_event", PostEventReducer),
   __reducerSchema("post_record", PostRecordReducer),
+  __reducerSchema("project_edit_dates", ProjectEditDatesReducer),
+  __reducerSchema("project_edit_description", ProjectEditDescriptionReducer),
+  __reducerSchema("project_edit_name", ProjectEditNameReducer),
+  __reducerSchema("project_update_status", ProjectUpdateStatusReducer),
   __reducerSchema("raw_server_player_add", RawServerPlayerAddReducer),
   __reducerSchema("raw_server_player_remove", RawServerPlayerRemoveReducer),
   __reducerSchema("raw_server_verify", RawServerVerifyReducer),
   __reducerSchema("register_player", RegisterPlayerReducer),
   __reducerSchema("server_method_call", ServerMethodCallReducer),
   __reducerSchema("server_method_response", ServerMethodResponseReducer),
-  __reducerSchema("tournament_edit_dates", TournamentEditDatesReducer),
-  __reducerSchema("tournament_edit_description", TournamentEditDescriptionReducer),
-  __reducerSchema("tournament_edit_name", TournamentEditNameReducer),
-  __reducerSchema("tournament_update_status", TournamentUpdateStatusReducer),
   __reducerSchema("unregister_player", UnregisterPlayerReducer),
 );
 

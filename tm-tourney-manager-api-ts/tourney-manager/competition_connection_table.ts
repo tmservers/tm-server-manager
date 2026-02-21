@@ -16,7 +16,7 @@ import {
 
 
 export default __t.row({
-  tournamentId: __t.u32().name("tournament_id"),
+  projectId: __t.u32().name("project_id"),
   competitionId: __t.u32().name("competition_id"),
   get connectionFrom() {
     return NodeKindHandle.name("connection_from");

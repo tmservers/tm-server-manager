@@ -32,9 +32,9 @@ pub mod create_competition_reducer;
 pub mod create_connection_reducer;
 pub mod create_env_var_reducer;
 pub mod create_monitor_reducer;
+pub mod create_project_reducer;
 pub mod create_schedule_reducer;
 pub mod create_team_reducer;
-pub mod create_tournament_reducer;
 pub mod custom_type;
 pub mod end_map_end_type;
 pub mod end_map_start_type;
@@ -50,7 +50,6 @@ pub mod finish_timeout_type;
 pub mod give_up_type;
 pub mod kick_args_type;
 pub mod laps_number_type;
-pub mod leaderboard_entry_type;
 pub mod loading_map_end_type;
 pub mod loading_map_start_type;
 pub mod login_as_server_procedure;
@@ -82,8 +81,8 @@ pub mod monitoring_settings_map_type;
 pub mod monitoring_settings_type;
 pub mod my_jobs_table;
 pub mod my_match_template_table;
+pub mod my_project_v_1_type;
 pub mod my_tournament_table;
-pub mod my_tournament_v_1_type;
 pub mod node_kind_handle_type;
 pub mod node_position_update_type;
 pub mod play_loop_end_type;
@@ -98,8 +97,15 @@ pub mod points_limit_type;
 pub mod post_event_reducer;
 pub mod post_record_reducer;
 pub mod post_round_replay_procedure;
+pub mod project_edit_dates_reducer;
+pub mod project_edit_description_reducer;
+pub mod project_edit_name_reducer;
 pub mod project_role_member_type;
 pub mod project_role_type;
+pub mod project_status_schedule_v_1_type;
+pub mod project_status_type;
+pub mod project_update_status_reducer;
+pub mod project_v_1_type;
 pub mod raw_server_config_table;
 pub mod raw_server_config_type;
 pub mod raw_server_current_players_table;
@@ -123,7 +129,6 @@ pub mod registration_settings_type;
 pub mod registration_team_settings_type;
 pub mod respawn_behaviour_type;
 pub mod respawn_type;
-pub mod round_standings_type;
 pub mod round_time_type;
 pub mod rounds_per_map_type;
 pub mod rounds_type;
@@ -148,6 +153,8 @@ pub mod tm_comp_record_type;
 pub mod tm_map_record_table;
 pub mod tm_map_record_type;
 pub mod tm_match_event_type;
+pub mod tm_match_leaderboard_ext_type;
+pub mod tm_match_leaderboard_type;
 pub mod tm_match_state_type;
 pub mod tm_match_table;
 pub mod tm_match_v_1_type;
@@ -157,14 +164,7 @@ pub mod tm_server_method_response_type;
 pub mod tm_worker_jobs_type;
 pub mod tm_worker_table;
 pub mod tm_worker_type;
-pub mod tournament_edit_dates_reducer;
-pub mod tournament_edit_description_reducer;
-pub mod tournament_edit_name_reducer;
-pub mod tournament_status_schedule_v_1_type;
-pub mod tournament_status_type;
 pub mod tournament_table;
-pub mod tournament_update_status_reducer;
-pub mod tournament_v_1_type;
 pub mod unloading_map_end_type;
 pub mod unloading_map_start_type;
 pub mod unregister_player_reducer;
@@ -203,9 +203,9 @@ pub use create_competition_reducer::create_competition;
 pub use create_connection_reducer::create_connection;
 pub use create_env_var_reducer::create_env_var;
 pub use create_monitor_reducer::create_monitor;
+pub use create_project_reducer::create_project;
 pub use create_schedule_reducer::create_schedule;
 pub use create_team_reducer::create_team;
-pub use create_tournament_reducer::create_tournament;
 pub use custom_type::Custom;
 pub use end_map_end_type::EndMapEnd;
 pub use end_map_start_type::EndMapStart;
@@ -221,7 +221,6 @@ pub use finish_timeout_type::FinishTimeout;
 pub use give_up_type::GiveUp;
 pub use kick_args_type::KickArgs;
 pub use laps_number_type::LapsNumber;
-pub use leaderboard_entry_type::LeaderboardEntry;
 pub use loading_map_end_type::LoadingMapEnd;
 pub use loading_map_start_type::LoadingMapStart;
 pub use login_as_server_procedure::login_as_server;
@@ -253,8 +252,8 @@ pub use monitoring_settings_map_type::MonitoringSettingsMap;
 pub use monitoring_settings_type::MonitoringSettings;
 pub use my_jobs_table::*;
 pub use my_match_template_table::*;
+pub use my_project_v_1_type::MyProjectV1;
 pub use my_tournament_table::*;
-pub use my_tournament_v_1_type::MyTournamentV1;
 pub use node_kind_handle_type::NodeKindHandle;
 pub use node_position_update_type::NodePositionUpdate;
 pub use play_loop_end_type::PlayLoopEnd;
@@ -269,8 +268,15 @@ pub use points_limit_type::PointsLimit;
 pub use post_event_reducer::post_event;
 pub use post_record_reducer::post_record;
 pub use post_round_replay_procedure::post_round_replay;
+pub use project_edit_dates_reducer::project_edit_dates;
+pub use project_edit_description_reducer::project_edit_description;
+pub use project_edit_name_reducer::project_edit_name;
 pub use project_role_member_type::ProjectRoleMember;
 pub use project_role_type::ProjectRole;
+pub use project_status_schedule_v_1_type::ProjectStatusScheduleV1;
+pub use project_status_type::ProjectStatus;
+pub use project_update_status_reducer::project_update_status;
+pub use project_v_1_type::ProjectV1;
 pub use raw_server_config_table::*;
 pub use raw_server_config_type::RawServerConfig;
 pub use raw_server_current_players_table::*;
@@ -294,7 +300,6 @@ pub use registration_settings_type::RegistrationSettings;
 pub use registration_team_settings_type::RegistrationTeamSettings;
 pub use respawn_behaviour_type::RespawnBehaviour;
 pub use respawn_type::Respawn;
-pub use round_standings_type::RoundStandings;
 pub use round_time_type::RoundTime;
 pub use rounds_per_map_type::RoundsPerMap;
 pub use rounds_type::Rounds;
@@ -319,6 +324,8 @@ pub use tm_comp_record_type::TmCompRecord;
 pub use tm_map_record_table::*;
 pub use tm_map_record_type::TmMapRecord;
 pub use tm_match_event_type::TmMatchEvent;
+pub use tm_match_leaderboard_ext_type::TmMatchLeaderboardExt;
+pub use tm_match_leaderboard_type::TmMatchLeaderboard;
 pub use tm_match_state_type::TmMatchState;
 pub use tm_match_table::*;
 pub use tm_match_v_1_type::TmMatchV1;
@@ -328,14 +335,7 @@ pub use tm_server_method_response_type::TmServerMethodResponse;
 pub use tm_worker_jobs_type::TmWorkerJobs;
 pub use tm_worker_table::*;
 pub use tm_worker_type::TmWorker;
-pub use tournament_edit_dates_reducer::tournament_edit_dates;
-pub use tournament_edit_description_reducer::tournament_edit_description;
-pub use tournament_edit_name_reducer::tournament_edit_name;
-pub use tournament_status_schedule_v_1_type::TournamentStatusScheduleV1;
-pub use tournament_status_type::TournamentStatus;
 pub use tournament_table::*;
-pub use tournament_update_status_reducer::tournament_update_status;
-pub use tournament_v_1_type::TournamentV1;
 pub use unloading_map_end_type::UnloadingMapEnd;
 pub use unloading_map_start_type::UnloadingMapStart;
 pub use unregister_player_reducer::unregister_player;
@@ -392,6 +392,12 @@ pub enum Reducer {
         competition: u32,
         settings: MonitoringSettings,
     },
+    CreateProject {
+        name: String,
+        description: String,
+        starting_at: __sdk::Timestamp,
+        ending_at: __sdk::Timestamp,
+    },
     CreateSchedule {
         competition_id: u32,
         scheduled_at: __sdk::Timestamp,
@@ -399,12 +405,6 @@ pub enum Reducer {
     CreateTeam {
         competition_id: u32,
         name: String,
-    },
-    CreateTournament {
-        name: String,
-        description: String,
-        starting_at: __sdk::Timestamp,
-        ending_at: __sdk::Timestamp,
     },
     MatchAssignServer {
         to: u32,
@@ -444,6 +444,22 @@ pub enum Reducer {
         account_id: __sdk::Uuid,
         time: u32,
     },
+    ProjectEditDates {
+        tournament_id: u32,
+        starting_at: __sdk::Timestamp,
+        ending_at: __sdk::Timestamp,
+    },
+    ProjectEditDescription {
+        tournament_id: u32,
+        description: String,
+    },
+    ProjectEditName {
+        tournament_id: u32,
+        name: String,
+    },
+    ProjectUpdateStatus {
+        tournament_id: u32,
+    },
     RawServerPlayerAdd {
         account_id: __sdk::Uuid,
         spectator: bool,
@@ -464,22 +480,6 @@ pub enum Reducer {
     ServerMethodResponse {
         call_id: u32,
         response: MethodResponse,
-    },
-    TournamentEditDates {
-        tournament_id: u32,
-        starting_at: __sdk::Timestamp,
-        ending_at: __sdk::Timestamp,
-    },
-    TournamentEditDescription {
-        tournament_id: u32,
-        description: String,
-    },
-    TournamentEditName {
-        tournament_id: u32,
-        name: String,
-    },
-    TournamentUpdateStatus {
-        tournament_id: u32,
     },
     UnregisterPlayer {
         competition_id: u32,
@@ -502,9 +502,9 @@ impl __sdk::Reducer for Reducer {
             Reducer::CreateConnection { .. } => "create_connection",
             Reducer::CreateEnvVar { .. } => "create_env_var",
             Reducer::CreateMonitor { .. } => "create_monitor",
+            Reducer::CreateProject { .. } => "create_project",
             Reducer::CreateSchedule { .. } => "create_schedule",
             Reducer::CreateTeam { .. } => "create_team",
-            Reducer::CreateTournament { .. } => "create_tournament",
             Reducer::MatchAssignServer { .. } => "match_assign_server",
             Reducer::MatchConfigured { .. } => "match_configured",
             Reducer::MatchCreate { .. } => "match_create",
@@ -515,16 +515,16 @@ impl __sdk::Reducer for Reducer {
             Reducer::MatchUpdatePreConfig { .. } => "match_update_pre_config",
             Reducer::PostEvent { .. } => "post_event",
             Reducer::PostRecord { .. } => "post_record",
+            Reducer::ProjectEditDates { .. } => "project_edit_dates",
+            Reducer::ProjectEditDescription { .. } => "project_edit_description",
+            Reducer::ProjectEditName { .. } => "project_edit_name",
+            Reducer::ProjectUpdateStatus { .. } => "project_update_status",
             Reducer::RawServerPlayerAdd { .. } => "raw_server_player_add",
             Reducer::RawServerPlayerRemove { .. } => "raw_server_player_remove",
             Reducer::RawServerVerify { .. } => "raw_server_verify",
             Reducer::RegisterPlayer { .. } => "register_player",
             Reducer::ServerMethodCall { .. } => "server_method_call",
             Reducer::ServerMethodResponse { .. } => "server_method_response",
-            Reducer::TournamentEditDates { .. } => "tournament_edit_dates",
-            Reducer::TournamentEditDescription { .. } => "tournament_edit_description",
-            Reducer::TournamentEditName { .. } => "tournament_edit_name",
-            Reducer::TournamentUpdateStatus { .. } => "tournament_update_status",
             Reducer::UnregisterPlayer { .. } => "unregister_player",
             _ => unreachable!(),
         }
@@ -595,6 +595,17 @@ impl __sdk::Reducer for Reducer {
                 competition: competition.clone(),
                 settings: settings.clone(),
             }),
+            Reducer::CreateProject {
+                name,
+                description,
+                starting_at,
+                ending_at,
+            } => __sats::bsatn::to_vec(&create_project_reducer::CreateProjectArgs {
+                name: name.clone(),
+                description: description.clone(),
+                starting_at: starting_at.clone(),
+                ending_at: ending_at.clone(),
+            }),
             Reducer::CreateSchedule {
                 competition_id,
                 scheduled_at,
@@ -608,17 +619,6 @@ impl __sdk::Reducer for Reducer {
             } => __sats::bsatn::to_vec(&create_team_reducer::CreateTeamArgs {
                 competition_id: competition_id.clone(),
                 name: name.clone(),
-            }),
-            Reducer::CreateTournament {
-                name,
-                description,
-                starting_at,
-                ending_at,
-            } => __sats::bsatn::to_vec(&create_tournament_reducer::CreateTournamentArgs {
-                name: name.clone(),
-                description: description.clone(),
-                starting_at: starting_at.clone(),
-                ending_at: ending_at.clone(),
             }),
             Reducer::MatchAssignServer { to, server_id } => {
                 __sats::bsatn::to_vec(&match_assign_server_reducer::MatchAssignServerArgs {
@@ -682,6 +682,36 @@ impl __sdk::Reducer for Reducer {
                 account_id: account_id.clone(),
                 time: time.clone(),
             }),
+            Reducer::ProjectEditDates {
+                tournament_id,
+                starting_at,
+                ending_at,
+            } => __sats::bsatn::to_vec(&project_edit_dates_reducer::ProjectEditDatesArgs {
+                tournament_id: tournament_id.clone(),
+                starting_at: starting_at.clone(),
+                ending_at: ending_at.clone(),
+            }),
+            Reducer::ProjectEditDescription {
+                tournament_id,
+                description,
+            } => __sats::bsatn::to_vec(
+                &project_edit_description_reducer::ProjectEditDescriptionArgs {
+                    tournament_id: tournament_id.clone(),
+                    description: description.clone(),
+                },
+            ),
+            Reducer::ProjectEditName {
+                tournament_id,
+                name,
+            } => __sats::bsatn::to_vec(&project_edit_name_reducer::ProjectEditNameArgs {
+                tournament_id: tournament_id.clone(),
+                name: name.clone(),
+            }),
+            Reducer::ProjectUpdateStatus { tournament_id } => {
+                __sats::bsatn::to_vec(&project_update_status_reducer::ProjectUpdateStatusArgs {
+                    tournament_id: tournament_id.clone(),
+                })
+            }
             Reducer::RawServerPlayerAdd {
                 account_id,
                 spectator,
@@ -717,36 +747,6 @@ impl __sdk::Reducer for Reducer {
                     response: response.clone(),
                 })
             }
-            Reducer::TournamentEditDates {
-                tournament_id,
-                starting_at,
-                ending_at,
-            } => __sats::bsatn::to_vec(&tournament_edit_dates_reducer::TournamentEditDatesArgs {
-                tournament_id: tournament_id.clone(),
-                starting_at: starting_at.clone(),
-                ending_at: ending_at.clone(),
-            }),
-            Reducer::TournamentEditDescription {
-                tournament_id,
-                description,
-            } => __sats::bsatn::to_vec(
-                &tournament_edit_description_reducer::TournamentEditDescriptionArgs {
-                    tournament_id: tournament_id.clone(),
-                    description: description.clone(),
-                },
-            ),
-            Reducer::TournamentEditName {
-                tournament_id,
-                name,
-            } => __sats::bsatn::to_vec(&tournament_edit_name_reducer::TournamentEditNameArgs {
-                tournament_id: tournament_id.clone(),
-                name: name.clone(),
-            }),
-            Reducer::TournamentUpdateStatus { tournament_id } => __sats::bsatn::to_vec(
-                &tournament_update_status_reducer::TournamentUpdateStatusArgs {
-                    tournament_id: tournament_id.clone(),
-                },
-            ),
             Reducer::UnregisterPlayer { competition_id } => {
                 __sats::bsatn::to_vec(&unregister_player_reducer::UnregisterPlayerArgs {
                     competition_id: competition_id.clone(),
@@ -768,12 +768,12 @@ pub struct DbUpdate {
     competition_node_position: __sdk::TableUpdate<CompetitionNodePosition>,
     competition_record: __sdk::TableUpdate<TmRecord>,
     map_record: __sdk::TableUpdate<TmRecord>,
-    match_leaderbaord: __sdk::TableUpdate<LeaderboardEntry>,
+    match_leaderbaord: __sdk::TableUpdate<TmMatchLeaderboard>,
     match_record: __sdk::TableUpdate<TmRecord>,
-    match_round: __sdk::TableUpdate<RoundStandings>,
+    match_round: __sdk::TableUpdate<TmMatchLeaderboardExt>,
     my_jobs: __sdk::TableUpdate<TmWorkerJobs>,
     my_match_template: __sdk::TableUpdate<MatchTemplate>,
-    my_tournament: __sdk::TableUpdate<MyTournamentV1>,
+    my_tournament: __sdk::TableUpdate<MyProjectV1>,
     raw_server_config: __sdk::TableUpdate<ServerConfig>,
     raw_server_current_players: __sdk::TableUpdate<RawServerPlayer>,
     raw_server_expected_players: __sdk::TableUpdate<RawServerPlayer>,
@@ -786,7 +786,7 @@ pub struct DbUpdate {
     tm_map_record: __sdk::TableUpdate<TmMapRecord>,
     tm_match: __sdk::TableUpdate<TmMatchV1>,
     tm_worker: __sdk::TableUpdate<TmWorker>,
-    tournament: __sdk::TableUpdate<TournamentV1>,
+    tournament: __sdk::TableUpdate<ProjectV1>,
     user: __sdk::TableUpdate<UserV1>,
 }
 
@@ -930,17 +930,19 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.competition_record =
             cache.apply_diff_to_table::<TmRecord>("competition_record", &self.competition_record);
         diff.map_record = cache.apply_diff_to_table::<TmRecord>("map_record", &self.map_record);
-        diff.match_leaderbaord = cache
-            .apply_diff_to_table::<LeaderboardEntry>("match_leaderbaord", &self.match_leaderbaord);
+        diff.match_leaderbaord = cache.apply_diff_to_table::<TmMatchLeaderboard>(
+            "match_leaderbaord",
+            &self.match_leaderbaord,
+        );
         diff.match_record =
             cache.apply_diff_to_table::<TmRecord>("match_record", &self.match_record);
         diff.match_round =
-            cache.apply_diff_to_table::<RoundStandings>("match_round", &self.match_round);
+            cache.apply_diff_to_table::<TmMatchLeaderboardExt>("match_round", &self.match_round);
         diff.my_jobs = cache.apply_diff_to_table::<TmWorkerJobs>("my_jobs", &self.my_jobs);
         diff.my_match_template = cache
             .apply_diff_to_table::<MatchTemplate>("my_match_template", &self.my_match_template);
         diff.my_tournament =
-            cache.apply_diff_to_table::<MyTournamentV1>("my_tournament", &self.my_tournament);
+            cache.apply_diff_to_table::<MyProjectV1>("my_tournament", &self.my_tournament);
         diff.raw_server_config =
             cache.apply_diff_to_table::<ServerConfig>("raw_server_config", &self.raw_server_config);
         diff.raw_server_current_players = cache.apply_diff_to_table::<RawServerPlayer>(
@@ -967,7 +969,7 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.this_raw_server =
             cache.apply_diff_to_table::<RawServerV1>("this_raw_server", &self.this_raw_server);
         diff.tm_match = cache.apply_diff_to_table::<TmMatchV1>("tm_match", &self.tm_match);
-        diff.tournament = cache.apply_diff_to_table::<TournamentV1>("tournament", &self.tournament);
+        diff.tournament = cache.apply_diff_to_table::<ProjectV1>("tournament", &self.tournament);
         diff.user = cache.apply_diff_to_table::<UserV1>("user", &self.user);
 
         diff
@@ -1173,12 +1175,12 @@ pub struct AppliedDiff<'r> {
     competition_node_position: __sdk::TableAppliedDiff<'r, CompetitionNodePosition>,
     competition_record: __sdk::TableAppliedDiff<'r, TmRecord>,
     map_record: __sdk::TableAppliedDiff<'r, TmRecord>,
-    match_leaderbaord: __sdk::TableAppliedDiff<'r, LeaderboardEntry>,
+    match_leaderbaord: __sdk::TableAppliedDiff<'r, TmMatchLeaderboard>,
     match_record: __sdk::TableAppliedDiff<'r, TmRecord>,
-    match_round: __sdk::TableAppliedDiff<'r, RoundStandings>,
+    match_round: __sdk::TableAppliedDiff<'r, TmMatchLeaderboardExt>,
     my_jobs: __sdk::TableAppliedDiff<'r, TmWorkerJobs>,
     my_match_template: __sdk::TableAppliedDiff<'r, MatchTemplate>,
-    my_tournament: __sdk::TableAppliedDiff<'r, MyTournamentV1>,
+    my_tournament: __sdk::TableAppliedDiff<'r, MyProjectV1>,
     raw_server_config: __sdk::TableAppliedDiff<'r, ServerConfig>,
     raw_server_current_players: __sdk::TableAppliedDiff<'r, RawServerPlayer>,
     raw_server_expected_players: __sdk::TableAppliedDiff<'r, RawServerPlayer>,
@@ -1191,7 +1193,7 @@ pub struct AppliedDiff<'r> {
     tm_map_record: __sdk::TableAppliedDiff<'r, TmMapRecord>,
     tm_match: __sdk::TableAppliedDiff<'r, TmMatchV1>,
     tm_worker: __sdk::TableAppliedDiff<'r, TmWorker>,
-    tournament: __sdk::TableAppliedDiff<'r, TournamentV1>,
+    tournament: __sdk::TableAppliedDiff<'r, ProjectV1>,
     user: __sdk::TableAppliedDiff<'r, UserV1>,
     __unused: std::marker::PhantomData<&'r ()>,
 }
@@ -1237,13 +1239,13 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             event,
         );
         callbacks.invoke_table_row_callbacks::<TmRecord>("map_record", &self.map_record, event);
-        callbacks.invoke_table_row_callbacks::<LeaderboardEntry>(
+        callbacks.invoke_table_row_callbacks::<TmMatchLeaderboard>(
             "match_leaderbaord",
             &self.match_leaderbaord,
             event,
         );
         callbacks.invoke_table_row_callbacks::<TmRecord>("match_record", &self.match_record, event);
-        callbacks.invoke_table_row_callbacks::<RoundStandings>(
+        callbacks.invoke_table_row_callbacks::<TmMatchLeaderboardExt>(
             "match_round",
             &self.match_round,
             event,
@@ -1254,7 +1256,7 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             &self.my_match_template,
             event,
         );
-        callbacks.invoke_table_row_callbacks::<MyTournamentV1>(
+        callbacks.invoke_table_row_callbacks::<MyProjectV1>(
             "my_tournament",
             &self.my_tournament,
             event,
@@ -1307,7 +1309,7 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
         );
         callbacks.invoke_table_row_callbacks::<TmMatchV1>("tm_match", &self.tm_match, event);
         callbacks.invoke_table_row_callbacks::<TmWorker>("tm_worker", &self.tm_worker, event);
-        callbacks.invoke_table_row_callbacks::<TournamentV1>("tournament", &self.tournament, event);
+        callbacks.invoke_table_row_callbacks::<ProjectV1>("tournament", &self.tournament, event);
         callbacks.invoke_table_row_callbacks::<UserV1>("user", &self.user, event);
     }
 }

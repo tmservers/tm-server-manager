@@ -11,7 +11,7 @@ use super::registration_settings_type::RegistrationSettings;
 #[sats(crate = __lib)]
 pub struct CompetitionV1 {
     pub id: u32,
-    pub tournament_id: u32,
+    pub project_id: u32,
     pub parent_id: u32,
     pub name: String,
     pub status: CompetitionStatus,
@@ -29,7 +29,7 @@ impl __sdk::InModule for CompetitionV1 {
 /// Provides typed access to columns for query building.
 pub struct CompetitionV1Cols {
     pub id: __sdk::__query_builder::Col<CompetitionV1, u32>,
-    pub tournament_id: __sdk::__query_builder::Col<CompetitionV1, u32>,
+    pub project_id: __sdk::__query_builder::Col<CompetitionV1, u32>,
     pub parent_id: __sdk::__query_builder::Col<CompetitionV1, u32>,
     pub name: __sdk::__query_builder::Col<CompetitionV1, String>,
     pub status: __sdk::__query_builder::Col<CompetitionV1, CompetitionStatus>,
@@ -43,7 +43,7 @@ impl __sdk::__query_builder::HasCols for CompetitionV1 {
     fn cols(table_name: &'static str) -> Self::Cols {
         CompetitionV1Cols {
             id: __sdk::__query_builder::Col::new(table_name, "id"),
-            tournament_id: __sdk::__query_builder::Col::new(table_name, "tournament_id"),
+            project_id: __sdk::__query_builder::Col::new(table_name, "project_id"),
             parent_id: __sdk::__query_builder::Col::new(table_name, "parent_id"),
             name: __sdk::__query_builder::Col::new(table_name, "name"),
             status: __sdk::__query_builder::Col::new(table_name, "status"),

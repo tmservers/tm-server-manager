@@ -12,7 +12,7 @@ spacetime generate --yes --lang rust --out-dir tm-tourney-manager-api-rs/src/gen
 spacetime generate --yes --lang typescript --out-dir tm-tourney-manager-api-ts/tourney-manager --module-path tm-tourney-manager
 
 # Create tournament
-spacetime call tm-tourney-manager create_tournament "My Tournament" "This is a beautiful tournament" '{"__timestamp_micros_since_unix_epoch__": 1777132984000000}' '{"__timestamp_micros_since_unix_epoch__": 1777233084000000}'
+spacetime call tm-tourney-manager create_project "My Tournament" "This is a beautiful tournament" '{"__timestamp_micros_since_unix_epoch__": 1777132984000000}' '{"__timestamp_micros_since_unix_epoch__": 1777233084000000}'
 
 # Qualifier matches
 spacetime call tm-tourney-manager match_create "" 1 null

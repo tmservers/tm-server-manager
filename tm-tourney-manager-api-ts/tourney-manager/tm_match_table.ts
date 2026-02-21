@@ -17,7 +17,7 @@ import {
 export default __t.row({
   name: __t.string(),
   id: __t.u32(),
-  tournamentId: __t.u32().name("tournament_id"),
+  projectId: __t.u32().name("project_id"),
   competitionId: __t.u32().name("competition_id"),
   preMatchConfig: __t.u32().name("pre_match_config"),
   matchConfig: __t.u32().name("match_config"),

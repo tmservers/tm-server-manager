@@ -3,7 +3,7 @@ use spacetimedb::{ReducerContext, SpacetimeType, ViewContext, reducer, view};
 use crate::{
     authorization::Authorization,
     competition::connection::{CompetitionConnection, NodeKindHandle},
-    tournament::permissions::TournamentPermissionsV1,
+    project::permissions::ProjectPermissionsV1,
 };
 
 #[spacetimedb::table(accessor= tab_competition_node_position,index(accessor=node_position,hash(columns=[node_variant,node_id])))]
@@ -80,7 +80,7 @@ fn competition_node_position_update(
     let user_account = ctx.get_user_account()?;
     let tournament_id = node.get_tournament(ctx);
     ctx.auth_builder(tournament_id, user_account)?
-        .permission(TournamentPermissionsV1::COMPETITION_LAYOUT_EDIT)
+        .permission(ProjectPermissionsV1::COMPETITION_LAYOUT_EDIT)
         .authorize()?;
 
     let Some(mut node) = ctx
@@ -111,7 +111,7 @@ fn competition_node_positions_update(
     for item in &positions {
         let tournament_id = item.node.get_tournament(ctx);
         ctx.auth_builder(tournament_id, user_account)?
-            .permission(TournamentPermissionsV1::COMPETITION_LAYOUT_EDIT)
+            .permission(ProjectPermissionsV1::COMPETITION_LAYOUT_EDIT)
             .authorize()?;
     }
 

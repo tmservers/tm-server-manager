@@ -58,7 +58,7 @@ export const Common = __t.object("Common", {
 export type Common = __Infer<typeof Common>;
 
 export const CompetitionConnection = __t.object("CompetitionConnection", {
-  tournamentId: __t.u32(),
+  projectId: __t.u32(),
   competitionId: __t.u32(),
   get connectionFrom() {
     return NodeKindHandle;
@@ -111,7 +111,7 @@ export type CompetitionStatus = __Infer<typeof CompetitionStatus>;
 
 export const CompetitionV1 = __t.object("CompetitionV1", {
   id: __t.u32(),
-  tournamentId: __t.u32(),
+  projectId: __t.u32(),
   parentId: __t.u32(),
   name: __t.string(),
   get status() {
@@ -359,13 +359,6 @@ export const LapsNumber = __t.enum("LapsNumber", {
 });
 export type LapsNumber = __Infer<typeof LapsNumber>;
 
-export const LeaderboardEntry = __t.object("LeaderboardEntry", {
-  accountId: __t.string(),
-  accountName: __t.string(),
-  score: __t.i32(),
-});
-export type LeaderboardEntry = __Infer<typeof LeaderboardEntry>;
-
 export const LoadingMapEnd = __t.object("LoadingMapEnd", {
   restarted: __t.bool(),
   time: __t.u32(),
@@ -514,7 +507,7 @@ export const MonitoringSettingsMap = __t.object("MonitoringSettingsMap", {
 });
 export type MonitoringSettingsMap = __Infer<typeof MonitoringSettingsMap>;
 
-export const MyTournamentV1 = __t.object("MyTournamentV1", {
+export const MyProjectV1 = __t.object("MyProjectV1", {
   id: __t.u32(),
   creatorAccountId: __t.uuid(),
   creatorName: __t.string(),
@@ -523,10 +516,10 @@ export const MyTournamentV1 = __t.object("MyTournamentV1", {
   endingAt: __t.timestamp(),
   description: __t.string(),
   get status() {
-    return TournamentStatus;
+    return ProjectStatus;
   },
 });
-export type MyTournamentV1 = __Infer<typeof MyTournamentV1>;
+export type MyProjectV1 = __Infer<typeof MyProjectV1>;
 
 // The tagged union or sum type for the algebraic type `NodeKindHandle`.
 export const NodeKindHandle = __t.enum("NodeKindHandle", {
@@ -643,6 +636,38 @@ export const ProjectRoleMember = __t.object("ProjectRoleMember", {
 });
 export type ProjectRoleMember = __Infer<typeof ProjectRoleMember>;
 
+// The tagged union or sum type for the algebraic type `ProjectStatus`.
+export const ProjectStatus = __t.enum("ProjectStatus", {
+  Planning: __t.unit(),
+  Announced: __t.unit(),
+  Ongoing: __t.unit(),
+  Ended: __t.unit(),
+});
+export type ProjectStatus = __Infer<typeof ProjectStatus>;
+
+export const ProjectStatusScheduleV1 = __t.object("ProjectStatusScheduleV1", {
+  scheduledId: __t.u64(),
+  scheduledAt: __t.scheduleAt(),
+  tournamentId: __t.u32(),
+  get newStatus() {
+    return ProjectStatus;
+  },
+});
+export type ProjectStatusScheduleV1 = __Infer<typeof ProjectStatusScheduleV1>;
+
+export const ProjectV1 = __t.object("ProjectV1", {
+  name: __t.string(),
+  description: __t.string(),
+  creatorAccountId: __t.uuid(),
+  startingAt: __t.timestamp(),
+  endingAt: __t.timestamp(),
+  id: __t.u32(),
+  get status() {
+    return ProjectStatus;
+  },
+});
+export type ProjectV1 = __Infer<typeof ProjectV1>;
+
 export const RawServerConfig = __t.object("RawServerConfig", {
   id: __t.u32(),
   get config() {
@@ -749,13 +774,6 @@ export const RespawnBehaviour = __t.enum("RespawnBehaviour", {
   GiveUpNever: __t.unit(),
 });
 export type RespawnBehaviour = __Infer<typeof RespawnBehaviour>;
-
-export const RoundStandings = __t.object("RoundStandings", {
-  accountId: __t.string(),
-  accountName: __t.string(),
-  score: __t.i32(),
-});
-export type RoundStandings = __Infer<typeof RoundStandings>;
 
 // The tagged union or sum type for the algebraic type `RoundTime`.
 export const RoundTime = __t.enum("RoundTime", {
@@ -877,7 +895,7 @@ export type StartTurn = __Infer<typeof StartTurn>;
 export const TabCompetitionConnection = __t.object("TabCompetitionConnection", {
   id: __t.u32(),
   competitionId: __t.u32(),
-  tournamentId: __t.u32(),
+  projectId: __t.u32(),
   connectionFrom: __t.u32(),
   connectionTo: __t.u32(),
   connectionFromVariant: __t.u8(),
@@ -940,6 +958,21 @@ export const TmMatchEvent = __t.object("TmMatchEvent", {
 });
 export type TmMatchEvent = __Infer<typeof TmMatchEvent>;
 
+export const TmMatchLeaderboard = __t.object("TmMatchLeaderboard", {
+  accountId: __t.uuid(),
+  matchId: __t.u32(),
+  round: __t.u32(),
+  points: __t.i32(),
+  id: __t.u32(),
+});
+export type TmMatchLeaderboard = __Infer<typeof TmMatchLeaderboard>;
+
+export const TmMatchLeaderboardExt = __t.object("TmMatchLeaderboardExt", {
+  accountId: __t.uuid(),
+  checkpoints: __t.array(__t.u32()),
+});
+export type TmMatchLeaderboardExt = __Infer<typeof TmMatchLeaderboardExt>;
+
 export const TmMatchState = __t.object("TmMatchState", {
   id: __t.u32(),
   restarted: __t.u16(),
@@ -953,7 +986,7 @@ export type TmMatchState = __Infer<typeof TmMatchState>;
 export const TmMatchV1 = __t.object("TmMatchV1", {
   name: __t.string(),
   id: __t.u32(),
-  tournamentId: __t.u32(),
+  projectId: __t.u32(),
   competitionId: __t.u32(),
   preMatchConfig: __t.u32(),
   matchConfig: __t.u32(),
@@ -1009,38 +1042,6 @@ export const TmWorkerJobs = __t.object("TmWorkerJobs", {
   mapUid: __t.string(),
 });
 export type TmWorkerJobs = __Infer<typeof TmWorkerJobs>;
-
-// The tagged union or sum type for the algebraic type `TournamentStatus`.
-export const TournamentStatus = __t.enum("TournamentStatus", {
-  Planning: __t.unit(),
-  Announced: __t.unit(),
-  Ongoing: __t.unit(),
-  Ended: __t.unit(),
-});
-export type TournamentStatus = __Infer<typeof TournamentStatus>;
-
-export const TournamentStatusScheduleV1 = __t.object("TournamentStatusScheduleV1", {
-  scheduledId: __t.u64(),
-  scheduledAt: __t.scheduleAt(),
-  tournamentId: __t.u32(),
-  get newStatus() {
-    return TournamentStatus;
-  },
-});
-export type TournamentStatusScheduleV1 = __Infer<typeof TournamentStatusScheduleV1>;
-
-export const TournamentV1 = __t.object("TournamentV1", {
-  name: __t.string(),
-  description: __t.string(),
-  creatorAccountId: __t.uuid(),
-  startingAt: __t.timestamp(),
-  endingAt: __t.timestamp(),
-  id: __t.u32(),
-  get status() {
-    return TournamentStatus;
-  },
-});
-export type TournamentV1 = __Infer<typeof TournamentV1>;
 
 export const UnloadingMapEnd = __t.object("UnloadingMapEnd", {
   time: __t.u32(),

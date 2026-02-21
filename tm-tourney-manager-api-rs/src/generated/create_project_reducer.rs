@@ -6,49 +6,61 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub(super) struct TournamentEditNameArgs {
-    pub tournament_id: u32,
+pub(super) struct CreateProjectArgs {
     pub name: String,
+    pub description: String,
+    pub starting_at: __sdk::Timestamp,
+    pub ending_at: __sdk::Timestamp,
 }
 
-impl From<TournamentEditNameArgs> for super::Reducer {
-    fn from(args: TournamentEditNameArgs) -> Self {
-        Self::TournamentEditName {
-            tournament_id: args.tournament_id,
+impl From<CreateProjectArgs> for super::Reducer {
+    fn from(args: CreateProjectArgs) -> Self {
+        Self::CreateProject {
             name: args.name,
+            description: args.description,
+            starting_at: args.starting_at,
+            ending_at: args.ending_at,
         }
     }
 }
 
-impl __sdk::InModule for TournamentEditNameArgs {
+impl __sdk::InModule for CreateProjectArgs {
     type Module = super::RemoteModule;
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the reducer `tournament_edit_name`.
+/// Extension trait for access to the reducer `create_project`.
 ///
 /// Implemented for [`super::RemoteReducers`].
-pub trait tournament_edit_name {
-    /// Request that the remote module invoke the reducer `tournament_edit_name` to run as soon as possible.
+pub trait create_project {
+    /// Request that the remote module invoke the reducer `create_project` to run as soon as possible.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
-    /// /// Use [`tournament_edit_name:tournament_edit_name_then`] to run a callback after the reducer completes.
-    fn tournament_edit_name(&self, tournament_id: u32, name: String) -> __sdk::Result<()> {
-        self.tournament_edit_name_then(tournament_id, name, |_, _| {})
+    /// /// Use [`create_project:create_project_then`] to run a callback after the reducer completes.
+    fn create_project(
+        &self,
+        name: String,
+        description: String,
+        starting_at: __sdk::Timestamp,
+        ending_at: __sdk::Timestamp,
+    ) -> __sdk::Result<()> {
+        self.create_project_then(name, description, starting_at, ending_at, |_, _| {})
     }
 
-    /// Request that the remote module invoke the reducer `tournament_edit_name` to run as soon as possible,
+    /// Request that the remote module invoke the reducer `create_project` to run as soon as possible,
     /// registering `callback` to run when we are notified that the reducer completed.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed with the `callback`.
-    fn tournament_edit_name_then(
+    fn create_project_then(
         &self,
-        tournament_id: u32,
         name: String,
+        description: String,
+        starting_at: __sdk::Timestamp,
+        ending_at: __sdk::Timestamp,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -56,20 +68,24 @@ pub trait tournament_edit_name {
     ) -> __sdk::Result<()>;
 }
 
-impl tournament_edit_name for super::RemoteReducers {
-    fn tournament_edit_name_then(
+impl create_project for super::RemoteReducers {
+    fn create_project_then(
         &self,
-        tournament_id: u32,
         name: String,
+        description: String,
+        starting_at: __sdk::Timestamp,
+        ending_at: __sdk::Timestamp,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     ) -> __sdk::Result<()> {
         self.imp.invoke_reducer_with_callback(
-            TournamentEditNameArgs {
-                tournament_id,
+            CreateProjectArgs {
                 name,
+                description,
+                starting_at,
+                ending_at,
             },
             callback,
         )

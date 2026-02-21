@@ -2,7 +2,7 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN YOUR MODULE SOURCE CODE INSTEAD.
 
 #![allow(unused, clippy::all)]
-use super::round_standings_type::RoundStandings;
+use super::tm_match_leaderboard_ext_type::TmMatchLeaderboardExt;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 /// Table handle for the table `match_round`.
@@ -14,7 +14,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 /// but to directly chain method calls,
 /// like `ctx.db.match_round().on_insert(...)`.
 pub struct MatchRoundTableHandle<'ctx> {
-    imp: __sdk::TableHandle<RoundStandings>,
+    imp: __sdk::TableHandle<TmMatchLeaderboardExt>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -31,7 +31,7 @@ pub trait MatchRoundTableAccess {
 impl MatchRoundTableAccess for super::RemoteTables {
     fn match_round(&self) -> MatchRoundTableHandle<'_> {
         MatchRoundTableHandle {
-            imp: self.imp.get_table::<RoundStandings>("match_round"),
+            imp: self.imp.get_table::<TmMatchLeaderboardExt>("match_round"),
             ctx: std::marker::PhantomData,
         }
     }
@@ -41,13 +41,13 @@ pub struct MatchRoundInsertCallbackId(__sdk::CallbackId);
 pub struct MatchRoundDeleteCallbackId(__sdk::CallbackId);
 
 impl<'ctx> __sdk::Table for MatchRoundTableHandle<'ctx> {
-    type Row = RoundStandings;
+    type Row = TmMatchLeaderboardExt;
     type EventContext = super::EventContext;
 
     fn count(&self) -> u64 {
         self.imp.count()
     }
-    fn iter(&self) -> impl Iterator<Item = RoundStandings> + '_ {
+    fn iter(&self) -> impl Iterator<Item = TmMatchLeaderboardExt> + '_ {
         self.imp.iter()
     }
 
@@ -80,32 +80,32 @@ impl<'ctx> __sdk::Table for MatchRoundTableHandle<'ctx> {
 
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
-    let _table = client_cache.get_or_make_table::<RoundStandings>("match_round");
+    let _table = client_cache.get_or_make_table::<TmMatchLeaderboardExt>("match_round");
 }
 
 #[doc(hidden)]
 pub(super) fn parse_table_update(
     raw_updates: __ws::v2::TableUpdate,
-) -> __sdk::Result<__sdk::TableUpdate<RoundStandings>> {
+) -> __sdk::Result<__sdk::TableUpdate<TmMatchLeaderboardExt>> {
     __sdk::TableUpdate::parse_table_update(raw_updates).map_err(|e| {
-        __sdk::InternalError::failed_parse("TableUpdate<RoundStandings>", "TableUpdate")
+        __sdk::InternalError::failed_parse("TableUpdate<TmMatchLeaderboardExt>", "TableUpdate")
             .with_cause(e)
             .into()
     })
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for query builder access to the table `RoundStandings`.
+/// Extension trait for query builder access to the table `TmMatchLeaderboardExt`.
 ///
 /// Implemented for [`__sdk::QueryTableAccessor`].
 pub trait match_roundQueryTableAccess {
     #[allow(non_snake_case)]
-    /// Get a query builder for the table `RoundStandings`.
-    fn match_round(&self) -> __sdk::__query_builder::Table<RoundStandings>;
+    /// Get a query builder for the table `TmMatchLeaderboardExt`.
+    fn match_round(&self) -> __sdk::__query_builder::Table<TmMatchLeaderboardExt>;
 }
 
 impl match_roundQueryTableAccess for __sdk::QueryTableAccessor {
-    fn match_round(&self) -> __sdk::__query_builder::Table<RoundStandings> {
+    fn match_round(&self) -> __sdk::__query_builder::Table<TmMatchLeaderboardExt> {
         __sdk::__query_builder::Table::new("match_round")
     }
 }

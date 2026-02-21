@@ -11,6 +11,7 @@ use crate::{
         },
         tab_competition,
     },
+    project::permissions::ProjectPermissionsV1,
     raw_server::{
         RawServerOccupation, RawServerV1, available_server_pool,
         config::{RawServerConfig, tab_raw_server_config},
@@ -20,11 +21,11 @@ use crate::{
         match_state::{TmMatchState, tab_tm_match_state},
         template::tab_match_template,
     },
-    tournament::permissions::TournamentPermissionsV1,
     user::user,
 };
 
 pub mod event;
+pub mod leaderboard;
 pub mod match_state;
 pub mod players;
 pub mod template;
@@ -59,7 +60,7 @@ pub struct TmMatchV1 {
     pub(crate) id: u32,
 
     /// The tournament this match is associated with.
-    tournament_id: u32,
+    project_id: u32,
     competition_id: u32,
 
     /// The moment the server is captured by the match the pre_match_config gets loaded in.
@@ -102,8 +103,8 @@ impl TmMatchV1 {
         self.status == MatchStatus::Live
     }
 
-    pub fn get_tournament(&self) -> u32 {
-        self.tournament_id
+    pub fn get_project(&self) -> u32 {
+        self.project_id
     }
 
     pub fn get_comp_id(&self) -> u32 {
@@ -141,15 +142,15 @@ pub fn match_create(
         return Err("Invalid competition".into());
     };
 
-    ctx.auth_builder(parent_competition.get_tournament(), user)?
-        .permission(TournamentPermissionsV1::MATCH_CREATE)
+    ctx.auth_builder(parent_competition.get_project(), user)?
+        .permission(ProjectPermissionsV1::MATCH_CREATE)
         .authorize()?;
 
     // Create an uncommitted match
     let mut tm_match = TmMatchV1 {
         id: 0,
         competition_id,
-        tournament_id: parent_competition.get_tournament(),
+        project_id: parent_competition.get_project(),
         name,
         status: MatchStatus::Configuring,
         pre_match_config: 0,
@@ -224,8 +225,8 @@ pub fn match_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> {
         return Err("Match was mot found!".into());
     };
 
-    ctx.auth_builder(tm_match.tournament_id, user_account)?
-        .permission(TournamentPermissionsV1::MATCH_CONFIGURE)
+    ctx.auth_builder(tm_match.project_id, user_account)?
+        .permission(ProjectPermissionsV1::MATCH_CONFIGURE)
         .authorize()?;
 
     if tm_match.status == MatchStatus::Configuring && tm_match.match_config != 0 {
@@ -291,8 +292,8 @@ pub fn match_try_start(ctx: &ReducerContext, match_id: u32) -> Result<(), String
         return Err("Match not found!".into());
     };
 
-    ctx.auth_builder(tm_match.tournament_id, user)?
-        .permission(TournamentPermissionsV1::MATCH_CONFIGURE)
+    ctx.auth_builder(tm_match.project_id, user)?
+        .permission(ProjectPermissionsV1::MATCH_CONFIGURE)
         .authorize()?;
 
     if tm_match.match_config == 0 {
@@ -340,8 +341,8 @@ pub fn match_delete(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
         return Err(format!("Match with id: {match_id} not found."));
     };
 
-    ctx.auth_builder(tm_match.tournament_id, user)?
-        .permission(TournamentPermissionsV1::MATCH_DELETE)
+    ctx.auth_builder(tm_match.project_id, user)?
+        .permission(ProjectPermissionsV1::MATCH_DELETE)
         .authorize()?;
 
     if !ctx.db.tab_tm_match().id().delete(match_id) {

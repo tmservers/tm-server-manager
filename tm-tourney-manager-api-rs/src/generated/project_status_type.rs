@@ -7,7 +7,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 #[derive(Copy, Eq, Hash)]
-pub enum TournamentStatus {
+pub enum ProjectStatus {
     Planning,
 
     Announced,
@@ -17,6 +17,6 @@ pub enum TournamentStatus {
     Ended,
 }
 
-impl __sdk::InModule for TournamentStatus {
+impl __sdk::InModule for ProjectStatus {
     type Module = super::RemoteModule;
 }

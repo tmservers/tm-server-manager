@@ -1,6 +1,6 @@
 use spacetimedb::{ReducerContext, Uuid, table};
 
-use crate::tournament::permissions::TournamentPermissionsV1;
+use crate::project::permissions::ProjectPermissionsV1;
 
 #[table(accessor= tab_project_role)]
 pub struct ProjectRole {
@@ -17,8 +17,8 @@ pub struct ProjectRole {
 }
 
 impl ProjectRole {
-    pub(crate) fn get_permissions1(&self) -> TournamentPermissionsV1 {
-        TournamentPermissionsV1(self.permissions1)
+    pub(crate) fn get_permissions1(&self) -> ProjectPermissionsV1 {
+        ProjectPermissionsV1(self.permissions1)
     }
 }
 

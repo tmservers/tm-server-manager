@@ -4,41 +4,41 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::tournament_status_type::TournamentStatus;
+use super::project_status_type::ProjectStatus;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct TournamentV1 {
+pub struct ProjectV1 {
     pub name: String,
     pub description: String,
     pub creator_account_id: __sdk::Uuid,
     pub starting_at: __sdk::Timestamp,
     pub ending_at: __sdk::Timestamp,
     pub id: u32,
-    pub status: TournamentStatus,
+    pub status: ProjectStatus,
 }
 
-impl __sdk::InModule for TournamentV1 {
+impl __sdk::InModule for ProjectV1 {
     type Module = super::RemoteModule;
 }
 
-/// Column accessor struct for the table `TournamentV1`.
+/// Column accessor struct for the table `ProjectV1`.
 ///
 /// Provides typed access to columns for query building.
-pub struct TournamentV1Cols {
-    pub name: __sdk::__query_builder::Col<TournamentV1, String>,
-    pub description: __sdk::__query_builder::Col<TournamentV1, String>,
-    pub creator_account_id: __sdk::__query_builder::Col<TournamentV1, __sdk::Uuid>,
-    pub starting_at: __sdk::__query_builder::Col<TournamentV1, __sdk::Timestamp>,
-    pub ending_at: __sdk::__query_builder::Col<TournamentV1, __sdk::Timestamp>,
-    pub id: __sdk::__query_builder::Col<TournamentV1, u32>,
-    pub status: __sdk::__query_builder::Col<TournamentV1, TournamentStatus>,
+pub struct ProjectV1Cols {
+    pub name: __sdk::__query_builder::Col<ProjectV1, String>,
+    pub description: __sdk::__query_builder::Col<ProjectV1, String>,
+    pub creator_account_id: __sdk::__query_builder::Col<ProjectV1, __sdk::Uuid>,
+    pub starting_at: __sdk::__query_builder::Col<ProjectV1, __sdk::Timestamp>,
+    pub ending_at: __sdk::__query_builder::Col<ProjectV1, __sdk::Timestamp>,
+    pub id: __sdk::__query_builder::Col<ProjectV1, u32>,
+    pub status: __sdk::__query_builder::Col<ProjectV1, ProjectStatus>,
 }
 
-impl __sdk::__query_builder::HasCols for TournamentV1 {
-    type Cols = TournamentV1Cols;
+impl __sdk::__query_builder::HasCols for ProjectV1 {
+    type Cols = ProjectV1Cols;
     fn cols(table_name: &'static str) -> Self::Cols {
-        TournamentV1Cols {
+        ProjectV1Cols {
             name: __sdk::__query_builder::Col::new(table_name, "name"),
             description: __sdk::__query_builder::Col::new(table_name, "description"),
             creator_account_id: __sdk::__query_builder::Col::new(table_name, "creator_account_id"),
@@ -50,19 +50,19 @@ impl __sdk::__query_builder::HasCols for TournamentV1 {
     }
 }
 
-/// Indexed column accessor struct for the table `TournamentV1`.
+/// Indexed column accessor struct for the table `ProjectV1`.
 ///
 /// Provides typed access to indexed columns for query building.
-pub struct TournamentV1IxCols {
-    pub creator_account_id: __sdk::__query_builder::IxCol<TournamentV1, __sdk::Uuid>,
-    pub id: __sdk::__query_builder::IxCol<TournamentV1, u32>,
-    pub name: __sdk::__query_builder::IxCol<TournamentV1, String>,
+pub struct ProjectV1IxCols {
+    pub creator_account_id: __sdk::__query_builder::IxCol<ProjectV1, __sdk::Uuid>,
+    pub id: __sdk::__query_builder::IxCol<ProjectV1, u32>,
+    pub name: __sdk::__query_builder::IxCol<ProjectV1, String>,
 }
 
-impl __sdk::__query_builder::HasIxCols for TournamentV1 {
-    type IxCols = TournamentV1IxCols;
+impl __sdk::__query_builder::HasIxCols for ProjectV1 {
+    type IxCols = ProjectV1IxCols;
     fn ix_cols(table_name: &'static str) -> Self::IxCols {
-        TournamentV1IxCols {
+        ProjectV1IxCols {
             creator_account_id: __sdk::__query_builder::IxCol::new(
                 table_name,
                 "creator_account_id",
@@ -73,4 +73,4 @@ impl __sdk::__query_builder::HasIxCols for TournamentV1 {
     }
 }
 
-impl __sdk::__query_builder::CanBeLookupTable for TournamentV1 {}
+impl __sdk::__query_builder::CanBeLookupTable for ProjectV1 {}

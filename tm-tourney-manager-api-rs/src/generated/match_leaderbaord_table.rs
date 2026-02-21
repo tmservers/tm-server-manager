@@ -2,7 +2,7 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN YOUR MODULE SOURCE CODE INSTEAD.
 
 #![allow(unused, clippy::all)]
-use super::leaderboard_entry_type::LeaderboardEntry;
+use super::tm_match_leaderboard_type::TmMatchLeaderboard;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 /// Table handle for the table `match_leaderbaord`.
@@ -14,7 +14,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 /// but to directly chain method calls,
 /// like `ctx.db.match_leaderbaord().on_insert(...)`.
 pub struct MatchLeaderbaordTableHandle<'ctx> {
-    imp: __sdk::TableHandle<LeaderboardEntry>,
+    imp: __sdk::TableHandle<TmMatchLeaderboard>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -31,7 +31,9 @@ pub trait MatchLeaderbaordTableAccess {
 impl MatchLeaderbaordTableAccess for super::RemoteTables {
     fn match_leaderbaord(&self) -> MatchLeaderbaordTableHandle<'_> {
         MatchLeaderbaordTableHandle {
-            imp: self.imp.get_table::<LeaderboardEntry>("match_leaderbaord"),
+            imp: self
+                .imp
+                .get_table::<TmMatchLeaderboard>("match_leaderbaord"),
             ctx: std::marker::PhantomData,
         }
     }
@@ -41,13 +43,13 @@ pub struct MatchLeaderbaordInsertCallbackId(__sdk::CallbackId);
 pub struct MatchLeaderbaordDeleteCallbackId(__sdk::CallbackId);
 
 impl<'ctx> __sdk::Table for MatchLeaderbaordTableHandle<'ctx> {
-    type Row = LeaderboardEntry;
+    type Row = TmMatchLeaderboard;
     type EventContext = super::EventContext;
 
     fn count(&self) -> u64 {
         self.imp.count()
     }
-    fn iter(&self) -> impl Iterator<Item = LeaderboardEntry> + '_ {
+    fn iter(&self) -> impl Iterator<Item = TmMatchLeaderboard> + '_ {
         self.imp.iter()
     }
 
@@ -80,32 +82,32 @@ impl<'ctx> __sdk::Table for MatchLeaderbaordTableHandle<'ctx> {
 
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
-    let _table = client_cache.get_or_make_table::<LeaderboardEntry>("match_leaderbaord");
+    let _table = client_cache.get_or_make_table::<TmMatchLeaderboard>("match_leaderbaord");
 }
 
 #[doc(hidden)]
 pub(super) fn parse_table_update(
     raw_updates: __ws::v2::TableUpdate,
-) -> __sdk::Result<__sdk::TableUpdate<LeaderboardEntry>> {
+) -> __sdk::Result<__sdk::TableUpdate<TmMatchLeaderboard>> {
     __sdk::TableUpdate::parse_table_update(raw_updates).map_err(|e| {
-        __sdk::InternalError::failed_parse("TableUpdate<LeaderboardEntry>", "TableUpdate")
+        __sdk::InternalError::failed_parse("TableUpdate<TmMatchLeaderboard>", "TableUpdate")
             .with_cause(e)
             .into()
     })
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for query builder access to the table `LeaderboardEntry`.
+/// Extension trait for query builder access to the table `TmMatchLeaderboard`.
 ///
 /// Implemented for [`__sdk::QueryTableAccessor`].
 pub trait match_leaderbaordQueryTableAccess {
     #[allow(non_snake_case)]
-    /// Get a query builder for the table `LeaderboardEntry`.
-    fn match_leaderbaord(&self) -> __sdk::__query_builder::Table<LeaderboardEntry>;
+    /// Get a query builder for the table `TmMatchLeaderboard`.
+    fn match_leaderbaord(&self) -> __sdk::__query_builder::Table<TmMatchLeaderboard>;
 }
 
 impl match_leaderbaordQueryTableAccess for __sdk::QueryTableAccessor {
-    fn match_leaderbaord(&self) -> __sdk::__query_builder::Table<LeaderboardEntry> {
+    fn match_leaderbaord(&self) -> __sdk::__query_builder::Table<TmMatchLeaderboard> {
         __sdk::__query_builder::Table::new("match_leaderbaord")
     }
 }

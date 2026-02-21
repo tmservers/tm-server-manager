@@ -11,7 +11,7 @@ use super::match_status_type::MatchStatus;
 pub struct TmMatchV1 {
     pub name: String,
     pub id: u32,
-    pub tournament_id: u32,
+    pub project_id: u32,
     pub competition_id: u32,
     pub pre_match_config: u32,
     pub match_config: u32,
@@ -30,7 +30,7 @@ impl __sdk::InModule for TmMatchV1 {
 pub struct TmMatchV1Cols {
     pub name: __sdk::__query_builder::Col<TmMatchV1, String>,
     pub id: __sdk::__query_builder::Col<TmMatchV1, u32>,
-    pub tournament_id: __sdk::__query_builder::Col<TmMatchV1, u32>,
+    pub project_id: __sdk::__query_builder::Col<TmMatchV1, u32>,
     pub competition_id: __sdk::__query_builder::Col<TmMatchV1, u32>,
     pub pre_match_config: __sdk::__query_builder::Col<TmMatchV1, u32>,
     pub match_config: __sdk::__query_builder::Col<TmMatchV1, u32>,
@@ -45,7 +45,7 @@ impl __sdk::__query_builder::HasCols for TmMatchV1 {
         TmMatchV1Cols {
             name: __sdk::__query_builder::Col::new(table_name, "name"),
             id: __sdk::__query_builder::Col::new(table_name, "id"),
-            tournament_id: __sdk::__query_builder::Col::new(table_name, "tournament_id"),
+            project_id: __sdk::__query_builder::Col::new(table_name, "project_id"),
             competition_id: __sdk::__query_builder::Col::new(table_name, "competition_id"),
             pre_match_config: __sdk::__query_builder::Col::new(table_name, "pre_match_config"),
             match_config: __sdk::__query_builder::Col::new(table_name, "match_config"),

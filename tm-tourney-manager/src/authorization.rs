@@ -3,14 +3,14 @@ use std::ops::{Add, BitAnd, BitOr, Not};
 use spacetimedb::{JwtClaims, ReducerContext, TxContext, Uuid, ViewContext};
 
 use crate::{
-    raw_server::{RawServerV1, tab_raw_server, tab_raw_server__view},
-    tournament::{
-        permissions::TournamentPermissionsV1,
+    project::{
+        permissions::ProjectPermissionsV1,
         roles::{
             tab_project_role, tab_project_role__view, tab_project_role_members,
             tab_project_role_members__view,
         },
     },
+    raw_server::{RawServerV1, tab_raw_server, tab_raw_server__view},
     user::{UserV1, tab_user, tab_user__view, tab_user_identity, tab_user_identity__view},
     worker::{TmWorker, tm_worker, tm_worker__view},
 };
@@ -25,7 +25,7 @@ pub(crate) trait Authorization {
         &self,
         tournament_id: u32,
         account_id: Uuid,
-    ) -> Result<AuthBuilder<TournamentPermissionsV1>, String>;
+    ) -> Result<AuthBuilder<ProjectPermissionsV1>, String>;
 }
 
 impl Authorization for ReducerContext {
@@ -71,13 +71,13 @@ impl Authorization for ReducerContext {
         &self,
         project_id: u32,
         account_id: Uuid,
-    ) -> Result<AuthBuilder<TournamentPermissionsV1>, String> {
+    ) -> Result<AuthBuilder<ProjectPermissionsV1>, String> {
         let permissions = self
             .db
             .tab_project_role_members()
             .user_roles()
             .filter((project_id, account_id))
-            .fold(TournamentPermissionsV1::default(), |acc, member| {
+            .fold(ProjectPermissionsV1::default(), |acc, member| {
                 if let Some(role) = self.db.tab_project_role().id().find(member.get_role_id()) {
                     return acc | role.get_permissions1();
                 }
@@ -130,13 +130,13 @@ impl Authorization for ViewContext {
         &self,
         project_id: u32,
         account_id: Uuid,
-    ) -> Result<AuthBuilder<TournamentPermissionsV1>, String> {
+    ) -> Result<AuthBuilder<ProjectPermissionsV1>, String> {
         let permissions = self
             .db
             .tab_project_role_members()
             .user_roles()
             .filter((project_id, account_id))
-            .fold(TournamentPermissionsV1::default(), |acc, member| {
+            .fold(ProjectPermissionsV1::default(), |acc, member| {
                 if let Some(role) = self.db.tab_project_role().id().find(member.get_role_id()) {
                     return acc | role.get_permissions1();
                 }

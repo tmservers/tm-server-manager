@@ -11,7 +11,9 @@ import {
 } from "spacetimedb";
 
 export default __t.row({
-  accountId: __t.string().name("account_id"),
-  accountName: __t.string().name("account_name"),
-  score: __t.i32(),
+  accountId: __t.uuid().name("account_id"),
+  matchId: __t.u32().name("match_id"),
+  round: __t.u32(),
+  points: __t.i32(),
+  id: __t.u32(),
 });

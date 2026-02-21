@@ -6,53 +6,46 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub(super) struct TournamentEditDescriptionArgs {
+pub(super) struct ProjectUpdateStatusArgs {
     pub tournament_id: u32,
-    pub description: String,
 }
 
-impl From<TournamentEditDescriptionArgs> for super::Reducer {
-    fn from(args: TournamentEditDescriptionArgs) -> Self {
-        Self::TournamentEditDescription {
+impl From<ProjectUpdateStatusArgs> for super::Reducer {
+    fn from(args: ProjectUpdateStatusArgs) -> Self {
+        Self::ProjectUpdateStatus {
             tournament_id: args.tournament_id,
-            description: args.description,
         }
     }
 }
 
-impl __sdk::InModule for TournamentEditDescriptionArgs {
+impl __sdk::InModule for ProjectUpdateStatusArgs {
     type Module = super::RemoteModule;
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the reducer `tournament_edit_description`.
+/// Extension trait for access to the reducer `project_update_status`.
 ///
 /// Implemented for [`super::RemoteReducers`].
-pub trait tournament_edit_description {
-    /// Request that the remote module invoke the reducer `tournament_edit_description` to run as soon as possible.
+pub trait project_update_status {
+    /// Request that the remote module invoke the reducer `project_update_status` to run as soon as possible.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
-    /// /// Use [`tournament_edit_description:tournament_edit_description_then`] to run a callback after the reducer completes.
-    fn tournament_edit_description(
-        &self,
-        tournament_id: u32,
-        description: String,
-    ) -> __sdk::Result<()> {
-        self.tournament_edit_description_then(tournament_id, description, |_, _| {})
+    /// /// Use [`project_update_status:project_update_status_then`] to run a callback after the reducer completes.
+    fn project_update_status(&self, tournament_id: u32) -> __sdk::Result<()> {
+        self.project_update_status_then(tournament_id, |_, _| {})
     }
 
-    /// Request that the remote module invoke the reducer `tournament_edit_description` to run as soon as possible,
+    /// Request that the remote module invoke the reducer `project_update_status` to run as soon as possible,
     /// registering `callback` to run when we are notified that the reducer completed.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed with the `callback`.
-    fn tournament_edit_description_then(
+    fn project_update_status_then(
         &self,
         tournament_id: u32,
-        description: String,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -60,22 +53,16 @@ pub trait tournament_edit_description {
     ) -> __sdk::Result<()>;
 }
 
-impl tournament_edit_description for super::RemoteReducers {
-    fn tournament_edit_description_then(
+impl project_update_status for super::RemoteReducers {
+    fn project_update_status_then(
         &self,
         tournament_id: u32,
-        description: String,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     ) -> __sdk::Result<()> {
-        self.imp.invoke_reducer_with_callback(
-            TournamentEditDescriptionArgs {
-                tournament_id,
-                description,
-            },
-            callback,
-        )
+        self.imp
+            .invoke_reducer_with_callback(ProjectUpdateStatusArgs { tournament_id }, callback)
     }
 }

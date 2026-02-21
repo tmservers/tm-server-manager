@@ -7,29 +7,19 @@ use crate::{NADEO, SERVER_CONFIG, TRACKMANIA};
 
 pub fn config_update(_: &EventContext, new_config: &ServerConfig) {
     let new = new_config.clone();
-    let Some(old_config) = SERVER_CONFIG.get() else {
-        //The server has not been synced yet. Bootstrapping it.
-        tokio::task::block_in_place(move || {
-            tokio::runtime::Handle::current().block_on(async move {
-                let server = TRACKMANIA.wait();
-                _ = server
-                    .chat_send_server_massage("[tm-server-bridge] Bootstrapping the server!")
-                    .await;
-                configure(new).await;
-                _ = server
-                    .chat_send_server_massage("[tm-server-bridge] Bootstrapping successfull :>")
-                    .await;
-            });
-        });
-        return;
-    };
 
-    if old_config == new_config {
+    let old_config = SERVER_CONFIG.get();
+
+    if old_config.is_some() && old_config.unwrap() == new_config {
         return;
     }
 
     tokio::task::block_in_place(move || {
         tokio::runtime::Handle::current().block_on(async move {
+            let server = TRACKMANIA.wait();
+            _ = server
+                .chat_send_server_massage("[tmservers.live] New configuration is loading.")
+                .await;
             configure(new).await;
         });
     });
@@ -66,7 +56,7 @@ pub async fn configure(server_config: ServerConfig) {
     //if loaded.is_ok_and(|l| l == 2) {
     if loaded.is_ok() {
         _ = local_server
-            .chat_send_server_massage("[tm-server-bridge]   Server configuration synchronized.")
+            .chat_send_server_massage("[tmservers.live] Configuration synchronized.")
             .await;
 
         _ = local_server.next_map().await;
@@ -112,12 +102,12 @@ pub(crate) async fn get_maps(maps: impl Iterator<Item = &String>) {
             .wait()
             .write_file(&format!("{}.Map.Gbx", &map_info.map_uid), map_file.to_vec())
             .await;
-        let _: Result<bool, ClientError> = TRACKMANIA
-            .wait()
-            .call(
-                "ChatSendServerMessage",
-                format!("[tm-server-bridge]   Imported map: {}$fff.", &map_info.name),
-            )
-            .await;
+        /* let _: Result<bool, ClientError> = TRACKMANIA
+        .wait()
+        .call(
+            "ChatSendServerMessage",
+            format!("[tm-server-bridge]   Imported map: {}$fff.", &map_info.name),
+        )
+        .await; */
     }
 }

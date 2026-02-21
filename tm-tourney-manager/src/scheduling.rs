@@ -58,7 +58,7 @@ pub fn create_schedule(
         scheduled_id: 0,
         scheduled_at: ScheduleAt::Time(scheduled_at),
         competition_id,
-        tournament_id: parent_competition.get_tournament(),
+        tournament_id: parent_competition.get_project(),
     };
 
     ctx.db.tab_schedule().try_insert(schedule)?;

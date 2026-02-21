@@ -4,11 +4,11 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::tournament_status_type::TournamentStatus;
+use super::project_status_type::ProjectStatus;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct MyTournamentV1 {
+pub struct MyProjectV1 {
     pub id: u32,
     pub creator_account_id: __sdk::Uuid,
     pub creator_name: String,
@@ -16,31 +16,31 @@ pub struct MyTournamentV1 {
     pub starting_at: __sdk::Timestamp,
     pub ending_at: __sdk::Timestamp,
     pub description: String,
-    pub status: TournamentStatus,
+    pub status: ProjectStatus,
 }
 
-impl __sdk::InModule for MyTournamentV1 {
+impl __sdk::InModule for MyProjectV1 {
     type Module = super::RemoteModule;
 }
 
-/// Column accessor struct for the table `MyTournamentV1`.
+/// Column accessor struct for the table `MyProjectV1`.
 ///
 /// Provides typed access to columns for query building.
-pub struct MyTournamentV1Cols {
-    pub id: __sdk::__query_builder::Col<MyTournamentV1, u32>,
-    pub creator_account_id: __sdk::__query_builder::Col<MyTournamentV1, __sdk::Uuid>,
-    pub creator_name: __sdk::__query_builder::Col<MyTournamentV1, String>,
-    pub name: __sdk::__query_builder::Col<MyTournamentV1, String>,
-    pub starting_at: __sdk::__query_builder::Col<MyTournamentV1, __sdk::Timestamp>,
-    pub ending_at: __sdk::__query_builder::Col<MyTournamentV1, __sdk::Timestamp>,
-    pub description: __sdk::__query_builder::Col<MyTournamentV1, String>,
-    pub status: __sdk::__query_builder::Col<MyTournamentV1, TournamentStatus>,
+pub struct MyProjectV1Cols {
+    pub id: __sdk::__query_builder::Col<MyProjectV1, u32>,
+    pub creator_account_id: __sdk::__query_builder::Col<MyProjectV1, __sdk::Uuid>,
+    pub creator_name: __sdk::__query_builder::Col<MyProjectV1, String>,
+    pub name: __sdk::__query_builder::Col<MyProjectV1, String>,
+    pub starting_at: __sdk::__query_builder::Col<MyProjectV1, __sdk::Timestamp>,
+    pub ending_at: __sdk::__query_builder::Col<MyProjectV1, __sdk::Timestamp>,
+    pub description: __sdk::__query_builder::Col<MyProjectV1, String>,
+    pub status: __sdk::__query_builder::Col<MyProjectV1, ProjectStatus>,
 }
 
-impl __sdk::__query_builder::HasCols for MyTournamentV1 {
-    type Cols = MyTournamentV1Cols;
+impl __sdk::__query_builder::HasCols for MyProjectV1 {
+    type Cols = MyProjectV1Cols;
     fn cols(table_name: &'static str) -> Self::Cols {
-        MyTournamentV1Cols {
+        MyProjectV1Cols {
             id: __sdk::__query_builder::Col::new(table_name, "id"),
             creator_account_id: __sdk::__query_builder::Col::new(table_name, "creator_account_id"),
             creator_name: __sdk::__query_builder::Col::new(table_name, "creator_name"),

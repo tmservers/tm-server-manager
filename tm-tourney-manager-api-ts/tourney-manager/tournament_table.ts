@@ -10,7 +10,7 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 import {
-  TournamentStatus,
+  ProjectStatus,
 } from "./types";
 
 
@@ -22,6 +22,6 @@ export default __t.row({
   endingAt: __t.timestamp().name("ending_at"),
   id: __t.u32(),
   get status() {
-    return TournamentStatus;
+    return ProjectStatus;
   },
 });

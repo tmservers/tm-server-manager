@@ -6,15 +6,15 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub(super) struct TournamentEditDatesArgs {
+pub(super) struct ProjectEditDatesArgs {
     pub tournament_id: u32,
     pub starting_at: __sdk::Timestamp,
     pub ending_at: __sdk::Timestamp,
 }
 
-impl From<TournamentEditDatesArgs> for super::Reducer {
-    fn from(args: TournamentEditDatesArgs) -> Self {
-        Self::TournamentEditDates {
+impl From<ProjectEditDatesArgs> for super::Reducer {
+    fn from(args: ProjectEditDatesArgs) -> Self {
+        Self::ProjectEditDates {
             tournament_id: args.tournament_id,
             starting_at: args.starting_at,
             ending_at: args.ending_at,
@@ -22,37 +22,37 @@ impl From<TournamentEditDatesArgs> for super::Reducer {
     }
 }
 
-impl __sdk::InModule for TournamentEditDatesArgs {
+impl __sdk::InModule for ProjectEditDatesArgs {
     type Module = super::RemoteModule;
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the reducer `tournament_edit_dates`.
+/// Extension trait for access to the reducer `project_edit_dates`.
 ///
 /// Implemented for [`super::RemoteReducers`].
-pub trait tournament_edit_dates {
-    /// Request that the remote module invoke the reducer `tournament_edit_dates` to run as soon as possible.
+pub trait project_edit_dates {
+    /// Request that the remote module invoke the reducer `project_edit_dates` to run as soon as possible.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
-    /// /// Use [`tournament_edit_dates:tournament_edit_dates_then`] to run a callback after the reducer completes.
-    fn tournament_edit_dates(
+    /// /// Use [`project_edit_dates:project_edit_dates_then`] to run a callback after the reducer completes.
+    fn project_edit_dates(
         &self,
         tournament_id: u32,
         starting_at: __sdk::Timestamp,
         ending_at: __sdk::Timestamp,
     ) -> __sdk::Result<()> {
-        self.tournament_edit_dates_then(tournament_id, starting_at, ending_at, |_, _| {})
+        self.project_edit_dates_then(tournament_id, starting_at, ending_at, |_, _| {})
     }
 
-    /// Request that the remote module invoke the reducer `tournament_edit_dates` to run as soon as possible,
+    /// Request that the remote module invoke the reducer `project_edit_dates` to run as soon as possible,
     /// registering `callback` to run when we are notified that the reducer completed.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed with the `callback`.
-    fn tournament_edit_dates_then(
+    fn project_edit_dates_then(
         &self,
         tournament_id: u32,
         starting_at: __sdk::Timestamp,
@@ -64,8 +64,8 @@ pub trait tournament_edit_dates {
     ) -> __sdk::Result<()>;
 }
 
-impl tournament_edit_dates for super::RemoteReducers {
-    fn tournament_edit_dates_then(
+impl project_edit_dates for super::RemoteReducers {
+    fn project_edit_dates_then(
         &self,
         tournament_id: u32,
         starting_at: __sdk::Timestamp,
@@ -76,7 +76,7 @@ impl tournament_edit_dates for super::RemoteReducers {
             + 'static,
     ) -> __sdk::Result<()> {
         self.imp.invoke_reducer_with_callback(
-            TournamentEditDatesArgs {
+            ProjectEditDatesArgs {
                 tournament_id,
                 starting_at,
                 ending_at,

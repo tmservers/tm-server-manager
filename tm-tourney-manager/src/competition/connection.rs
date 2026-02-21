@@ -6,9 +6,9 @@ use crate::{
         connection::connection_data::{CompetitionConnectionData, tab_competition_connection_data},
         tab_competition,
     },
+    project::permissions::ProjectPermissionsV1,
     scheduling::tab_schedule,
     tm_match::tab_tm_match,
-    tournament::permissions::TournamentPermissionsV1,
 };
 
 pub(super) mod connection_data;
@@ -28,7 +28,7 @@ pub struct TabCompetitionConnection {
     competition_id: u32,
 
     //Maybe not necessary if we can expose another view with arg or something like that.
-    tournament_id: u32,
+    project_id: u32,
 
     connection_from: u32,
     connection_to: u32,
@@ -57,8 +57,7 @@ pub enum ConnectionSettings {
     Data,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-#[cfg_attr(feature = "spacetime", derive(spacetimedb::SpacetimeType))]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, SpacetimeType)]
 pub enum NodeKindHandle {
     MatchV1(u32),
     CompetitionV1(u32),
@@ -106,14 +105,14 @@ impl NodeKindHandle {
         match self {
             NodeKindHandle::MatchV1(m) => {
                 if let Some(ma) = ctx.db.tab_tm_match().id().find(m) {
-                    ma.get_tournament()
+                    ma.get_project()
                 } else {
                     u32::MAX
                 }
             }
             NodeKindHandle::CompetitionV1(c) => {
                 if let Some(co) = ctx.db.tab_competition().id().find(c) {
-                    co.get_tournament()
+                    co.get_project()
                 } else {
                     u32::MAX
                 }
@@ -193,10 +192,10 @@ pub fn create_connection(
         );
     }
 
-    let tournament_id = connection_from.get_tournament(ctx);
+    let project_id = connection_from.get_tournament(ctx);
 
-    ctx.auth_builder(tournament_id, account_id)?
-        .permission(TournamentPermissionsV1::COMPETITION_CONNECTION_EDIT)
+    ctx.auth_builder(project_id, account_id)?
+        .permission(ProjectPermissionsV1::COMPETITION_CONNECTION_EDIT)
         .authorize()?;
 
     //TODO FIXME: Detect cycles and reject.
@@ -224,7 +223,7 @@ pub fn create_connection(
         .tab_competition_connection()
         .try_insert(TabCompetitionConnection {
             id: 0,
-            tournament_id,
+            project_id,
             competition_id: from_comp,
             connection_from,
             connection_to,
@@ -252,7 +251,7 @@ pub fn create_connection(
 
 #[derive(Debug, SpacetimeType)]
 pub struct CompetitionConnection {
-    tournament_id: u32,
+    project_id: u32,
     competition_id: u32,
 
     connection_from: NodeKindHandle,
@@ -269,7 +268,7 @@ pub fn competition_connection(ctx: &ViewContext) -> Vec<CompetitionConnection> {
         //TODO actually make a view arg to filter not return everything.
         .filter(1u32..u32::MAX)
         .map(|v| CompetitionConnection {
-            tournament_id: v.tournament_id,
+            project_id: v.project_id,
             competition_id: v.competition_id,
             connection_from: NodeKindHandle::combine(v.connection_from_variant, v.connection_from),
             connection_to: NodeKindHandle::combine(v.connection_to_variant, v.connection_to),
@@ -296,7 +295,7 @@ pub fn internal_graph_resolution_node_finished(
         .filter(competition_id)
         .filter(|c| !c.resolved)
         .map(|t| CompetitionConnection {
-            tournament_id: t.tournament_id,
+            project_id: t.project_id,
             competition_id: t.competition_id,
             connection_from: NodeKindHandle::combine(t.connection_from_variant, t.connection_from),
             connection_to: NodeKindHandle::combine(t.connection_to_variant, t.connection_to),

@@ -16,7 +16,7 @@ pub mod registration;
 pub mod scheduling;
 pub mod tm_match;
 pub mod tm_server;
-pub mod tournament;
+pub mod project;
 pub mod user;
 pub mod worker;
 
@@ -50,8 +50,7 @@ fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
         // Annonymous connections are used for:
         // - Servers
         // - Workers
-        // - General purpose applications
-        // And dont have the full access for features. (Mostly read perms)
+        // - Read only general purpose applications and dont need full access for features.
         log::info!("Connected Annonymously");
         Ok(())
     }

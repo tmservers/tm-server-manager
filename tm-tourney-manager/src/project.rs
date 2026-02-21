@@ -6,7 +6,7 @@ use spacetimedb::{
 use crate::{
     authorization::Authorization,
     competition::{CompetitionV1, tab_competition},
-    tournament::permissions::TournamentPermissionsV1,
+    project::permissions::ProjectPermissionsV1,
     user::{tab_user__view, tab_user_identity__view},
 };
 
@@ -16,8 +16,8 @@ mod status_schedule;
 
 /// A tournament is a logical grouping of competitions and also the only way to obtain a competition in the first place.
 /// It does not provide functionality in of itself but is responsible for all the metadata.
-#[table(accessor= tab_tournament)]
-pub struct TournamentV1 {
+#[table(accessor= tab_project)]
+pub struct ProjectV1 {
     #[unique]
     name: String,
     description: String,
@@ -32,13 +32,13 @@ pub struct TournamentV1 {
     #[primary_key]
     pub id: u32,
 
-    status: TournamentStatus,
+    status: ProjectStatus,
 }
 
-impl TournamentV1 {}
+impl ProjectV1 {}
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, SpacetimeType)]
-pub enum TournamentStatus {
+pub enum ProjectStatus {
     // public API cant query it
     Planning,
     // API is public
@@ -49,17 +49,17 @@ pub enum TournamentStatus {
     Ended,
 }
 
-impl TournamentStatus {
+impl ProjectStatus {
     //TODO this method cannot be used because of custom type
     fn is_public(&self) -> bool {
-        *self != TournamentStatus::Planning
+        *self != ProjectStatus::Planning
     }
 }
 
 /// Requires name, description, starting and ending timestamps.
 /// Description can be empty.
 #[reducer]
-fn create_tournament(
+fn create_project(
     ctx: &ReducerContext,
     name: String,
     description: String,
@@ -68,11 +68,11 @@ fn create_tournament(
 ) -> Result<(), String> {
     let user = ctx.get_user()?;
 
-    let tournament = ctx.db.tab_tournament().try_insert(TournamentV1 {
+    let tournament = ctx.db.tab_project().try_insert(ProjectV1 {
         id: 0,
         name: name.clone(),
         creator_account_id: user.account_id,
-        status: TournamentStatus::Planning,
+        status: ProjectStatus::Planning,
         description,
         starting_at,
         ending_at,
@@ -86,51 +86,47 @@ fn create_tournament(
 }
 
 #[spacetimedb::reducer]
-fn tournament_edit_name(
-    ctx: &ReducerContext,
-    tournament_id: u32,
-    name: String,
-) -> Result<(), String> {
+fn project_edit_name(ctx: &ReducerContext, tournament_id: u32, name: String) -> Result<(), String> {
     let user = ctx.get_user()?;
     ctx.auth_builder(tournament_id, user.account_id)?
-        .permission(TournamentPermissionsV1::PROJECT_EDIT_NAME)
+        .permission(ProjectPermissionsV1::PROJECT_EDIT_NAME)
         .authorize()?;
 
-    let Some(mut tournament) = ctx.db.tab_tournament().id().find(tournament_id) else {
+    let Some(mut tournament) = ctx.db.tab_project().id().find(tournament_id) else {
         return Err("Supplied tournament_id incorrect.".into());
     };
 
     tournament.name = name;
 
-    ctx.db.tab_tournament().id().update(tournament);
+    ctx.db.tab_project().id().update(tournament);
 
     Ok(())
 }
 
 #[spacetimedb::reducer]
-fn tournament_edit_description(
+fn project_edit_description(
     ctx: &ReducerContext,
     tournament_id: u32,
     description: String,
 ) -> Result<(), String> {
     let user = ctx.get_user()?;
     ctx.auth_builder(tournament_id, user.account_id)?
-        .permission(TournamentPermissionsV1::PROJECT_EDIT_DESCRIPTION)
+        .permission(ProjectPermissionsV1::PROJECT_EDIT_DESCRIPTION)
         .authorize()?;
 
-    let Some(mut tournament) = ctx.db.tab_tournament().id().find(tournament_id) else {
+    let Some(mut tournament) = ctx.db.tab_project().id().find(tournament_id) else {
         return Err("Supplied tournament_id incorrect.".into());
     };
 
     tournament.description = description;
 
-    ctx.db.tab_tournament().id().update(tournament);
+    ctx.db.tab_project().id().update(tournament);
 
     Ok(())
 }
 
 #[spacetimedb::reducer]
-fn tournament_edit_dates(
+fn project_edit_dates(
     ctx: &ReducerContext,
     tournament_id: u32,
     starting_at: Timestamp,
@@ -138,25 +134,25 @@ fn tournament_edit_dates(
 ) -> Result<(), String> {
     let user = ctx.get_user()?;
     ctx.auth_builder(tournament_id, user.account_id)?
-        .permission(TournamentPermissionsV1::PROJECT_EDIT_DATE)
+        .permission(ProjectPermissionsV1::PROJECT_EDIT_DATE)
         .authorize()?;
 
-    let Some(mut tournament) = ctx.db.tab_tournament().id().find(tournament_id) else {
+    let Some(mut project) = ctx.db.tab_project().id().find(tournament_id) else {
         return Err("Supplied tournament_id incorrect.".into());
     };
 
     let current_time = ctx.timestamp;
 
-    if tournament.status != TournamentStatus::Planning {
+    if project.status != ProjectStatus::Planning {
         // Don't allow modifying starting_at if tournament already started
-        if tournament.starting_at != starting_at && current_time >= tournament.starting_at {
+        if project.starting_at != starting_at && current_time >= project.starting_at {
             return Err(
                 "Cannot modify start date of a tournament that has already started.".into(),
             );
         }
 
         // Don't allow modifying ending_at if tournament already ended
-        if tournament.ending_at != ending_at && current_time >= tournament.ending_at {
+        if project.ending_at != ending_at && current_time >= project.ending_at {
             return Err("Cannot modify end date of a tournament that has already ended.".into());
         }
     }
@@ -166,72 +162,72 @@ fn tournament_edit_dates(
         return Err("Ending date cannot be before starting date.".into());
     }
 
-    tournament.starting_at = starting_at;
-    tournament.ending_at = ending_at;
+    project.starting_at = starting_at;
+    project.ending_at = ending_at;
 
     // Check if the current status needs to be updated based on the new dates
-    if tournament.status == TournamentStatus::Announced && current_time >= starting_at {
+    if project.status == ProjectStatus::Announced && current_time >= starting_at {
         // Announced and starting time passed
-        tournament.status = TournamentStatus::Ongoing;
+        project.status = ProjectStatus::Ongoing;
 
         if current_time >= ending_at {
             // Ending time also passed
-            tournament.status = TournamentStatus::Ended;
+            project.status = ProjectStatus::Ended;
         }
-    } else if tournament.status == TournamentStatus::Ongoing && current_time >= ending_at {
+    } else if project.status == ProjectStatus::Ongoing && current_time >= ending_at {
         // Ongoing and ending time passed
-        tournament.status = TournamentStatus::Ended;
+        project.status = ProjectStatus::Ended;
     }
 
-    tournament = ctx.db.tab_tournament().id().update(tournament);
+    project = ctx.db.tab_project().id().update(project);
 
     // Schedule the next status change if applicable
-    status_schedule::schedule_tournament_status_change(ctx, &tournament)?;
+    status_schedule::schedule_project_status_change(ctx, &project)?;
 
     Ok(())
 }
 
 #[spacetimedb::reducer]
-fn tournament_update_status(ctx: &ReducerContext, tournament_id: u32) -> Result<(), String> {
+fn project_update_status(ctx: &ReducerContext, tournament_id: u32) -> Result<(), String> {
     let user = ctx.get_user()?;
 
-    let Some(mut tournament) = ctx.db.tab_tournament().id().find(tournament_id) else {
+    let Some(mut tournament) = ctx.db.tab_project().id().find(tournament_id) else {
         return Err("Supplied tournament_id incorrect.".into());
     };
 
-    if tournament.status != TournamentStatus::Planning {
+    if tournament.status != ProjectStatus::Planning {
         return Err("Tournament status can only be updated from Planning state.".into());
     }
 
     let current_time = ctx.timestamp;
 
     if current_time < tournament.starting_at {
-        tournament.status = TournamentStatus::Announced;
+        tournament.status = ProjectStatus::Announced;
     } else if current_time >= tournament.starting_at && current_time < tournament.ending_at {
-        tournament.status = TournamentStatus::Ongoing;
+        tournament.status = ProjectStatus::Ongoing;
     } else {
-        tournament.status = TournamentStatus::Ended;
+        tournament.status = ProjectStatus::Ended;
     }
 
-    tournament = ctx.db.tab_tournament().id().update(tournament);
+    tournament = ctx.db.tab_project().id().update(tournament);
 
     // Schedule the next status change
-    status_schedule::schedule_tournament_status_change(ctx, &tournament)?;
+    status_schedule::schedule_project_status_change(ctx, &tournament)?;
 
     Ok(())
 }
 
 #[view(accessor=tournament,public)]
-pub fn tournament(ctx: &AnonymousViewContext) -> impl Query<TournamentV1> {
+pub fn tournament(ctx: &AnonymousViewContext) -> impl Query<ProjectV1> {
     ctx.from
-        .tab_tournament()
+        .tab_project()
         //TODO this equality doesnt work atm because of enum
         //.r#where(|t| t.status.ne(TournamentStatus::Planning))
         .build()
 }
 
 #[derive(Debug, SpacetimeType)]
-pub struct MyTournamentV1 {
+pub struct MyProjectV1 {
     id: u32,
 
     creator_account_id: Uuid,
@@ -244,11 +240,11 @@ pub struct MyTournamentV1 {
 
     description: String,
 
-    status: TournamentStatus,
+    status: ProjectStatus,
 }
 
 #[view(accessor=my_tournament,public)]
-pub fn my_tournament(ctx: &ViewContext) -> Vec<MyTournamentV1> {
+pub fn my_project(ctx: &ViewContext) -> Vec<MyProjectV1> {
     let id = if let Some(user) = ctx.db.tab_user_identity().identity().find(ctx.sender()) {
         user.account_id
     } else {
@@ -260,10 +256,10 @@ pub fn my_tournament(ctx: &ViewContext) -> Vec<MyTournamentV1> {
     };
 
     ctx.db
-        .tab_tournament()
+        .tab_project()
         .creator_account_id()
         .filter(id)
-        .map(|t| MyTournamentV1 {
+        .map(|t| MyProjectV1 {
             id: t.id,
             creator_account_id: t.creator_account_id,
             creator_name: user.get_name().to_string(),

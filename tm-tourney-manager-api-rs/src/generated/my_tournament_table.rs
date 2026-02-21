@@ -2,8 +2,8 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN YOUR MODULE SOURCE CODE INSTEAD.
 
 #![allow(unused, clippy::all)]
-use super::my_tournament_v_1_type::MyTournamentV1;
-use super::tournament_status_type::TournamentStatus;
+use super::my_project_v_1_type::MyProjectV1;
+use super::project_status_type::ProjectStatus;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 /// Table handle for the table `my_tournament`.
@@ -15,7 +15,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 /// but to directly chain method calls,
 /// like `ctx.db.my_tournament().on_insert(...)`.
 pub struct MyTournamentTableHandle<'ctx> {
-    imp: __sdk::TableHandle<MyTournamentV1>,
+    imp: __sdk::TableHandle<MyProjectV1>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -32,7 +32,7 @@ pub trait MyTournamentTableAccess {
 impl MyTournamentTableAccess for super::RemoteTables {
     fn my_tournament(&self) -> MyTournamentTableHandle<'_> {
         MyTournamentTableHandle {
-            imp: self.imp.get_table::<MyTournamentV1>("my_tournament"),
+            imp: self.imp.get_table::<MyProjectV1>("my_tournament"),
             ctx: std::marker::PhantomData,
         }
     }
@@ -42,13 +42,13 @@ pub struct MyTournamentInsertCallbackId(__sdk::CallbackId);
 pub struct MyTournamentDeleteCallbackId(__sdk::CallbackId);
 
 impl<'ctx> __sdk::Table for MyTournamentTableHandle<'ctx> {
-    type Row = MyTournamentV1;
+    type Row = MyProjectV1;
     type EventContext = super::EventContext;
 
     fn count(&self) -> u64 {
         self.imp.count()
     }
-    fn iter(&self) -> impl Iterator<Item = MyTournamentV1> + '_ {
+    fn iter(&self) -> impl Iterator<Item = MyProjectV1> + '_ {
         self.imp.iter()
     }
 
@@ -81,32 +81,32 @@ impl<'ctx> __sdk::Table for MyTournamentTableHandle<'ctx> {
 
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
-    let _table = client_cache.get_or_make_table::<MyTournamentV1>("my_tournament");
+    let _table = client_cache.get_or_make_table::<MyProjectV1>("my_tournament");
 }
 
 #[doc(hidden)]
 pub(super) fn parse_table_update(
     raw_updates: __ws::v2::TableUpdate,
-) -> __sdk::Result<__sdk::TableUpdate<MyTournamentV1>> {
+) -> __sdk::Result<__sdk::TableUpdate<MyProjectV1>> {
     __sdk::TableUpdate::parse_table_update(raw_updates).map_err(|e| {
-        __sdk::InternalError::failed_parse("TableUpdate<MyTournamentV1>", "TableUpdate")
+        __sdk::InternalError::failed_parse("TableUpdate<MyProjectV1>", "TableUpdate")
             .with_cause(e)
             .into()
     })
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for query builder access to the table `MyTournamentV1`.
+/// Extension trait for query builder access to the table `MyProjectV1`.
 ///
 /// Implemented for [`__sdk::QueryTableAccessor`].
 pub trait my_tournamentQueryTableAccess {
     #[allow(non_snake_case)]
-    /// Get a query builder for the table `MyTournamentV1`.
-    fn my_tournament(&self) -> __sdk::__query_builder::Table<MyTournamentV1>;
+    /// Get a query builder for the table `MyProjectV1`.
+    fn my_tournament(&self) -> __sdk::__query_builder::Table<MyProjectV1>;
 }
 
 impl my_tournamentQueryTableAccess for __sdk::QueryTableAccessor {
-    fn my_tournament(&self) -> __sdk::__query_builder::Table<MyTournamentV1> {
+    fn my_tournament(&self) -> __sdk::__query_builder::Table<MyProjectV1> {
         __sdk::__query_builder::Table::new("my_tournament")
     }
 }
