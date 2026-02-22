@@ -8,16 +8,13 @@ mod r#match;
 /// All entries to a leaderboard should have a ghost associated with it.
 #[derive(Debug, SpacetimeType)]
 pub struct TmRecord {
-    pub map_uid: String,
     pub account_id: Uuid,
+    pub ghost: Uuid,
 
-    pub timestamp: Timestamp,
-
-    pub time: u32,
-
+    pub map_uid: String,
     pub zone: String,
     pub player_name: String,
 
-    //TODO: figure this out
-    pub ghost: String,
+    pub timestamp: Timestamp,
+    pub time: u32,
 }

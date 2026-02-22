@@ -35,7 +35,7 @@ impl TmMapRecord {
             timestamp: self.timestamp,
             time: self.time,
             //TODO
-            ghost: "".into(),
+            ghost: Uuid::NIL,
             //TODO
             zone: "".into(),
             player_name: "".into(),
