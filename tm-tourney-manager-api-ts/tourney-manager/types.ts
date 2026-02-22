@@ -571,9 +571,9 @@ export const Player = __t.object("Player", {
   name: __t.string(),
   team: __t.i32(),
   rank: __t.u32(),
-  roundPoints: __t.u32(),
-  mapPoints: __t.u32(),
-  matchPoints: __t.u32(),
+  roundPoints: __t.i32(),
+  mapPoints: __t.i32(),
+  matchPoints: __t.i32(),
   get bestRacetime() {
     return RoundTime;
   },
@@ -798,7 +798,7 @@ export const ReverseCup = __t.object("ReverseCup", {
     return RoundsPerMap;
   },
   useTieBreaker: __t.bool(),
-  startingPoints: __t.u32(),
+  startingPoints: __t.i32(),
   disableLastChance: __t.bool(),
   allowFastForwardRounds: __t.bool(),
   fastForwardPointsRepartition: __t.bool(),

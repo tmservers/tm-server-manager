@@ -20,11 +20,11 @@ pub struct Player {
     rank: u32,
 
     #[cfg_attr(feature = "serde", serde(rename = "roundpoints"))]
-    round_points: u32,
+    round_points: i32,
     #[cfg_attr(feature = "serde", serde(rename = "mappoints"))]
-    map_points: u32,
+    map_points: i32,
     #[cfg_attr(feature = "serde", serde(rename = "matchpoints"))]
-    match_points: u32,
+    match_points: i32,
 
     #[cfg_attr(feature = "serde", serde(rename = "bestracetime"))]
     best_racetime: RoundTime,

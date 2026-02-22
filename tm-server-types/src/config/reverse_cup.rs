@@ -16,7 +16,7 @@ pub struct ReverseCup {
 
     //New settings introduced
     /// The amount of points each player receives at the start
-    pub starting_points: u32,
+    pub starting_points: i32,
     /// When a player reach 0 points he is automatically eliminated
     pub disable_last_chance: bool,
     /// If whatever the issue of the round, all players will be in Last Chance,

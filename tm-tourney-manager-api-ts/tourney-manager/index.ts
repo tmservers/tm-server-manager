@@ -99,7 +99,6 @@ import ScheduleRow from "./schedule_table";
 import ThisRawServerRow from "./this_raw_server_table";
 import TmMapRecordRow from "./tm_map_record_table";
 import TmMatchRow from "./tm_match_table";
-import TmWorkerRow from "./tm_worker_table";
 import UserRow from "./user_table";
 
 /** Type-only namespace exports for generated type groups. */
@@ -121,21 +120,6 @@ const tablesSchema = __schema({
       { name: 'tm_map_record_id_key', constraint: 'unique', columns: ['id'] },
     ],
   }, TmMapRecordRow),
-  tm_worker: __table({
-    name: 'tm_worker',
-    indexes: [
-      { name: 'identity', algorithm: 'btree', columns: [
-        'identity',
-      ] },
-      { name: 'tm_login', algorithm: 'btree', columns: [
-        'tmLogin',
-      ] },
-    ],
-    constraints: [
-      { name: 'tm_worker_identity_key', constraint: 'unique', columns: ['identity'] },
-      { name: 'tm_worker_tm_login_key', constraint: 'unique', columns: ['tmLogin'] },
-    ],
-  }, TmWorkerRow),
   available_server_pool: __table({
     name: 'available_server_pool',
     indexes: [

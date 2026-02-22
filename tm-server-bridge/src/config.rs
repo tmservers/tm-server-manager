@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use tm_server_controller::{ClientError, method::XmlRpcMethods};
 use tm_tourney_manager_api_rs::{EventContext, ServerConfig};
 
-use crate::{NADEO, SERVER_CONFIG, TRACKMANIA};
+use crate::{NADEO, SERVER_CONFIG, TRACKMANIA, TRACKMANIA_FILES};
 
 pub fn config_update(_: &EventContext, new_config: &ServerConfig) {
     let new = new_config.clone();
@@ -38,15 +38,17 @@ pub async fn configure(server_config: ServerConfig) {
 
     let config = configuration.into_xml();
 
-    let written = local_server
-        .write_file("MatchSettings/manager.txt", config.into())
-        .await;
+    tracing::info!("Attempt to load configuration: {config}");
 
-    //Configuration was successfully saved.
-    if written.is_ok_and(|r| r) {
-        // Load all maps to make them accessible locally
-        get_maps(configuration.iter_maps()).await;
+    let full_path = TRACKMANIA_FILES.wait().clone() + "/Maps/MatchSettings/manager.txt";
+
+    if let Err(error) = std::fs::write(&full_path, config) {
+        tracing::error!("Could not write the configuration file: {error}");
+        return;
     }
+
+    // Load all maps to make them accessible locally
+    get_maps(configuration.iter_maps()).await;
 
     let loaded = local_server
         .load_match_settings("MatchSettings/manager.txt")

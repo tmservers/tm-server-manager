@@ -115,7 +115,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             tm_server_password,
             tm_account_id,
             |_, result| {
-                let Ok(Ok(dh)) = result else {
+                if result.is_ok() && result.unwrap().is_ok() {
+                    tracing::info!("Successfully connected to tmservers.live!")
+                } else {
+                    tracing::error!("Could not successfully authenticate as a server!");
                     std::process::exit(1)
                 };
             },
@@ -195,7 +198,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     match signal::ctrl_c().await {
         Ok(()) => {}
         Err(err) => {
-            eprintln!("Unable to listen for shutdown signal: {}", err);
+            tracing::error!("Unable to listen for shutdown signal: {}", err);
             // we also shut down in case of error
         }
     }
@@ -205,17 +208,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
 /// Our `on_connect_error` callback: print the error, then exit the process.
 fn on_connect_error(_ctx: &ErrorContext, err: Error) {
-    eprintln!("SpacetimeDB connection error: {:?}", err);
+    tracing::error!("SpacetimeDB connection error: {:?}", err);
     std::process::exit(1);
 }
 
 /// Our `on_disconnect` callback: print a note, then exit the process.
 fn on_disconnected(_ctx: &ErrorContext, err: Option<Error>) {
     if let Some(err) = err {
-        eprintln!("Disconnected from SpacetimeDB: {}", err);
+        tracing::error!("Disconnected from SpacetimeDB: {}", err);
         std::process::exit(1);
     } else {
-        println!("Disconnected.");
+        tracing::error!("Disconnected.");
         std::process::exit(0);
     }
 }

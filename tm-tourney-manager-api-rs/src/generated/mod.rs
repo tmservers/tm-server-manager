@@ -165,7 +165,6 @@ pub mod tm_monitoring_type;
 pub mod tm_record_type;
 pub mod tm_server_method_response_type;
 pub mod tm_worker_jobs_type;
-pub mod tm_worker_table;
 pub mod tm_worker_type;
 pub mod unloading_map_end_type;
 pub mod unloading_map_start_type;
@@ -338,7 +337,6 @@ pub use tm_monitoring_type::TmMonitoring;
 pub use tm_record_type::TmRecord;
 pub use tm_server_method_response_type::TmServerMethodResponse;
 pub use tm_worker_jobs_type::TmWorkerJobs;
-pub use tm_worker_table::*;
 pub use tm_worker_type::TmWorker;
 pub use unloading_map_end_type::UnloadingMapEnd;
 pub use unloading_map_start_type::UnloadingMapStart;
@@ -789,7 +787,6 @@ pub struct DbUpdate {
     this_raw_server: __sdk::TableUpdate<RawServerV1>,
     tm_map_record: __sdk::TableUpdate<TmMapRecord>,
     tm_match: __sdk::TableUpdate<TmMatchV1>,
-    tm_worker: __sdk::TableUpdate<TmWorker>,
     user: __sdk::TableUpdate<UserV1>,
 }
 
@@ -874,9 +871,6 @@ impl TryFrom<__ws::v2::TransactionUpdate> for DbUpdate {
                 "tm_match" => db_update
                     .tm_match
                     .append(tm_match_table::parse_table_update(table_update)?),
-                "tm_worker" => db_update
-                    .tm_worker
-                    .append(tm_worker_table::parse_table_update(table_update)?),
                 "user" => db_update
                     .user
                     .append(user_table::parse_table_update(table_update)?),
@@ -909,9 +903,6 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.tm_map_record = cache
             .apply_diff_to_table::<TmMapRecord>("tm_map_record", &self.tm_map_record)
             .with_updates_by_pk(|row| &row.id);
-        diff.tm_worker = cache
-            .apply_diff_to_table::<TmWorker>("tm_worker", &self.tm_worker)
-            .with_updates_by_pk(|row| &row.tm_login);
         diff.available_server_pool = cache.apply_diff_to_table::<RawServerV1>(
             "available_server_pool",
             &self.available_server_pool,
@@ -1055,9 +1046,6 @@ impl __sdk::DbUpdate for DbUpdate {
                 "tm_match" => db_update
                     .tm_match
                     .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
-                "tm_worker" => db_update
-                    .tm_worker
-                    .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
                 "user" => db_update
                     .user
                     .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
@@ -1149,9 +1137,6 @@ impl __sdk::DbUpdate for DbUpdate {
                 "tm_match" => db_update
                     .tm_match
                     .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
-                "tm_worker" => db_update
-                    .tm_worker
-                    .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
                 "user" => db_update
                     .user
                     .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
@@ -1195,7 +1180,6 @@ pub struct AppliedDiff<'r> {
     this_raw_server: __sdk::TableAppliedDiff<'r, RawServerV1>,
     tm_map_record: __sdk::TableAppliedDiff<'r, TmMapRecord>,
     tm_match: __sdk::TableAppliedDiff<'r, TmMatchV1>,
-    tm_worker: __sdk::TableAppliedDiff<'r, TmWorker>,
     user: __sdk::TableAppliedDiff<'r, UserV1>,
     __unused: std::marker::PhantomData<&'r ()>,
 }
@@ -1307,7 +1291,6 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             event,
         );
         callbacks.invoke_table_row_callbacks::<TmMatchV1>("tm_match", &self.tm_match, event);
-        callbacks.invoke_table_row_callbacks::<TmWorker>("tm_worker", &self.tm_worker, event);
         callbacks.invoke_table_row_callbacks::<UserV1>("user", &self.user, event);
     }
 }
@@ -1978,7 +1961,6 @@ impl __sdk::SpacetimeModule for RemoteModule {
         this_raw_server_table::register_table(client_cache);
         tm_map_record_table::register_table(client_cache);
         tm_match_table::register_table(client_cache);
-        tm_worker_table::register_table(client_cache);
         user_table::register_table(client_cache);
     }
     const ALL_TABLE_NAMES: &'static [&'static str] = &[
@@ -2007,7 +1989,6 @@ impl __sdk::SpacetimeModule for RemoteModule {
         "this_raw_server",
         "tm_map_record",
         "tm_match",
-        "tm_worker",
         "user",
     ];
 }

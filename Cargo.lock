@@ -4605,6 +4605,8 @@ dependencies = [
  "gbx-header",
  "log",
  "petgraph 0.8.3",
+ "serde",
+ "serde_json",
  "spacetimedb",
  "tm-server-types",
 ]

@@ -18,7 +18,7 @@ pub struct ReverseCup {
     pub points_repartition: Vec<u32>,
     pub rounds_per_map: RoundsPerMap,
     pub use_tie_breaker: bool,
-    pub starting_points: u32,
+    pub starting_points: i32,
     pub disable_last_chance: bool,
     pub allow_fast_forward_rounds: bool,
     pub fast_forward_points_repartition: bool,

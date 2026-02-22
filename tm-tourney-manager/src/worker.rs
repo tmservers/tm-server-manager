@@ -2,7 +2,7 @@ use spacetimedb::{Identity, ProcedureContext, Table};
 
 pub mod jobs;
 
-#[cfg_attr(feature = "spacetime", spacetimedb::table(accessor=tm_worker, public))]
+#[spacetimedb::table(accessor=tm_worker)]
 pub struct TmWorker {
     /// Trackmania server logins are unique.
     #[primary_key]
@@ -25,7 +25,7 @@ impl TmWorker {
 
 /// Elevates an annonymous user to a trackmania server.
 /// password of the server doesn't get saved but rather verified for validity.
-#[cfg_attr(feature = "spacetime", spacetimedb::procedure)]
+#[spacetimedb::procedure]
 pub fn login_as_worker(
     ctx: &mut ProcedureContext,
     login: String,

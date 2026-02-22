@@ -25,7 +25,7 @@ impl ProjectStatusScheduleV1 {
     }
 }
 
-#[cfg_attr(feature = "spacetime", spacetimedb::reducer)]
+#[spacetimedb::reducer]
 fn on_project_status_schedule_triggered(
     ctx: &ReducerContext,
     arg: ProjectStatusScheduleV1,

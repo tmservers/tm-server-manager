@@ -16,9 +16,12 @@ crate-type = ["cdylib"]
 
 [dependencies]
 log = "0.4"
-spacetimedb = { workspace = true, optional = true }
-tm-server-types = { path = "../tm-server-types" }
+spacetimedb = { workspace = true }
+tm-server-types = { path = "../tm-server-types", features = ["spacetime"] }
 gbx-header = "0"
+
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
 
 #gbx-rs.workspace = true
 base64.workspace = true
@@ -27,5 +30,4 @@ petgraph.workspace = true
 
 
 [features]
-default = ["spacetime"]
-spacetime = ["dep:spacetimedb", "tm-server-types/spacetime"]
+production = []

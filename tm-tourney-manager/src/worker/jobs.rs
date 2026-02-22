@@ -1,8 +1,8 @@
-use spacetimedb::{SpacetimeType, ViewContext, view};
+use spacetimedb::{SpacetimeType, ViewContext, table, view};
 
 use crate::worker::tm_worker__view;
 
-#[cfg_attr(feature = "spacetime", spacetimedb::table(accessor=tm_worker_jobs,index(accessor= worker_id,btree(columns= [tm_login]))))]
+#[table(accessor=tm_worker_jobs,index(accessor= worker_id,btree(columns= [tm_login])))]
 #[derive(Debug)]
 pub struct TmWorkerJobs {
     // The

@@ -10,13 +10,13 @@ pub mod competition;
 pub mod environment;
 pub mod ghosts;
 pub mod monitoring;
+pub mod project;
 pub mod raw_server;
 pub mod record;
 pub mod registration;
 pub mod scheduling;
 pub mod tm_match;
 pub mod tm_server;
-pub mod project;
 pub mod user;
 pub mod worker;
 
@@ -24,34 +24,59 @@ pub mod worker;
 #[spacetimedb::settings]
 const CASE_CONVERSION_POLICY: CaseConversionPolicy = CaseConversionPolicy::None;
 
+#[derive(serde::Deserialize)]
+struct SpacetimeAuthClaims {
+    preferred_username: String,
+    login_method: String,
+    project_id: String,
+    provider_id: String,
+}
+
 #[spacetimedb::reducer(client_connected)]
 fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
     // If someone tries to connect with a token it needs to be a token from SpacetimeAuth
     // with the Trackmania provider. Otherwise you should connect annonymously.
     if let Some(jwt) = ctx.sender_auth().jwt() {
-        log::warn!("Tried to connect with jwt {}", jwt.raw_payload());
+        if jwt.issuer() == "localhost" {
+            // Client connects annonymously.
+            // Annonymous connections are used for:
+            // - Servers
+            // - Workers
+            // - Read only general purpose applications and dont need full access for features.
+            log::info!("Connected Annonymously");
+            return Ok(());
+        }
+        if jwt.issuer() == "https://auth.spacetimedb.com" {
+            #[cfg(feature = "production")]
+            {
+                //TODO
+                log::error!("TODO implement the token parsing and checking");
+                return Err("TODO actualy implament the right issuer handling");
+            }
+            // This is only that the batch scripts can run while developing.
+            // The production feature flag is enforced in CI.
+            #[cfg(not(feature = "production"))]
+            {
+                log::warn!("Connected as Mr.Joermungandr in a development environment!");
+                let account_id: Uuid =
+                    Uuid::parse_str("3467014a-c1cc-4aae-99fe-6beb5eca232a").unwrap();
 
-        //TODO get trackmania id claim.
-        let account_id: Uuid = Uuid::parse_str("3467014a-c1cc-4aae-99fe-6beb5eca232a").unwrap();
-        log::warn!("{account_id}");
+                let preferred_username = String::from("Mr.Joermungandr");
 
-        let preferred_username = String::from("Mr.Joermungandr");
+                ctx.db
+                    .tab_user()
+                    .try_insert(UserStruct::new(account_id, preferred_username))?;
+                ctx.db
+                    .tab_user_identity()
+                    .try_insert(UserIdentity::new(account_id, ctx.sender()))?;
 
-        ctx.db
-            .tab_user()
-            .try_insert(UserStruct::new(account_id, preferred_username))?;
-        ctx.db
-            .tab_user_identity()
-            .try_insert(UserIdentity::new(account_id, ctx.sender()))?;
+                return Ok(());
+            }
+        }
 
-        Ok(())
+        Err("Tried to connect with the wrong issuer.".into())
     } else {
-        // Client connects annonymously.
-        // Annonymous connections are used for:
-        // - Servers
-        // - Workers
-        // - Read only general purpose applications and dont need full access for features.
-        log::info!("Connected Annonymously");
+        //Internal
         Ok(())
     }
 }
