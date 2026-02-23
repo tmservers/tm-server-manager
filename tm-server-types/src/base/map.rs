@@ -1,37 +1,52 @@
+use serde::{Deserialize, Deserializer};
+
+use crate::base::login_to_account_id;
+
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub struct Map {
-    uid: String,
-    name: String,
-    filename: String,
-    #[cfg_attr(feature = "serde", serde(rename = "author"))]
-    author_login: String,
+    pub uid: String,
+    pub name: String,
+    pub filename: String,
+    #[cfg_attr(
+        feature = "serde",
+        serde(rename = "author", deserialize_with = "author_login_to_id")
+    )]
+    pub author_account_id: String,
     #[cfg_attr(feature = "serde", serde(rename = "authornickname"))]
-    author_nickname: String,
-    environment: String,
-    mood: String,
+    pub author_nickname: String,
+    pub environment: String,
+    pub mood: String,
     #[cfg_attr(feature = "serde", serde(rename = "bronzetime"))]
-    bronze_time: u32,
+    pub bronze_time: u32,
     #[cfg_attr(feature = "serde", serde(rename = "silvertime"))]
-    silver_time: u32,
+    pub silver_time: u32,
     #[cfg_attr(feature = "serde", serde(rename = "goldtime"))]
-    gold_time: u32,
+    pub gold_time: u32,
     #[cfg_attr(feature = "serde", serde(rename = "authortime"))]
-    author_time: u32,
+    pub author_time: u32,
 
-    copperprice: u32,
+    pub copperprice: u32,
 
     #[cfg_attr(feature = "serde", serde(rename = "laprace"))]
-    lap_race: bool,
+    pub lap_race: bool,
 
     #[cfg_attr(feature = "serde", serde(rename = "nblaps"))]
-    number_laps: u32,
+    pub number_laps: u32,
 
     #[cfg_attr(feature = "serde", serde(rename = "maptype"))]
-    map_type: String,
+    pub map_type: String,
 
     #[cfg_attr(feature = "serde", serde(rename = "mapstyle"))]
-    map_style: String,
+    pub map_style: String,
+}
+
+fn author_login_to_id<'de, D>(d: D) -> Result<String, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let login = String::deserialize(d)?;
+    Ok(login_to_account_id(&login))
 }

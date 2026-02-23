@@ -10,7 +10,7 @@ pub struct Map {
     pub uid: String,
     pub name: String,
     pub filename: String,
-    pub author_login: String,
+    pub author_account_id: String,
     pub author_nickname: String,
     pub environment: String,
     pub mood: String,

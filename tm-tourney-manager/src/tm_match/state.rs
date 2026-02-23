@@ -26,13 +26,9 @@ impl TmMatchState {
         }
     }
 
-    /* pub(crate) fn enable_wu(&mut self) {
-        self.is_warmup = true;
+    pub(crate) fn set_wu(&mut self, active: bool) {
+        self.is_warmup = active;
     }
-
-    pub(crate) fn disable_wu(&mut self) {
-        self.is_warmup = false;
-    } */
 
     pub(crate) fn set_pause(&mut self, paused: bool) {
         self.paused = paused;

@@ -157,8 +157,32 @@ pub(crate) fn handle_match_event(
 
             ctx.db.tab_tm_match_round_player_ext().id().update(entry);
         }
-        Event::StartMapStart(start_map) => todo!(),
-        Event::StartRoundStart(start_round) => todo!(),
+        Event::StartMapStart(start_map) => {
+            let mut state = ctx
+                .db
+                .tab_tm_match_state()
+                .match_id()
+                .find(match_id)
+                .unwrap();
+
+            //TODO set correct active map.
+            //state.set_map(start_map.map.uid);
+
+            ctx.db.tab_tm_match_state().match_id().update(state);
+        }
+        Event::StartRoundStart(_) => {
+            let mut state = ctx
+                .db
+                .tab_tm_match_state()
+                .match_id()
+                .find(match_id)
+                .unwrap();
+
+            //TODO there could be some weirdities with paused or warmup
+            state.new_round();
+
+            ctx.db.tab_tm_match_state().match_id().update(state);
+        }
         Event::EndMatchEnd(_) => {
             //TODO complete this impl
             let Some(mut tm_match) = ctx.db.tab_tm_match().id().find(match_id) else {
@@ -179,10 +203,42 @@ pub(crate) fn handle_match_event(
                 .delete(match_id);
             log::info!("The match {match_id} has successfully ended!");
         }
-        Event::WarmupStart => todo!(),
-        Event::WarmupEnd => todo!(),
-        Event::WarmupStartRound(warmup_round) => todo!(),
-        Event::WarmupEndRound(warmup_round) => todo!(),
+        Event::WarmupStart => {
+            let mut state = ctx
+                .db
+                .tab_tm_match_state()
+                .match_id()
+                .find(match_id)
+                .unwrap();
+
+            state.set_wu(true);
+
+            ctx.db.tab_tm_match_state().match_id().update(state);
+        }
+        Event::WarmupEnd => {
+            let mut state = ctx
+                .db
+                .tab_tm_match_state()
+                .match_id()
+                .find(match_id)
+                .unwrap();
+
+            state.set_wu(false);
+
+            ctx.db.tab_tm_match_state().match_id().update(state);
+        }
+        Event::WarmupStartRound(_) => {
+            let mut state = ctx
+                .db
+                .tab_tm_match_state()
+                .match_id()
+                .find(match_id)
+                .unwrap();
+
+            state.new_wu_round();
+
+            ctx.db.tab_tm_match_state().match_id().update(state);
+        }
         Event::Pause(pause) => {
             let mut state = ctx
                 .db

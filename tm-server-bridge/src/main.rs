@@ -150,14 +150,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         /*  _ = server.get_callbacks_list_disabled().await?;
         _ = server.get_callbacks_list().await?; */
 
-        // Emit all events
-        /*  server.on_event(|event| {
+        /* server.on_event(|event| {
             let event = event.clone();
             tokio::spawn(async move {
                 let server = TRACKMANIA.wait();
 
                 //TODO reenable automatic kicking
-                /* if let tm_server_controller::types::event::Event::PlayerConenct(player) = &event
+                if let tm_server_controller::event::Event::PlayerConenct(player) = &event
                     && player.account_id != "bla"
                     && !player.is_spectator
                 {
@@ -168,7 +167,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                         )
                         .await;
                     tracing::error!("player successfully kicked {}", &player.account_id);
-                }; */
+                };
             });
         }) */
     }
