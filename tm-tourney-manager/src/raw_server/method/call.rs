@@ -37,7 +37,7 @@ pub fn server_method_call(
     server_login: String,
     method: MethodCall,
 ) -> Result<(), String> {
-    let account_id = ctx.get_user()?.account_id;
+    let account_id = ctx.get_user_account()?;
 
     let Some(server) = ctx.db.tab_raw_server().server_login().find(&server_login) else {
         return Err(format!(
@@ -67,7 +67,6 @@ fn raw_server_method_call(ctx: &ViewContext) -> Vec<RawServerMethodCall> {
     ctx.db
         .tab_raw_server_method_call()
         .server_id()
-        .filter(&server.server_login)
-        //.map(|v| v.method)
+        .filter(server.id)
         .collect()
 }

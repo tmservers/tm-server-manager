@@ -16,6 +16,7 @@ use super::end_turn_start_type::EndTurnStart;
 use super::give_up_type::GiveUp;
 use super::loading_map_end_type::LoadingMapEnd;
 use super::loading_map_start_type::LoadingMapStart;
+use super::pause_type::Pause;
 use super::play_loop_end_type::PlayLoopEnd;
 use super::play_loop_start_type::PlayLoopStart;
 use super::player_chat_type::PlayerChat;
@@ -120,6 +121,8 @@ pub enum Event {
     WarmupStartRound(WarmupRound),
 
     WarmupEndRound(WarmupRound),
+
+    Pause(Pause),
 
     Custom(Custom),
 }

@@ -326,6 +326,9 @@ export const Event = __t.enum("Event", {
   get WarmupEndRound() {
     return WarmupRound;
   },
+  get Pause() {
+    return Pause;
+  },
   get Custom() {
     return Custom;
   },
@@ -551,6 +554,12 @@ export const NodePositionUpdate = __t.object("NodePositionUpdate", {
 });
 export type NodePositionUpdate = __Infer<typeof NodePositionUpdate>;
 
+export const Pause = __t.object("Pause", {
+  available: __t.bool(),
+  active: __t.bool(),
+});
+export type Pause = __Infer<typeof Pause>;
+
 export const PlayLoopEnd = __t.object("PlayLoopEnd", {
   count: __t.u32(),
   valid: __t.u32(),
@@ -609,6 +618,7 @@ export type PlayerActionCheckpoint = __Infer<typeof PlayerActionCheckpoint>;
 
 export const PlayerActionRespawn = __t.object("PlayerActionRespawn", {
   speed: __t.f32(),
+  standing: __t.bool(),
 });
 export type PlayerActionRespawn = __Infer<typeof PlayerActionRespawn>;
 
@@ -1032,13 +1042,13 @@ export const TmMatchRoundPlayerExt = __t.object("TmMatchRoundPlayerExt", {
 export type TmMatchRoundPlayerExt = __Infer<typeof TmMatchRoundPlayerExt>;
 
 export const TmMatchState = __t.object("TmMatchState", {
+  mapId: __t.uuid(),
   matchId: __t.u32(),
   restarted: __t.u16(),
   round: __t.u16(),
   warmup: __t.u16(),
   isWarmup: __t.bool(),
   paused: __t.bool(),
-  mapId: __t.uuid(),
 });
 export type TmMatchState = __Infer<typeof TmMatchState>;
 

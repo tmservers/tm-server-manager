@@ -49,10 +49,11 @@ fn connect_to_db() -> DbConnection {
     DbConnection::builder()
         .on_connect_error(on_connect_error)
         .on_disconnect(on_disconnected)
-        .with_database_name(
-            std::env::var("SPACETIMEDB_MODULE").unwrap_or("tm-tourney-manager".to_string()),
+        .with_database_name(std::env::var("SPACETIMEDB_MODULE").unwrap_or("tmservers".to_string()))
+        .with_uri(
+            std::env::var("SPACETIMEDB_URL")
+                .unwrap_or("https://maincloud.spacetimedb.com".to_string()),
         )
-        .with_uri(std::env::var("SPACETIMEDB_URL").unwrap_or("http://localhost:1234".to_string()))
         .build()
         .expect("Failed to connect to SpacetimeDB. Aborting.")
 }

@@ -1,6 +1,6 @@
 use spacetimedb::{AnonymousViewContext, SpacetimeType, Uuid, table, view};
 
-use crate::tm_match::match_state::tab_tm_match_state__view;
+use crate::tm_match::state::tab_tm_match_state__view;
 
 #[derive(Debug, SpacetimeType)]
 pub(super) enum PlayerAction {
@@ -12,6 +12,7 @@ pub(super) enum PlayerAction {
 #[derive(Debug, SpacetimeType)]
 pub(super) struct PlayerActionRespawn {
     speed: f32,
+    standing: bool,
 }
 
 #[derive(Debug, SpacetimeType)]
@@ -83,32 +84,41 @@ impl TmMatchRoundPlayerExt {
                 time,
             }));
     }
+
+    pub(crate) fn add_respawn(&mut self, speed: f32) {
+        self.round_actions
+            .push(PlayerAction::Respawn(PlayerActionRespawn {
+                speed,
+                standing: speed == 0.,
+            }));
+    }
+
+    pub(crate) fn give_up(&mut self) {
+        self.round_actions.push(PlayerAction::GiveUp);
+    }
 }
 
-#[view(accessor=match_leaderbaord,public)]
-pub fn match_leaderboard(
-    ctx: &AnonymousViewContext, /* match_id: u32 */
-) -> Vec<TmMatchRoundPlayer> {
-    let match_id = 1u32;
-
-    let Some(match_state) = ctx.db.tab_tm_match_state().match_id().find(match_id) else {
-        return Vec::new();
-    };
-
-    ctx.db
-        .tab_tm_match_round_player()
-        .match_round()
-        .filter((match_id, match_state.get_round()))
-        .collect()
-}
-
+/// Returns the specified round of the match.
+/// Round 0 is giving you a live view.
 #[view(accessor=match_round,public)]
 pub fn match_round(
     ctx: &AnonymousViewContext, /*, match_id: u32, round: u16 */
 ) -> Vec<TmMatchRoundPlayer> {
     let match_id = 1u32;
+    let mut round = 0u16;
 
-    Vec::new()
+    if round == 0 {
+        let Some(state) = ctx.db.tab_tm_match_state().match_id().find(match_id) else {
+            return Vec::new();
+        };
+        round = state.get_round();
+    }
+
+    ctx.db
+        .tab_tm_match_round_player()
+        .match_round()
+        .filter((match_id, round))
+        .collect()
 }
 
 /// If round 0 is supplied we take the current round.

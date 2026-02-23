@@ -11,7 +11,7 @@ use crate::{
             TmMatchRoundPlayer, TmMatchRoundPlayerExt, tab_tm_match_round_player,
             tab_tm_match_round_player_ext,
         },
-        match_state::{TmMatchState, tab_tm_match_state, tab_tm_match_state__view},
+        state::{TmMatchState, tab_tm_match_state, tab_tm_match_state__view},
         tab_tm_match,
     },
     user::tab_user,
@@ -97,29 +97,70 @@ pub(crate) fn handle_match_event(
 
             ctx.db.tab_tm_match_round_player_ext().id().update(entry);
         }
-        Event::Respawn(respawn) => todo!(),
-        Event::GiveUp(give_up) => todo!(),
-        Event::LoadingMapStart(loading_map_start) => todo!(),
-        Event::LoadingMapEnd(loading_map_end) => todo!(),
+        Event::Respawn(respawn) => {
+            let account_id = Uuid::parse_str(&respawn.account_id).unwrap();
+            let internal_account_id = ctx
+                .db
+                .tab_user()
+                .account_id()
+                .find(account_id)
+                .unwrap()
+                .internal_id;
+
+            let round = ctx
+                .db
+                .tab_tm_match_state()
+                .match_id()
+                .find(match_id)
+                .unwrap()
+                .get_round();
+
+            let mut entry = ctx
+                .db
+                .tab_tm_match_round_player_ext()
+                .match_round_player()
+                .filter((match_id, round, internal_account_id))
+                .next()
+                .unwrap();
+
+            entry.add_respawn(respawn.speed);
+
+            ctx.db.tab_tm_match_round_player_ext().id().update(entry);
+        }
+        Event::GiveUp(give_up) => {
+            let account_id = Uuid::parse_str(&give_up.account_id).unwrap();
+            let internal_account_id = ctx
+                .db
+                .tab_user()
+                .account_id()
+                .find(account_id)
+                .unwrap()
+                .internal_id;
+
+            let round = ctx
+                .db
+                .tab_tm_match_state()
+                .match_id()
+                .find(match_id)
+                .unwrap()
+                .get_round();
+
+            let mut entry = ctx
+                .db
+                .tab_tm_match_round_player_ext()
+                .match_round_player()
+                .filter((match_id, round, internal_account_id))
+                .next()
+                .unwrap();
+
+            entry.give_up();
+
+            ctx.db.tab_tm_match_round_player_ext().id().update(entry);
+        }
         Event::StartMapStart(start_map) => todo!(),
-        Event::StartMapEnd(start_map) => todo!(),
-        Event::EndMapStart(end_map_start) => todo!(),
-        Event::EndMapEnd(end_map_end) => todo!(),
-        Event::UnloadingMapStart(unloading_map_start) => todo!(),
-        Event::UnloadingMapEnd(unloading_map_end) => todo!(),
-        Event::StartTurnStart(start_turn) => todo!(),
-        Event::StartTurnEnd(start_turn) => todo!(),
-        Event::EndTurnStart(end_turn_start) => todo!(),
-        Event::EndTurnEnd(end_turn_end) => todo!(),
         Event::StartRoundStart(start_round) => todo!(),
-        Event::StartRoundEnd(start_round) => todo!(),
-        Event::EndRoundStart(end_round_start) => todo!(),
-        Event::EndRoundEnd(end_round_end) => todo!(),
-        Event::PodiumStart(podium) => todo!(),
-        Event::PodiumEnd(podium) => todo!(),
-        Event::StartMatchStart(start_match) => todo!(),
-        Event::StartMatchEnd(start_match) => todo!(),
         Event::EndMatchEnd(_) => {
+            //TODO complete this impl
             let Some(mut tm_match) = ctx.db.tab_tm_match().id().find(match_id) else {
                 return Err("Match not found".into());
             };
@@ -142,6 +183,18 @@ pub(crate) fn handle_match_event(
         Event::WarmupEnd => todo!(),
         Event::WarmupStartRound(warmup_round) => todo!(),
         Event::WarmupEndRound(warmup_round) => todo!(),
+        Event::Pause(pause) => {
+            let mut state = ctx
+                .db
+                .tab_tm_match_state()
+                .match_id()
+                .find(match_id)
+                .unwrap();
+
+            state.set_pause(pause.active);
+
+            ctx.db.tab_tm_match_state().match_id().update(state);
+        }
         _ => (),
     }
 

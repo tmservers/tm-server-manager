@@ -10,7 +10,7 @@ use crate::{
     },
     tm_match::{
         event::handle_match_event,
-        match_state::{TmMatchState, tab_tm_match_state},
+        state::{TmMatchState, tab_tm_match_state},
         tab_tm_match,
     },
 };

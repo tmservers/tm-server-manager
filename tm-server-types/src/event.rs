@@ -45,6 +45,9 @@ pub use r#match::*;
 mod server;
 pub use server::*;
 
+mod pause;
+pub use pause::Pause;
+
 use crate::base::PlayerInfo;
 
 /// Can hold every Event trasmitted trough the ModeScript or vanilla events.
@@ -53,6 +56,7 @@ use crate::base::PlayerInfo;
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
+#[non_exhaustive]
 pub enum Event {
     WayPoint(WayPoint),
     Respawn(Respawn),
@@ -104,6 +108,8 @@ pub enum Event {
     WarmupEnd,
     WarmupStartRound(WarmupRound),
     WarmupEndRound(WarmupRound),
+
+    Pause(Pause),
 
     Custom(Custom),
 }
@@ -230,6 +236,10 @@ impl Event {
             "Trackmania.WarmUp.EndRound" => Event::WarmupEndRound(
                 json::from_str(&body).map_err(|e| (name.to_string(), e, body))?,
             ),
+
+            "Maniaplanet.Pause.Status" => {
+                Event::Pause(json::from_str(&body).map_err(|e| (name.to_string(), e, body))?)
+            }
 
             _ => Event::Custom(Custom::new(name.to_string(), body)),
         };

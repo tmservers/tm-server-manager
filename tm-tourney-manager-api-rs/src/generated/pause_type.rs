@@ -6,11 +6,11 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct PlayerActionRespawn {
-    pub speed: f32,
-    pub standing: bool,
+pub struct Pause {
+    pub available: bool,
+    pub active: bool,
 }
 
-impl __sdk::InModule for PlayerActionRespawn {
+impl __sdk::InModule for Pause {
     type Module = super::RemoteModule;
 }

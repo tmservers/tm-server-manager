@@ -1,6 +1,6 @@
 use nadeo_api::{NadeoRequest, auth::AuthType, request::Method};
 use serde::{Deserialize, Serialize};
-use tm_server_controller::{ClientError, method::XmlRpcMethods};
+use tm_server_controller::method::XmlRpcMethods;
 use tm_tourney_manager_api_rs::{EventContext, ServerConfig};
 
 use crate::{NADEO, SERVER_CONFIG, TRACKMANIA, TRACKMANIA_FILES};
@@ -57,16 +57,15 @@ pub async fn configure(server_config: ServerConfig) {
     //TODO figure out what the returned integer means.
     //if loaded.is_ok_and(|l| l == 2) {
     if loaded.is_ok() {
+        _ = local_server.next_map().await;
+
         _ = local_server
             .chat_send_server_massage("[tmservers.live] Configuration synchronized.")
             .await;
-
-        _ = local_server.next_map().await;
     }
 }
 
 pub(crate) async fn get_maps(maps: impl Iterator<Item = &String>) {
-    //Only used in this function
     #[derive(Debug, Serialize, Deserialize)]
     struct MapInfo {
         #[serde(rename = "fileUrl")]
@@ -104,12 +103,5 @@ pub(crate) async fn get_maps(maps: impl Iterator<Item = &String>) {
             .wait()
             .write_file(&format!("{}.Map.Gbx", &map_info.map_uid), map_file.to_vec())
             .await;
-        /* let _: Result<bool, ClientError> = TRACKMANIA
-        .wait()
-        .call(
-            "ChatSendServerMessage",
-            format!("[tm-server-bridge]   Imported map: {}$fff.", &map_info.name),
-        )
-        .await; */
     }
 }

@@ -1,9 +1,9 @@
-use spacetimedb::{Uuid, table};
-use tm_server_types::event::Event;
+use spacetimedb::{AnonymousViewContext, Query, Uuid, table, view};
 
 #[derive(Debug, Copy, Clone)]
 #[table(accessor=tab_tm_match_state)]
 pub struct TmMatchState {
+    map_id: Uuid,
     #[primary_key]
     pub(crate) match_id: u32,
     restarted: u16,
@@ -11,7 +11,6 @@ pub struct TmMatchState {
     warmup: u16,
     is_warmup: bool,
     paused: bool,
-    map_id: Uuid,
 }
 
 impl TmMatchState {
@@ -27,12 +26,16 @@ impl TmMatchState {
         }
     }
 
-    pub(crate) fn enable_wu(&mut self) {
+    /* pub(crate) fn enable_wu(&mut self) {
         self.is_warmup = true;
     }
 
     pub(crate) fn disable_wu(&mut self) {
         self.is_warmup = false;
+    } */
+
+    pub(crate) fn set_pause(&mut self, paused: bool) {
+        self.paused = paused;
     }
 
     pub(crate) fn new_wu_round(&mut self) {
@@ -46,4 +49,12 @@ impl TmMatchState {
     pub(super) fn get_round(&self) -> u16 {
         self.round
     }
+}
+
+#[view(accessor=match_state,public)]
+pub fn match_state(ctx: &AnonymousViewContext /* match_id:u32 */) -> impl Query<TmMatchState> {
+    let match_id = 1u32;
+    ctx.from
+        .tab_tm_match_state()
+        .r#where(|c| c.match_id.eq(match_id))
 }

@@ -18,7 +18,7 @@ use crate::{
         raw_server_pool, tab_raw_server, tab_raw_server_occupation,
     },
     tm_match::{
-        match_state::{TmMatchState, tab_tm_match_state},
+        state::{TmMatchState, tab_tm_match_state},
         template::tab_match_template,
     },
     user::user,
@@ -26,7 +26,7 @@ use crate::{
 
 pub mod event;
 pub mod leaderboard;
-pub mod match_state;
+pub mod state;
 pub mod players;
 pub mod template;
 
@@ -312,6 +312,10 @@ pub fn match_try_start(ctx: &ReducerContext, match_id: u32) -> Result<(), String
         tm_match.status = MatchStatus::Live;
         ctx.db.tab_tm_match().id().update(tm_match);
 
+        ctx.db
+            .tab_tm_match_state()
+            .try_insert(TmMatchState::new(match_id))?;
+
         return Ok(());
     }
 
@@ -327,6 +331,10 @@ pub fn match_try_start(ctx: &ReducerContext, match_id: u32) -> Result<(), String
 
         tm_match.status = MatchStatus::Live;
         ctx.db.tab_tm_match().id().update(tm_match);
+
+        ctx.db
+            .tab_tm_match_state()
+            .try_insert(TmMatchState::new(match_id))?;
 
         Ok(())
     } else {
