@@ -8,6 +8,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[sats(crate = __lib)]
 pub struct UserV1 {
     pub account_id: __sdk::Uuid,
+    pub internal_id: u32,
     pub name: String,
     pub club_tag: String,
     pub online: bool,
@@ -22,6 +23,7 @@ impl __sdk::InModule for UserV1 {
 /// Provides typed access to columns for query building.
 pub struct UserV1Cols {
     pub account_id: __sdk::__query_builder::Col<UserV1, __sdk::Uuid>,
+    pub internal_id: __sdk::__query_builder::Col<UserV1, u32>,
     pub name: __sdk::__query_builder::Col<UserV1, String>,
     pub club_tag: __sdk::__query_builder::Col<UserV1, String>,
     pub online: __sdk::__query_builder::Col<UserV1, bool>,
@@ -32,6 +34,7 @@ impl __sdk::__query_builder::HasCols for UserV1 {
     fn cols(table_name: &'static str) -> Self::Cols {
         UserV1Cols {
             account_id: __sdk::__query_builder::Col::new(table_name, "account_id"),
+            internal_id: __sdk::__query_builder::Col::new(table_name, "internal_id"),
             name: __sdk::__query_builder::Col::new(table_name, "name"),
             club_tag: __sdk::__query_builder::Col::new(table_name, "club_tag"),
             online: __sdk::__query_builder::Col::new(table_name, "online"),
@@ -44,6 +47,7 @@ impl __sdk::__query_builder::HasCols for UserV1 {
 /// Provides typed access to indexed columns for query building.
 pub struct UserV1IxCols {
     pub account_id: __sdk::__query_builder::IxCol<UserV1, __sdk::Uuid>,
+    pub internal_id: __sdk::__query_builder::IxCol<UserV1, u32>,
 }
 
 impl __sdk::__query_builder::HasIxCols for UserV1 {
@@ -51,6 +55,7 @@ impl __sdk::__query_builder::HasIxCols for UserV1 {
     fn ix_cols(table_name: &'static str) -> Self::IxCols {
         UserV1IxCols {
             account_id: __sdk::__query_builder::IxCol::new(table_name, "account_id"),
+            internal_id: __sdk::__query_builder::IxCol::new(table_name, "internal_id"),
         }
     }
 }

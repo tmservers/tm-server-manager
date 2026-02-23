@@ -1,20 +1,32 @@
-use spacetimedb::table;
+use spacetimedb::{Uuid, table};
 use tm_server_types::event::Event;
 
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Copy, Clone)]
 #[table(accessor=tab_tm_match_state)]
 pub struct TmMatchState {
     #[primary_key]
-    pub(crate) id: u32,
-    pub(crate) restarted: u16,
-    pub(crate) round: u16,
-    pub(crate) warmup: u16,
-    pub(crate) is_warmup: bool,
-    pub(crate) paused: bool,
-    // map_uid: String,
+    pub(crate) match_id: u32,
+    restarted: u16,
+    round: u16,
+    warmup: u16,
+    is_warmup: bool,
+    paused: bool,
+    map_id: Uuid,
 }
 
 impl TmMatchState {
+    pub fn new(match_id: u32) -> Self {
+        Self {
+            match_id,
+            restarted: 0,
+            round: 0,
+            warmup: 0,
+            is_warmup: false,
+            paused: false,
+            map_id: Uuid::NIL,
+        }
+    }
+
     pub(crate) fn enable_wu(&mut self) {
         self.is_warmup = true;
     }
@@ -31,18 +43,7 @@ impl TmMatchState {
         self.round += 1;
     }
 
-    /// # Safety:
-    /// Must only be called if match is live.
-    pub fn add_server_event(&mut self, event: &Event) -> bool {
-        //TODO
-        match event {
-            Event::WarmupStart => self.enable_wu(),
-            Event::WarmupEnd => self.disable_wu(),
-            Event::WarmupStartRound(_) => self.new_wu_round(),
-            Event::StartRoundStart(_) => self.new_round(),
-            _ => return false,
-        }
-        log::warn!("{:#?}", self);
-        true
+    pub(super) fn get_round(&self) -> u16 {
+        self.round
     }
 }

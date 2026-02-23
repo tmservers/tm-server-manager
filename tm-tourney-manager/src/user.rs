@@ -3,8 +3,12 @@ use spacetimedb::{AnonymousViewContext, Identity, Query, Uuid, table, view};
 #[table(accessor= tab_user)]
 pub struct UserV1 {
     //ubisoft id of the user
-    #[primary_key]
+    #[unique]
     pub account_id: Uuid,
+
+    #[auto_inc]
+    #[primary_key]
+    pub internal_id: u32,
 
     name: String,
 
@@ -16,6 +20,7 @@ pub struct UserV1 {
 impl UserV1 {
     pub fn new(account_id: Uuid, name: String) -> Self {
         UserV1 {
+            internal_id: 0,
             account_id,
             name,
             club_tag: "".into(),
@@ -35,8 +40,9 @@ pub fn user(ctx: &AnonymousViewContext) -> impl Query<UserV1> {
 
 #[table(accessor= tab_user_identity)]
 pub struct UserIdentity {
-    #[primary_key]
+    #[unique]
     pub identity: Identity,
+    #[primary_key]
     pub account_id: Uuid,
 }
 

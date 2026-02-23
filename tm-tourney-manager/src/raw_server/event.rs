@@ -9,7 +9,7 @@ use crate::{
         tab_raw_server, tab_raw_server_occupation,
     },
     tm_match::{
-        event::{TmMatchEvent, tab_tm_match_event},
+        event::handle_match_event,
         match_state::{TmMatchState, tab_tm_match_state},
         tab_tm_match,
     },
@@ -41,54 +41,10 @@ pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
         .tab_raw_server_occupation()
         .server_id()
         .find(server.id)
-        && let Some(mut tm_match) = ctx.db.tab_tm_match().id().find(occupation.match_id)
+        && let Some(tm_match) = ctx.db.tab_tm_match().id().find(occupation.match_id)
         && tm_match.is_live()
-        && let Some(mut match_state) = ctx.db.tab_tm_match_state().id().find(occupation.match_id)
     {
-        // TODO maybe move this whole thing in a function for TmMatch to handle it there.
-
-        let match_state_changed = match_state.add_server_event(&event);
-        //let server_changed = tm_server.add_server_event(&event);
-
-        let match_ended = if let Event::EndMatchEnd(_) = &event {
-            log::error!("MATCH ENDED");
-
-            tm_match.end_match();
-            let tm_match = ctx.db.tab_tm_match().id().update(tm_match);
-
-            internal_graph_resolution_node_finished(
-                ctx,
-                tm_match.get_comp_id(),
-                NodeKindHandle::MatchV1(tm_match.id),
-            )?;
-
-            ctx.db
-                .tab_raw_server_occupation()
-                .server_id()
-                .delete(server.id);
-            true
-        } else {
-            false
-        };
-
-        //let project_id = tm_match.get_project();
-        ctx.db.tab_tm_match_event().insert(TmMatchEvent {
-            //project_id,
-            match_id: occupation.match_id,
-            event,
-            restarted: match_state.restarted,
-            round: match_state.round,
-            warmup: match_state.warmup,
-            is_warmup: match_state.is_warmup,
-            paused: match_state.paused,
-        });
-
-        if match_state_changed || match_ended {
-            ctx.db.tab_tm_match_state().id().update(match_state);
-        }
-        if match_ended {
-            ctx.db.tab_raw_server().id().update(server);
-        }
+        handle_match_event(ctx, tm_match.id, event)?
     }
     Ok(())
 }

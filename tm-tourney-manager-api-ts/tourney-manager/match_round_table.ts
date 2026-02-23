@@ -11,6 +11,9 @@ import {
 } from "spacetimedb";
 
 export default __t.row({
-  accountId: __t.uuid().name("account_id"),
-  checkpoints: __t.array(__t.u32()),
+  internalAccountId: __t.u32().name("internal_account_id"),
+  matchId: __t.u32().name("match_id"),
+  time: __t.i32(),
+  roundPoints: __t.i32().name("round_points"),
+  round: __t.u16(),
 });

@@ -63,12 +63,23 @@ fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
 
                 let preferred_username = String::from("Mr.Joermungandr");
 
-                ctx.db
-                    .tab_user()
-                    .try_insert(UserStruct::new(account_id, preferred_username))?;
-                ctx.db
-                    .tab_user_identity()
-                    .try_insert(UserIdentity::new(account_id, ctx.sender()))?;
+                if let Some(user) = ctx.db.tab_user().account_id().find(account_id) {
+                    //TODO check if user name changed and update on demand. also update the identity if applicable.
+                    ctx.db
+                        .tab_user_identity()
+                        .account_id()
+                        .insert_or_update(UserIdentity::new(account_id, ctx.sender()));
+                    Ok::<(), String>(())
+                } else {
+                    ctx.db
+                        .tab_user()
+                        .try_insert(UserStruct::new(account_id, preferred_username))?;
+                    ctx.db
+                        .tab_user_identity()
+                        .try_insert(UserIdentity::new(account_id, ctx.sender()))?;
+
+                    Ok(())
+                }?;
 
                 return Ok(());
             }

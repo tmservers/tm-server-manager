@@ -7,13 +7,13 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct TmRecord {
-    pub map_uid: String,
     pub account_id: __sdk::Uuid,
-    pub timestamp: __sdk::Timestamp,
-    pub time: u32,
+    pub ghost: __sdk::Uuid,
+    pub map_uid: String,
     pub zone: String,
     pub player_name: String,
-    pub ghost: String,
+    pub timestamp: __sdk::Timestamp,
+    pub time: u32,
 }
 
 impl __sdk::InModule for TmRecord {
@@ -24,26 +24,26 @@ impl __sdk::InModule for TmRecord {
 ///
 /// Provides typed access to columns for query building.
 pub struct TmRecordCols {
-    pub map_uid: __sdk::__query_builder::Col<TmRecord, String>,
     pub account_id: __sdk::__query_builder::Col<TmRecord, __sdk::Uuid>,
-    pub timestamp: __sdk::__query_builder::Col<TmRecord, __sdk::Timestamp>,
-    pub time: __sdk::__query_builder::Col<TmRecord, u32>,
+    pub ghost: __sdk::__query_builder::Col<TmRecord, __sdk::Uuid>,
+    pub map_uid: __sdk::__query_builder::Col<TmRecord, String>,
     pub zone: __sdk::__query_builder::Col<TmRecord, String>,
     pub player_name: __sdk::__query_builder::Col<TmRecord, String>,
-    pub ghost: __sdk::__query_builder::Col<TmRecord, String>,
+    pub timestamp: __sdk::__query_builder::Col<TmRecord, __sdk::Timestamp>,
+    pub time: __sdk::__query_builder::Col<TmRecord, u32>,
 }
 
 impl __sdk::__query_builder::HasCols for TmRecord {
     type Cols = TmRecordCols;
     fn cols(table_name: &'static str) -> Self::Cols {
         TmRecordCols {
-            map_uid: __sdk::__query_builder::Col::new(table_name, "map_uid"),
             account_id: __sdk::__query_builder::Col::new(table_name, "account_id"),
-            timestamp: __sdk::__query_builder::Col::new(table_name, "timestamp"),
-            time: __sdk::__query_builder::Col::new(table_name, "time"),
+            ghost: __sdk::__query_builder::Col::new(table_name, "ghost"),
+            map_uid: __sdk::__query_builder::Col::new(table_name, "map_uid"),
             zone: __sdk::__query_builder::Col::new(table_name, "zone"),
             player_name: __sdk::__query_builder::Col::new(table_name, "player_name"),
-            ghost: __sdk::__query_builder::Col::new(table_name, "ghost"),
+            timestamp: __sdk::__query_builder::Col::new(table_name, "timestamp"),
+            time: __sdk::__query_builder::Col::new(table_name, "time"),
         }
     }
 }

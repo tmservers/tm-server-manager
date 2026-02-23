@@ -37,6 +37,7 @@ impl __sdk::__query_builder::HasCols for UserIdentity {
 ///
 /// Provides typed access to indexed columns for query building.
 pub struct UserIdentityIxCols {
+    pub account_id: __sdk::__query_builder::IxCol<UserIdentity, __sdk::Uuid>,
     pub identity: __sdk::__query_builder::IxCol<UserIdentity, __sdk::Identity>,
 }
 
@@ -44,6 +45,7 @@ impl __sdk::__query_builder::HasIxCols for UserIdentity {
     type IxCols = UserIdentityIxCols;
     fn ix_cols(table_name: &'static str) -> Self::IxCols {
         UserIdentityIxCols {
+            account_id: __sdk::__query_builder::IxCol::new(table_name, "account_id"),
             identity: __sdk::__query_builder::IxCol::new(table_name, "identity"),
         }
     }

@@ -66,6 +66,7 @@ pub mod match_delete_reducer;
 pub mod match_ghost_type;
 pub mod match_leaderbaord_table;
 pub mod match_record_table;
+pub mod match_round_ext_table;
 pub mod match_round_table;
 pub mod match_status_type;
 pub mod match_template_create_reducer;
@@ -88,6 +89,9 @@ pub mod node_kind_handle_type;
 pub mod node_position_update_type;
 pub mod play_loop_end_type;
 pub mod play_loop_start_type;
+pub mod player_action_checkpoint_type;
+pub mod player_action_respawn_type;
+pub mod player_action_type;
 pub mod player_chat_type;
 pub mod player_connect_type;
 pub mod player_disconnect_type;
@@ -156,8 +160,8 @@ pub mod tm_comp_record_type;
 pub mod tm_map_record_table;
 pub mod tm_map_record_type;
 pub mod tm_match_event_type;
-pub mod tm_match_leaderboard_ext_type;
-pub mod tm_match_leaderboard_type;
+pub mod tm_match_round_player_ext_type;
+pub mod tm_match_round_player_type;
 pub mod tm_match_state_type;
 pub mod tm_match_table;
 pub mod tm_match_v_1_type;
@@ -238,6 +242,7 @@ pub use match_delete_reducer::match_delete;
 pub use match_ghost_type::MatchGhost;
 pub use match_leaderbaord_table::*;
 pub use match_record_table::*;
+pub use match_round_ext_table::*;
 pub use match_round_table::*;
 pub use match_status_type::MatchStatus;
 pub use match_template_create_reducer::match_template_create;
@@ -260,6 +265,9 @@ pub use node_kind_handle_type::NodeKindHandle;
 pub use node_position_update_type::NodePositionUpdate;
 pub use play_loop_end_type::PlayLoopEnd;
 pub use play_loop_start_type::PlayLoopStart;
+pub use player_action_checkpoint_type::PlayerActionCheckpoint;
+pub use player_action_respawn_type::PlayerActionRespawn;
+pub use player_action_type::PlayerAction;
 pub use player_chat_type::PlayerChat;
 pub use player_connect_type::PlayerConnect;
 pub use player_disconnect_type::PlayerDisconnect;
@@ -328,8 +336,8 @@ pub use tm_comp_record_type::TmCompRecord;
 pub use tm_map_record_table::*;
 pub use tm_map_record_type::TmMapRecord;
 pub use tm_match_event_type::TmMatchEvent;
-pub use tm_match_leaderboard_ext_type::TmMatchLeaderboardExt;
-pub use tm_match_leaderboard_type::TmMatchLeaderboard;
+pub use tm_match_round_player_ext_type::TmMatchRoundPlayerExt;
+pub use tm_match_round_player_type::TmMatchRoundPlayer;
 pub use tm_match_state_type::TmMatchState;
 pub use tm_match_table::*;
 pub use tm_match_v_1_type::TmMatchV1;
@@ -769,9 +777,10 @@ pub struct DbUpdate {
     competition_node_position: __sdk::TableUpdate<CompetitionNodePosition>,
     competition_record: __sdk::TableUpdate<TmRecord>,
     map_record: __sdk::TableUpdate<TmRecord>,
-    match_leaderbaord: __sdk::TableUpdate<TmMatchLeaderboard>,
+    match_leaderbaord: __sdk::TableUpdate<TmMatchRoundPlayer>,
     match_record: __sdk::TableUpdate<TmRecord>,
-    match_round: __sdk::TableUpdate<TmMatchLeaderboardExt>,
+    match_round: __sdk::TableUpdate<TmMatchRoundPlayer>,
+    match_round_ext: __sdk::TableUpdate<TmMatchRoundPlayerExt>,
     my_jobs: __sdk::TableUpdate<TmWorkerJobs>,
     my_match_template: __sdk::TableUpdate<MatchTemplate>,
     my_project: __sdk::TableUpdate<MyProjectV1>,
@@ -826,6 +835,9 @@ impl TryFrom<__ws::v2::TransactionUpdate> for DbUpdate {
                 "match_round" => db_update
                     .match_round
                     .append(match_round_table::parse_table_update(table_update)?),
+                "match_round_ext" => db_update
+                    .match_round_ext
+                    .append(match_round_ext_table::parse_table_update(table_update)?),
                 "my_jobs" => db_update
                     .my_jobs
                     .append(my_jobs_table::parse_table_update(table_update)?),
@@ -924,14 +936,16 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.competition_record =
             cache.apply_diff_to_table::<TmRecord>("competition_record", &self.competition_record);
         diff.map_record = cache.apply_diff_to_table::<TmRecord>("map_record", &self.map_record);
-        diff.match_leaderbaord = cache.apply_diff_to_table::<TmMatchLeaderboard>(
+        diff.match_leaderbaord = cache.apply_diff_to_table::<TmMatchRoundPlayer>(
             "match_leaderbaord",
             &self.match_leaderbaord,
         );
         diff.match_record =
             cache.apply_diff_to_table::<TmRecord>("match_record", &self.match_record);
         diff.match_round =
-            cache.apply_diff_to_table::<TmMatchLeaderboardExt>("match_round", &self.match_round);
+            cache.apply_diff_to_table::<TmMatchRoundPlayer>("match_round", &self.match_round);
+        diff.match_round_ext = cache
+            .apply_diff_to_table::<TmMatchRoundPlayerExt>("match_round_ext", &self.match_round_ext);
         diff.my_jobs = cache.apply_diff_to_table::<TmWorkerJobs>("my_jobs", &self.my_jobs);
         diff.my_match_template = cache
             .apply_diff_to_table::<MatchTemplate>("my_match_template", &self.my_match_template);
@@ -1000,6 +1014,9 @@ impl __sdk::DbUpdate for DbUpdate {
                     .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
                 "match_round" => db_update
                     .match_round
+                    .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
+                "match_round_ext" => db_update
+                    .match_round_ext
                     .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
                 "my_jobs" => db_update
                     .my_jobs
@@ -1092,6 +1109,9 @@ impl __sdk::DbUpdate for DbUpdate {
                 "match_round" => db_update
                     .match_round
                     .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
+                "match_round_ext" => db_update
+                    .match_round_ext
+                    .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
                 "my_jobs" => db_update
                     .my_jobs
                     .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
@@ -1162,9 +1182,10 @@ pub struct AppliedDiff<'r> {
     competition_node_position: __sdk::TableAppliedDiff<'r, CompetitionNodePosition>,
     competition_record: __sdk::TableAppliedDiff<'r, TmRecord>,
     map_record: __sdk::TableAppliedDiff<'r, TmRecord>,
-    match_leaderbaord: __sdk::TableAppliedDiff<'r, TmMatchLeaderboard>,
+    match_leaderbaord: __sdk::TableAppliedDiff<'r, TmMatchRoundPlayer>,
     match_record: __sdk::TableAppliedDiff<'r, TmRecord>,
-    match_round: __sdk::TableAppliedDiff<'r, TmMatchLeaderboardExt>,
+    match_round: __sdk::TableAppliedDiff<'r, TmMatchRoundPlayer>,
+    match_round_ext: __sdk::TableAppliedDiff<'r, TmMatchRoundPlayerExt>,
     my_jobs: __sdk::TableAppliedDiff<'r, TmWorkerJobs>,
     my_match_template: __sdk::TableAppliedDiff<'r, MatchTemplate>,
     my_project: __sdk::TableAppliedDiff<'r, MyProjectV1>,
@@ -1225,15 +1246,20 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             event,
         );
         callbacks.invoke_table_row_callbacks::<TmRecord>("map_record", &self.map_record, event);
-        callbacks.invoke_table_row_callbacks::<TmMatchLeaderboard>(
+        callbacks.invoke_table_row_callbacks::<TmMatchRoundPlayer>(
             "match_leaderbaord",
             &self.match_leaderbaord,
             event,
         );
         callbacks.invoke_table_row_callbacks::<TmRecord>("match_record", &self.match_record, event);
-        callbacks.invoke_table_row_callbacks::<TmMatchLeaderboardExt>(
+        callbacks.invoke_table_row_callbacks::<TmMatchRoundPlayer>(
             "match_round",
             &self.match_round,
+            event,
+        );
+        callbacks.invoke_table_row_callbacks::<TmMatchRoundPlayerExt>(
+            "match_round_ext",
+            &self.match_round_ext,
             event,
         );
         callbacks.invoke_table_row_callbacks::<TmWorkerJobs>("my_jobs", &self.my_jobs, event);
@@ -1946,6 +1972,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
         match_leaderbaord_table::register_table(client_cache);
         match_record_table::register_table(client_cache);
         match_round_table::register_table(client_cache);
+        match_round_ext_table::register_table(client_cache);
         my_jobs_table::register_table(client_cache);
         my_match_template_table::register_table(client_cache);
         my_project_table::register_table(client_cache);
@@ -1974,6 +2001,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
         "match_leaderbaord",
         "match_record",
         "match_round",
+        "match_round_ext",
         "my_jobs",
         "my_match_template",
         "my_project",

@@ -11,11 +11,11 @@ import {
 } from "spacetimedb";
 
 export default __t.row({
-  mapUid: __t.string().name("map_uid"),
   accountId: __t.uuid().name("account_id"),
-  timestamp: __t.timestamp(),
-  time: __t.u32(),
+  ghost: __t.uuid(),
+  mapUid: __t.string().name("map_uid"),
   zone: __t.string(),
   playerName: __t.string().name("player_name"),
-  ghost: __t.string(),
+  timestamp: __t.timestamp(),
+  time: __t.u32(),
 });

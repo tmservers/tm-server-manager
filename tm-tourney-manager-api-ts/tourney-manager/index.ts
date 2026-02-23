@@ -84,6 +84,7 @@ import MapRecordRow from "./map_record_table";
 import MatchLeaderbaordRow from "./match_leaderbaord_table";
 import MatchRecordRow from "./match_record_table";
 import MatchRoundRow from "./match_round_table";
+import MatchRoundExtRow from "./match_round_ext_table";
 import MyJobsRow from "./my_jobs_table";
 import MyMatchTemplateRow from "./my_match_template_table";
 import MyProjectRow from "./my_project_table";
@@ -190,6 +191,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, MatchRoundRow),
+  match_round_ext: __table({
+    name: 'match_round_ext',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MatchRoundExtRow),
   my_jobs: __table({
     name: 'my_jobs',
     indexes: [

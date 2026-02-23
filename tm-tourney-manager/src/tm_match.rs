@@ -176,14 +176,15 @@ pub fn match_create(
             tm_match.competition_id,
         ))?;
 
-    ctx.db.tab_tm_match_state().try_insert(TmMatchState {
-        id: tm_match.id,
+    /* ctx.db.tab_tm_match_state().try_insert(TmMatchState {
+        match_id: tm_match.id,
         restarted: 0,
         round: 0,
         warmup: 0,
         is_warmup: false,
         paused: false,
-    })?;
+        map_id: Uuid
+    })?; */
 
     Ok(())
 }
