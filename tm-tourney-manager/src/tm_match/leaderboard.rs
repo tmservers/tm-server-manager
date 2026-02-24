@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use spacetimedb::{AnonymousViewContext, SpacetimeType, Uuid, table, view};
 
 use crate::tm_match::state::tab_tm_match_state__view;
@@ -23,6 +25,7 @@ pub(super) struct PlayerActionCheckpoint {
 
 #[table(accessor= tab_tm_match_round_player,
     index(accessor=match_round, hash(columns=[match_id,round])),
+    index(accessor=match_round_range, btree(columns=[match_id,round])),
     index(accessor=match_round_player, hash(columns=[match_id,round,internal_account_id]))
 )]
 pub struct TmMatchRoundPlayer {
@@ -52,6 +55,7 @@ impl TmMatchRoundPlayer {
 
 #[table(accessor= tab_tm_match_round_player_ext,
     index(accessor=match_round, hash(columns=[match_id,round])),
+    index(accessor=match_round_range, btree(columns=[match_id,round])),
     index(accessor=match_round_player, hash(columns=[match_id,round,internal_account_id]))
 )]
 pub struct TmMatchRoundPlayerExt {
@@ -98,8 +102,52 @@ impl TmMatchRoundPlayerExt {
     }
 }
 
+/// Accumulates points of all previous rounds.
+/// Round 0 is giving you a live view.
+/// If you want points from individual rounds use the match_round view instead.
+#[view(accessor=match_leaderboard,public)]
+pub fn match_leaderboard(
+    ctx: &AnonymousViewContext, /*, match_id: u32, round: u16 */
+) -> Vec<TmMatchRoundPlayer> {
+    let match_id = 1u32;
+    let mut round = 0u16;
+    let entries: Vec<TmMatchRoundPlayer> = if round == 0 {
+        let Some(state) = ctx.db.tab_tm_match_state().match_id().find(match_id) else {
+            return Vec::new();
+        };
+        round = state.get_round();
+        ctx.db
+            .tab_tm_match_round_player()
+            .match_round_range()
+            .filter((match_id, 1..round))
+            .collect()
+    } else {
+        ctx.db
+            .tab_tm_match_round_player()
+            .match_round_range()
+            .filter((match_id, 1..=round))
+            .collect()
+    };
+
+    let mut map = HashMap::<u32, TmMatchRoundPlayer>::new();
+
+    for entry in entries {
+        map.entry(entry.internal_account_id)
+            .and_modify(|e| {
+                e.round_points += entry.round_points;
+                if entry.round > e.round {
+                    e.round = entry.round
+                }
+            })
+            .or_insert(entry);
+    }
+
+    map.into_values().collect()
+}
+
 /// Returns the specified round of the match.
 /// Round 0 is giving you a live view.
+/// If you want a accumulated view please you the match_leaderboard view instead.
 #[view(accessor=match_round,public)]
 pub fn match_round(
     ctx: &AnonymousViewContext, /*, match_id: u32, round: u16 */

@@ -26,8 +26,8 @@ use crate::{
 
 pub mod event;
 pub mod leaderboard;
-pub mod state;
 pub mod players;
+pub mod state;
 pub mod template;
 
 /// # Match
