@@ -6,44 +6,49 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub(super) struct MatchConfiguredArgs {
-    pub id: u32,
+pub(super) struct LendRawServerArgs {
+    pub server_id: u32,
+    pub project_id: u32,
 }
 
-impl From<MatchConfiguredArgs> for super::Reducer {
-    fn from(args: MatchConfiguredArgs) -> Self {
-        Self::MatchConfigured { id: args.id }
+impl From<LendRawServerArgs> for super::Reducer {
+    fn from(args: LendRawServerArgs) -> Self {
+        Self::LendRawServer {
+            server_id: args.server_id,
+            project_id: args.project_id,
+        }
     }
 }
 
-impl __sdk::InModule for MatchConfiguredArgs {
+impl __sdk::InModule for LendRawServerArgs {
     type Module = super::RemoteModule;
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the reducer `match_configured`.
+/// Extension trait for access to the reducer `lend_raw_server`.
 ///
 /// Implemented for [`super::RemoteReducers`].
-pub trait match_configured {
-    /// Request that the remote module invoke the reducer `match_configured` to run as soon as possible.
+pub trait lend_raw_server {
+    /// Request that the remote module invoke the reducer `lend_raw_server` to run as soon as possible.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
-    /// /// Use [`match_configured:match_configured_then`] to run a callback after the reducer completes.
-    fn match_configured(&self, id: u32) -> __sdk::Result<()> {
-        self.match_configured_then(id, |_, _| {})
+    /// /// Use [`lend_raw_server:lend_raw_server_then`] to run a callback after the reducer completes.
+    fn lend_raw_server(&self, server_id: u32, project_id: u32) -> __sdk::Result<()> {
+        self.lend_raw_server_then(server_id, project_id, |_, _| {})
     }
 
-    /// Request that the remote module invoke the reducer `match_configured` to run as soon as possible,
+    /// Request that the remote module invoke the reducer `lend_raw_server` to run as soon as possible,
     /// registering `callback` to run when we are notified that the reducer completed.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed with the `callback`.
-    fn match_configured_then(
+    fn lend_raw_server_then(
         &self,
-        id: u32,
+        server_id: u32,
+        project_id: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -51,16 +56,22 @@ pub trait match_configured {
     ) -> __sdk::Result<()>;
 }
 
-impl match_configured for super::RemoteReducers {
-    fn match_configured_then(
+impl lend_raw_server for super::RemoteReducers {
+    fn lend_raw_server_then(
         &self,
-        id: u32,
+        server_id: u32,
+        project_id: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     ) -> __sdk::Result<()> {
-        self.imp
-            .invoke_reducer_with_callback(MatchConfiguredArgs { id }, callback)
+        self.imp.invoke_reducer_with_callback(
+            LendRawServerArgs {
+                server_id,
+                project_id,
+            },
+            callback,
+        )
     }
 }

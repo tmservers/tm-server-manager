@@ -679,6 +679,12 @@ export const ProjectRoleMember = __t.object("ProjectRoleMember", {
 });
 export type ProjectRoleMember = __Infer<typeof ProjectRoleMember>;
 
+export const ProjectServer = __t.object("ProjectServer", {
+  projectId: __t.u32(),
+  serverId: __t.u32(),
+});
+export type ProjectServer = __Infer<typeof ProjectServer>;
+
 // The tagged union or sum type for the algebraic type `ProjectStatus`.
 export const ProjectStatus = __t.enum("ProjectStatus", {
   Planning: __t.unit(),
