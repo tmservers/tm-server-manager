@@ -12,6 +12,7 @@ use crate::{
 
 pub(crate) mod permissions;
 pub mod roles;
+pub mod servers;
 mod status_schedule;
 
 /// A project is a logical grouping of competitions and also the only way to obtain a competition in the first place.

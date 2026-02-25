@@ -167,8 +167,8 @@ fn this_raw_server(ctx: &ViewContext) -> Option<RawServerV1> {
 }
 
 /// The Raw server pool are all servers of an account which are verified.
-#[view(accessor= raw_server_pool, public)]
-pub(crate) fn raw_server_pool(ctx: &ViewContext) -> Vec<RawServerV1> {
+#[view(accessor= user_raw_server_pool, public)]
+pub(crate) fn user_raw_server_pool(ctx: &ViewContext) -> Vec<RawServerV1> {
     let Ok(user) = ctx.get_user() else {
         return Vec::new();
     };
@@ -182,8 +182,8 @@ pub(crate) fn raw_server_pool(ctx: &ViewContext) -> Vec<RawServerV1> {
 }
 
 /// The Raw server pool are all servers of an account which are verified.
-#[view(accessor= available_server_pool, public)]
-pub(crate) fn available_server_pool(ctx: &ViewContext) -> Vec<RawServerV1> {
+#[view(accessor= user_available_server_pool, public)]
+pub(crate) fn user_available_server_pool(ctx: &ViewContext) -> Vec<RawServerV1> {
     let Ok(user) = ctx.get_user() else {
         return Vec::new();
     };
@@ -204,8 +204,8 @@ pub(crate) fn available_server_pool(ctx: &ViewContext) -> Vec<RawServerV1> {
 }
 
 /// The unverified version of a server pool includes all servers of an account which are not vet verified.
-#[view(accessor= raw_server_pool_unverified, public)]
-fn raw_server_pool_unverified(ctx: &ViewContext) -> Vec<RawServerV1> {
+#[view(accessor= user_raw_server_pool_unverified, public)]
+fn user_raw_server_pool_unverified(ctx: &ViewContext) -> Vec<RawServerV1> {
     let Ok(user) = ctx.get_user() else {
         return Vec::new();
     };

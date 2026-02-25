@@ -11,11 +11,12 @@ use crate::{
         },
         tab_competition,
     },
-    project::permissions::ProjectPermissionsV1,
+    project::{permissions::ProjectPermissionsV1, servers::{project_available_server_pool, tab_project_server}},
     raw_server::{
-        RawServerOccupation, RawServerV1, available_server_pool,
+        RawServerOccupation, RawServerV1,
         config::{RawServerConfig, tab_raw_server_config},
-        raw_server_pool, tab_raw_server, tab_raw_server_occupation,
+        tab_raw_server, tab_raw_server_occupation, user_available_server_pool,
+        user_raw_server_pool,
     },
     tm_match::{
         state::{TmMatchState, tab_tm_match_state},
@@ -190,36 +191,64 @@ pub fn match_create(
 }
 
 /// Assigns a server to the selected match.
+/// This is only possible if the match is configuring or down
+/// the server is not already occupied
+/// the user has the permission to assign servers in the project
+/// and the server is lended to the project.
 #[reducer]
 pub fn match_assign_server(ctx: &ReducerContext, to: u32, server_id: u32) -> Result<(), String> {
-    //TODO permissions. The problem is which server should be available?
-    // Maybe we need to map the server pool to a project that you have a permission add server to pool.
-    // This way multiple users can contribute their servers.
-    let user = ctx.get_user()?;
-    if let Some(server) = ctx.db.tab_raw_server().id().find(server_id)
-        && server.account_id == user.account_id
-        && server.is_verified()
-        && let Some(tm_match) = ctx.db.tab_tm_match().id().find(to)
-        && tm_match.status == MatchStatus::Configuring
-    {
-        /* if let Some(mut occupation) = ctx
-            .db
-            .tab_raw_server_occupation()
-            .server_id()
-            .find(server.id)
-        {} */
-        //TODO check permissions
-        ctx.db
-            .tab_raw_server_occupation()
-            .server_id()
-            .try_insert_or_update(RawServerOccupation::new(to, server_id))?;
+    let user_account = ctx.get_user_account()?;
+
+    let Some(tm_match) = ctx.db.tab_tm_match().id().find(to) else {
+        return Err("Supplied match was not found!".into());
+    };
+
+    ctx.auth_builder(tm_match.project_id, user_account)?
+        .permission(ProjectPermissionsV1::MATCH_ASSIGN_SERVER)
+        .authorize()?;
+
+    if tm_match.status != MatchStatus::Configuring {
+        return Err(
+            "Match is currently not getting configured so assigning a new server is possible."
+                .into(),
+        );
     }
+
+    if ctx
+        .db
+        .tab_raw_server_occupation()
+        .server_id()
+        .find(server_id)
+        .is_some()
+    {
+        return Err("Server is already occupied! Cannot assign!".into());
+    }
+
+    if ctx.db.tab_raw_server().id().find(server_id).is_none() {
+        return Err("Server with id was not found!".into());
+    };
+
+    if !ctx
+        .db
+        .tab_project_server()
+        .project_id()
+        .filter(tm_match.project_id)
+        .any(|s| s.server_id == server_id)
+    {
+        return Err("Server is not lended to the project".into());
+    }
+
+    ctx.db
+        .tab_raw_server_occupation()
+        .server_id()
+        .try_insert_or_update(RawServerOccupation::new(to, server_id))?;
+
     Ok(())
 }
 
 //TODO reevaluate if this is necessary.
 // This is because maybe it just is automatically upcomoing if all conncetions resolve?
-#[reducer]
+/* #[reducer]
 pub fn match_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> {
     let user_account = ctx.get_user_account()?;
     let Some(mut tm_match) = ctx.db.tab_tm_match().id().find(id) else {
@@ -239,7 +268,7 @@ pub fn match_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> {
     } else {
         Err("Not all condidiions were met".into())
     }
-}
+} */
 
 #[reducer]
 pub fn match_update_pre_config(
@@ -309,6 +338,7 @@ pub fn match_try_start(ctx: &ReducerContext, match_id: u32) -> Result<(), String
         .next()
         .is_some()
     {
+        //TODO this is depending on player state (e.g. is there need to be specific players present are all there?)
         tm_match.status = MatchStatus::Live;
         ctx.db.tab_tm_match().id().update(tm_match);
 
@@ -320,7 +350,7 @@ pub fn match_try_start(ctx: &ReducerContext, match_id: u32) -> Result<(), String
     }
 
     if tm_match.auto_provision_server {
-        let available_servers = available_server_pool(&ctx.as_read_only());
+        let available_servers = project_available_server_pool(&ctx.as_read_only());
         if available_servers.is_empty() {
             return Err("No server is assigned to the match and there are no servers left to auto provision. Cannot start the match!".into());
         }

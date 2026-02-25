@@ -38,6 +38,11 @@ impl ProjectPermissionsV1 {
     pub const MATCH_CREATE: ProjectPermissionsV1 = ProjectPermissionsV1(0b10000);
     pub const MATCH_DELETE: ProjectPermissionsV1 = ProjectPermissionsV1(0b1000000000);
     pub const MATCH_CONFIGURE: ProjectPermissionsV1 = ProjectPermissionsV1(0b1000000000000);
+
+    pub const RAW_SERVER_ADD: ProjectPermissionsV1 = ProjectPermissionsV1(0b10000000000000);
+    pub const RAW_SERVER_REVOKE: ProjectPermissionsV1 = ProjectPermissionsV1(0b100000000000000);
+
+    pub const MATCH_ASSIGN_SERVER: ProjectPermissionsV1 = ProjectPermissionsV1(0b1000000000000000);
 }
 
 impl PermissionType for ProjectPermissionsV1 {
