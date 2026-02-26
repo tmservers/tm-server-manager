@@ -54,7 +54,6 @@ impl Authorization for ReducerContext {
             return Ok(server);
         }
 
-        //TODO
         Err("Tried to use a reducer meant for Servers without the proper Authentication.".into())
     }
 
@@ -63,7 +62,6 @@ impl Authorization for ReducerContext {
             return Ok(worker);
         }
 
-        //TODO
         Err("Tried to use a reducer meant for Workers without the proper Authentication.".into())
     }
 
@@ -153,7 +151,7 @@ pub(crate) trait PermissionType:
     + Copy
     + BitAnd<Output = Self>
     + Not<Output = Self>
-    + BitOr
+    + BitOr<Output = Self>
 {
     fn initial() -> Self;
 
@@ -173,7 +171,7 @@ impl<Item: PermissionType> AuthBuilder<Item> {
     }
 
     pub(crate) fn permission(mut self, permission: Item) -> Self {
-        self.expected = self.expected + permission;
+        self.expected = self.expected | permission;
         self
     }
 

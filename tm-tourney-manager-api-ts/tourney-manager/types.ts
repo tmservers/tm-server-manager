@@ -665,17 +665,25 @@ export const PointsLimit = __t.enum("PointsLimit", {
 });
 export type PointsLimit = __Infer<typeof PointsLimit>;
 
+export const ProjectMember = __t.object("ProjectMember", {
+  permissions: __t.u64(),
+  id: __t.u32(),
+  projectId: __t.u32(),
+  accountId: __t.u32(),
+});
+export type ProjectMember = __Infer<typeof ProjectMember>;
+
 export const ProjectRole = __t.object("ProjectRole", {
   name: __t.string(),
   id: __t.u32(),
   projectId: __t.u32(),
-  permissions1: __t.u64(),
+  permissions: __t.u64(),
 });
 export type ProjectRole = __Infer<typeof ProjectRole>;
 
 export const ProjectRoleMember = __t.object("ProjectRoleMember", {
   roleId: __t.u32(),
-  accountId: __t.uuid(),
+  accountId: __t.u32(),
 });
 export type ProjectRoleMember = __Infer<typeof ProjectRoleMember>;
 

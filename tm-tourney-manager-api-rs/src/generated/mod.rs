@@ -108,8 +108,10 @@ pub mod project_edit_dates_reducer;
 pub mod project_edit_description_reducer;
 pub mod project_edit_name_reducer;
 pub mod project_member_add_reducer;
+pub mod project_member_assign_permission_reducer;
 pub mod project_member_remove_reducer;
 pub mod project_member_type;
+pub mod project_role_assign_permission_reducer;
 pub mod project_role_create_reducer;
 pub mod project_role_member_assign_reducer;
 pub mod project_role_member_remove_reducer;
@@ -296,8 +298,10 @@ pub use project_edit_dates_reducer::project_edit_dates;
 pub use project_edit_description_reducer::project_edit_description;
 pub use project_edit_name_reducer::project_edit_name;
 pub use project_member_add_reducer::project_member_add;
+pub use project_member_assign_permission_reducer::project_member_assign_permission;
 pub use project_member_remove_reducer::project_member_remove;
 pub use project_member_type::ProjectMember;
+pub use project_role_assign_permission_reducer::project_role_assign_permission;
 pub use project_role_create_reducer::project_role_create;
 pub use project_role_member_assign_reducer::project_role_member_assign;
 pub use project_role_member_remove_reducer::project_role_member_remove;
@@ -496,8 +500,16 @@ pub enum Reducer {
         project_id: u32,
         account_id: __sdk::Uuid,
     },
+    ProjectMemberAssignPermission {
+        member_id: u32,
+        new_permissions: u64,
+    },
     ProjectMemberRemove {
         member_id: u32,
+    },
+    ProjectRoleAssignPermission {
+        role_id: u32,
+        new_permissions: u64,
     },
     ProjectRoleCreate {
         project_id: u32,
@@ -580,7 +592,9 @@ impl __sdk::Reducer for Reducer {
             Reducer::ProjectEditDescription { .. } => "project_edit_description",
             Reducer::ProjectEditName { .. } => "project_edit_name",
             Reducer::ProjectMemberAdd { .. } => "project_member_add",
+            Reducer::ProjectMemberAssignPermission { .. } => "project_member_assign_permission",
             Reducer::ProjectMemberRemove { .. } => "project_member_remove",
+            Reducer::ProjectRoleAssignPermission { .. } => "project_role_assign_permission",
             Reducer::ProjectRoleCreate { .. } => "project_role_create",
             Reducer::ProjectRoleMemberAssign { .. } => "project_role_member_assign",
             Reducer::ProjectRoleMemberRemove { .. } => "project_role_member_remove",
@@ -783,11 +797,29 @@ impl __sdk::Reducer for Reducer {
                 project_id: project_id.clone(),
                 account_id: account_id.clone(),
             }),
+            Reducer::ProjectMemberAssignPermission {
+                member_id,
+                new_permissions,
+            } => __sats::bsatn::to_vec(
+                &project_member_assign_permission_reducer::ProjectMemberAssignPermissionArgs {
+                    member_id: member_id.clone(),
+                    new_permissions: new_permissions.clone(),
+                },
+            ),
             Reducer::ProjectMemberRemove { member_id } => {
                 __sats::bsatn::to_vec(&project_member_remove_reducer::ProjectMemberRemoveArgs {
                     member_id: member_id.clone(),
                 })
             }
+            Reducer::ProjectRoleAssignPermission {
+                role_id,
+                new_permissions,
+            } => __sats::bsatn::to_vec(
+                &project_role_assign_permission_reducer::ProjectRoleAssignPermissionArgs {
+                    role_id: role_id.clone(),
+                    new_permissions: new_permissions.clone(),
+                },
+            ),
             Reducer::ProjectRoleCreate { project_id, name } => {
                 __sats::bsatn::to_vec(&project_role_create_reducer::ProjectRoleCreateArgs {
                     project_id: project_id.clone(),

@@ -59,6 +59,14 @@ import PostRecordReducer from "./post_record_reducer";
 import ProjectEditDatesReducer from "./project_edit_dates_reducer";
 import ProjectEditDescriptionReducer from "./project_edit_description_reducer";
 import ProjectEditNameReducer from "./project_edit_name_reducer";
+import ProjectMemberAddReducer from "./project_member_add_reducer";
+import ProjectMemberAssignPermissionReducer from "./project_member_assign_permission_reducer";
+import ProjectMemberRemoveReducer from "./project_member_remove_reducer";
+import ProjectRoleAssignPermissionReducer from "./project_role_assign_permission_reducer";
+import ProjectRoleCreateReducer from "./project_role_create_reducer";
+import ProjectRoleMemberAssignReducer from "./project_role_member_assign_reducer";
+import ProjectRoleMemberRemoveReducer from "./project_role_member_remove_reducer";
+import ProjectRoleRemoveReducer from "./project_role_remove_reducer";
 import ProjectUpdateStatusReducer from "./project_update_status_reducer";
 import RawServerPlayerAddReducer from "./raw_server_player_add_reducer";
 import RawServerPlayerRemoveReducer from "./raw_server_player_remove_reducer";
@@ -349,6 +357,14 @@ const reducersSchema = __reducers(
   __reducerSchema("project_edit_dates", ProjectEditDatesReducer),
   __reducerSchema("project_edit_description", ProjectEditDescriptionReducer),
   __reducerSchema("project_edit_name", ProjectEditNameReducer),
+  __reducerSchema("project_member_add", ProjectMemberAddReducer),
+  __reducerSchema("project_member_assign_permission", ProjectMemberAssignPermissionReducer),
+  __reducerSchema("project_member_remove", ProjectMemberRemoveReducer),
+  __reducerSchema("project_role_assign_permission", ProjectRoleAssignPermissionReducer),
+  __reducerSchema("project_role_create", ProjectRoleCreateReducer),
+  __reducerSchema("project_role_member_assign", ProjectRoleMemberAssignReducer),
+  __reducerSchema("project_role_member_remove", ProjectRoleMemberRemoveReducer),
+  __reducerSchema("project_role_remove", ProjectRoleRemoveReducer),
   __reducerSchema("project_update_status", ProjectUpdateStatusReducer),
   __reducerSchema("raw_server_player_add", RawServerPlayerAddReducer),
   __reducerSchema("raw_server_player_remove", RawServerPlayerRemoveReducer),
