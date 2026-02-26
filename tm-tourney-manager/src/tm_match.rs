@@ -11,7 +11,10 @@ use crate::{
         },
         tab_competition,
     },
-    project::{permissions::ProjectPermissionsV1, servers::{project_available_server_pool, tab_project_server}},
+    project::{
+        permissions::ProjectPermissionsV1,
+        servers::{project_available_server_pool, tab_project_server},
+    },
     raw_server::{
         RawServerOccupation, RawServerV1,
         config::{RawServerConfig, tab_raw_server_config},
@@ -416,5 +419,5 @@ pub fn match_delete(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
 
 #[view(accessor=tm_match,public)]
 fn tm_match(ctx: &ViewContext) -> impl Query<TmMatchV1> {
-    ctx.from.tab_tm_match().build()
+    ctx.from.tab_tm_match()
 }

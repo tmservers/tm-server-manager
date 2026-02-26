@@ -99,12 +99,12 @@ fn raw_server_current_players(
     ctx.from
         .tab_raw_server_player()
         .r#where(|p| p.server_id.eq(server_id))
-        .build()
 }
 
+// We need to distinguish allowed and mandatory players.
 #[view(accessor= raw_server_expected_players, public)]
 fn raw_server_allowed_players(ctx: &ViewContext) -> Vec<RawServerPlayer> {
-    let Some(server) = ctx.db.tab_raw_server().identity().find(ctx.sender()) else {
+    let Ok(server) = ctx.get_server() else {
         return Vec::new();
     };
 

@@ -10,7 +10,7 @@ use crate::authorization::Authorization;
 pub mod config;
 pub mod event;
 pub mod method;
-pub mod state;
+pub mod player;
 
 #[spacetimedb::table(accessor=tab_raw_server)]
 pub struct RawServerV1 {

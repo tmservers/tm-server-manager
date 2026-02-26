@@ -5,7 +5,7 @@ use crate::{
     authorization::Authorization,
     competition::connection::{NodeKindHandle, internal_graph_resolution_node_finished},
     raw_server::{
-        state::{raw_server_player_add, raw_server_player_remove, tab_raw_server_player},
+        player::{raw_server_player_add, raw_server_player_remove, tab_raw_server_player},
         tab_raw_server, tab_raw_server_occupation,
     },
     tm_match::{
