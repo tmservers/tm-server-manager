@@ -6,8 +6,8 @@ use crate::{
     project::{
         permissions::ProjectPermissionsV1,
         roles::{
-            tab_project_role, tab_project_role__view, tab_project_role_members,
-            tab_project_role_members__view,
+            tab_project_role, tab_project_role__view, tab_project_role_member,
+            tab_project_role_member__view,
         },
     },
     raw_server::{RawServerV1, tab_raw_server, tab_raw_server__view},
@@ -74,7 +74,7 @@ impl Authorization for ReducerContext {
     ) -> Result<AuthBuilder<ProjectPermissionsV1>, String> {
         let permissions = self
             .db
-            .tab_project_role_members()
+            .tab_project_role_member()
             .user_roles()
             .filter((project_id, account_id))
             .fold(ProjectPermissionsV1::default(), |acc, member| {
@@ -133,7 +133,7 @@ impl Authorization for ViewContext {
     ) -> Result<AuthBuilder<ProjectPermissionsV1>, String> {
         let permissions = self
             .db
-            .tab_project_role_members()
+            .tab_project_role_member()
             .user_roles()
             .filter((project_id, account_id))
             .fold(ProjectPermissionsV1::default(), |acc, member| {

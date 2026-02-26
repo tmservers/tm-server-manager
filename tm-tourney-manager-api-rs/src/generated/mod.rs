@@ -107,7 +107,14 @@ pub mod project_available_server_pool_table;
 pub mod project_edit_dates_reducer;
 pub mod project_edit_description_reducer;
 pub mod project_edit_name_reducer;
+pub mod project_member_add_reducer;
+pub mod project_member_remove_reducer;
+pub mod project_member_type;
+pub mod project_role_create_reducer;
+pub mod project_role_member_assign_reducer;
+pub mod project_role_member_remove_reducer;
 pub mod project_role_member_type;
+pub mod project_role_remove_reducer;
 pub mod project_role_type;
 pub mod project_server_type;
 pub mod project_status_schedule_v_1_type;
@@ -288,7 +295,14 @@ pub use project_available_server_pool_table::*;
 pub use project_edit_dates_reducer::project_edit_dates;
 pub use project_edit_description_reducer::project_edit_description;
 pub use project_edit_name_reducer::project_edit_name;
+pub use project_member_add_reducer::project_member_add;
+pub use project_member_remove_reducer::project_member_remove;
+pub use project_member_type::ProjectMember;
+pub use project_role_create_reducer::project_role_create;
+pub use project_role_member_assign_reducer::project_role_member_assign;
+pub use project_role_member_remove_reducer::project_role_member_remove;
 pub use project_role_member_type::ProjectRoleMember;
+pub use project_role_remove_reducer::project_role_remove;
 pub use project_role_type::ProjectRole;
 pub use project_server_type::ProjectServer;
 pub use project_status_schedule_v_1_type::ProjectStatusScheduleV1;
@@ -478,6 +492,28 @@ pub enum Reducer {
         project_id: u32,
         name: String,
     },
+    ProjectMemberAdd {
+        project_id: u32,
+        account_id: __sdk::Uuid,
+    },
+    ProjectMemberRemove {
+        member_id: u32,
+    },
+    ProjectRoleCreate {
+        project_id: u32,
+        name: String,
+    },
+    ProjectRoleMemberAssign {
+        role_id: u32,
+        account_id: __sdk::Uuid,
+    },
+    ProjectRoleMemberRemove {
+        role_id: u32,
+        account_id: __sdk::Uuid,
+    },
+    ProjectRoleRemove {
+        role_id: u32,
+    },
     ProjectUpdateStatus {
         project_id: u32,
     },
@@ -543,6 +579,12 @@ impl __sdk::Reducer for Reducer {
             Reducer::ProjectEditDates { .. } => "project_edit_dates",
             Reducer::ProjectEditDescription { .. } => "project_edit_description",
             Reducer::ProjectEditName { .. } => "project_edit_name",
+            Reducer::ProjectMemberAdd { .. } => "project_member_add",
+            Reducer::ProjectMemberRemove { .. } => "project_member_remove",
+            Reducer::ProjectRoleCreate { .. } => "project_role_create",
+            Reducer::ProjectRoleMemberAssign { .. } => "project_role_member_assign",
+            Reducer::ProjectRoleMemberRemove { .. } => "project_role_member_remove",
+            Reducer::ProjectRoleRemove { .. } => "project_role_remove",
             Reducer::ProjectUpdateStatus { .. } => "project_update_status",
             Reducer::RawServerPlayerAdd { .. } => "raw_server_player_add",
             Reducer::RawServerPlayerRemove { .. } => "raw_server_player_remove",
@@ -732,6 +774,47 @@ impl __sdk::Reducer for Reducer {
                 __sats::bsatn::to_vec(&project_edit_name_reducer::ProjectEditNameArgs {
                     project_id: project_id.clone(),
                     name: name.clone(),
+                })
+            }
+            Reducer::ProjectMemberAdd {
+                project_id,
+                account_id,
+            } => __sats::bsatn::to_vec(&project_member_add_reducer::ProjectMemberAddArgs {
+                project_id: project_id.clone(),
+                account_id: account_id.clone(),
+            }),
+            Reducer::ProjectMemberRemove { member_id } => {
+                __sats::bsatn::to_vec(&project_member_remove_reducer::ProjectMemberRemoveArgs {
+                    member_id: member_id.clone(),
+                })
+            }
+            Reducer::ProjectRoleCreate { project_id, name } => {
+                __sats::bsatn::to_vec(&project_role_create_reducer::ProjectRoleCreateArgs {
+                    project_id: project_id.clone(),
+                    name: name.clone(),
+                })
+            }
+            Reducer::ProjectRoleMemberAssign {
+                role_id,
+                account_id,
+            } => __sats::bsatn::to_vec(
+                &project_role_member_assign_reducer::ProjectRoleMemberAssignArgs {
+                    role_id: role_id.clone(),
+                    account_id: account_id.clone(),
+                },
+            ),
+            Reducer::ProjectRoleMemberRemove {
+                role_id,
+                account_id,
+            } => __sats::bsatn::to_vec(
+                &project_role_member_remove_reducer::ProjectRoleMemberRemoveArgs {
+                    role_id: role_id.clone(),
+                    account_id: account_id.clone(),
+                },
+            ),
+            Reducer::ProjectRoleRemove { role_id } => {
+                __sats::bsatn::to_vec(&project_role_remove_reducer::ProjectRoleRemoveArgs {
+                    role_id: role_id.clone(),
                 })
             }
             Reducer::ProjectUpdateStatus { project_id } => {

@@ -10,7 +10,7 @@ pub struct ProjectRole {
     pub name: String,
     pub id: u32,
     pub project_id: u32,
-    pub permissions_1: u64,
+    pub permissions: u64,
 }
 
 impl __sdk::InModule for ProjectRole {
@@ -24,7 +24,7 @@ pub struct ProjectRoleCols {
     pub name: __sdk::__query_builder::Col<ProjectRole, String>,
     pub id: __sdk::__query_builder::Col<ProjectRole, u32>,
     pub project_id: __sdk::__query_builder::Col<ProjectRole, u32>,
-    pub permissions1: __sdk::__query_builder::Col<ProjectRole, u64>,
+    pub permissions: __sdk::__query_builder::Col<ProjectRole, u64>,
 }
 
 impl __sdk::__query_builder::HasCols for ProjectRole {
@@ -34,7 +34,7 @@ impl __sdk::__query_builder::HasCols for ProjectRole {
             name: __sdk::__query_builder::Col::new(table_name, "name"),
             id: __sdk::__query_builder::Col::new(table_name, "id"),
             project_id: __sdk::__query_builder::Col::new(table_name, "project_id"),
-            permissions1: __sdk::__query_builder::Col::new(table_name, "permissions1"),
+            permissions: __sdk::__query_builder::Col::new(table_name, "permissions"),
         }
     }
 }

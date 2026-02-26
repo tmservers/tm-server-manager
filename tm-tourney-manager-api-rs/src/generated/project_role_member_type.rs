@@ -8,7 +8,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[sats(crate = __lib)]
 pub struct ProjectRoleMember {
     pub role_id: u32,
-    pub account_id: __sdk::Uuid,
+    pub account_id: u32,
 }
 
 impl __sdk::InModule for ProjectRoleMember {
@@ -20,7 +20,7 @@ impl __sdk::InModule for ProjectRoleMember {
 /// Provides typed access to columns for query building.
 pub struct ProjectRoleMemberCols {
     pub role_id: __sdk::__query_builder::Col<ProjectRoleMember, u32>,
-    pub account_id: __sdk::__query_builder::Col<ProjectRoleMember, __sdk::Uuid>,
+    pub account_id: __sdk::__query_builder::Col<ProjectRoleMember, u32>,
 }
 
 impl __sdk::__query_builder::HasCols for ProjectRoleMember {
@@ -37,7 +37,7 @@ impl __sdk::__query_builder::HasCols for ProjectRoleMember {
 ///
 /// Provides typed access to indexed columns for query building.
 pub struct ProjectRoleMemberIxCols {
-    pub account_id: __sdk::__query_builder::IxCol<ProjectRoleMember, __sdk::Uuid>,
+    pub account_id: __sdk::__query_builder::IxCol<ProjectRoleMember, u32>,
     pub role_id: __sdk::__query_builder::IxCol<ProjectRoleMember, u32>,
 }
 
