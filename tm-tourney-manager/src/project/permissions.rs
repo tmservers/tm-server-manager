@@ -51,7 +51,15 @@ impl PermissionType for ProjectPermissionsV1 {
     }
 
     fn passed(self) -> bool {
+        //TODO make this correct.
+        //TODO how to ideally handle the OWNER
         self.0 == 0
+    }
+
+    fn bypass(&self) -> bool {
+        //TODO make this correct
+        // self.0 & 0b1 == 0b1
+        true
     }
 }
 

@@ -155,6 +155,8 @@ pub(crate) trait PermissionType:
 {
     fn initial() -> Self;
 
+    fn bypass(&self) -> bool;
+
     fn passed(self) -> bool;
 }
 pub(crate) struct AuthBuilder<Item: PermissionType> {
