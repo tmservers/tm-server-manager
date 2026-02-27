@@ -110,20 +110,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             }
         });
 
-        //TODO proper error handling
-        SPACETIME.wait().procedures.login_as_server_then(
-            tm_server_login,
-            tm_server_password,
-            tm_account_id,
-            |_, result| {
-                if result.is_ok() && result.unwrap().is_ok() {
-                    tracing::info!("Successfully connected to tmservers.live!")
-                } else {
-                    tracing::error!("Could not successfully authenticate as a server!");
-                    std::process::exit(1)
-                };
-            },
-        );
+        SPACETIME
+            .wait()
+            .procedures
+            .login_as_server_async(tm_server_login, tm_server_password, tm_account_id)
+            .await
+            .unwrap()
+            .expect("Server could not be authenticated successfully");
+
+        tracing::info!("Successfully connected to tmservers.live!");
     }
 
     // Initial Configuration for the Trackmania server connection.

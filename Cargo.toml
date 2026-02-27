@@ -47,9 +47,11 @@ async_fn_traits = "*"
 #============
 # SpacetimeDB
 #============
-spacetimedb = { version = "2.0.1", features = ["unstable"] }
-spacetimedb-lib = { version = "2.0.1" }
-spacetimedb-sdk = { version = "2.0.1" }
+spacetimedb = { version = "2.0.2", features = [
+    "unstable",
+], git = "https://github.com/kistz/SpacetimeDB.git", branch = "async-procedures" }
+spacetimedb-lib = { version = "2.0.2", git = "https://github.com/kistz/SpacetimeDB.git", branch = "async-procedures" }
+spacetimedb-sdk = { version = "2.0.2", git = "https://github.com/kistz/SpacetimeDB.git", branch = "async-procedures" }
 
 
 #==============
