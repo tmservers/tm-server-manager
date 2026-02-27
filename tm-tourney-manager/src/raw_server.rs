@@ -122,7 +122,7 @@ pub fn login_as_server(
     let result = ctx
         .http
         .send(request)
-        .map_err(|_| "Internal Error! The HTTP request could not be sent!")?;
+        .map_err(|e| format!("Internal Error! The HTTP request could not be sent! Error: {e}"))?;
 
     let status = result.status();
 

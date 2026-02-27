@@ -41,8 +41,6 @@ static TRACKMANIA_FILES: OnceLock<String> = OnceLock::new();
 
 static SERVER_CONFIG: OnceLock<ServerConfig> = OnceLock::new();
 
-//static STATE: OnceLock<Mutex<State>> = OnceLock::new();
-
 /// Load credentials from a file and connect to the database.
 #[instrument(level = "debug")]
 fn connect_to_db() -> DbConnection {
@@ -61,10 +59,14 @@ fn connect_to_db() -> DbConnection {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     dotenvy::from_path(env!("CARGO_MANIFEST_DIR").to_string() + "/.env")
-        .expect("Es konnte kein .env file gefunden werden!");
+        .expect(".env file could not be found!");
+    if let Err(dbg_error) = dotenvy::from_path(env!("CARGO_MANIFEST_DIR").to_string() + "/.env")
+        && let Err(prod_error) = dotenvy::dotenv()
+    {
+        tracing::warn!("No .env file was found. Error Prod: {prod_error}, Error Dbg: {dbg_error}")
+    };
 
-    // Tracing Guard.
-    let _ = init_tracing_subscriber();
+    init_tracing_subscriber();
 
     let tm_server_login = std::env::var("TM_MASTERSERVER_LOGIN")
         .expect("Environment variable: TM_MASTERSERVER_LOGIN MUST be set");

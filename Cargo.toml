@@ -30,16 +30,13 @@ edition = "2024"
 #==================
 # Util Dependencies
 #==================
-takumi = "0"
+#takumi = "0"
 dotenvy = "0.15"
 tokio = { features = ["full"], version = "1" }
 base64 = { version = "*" }
 dxr = "0.8"
-# Renamed to json because maybe swtich to simd-json
-json = { package = "serde_json", version = "*" }
+json = { package = "simd-json", version = "0.17" }
 serde = { version = "1" }
-serde_json = "1.0.143"
-petgraph = { version = "0.8" }
 uuid = { version = "1.12", features = ["serde"] }
 # This can be removed if we actualy have higher-ranked trait bounds for AsyncFnMuts Output type which is a supertrait of AsyncFn which is needed for event propagation in the trackmania server. 
 async_fn_traits = "*"

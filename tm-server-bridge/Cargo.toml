@@ -20,7 +20,7 @@ tm-tourney-manager-api-rs.workspace = true
 
 dotenvy.workspace = true
 
-takumi.workspace = true
+#takumi.workspace = true
 
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
@@ -29,27 +29,6 @@ serde = { workspace = true, features = ['derive'] }
 
 nadeo-api = "*"
 
-
-# Implements the types defined in the Otel spec
-opentelemetry = { version = "0.31.0", default-features = false, features = [
-    "trace",
-] }
-opentelemetry_sdk = { version = "0.31.0", default-features = false, features = [
-    "trace",
-] }
-opentelemetry-stdout = { version = "0.31.0", features = ["trace", "metrics"] }
-opentelemetry-semantic-conventions = { version = "0.31.0", features = [
-    "semconv_experimental",
-] }
-opentelemetry-otlp = { version = "0.31.0", features = [
-    "metrics",
-    "grpc-tonic",
-] }
-# Integration between the tracing crate and the opentelemetry crate
-tracing-opentelemetry = "0.32"
-
-# Allows you to export data to Jaeger
-opentelemetry-jaeger-propagator = "0.31"
 
 [dev-dependencies]
 testcontainers = { version = "*", features = ["blocking"] }
