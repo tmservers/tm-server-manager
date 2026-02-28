@@ -1,4 +1,4 @@
-use dxr::{TryFromParams, TryFromValue};
+use dxr::TryFromValue;
 
 use crate::{
     base::{RoundTime, login_to_account_id},
@@ -56,20 +56,6 @@ pub struct PlayerInfo {
     pub ladder_ranking: i32,
     pub flags: i32,
 }
-
-/* impl TryFromParams for PlayerInfo {
-    fn try_from_params(values: &[dxr::Value]) -> Result<Self, dxr::Error> {
-        Ok(Self {
-            account_id: login_to_account_id(&String::try_from_value(&values[0])?),
-            nick_name: String::try_from_value(&values[1])?,
-            player_id: i32::try_from_value(&values[2])?,
-            team_id: i32::try_from_value(&values[3])?,
-            spectator_status: i32::try_from_value(&values[4])?,
-            ladder_ranking: i32::try_from_value(&values[5])?,
-            flags: i32::try_from_value(&values[6])?,
-        })
-    }
-} */
 
 impl dxr::TryFromValue for PlayerInfo {
     fn try_from_value(value: &dxr::Value) -> ::std::result::Result<PlayerInfo, dxr::Error> {

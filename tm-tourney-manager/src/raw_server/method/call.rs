@@ -1,6 +1,4 @@
-use spacetimedb::{
-    Query, ReducerContext, Table, Timestamp, Uuid, ViewContext, reducer, table, view,
-};
+use spacetimedb::{ReducerContext, Table, Timestamp, Uuid, ViewContext, reducer, table, view};
 use tm_server_types::method::MethodCall;
 
 use crate::{

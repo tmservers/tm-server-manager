@@ -1098,7 +1098,7 @@ dependencies = [
 
 [[package]]
 name = "gbx-rs"
-version = "0.0.4-dev"
+version = "0.1.0-dev"
 dependencies = [
  "bytes",
  "flate2",
@@ -3496,7 +3496,7 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tm-leaderboard-worker"
-version = "0.0.4-dev"
+version = "0.1.0-dev"
 dependencies = [
  "dotenvy",
  "nadeo-api-rs",
@@ -3507,7 +3507,7 @@ dependencies = [
 
 [[package]]
 name = "tm-server-bridge"
-version = "0.0.4-dev"
+version = "0.1.0-dev"
 dependencies = [
  "dotenvy",
  "nadeo-api",
@@ -3525,10 +3525,10 @@ dependencies = [
 
 [[package]]
 name = "tm-server-controller"
-version = "0.0.4-dev"
+version = "0.1.0-dev"
 dependencies = [
  "async_fn_traits",
- "base64 0.22.1",
+ "base64 0.21.7",
  "bytes",
  "dashmap",
  "dxr",
@@ -3537,7 +3537,7 @@ dependencies = [
  "serde",
  "tachyonix",
  "testcontainers",
- "thiserror 2.0.18",
+ "thiserror 1.0.69",
  "tm-server-types",
  "tokio",
  "tracing",
@@ -3545,9 +3545,9 @@ dependencies = [
 
 [[package]]
 name = "tm-server-types"
-version = "0.0.4-dev"
+version = "0.1.0-dev"
 dependencies = [
- "base64 0.22.1",
+ "base64 0.21.7",
  "dxr",
  "serde",
  "simd-json",
@@ -3557,9 +3557,9 @@ dependencies = [
 
 [[package]]
 name = "tm-tourney-manager"
-version = "0.0.4-dev"
+version = "0.1.0-dev"
 dependencies = [
- "base64 0.22.1",
+ "base64 0.21.7",
  "gbx-header",
  "log",
  "serde",
@@ -3570,14 +3570,14 @@ dependencies = [
 
 [[package]]
 name = "tm-tourney-manager-api-rs"
-version = "0.0.4-dev"
+version = "0.1.0-dev"
 dependencies = [
  "spacetimedb-sdk",
 ]
 
 [[package]]
 name = "tm-tourney-manager-test"
-version = "0.0.4-dev"
+version = "0.1.0-dev"
 dependencies = [
  "insta",
  "spacetimedb-sdk",

@@ -12,7 +12,7 @@ members = [
 resolver = "3"
 
 [workspace.package]
-version = "0.0.4-dev"
+version = "0.1.0-dev"
 authors = ["kistz (Kilian Strunz)"]
 keywords = ["trackmania", "nadeo", "gbxremote", "gbx", "api", "xml-rpc"]
 categories = [
@@ -55,9 +55,9 @@ spacetimedb-sdk = { version = "2.0.2", git = "https://github.com/kistz/Spacetime
 # Worspace Deps
 #==============
 gbx-rs = { path = "./gbx-rs" }
-tm-tourney-manager-api-rs = { path = "./tm-tourney-manager-api-rs" }
-tm-server-types = { path = "./tm-server-types" }
-tm-server-controller = { path = "./tm-server-controller" }
+tm-tourney-manager-api-rs = { path = "./tm-tourney-manager-api-rs", version = "0.1.0-dev" }
+tm-server-types = { path = "./tm-server-types", version = "0.1.0-dev" }
+tm-server-controller = { path = "./tm-server-controller", version = "0.1.0-dev" }
 
 
 #=======

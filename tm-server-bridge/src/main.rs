@@ -80,6 +80,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         .set(std::env::var("TM_FILES").unwrap_or("./UserData".into()))
         .expect("The Path to the Trackmania Filesystem could not be established. Aborting.");
 
+    if !std::fs::exists(TRACKMANIA_FILES.wait()).is_ok_and(|b| b) {
+        panic!(
+            "The TM_FILES variable is set to {} but the directory does not exist.
+            Consider mounting the correct directory if you are using a docker container.",
+            TRACKMANIA_FILES.wait()
+        );
+    } else {
+        tracing::info!("Successfully detected the trackmania filesystem.");
+    }
+
     {
         //Initialize the NadeoClient
         let nadeo = NadeoClient::builder()

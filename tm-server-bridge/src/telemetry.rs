@@ -1,5 +1,5 @@
 use tracing::Level;
-use tracing_subscriber::{layer::SubscriberExt as _, util::SubscriberInitExt};
+use tracing_subscriber::{filter, layer::SubscriberExt as _, util::SubscriberInitExt};
 
 // Initialize tracing-subscriber and return OtelGuard for opentelemetry-related termination processing
 pub(crate) fn init_tracing_subscriber() {
@@ -7,6 +7,7 @@ pub(crate) fn init_tracing_subscriber() {
         .with(tracing_subscriber::filter::LevelFilter::from_level(
             Level::INFO,
         ))
+        .with(filter::EnvFilter::from_env("LOG_LEVEL"))
         .with(tracing_subscriber::fmt::layer())
         .init();
 }
