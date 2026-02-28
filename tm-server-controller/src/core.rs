@@ -231,26 +231,29 @@ impl TrackmaniaServer {
                             let modescript_callback_body =
                                 String::try_from_value(&value[0]).unwrap();
 
-                            info!("Name: {callback_name}, JSON: {modescript_callback_body:?}");
+                            tracing::debug!(
+                                "Received callback new. Name: {callback_name}, Body: {modescript_callback_body:?}"
+                            );
 
                             // Parse the event to make it fully typed.
                             match Event::from_modescript(&callback_name, modescript_callback_body) {
                                 Ok(event) => event,
                                 Err(error) => {
-                                    error!("Couldnt deserialize ModeScript event: {error:?}");
+                                    error!("Could not deserialize ModeScript event: {error:?}");
                                     None
                                 }
                             }
                         } else {
-                            info!(
-                                "Old callback Name: {:?} , Body: {:?}",
-                                callback_name, callback.params
+                            tracing::debug!(
+                                "Received callback old. Name: {:?} , Body: {:?}",
+                                callback_name,
+                                callback.params
                             );
                             let params = callback.params;
                             match Event::from_legacy(&callback_name, params) {
                                 Ok(event) => event,
                                 Err(error) => {
-                                    error!("Couldnt deserialize Legacy event: {error:?}");
+                                    error!("Could not deserialize Legacy event: {error:?}");
                                     None
                                 }
                             }

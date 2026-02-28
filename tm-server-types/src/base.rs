@@ -14,6 +14,7 @@ pub use map::Map;
 mod time;
 pub use time::*;
 
+#[track_caller]
 pub fn login_to_account_id(login: &str) -> String {
     let string = login.replace("-", "+");
     let mut string = string.replace("_", "/");

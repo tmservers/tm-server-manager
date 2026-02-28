@@ -48,5 +48,10 @@ where
     D: Deserializer<'de>,
 {
     let login = String::deserialize(d)?;
+    // This is hardcoded because on old maps Nadeo maps were using no account.
+    if login == "Nadeo" {
+        // Account id of the Nadeo. account which is used now.
+        return Ok("aa02b90e-0652-4a1c-b705-4677e2983003".into());
+    }
     Ok(login_to_account_id(&login))
 }
