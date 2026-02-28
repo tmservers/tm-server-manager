@@ -58,8 +58,6 @@ fn connect_to_db() -> DbConnection {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    dotenvy::from_path(env!("CARGO_MANIFEST_DIR").to_string() + "/.env")
-        .expect(".env file could not be found!");
     if let Err(dbg_error) = dotenvy::from_path(env!("CARGO_MANIFEST_DIR").to_string() + "/.env")
         && let Err(prod_error) = dotenvy::dotenv()
     {
@@ -76,6 +74,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         .expect("Environment variable: TM_ACCOUNT_ID MUST be set at the moment.
         This will be the account where the server will be available under and can be obtained from e.g. trackmania.io. 
         We hope to make this optional in the future but depend on a change from nadeo on that sooo good luck ^^");
+    let tm_server_url = std::env::var("TM_SERVER_URL").expect("Environment variable: TM_SERVER_URL MUST be set. This is needed to connect to the Trackmania server.");
 
     TRACKMANIA_FILES
         .set(std::env::var("TM_FILES").unwrap_or("./UserData".into()))
@@ -94,7 +93,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     //Connect to the Trackmania server
     {
-        let server = TrackmaniaServer::new("127.0.0.1:5001").await;
+        let server = TrackmaniaServer::new(tm_server_url).await;
         _ = TRACKMANIA.set(server);
     }
 

@@ -29,6 +29,13 @@ serde = { workspace = true, features = ['derive'] }
 
 nadeo-api = "*"
 
+# This is needed because openssl is an implicit dependency.
+# If we want to compile for docker musl we need to statically link
+# against it and otherwise it wont be found.
+# The other builds continue to work tho so for now deciding to not 
+# feature gate it and enable it iin all cases.
+openssl = { version = "0.10", features = ["vendored"] }
+
 
 [dev-dependencies]
 testcontainers = { version = "*", features = ["blocking"] }
