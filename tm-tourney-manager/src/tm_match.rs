@@ -55,8 +55,6 @@ pub mod template;
 /// the captured server. Advances to [MatchStatus::Ended].
 #[table(accessor= tab_tm_match)]
 pub struct TmMatchV1 {
-    /* /// The assigned server that is currently used by this match.
-    server_id: Option<String>, */
     name: String,
 
     #[auto_inc]

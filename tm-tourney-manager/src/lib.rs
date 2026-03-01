@@ -10,6 +10,7 @@ pub mod competition;
 pub mod environment;
 pub mod ghosts;
 pub mod monitoring;
+pub mod portal;
 pub mod project;
 pub mod raw_server;
 pub mod record;

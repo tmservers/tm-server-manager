@@ -6,6 +6,7 @@ use crate::{
         connection::connection_data::{CompetitionConnectionData, tab_competition_connection_data},
         tab_competition,
     },
+    portal::tab_portal,
     project::permissions::ProjectPermissionsV1,
     scheduling::tab_schedule,
     tm_match::tab_tm_match,
@@ -58,16 +59,18 @@ pub enum ConnectionSettings {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, SpacetimeType)]
+#[non_exhaustive]
 pub enum NodeKindHandle {
     MatchV1(u32),
     CompetitionV1(u32),
     MonitoringV1(u32),
     ServerV1(u32),
     SchedulingV1(u32),
+    PortalV1(u32),
 }
 
 impl NodeKindHandle {
-    fn get_competition(&self, ctx: &ReducerContext) -> Result<u32, String> {
+    pub(crate) fn get_competition(&self, ctx: &ReducerContext) -> Result<u32, String> {
         match self {
             NodeKindHandle::MatchV1(m) => {
                 if let Some(ma) = ctx.db.tab_tm_match().id().find(m) {
@@ -97,11 +100,18 @@ impl NodeKindHandle {
             }
             NodeKindHandle::MonitoringV1(_) => todo!(),
             NodeKindHandle::ServerV1(_) => todo!(),
+            NodeKindHandle::PortalV1(portal_id) => {
+                if let Some(portal) = ctx.db.tab_portal().id().find(*portal_id) {
+                    Ok(portal.get_comp_id())
+                } else {
+                    Err("Portal could not be found.".into())
+                }
+            }
         }
     }
 
     /// Safety: can only be called when you know the competiiton exists
-    fn get_project(&self, ctx: &ReducerContext) -> u32 {
+    pub(crate) fn get_project(&self, ctx: &ReducerContext) -> u32 {
         match self {
             NodeKindHandle::MatchV1(m) => {
                 if let Some(ma) = ctx.db.tab_tm_match().id().find(m) {
@@ -126,6 +136,13 @@ impl NodeKindHandle {
             }
             NodeKindHandle::MonitoringV1(_) => todo!(),
             NodeKindHandle::ServerV1(_) => todo!(),
+            NodeKindHandle::PortalV1(port) => {
+                if let Some(portal) = ctx.db.tab_portal().id().find(port) {
+                    portal.get_project()
+                } else {
+                    u32::MAX
+                }
+            }
         }
     }
 
@@ -136,6 +153,7 @@ impl NodeKindHandle {
             NodeKindHandle::SchedulingV1(s) => (3, s),
             NodeKindHandle::MonitoringV1(_) => todo!(),
             NodeKindHandle::ServerV1(_) => todo!(),
+            NodeKindHandle::PortalV1(p) => (6, p),
         }
     }
 
@@ -144,29 +162,10 @@ impl NodeKindHandle {
             1 => Self::MatchV1(value),
             2 => Self::CompetitionV1(value),
             3 => Self::SchedulingV1(value),
+            6 => Self::PortalV1(value),
             _ => unreachable!(),
         }
     }
-
-    /* fn resolve(&self, ctx: &ReducerContext) -> Box<dyn NodeBehaviour> {
-        match self {
-            NodeKindHandle::MatchV1(m) => ctx.db.tab_tm_match().id().find(m),
-            NodeKindHandle::CompetitionV1(_) => todo!(),
-            NodeKindHandle::MonitoringV1(_) => todo!(),
-            NodeKindHandle::ServerV1(_) => todo!(),
-            NodeKindHandle::SchedulingV1(_) => todo!(),
-        }
-    } */
-
-    /* fn get_unique(self) -> u64 {
-        match self {
-            NodeKindRef::MatchV1(m) => (1u64 << 32) + m as u64,
-            NodeKindRef::CompetitionV1(_) => (2u64 << 32) + m as u64,
-            NodeKindRef::MonitoringV1(_) => todo!(),
-            NodeKindRef::ServerV1(_) => todo!(),
-            NodeKindRef::SchedulingV1(_) => todo!(),
-        }
-    } */
 }
 
 /// Since we need to check either way if the two thing have the same parent we can omit specifing the competition manually.

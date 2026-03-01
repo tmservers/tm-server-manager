@@ -86,20 +86,20 @@ pub enum CompetitionStatus {
 
 /// Adds a new Competition to the specified project.
 #[reducer]
-pub fn create_competition(
+pub fn competition_create(
     ctx: &ReducerContext,
     name: String,
     parent_id: u32,
-    with_template: Option<u32>,
+    with_template: u32,
 ) -> Result<(), String> {
-    let user = ctx.get_user()?;
+    let account_id = ctx.get_user_account()?;
 
     // If parent is valid it is guaranteed that it has a valid project associated with it.
     let Some(parent_competition) = ctx.db.tab_competition().id().find(parent_id) else {
         return Err("Invalid parent_id".into());
     };
 
-    ctx.auth_builder(parent_competition.project_id, user.account_id)?
+    ctx.auth_builder(parent_competition.project_id, account_id)?
         .permission(ProjectPermissionsV1::COMPETITION_CREATE)
         .authorize()?;
 
@@ -117,13 +117,13 @@ pub fn competition_edit_name(
     competition_id: u32,
     name: String,
 ) -> Result<(), String> {
-    let user = ctx.get_user()?;
+    let account_id = ctx.get_user_account()?;
 
     let Some(mut competition) = ctx.db.tab_competition().id().find(competition_id) else {
         return Err("Invalid competition".into());
     };
 
-    ctx.auth_builder(competition.project_id, user.account_id)?
+    ctx.auth_builder(competition.project_id, account_id)?
         .permission(ProjectPermissionsV1::COMPETITION_EDIT_NAME)
         .authorize()?;
 
