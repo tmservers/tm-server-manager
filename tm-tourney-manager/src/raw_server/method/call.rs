@@ -1,5 +1,5 @@
 use spacetimedb::{ReducerContext, Table, Timestamp, Uuid, ViewContext, reducer, table, view};
-use tm_server_types::method::MethodCall;
+use tm_server_types::method::{MethodCall, MethodResponse};
 
 use crate::{
     authorization::Authorization,
@@ -20,7 +20,8 @@ pub struct RawServerMethodCall {
 
     timestamp: Timestamp,
 
-    method: MethodCall,
+    call: MethodCall,
+    // resposne: MethodResponse,
 }
 
 impl RawServerMethodCall {
@@ -33,7 +34,7 @@ impl RawServerMethodCall {
 pub fn server_method_call(
     ctx: &ReducerContext,
     server_login: String,
-    method: MethodCall,
+    call: MethodCall,
 ) -> Result<(), String> {
     let account_id = ctx.get_user_account()?;
 
@@ -50,7 +51,7 @@ pub fn server_method_call(
             account_id,
             timestamp: ctx.timestamp,
             server_id: server.id,
-            method,
+            call,
         })?;
 
     Ok(())

@@ -1,6 +1,6 @@
 use std::ops::{Add, BitAnd, BitOr, Not};
 
-use spacetimedb::{JwtClaims, ReducerContext, TxContext, Uuid, ViewContext};
+use spacetimedb::{JwtClaims, ProcedureContext, ReducerContext, TxContext, Uuid, ViewContext};
 
 use crate::{
     project::{

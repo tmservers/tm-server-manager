@@ -1,8 +1,12 @@
 use spacetimedb::{
-    AnonymousViewContext, Query, ReducerContext, Table, Uuid, ViewContext, reducer, table, view,
+    AnonymousViewContext, Query, ReducerContext, SpacetimeType, Table, Uuid, ViewContext, reducer,
+    table, view,
 };
 
-use crate::{authorization::Authorization, raw_server::tab_raw_server__view};
+use crate::{
+    authorization::Authorization,
+    raw_server::{tab_raw_server__view, tab_raw_server_occupation__view},
+};
 
 #[derive(Debug)]
 #[table(accessor= tab_raw_server_player)]
@@ -101,18 +105,31 @@ fn raw_server_current_players(
         .r#where(|p| p.server_id.eq(server_id))
 }
 
+#[derive(Debug, SpacetimeType)]
+struct PermittedPlayer {
+    account_id: Uuid,
+    mandatory: bool,
+    only_spectator: bool,
+}
+
 // We need to distinguish allowed and mandatory players.
 #[view(accessor= raw_server_expected_players, public)]
-fn raw_server_allowed_players(ctx: &ViewContext) -> Vec<RawServerPlayer> {
+fn raw_server_allowed_players(ctx: &ViewContext) -> Vec<PermittedPlayer> {
     let Ok(server) = ctx.get_server() else {
         return Vec::new();
     };
 
-    /* if let Some(match_id) = server.active_match() {
-        //TODO convert the match_id to the list with the connection filter
-        Vec::new()
-    } else {
-        Vec::new()
-    } */
+    let Some(occupation) = ctx
+        .db
+        .tab_raw_server_occupation()
+        .server_id()
+        .find(server.id)
+    else {
+        return Vec::new();
+    };
+
+    //TODO
+    //occupation.match_id
+
     Vec::new()
 }

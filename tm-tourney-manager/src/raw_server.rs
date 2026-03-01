@@ -11,6 +11,7 @@ pub mod config;
 pub mod event;
 pub mod method;
 pub mod player;
+pub mod replay;
 
 #[spacetimedb::table(accessor=tab_raw_server)]
 pub struct RawServerV1 {
