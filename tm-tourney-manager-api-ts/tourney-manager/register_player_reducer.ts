@@ -11,5 +11,5 @@ import {
 } from "spacetimedb";
 
 export default {
-  competitionId: __t.u32(),
+  registrationId: __t.u32(),
 };

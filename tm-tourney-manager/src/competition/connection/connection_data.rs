@@ -29,6 +29,7 @@ impl CompetitionConnectionData {
 
 #[derive(Debug, SpacetimeType)]
 pub enum CompetitionConnectionDataOption {
+    All,
     First(u8),
     Last(u8),
     Custom(Vec<u8>),

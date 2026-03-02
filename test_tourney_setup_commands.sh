@@ -19,10 +19,10 @@ spacetime call tm-tourney-manager match_create "" 1 null
 spacetime call tm-tourney-manager match_create "" 1 null
 
 # Division 1
-spacetime call tm-tourney-manager competition_create "Division 1" 1 null
+spacetime call tm-tourney-manager competition_create "Division 1" 1 0
 
 # League phase matches for Division 1
-spacetime call tm-tourney-manager competition_create "League Phase" 2 null
+spacetime call tm-tourney-manager competition_create "League Phase" 2 0
 spacetime call tm-tourney-manager match_create "" 3 null
 spacetime call tm-tourney-manager match_create "" 3 null
 spacetime call tm-tourney-manager match_create "" 3 null
@@ -34,22 +34,22 @@ spacetime call tm-tourney-manager create_connection '{"MatchV1": 5 }' '{"MatchV1
 # spacetime call tm-tourney-manager create_connection '{"MatchV1": 6 }' '{"MatchV1": 3 }' '{"Waiting": {}}'
 
 # Playoffs for Division 1
-spacetime call tm-tourney-manager competition_create "Playoffs" 2 null
+spacetime call tm-tourney-manager competition_create "Playoffs" 2 0
 spacetime call tm-tourney-manager match_create "" 4 null
 spacetime call tm-tourney-manager match_create "" 4 null
 
 # Division 2
-spacetime call tm-tourney-manager competition_create "Division 2" 1 null
+spacetime call tm-tourney-manager competition_create "Division 2" 1 0
 
 # League phase matches for Division 2
-spacetime call tm-tourney-manager competition_create "League Phase" 5 null
+spacetime call tm-tourney-manager competition_create "League Phase" 5 0
 spacetime call tm-tourney-manager match_create "" 6 null
 spacetime call tm-tourney-manager match_create "" 6 null
 spacetime call tm-tourney-manager match_create "" 6 null
 spacetime call tm-tourney-manager match_create "" 6 null
 
 # Playoffs for Division 2
-spacetime call tm-tourney-manager competition_create "Playoffs" 5 null
+spacetime call tm-tourney-manager competition_create "Playoffs" 5 0
 spacetime call tm-tourney-manager match_create "" 7 null
 spacetime call tm-tourney-manager match_create "" 7 null
 

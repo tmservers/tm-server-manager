@@ -15,7 +15,7 @@ spacetime generate --yes --lang typescript --out-dir tm-tourney-manager-api-ts/t
 spacetime call tm-tourney-manager create_project "Double Elimination" "This is a beautiful project" '{"__timestamp_micros_since_unix_epoch__": 1777132984000000}' '{"__timestamp_micros_since_unix_epoch__": 1777233084000000}'
 
 # Double elimination bracket
-spacetime call tm-tourney-manager competition_create "Double Elimination Bracket" 1 null
+spacetime call tm-tourney-manager competition_create "Double Elimination Bracket" 1 0
 
 # Upper R1
 # 8 matches, Match IDs 1-8

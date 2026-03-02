@@ -7,13 +7,13 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct UnregisterPlayerArgs {
-    pub competition_id: u32,
+    pub registration_id: u32,
 }
 
 impl From<UnregisterPlayerArgs> for super::Reducer {
     fn from(args: UnregisterPlayerArgs) -> Self {
         Self::UnregisterPlayer {
-            competition_id: args.competition_id,
+            registration_id: args.registration_id,
         }
     }
 }
@@ -33,8 +33,8 @@ pub trait unregister_player {
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
     /// /// Use [`unregister_player:unregister_player_then`] to run a callback after the reducer completes.
-    fn unregister_player(&self, competition_id: u32) -> __sdk::Result<()> {
-        self.unregister_player_then(competition_id, |_, _| {})
+    fn unregister_player(&self, registration_id: u32) -> __sdk::Result<()> {
+        self.unregister_player_then(registration_id, |_, _| {})
     }
 
     /// Request that the remote module invoke the reducer `unregister_player` to run as soon as possible,
@@ -45,7 +45,7 @@ pub trait unregister_player {
     ///  and its status can be observed with the `callback`.
     fn unregister_player_then(
         &self,
-        competition_id: u32,
+        registration_id: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -56,13 +56,13 @@ pub trait unregister_player {
 impl unregister_player for super::RemoteReducers {
     fn unregister_player_then(
         &self,
-        competition_id: u32,
+        registration_id: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     ) -> __sdk::Result<()> {
         self.imp
-            .invoke_reducer_with_callback(UnregisterPlayerArgs { competition_id }, callback)
+            .invoke_reducer_with_callback(UnregisterPlayerArgs { registration_id }, callback)
     }
 }

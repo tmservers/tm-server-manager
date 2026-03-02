@@ -46,3 +46,13 @@ pub struct Registration {
 
     settings: RegistrationSettings,
 }
+
+impl Registration {
+    pub(crate) fn get_comp_id(&self) -> u32 {
+        self.parent_id
+    }
+
+    pub(crate) fn get_project(&self) -> u32 {
+        self.project_id
+    }
+}

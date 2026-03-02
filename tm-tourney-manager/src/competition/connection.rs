@@ -8,6 +8,7 @@ use crate::{
     },
     portal::tab_portal,
     project::permissions::ProjectPermissionsV1,
+    registration::tab_registration,
     scheduling::tab_schedule,
     tm_match::tab_tm_match,
 };
@@ -67,6 +68,7 @@ pub enum NodeKindHandle {
     ServerV1(u32),
     SchedulingV1(u32),
     PortalV1(u32),
+    RegistrationV1(u32),
 }
 
 impl NodeKindHandle {
@@ -107,6 +109,13 @@ impl NodeKindHandle {
                     Err("Portal could not be found.".into())
                 }
             }
+            NodeKindHandle::RegistrationV1(reg) => {
+                if let Some(reg) = ctx.db.tab_registration().id().find(reg) {
+                    Ok(reg.get_comp_id())
+                } else {
+                    Err("Schedule could not be found.".into())
+                }
+            }
         }
     }
 
@@ -143,6 +152,13 @@ impl NodeKindHandle {
                     u32::MAX
                 }
             }
+            NodeKindHandle::RegistrationV1(reg) => {
+                if let Some(reg) = ctx.db.tab_registration().id().find(reg) {
+                    reg.get_project()
+                } else {
+                    u32::MAX
+                }
+            }
         }
     }
 
@@ -154,6 +170,7 @@ impl NodeKindHandle {
             NodeKindHandle::MonitoringV1(_) => todo!(),
             NodeKindHandle::ServerV1(_) => todo!(),
             NodeKindHandle::PortalV1(p) => (6, p),
+            NodeKindHandle::RegistrationV1(r) => (7, r),
         }
     }
 
@@ -163,6 +180,7 @@ impl NodeKindHandle {
             2 => Self::CompetitionV1(value),
             3 => Self::SchedulingV1(value),
             6 => Self::PortalV1(value),
+            7 => Self::RegistrationV1(value),
             _ => unreachable!(),
         }
     }

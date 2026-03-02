@@ -545,6 +545,7 @@ export const NodeKindHandle = __t.enum("NodeKindHandle", {
   ServerV1: __t.u32(),
   SchedulingV1: __t.u32(),
   PortalV1: __t.u32(),
+  RegistrationV1: __t.u32(),
 });
 export type NodeKindHandle = __Infer<typeof NodeKindHandle>;
 
@@ -790,7 +791,7 @@ export const RawServerV1 = __t.object("RawServerV1", {
 export type RawServerV1 = __Infer<typeof RawServerV1>;
 
 export const RegisteredPlayer = __t.object("RegisteredPlayer", {
-  competitionId: __t.u32(),
+  registrationId: __t.u32(),
   accountId: __t.uuid(),
   registeredAt: __t.timestamp(),
 });
