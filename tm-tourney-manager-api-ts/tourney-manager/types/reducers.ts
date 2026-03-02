@@ -7,11 +7,11 @@ import { type Infer as __Infer } from "spacetimedb";
 
 // Import all reducer arg schemas
 import CompetitionConnectionDataUpdateReducer from "../competition_connection_data_update_reducer";
+import CompetitionCreateReducer from "../competition_create_reducer";
 import CompetitionEditNameReducer from "../competition_edit_name_reducer";
 import CompetitionNodePositionUpdateReducer from "../competition_node_position_update_reducer";
 import CompetitionNodePositionsUpdateReducer from "../competition_node_positions_update_reducer";
 import CompetitionRegistrationSettingsReducer from "../competition_registration_settings_reducer";
-import CreateCompetitionReducer from "../create_competition_reducer";
 import CreateConnectionReducer from "../create_connection_reducer";
 import CreateEnvVarReducer from "../create_env_var_reducer";
 import CreateMonitorReducer from "../create_monitor_reducer";
@@ -26,6 +26,7 @@ import MatchTemplateCreateReducer from "../match_template_create_reducer";
 import MatchTryStartReducer from "../match_try_start_reducer";
 import MatchUpdateConfigReducer from "../match_update_config_reducer";
 import MatchUpdatePreConfigReducer from "../match_update_pre_config_reducer";
+import PortalCreateReducer from "../portal_create_reducer";
 import PostEventReducer from "../post_event_reducer";
 import PostRecordReducer from "../post_record_reducer";
 import ProjectEditDatesReducer from "../project_edit_dates_reducer";
@@ -50,11 +51,11 @@ import ServerMethodResponseReducer from "../server_method_response_reducer";
 import UnregisterPlayerReducer from "../unregister_player_reducer";
 
 export type CompetitionConnectionDataUpdateParams = __Infer<typeof CompetitionConnectionDataUpdateReducer>;
+export type CompetitionCreateParams = __Infer<typeof CompetitionCreateReducer>;
 export type CompetitionEditNameParams = __Infer<typeof CompetitionEditNameReducer>;
 export type CompetitionNodePositionUpdateParams = __Infer<typeof CompetitionNodePositionUpdateReducer>;
 export type CompetitionNodePositionsUpdateParams = __Infer<typeof CompetitionNodePositionsUpdateReducer>;
 export type CompetitionRegistrationSettingsParams = __Infer<typeof CompetitionRegistrationSettingsReducer>;
-export type CreateCompetitionParams = __Infer<typeof CreateCompetitionReducer>;
 export type CreateConnectionParams = __Infer<typeof CreateConnectionReducer>;
 export type CreateEnvVarParams = __Infer<typeof CreateEnvVarReducer>;
 export type CreateMonitorParams = __Infer<typeof CreateMonitorReducer>;
@@ -69,6 +70,7 @@ export type MatchTemplateCreateParams = __Infer<typeof MatchTemplateCreateReduce
 export type MatchTryStartParams = __Infer<typeof MatchTryStartReducer>;
 export type MatchUpdateConfigParams = __Infer<typeof MatchUpdateConfigReducer>;
 export type MatchUpdatePreConfigParams = __Infer<typeof MatchUpdatePreConfigReducer>;
+export type PortalCreateParams = __Infer<typeof PortalCreateReducer>;
 export type PostEventParams = __Infer<typeof PostEventReducer>;
 export type PostRecordParams = __Infer<typeof PostRecordReducer>;
 export type ProjectEditDatesParams = __Infer<typeof ProjectEditDatesReducer>;

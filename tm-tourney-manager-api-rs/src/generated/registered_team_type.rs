@@ -7,10 +7,11 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct RegisteredTeam {
+    pub name: String,
     pub account_id: __sdk::Uuid,
     pub registered_at: __sdk::Timestamp,
     pub competition_id: u32,
-    pub name: String,
+    pub id: u32,
 }
 
 impl __sdk::InModule for RegisteredTeam {
@@ -21,20 +22,22 @@ impl __sdk::InModule for RegisteredTeam {
 ///
 /// Provides typed access to columns for query building.
 pub struct RegisteredTeamCols {
+    pub name: __sdk::__query_builder::Col<RegisteredTeam, String>,
     pub account_id: __sdk::__query_builder::Col<RegisteredTeam, __sdk::Uuid>,
     pub registered_at: __sdk::__query_builder::Col<RegisteredTeam, __sdk::Timestamp>,
     pub competition_id: __sdk::__query_builder::Col<RegisteredTeam, u32>,
-    pub name: __sdk::__query_builder::Col<RegisteredTeam, String>,
+    pub id: __sdk::__query_builder::Col<RegisteredTeam, u32>,
 }
 
 impl __sdk::__query_builder::HasCols for RegisteredTeam {
     type Cols = RegisteredTeamCols;
     fn cols(table_name: &'static str) -> Self::Cols {
         RegisteredTeamCols {
+            name: __sdk::__query_builder::Col::new(table_name, "name"),
             account_id: __sdk::__query_builder::Col::new(table_name, "account_id"),
             registered_at: __sdk::__query_builder::Col::new(table_name, "registered_at"),
             competition_id: __sdk::__query_builder::Col::new(table_name, "competition_id"),
-            name: __sdk::__query_builder::Col::new(table_name, "name"),
+            id: __sdk::__query_builder::Col::new(table_name, "id"),
         }
     }
 }
@@ -44,6 +47,7 @@ impl __sdk::__query_builder::HasCols for RegisteredTeam {
 /// Provides typed access to indexed columns for query building.
 pub struct RegisteredTeamIxCols {
     pub competition_id: __sdk::__query_builder::IxCol<RegisteredTeam, u32>,
+    pub id: __sdk::__query_builder::IxCol<RegisteredTeam, u32>,
 }
 
 impl __sdk::__query_builder::HasIxCols for RegisteredTeam {
@@ -51,6 +55,7 @@ impl __sdk::__query_builder::HasIxCols for RegisteredTeam {
     fn ix_cols(table_name: &'static str) -> Self::IxCols {
         RegisteredTeamIxCols {
             competition_id: __sdk::__query_builder::IxCol::new(table_name, "competition_id"),
+            id: __sdk::__query_builder::IxCol::new(table_name, "id"),
         }
     }
 }

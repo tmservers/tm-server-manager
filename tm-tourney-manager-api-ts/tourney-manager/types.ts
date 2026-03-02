@@ -496,6 +496,9 @@ export const ModeConfig = __t.enum("ModeConfig", {
   get ReverseCup() {
     return ReverseCup;
   },
+  get TimeAttack() {
+    return TimeAttack;
+  },
 });
 export type ModeConfig = __Infer<typeof ModeConfig>;
 
@@ -541,6 +544,7 @@ export const NodeKindHandle = __t.enum("NodeKindHandle", {
   MonitoringV1: __t.u32(),
   ServerV1: __t.u32(),
   SchedulingV1: __t.u32(),
+  PortalV1: __t.u32(),
 });
 export type NodeKindHandle = __Infer<typeof NodeKindHandle>;
 
@@ -559,6 +563,13 @@ export const Pause = __t.object("Pause", {
   active: __t.bool(),
 });
 export type Pause = __Infer<typeof Pause>;
+
+export const PermittedPlayer = __t.object("PermittedPlayer", {
+  accountId: __t.uuid(),
+  mandatory: __t.bool(),
+  onlySpectator: __t.bool(),
+});
+export type PermittedPlayer = __Infer<typeof PermittedPlayer>;
 
 export const PlayLoopEnd = __t.object("PlayLoopEnd", {
   count: __t.u32(),
@@ -665,6 +676,16 @@ export const PointsLimit = __t.enum("PointsLimit", {
 });
 export type PointsLimit = __Infer<typeof PointsLimit>;
 
+export const Portal = __t.object("Portal", {
+  name: __t.string(),
+  id: __t.u32(),
+  parentId: __t.u32(),
+  projectId: __t.u32(),
+  targetId: __t.u32(),
+  targetVariant: __t.u8(),
+});
+export type Portal = __Infer<typeof Portal>;
+
 export const ProjectMember = __t.object("ProjectMember", {
   permissions: __t.u64(),
   id: __t.u32(),
@@ -738,7 +759,7 @@ export const RawServerMethodCall = __t.object("RawServerMethodCall", {
   serverId: __t.u32(),
   accountId: __t.uuid(),
   timestamp: __t.timestamp(),
-  get method() {
+  get call() {
     return MethodCall;
   },
 });
@@ -776,12 +797,24 @@ export const RegisteredPlayer = __t.object("RegisteredPlayer", {
 export type RegisteredPlayer = __Infer<typeof RegisteredPlayer>;
 
 export const RegisteredTeam = __t.object("RegisteredTeam", {
+  name: __t.string(),
   accountId: __t.uuid(),
   registeredAt: __t.timestamp(),
   competitionId: __t.u32(),
-  name: __t.string(),
+  id: __t.u32(),
 });
 export type RegisteredTeam = __Infer<typeof RegisteredTeam>;
+
+export const Registration = __t.object("Registration", {
+  name: __t.string(),
+  id: __t.u32(),
+  parentId: __t.u32(),
+  projectId: __t.u32(),
+  get settings() {
+    return RegistrationSettings;
+  },
+});
+export type Registration = __Infer<typeof Registration>;
 
 export const RegistrationPlayerSettings = __t.object("RegistrationPlayerSettings", {
   playerLimit: __t.option(__t.u32()),
@@ -1008,6 +1041,11 @@ export const Team = __t.object("Team", {
   matchPoints: __t.u32(),
 });
 export type Team = __Infer<typeof Team>;
+
+export const TimeAttack = __t.object("TimeAttack", {
+  timeLimit: __t.i32(),
+});
+export type TimeAttack = __Infer<typeof TimeAttack>;
 
 export const TmCompRecord = __t.object("TmCompRecord", {
   matchId: __t.u32(),

@@ -6,15 +6,15 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub(super) struct CreateCompetitionArgs {
+pub(super) struct CompetitionCreateArgs {
     pub name: String,
     pub parent_id: u32,
-    pub with_template: Option<u32>,
+    pub with_template: u32,
 }
 
-impl From<CreateCompetitionArgs> for super::Reducer {
-    fn from(args: CreateCompetitionArgs) -> Self {
-        Self::CreateCompetition {
+impl From<CompetitionCreateArgs> for super::Reducer {
+    fn from(args: CompetitionCreateArgs) -> Self {
+        Self::CompetitionCreate {
             name: args.name,
             parent_id: args.parent_id,
             with_template: args.with_template,
@@ -22,41 +22,41 @@ impl From<CreateCompetitionArgs> for super::Reducer {
     }
 }
 
-impl __sdk::InModule for CreateCompetitionArgs {
+impl __sdk::InModule for CompetitionCreateArgs {
     type Module = super::RemoteModule;
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the reducer `create_competition`.
+/// Extension trait for access to the reducer `competition_create`.
 ///
 /// Implemented for [`super::RemoteReducers`].
-pub trait create_competition {
-    /// Request that the remote module invoke the reducer `create_competition` to run as soon as possible.
+pub trait competition_create {
+    /// Request that the remote module invoke the reducer `competition_create` to run as soon as possible.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
-    /// /// Use [`create_competition:create_competition_then`] to run a callback after the reducer completes.
-    fn create_competition(
+    /// /// Use [`competition_create:competition_create_then`] to run a callback after the reducer completes.
+    fn competition_create(
         &self,
         name: String,
         parent_id: u32,
-        with_template: Option<u32>,
+        with_template: u32,
     ) -> __sdk::Result<()> {
-        self.create_competition_then(name, parent_id, with_template, |_, _| {})
+        self.competition_create_then(name, parent_id, with_template, |_, _| {})
     }
 
-    /// Request that the remote module invoke the reducer `create_competition` to run as soon as possible,
+    /// Request that the remote module invoke the reducer `competition_create` to run as soon as possible,
     /// registering `callback` to run when we are notified that the reducer completed.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed with the `callback`.
-    fn create_competition_then(
+    fn competition_create_then(
         &self,
         name: String,
         parent_id: u32,
-        with_template: Option<u32>,
+        with_template: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -64,19 +64,19 @@ pub trait create_competition {
     ) -> __sdk::Result<()>;
 }
 
-impl create_competition for super::RemoteReducers {
-    fn create_competition_then(
+impl competition_create for super::RemoteReducers {
+    fn competition_create_then(
         &self,
         name: String,
         parent_id: u32,
-        with_template: Option<u32>,
+        with_template: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     ) -> __sdk::Result<()> {
         self.imp.invoke_reducer_with_callback(
-            CreateCompetitionArgs {
+            CompetitionCreateArgs {
                 name,
                 parent_id,
                 with_template,

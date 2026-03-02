@@ -12,6 +12,6 @@ import {
 
 export default __t.row({
   accountId: __t.uuid().name("account_id"),
-  serverId: __t.u32().name("server_id"),
-  spectator: __t.bool(),
+  mandatory: __t.bool(),
+  onlySpectator: __t.bool().name("only_spectator"),
 });

@@ -50,7 +50,7 @@ impl CompetitionV1 {
     }
 
     /// # Safety
-    /// The new competition has to be commited to spacetime db through the `create_competition` reducer.
+    /// The new competition has to be commited to spacetime db through the `competition_create` reducer.
     /// Otherwise the id is invalid.
     pub unsafe fn new(name: String, parent_id: u32, project_id: u32) -> Self {
         Self {

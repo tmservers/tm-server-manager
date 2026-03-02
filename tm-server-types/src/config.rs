@@ -4,6 +4,9 @@ pub use rounds::Rounds;
 mod reverse_cup;
 pub use reverse_cup::ReverseCup;
 
+mod time_attack;
+pub use time_attack::TimeAttack;
+
 mod common;
 pub use common::*;
 
@@ -83,6 +86,7 @@ impl Default for ServerConfig {
 pub enum ModeConfig {
     Rounds(Rounds),
     ReverseCup(ReverseCup),
+    TimeAttack(TimeAttack),
 }
 
 impl ModeConfig {
@@ -90,6 +94,7 @@ impl ModeConfig {
         match self {
             ModeConfig::Rounds(rounds) => rounds.into_xml(),
             ModeConfig::ReverseCup(reverse_cup) => reverse_cup.into_xml(),
+            ModeConfig::TimeAttack(time_attack) => time_attack.into_xml(),
         }
     }
 
@@ -100,6 +105,9 @@ impl ModeConfig {
             }
             ModeConfig::ReverseCup(_) => {
                 "<script_name>Modes/Trackmania/ReverseCup</script_name>".into()
+            }
+            ModeConfig::TimeAttack(_) => {
+                "<script_name>Trackmania/TM_TimeAttack_Online</script_name>".into()
             }
         }
     }

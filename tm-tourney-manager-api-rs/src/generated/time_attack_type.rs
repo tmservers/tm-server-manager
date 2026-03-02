@@ -6,20 +6,10 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub enum NodeKindHandle {
-    MatchV1(u32),
-
-    CompetitionV1(u32),
-
-    MonitoringV1(u32),
-
-    ServerV1(u32),
-
-    SchedulingV1(u32),
-
-    PortalV1(u32),
+pub struct TimeAttack {
+    pub time_limit: i32,
 }
 
-impl __sdk::InModule for NodeKindHandle {
+impl __sdk::InModule for TimeAttack {
     type Module = super::RemoteModule;
 }

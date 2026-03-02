@@ -1,4 +1,4 @@
-use spacetimedb::{SpacetimeType, Timestamp};
+use spacetimedb::{SpacetimeType, Timestamp, table};
 
 mod player;
 mod team;
@@ -31,4 +31,18 @@ pub struct TeamInfo {
     name: String,
     creator: String,
     members: Vec<String>,
+}
+
+#[table(accessor=tab_registration)]
+pub struct Registration {
+    name: String,
+
+    #[auto_inc]
+    #[primary_key]
+    pub id: u32,
+
+    parent_id: u32,
+    project_id: u32,
+
+    settings: RegistrationSettings,
 }

@@ -10,14 +10,14 @@ use super::method_call_type::MethodCall;
 #[sats(crate = __lib)]
 pub(super) struct ServerMethodCallArgs {
     pub server_login: String,
-    pub method: MethodCall,
+    pub call: MethodCall,
 }
 
 impl From<ServerMethodCallArgs> for super::Reducer {
     fn from(args: ServerMethodCallArgs) -> Self {
         Self::ServerMethodCall {
             server_login: args.server_login,
-            method: args.method,
+            call: args.call,
         }
     }
 }
@@ -37,8 +37,8 @@ pub trait server_method_call {
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
     /// /// Use [`server_method_call:server_method_call_then`] to run a callback after the reducer completes.
-    fn server_method_call(&self, server_login: String, method: MethodCall) -> __sdk::Result<()> {
-        self.server_method_call_then(server_login, method, |_, _| {})
+    fn server_method_call(&self, server_login: String, call: MethodCall) -> __sdk::Result<()> {
+        self.server_method_call_then(server_login, call, |_, _| {})
     }
 
     /// Request that the remote module invoke the reducer `server_method_call` to run as soon as possible,
@@ -50,7 +50,7 @@ pub trait server_method_call {
     fn server_method_call_then(
         &self,
         server_login: String,
-        method: MethodCall,
+        call: MethodCall,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -62,18 +62,13 @@ impl server_method_call for super::RemoteReducers {
     fn server_method_call_then(
         &self,
         server_login: String,
-        method: MethodCall,
+        call: MethodCall,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     ) -> __sdk::Result<()> {
-        self.imp.invoke_reducer_with_callback(
-            ServerMethodCallArgs {
-                server_login,
-                method,
-            },
-            callback,
-        )
+        self.imp
+            .invoke_reducer_with_callback(ServerMethodCallArgs { server_login, call }, callback)
     }
 }

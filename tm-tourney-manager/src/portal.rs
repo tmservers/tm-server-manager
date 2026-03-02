@@ -73,7 +73,7 @@ fn portal_create(
     Ok(())
 }
 
-#[view(accessor=portal_target_suggestions,public)]
+/* #[view(accessor=portal_target_suggestions,public)]
 pub fn portal_target_suggestions(ctx: &ViewContext /* portal_id: u32 */) -> Vec<()> {
     let portal_id = 1u32;
 
@@ -84,3 +84,4 @@ pub fn portal_target_suggestions(ctx: &ViewContext /* portal_id: u32 */) -> Vec<
     //TODO
     Vec::new()
 }
+ */

@@ -10,13 +10,8 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-import {
-  MethodCall,
-} from "./types";
-
 export default {
-  serverLogin: __t.string(),
-  get call() {
-    return MethodCall;
-  },
+  name: __t.string(),
+  parentId: __t.u32(),
+  withTemplate: __t.u32(),
 };

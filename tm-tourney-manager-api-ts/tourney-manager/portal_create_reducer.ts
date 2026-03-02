@@ -10,8 +10,14 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
+import {
+  NodeKindHandle,
+} from "./types";
+
 export default {
   name: __t.string(),
-  parentId: __t.u32(),
-  withTemplate: __t.option(__t.u32()),
+  competitionId: __t.u32(),
+  get target() {
+    return NodeKindHandle;
+  },
 };
