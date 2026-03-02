@@ -14,7 +14,7 @@ pub fn method_call_received(_: &EventContext, method: &RawServerMethodCall) {
                     std::mem::transmute::<
                         tm_tourney_manager_api_rs::MethodCall,
                         tm_server_types::method::MethodCall,
-                    >(new.method)
+                    >(new.call)
                 },
             )
             .await;
