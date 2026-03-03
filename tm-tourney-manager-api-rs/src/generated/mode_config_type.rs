@@ -5,7 +5,6 @@
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 use super::reverse_cup_type::ReverseCup;
-use super::rounds_bot_online_type::RoundsBotOnline;
 use super::rounds_type::Rounds;
 use super::time_attack_type::TimeAttack;
 
@@ -17,8 +16,6 @@ pub enum ModeConfig {
     ReverseCup(ReverseCup),
 
     TimeAttack(TimeAttack),
-
-    RoundsBotOnline(RoundsBotOnline),
 }
 
 impl __sdk::InModule for ModeConfig {

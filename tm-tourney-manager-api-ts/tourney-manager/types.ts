@@ -429,7 +429,7 @@ export type MatchGhost = __Infer<typeof MatchGhost>;
 // The tagged union or sum type for the algebraic type `MatchStatus`.
 export const MatchStatus = __t.enum("MatchStatus", {
   Configuring: __t.unit(),
-  Upcoming: __t.unit(),
+  Preparation: __t.unit(),
   Live: __t.unit(),
   Ended: __t.unit(),
 });
@@ -499,9 +499,6 @@ export const ModeConfig = __t.enum("ModeConfig", {
   },
   get TimeAttack() {
     return TimeAttack;
-  },
-  get RoundsBotOnline() {
-    return RoundsBotOnline;
   },
 });
 export type ModeConfig = __Infer<typeof ModeConfig>;
@@ -920,9 +917,6 @@ export const Rounds = __t.object("Rounds", {
   useTieBreaker: __t.bool(),
 });
 export type Rounds = __Infer<typeof Rounds>;
-
-export const RoundsBotOnline = __t.object("RoundsBotOnline", {});
-export type RoundsBotOnline = __Infer<typeof RoundsBotOnline>;
 
 // The tagged union or sum type for the algebraic type `RoundsPerMap`.
 export const RoundsPerMap = __t.enum("RoundsPerMap", {

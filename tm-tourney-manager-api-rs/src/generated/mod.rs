@@ -67,6 +67,7 @@ pub mod match_leaderboard_table;
 pub mod match_record_table;
 pub mod match_round_ext_table;
 pub mod match_round_table;
+pub mod match_set_preparation_reducer;
 pub mod match_state_table;
 pub mod match_status_type;
 pub mod match_template_create_reducer;
@@ -152,7 +153,6 @@ pub mod respawn_type;
 pub mod reverse_cup_type;
 pub mod revoke_raw_server_reducer;
 pub mod round_time_type;
-pub mod rounds_bot_online_type;
 pub mod rounds_per_map_type;
 pub mod rounds_type;
 pub mod schedule_table;
@@ -263,6 +263,7 @@ pub use match_leaderboard_table::*;
 pub use match_record_table::*;
 pub use match_round_ext_table::*;
 pub use match_round_table::*;
+pub use match_set_preparation_reducer::match_set_preparation;
 pub use match_state_table::*;
 pub use match_status_type::MatchStatus;
 pub use match_template_create_reducer::match_template_create;
@@ -348,7 +349,6 @@ pub use respawn_type::Respawn;
 pub use reverse_cup_type::ReverseCup;
 pub use revoke_raw_server_reducer::revoke_raw_server;
 pub use round_time_type::RoundTime;
-pub use rounds_bot_online_type::RoundsBotOnline;
 pub use rounds_per_map_type::RoundsPerMap;
 pub use rounds_type::Rounds;
 pub use schedule_table::*;
@@ -470,6 +470,9 @@ pub enum Reducer {
         with_template: Option<u32>,
     },
     MatchDelete {
+        match_id: u32,
+    },
+    MatchSetPreparation {
         match_id: u32,
     },
     MatchTemplateCreate {
@@ -599,6 +602,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::MatchAssignServer { .. } => "match_assign_server",
             Reducer::MatchCreate { .. } => "match_create",
             Reducer::MatchDelete { .. } => "match_delete",
+            Reducer::MatchSetPreparation { .. } => "match_set_preparation",
             Reducer::MatchTemplateCreate { .. } => "match_template_create",
             Reducer::MatchTryStart { .. } => "match_try_start",
             Reducer::MatchUpdateConfig { .. } => "match_update_config",
@@ -744,6 +748,11 @@ impl __sdk::Reducer for Reducer {
             }),
             Reducer::MatchDelete { match_id } => {
                 __sats::bsatn::to_vec(&match_delete_reducer::MatchDeleteArgs {
+                    match_id: match_id.clone(),
+                })
+            }
+            Reducer::MatchSetPreparation { match_id } => {
+                __sats::bsatn::to_vec(&match_set_preparation_reducer::MatchSetPreparationArgs {
                     match_id: match_id.clone(),
                 })
             }

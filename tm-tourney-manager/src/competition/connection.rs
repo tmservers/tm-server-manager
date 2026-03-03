@@ -1,3 +1,6 @@
+use std::collections::{HashMap, HashSet};
+
+use petgraph::{acyclic::Acyclic, data::Create};
 use spacetimedb::{ReducerContext, SpacetimeType, Table, ViewContext, reducer, view};
 
 use crate::{
@@ -59,7 +62,7 @@ pub enum ConnectionSettings {
     Data,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy, SpacetimeType)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, SpacetimeType, Hash)]
 #[non_exhaustive]
 pub enum NodeKindHandle {
     MatchV1(u32),
@@ -69,6 +72,17 @@ pub enum NodeKindHandle {
     SchedulingV1(u32),
     PortalV1(u32),
     RegistrationV1(u32),
+}
+
+// This is done because of a petgraph trait bound.
+impl Default for NodeKindHandle {
+    fn default() -> Self {
+        log::error!(
+            "Tried to call the deafault implementation of NodeKindHandle.
+            This should not be possible and is only implemented because of a petgraph trait bound."
+        );
+        panic!()
+    }
 }
 
 impl NodeKindHandle {
@@ -215,19 +229,21 @@ pub fn create_connection(
         .permission(ProjectPermissionsV1::COMPETITION_CONNECTION_EDIT)
         .authorize()?;
 
-    //TODO FIXME: Detect cycles and reject.
+    let mut set = HashSet::new();
+    set.insert(connection_from);
+    set.insert(connection_to);
 
-    let (connection_from_variant, connection_from) = connection_from.split();
-    let (connection_to_variant, connection_to) = connection_to.split();
+    let (split_connection_from_variant, split_connection_from) = connection_from.split();
+    let (split_connection_to_variant, split_connection_to) = connection_to.split();
     if ctx
         .db
         .tab_competition_connection()
         .connection_exists()
         .filter((
-            connection_from_variant,
-            connection_to_variant,
-            connection_from,
-            connection_to,
+            split_connection_from_variant,
+            split_connection_to_variant,
+            split_connection_from,
+            split_connection_to,
         ))
         .next()
         .is_some()
@@ -235,6 +251,59 @@ pub fn create_connection(
         return Err("Parallel edges not allowed.".into());
     };
 
+    let competition_connections = ctx
+        .db
+        .tab_competition_connection()
+        .competition_id()
+        .filter(from_comp)
+        .collect::<Vec<_>>();
+
+    for connection in &competition_connections {
+        set.insert(NodeKindHandle::combine(
+            connection.connection_from_variant,
+            connection.connection_from,
+        ));
+        set.insert(NodeKindHandle::combine(
+            connection.connection_to_variant,
+            connection.connection_to,
+        ));
+    }
+
+    log::error!("{set:?}");
+
+    let mut map = HashMap::with_capacity(set.len());
+    let mut graph = petgraph::graph::Graph::new();
+    for set_entry in set.into_iter() {
+        let index = graph.add_node(set_entry);
+        map.insert(set_entry, index);
+    }
+    log::error!("{map:?}");
+
+    let edge_extension = competition_connections
+        .into_iter()
+        .map(|c| {
+            (
+                *map.get(&c.node_from()).unwrap(),
+                *map.get(&c.node_to()).unwrap(),
+                c.connection_settings,
+            )
+        })
+        .collect::<Vec<_>>();
+
+    graph.extend_with_edges(edge_extension);
+
+    log::error!("{graph:?}");
+    let mut graph = Acyclic::try_from_graph(graph).map_err(|e| format!("{e:?}"))?;
+    graph
+        .try_add_edge(
+            *map.get(&connection_from).unwrap(),
+            *map.get(&connection_to).unwrap(),
+            setting,
+        )
+        .map_err(|e| format!("{e:?}"))?;
+
+    let (connection_from_variant, connection_from) = connection_from.split();
+    let (connection_to_variant, connection_to) = connection_to.split();
     let connection = ctx
         .db
         .tab_competition_connection()
@@ -278,7 +347,11 @@ pub struct CompetitionConnection {
 }
 
 #[view(accessor=competition_connection,public)]
-pub fn competition_connection(ctx: &ViewContext) -> Vec<CompetitionConnection> {
+pub fn competition_connection(
+    ctx: &ViewContext, /* competition_id: u32 */
+) -> Vec<CompetitionConnection> {
+    let competition_id = 1u32;
+
     ctx.db
         .tab_competition_connection()
         .competition_id()
@@ -326,10 +399,6 @@ pub fn internal_graph_resolution_node_finished(
         //affected_connection.try_start()
         log::warn!("{affected_connection:?}");
     }
-
-    /* .map(|v| (v.connection_from, v.connection_to, v.connection_settings)); */
-    //let graph = Graph::<(), ConnectionSettings, Directed>::from_edges(iterable);
-    //let graph = Acyclic::try_from_graph(graph).map_err(|e| format!("{e:?}"))?;
 
     Ok(())
 }

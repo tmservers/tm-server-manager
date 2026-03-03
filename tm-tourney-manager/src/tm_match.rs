@@ -82,7 +82,7 @@ impl TmMatchV1 {
     pub fn get_config_id(&self) -> u32 {
         match self.status {
             MatchStatus::Configuring => 0,
-            MatchStatus::Upcoming => {
+            MatchStatus::Preparation => {
                 if self.pre_match_config != 0 {
                     self.pre_match_config
                 } else {
@@ -123,7 +123,7 @@ pub enum MatchStatus {
     /// Allows to change all associated configurations of the Match.
     Configuring,
     /// No changes to the pre_match configuration can be made anymore.
-    Upcoming,
+    Preparation,
     /// No changes to the match configuration can be made anymore.
     Live,
     /// Match is immutable and achived.
@@ -316,6 +316,67 @@ pub fn match_update_config(
 /// If the match is fully configured and ready start.
 /// This can also serve as a manual override for scheduled matches.
 #[reducer]
+pub fn match_set_preparation(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
+    let user = ctx.get_user_account()?;
+
+    let Some(mut tm_match) = ctx.db.tab_tm_match().id().find(match_id) else {
+        return Err("Match not found!".into());
+    };
+
+    ctx.auth_builder(tm_match.project_id, user)?
+        .permission(ProjectPermissionsV1::MATCH_CONFIGURE)
+        .authorize()?;
+
+    if tm_match.match_config == 0 {
+        return Err(
+            "Match needs a configuration in order to advance to the upcoming state.".into(),
+        );
+    }
+
+    if ctx
+        .db
+        .tab_raw_server_occupation()
+        .match_id()
+        .filter(tm_match.id)
+        .next()
+        .is_some()
+    {
+        tm_match.status = MatchStatus::Preparation;
+        ctx.db.tab_tm_match().id().update(tm_match);
+
+        ctx.db
+            .tab_tm_match_state()
+            .try_insert(TmMatchState::new(match_id))?;
+
+        return Ok(());
+    }
+
+    if tm_match.auto_provision_server {
+        let available_servers = project_available_server_pool(&ctx.as_read_only());
+        if available_servers.is_empty() {
+            return Err("No server is assigned to the match and there are no servers left to auto provision. Cannot start the match!".into());
+        }
+
+        ctx.db
+            .tab_raw_server_occupation()
+            .try_insert(RawServerOccupation::new(match_id, available_servers[0].id))?;
+
+        tm_match.status = MatchStatus::Preparation;
+        ctx.db.tab_tm_match().id().update(tm_match);
+
+        ctx.db
+            .tab_tm_match_state()
+            .try_insert(TmMatchState::new(match_id))?;
+
+        Ok(())
+    } else {
+        Err("Match has auto provisioning turned off and no server assigned! Cannot start the match!".into())
+    }
+}
+
+/// If the match is fully configured and ready start.
+/// This can also serve as a manual override for scheduled matches.
+#[reducer]
 pub fn match_try_start(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
     let user = ctx.get_user_account()?;
 
@@ -337,40 +398,20 @@ pub fn match_try_start(ctx: &ReducerContext, match_id: u32) -> Result<(), String
         .match_id()
         .filter(tm_match.id)
         .next()
-        .is_some()
+        .is_none()
     {
-        //TODO this is depending on player state (e.g. is there need to be specific players present are all there?)
-        tm_match.status = MatchStatus::Live;
-        ctx.db.tab_tm_match().id().update(tm_match);
+        return Err("No server is assigned to the match.".into());
+    };
 
-        ctx.db
-            .tab_tm_match_state()
-            .try_insert(TmMatchState::new(match_id))?;
+    //TODO this is depending on player state (e.g. is there need to be specific players present are all there?)
+    tm_match.status = MatchStatus::Live;
+    ctx.db.tab_tm_match().id().update(tm_match);
 
-        return Ok(());
-    }
+    ctx.db
+        .tab_tm_match_state()
+        .try_insert(TmMatchState::new(match_id))?;
 
-    if tm_match.auto_provision_server {
-        let available_servers = project_available_server_pool(&ctx.as_read_only());
-        if available_servers.is_empty() {
-            return Err("No server is assigned to the match and there are no servers left to auto provision. Cannot start the match!".into());
-        }
-
-        ctx.db
-            .tab_raw_server_occupation()
-            .try_insert(RawServerOccupation::new(match_id, available_servers[0].id))?;
-
-        tm_match.status = MatchStatus::Live;
-        ctx.db.tab_tm_match().id().update(tm_match);
-
-        ctx.db
-            .tab_tm_match_state()
-            .try_insert(TmMatchState::new(match_id))?;
-
-        Ok(())
-    } else {
-        Err("Match has auto provisioning turned off and no server assigned! Cannot start the match!".into())
-    }
+    Ok(())
 }
 
 #[reducer]

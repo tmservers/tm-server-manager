@@ -10,7 +10,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 pub enum MatchStatus {
     Configuring,
 
-    Upcoming,
+    Preparation,
 
     Live,
 

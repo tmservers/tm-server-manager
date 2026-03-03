@@ -107,4 +107,4 @@ fn test_login_to_account_id() {
     assert!(login == new_login);
 }
 
-const FAKE_PLAYER_MAP: [&str; 2] = ["iyOlLqb7TMmlOwxGwIdo-g", "-2eFU_cwRCqgNd_FD0pbew"];
+//const FAKE_PLAYER_MAP: [&str; 2] = ["iyOlLqb7TMmlOwxGwIdo-g", "-2eFU_cwRCqgNd_FD0pbew"];
