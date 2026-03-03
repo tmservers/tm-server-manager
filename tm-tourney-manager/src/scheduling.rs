@@ -37,7 +37,7 @@ pub(crate) fn on_schedule_triggered(ctx: &ReducerContext, arg: ScheduleV1) -> Re
 
     internal_graph_resolution_node_finished(
         ctx,
-        arg.competition_id,
+        //arg.competition_id,
         NodeKindHandle::SchedulingV1(arg.scheduled_id as u32),
     )?;
 

@@ -184,7 +184,6 @@ pub(crate) fn handle_match_event(
             ctx.db.tab_tm_match_state().match_id().update(state);
         }
         Event::EndMatchEnd(_) => {
-            //TODO complete this impl
             let Some(mut tm_match) = ctx.db.tab_tm_match().id().find(match_id) else {
                 return Err("Match not found".into());
             };
@@ -193,7 +192,7 @@ pub(crate) fn handle_match_event(
 
             internal_graph_resolution_node_finished(
                 ctx,
-                tm_match.get_comp_id(),
+                //tm_match.get_comp_id(),
                 NodeKindHandle::MatchV1(tm_match.id),
             )?;
 

@@ -62,6 +62,10 @@ pub async fn configure(server_config: ServerConfig) {
         _ = local_server
             .chat_send_server_massage("[tmservers.live] Configuration synchronized.")
             .await;
+
+        tracing::info!("Loaded new configuration");
+    } else {
+        tracing::error!("There was an error loading the new configuration file.")
     }
 }
 

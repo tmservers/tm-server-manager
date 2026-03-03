@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use petgraph::{acyclic::Acyclic, data::Create};
+use petgraph::acyclic::Acyclic;
 use spacetimedb::{ReducerContext, SpacetimeType, Table, ViewContext, reducer, view};
 
 use crate::{
@@ -21,6 +21,8 @@ pub(crate) mod node_position;
 
 #[spacetimedb::table(accessor= tab_competition_connection,
     index(accessor=connection_exists,hash(columns=[connection_from_variant,connection_to_variant,connection_from,connection_to])),
+    index(accessor=target_nodes_of,hash(columns=[connection_from_variant,connection_from])),
+    index(accessor=origin_nodes_of,hash(columns=[connection_to_variant,connection_to]))
 )]
 #[derive(Debug, Clone, Copy)]
 pub struct TabCompetitionConnection {
@@ -41,7 +43,6 @@ pub struct TabCompetitionConnection {
     connection_to_variant: u8,
 
     connection_settings: ConnectionSettings,
-
     //Wheter the connection has served its purpose and can be skipped.
     resolved: bool,
 }
@@ -369,21 +370,22 @@ pub fn competition_connection(
 
 pub fn internal_graph_resolution_node_finished(
     ctx: &ReducerContext,
-    competition_id: u32,
+    //TODO: maybe remove this because it should already be authorized when calling this
+    //competition_id: u32,
     trigger: NodeKindHandle,
 ) -> Result<(), String> {
-    if !ctx.sender_auth().is_internal() {
+    //TODO: maybe remove this because it should already be authorized when calling this
+    /* if !ctx.sender_auth().is_internal() {
         return Err(
             "Graph evaluation can not be invoked manually due to its reactive nature.".into(),
         );
-    }
+    } */
 
     let affected_connections = ctx
         .db
         .tab_competition_connection()
-        .competition_id()
-        .filter(competition_id)
-        .filter(|c| !c.resolved)
+        .target_nodes_of()
+        .filter(trigger.split())
         .map(|t| CompetitionConnection {
             project_id: t.project_id,
             competition_id: t.competition_id,
@@ -392,12 +394,14 @@ pub fn internal_graph_resolution_node_finished(
             connection_settings: t.connection_settings,
         });
 
-    for affected_connection in affected_connections
-        .filter(|n| n.connection_from == trigger)
-        .map(|c| c.connection_to)
-    {
+    for affected_connection in affected_connections.map(|c| c.connection_to) {
         //affected_connection.try_start()
-        log::warn!("{affected_connection:?}");
+        let things = ctx
+            .db
+            .tab_competition_connection()
+            .origin_nodes_of()
+            .filter(affected_connection.split());
+        log::warn!("{:?}", things.collect::<Vec<_>>());
     }
 
     Ok(())

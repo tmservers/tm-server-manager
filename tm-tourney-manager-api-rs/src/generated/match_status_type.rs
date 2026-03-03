@@ -15,6 +15,8 @@ pub enum MatchStatus {
     Live,
 
     Ended,
+
+    Locked,
 }
 
 impl __sdk::InModule for MatchStatus {

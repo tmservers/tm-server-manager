@@ -81,7 +81,9 @@ pub struct TmMatchV1 {
 impl TmMatchV1 {
     pub fn get_config_id(&self) -> u32 {
         match self.status {
-            MatchStatus::Configuring => 0,
+            MatchStatus::Configuring => {
+                panic!("should not ask for a config if match is configuring.")
+            }
             MatchStatus::Preparation => {
                 if self.pre_match_config != 0 {
                     self.pre_match_config
@@ -96,6 +98,9 @@ impl TmMatchV1 {
                 } else {
                     self.match_config
                 }
+            }
+            MatchStatus::Locked => {
+                panic!("should not ask for a config if match is locked.")
             }
         }
     }
@@ -129,6 +134,7 @@ pub enum MatchStatus {
     /// Match is immutable and achived.
     /// Loads the post match config if present.
     Ended,
+    Locked,
 }
 
 #[reducer]
