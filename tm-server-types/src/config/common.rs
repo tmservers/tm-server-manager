@@ -1,6 +1,6 @@
 use crate::config::{
-    helper::{RespawnBehaviour, WarmupDuration, WarmupTimeout},
     LapsNumber,
+    helper::{RespawnBehaviour, WarmupDuration, WarmupTimeout},
 };
 
 /// The configuration available in every game mode.
@@ -10,7 +10,7 @@ use crate::config::{
 /// - Script Environment: No dev support
 /// - Season Ids: Nobody knows what it does
 ///
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]

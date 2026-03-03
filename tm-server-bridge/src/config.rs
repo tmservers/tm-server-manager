@@ -1,26 +1,35 @@
 use nadeo_api::{NadeoRequest, auth::AuthType, request::Method};
 use serde::{Deserialize, Serialize};
-use tm_server_controller::method::XmlRpcMethods;
-use tm_tourney_manager_api_rs::{EventContext, ServerConfig};
+use tm_server_controller::{ClientError, method::XmlRpcMethods};
+use tm_server_types::config::ServerConfig;
+use tm_tourney_manager_api_rs::EventContext;
+use tokio::sync::Mutex;
 
 use crate::{NADEO, SERVER_CONFIG, TRACKMANIA, TRACKMANIA_FILES};
 
-pub fn config_update(_: &EventContext, new_config: &ServerConfig) {
-    let new = new_config.clone();
-
-    let old_config = SERVER_CONFIG.get();
-
-    if old_config.is_some() && old_config.unwrap() == new_config {
-        return;
-    }
+pub fn config_update(_: &EventContext, new_config: &tm_tourney_manager_api_rs::ServerConfig) {
+    //SAFETY: Same type but rust can't know that.
+    let configuration = unsafe {
+        std::mem::transmute::<
+            tm_tourney_manager_api_rs::ServerConfig,
+            tm_server_controller::config::ServerConfig,
+        >(new_config.clone())
+    };
 
     tokio::task::block_in_place(move || {
+        let old_config = SERVER_CONFIG.get();
         tokio::runtime::Handle::current().block_on(async move {
+            {
+                if old_config.is_some() && *old_config.unwrap().lock().await == configuration {
+                    return;
+                }
+            }
+
             let server = TRACKMANIA.wait();
             _ = server
                 .chat_send_server_massage("[tmservers.live] New configuration is loading.")
                 .await;
-            configure(new).await;
+            configure(configuration).await;
         });
     });
 }
@@ -28,15 +37,7 @@ pub fn config_update(_: &EventContext, new_config: &ServerConfig) {
 pub async fn configure(server_config: ServerConfig) {
     let local_server = TRACKMANIA.wait();
 
-    //SAFETY: Same type but rust can't know that.
-    let configuration = unsafe {
-        std::mem::transmute::<
-            tm_tourney_manager_api_rs::ServerConfig,
-            tm_server_controller::config::ServerConfig,
-        >(server_config)
-    };
-
-    let config = configuration.into_xml();
+    let config = server_config.into_xml();
 
     tracing::info!("Attempt to load configuration: {config}");
 
@@ -48,15 +49,25 @@ pub async fn configure(server_config: ServerConfig) {
     }
 
     // Load all maps to make them accessible locally
-    get_maps(configuration.iter_maps()).await;
+    get_maps(server_config.iter_maps()).await;
 
     let loaded = local_server
         .load_match_settings("MatchSettings/manager.txt")
         .await;
 
-    //TODO figure out what the returned integer means.
-    //if loaded.is_ok_and(|l| l == 2) {
+    // The i32 is the map count which is not important to verify.
     if loaded.is_ok() {
+        //TODO remove.
+        let _: Result<(), ClientError> = local_server.call("GetModeScriptSettings", ()).await;
+
+        {
+            let mut locked = SERVER_CONFIG
+                .get_or_init(|| Mutex::new(server_config.clone()))
+                .lock()
+                .await;
+            *locked = server_config;
+        }
+
         _ = local_server.next_map().await;
 
         _ = local_server
@@ -65,7 +76,7 @@ pub async fn configure(server_config: ServerConfig) {
 
         tracing::info!("Loaded new configuration");
     } else {
-        tracing::error!("There was an error loading the new configuration file.")
+        tracing::error!("There was an error loading the new configuration file. {loaded:?}")
     }
 }
 

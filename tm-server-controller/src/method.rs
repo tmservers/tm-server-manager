@@ -97,6 +97,10 @@ impl ModeScriptMethodsXmlRpc for TrackmaniaServer {
     }
 
     async fn get_all_api_versions(&self, enable: bool) -> Result<bool, ClientError> {
+        /* self.call(
+            "TriggerModeScriptEventArray",
+            ("XmlRpc.GetAllApiVersions", [""]),
+        ) */
         todo!()
     }
 
@@ -245,6 +249,7 @@ impl XmlRpcMethods for TrackmaniaServer {
         self.call("WriteFile", (path, content)).await
     }
 
+    /// Returns the count of maps loaded in the playlist if it successds.
     async fn load_match_settings(&self, path: &str) -> Result<i32, ClientError> {
         self.call("LoadMatchSettings", path).await
     }

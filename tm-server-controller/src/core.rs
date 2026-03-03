@@ -216,8 +216,10 @@ impl TrackmaniaServer {
                 while let Some(packet) = parse_packet(&mut buffer) {
                     //check if this is a method response we are waiting for.
                     if packet.is_method_response() {
-                        let (_, response) = reader_response.remove(&packet.handler).unwrap();
-                        _ = response.send(MethodResponse::from_xml(&packet.body));
+                        let (_, response_sender) = reader_response.remove(&packet.handler).unwrap();
+                        let response = MethodResponse::from_xml(&packet.body);
+                        tracing::debug!("Received a response to a method call. {response:?}");
+                        _ = response_sender.send(response);
                     } else {
                         // if its not a method response it must be an event.
                         let callback = MethodCall::from_xml(&packet.body).unwrap();

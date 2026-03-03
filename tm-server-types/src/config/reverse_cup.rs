@@ -1,7 +1,7 @@
 use crate::config::{MapsPerMatch, RoundsPerMap, helper::FinishTimeout};
 
 /// The script has the rounds script as a base so it is inheriting all the settings.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
@@ -15,6 +15,7 @@ pub struct ReverseCup {
     pub use_tie_breaker: bool,
 
     //New settings introduced
+    pub number_of_winners: i32,
     /// The amount of points each player receives at the start
     pub starting_points: i32,
     /// When a player reach 0 points he is automatically eliminated
@@ -49,6 +50,7 @@ impl ReverseCup {
         <setting name="S_DNF_LossPoints" value="{}" type="integer"/>
         <setting name="S_LastChance_DNF_Mode" value="{}" type="integer"/>
         <setting name="S_NbOfPlayers" value="{}" type="integer"/>
+        <setting name="S_NbOfWinners" value="{}" type="integer"/>
         
             "#,
             Into::<i32>::into(self.rounds_per_map),
@@ -63,7 +65,8 @@ impl ReverseCup {
             self.fast_forward_points_repartition,
             self.dnf_points_loss,
             Into::<i32>::into(self.last_chance_dnf_mode),
-            self.number_of_players
+            self.number_of_players,
+            self.number_of_winners
         )
     }
 }
@@ -93,11 +96,12 @@ impl Default for ReverseCup {
             dnf_points_loss: 20,
             last_chance_dnf_mode: LastChanceDnfMode::AllPlayers,
             number_of_players: 0,
+            number_of_winners: 1,
         }
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]

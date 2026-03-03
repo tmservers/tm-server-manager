@@ -3,13 +3,8 @@ use tm_server_controller::{
     callbacks::TypedCallbacks,
     method::{ModeScriptMethodsXmlRpc, XmlRpcMethods},
 };
-use tm_server_types::{
-    base::PlayerInfo,
-    event::{EndRoundStart, PlayerConnect, PlayerDisconnect},
-};
-use tm_tourney_manager_api_rs::{
-    post_event, post_round_replay, raw_server_player_add, raw_server_player_remove,
-};
+use tm_server_types::event::EndRoundStart;
+use tm_tourney_manager_api_rs::{post_event, raw_server_player_add};
 
 use crate::{SPACETIME, TRACKMANIA, TRACKMANIA_FILES};
 
@@ -52,7 +47,7 @@ pub async fn setup_state_synchronization() {
             + ".Replay.Gbx";
 
         match std::fs::read(&full_path) {
-            Ok(file) => {
+            Ok(_file) => {
                 //TODO enable the posting again.
                 //SPACETIME.wait().procedures.post_round_replay(file);
             }

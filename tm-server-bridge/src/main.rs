@@ -4,11 +4,14 @@ use nadeo_api::NadeoClient;
 
 use spacetimedb_sdk::{DbContext, Error, Table, Uuid};
 
-use tm_tourney_manager_api_rs::*;
-
 use tm_server_controller::{
     TrackmaniaServer,
     method::{ModeScriptMethodsXmlRpc, XmlRpcMethods},
+};
+use tm_server_types::config::ServerConfig;
+use tm_tourney_manager_api_rs::{
+    DbConnection, ErrorContext, RawServerConfigTableAccess, RawServerMethodCallTableAccess,
+    login_as_server, raw_server_configQueryTableAccess, raw_server_method_callQueryTableAccess,
 };
 use tokio::{signal, sync::Mutex};
 use tracing::{instrument, warn};
@@ -39,7 +42,7 @@ static NADEO: OnceLock<Mutex<NadeoClient>> = OnceLock::new();
 /// Path to the Filesystem of the trackmnia server UserData.
 static TRACKMANIA_FILES: OnceLock<String> = OnceLock::new();
 
-static SERVER_CONFIG: OnceLock<ServerConfig> = OnceLock::new();
+static SERVER_CONFIG: OnceLock<Mutex<ServerConfig>> = OnceLock::new();
 
 /// Load credentials from a file and connect to the database.
 #[instrument(level = "debug")]
@@ -123,7 +126,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
         SPACETIME
             .wait()
-            .procedures
+            .procedures()
             .login_as_server_async(tm_server_login, tm_server_password, tm_account_id)
             .await
             .unwrap()
@@ -136,7 +139,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     {
         let server = TRACKMANIA.wait();
 
-        let _: bool = server.call("SetApiVersion", "2025-07-04").await?;
+        let _: bool = server.call("SetApiVersion", "2023-03-25").await?;
 
         server.authenticate("SuperAdmin", "SuperAdmin").await?;
 
