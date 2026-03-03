@@ -7,7 +7,6 @@ pub(crate) fn init_tracing_subscriber() {
         .with(tracing_subscriber::filter::LevelFilter::from_level(
             Level::INFO,
         ))
-        .with(filter::EnvFilter::from_env("LOG_LEVEL"))
         .with(tracing_subscriber::fmt::layer())
         .init();
 }

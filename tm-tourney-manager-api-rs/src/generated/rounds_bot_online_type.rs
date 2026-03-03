@@ -6,16 +6,8 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub enum CompetitionConnectionDataOption {
-    All,
+pub struct RoundsBotOnline {}
 
-    First(u8),
-
-    Last(u8),
-
-    Custom(Vec<u8>),
-}
-
-impl __sdk::InModule for CompetitionConnectionDataOption {
+impl __sdk::InModule for RoundsBotOnline {
     type Module = super::RemoteModule;
 }

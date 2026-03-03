@@ -35,6 +35,14 @@ pub trait login_as_worker {
             + Send
             + 'static,
     );
+
+    #[allow(async_fn_in_trait)]
+    async fn login_as_worker_async(
+        &self,
+        login: String,
+        password: String,
+        account_id: String,
+    ) -> Result<(), __sdk::InternalError>;
 }
 
 impl login_as_worker for super::RemoteProcedures {
@@ -57,5 +65,23 @@ impl login_as_worker for super::RemoteProcedures {
             },
             __callback,
         );
+    }
+
+    async fn login_as_worker_async(
+        &self,
+        login: String,
+        password: String,
+        account_id: String,
+    ) -> Result<(), __sdk::InternalError> {
+        self.imp
+            .invoke_procedure_async::<_, ()>(
+                "login_as_worker",
+                LoginAsWorkerArgs {
+                    login,
+                    password,
+                    account_id,
+                },
+            )
+            .await
     }
 }

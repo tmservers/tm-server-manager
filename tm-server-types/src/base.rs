@@ -16,6 +16,19 @@ pub use time::*;
 
 #[track_caller]
 pub fn login_to_account_id(login: &str) -> String {
+    //TODO: Maybe guard this behing a debug or development feature.
+    /* let mut login = login;
+    if login.starts_with("*fakeplayer") {
+        let fakeplayer_number = login
+            .trim_end_matches("*")
+            .trim_start_matches("*fakeplayer")
+            .parse::<u32>()
+            .unwrap();
+
+        login = FAKE_PLAYER_MAP[(fakeplayer_number - 1) as usize];
+        println!("Swapped out login!")
+    } */
+
     let string = login.replace("-", "+");
     let mut string = string.replace("_", "/");
 
@@ -93,3 +106,5 @@ fn test_login_to_account_id() {
     let new_login = account_id_to_login(&account_id);
     assert!(login == new_login);
 }
+
+const FAKE_PLAYER_MAP: [&str; 2] = ["iyOlLqb7TMmlOwxGwIdo-g", "-2eFU_cwRCqgNd_FD0pbew"];

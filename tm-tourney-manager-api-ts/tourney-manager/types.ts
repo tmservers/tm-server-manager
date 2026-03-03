@@ -83,6 +83,7 @@ export type CompetitionConnectionData = __Infer<typeof CompetitionConnectionData
 
 // The tagged union or sum type for the algebraic type `CompetitionConnectionDataOption`.
 export const CompetitionConnectionDataOption = __t.enum("CompetitionConnectionDataOption", {
+  All: __t.unit(),
   First: __t.u8(),
   Last: __t.u8(),
   Custom: __t.byteArray(),
@@ -498,6 +499,9 @@ export const ModeConfig = __t.enum("ModeConfig", {
   },
   get TimeAttack() {
     return TimeAttack;
+  },
+  get RoundsBotOnline() {
+    return RoundsBotOnline;
   },
 });
 export type ModeConfig = __Infer<typeof ModeConfig>;
@@ -916,6 +920,9 @@ export const Rounds = __t.object("Rounds", {
   useTieBreaker: __t.bool(),
 });
 export type Rounds = __Infer<typeof Rounds>;
+
+export const RoundsBotOnline = __t.object("RoundsBotOnline", {});
+export type RoundsBotOnline = __Infer<typeof RoundsBotOnline>;
 
 // The tagged union or sum type for the algebraic type `RoundsPerMap`.
 export const RoundsPerMap = __t.enum("RoundsPerMap", {
