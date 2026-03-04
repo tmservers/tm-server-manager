@@ -26,10 +26,18 @@ pub fn config_update(_: &EventContext, new_config: &tm_tourney_manager_api_rs::S
             }
 
             let server = TRACKMANIA.wait();
+
             _ = server
                 .chat_send_server_massage("[tmservers.live] New configuration is loading.")
                 .await;
             configure(configuration).await;
+
+            _ = server
+                .chat_send_server_massage("[tmservers.live] New configuration loaded.")
+                .await;
+
+            let p: Result<String, ClientError> = server.call("GetModeScriptVariables", ()).await;
+            tracing::error!("a {p:?}");
         });
     });
 }
@@ -57,9 +65,6 @@ pub async fn configure(server_config: ServerConfig) {
 
     // The i32 is the map count which is not important to verify.
     if loaded.is_ok() {
-        //TODO remove.
-        let _: Result<(), ClientError> = local_server.call("GetModeScriptSettings", ()).await;
-
         {
             let mut locked = SERVER_CONFIG
                 .get_or_init(|| Mutex::new(server_config.clone()))
@@ -68,11 +73,9 @@ pub async fn configure(server_config: ServerConfig) {
             *locked = server_config;
         }
 
-        _ = local_server.next_map().await;
-
-        _ = local_server
-            .chat_send_server_massage("[tmservers.live] Configuration synchronized.")
-            .await;
+        _ = local_server.restart_map().await;
+        //TODO remove.
+        let _: Result<(), ClientError> = local_server.call("GetModeScriptSettings", ()).await;
 
         tracing::info!("Loaded new configuration");
     } else {
