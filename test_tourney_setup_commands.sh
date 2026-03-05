@@ -28,10 +28,10 @@ spacetime call tm-tourney-manager match_create "" 3 null
 spacetime call tm-tourney-manager match_create "" 3 null
 spacetime call tm-tourney-manager match_create "" 3 null
 
-spacetime call tm-tourney-manager create_connection '{"MatchV1": 5 }' '{"MatchV1": 3 }' '{"Waiting": {}}'
-spacetime call tm-tourney-manager create_connection '{"MatchV1": 5 }' '{"MatchV1": 4 }' '{"Waiting": {}}'
-# spacetime call tm-tourney-manager create_connection '{"MatchV1": 6 }' '{"MatchV1": 4 }' '{"Waiting": {}}'
-# spacetime call tm-tourney-manager create_connection '{"MatchV1": 6 }' '{"MatchV1": 3 }' '{"Waiting": {}}'
+spacetime call tm-tourney-manager connection_create '{"MatchV1": 5 }' '{"MatchV1": 3 }' '{"Waiting": {}}'
+spacetime call tm-tourney-manager connection_create '{"MatchV1": 5 }' '{"MatchV1": 4 }' '{"Waiting": {}}'
+# spacetime call tm-tourney-manager connection_create '{"MatchV1": 6 }' '{"MatchV1": 4 }' '{"Waiting": {}}'
+# spacetime call tm-tourney-manager connection_create '{"MatchV1": 6 }' '{"MatchV1": 3 }' '{"Waiting": {}}'
 
 # Playoffs for Division 1
 spacetime call tm-tourney-manager competition_create "Playoffs" 2 0

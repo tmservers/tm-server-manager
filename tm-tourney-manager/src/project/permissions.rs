@@ -43,6 +43,8 @@ impl ProjectPermissionsV1 {
     pub const RAW_SERVER_REVOKE: ProjectPermissionsV1 = ProjectPermissionsV1(0b100000000000000);
 
     pub const MATCH_ASSIGN_SERVER: ProjectPermissionsV1 = ProjectPermissionsV1(0b1000000000000000);
+
+    pub const REGISTRATION_CREATE: ProjectPermissionsV1 = ProjectPermissionsV1(0b10000000000000000);
 }
 
 impl PermissionType for ProjectPermissionsV1 {

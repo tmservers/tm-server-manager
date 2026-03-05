@@ -13,7 +13,7 @@ use crate::{
     project::permissions::ProjectPermissionsV1,
     registration::tab_registration,
     scheduling::tab_schedule,
-    tm_match::tab_tm_match,
+    tm_match::{match_set_preparation, tab_tm_match},
 };
 
 pub(super) mod connection_data;
@@ -201,9 +201,27 @@ impl NodeKindHandle {
     }
 }
 
+pub trait NodeType {
+    fn ready(&self, ctx: &ReducerContext) -> Result<(), String>;
+}
+
+impl NodeType for NodeKindHandle {
+    fn ready(&self, ctx: &ReducerContext) -> Result<(), String> {
+        match self {
+            NodeKindHandle::MatchV1(match_id) => match_set_preparation(ctx, *match_id),
+            NodeKindHandle::CompetitionV1(_) => todo!(),
+            NodeKindHandle::MonitoringV1(_) => todo!(),
+            NodeKindHandle::ServerV1(_) => todo!(),
+            NodeKindHandle::SchedulingV1(_) => todo!(),
+            NodeKindHandle::PortalV1(_) => todo!(),
+            NodeKindHandle::RegistrationV1(_) => todo!(),
+        }
+    }
+}
+
 /// Since we need to check either way if the two thing have the same parent we can omit specifing the competition manually.
 #[reducer]
-pub fn create_connection(
+pub fn connection_create(
     ctx: &ReducerContext,
     connection_from: NodeKindHandle,
     connection_to: NodeKindHandle,
@@ -395,13 +413,25 @@ pub fn internal_graph_resolution_node_finished(
         });
 
     for affected_connection in affected_connections.map(|c| c.connection_to) {
-        //affected_connection.try_start()
-        let things = ctx
+        let pending_connections = ctx
             .db
             .tab_competition_connection()
             .origin_nodes_of()
-            .filter(affected_connection.split());
-        log::warn!("{:?}", things.collect::<Vec<_>>());
+            .filter(affected_connection.split())
+            .filter(|c| !c.resolved)
+            .collect::<Vec<_>>();
+        if pending_connections.is_empty() {
+            log::warn!("The node can be started now.");
+            if let Err(error) = affected_connection.ready(ctx) {
+                //TODO maybe add a table for node problems?
+                // maybe there also should be a intended to progress state in the nodes.
+                log::error!("Node shoud have been started but could because: {error}")
+            };
+        } else {
+            log::info!(
+                "There aare still nodes that are not finished!, Pending Nodes: {pending_connections:?}"
+            );
+        }
     }
 
     Ok(())

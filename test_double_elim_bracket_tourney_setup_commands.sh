@@ -45,13 +45,13 @@ for match in {9..12}; do
   for target in {1..8}; do
     # If target is one of the winners for this match, create Data connection
     if [[ " ${winners[@]} " =~ " ${target} " ]]; then
-      spacetime call tm-tourney-manager create_connection \
+      spacetime call tm-tourney-manager connection_create \
         "{\"MatchV1\": $match }" \
         "{\"MatchV1\": $target }" \
         '{"Data": {}}'
     # Otherwise, create Waiting connection
     else
-      spacetime call tm-tourney-manager create_connection \
+      spacetime call tm-tourney-manager connection_create \
         "{\"MatchV1\": $match }" \
         "{\"MatchV1\": $target }" \
         '{"Waiting": {}}'
@@ -81,13 +81,13 @@ for match in {13..16}; do
   for target in {1..8}; do
     # If target is one of the losers for this match, create Data connection
     if [[ " ${losers[@]} " =~ " ${target} " ]]; then
-      spacetime call tm-tourney-manager create_connection \
+      spacetime call tm-tourney-manager connection_create \
         "{\"MatchV1\": $match }" \
         "{\"MatchV1\": $target }" \
         '{"Data": {}}'
     # Otherwise, create Waiting connection
     else
-      spacetime call tm-tourney-manager create_connection \
+      spacetime call tm-tourney-manager connection_create \
         "{\"MatchV1\": $match }" \
         "{\"MatchV1\": $target }" \
         '{"Waiting": {}}'
@@ -120,13 +120,13 @@ for match in {17..20}; do
   for target in {9..16}; do
     # If target is one of the winners or losers for this match, create Data connection
     if [[ " ${lower_winners[@]} " =~ " ${target} " ]] || [[ " ${upper_losers[@]} " =~ " ${target} " ]]; then
-      spacetime call tm-tourney-manager create_connection \
+      spacetime call tm-tourney-manager connection_create \
         "{\"MatchV1\": $match }" \
         "{\"MatchV1\": $target }" \
         '{"Data": {}}'
     # Otherwise, create Waiting connection
     else
-      spacetime call tm-tourney-manager create_connection \
+      spacetime call tm-tourney-manager connection_create \
         "{\"MatchV1\": $match }" \
         "{\"MatchV1\": $target }" \
         '{"Waiting": {}}'
@@ -147,7 +147,7 @@ done
 # Upper R3 M2 gets winners of Upper R2 matches 1, 2, 3, 4
 for match in {21..22}; do
   for target in {9..12}; do
-    spacetime call tm-tourney-manager create_connection \
+    spacetime call tm-tourney-manager connection_create \
       "{\"MatchV1\": $match }" \
       "{\"MatchV1\": $target }" \
       '{"Data": {}}'
@@ -157,7 +157,7 @@ done
 # Upper round 3 also has to wait on Lower R2
 for match in {21..22}; do
   for target in {17..20}; do
-    spacetime call tm-tourney-manager create_connection \
+    spacetime call tm-tourney-manager connection_create \
       "{\"MatchV1\": $match }" \
       "{\"MatchV1\": $target }" \
       '{"Waiting": {}}'
@@ -176,7 +176,7 @@ done
 # Lower R3 M2 gets winners of Lower R2 matches 1, 2, 3, 4
 for match in {23..24}; do
   for target in {17..20}; do
-    spacetime call tm-tourney-manager create_connection \
+    spacetime call tm-tourney-manager connection_create \
       "{\"MatchV1\": $match }" \
       "{\"MatchV1\": $target }" \
       '{"Data": {}}'
@@ -195,7 +195,7 @@ done
 # Lower R4 M2 gets winners of Lower R3 match 1, 2 and losers of Upper R3 match 1, 2
 for match in {25..26}; do
   for target in {21..24}; do
-    spacetime call tm-tourney-manager create_connection \
+    spacetime call tm-tourney-manager connection_create \
       "{\"MatchV1\": $match }" \
       "{\"MatchV1\": $target }" \
       '{"Data": {}}'
@@ -210,7 +210,7 @@ spacetime call tm-tourney-manager match_create "Upper Final" 2 null
 # Winners of Upper R3 to Upper Final
 # Upper Final gets winners of Upper R3 match 1, 2
 for target in {21..22}; do
-  spacetime call tm-tourney-manager create_connection \
+  spacetime call tm-tourney-manager connection_create \
     '{"MatchV1": 27 }' \
     "{\"MatchV1\": $target }" \
     '{"Data": {}}'
@@ -218,7 +218,7 @@ done
 
 # Upper Final also has to wait on Lower R4
 for target in {25..26}; do
-  spacetime call tm-tourney-manager create_connection \
+  spacetime call tm-tourney-manager connection_create \
     '{"MatchV1": 27 }' \
     "{\"MatchV1\": $target }" \
     '{"Waiting": {}}'
@@ -232,7 +232,7 @@ spacetime call tm-tourney-manager match_create "Lower Final" 2 null
 # Winners of Lower R4 to Lower Final
 # Lower Final gets winners of Lower R4 match 1, 2
 for target in {25..26}; do
-  spacetime call tm-tourney-manager create_connection \
+  spacetime call tm-tourney-manager connection_create \
     '{"MatchV1": 28 }' \
     "{\"MatchV1\": $target }" \
     '{"Data": {}}'
@@ -246,7 +246,7 @@ spacetime call tm-tourney-manager match_create "Consolidation Final" 2 null
 # Losers of Upper Final and Winners of Lower Final to Consolidation Final
 # Consolidation Final gets loser of Upper Final and winner of Lower Final
 for target in {27,28}; do
-  spacetime call tm-tourney-manager create_connection \
+  spacetime call tm-tourney-manager connection_create \
     '{"MatchV1": 29 }' \
     "{\"MatchV1\": $target }" \
     '{"Data": {}}'
@@ -260,7 +260,7 @@ spacetime call tm-tourney-manager match_create "Grand Final" 2 null
 # Winners of Upper Final and Winners of Consolidation Final to Grand Final
 # Grand Final gets winner of Upper Final and winner of Consolidation Final
 for target in {27,29}; do
-  spacetime call tm-tourney-manager create_connection \
+  spacetime call tm-tourney-manager connection_create \
     '{"MatchV1": 30 }' \
     "{\"MatchV1\": $target }" \
     '{"Data": {}}'

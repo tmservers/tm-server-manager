@@ -31,4 +31,4 @@ spacetime call tm-tourney-manager competition_create "Playoffs" 5 0
 spacetime call tm-tourney-manager match_create "" 7 null
 spacetime call tm-tourney-manager match_create "" 7 null
 
-spacetime call tm-tourney-manager create_connection "{""MatchV1"": 1 }" "{""MatchV1"": 2 }" "{""Waiting"": {}}"
+spacetime call tm-tourney-manager connection_create "{""MatchV1"": 1 }" "{""MatchV1"": 2 }" "{""Waiting"": {}}"
