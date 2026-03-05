@@ -40,7 +40,7 @@ import CompetitionEditNameReducer from "./competition_edit_name_reducer";
 import CompetitionNodePositionUpdateReducer from "./competition_node_position_update_reducer";
 import CompetitionNodePositionsUpdateReducer from "./competition_node_positions_update_reducer";
 import CompetitionRegistrationSettingsReducer from "./competition_registration_settings_reducer";
-import CreateConnectionReducer from "./create_connection_reducer";
+import ConnectionCreateReducer from "./connection_create_reducer";
 import CreateEnvVarReducer from "./create_env_var_reducer";
 import CreateMonitorReducer from "./create_monitor_reducer";
 import CreateProjectReducer from "./create_project_reducer";
@@ -74,6 +74,7 @@ import RawServerPlayerAddReducer from "./raw_server_player_add_reducer";
 import RawServerPlayerRemoveReducer from "./raw_server_player_remove_reducer";
 import RawServerVerifyReducer from "./raw_server_verify_reducer";
 import RegisterPlayerReducer from "./register_player_reducer";
+import RegistrationCreateReducer from "./registration_create_reducer";
 import RevokeRawServerReducer from "./revoke_raw_server_reducer";
 import ServerMethodCallReducer from "./server_method_call_reducer";
 import ServerMethodResponseReducer from "./server_method_response_reducer";
@@ -101,9 +102,9 @@ import MyMatchTemplateRow from "./my_match_template_table";
 import MyProjectRow from "./my_project_table";
 import ProjectRow from "./project_table";
 import ProjectAvailableServerPoolRow from "./project_available_server_pool_table";
+import RawServerAllowedPlayersRow from "./raw_server_allowed_players_table";
 import RawServerConfigRow from "./raw_server_config_table";
 import RawServerCurrentPlayersRow from "./raw_server_current_players_table";
-import RawServerExpectedPlayersRow from "./raw_server_expected_players_table";
 import RawServerMethodCallRow from "./raw_server_method_call_table";
 import RegisteredPlayerRow from "./registered_player_table";
 import ScheduleRow from "./schedule_table";
@@ -246,6 +247,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, ProjectAvailableServerPoolRow),
+  raw_server_allowed_players: __table({
+    name: 'raw_server_allowed_players',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, RawServerAllowedPlayersRow),
   raw_server_config: __table({
     name: 'raw_server_config',
     indexes: [
@@ -260,13 +268,6 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, RawServerCurrentPlayersRow),
-  raw_server_expected_players: __table({
-    name: 'raw_server_expected_players',
-    indexes: [
-    ],
-    constraints: [
-    ],
-  }, RawServerExpectedPlayersRow),
   raw_server_method_call: __table({
     name: 'raw_server_method_call',
     indexes: [
@@ -340,7 +341,7 @@ const reducersSchema = __reducers(
   __reducerSchema("competition_node_position_update", CompetitionNodePositionUpdateReducer),
   __reducerSchema("competition_node_positions_update", CompetitionNodePositionsUpdateReducer),
   __reducerSchema("competition_registration_settings", CompetitionRegistrationSettingsReducer),
-  __reducerSchema("create_connection", CreateConnectionReducer),
+  __reducerSchema("connection_create", ConnectionCreateReducer),
   __reducerSchema("create_env_var", CreateEnvVarReducer),
   __reducerSchema("create_monitor", CreateMonitorReducer),
   __reducerSchema("create_project", CreateProjectReducer),
@@ -374,6 +375,7 @@ const reducersSchema = __reducers(
   __reducerSchema("raw_server_player_remove", RawServerPlayerRemoveReducer),
   __reducerSchema("raw_server_verify", RawServerVerifyReducer),
   __reducerSchema("register_player", RegisterPlayerReducer),
+  __reducerSchema("registration_create", RegistrationCreateReducer),
   __reducerSchema("revoke_raw_server", RevokeRawServerReducer),
   __reducerSchema("server_method_call", ServerMethodCallReducer),
   __reducerSchema("server_method_response", ServerMethodResponseReducer),

@@ -4,16 +4,21 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::server_mode_info_type::ServerModeInfo;
-
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct StartServer {
-    pub restarted: bool,
-    pub time: u32,
-    pub mode: ServerModeInfo,
+#[derive(Copy, Eq, Hash)]
+pub enum RegistrationState {
+    Configuring,
+
+    Upcoming,
+
+    Ongoing,
+
+    Ended,
+
+    Locked,
 }
 
-impl __sdk::InModule for StartServer {
+impl __sdk::InModule for RegistrationState {
     type Module = super::RemoteModule;
 }

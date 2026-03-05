@@ -1,7 +1,10 @@
 use async_fn_traits::AsyncFn1;
 use tm_server_types::{
     base::PlayerInfo,
-    event::{EndRoundStart, PlayerChat, PlayerConnect, PlayerDisconnect, Scores, WayPoint},
+    event::{
+        EndRoundEnd, EndRoundStart, PlayerChat, PlayerConnect, PlayerDisconnect, Scores,
+        StartServer, WayPoint,
+    },
 };
 
 use crate::TrackmaniaServer;
@@ -52,6 +55,22 @@ pub trait TypedCallbacks {
     fn on_end_round_start(
         &self,
         execute: impl for<'a> AsyncFn1<&'a EndRoundStart, OutputFuture: Send, Output = ()>
+        + Send
+        + Sync
+        + 'static,
+    );
+
+    fn on_end_round_end(
+        &self,
+        execute: impl for<'a> AsyncFn1<&'a EndRoundEnd, OutputFuture: Send, Output = ()>
+        + Send
+        + Sync
+        + 'static,
+    );
+
+    fn on_start_server_start(
+        &self,
+        execute: impl for<'a> AsyncFn1<&'a StartServer, OutputFuture: Send, Output = ()>
         + Send
         + Sync
         + 'static,
@@ -118,7 +137,7 @@ impl TypedCallbacks for TrackmaniaServer {
     ) {
         self.on("ManiaPlanet.PlayerChat", execute);
     }
-    
+
     fn on_end_round_start(
         &self,
         execute: impl for<'a> AsyncFn1<&'a EndRoundStart, OutputFuture: Send, Output = ()>
@@ -126,6 +145,26 @@ impl TypedCallbacks for TrackmaniaServer {
         + Sync
         + 'static,
     ) {
-        self.on("event", execute);
+        self.on("ManiaPlanet.EndRound_Start", execute);
+    }
+
+    fn on_end_round_end(
+        &self,
+        execute: impl for<'a> AsyncFn1<&'a EndRoundEnd, OutputFuture: Send, Output = ()>
+        + Send
+        + Sync
+        + 'static,
+    ) {
+        self.on("ManiaPlanet.EndRound_End", execute);
+    }
+
+    fn on_start_server_start(
+        &self,
+        execute: impl for<'a> AsyncFn1<&'a StartServer, OutputFuture: Send, Output = ()>
+        + Send
+        + Sync
+        + 'static,
+    ) {
+        self.on("StartServer_Start", execute);
     }
 }

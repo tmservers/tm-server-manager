@@ -10,7 +10,7 @@ pub struct TmMatchRoundPlayer {
     pub internal_account_id: u32,
     pub match_id: u32,
     pub time: i32,
-    pub round_points: i32,
+    pub points: i32,
     pub round: u16,
 }
 
@@ -25,7 +25,7 @@ pub struct TmMatchRoundPlayerCols {
     pub internal_account_id: __sdk::__query_builder::Col<TmMatchRoundPlayer, u32>,
     pub match_id: __sdk::__query_builder::Col<TmMatchRoundPlayer, u32>,
     pub time: __sdk::__query_builder::Col<TmMatchRoundPlayer, i32>,
-    pub round_points: __sdk::__query_builder::Col<TmMatchRoundPlayer, i32>,
+    pub points: __sdk::__query_builder::Col<TmMatchRoundPlayer, i32>,
     pub round: __sdk::__query_builder::Col<TmMatchRoundPlayer, u16>,
 }
 
@@ -39,7 +39,7 @@ impl __sdk::__query_builder::HasCols for TmMatchRoundPlayer {
             ),
             match_id: __sdk::__query_builder::Col::new(table_name, "match_id"),
             time: __sdk::__query_builder::Col::new(table_name, "time"),
-            round_points: __sdk::__query_builder::Col::new(table_name, "round_points"),
+            points: __sdk::__query_builder::Col::new(table_name, "points"),
             round: __sdk::__query_builder::Col::new(table_name, "round"),
         }
     }

@@ -9,6 +9,17 @@ pub struct StartRound {
     pub time: u32,
 }
 
+impl<'a> From<&'a Event> for &'a StartRound {
+    #[inline]
+    fn from(value: &'a Event) -> Self {
+        match value {
+            Event::StartRoundStart(event) => event,
+            Event::StartRoundEnd(event) => event,
+            _ => unreachable!(),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
@@ -38,4 +49,14 @@ pub struct EndRoundEnd {
     pub time: u32,
     #[cfg_attr(feature = "serde", serde(rename = "isvalid"))]
     pub is_valid: bool,
+}
+
+impl<'a> From<&'a Event> for &'a EndRoundEnd {
+    #[inline]
+    fn from(value: &'a Event) -> Self {
+        match value {
+            Event::EndRoundEnd(event) => event,
+            _ => unreachable!(),
+        }
+    }
 }

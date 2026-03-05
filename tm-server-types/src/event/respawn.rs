@@ -1,3 +1,5 @@
+use crate::event::Event;
+
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
@@ -20,4 +22,14 @@ pub struct Respawn {
     pub checkpoint_in_lap: i32,
 
     pub speed: f32,
+}
+
+impl<'a> From<&'a Event> for &'a Respawn {
+    #[inline]
+    fn from(value: &'a Event) -> Self {
+        match value {
+            Event::Respawn(event) => event,
+            _ => unreachable!(),
+        }
+    }
 }

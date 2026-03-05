@@ -9,15 +9,15 @@ use super::node_kind_handle_type::NodeKindHandle;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub(super) struct CreateConnectionArgs {
+pub(super) struct ConnectionCreateArgs {
     pub connection_from: NodeKindHandle,
     pub connection_to: NodeKindHandle,
     pub setting: ConnectionSettings,
 }
 
-impl From<CreateConnectionArgs> for super::Reducer {
-    fn from(args: CreateConnectionArgs) -> Self {
-        Self::CreateConnection {
+impl From<ConnectionCreateArgs> for super::Reducer {
+    fn from(args: ConnectionCreateArgs) -> Self {
+        Self::ConnectionCreate {
             connection_from: args.connection_from,
             connection_to: args.connection_to,
             setting: args.setting,
@@ -25,37 +25,37 @@ impl From<CreateConnectionArgs> for super::Reducer {
     }
 }
 
-impl __sdk::InModule for CreateConnectionArgs {
+impl __sdk::InModule for ConnectionCreateArgs {
     type Module = super::RemoteModule;
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the reducer `create_connection`.
+/// Extension trait for access to the reducer `connection_create`.
 ///
 /// Implemented for [`super::RemoteReducers`].
-pub trait create_connection {
-    /// Request that the remote module invoke the reducer `create_connection` to run as soon as possible.
+pub trait connection_create {
+    /// Request that the remote module invoke the reducer `connection_create` to run as soon as possible.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
-    /// /// Use [`create_connection:create_connection_then`] to run a callback after the reducer completes.
-    fn create_connection(
+    /// /// Use [`connection_create:connection_create_then`] to run a callback after the reducer completes.
+    fn connection_create(
         &self,
         connection_from: NodeKindHandle,
         connection_to: NodeKindHandle,
         setting: ConnectionSettings,
     ) -> __sdk::Result<()> {
-        self.create_connection_then(connection_from, connection_to, setting, |_, _| {})
+        self.connection_create_then(connection_from, connection_to, setting, |_, _| {})
     }
 
-    /// Request that the remote module invoke the reducer `create_connection` to run as soon as possible,
+    /// Request that the remote module invoke the reducer `connection_create` to run as soon as possible,
     /// registering `callback` to run when we are notified that the reducer completed.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed with the `callback`.
-    fn create_connection_then(
+    fn connection_create_then(
         &self,
         connection_from: NodeKindHandle,
         connection_to: NodeKindHandle,
@@ -67,8 +67,8 @@ pub trait create_connection {
     ) -> __sdk::Result<()>;
 }
 
-impl create_connection for super::RemoteReducers {
-    fn create_connection_then(
+impl connection_create for super::RemoteReducers {
+    fn connection_create_then(
         &self,
         connection_from: NodeKindHandle,
         connection_to: NodeKindHandle,
@@ -79,7 +79,7 @@ impl create_connection for super::RemoteReducers {
             + 'static,
     ) -> __sdk::Result<()> {
         self.imp.invoke_reducer_with_callback(
-            CreateConnectionArgs {
+            ConnectionCreateArgs {
                 connection_from,
                 connection_to,
                 setting,

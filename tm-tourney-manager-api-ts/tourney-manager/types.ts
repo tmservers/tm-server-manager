@@ -816,6 +816,9 @@ export const Registration = __t.object("Registration", {
   get settings() {
     return RegistrationSettings;
   },
+  get registrationState() {
+    return RegistrationState;
+  },
 });
 export type Registration = __Infer<typeof Registration>;
 
@@ -836,6 +839,16 @@ export const RegistrationSettings = __t.enum("RegistrationSettings", {
   None: __t.unit(),
 });
 export type RegistrationSettings = __Infer<typeof RegistrationSettings>;
+
+// The tagged union or sum type for the algebraic type `RegistrationState`.
+export const RegistrationState = __t.enum("RegistrationState", {
+  Configuring: __t.unit(),
+  Upcoming: __t.unit(),
+  Ongoing: __t.unit(),
+  Ended: __t.unit(),
+  Locked: __t.unit(),
+});
+export type RegistrationState = __Infer<typeof RegistrationState>;
 
 export const RegistrationTeamSettings = __t.object("RegistrationTeamSettings", {
   teamLimit: __t.option(__t.u32()),
@@ -966,6 +979,12 @@ export const ServerConfig = __t.object("ServerConfig", {
 });
 export type ServerConfig = __Infer<typeof ServerConfig>;
 
+export const ServerModeInfo = __t.object("ServerModeInfo", {
+  restarted: __t.bool(),
+  name: __t.string(),
+});
+export type ServerModeInfo = __Infer<typeof ServerModeInfo>;
+
 export const ServerOptions = __t.object("ServerOptions", {});
 export type ServerOptions = __Infer<typeof ServerOptions>;
 
@@ -1001,6 +1020,9 @@ export type StartRound = __Infer<typeof StartRound>;
 export const StartServer = __t.object("StartServer", {
   restarted: __t.bool(),
   time: __t.u32(),
+  get mode() {
+    return ServerModeInfo;
+  },
 });
 export type StartServer = __Infer<typeof StartServer>;
 
@@ -1081,7 +1103,7 @@ export const TmMatchRoundPlayer = __t.object("TmMatchRoundPlayer", {
   internalAccountId: __t.u32(),
   matchId: __t.u32(),
   time: __t.i32(),
-  roundPoints: __t.i32(),
+  points: __t.i32(),
   round: __t.u16(),
 });
 export type TmMatchRoundPlayer = __Infer<typeof TmMatchRoundPlayer>;

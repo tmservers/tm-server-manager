@@ -35,9 +35,6 @@ pub fn config_update(_: &EventContext, new_config: &tm_tourney_manager_api_rs::S
             _ = server
                 .chat_send_server_massage("[tmservers.live] New configuration loaded.")
                 .await;
-
-            let p: Result<String, ClientError> = server.call("GetModeScriptVariables", ()).await;
-            tracing::error!("a {p:?}");
         });
     });
 }

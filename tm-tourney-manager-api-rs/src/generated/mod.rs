@@ -27,8 +27,8 @@ pub mod competition_registration_settings_reducer;
 pub mod competition_status_type;
 pub mod competition_table;
 pub mod competition_v_1_type;
+pub mod connection_create_reducer;
 pub mod connection_settings_type;
-pub mod create_connection_reducer;
 pub mod create_env_var_reducer;
 pub mod create_monitor_reducer;
 pub mod create_project_reducer;
@@ -128,10 +128,10 @@ pub mod project_status_type;
 pub mod project_table;
 pub mod project_update_status_reducer;
 pub mod project_v_1_type;
+pub mod raw_server_allowed_players_table;
 pub mod raw_server_config_table;
 pub mod raw_server_config_type;
 pub mod raw_server_current_players_table;
-pub mod raw_server_expected_players_table;
 pub mod raw_server_method_call_table;
 pub mod raw_server_method_call_type;
 pub mod raw_server_occupation_type;
@@ -144,8 +144,10 @@ pub mod register_player_reducer;
 pub mod registered_player_table;
 pub mod registered_player_type;
 pub mod registered_team_type;
+pub mod registration_create_reducer;
 pub mod registration_player_settings_type;
 pub mod registration_settings_type;
+pub mod registration_state_type;
 pub mod registration_team_settings_type;
 pub mod registration_type;
 pub mod respawn_behaviour_type;
@@ -161,6 +163,7 @@ pub mod scores_type;
 pub mod server_config_type;
 pub mod server_method_call_reducer;
 pub mod server_method_response_reducer;
+pub mod server_mode_info_type;
 pub mod server_options_type;
 pub mod start_line_type;
 pub mod start_map_type;
@@ -223,8 +226,8 @@ pub use competition_registration_settings_reducer::competition_registration_sett
 pub use competition_status_type::CompetitionStatus;
 pub use competition_table::*;
 pub use competition_v_1_type::CompetitionV1;
+pub use connection_create_reducer::connection_create;
 pub use connection_settings_type::ConnectionSettings;
-pub use create_connection_reducer::create_connection;
 pub use create_env_var_reducer::create_env_var;
 pub use create_monitor_reducer::create_monitor;
 pub use create_project_reducer::create_project;
@@ -324,10 +327,10 @@ pub use project_status_type::ProjectStatus;
 pub use project_table::*;
 pub use project_update_status_reducer::project_update_status;
 pub use project_v_1_type::ProjectV1;
+pub use raw_server_allowed_players_table::*;
 pub use raw_server_config_table::*;
 pub use raw_server_config_type::RawServerConfig;
 pub use raw_server_current_players_table::*;
-pub use raw_server_expected_players_table::*;
 pub use raw_server_method_call_table::*;
 pub use raw_server_method_call_type::RawServerMethodCall;
 pub use raw_server_occupation_type::RawServerOccupation;
@@ -340,8 +343,10 @@ pub use register_player_reducer::register_player;
 pub use registered_player_table::*;
 pub use registered_player_type::RegisteredPlayer;
 pub use registered_team_type::RegisteredTeam;
+pub use registration_create_reducer::registration_create;
 pub use registration_player_settings_type::RegistrationPlayerSettings;
 pub use registration_settings_type::RegistrationSettings;
+pub use registration_state_type::RegistrationState;
 pub use registration_team_settings_type::RegistrationTeamSettings;
 pub use registration_type::Registration;
 pub use respawn_behaviour_type::RespawnBehaviour;
@@ -357,6 +362,7 @@ pub use scores_type::Scores;
 pub use server_config_type::ServerConfig;
 pub use server_method_call_reducer::server_method_call;
 pub use server_method_response_reducer::server_method_response;
+pub use server_mode_info_type::ServerModeInfo;
 pub use server_options_type::ServerOptions;
 pub use start_line_type::StartLine;
 pub use start_map_type::StartMap;
@@ -429,7 +435,7 @@ pub enum Reducer {
         competition_id: u32,
         registration_settings: RegistrationSettings,
     },
-    CreateConnection {
+    ConnectionCreate {
         connection_from: NodeKindHandle,
         connection_to: NodeKindHandle,
         setting: ConnectionSettings,
@@ -562,6 +568,11 @@ pub enum Reducer {
     RegisterPlayer {
         registration_id: u32,
     },
+    RegistrationCreate {
+        name: String,
+        parent_id: u32,
+        with_template: u32,
+    },
     RevokeRawServer {
         server_id: u32,
         project_id: u32,
@@ -592,7 +603,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::CompetitionNodePositionUpdate { .. } => "competition_node_position_update",
             Reducer::CompetitionNodePositionsUpdate { .. } => "competition_node_positions_update",
             Reducer::CompetitionRegistrationSettings { .. } => "competition_registration_settings",
-            Reducer::CreateConnection { .. } => "create_connection",
+            Reducer::ConnectionCreate { .. } => "connection_create",
             Reducer::CreateEnvVar { .. } => "create_env_var",
             Reducer::CreateMonitor { .. } => "create_monitor",
             Reducer::CreateProject { .. } => "create_project",
@@ -626,6 +637,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::RawServerPlayerRemove { .. } => "raw_server_player_remove",
             Reducer::RawServerVerify { .. } => "raw_server_verify",
             Reducer::RegisterPlayer { .. } => "register_player",
+            Reducer::RegistrationCreate { .. } => "registration_create",
             Reducer::RevokeRawServer { .. } => "revoke_raw_server",
             Reducer::ServerMethodCall { .. } => "server_method_call",
             Reducer::ServerMethodResponse { .. } => "server_method_response",
@@ -677,11 +689,11 @@ impl __sdk::Reducer for Reducer {
                     registration_settings: registration_settings.clone(),
                 },
             ),
-            Reducer::CreateConnection {
+            Reducer::ConnectionCreate {
                 connection_from,
                 connection_to,
                 setting,
-            } => __sats::bsatn::to_vec(&create_connection_reducer::CreateConnectionArgs {
+            } => __sats::bsatn::to_vec(&connection_create_reducer::ConnectionCreateArgs {
                 connection_from: connection_from.clone(),
                 connection_to: connection_to.clone(),
                 setting: setting.clone(),
@@ -912,6 +924,15 @@ impl __sdk::Reducer for Reducer {
                     registration_id: registration_id.clone(),
                 })
             }
+            Reducer::RegistrationCreate {
+                name,
+                parent_id,
+                with_template,
+            } => __sats::bsatn::to_vec(&registration_create_reducer::RegistrationCreateArgs {
+                name: name.clone(),
+                parent_id: parent_id.clone(),
+                with_template: with_template.clone(),
+            }),
             Reducer::RevokeRawServer {
                 server_id,
                 project_id,
@@ -961,9 +982,9 @@ pub struct DbUpdate {
     my_project: __sdk::TableUpdate<MyProjectV1>,
     project: __sdk::TableUpdate<ProjectV1>,
     project_available_server_pool: __sdk::TableUpdate<RawServerV1>,
+    raw_server_allowed_players: __sdk::TableUpdate<PermittedPlayer>,
     raw_server_config: __sdk::TableUpdate<ServerConfig>,
     raw_server_current_players: __sdk::TableUpdate<RawServerPlayer>,
-    raw_server_expected_players: __sdk::TableUpdate<PermittedPlayer>,
     raw_server_method_call: __sdk::TableUpdate<RawServerMethodCall>,
     registered_player: __sdk::TableUpdate<RegisteredPlayer>,
     schedule: __sdk::TableUpdate<ScheduleV1>,
@@ -1030,14 +1051,14 @@ impl TryFrom<__ws::v2::TransactionUpdate> for DbUpdate {
                 "project_available_server_pool" => db_update.project_available_server_pool.append(
                     project_available_server_pool_table::parse_table_update(table_update)?,
                 ),
+                "raw_server_allowed_players" => db_update.raw_server_allowed_players.append(
+                    raw_server_allowed_players_table::parse_table_update(table_update)?,
+                ),
                 "raw_server_config" => db_update
                     .raw_server_config
                     .append(raw_server_config_table::parse_table_update(table_update)?),
                 "raw_server_current_players" => db_update.raw_server_current_players.append(
                     raw_server_current_players_table::parse_table_update(table_update)?,
-                ),
-                "raw_server_expected_players" => db_update.raw_server_expected_players.append(
-                    raw_server_expected_players_table::parse_table_update(table_update)?,
                 ),
                 "raw_server_method_call" => db_update.raw_server_method_call.append(
                     raw_server_method_call_table::parse_table_update(table_update)?,
@@ -1138,15 +1159,15 @@ impl __sdk::DbUpdate for DbUpdate {
             "project_available_server_pool",
             &self.project_available_server_pool,
         );
+        diff.raw_server_allowed_players = cache.apply_diff_to_table::<PermittedPlayer>(
+            "raw_server_allowed_players",
+            &self.raw_server_allowed_players,
+        );
         diff.raw_server_config =
             cache.apply_diff_to_table::<ServerConfig>("raw_server_config", &self.raw_server_config);
         diff.raw_server_current_players = cache.apply_diff_to_table::<RawServerPlayer>(
             "raw_server_current_players",
             &self.raw_server_current_players,
-        );
-        diff.raw_server_expected_players = cache.apply_diff_to_table::<PermittedPlayer>(
-            "raw_server_expected_players",
-            &self.raw_server_expected_players,
         );
         diff.raw_server_method_call = cache.apply_diff_to_table::<RawServerMethodCall>(
             "raw_server_method_call",
@@ -1224,14 +1245,14 @@ impl __sdk::DbUpdate for DbUpdate {
                 "project_available_server_pool" => db_update
                     .project_available_server_pool
                     .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
+                "raw_server_allowed_players" => db_update
+                    .raw_server_allowed_players
+                    .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
                 "raw_server_config" => db_update
                     .raw_server_config
                     .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
                 "raw_server_current_players" => db_update
                     .raw_server_current_players
-                    .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
-                "raw_server_expected_players" => db_update
-                    .raw_server_expected_players
                     .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
                 "raw_server_method_call" => db_update
                     .raw_server_method_call
@@ -1324,14 +1345,14 @@ impl __sdk::DbUpdate for DbUpdate {
                 "project_available_server_pool" => db_update
                     .project_available_server_pool
                     .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
+                "raw_server_allowed_players" => db_update
+                    .raw_server_allowed_players
+                    .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
                 "raw_server_config" => db_update
                     .raw_server_config
                     .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
                 "raw_server_current_players" => db_update
                     .raw_server_current_players
-                    .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
-                "raw_server_expected_players" => db_update
-                    .raw_server_expected_players
                     .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
                 "raw_server_method_call" => db_update
                     .raw_server_method_call
@@ -1394,9 +1415,9 @@ pub struct AppliedDiff<'r> {
     my_project: __sdk::TableAppliedDiff<'r, MyProjectV1>,
     project: __sdk::TableAppliedDiff<'r, ProjectV1>,
     project_available_server_pool: __sdk::TableAppliedDiff<'r, RawServerV1>,
+    raw_server_allowed_players: __sdk::TableAppliedDiff<'r, PermittedPlayer>,
     raw_server_config: __sdk::TableAppliedDiff<'r, ServerConfig>,
     raw_server_current_players: __sdk::TableAppliedDiff<'r, RawServerPlayer>,
-    raw_server_expected_players: __sdk::TableAppliedDiff<'r, PermittedPlayer>,
     raw_server_method_call: __sdk::TableAppliedDiff<'r, RawServerMethodCall>,
     registered_player: __sdk::TableAppliedDiff<'r, RegisteredPlayer>,
     schedule: __sdk::TableAppliedDiff<'r, ScheduleV1>,
@@ -1480,6 +1501,11 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             &self.project_available_server_pool,
             event,
         );
+        callbacks.invoke_table_row_callbacks::<PermittedPlayer>(
+            "raw_server_allowed_players",
+            &self.raw_server_allowed_players,
+            event,
+        );
         callbacks.invoke_table_row_callbacks::<ServerConfig>(
             "raw_server_config",
             &self.raw_server_config,
@@ -1488,11 +1514,6 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
         callbacks.invoke_table_row_callbacks::<RawServerPlayer>(
             "raw_server_current_players",
             &self.raw_server_current_players,
-            event,
-        );
-        callbacks.invoke_table_row_callbacks::<PermittedPlayer>(
-            "raw_server_expected_players",
-            &self.raw_server_expected_players,
             event,
         );
         callbacks.invoke_table_row_callbacks::<RawServerMethodCall>(
@@ -2193,9 +2214,9 @@ impl __sdk::SpacetimeModule for RemoteModule {
         my_project_table::register_table(client_cache);
         project_table::register_table(client_cache);
         project_available_server_pool_table::register_table(client_cache);
+        raw_server_allowed_players_table::register_table(client_cache);
         raw_server_config_table::register_table(client_cache);
         raw_server_current_players_table::register_table(client_cache);
-        raw_server_expected_players_table::register_table(client_cache);
         raw_server_method_call_table::register_table(client_cache);
         registered_player_table::register_table(client_cache);
         schedule_table::register_table(client_cache);
@@ -2224,9 +2245,9 @@ impl __sdk::SpacetimeModule for RemoteModule {
         "my_project",
         "project",
         "project_available_server_pool",
+        "raw_server_allowed_players",
         "raw_server_config",
         "raw_server_current_players",
-        "raw_server_expected_players",
         "raw_server_method_call",
         "registered_player",
         "schedule",

@@ -14,6 +14,6 @@ export default __t.row({
   internalAccountId: __t.u32().name("internal_account_id"),
   matchId: __t.u32().name("match_id"),
   time: __t.i32(),
-  roundPoints: __t.i32().name("round_points"),
+  points: __t.i32(),
   round: __t.u16(),
 });

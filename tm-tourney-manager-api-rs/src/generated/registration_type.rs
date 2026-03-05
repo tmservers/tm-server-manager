@@ -5,6 +5,7 @@
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 use super::registration_settings_type::RegistrationSettings;
+use super::registration_state_type::RegistrationState;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
@@ -14,6 +15,7 @@ pub struct Registration {
     pub parent_id: u32,
     pub project_id: u32,
     pub settings: RegistrationSettings,
+    pub registration_state: RegistrationState,
 }
 
 impl __sdk::InModule for Registration {
@@ -29,6 +31,7 @@ pub struct RegistrationCols {
     pub parent_id: __sdk::__query_builder::Col<Registration, u32>,
     pub project_id: __sdk::__query_builder::Col<Registration, u32>,
     pub settings: __sdk::__query_builder::Col<Registration, RegistrationSettings>,
+    pub registration_state: __sdk::__query_builder::Col<Registration, RegistrationState>,
 }
 
 impl __sdk::__query_builder::HasCols for Registration {
@@ -40,6 +43,7 @@ impl __sdk::__query_builder::HasCols for Registration {
             parent_id: __sdk::__query_builder::Col::new(table_name, "parent_id"),
             project_id: __sdk::__query_builder::Col::new(table_name, "project_id"),
             settings: __sdk::__query_builder::Col::new(table_name, "settings"),
+            registration_state: __sdk::__query_builder::Col::new(table_name, "registration_state"),
         }
     }
 }
