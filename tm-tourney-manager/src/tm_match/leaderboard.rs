@@ -33,7 +33,8 @@ pub struct TmMatchRoundPlayer {
 
     match_id: u32,
     time: i32,
-    round_points: i32,
+    // The points of the round.
+    points: i32,
 
     round: u16,
     // maybe accumulate this in the view.
@@ -47,8 +48,7 @@ impl TmMatchRoundPlayer {
             match_id,
             round,
             time: 0,
-            round_points: 0,
-            //match_points: 0,
+            points: 0,
         }
     }
 }
@@ -134,7 +134,7 @@ pub fn match_leaderboard(
     for entry in entries {
         map.entry(entry.internal_account_id)
             .and_modify(|e| {
-                e.round_points += entry.round_points;
+                e.points += entry.points;
                 if entry.round > e.round {
                     e.round = entry.round
                 }
