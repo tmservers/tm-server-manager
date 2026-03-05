@@ -24,7 +24,9 @@ pub struct CompetitionV1 {
 
     // Necessary to hide and mark as immutable
     status: CompetitionStatus,
+    // inheriting_permissions: bool,
 
+    
     // The two timestamps to display players in which time range the competiion is taking place.
     starting_at: Option<Timestamp>,
     ending_at: Option<Timestamp>,

@@ -62,31 +62,3 @@ spacetime call tm-tourney-manager connection_create "{""MatchV1"": 4 }" "{""Comp
 spacetime call tm-tourney-manager connection_create "{""MatchV1"": 4 }" "{""CompetitionV1"": 7 }" "{""Data"": {}}"
 :: Yoink fourth 16
 spacetime call tm-tourney-manager connection_create "{""MatchV1"": 4 }" "{""CompetitionV1"": 8 }" "{""Data"": {}}"
-
-
-
-
-
-
-spacetime call tm-tourney-manager match_create "" 3 null
-spacetime call tm-tourney-manager match_create "" 3 null
-spacetime call tm-tourney-manager match_create "" 3 null
-spacetime call tm-tourney-manager match_create "" 3 null
-
-spacetime call tm-tourney-manager competition_create "Playoffs" 2 0
-spacetime call tm-tourney-manager match_create "" 4 null
-spacetime call tm-tourney-manager match_create "" 4 null
-
-spacetime call tm-tourney-manager competition_create "Division 2" 1 0
-
-spacetime call tm-tourney-manager competition_create "League Phase" 5 0
-spacetime call tm-tourney-manager match_create "" 6 null
-spacetime call tm-tourney-manager match_create "" 6 null
-spacetime call tm-tourney-manager match_create "" 6 null
-spacetime call tm-tourney-manager match_create "" 6 null
-
-spacetime call tm-tourney-manager competition_create "Playoffs" 5 0
-spacetime call tm-tourney-manager match_create "" 7 null
-spacetime call tm-tourney-manager match_create "" 7 null
-
-spacetime call tm-tourney-manager connection_create "{""MatchV1"": 1 }" "{""MatchV1"": 2 }" "{""Waiting"": {}}"

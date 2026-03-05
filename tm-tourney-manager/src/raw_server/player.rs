@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use spacetimedb::{
     AnonymousViewContext, Query, ReducerContext, SpacetimeType, Table, Uuid, ViewContext, reducer,
     table, view,
@@ -5,7 +7,9 @@ use spacetimedb::{
 
 use crate::{
     authorization::Authorization,
+    competition::connection::tab_competition_connection__view,
     raw_server::{tab_raw_server__view, tab_raw_server_occupation__view},
+    tm_match::leaderboard::match_leaderboard,
 };
 
 #[derive(Debug)]
@@ -112,8 +116,7 @@ struct PermittedPlayer {
     only_spectator: bool,
 }
 
-// We need to distinguish allowed and mandatory players.
-#[view(accessor= raw_server_expected_players, public)]
+#[view(accessor= raw_server_allowed_players, public)]
 fn raw_server_allowed_players(ctx: &ViewContext) -> Vec<PermittedPlayer> {
     let Ok(server) = ctx.get_server() else {
         return Vec::new();
@@ -129,7 +132,23 @@ fn raw_server_allowed_players(ctx: &ViewContext) -> Vec<PermittedPlayer> {
     };
 
     //TODO
-    //occupation.match_id
+
+    let depending_nodes = ctx
+        .db
+        .tab_competition_connection()
+        .origin_nodes_of()
+        .filter(occupation.match_id)
+        .filter(|c| c.is_data())
+        .map(|c| c.node_from());
+
+    //let map = HashMap::new();
+    for depending_node in depending_nodes {
+        // This should return a Vec<Players> probably.
+        //let leaderboard = depending_node.get_leaderboard();
+    }
+
+    //TODO
+    // map.map(|ja|ja.) -> PermittedPlayer
 
     Vec::new()
 }

@@ -55,9 +55,13 @@ impl TabCompetitionConnection {
     pub(crate) fn node_to(&self) -> NodeKindHandle {
         NodeKindHandle::combine(self.connection_to_variant, self.connection_to)
     }
+
+    pub(crate) fn is_data(&self) -> bool {
+        self.connection_settings == ConnectionSettings::Data
+    }
 }
 
-#[derive(Debug, SpacetimeType, Clone, Copy)]
+#[derive(Debug, SpacetimeType, Clone, Copy, PartialEq, Eq)]
 pub enum ConnectionSettings {
     Waiting,
     Data,
