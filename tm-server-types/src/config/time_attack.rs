@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
@@ -14,6 +16,17 @@ impl TimeAttack {
             "#,
             Into::<i32>::into(self.time_limit),
         )
+    }
+
+    pub(super) fn get_xml_map(&self) -> BTreeMap<String, dxr::Value> {
+        let mut map = BTreeMap::new();
+
+        map.insert(
+            "S_TimeLimit".into(),
+            dxr::Value::Integer(Into::<i32>::into(self.time_limit)),
+        );
+
+        map
     }
 }
 

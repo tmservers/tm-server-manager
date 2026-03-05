@@ -26,8 +26,8 @@ impl<'a> From<&'a Event> for &'a StartServer {
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub struct ServerModeInfo {
-    restarted: bool,
-    name: String,
+    pub updated: bool,
+    pub name: String,
 }
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

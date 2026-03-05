@@ -6,7 +6,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 use super::common_type::Common;
 use super::map_pool_config_type::MapPoolConfig;
-use super::mode_config_type::ModeConfig;
+use super::mode_settings_type::ModeSettings;
 use super::server_options_type::ServerOptions;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
@@ -14,7 +14,7 @@ use super::server_options_type::ServerOptions;
 pub struct ServerConfig {
     pub options: ServerOptions,
     pub common: Common,
-    pub mode: ModeConfig,
+    pub mode: ModeSettings,
     pub maps: MapPoolConfig,
 }
 
@@ -28,7 +28,7 @@ impl __sdk::InModule for ServerConfig {
 pub struct ServerConfigCols {
     pub options: __sdk::__query_builder::Col<ServerConfig, ServerOptions>,
     pub common: __sdk::__query_builder::Col<ServerConfig, Common>,
-    pub mode: __sdk::__query_builder::Col<ServerConfig, ModeConfig>,
+    pub mode: __sdk::__query_builder::Col<ServerConfig, ModeSettings>,
     pub maps: __sdk::__query_builder::Col<ServerConfig, MapPoolConfig>,
 }
 

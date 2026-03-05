@@ -1,5 +1,6 @@
 use tm_server_types::{
     base::{PlayerInfo, account_id_to_login},
+    config::{ModeSettings, ServerConfig},
     method::{MethodCall, MethodError, MethodResponse},
 };
 
@@ -205,6 +206,8 @@ pub trait XmlRpcMethods {
         sender: impl Into<String>,
         receivers: Option<Vec<String>>,
     ) -> Result<bool, ClientError>;
+
+    async fn set_mode_script_settings(&self, settings: ServerConfig) -> Result<bool, ClientError>;
 }
 
 impl XmlRpcMethods for TrackmaniaServer {
@@ -329,6 +332,11 @@ impl XmlRpcMethods for TrackmaniaServer {
         password: impl Into<String>,
     ) -> Result<bool, ClientError> {
         self.call("Authenticate", (username.into(), password.into()))
+            .await
+    }
+
+    async fn set_mode_script_settings(&self, settings: ServerConfig) -> Result<bool, ClientError> {
+        self.call("SetModeScriptSettings", settings.get_mode_settings_struct())
             .await
     }
 }

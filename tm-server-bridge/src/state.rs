@@ -1,12 +1,13 @@
 use spacetimedb_sdk::Uuid;
 use tm_server_controller::{
+    ClientError,
     callbacks::TypedCallbacks,
     method::{ModeScriptMethodsXmlRpc, XmlRpcMethods},
 };
-use tm_server_types::event::EndRoundStart;
+use tm_server_types::event::{EndRoundStart, StartMatch, StartServer};
 use tm_tourney_manager_api_rs::{post_event, raw_server_player_add};
 
-use crate::{SPACETIME, TRACKMANIA, TRACKMANIA_FILES};
+use crate::{SERVER_CONFIG, SPACETIME, TRACKMANIA, TRACKMANIA_FILES};
 
 pub async fn setup_state_synchronization() {
     let server = TRACKMANIA.wait();
@@ -58,7 +59,40 @@ pub async fn setup_state_synchronization() {
         if let Err(error) = std::fs::remove_file(&full_path) {
             tracing::error!("Failed to delete the current replay file! Reason: {error}")
         };
-    })
+    });
+
+    server.on_start_server_start(async |event: &StartServer| {
+        if event.mode.updated {
+            tracing::error!("Mode Script was updated");
+            //We need to load the settings again because we changed the script.
+            if let Err(error) = TRACKMANIA
+                .wait()
+                .set_mode_script_settings(SERVER_CONFIG.wait().lock().await.clone())
+                .await
+            {
+                tracing::error!("{error}")
+            };
+            //TODO remove.
+            let _: Result<(), ClientError> =
+                TRACKMANIA.wait().call("GetModeScriptSettings", ()).await;
+        } else {
+            //We should be fine because the settings already loaded correctly.
+            tracing::error!("Mode Script stayed the same");
+        }
+    });
+
+    server.on_start_match_start(async |_: &StartMatch| {
+        //We need to load the settings again because we changed the script.
+        if let Err(error) = TRACKMANIA
+            .wait()
+            .set_mode_script_settings(SERVER_CONFIG.wait().lock().await.clone())
+            .await
+        {
+            tracing::error!("{error}")
+        };
+        //TODO remove.
+        let _: Result<(), ClientError> = TRACKMANIA.wait().call("GetModeScriptSettings", ()).await;
+    });
 }
 
 /// Synchronizes all the state already present on the server with spacetime db.

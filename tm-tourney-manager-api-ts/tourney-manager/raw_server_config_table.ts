@@ -12,7 +12,7 @@ import {
 import {
   ServerOptions,
   Common,
-  ModeConfig,
+  ModeSettings,
   MapPoolConfig,
 } from "./types";
 
@@ -25,7 +25,7 @@ export default __t.row({
     return Common;
   },
   get mode() {
-    return ModeConfig;
+    return ModeSettings;
   },
   get maps() {
     return MapPoolConfig;

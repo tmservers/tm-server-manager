@@ -3,7 +3,7 @@ use tm_server_types::{
     base::PlayerInfo,
     event::{
         EndRoundEnd, EndRoundStart, PlayerChat, PlayerConnect, PlayerDisconnect, Scores,
-        StartServer, WayPoint,
+        StartMatch, StartServer, WayPoint,
     },
 };
 
@@ -71,6 +71,14 @@ pub trait TypedCallbacks {
     fn on_start_server_start(
         &self,
         execute: impl for<'a> AsyncFn1<&'a StartServer, OutputFuture: Send, Output = ()>
+        + Send
+        + Sync
+        + 'static,
+    );
+
+    fn on_start_match_start(
+        &self,
+        execute: impl for<'a> AsyncFn1<&'a StartMatch, OutputFuture: Send, Output = ()>
         + Send
         + Sync
         + 'static,
@@ -165,6 +173,16 @@ impl TypedCallbacks for TrackmaniaServer {
         + Sync
         + 'static,
     ) {
-        self.on("StartServer_Start", execute);
+        self.on("Maniaplanet.StartServer_Start", execute);
+    }
+
+    fn on_start_match_start(
+        &self,
+        execute: impl for<'a> AsyncFn1<&'a StartMatch, OutputFuture: Send, Output = ()>
+        + Send
+        + Sync
+        + 'static,
+    ) {
+        self.on("Maniaplanet.StartMatch_Start", execute);
     }
 }

@@ -1,4 +1,6 @@
 mod rounds;
+use std::collections::BTreeMap;
+
 pub use rounds::Rounds;
 
 mod reverse_cup;
@@ -29,7 +31,7 @@ pub struct ServerConfig {
 
     // Playlist settings.
     common: Common,
-    mode: ModeConfig,
+    mode: ModeSettings,
     maps: MapPoolConfig,
 }
 
@@ -58,7 +60,7 @@ impl ServerConfig {
         &self.common
     }
 
-    pub fn get_mode(&self) -> &ModeConfig {
+    pub fn get_mode(&self) -> &ModeSettings {
         &self.mode
     }
 
@@ -69,13 +71,19 @@ impl ServerConfig {
     pub fn iter_maps(&self) -> impl Iterator<Item = &String> {
         self.maps.map_uids.iter()
     }
+
+    pub fn get_mode_settings_struct(&self) -> dxr::Value {
+        let mut cfg = self.common.get_xml_map();
+        cfg.append(&mut self.mode.get_xml_map());
+        dxr::Value::Struct(cfg)
+    }
 }
 
 impl Default for ServerConfig {
     fn default() -> Self {
         Self {
             common: Common::default_rounds(),
-            mode: ModeConfig::Rounds(Rounds::default()),
+            mode: ModeSettings::Rounds(Rounds::default()),
             maps: Default::default(),
             options: Default::default(),
         }
@@ -86,32 +94,41 @@ impl Default for ServerConfig {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
-pub enum ModeConfig {
+pub enum ModeSettings {
     Rounds(Rounds),
     ReverseCup(ReverseCup),
     TimeAttack(TimeAttack),
     //RoundsBotOnline(RoundsBotOnline),
 }
 
-impl ModeConfig {
+impl ModeSettings {
     pub fn into_xml(&self) -> String {
         match self {
-            ModeConfig::Rounds(rounds) => rounds.into_xml(),
-            ModeConfig::ReverseCup(reverse_cup) => reverse_cup.into_xml(),
-            ModeConfig::TimeAttack(time_attack) => time_attack.into_xml(),
+            ModeSettings::Rounds(rounds) => rounds.into_xml(),
+            ModeSettings::ReverseCup(reverse_cup) => reverse_cup.into_xml(),
+            ModeSettings::TimeAttack(time_attack) => time_attack.into_xml(),
+            //ModeConfig::RoundsBotOnline(rounds_bot) => rounds_bot.into_xml(),
+        }
+    }
+
+    pub fn get_xml_map(&self) -> BTreeMap<String, dxr::Value> {
+        match self {
+            ModeSettings::Rounds(rounds) => rounds.get_xml_map(),
+            ModeSettings::ReverseCup(reverse_cup) => reverse_cup.get_xml_map(),
+            ModeSettings::TimeAttack(time_attack) => time_attack.get_xml_map(),
             //ModeConfig::RoundsBotOnline(rounds_bot) => rounds_bot.into_xml(),
         }
     }
 
     pub fn mode_header(&self) -> String {
         match self {
-            ModeConfig::Rounds(_) => {
+            ModeSettings::Rounds(_) => {
                 "<script_name>Trackmania/TM_Rounds_Online</script_name>".into()
             }
-            ModeConfig::ReverseCup(_) => {
+            ModeSettings::ReverseCup(_) => {
                 "<script_name>Modes/Trackmania/ReverseCup</script_name>".into()
             }
-            ModeConfig::TimeAttack(_) => {
+            ModeSettings::TimeAttack(_) => {
                 "<script_name>Trackmania/TM_TimeAttack_Online</script_name>".into()
             } /* ModeConfig::RoundsBotOnline(_) => {
                   "<script_name>Trackmania/TM_RoundsBot_Online</script_name>".into()

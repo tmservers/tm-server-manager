@@ -4,7 +4,7 @@
 #![allow(unused, clippy::all)]
 use super::common_type::Common;
 use super::map_pool_config_type::MapPoolConfig;
-use super::mode_config_type::ModeConfig;
+use super::mode_settings_type::ModeSettings;
 use super::server_config_type::ServerConfig;
 use super::server_options_type::ServerOptions;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};

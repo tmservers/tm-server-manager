@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use crate::config::{MapsPerMatch, RoundsPerMap, helper::FinishTimeout};
 
 /// The script has the rounds script as a base so it is inheriting all the settings.
@@ -9,7 +11,6 @@ pub struct ReverseCup {
     //Inherited Rounds settings.
     pub finish_timeout: FinishTimeout,
     pub maps_per_match: MapsPerMatch,
-    pub use_custom_points_repartition: bool,
     pub points_repartition: Vec<u32>,
     pub rounds_per_map: RoundsPerMap,
     pub use_tie_breaker: bool,
@@ -40,7 +41,6 @@ impl ReverseCup {
         <setting name="S_RoundsPerMap" value="{}" type="integer"/>
         <setting name="S_MapsPerMatch" value="{}" type="integer"/>
         <setting name="S_PointsRepartition" value="{}" type="text"/>
-        <setting name="S_UseCustomPointsRepartition" value="{}" type="boolean"/>
         <setting name="S_FinishTimeout" value="{}" type="integer"/>
         <setting name="S_UseTieBreak" value="{}" type="boolean"/>
         <setting name="S_PointsStartup" value="{}" type="integer"/>
@@ -56,7 +56,6 @@ impl ReverseCup {
             Into::<i32>::into(self.rounds_per_map),
             Into::<i32>::into(self.maps_per_match),
             points_repartition_format(&self.points_repartition),
-            self.use_custom_points_repartition,
             Into::<i32>::into(self.finish_timeout),
             self.use_tie_breaker,
             self.starting_points,
@@ -68,6 +67,66 @@ impl ReverseCup {
             self.number_of_players,
             self.number_of_winners
         )
+    }
+
+    pub(super) fn get_xml_map(&self) -> BTreeMap<String, dxr::Value> {
+        let mut map = BTreeMap::new();
+
+        map.insert(
+            "S_RoundsPerMap".into(),
+            dxr::Value::Integer(Into::<i32>::into(self.rounds_per_map)),
+        );
+        map.insert(
+            "S_MapsPerMatch".into(),
+            dxr::Value::Integer(Into::<i32>::into(self.maps_per_match)),
+        );
+        map.insert(
+            "S_PointsRepartition".into(),
+            dxr::Value::String(points_repartition_format(&self.points_repartition)),
+        );
+        map.insert(
+            "S_FinishTimeout".into(),
+            dxr::Value::Integer(Into::<i32>::into(self.finish_timeout)),
+        );
+        map.insert(
+            "S_UseTieBreak".into(),
+            dxr::Value::Boolean(self.use_tie_breaker),
+        );
+
+        map.insert(
+            "S_PointsStartup".into(),
+            dxr::Value::Integer(self.starting_points),
+        );
+        map.insert(
+            "S_DisableLastChance".into(),
+            dxr::Value::Boolean(self.disable_last_chance),
+        );
+        map.insert(
+            "S_AllowFastForwardRounds".into(),
+            dxr::Value::Boolean(self.allow_fast_forward_rounds),
+        );
+        map.insert(
+            "S_FastForwardPointsRepartition".into(),
+            dxr::Value::Boolean(self.fast_forward_points_repartition),
+        );
+        map.insert(
+            "S_DNF_LossPoints".into(),
+            dxr::Value::Integer(self.dnf_points_loss as i32),
+        );
+        map.insert(
+            "S_LastChance_DNF_Mode".into(),
+            dxr::Value::Integer(Into::<i32>::into(self.last_chance_dnf_mode)),
+        );
+        map.insert(
+            "S_NbOfPlayers".into(),
+            dxr::Value::Integer(self.number_of_players as i32),
+        );
+        map.insert(
+            "S_NbOfWinners".into(),
+            dxr::Value::Integer(self.number_of_winners),
+        );
+
+        map
     }
 }
 
@@ -87,7 +146,6 @@ impl Default for ReverseCup {
             maps_per_match: MapsPerMatch::One,
             points_repartition: vec![10, 6, 4, 3, 2, 1],
             rounds_per_map: RoundsPerMap::Unlimited,
-            use_custom_points_repartition: false,
             use_tie_breaker: true,
             starting_points: 100,
             disable_last_chance: false,

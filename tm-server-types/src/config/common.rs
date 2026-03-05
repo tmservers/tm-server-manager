@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use crate::config::{
     LapsNumber,
     helper::{RespawnBehaviour, WarmupDuration, WarmupTimeout},
@@ -124,5 +126,80 @@ impl Common {
             self.deco_image_url_who_am_i_url,
             Into::<i32>::into(self.force_laps_number),
         )
+    }
+
+    pub(super) fn get_xml_map(&self) -> BTreeMap<String, dxr::Value> {
+        let mut map = BTreeMap::new();
+
+        map.insert(
+            "S_ChatTime".to_string(),
+            dxr::Value::Integer(self.chat_time as i32),
+        );
+        map.insert(
+            "S_RespawnBehaviour".to_string(),
+            dxr::Value::Integer(Into::<i32>::into(self.respawn_behaviour)),
+        );
+        map.insert(
+            "S_DelayBeforeNextMap".to_string(),
+            dxr::Value::Integer(self.delay_before_next_map as i32),
+        );
+        map.insert(
+            "S_SynchronizePlayersAtMapStart".to_string(),
+            dxr::Value::Boolean(self.synchronize_players_at_map_start),
+        );
+        map.insert(
+            "S_SynchronizePlayersAtRoundStart".to_string(),
+            dxr::Value::Boolean(self.synchronize_players_at_round_start),
+        );
+        map.insert(
+            "S_TrustClientSimu".to_string(),
+            dxr::Value::Boolean(self.trust_client_simulation),
+        );
+        map.insert(
+            "S_UseCrudeExtrapolation".to_string(),
+            dxr::Value::Boolean(self.use_crude_extrapolation),
+        );
+        map.insert(
+            "S_WarmUpDuration".to_string(),
+            dxr::Value::Integer(Into::<i32>::into(self.warmup_duration)),
+        );
+        map.insert(
+            "S_WarmUpTimeout".to_string(),
+            dxr::Value::Integer(Into::<i32>::into(self.warmup_timeout)),
+        );
+        map.insert(
+            "S_WarmUpNb".to_string(),
+            dxr::Value::Integer(self.warmup_number as i32),
+        );
+        map.insert(
+            "S_DecoImageUrl_Checkpoint".to_string(),
+            dxr::Value::String(self.deco_image_url_checkpoint.clone()),
+        );
+        map.insert(
+            "S_DecoImageUrl_DecalSponsor4x1".to_string(),
+            dxr::Value::String(self.deco_image_url_decal_sponsor_4x1.clone()),
+        );
+        map.insert(
+            "S_DecoImageUrl_Screen16x1".to_string(),
+            dxr::Value::String(self.deco_image_url_screen_16x1.clone()),
+        );
+        map.insert(
+            "S_DecoImageUrl_Screen16x9".to_string(),
+            dxr::Value::String(self.deco_image_url_screen_16x9.clone()),
+        );
+        map.insert(
+            "S_DecoImageUrl_Screen8x1".to_string(),
+            dxr::Value::String(self.deco_image_url_screen_8x1.clone()),
+        );
+        map.insert(
+            "S_DecoImageUrl_WhoAmIUrl".to_string(),
+            dxr::Value::String(self.deco_image_url_who_am_i_url.clone()),
+        );
+        map.insert(
+            "S_ForceLapsNb".to_string(),
+            dxr::Value::Integer(Into::<i32>::into(self.force_laps_number)),
+        );
+
+        map
     }
 }

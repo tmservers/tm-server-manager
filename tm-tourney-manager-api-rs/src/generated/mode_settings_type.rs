@@ -10,7 +10,7 @@ use super::time_attack_type::TimeAttack;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub enum ModeConfig {
+pub enum ModeSettings {
     Rounds(Rounds),
 
     ReverseCup(ReverseCup),
@@ -18,6 +18,6 @@ pub enum ModeConfig {
     TimeAttack(TimeAttack),
 }
 
-impl __sdk::InModule for ModeConfig {
+impl __sdk::InModule for ModeSettings {
     type Module = super::RemoteModule;
 }

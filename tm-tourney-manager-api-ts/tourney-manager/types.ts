@@ -490,8 +490,8 @@ export const MethodResponse = __t.enum("MethodResponse", {
 });
 export type MethodResponse = __Infer<typeof MethodResponse>;
 
-// The tagged union or sum type for the algebraic type `ModeConfig`.
-export const ModeConfig = __t.enum("ModeConfig", {
+// The tagged union or sum type for the algebraic type `ModeSettings`.
+export const ModeSettings = __t.enum("ModeSettings", {
   get Rounds() {
     return Rounds;
   },
@@ -502,7 +502,7 @@ export const ModeConfig = __t.enum("ModeConfig", {
     return TimeAttack;
   },
 });
-export type ModeConfig = __Infer<typeof ModeConfig>;
+export type ModeSettings = __Infer<typeof ModeSettings>;
 
 // The tagged union or sum type for the algebraic type `MonitoringSettings`.
 export const MonitoringSettings = __t.enum("MonitoringSettings", {
@@ -888,7 +888,6 @@ export const ReverseCup = __t.object("ReverseCup", {
   get mapsPerMatch() {
     return MapsPerMatch;
   },
-  useCustomPointsRepartition: __t.bool(),
   pointsRepartition: __t.array(__t.u32()),
   get roundsPerMap() {
     return RoundsPerMap;
@@ -924,7 +923,6 @@ export const Rounds = __t.object("Rounds", {
   get pointsLimit() {
     return PointsLimit;
   },
-  useCustomPointsRepartition: __t.bool(),
   pointsRepartition: __t.array(__t.u32()),
   get roundsPerMap() {
     return RoundsPerMap;
@@ -971,7 +969,7 @@ export const ServerConfig = __t.object("ServerConfig", {
     return Common;
   },
   get mode() {
-    return ModeConfig;
+    return ModeSettings;
   },
   get maps() {
     return MapPoolConfig;
@@ -980,7 +978,7 @@ export const ServerConfig = __t.object("ServerConfig", {
 export type ServerConfig = __Infer<typeof ServerConfig>;
 
 export const ServerModeInfo = __t.object("ServerModeInfo", {
-  restarted: __t.bool(),
+  updated: __t.bool(),
   name: __t.string(),
 });
 export type ServerModeInfo = __Infer<typeof ServerModeInfo>;
