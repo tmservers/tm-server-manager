@@ -13,7 +13,6 @@ pub struct ReverseCup {
     pub maps_per_match: MapsPerMatch,
     pub points_repartition: Vec<u32>,
     pub rounds_per_map: RoundsPerMap,
-    pub use_tie_breaker: bool,
 
     //New settings introduced
     pub number_of_winners: i32,
@@ -42,7 +41,6 @@ impl ReverseCup {
         <setting name="S_MapsPerMatch" value="{}" type="integer"/>
         <setting name="S_PointsRepartition" value="{}" type="text"/>
         <setting name="S_FinishTimeout" value="{}" type="integer"/>
-        <setting name="S_UseTieBreak" value="{}" type="boolean"/>
         <setting name="S_PointsStartup" value="{}" type="integer"/>
         <setting name="S_DisableLastChance" value="{}" type="boolean"/>
         <setting name="S_AllowFastForwardRounds" value="{}" type="boolean"/>
@@ -57,7 +55,6 @@ impl ReverseCup {
             Into::<i32>::into(self.maps_per_match),
             points_repartition_format(&self.points_repartition),
             Into::<i32>::into(self.finish_timeout),
-            self.use_tie_breaker,
             self.starting_points,
             self.disable_last_chance,
             self.allow_fast_forward_rounds,
@@ -88,11 +85,6 @@ impl ReverseCup {
             "S_FinishTimeout".into(),
             dxr::Value::Integer(Into::<i32>::into(self.finish_timeout)),
         );
-        map.insert(
-            "S_UseTieBreak".into(),
-            dxr::Value::Boolean(self.use_tie_breaker),
-        );
-
         map.insert(
             "S_PointsStartup".into(),
             dxr::Value::Integer(self.starting_points),
@@ -136,7 +128,7 @@ fn points_repartition_format(points: &Vec<u32>) -> String {
         string += &point.to_string();
         string += ", "
     }
-    string
+    string.trim_end_matches(", ").to_string()
 }
 
 impl Default for ReverseCup {
@@ -146,7 +138,6 @@ impl Default for ReverseCup {
             maps_per_match: MapsPerMatch::One,
             points_repartition: vec![10, 6, 4, 3, 2, 1],
             rounds_per_map: RoundsPerMap::Unlimited,
-            use_tie_breaker: true,
             starting_points: 100,
             disable_last_chance: false,
             allow_fast_forward_rounds: true,

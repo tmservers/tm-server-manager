@@ -73,7 +73,7 @@ fn points_repartition_format(points: &Vec<u32>) -> String {
         string += &point.to_string();
         string += ", "
     }
-    string
+    string.trim_end_matches(", ").to_string()
 }
 
 impl Default for Rounds {

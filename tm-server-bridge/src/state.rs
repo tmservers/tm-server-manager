@@ -4,7 +4,7 @@ use tm_server_controller::{
     callbacks::TypedCallbacks,
     method::{ModeScriptMethodsXmlRpc, XmlRpcMethods},
 };
-use tm_server_types::event::{EndRoundStart, StartMatch, StartServer};
+use tm_server_types::event::{EndRoundStart, StartMatch, StartRound, StartServer};
 use tm_tourney_manager_api_rs::{post_event, raw_server_player_add};
 
 use crate::{SERVER_CONFIG, SPACETIME, TRACKMANIA, TRACKMANIA_FILES};
@@ -72,6 +72,7 @@ pub async fn setup_state_synchronization() {
             {
                 tracing::error!("{error}")
             };
+
             //TODO remove.
             let _: Result<(), ClientError> =
                 TRACKMANIA.wait().call("GetModeScriptSettings", ()).await;
@@ -81,7 +82,7 @@ pub async fn setup_state_synchronization() {
         }
     });
 
-    server.on_start_match_start(async |_: &StartMatch| {
+    server.on_start_round_start(async |_: &StartRound| {
         //We need to load the settings again because we changed the script.
         if let Err(error) = TRACKMANIA
             .wait()

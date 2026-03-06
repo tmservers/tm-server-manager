@@ -3,7 +3,7 @@ use tm_server_types::{
     base::PlayerInfo,
     event::{
         EndRoundEnd, EndRoundStart, PlayerChat, PlayerConnect, PlayerDisconnect, Scores,
-        StartMatch, StartServer, WayPoint,
+        StartMatch, StartRound, StartServer, WayPoint,
     },
 };
 
@@ -52,6 +52,15 @@ pub trait TypedCallbacks {
         + Sync
         + 'static,
     );
+
+    fn on_start_round_start(
+        &self,
+        execute: impl for<'a> AsyncFn1<&'a StartRound, OutputFuture: Send, Output = ()>
+        + Send
+        + Sync
+        + 'static,
+    );
+
     fn on_end_round_start(
         &self,
         execute: impl for<'a> AsyncFn1<&'a EndRoundStart, OutputFuture: Send, Output = ()>
@@ -76,7 +85,23 @@ pub trait TypedCallbacks {
         + 'static,
     );
 
+    fn on_start_server_end(
+        &self,
+        execute: impl for<'a> AsyncFn1<&'a StartServer, OutputFuture: Send, Output = ()>
+        + Send
+        + Sync
+        + 'static,
+    );
+
     fn on_start_match_start(
+        &self,
+        execute: impl for<'a> AsyncFn1<&'a StartMatch, OutputFuture: Send, Output = ()>
+        + Send
+        + Sync
+        + 'static,
+    );
+
+    fn on_start_match_end(
         &self,
         execute: impl for<'a> AsyncFn1<&'a StartMatch, OutputFuture: Send, Output = ()>
         + Send
@@ -146,6 +171,16 @@ impl TypedCallbacks for TrackmaniaServer {
         self.on("ManiaPlanet.PlayerChat", execute);
     }
 
+    fn on_start_round_start(
+        &self,
+        execute: impl for<'a> AsyncFn1<&'a StartRound, OutputFuture: Send, Output = ()>
+        + Send
+        + Sync
+        + 'static,
+    ) {
+        self.on("ManiaPlanet.StartRound_Start", execute);
+    }
+
     fn on_end_round_start(
         &self,
         execute: impl for<'a> AsyncFn1<&'a EndRoundStart, OutputFuture: Send, Output = ()>
@@ -176,6 +211,16 @@ impl TypedCallbacks for TrackmaniaServer {
         self.on("Maniaplanet.StartServer_Start", execute);
     }
 
+    fn on_start_server_end(
+        &self,
+        execute: impl for<'a> AsyncFn1<&'a StartServer, OutputFuture: Send, Output = ()>
+        + Send
+        + Sync
+        + 'static,
+    ) {
+        self.on("Maniaplanet.StartServer_End", execute);
+    }
+
     fn on_start_match_start(
         &self,
         execute: impl for<'a> AsyncFn1<&'a StartMatch, OutputFuture: Send, Output = ()>
@@ -184,5 +229,15 @@ impl TypedCallbacks for TrackmaniaServer {
         + 'static,
     ) {
         self.on("Maniaplanet.StartMatch_Start", execute);
+    }
+
+    fn on_start_match_end(
+        &self,
+        execute: impl for<'a> AsyncFn1<&'a StartMatch, OutputFuture: Send, Output = ()>
+        + Send
+        + Sync
+        + 'static,
+    ) {
+        self.on("Maniaplanet.StartMatch_End", execute);
     }
 }

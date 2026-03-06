@@ -892,7 +892,6 @@ export const ReverseCup = __t.object("ReverseCup", {
   get roundsPerMap() {
     return RoundsPerMap;
   },
-  useTieBreaker: __t.bool(),
   numberOfWinners: __t.i32(),
   startingPoints: __t.i32(),
   disableLastChance: __t.bool(),
