@@ -9,11 +9,15 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
+import {
+  CompetitionConnectionDataOption,
+} from "./types";
+
 
 export default __t.row({
   competitionId: __t.u32().name("competition_id"),
   connectionId: __t.u32().name("connection_id"),
-  countTop: __t.option(__t.u8()).name("count_top"),
-  countBottom: __t.option(__t.u8()).name("count_bottom"),
-  customList: __t.byteArray().name("custom_list"),
+  get options() {
+    return CompetitionConnectionDataOption;
+  },
 });

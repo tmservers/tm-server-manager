@@ -173,6 +173,8 @@ pub mod start_server_type;
 pub mod start_turn_type;
 pub mod tab_competition_connection_type;
 pub mod tab_competition_node_position_type;
+pub mod tab_tm_match_round_player_ext_type;
+pub mod tab_tm_match_round_player_type;
 pub mod team_type;
 pub mod this_raw_server_table;
 pub mod time_attack_type;
@@ -180,7 +182,6 @@ pub mod tm_comp_record_type;
 pub mod tm_map_record_table;
 pub mod tm_map_record_type;
 pub mod tm_match_event_type;
-pub mod tm_match_round_player_ext_type;
 pub mod tm_match_round_player_type;
 pub mod tm_match_state_type;
 pub mod tm_match_table;
@@ -372,6 +373,8 @@ pub use start_server_type::StartServer;
 pub use start_turn_type::StartTurn;
 pub use tab_competition_connection_type::TabCompetitionConnection;
 pub use tab_competition_node_position_type::TabCompetitionNodePosition;
+pub use tab_tm_match_round_player_ext_type::TabTmMatchRoundPlayerExt;
+pub use tab_tm_match_round_player_type::TabTmMatchRoundPlayer;
 pub use team_type::Team;
 pub use this_raw_server_table::*;
 pub use time_attack_type::TimeAttack;
@@ -379,7 +382,6 @@ pub use tm_comp_record_type::TmCompRecord;
 pub use tm_map_record_table::*;
 pub use tm_map_record_type::TmMapRecord;
 pub use tm_match_event_type::TmMatchEvent;
-pub use tm_match_round_player_ext_type::TmMatchRoundPlayerExt;
 pub use tm_match_round_player_type::TmMatchRoundPlayer;
 pub use tm_match_state_type::TmMatchState;
 pub use tm_match_table::*;
@@ -974,8 +976,8 @@ pub struct DbUpdate {
     map_record: __sdk::TableUpdate<TmRecord>,
     match_leaderboard: __sdk::TableUpdate<TmMatchRoundPlayer>,
     match_record: __sdk::TableUpdate<TmRecord>,
-    match_round: __sdk::TableUpdate<TmMatchRoundPlayer>,
-    match_round_ext: __sdk::TableUpdate<TmMatchRoundPlayerExt>,
+    match_round: __sdk::TableUpdate<TabTmMatchRoundPlayer>,
+    match_round_ext: __sdk::TableUpdate<TabTmMatchRoundPlayerExt>,
     match_state: __sdk::TableUpdate<TmMatchState>,
     my_jobs: __sdk::TableUpdate<TmWorkerJobs>,
     my_match_template: __sdk::TableUpdate<MatchTemplate>,
@@ -1145,9 +1147,11 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.match_record =
             cache.apply_diff_to_table::<TmRecord>("match_record", &self.match_record);
         diff.match_round =
-            cache.apply_diff_to_table::<TmMatchRoundPlayer>("match_round", &self.match_round);
-        diff.match_round_ext = cache
-            .apply_diff_to_table::<TmMatchRoundPlayerExt>("match_round_ext", &self.match_round_ext);
+            cache.apply_diff_to_table::<TabTmMatchRoundPlayer>("match_round", &self.match_round);
+        diff.match_round_ext = cache.apply_diff_to_table::<TabTmMatchRoundPlayerExt>(
+            "match_round_ext",
+            &self.match_round_ext,
+        );
         diff.match_state =
             cache.apply_diff_to_table::<TmMatchState>("match_state", &self.match_state);
         diff.my_jobs = cache.apply_diff_to_table::<TmWorkerJobs>("my_jobs", &self.my_jobs);
@@ -1407,8 +1411,8 @@ pub struct AppliedDiff<'r> {
     map_record: __sdk::TableAppliedDiff<'r, TmRecord>,
     match_leaderboard: __sdk::TableAppliedDiff<'r, TmMatchRoundPlayer>,
     match_record: __sdk::TableAppliedDiff<'r, TmRecord>,
-    match_round: __sdk::TableAppliedDiff<'r, TmMatchRoundPlayer>,
-    match_round_ext: __sdk::TableAppliedDiff<'r, TmMatchRoundPlayerExt>,
+    match_round: __sdk::TableAppliedDiff<'r, TabTmMatchRoundPlayer>,
+    match_round_ext: __sdk::TableAppliedDiff<'r, TabTmMatchRoundPlayerExt>,
     match_state: __sdk::TableAppliedDiff<'r, TmMatchState>,
     my_jobs: __sdk::TableAppliedDiff<'r, TmWorkerJobs>,
     my_match_template: __sdk::TableAppliedDiff<'r, MatchTemplate>,
@@ -1473,12 +1477,12 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             event,
         );
         callbacks.invoke_table_row_callbacks::<TmRecord>("match_record", &self.match_record, event);
-        callbacks.invoke_table_row_callbacks::<TmMatchRoundPlayer>(
+        callbacks.invoke_table_row_callbacks::<TabTmMatchRoundPlayer>(
             "match_round",
             &self.match_round,
             event,
         );
-        callbacks.invoke_table_row_callbacks::<TmMatchRoundPlayerExt>(
+        callbacks.invoke_table_row_callbacks::<TabTmMatchRoundPlayerExt>(
             "match_round_ext",
             &self.match_round_ext,
             event,

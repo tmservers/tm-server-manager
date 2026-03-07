@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use spacetimedb::{AnonymousViewContext, SpacetimeType, Uuid, table, view};
 
-use crate::tm_match::state::tab_tm_match_state__view;
+use crate::{tm_match::state::tab_tm_match_state__view, user::tab_user__view};
 
 #[derive(Debug, SpacetimeType)]
 pub(super) enum PlayerAction {
@@ -28,7 +28,7 @@ pub(super) struct PlayerActionCheckpoint {
     index(accessor=match_round_range, btree(columns=[match_id,round])),
     index(accessor=match_round_player, hash(columns=[match_id,round,internal_account_id]))
 )]
-pub struct TmMatchRoundPlayer {
+pub struct TabTmMatchRoundPlayer {
     internal_account_id: u32,
 
     match_id: u32,
@@ -41,7 +41,7 @@ pub struct TmMatchRoundPlayer {
     // match_points: i32,
 }
 
-impl TmMatchRoundPlayer {
+impl TabTmMatchRoundPlayer {
     pub fn new(match_id: u32, internal_account_id: u32, round: u16) -> Self {
         Self {
             internal_account_id,
@@ -58,7 +58,7 @@ impl TmMatchRoundPlayer {
     index(accessor=match_round_range, btree(columns=[match_id,round])),
     index(accessor=match_round_player, hash(columns=[match_id,round,internal_account_id]))
 )]
-pub struct TmMatchRoundPlayerExt {
+pub struct TabTmMatchRoundPlayerExt {
     round_actions: Vec<PlayerAction>,
 
     internal_account_id: u32,
@@ -70,7 +70,7 @@ pub struct TmMatchRoundPlayerExt {
     pub id: u32,
 }
 
-impl TmMatchRoundPlayerExt {
+impl TabTmMatchRoundPlayerExt {
     pub fn new(match_id: u32, internal_account_id: u32, round: u16) -> Self {
         Self {
             internal_account_id,
@@ -102,6 +102,22 @@ impl TmMatchRoundPlayerExt {
     }
 }
 
+#[derive(Debug, SpacetimeType, Clone, Copy)]
+pub struct TmMatchRoundPlayer {
+    pub account_id: Uuid,
+
+    // We can most likely omit this match_id because we already query after the match so it should be obvious.
+    // For now its not really an issue but maybe this can be replaced with something else.
+    match_id: u32,
+    // We can most likely omit this. maybe we could include the best match round time? -> then we should rename.
+    time: i32,
+    // The points of the round.
+    points: i32,
+
+    round: u16,
+    position: u16,
+}
+
 /// Accumulates points of all previous rounds.
 /// Round 0 is giving you a live view.
 /// If you want points from individual rounds use the match_round view instead.
@@ -111,7 +127,7 @@ pub fn match_leaderboard(
 ) -> Vec<TmMatchRoundPlayer> {
     let match_id = 1u32;
     let mut round = 0u16;
-    let entries: Vec<TmMatchRoundPlayer> = if round == 0 {
+    let entries: Vec<TabTmMatchRoundPlayer> = if round == 0 {
         let Some(state) = ctx.db.tab_tm_match_state().match_id().find(match_id) else {
             return Vec::new();
         };
@@ -129,7 +145,7 @@ pub fn match_leaderboard(
             .collect()
     };
 
-    let mut map = HashMap::<u32, TmMatchRoundPlayer>::new();
+    let mut map = HashMap::<u32, TabTmMatchRoundPlayer>::new();
 
     for entry in entries {
         map.entry(entry.internal_account_id)
@@ -142,7 +158,29 @@ pub fn match_leaderboard(
             .or_insert(entry);
     }
 
-    map.into_values().collect()
+    let mut standings = map
+        .into_values()
+        .map(|p| TmMatchRoundPlayer {
+            account_id: ctx
+                .db
+                .tab_user()
+                .internal_id()
+                .find(p.internal_account_id)
+                .unwrap()
+                .account_id,
+            match_id,
+            time: p.time,
+            points: p.points,
+            round: p.round,
+            position: 0,
+        })
+        .collect::<Vec<_>>();
+
+    standings.sort_by_key(|v| v.points);
+    for (position, entry) in standings.iter_mut().enumerate() {
+        entry.position = (position + 1) as u16;
+    }
+    standings
 }
 
 /// Returns the specified round of the match.
@@ -151,7 +189,7 @@ pub fn match_leaderboard(
 #[view(accessor=match_round,public)]
 pub fn match_round(
     ctx: &AnonymousViewContext, /*, match_id: u32, round: u16 */
-) -> Vec<TmMatchRoundPlayer> {
+) -> Vec<TabTmMatchRoundPlayer> {
     let match_id = 1u32;
     let mut round = 0u16;
 
@@ -173,7 +211,7 @@ pub fn match_round(
 #[view(accessor=match_round_ext,public)]
 pub fn match_round_ext(
     ctx: &AnonymousViewContext, /* match_id: u32, round: u16 */
-) -> Vec<TmMatchRoundPlayerExt> {
+) -> Vec<TabTmMatchRoundPlayerExt> {
     let match_id = 1u32;
     let mut round = 0u16;
 

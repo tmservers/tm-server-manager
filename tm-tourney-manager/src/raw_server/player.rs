@@ -110,10 +110,20 @@ fn raw_server_current_players(
 }
 
 #[derive(Debug, SpacetimeType)]
-struct PermittedPlayer {
+pub struct PermittedPlayer {
     account_id: Uuid,
     mandatory: bool,
     only_spectator: bool,
+}
+
+impl PermittedPlayer {
+    pub(crate) fn new(account_id: Uuid, mandatory: bool, only_spectator: bool) -> Self {
+        Self {
+            account_id,
+            mandatory,
+            only_spectator,
+        }
+    }
 }
 
 #[view(accessor= raw_server_allowed_players, public)]
@@ -131,24 +141,30 @@ fn raw_server_allowed_players(ctx: &ViewContext) -> Vec<PermittedPlayer> {
         return Vec::new();
     };
 
-    //TODO
-
+    let mut map: HashMap<Uuid, PermittedPlayer> = HashMap::new();
     let depending_nodes = ctx
         .db
         .tab_competition_connection()
         .origin_nodes_of()
         .filter(occupation.match_id)
-        .filter(|c| c.is_data())
-        .map(|c| c.node_from());
+        .filter(|c| c.is_data());
 
-    //let map = HashMap::new();
-    for depending_node in depending_nodes {
-        // This should return a Vec<Players> probably.
-        //let leaderboard = depending_node.get_leaderboard();
+    for node in depending_nodes {
+        let permitted_players = node
+            .get_permitted_players(ctx)
+            .into_iter()
+            .map(|p| (p.account_id, p));
+        map.extend(permitted_players);
     }
 
-    //TODO
-    // map.map(|ja|ja.) -> PermittedPlayer
+    /* for depending_node in depending_nodes {
 
-    Vec::new()
+        // lets assume this is a match for now TODO
+        let split = depending_node.split();
+        let tm_match = match_leaderboard(&ctx.as_anonymous_read_only())
+            .into_iter()
+            .map(|p| p.);
+    } */
+
+    map.into_values().collect()
 }

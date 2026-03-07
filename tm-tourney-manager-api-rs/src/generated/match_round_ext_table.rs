@@ -3,7 +3,7 @@
 
 #![allow(unused, clippy::all)]
 use super::player_action_type::PlayerAction;
-use super::tm_match_round_player_ext_type::TmMatchRoundPlayerExt;
+use super::tab_tm_match_round_player_ext_type::TabTmMatchRoundPlayerExt;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 /// Table handle for the table `match_round_ext`.
@@ -15,7 +15,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 /// but to directly chain method calls,
 /// like `ctx.db.match_round_ext().on_insert(...)`.
 pub struct MatchRoundExtTableHandle<'ctx> {
-    imp: __sdk::TableHandle<TmMatchRoundPlayerExt>,
+    imp: __sdk::TableHandle<TabTmMatchRoundPlayerExt>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -34,7 +34,7 @@ impl MatchRoundExtTableAccess for super::RemoteTables {
         MatchRoundExtTableHandle {
             imp: self
                 .imp
-                .get_table::<TmMatchRoundPlayerExt>("match_round_ext"),
+                .get_table::<TabTmMatchRoundPlayerExt>("match_round_ext"),
             ctx: std::marker::PhantomData,
         }
     }
@@ -44,13 +44,13 @@ pub struct MatchRoundExtInsertCallbackId(__sdk::CallbackId);
 pub struct MatchRoundExtDeleteCallbackId(__sdk::CallbackId);
 
 impl<'ctx> __sdk::Table for MatchRoundExtTableHandle<'ctx> {
-    type Row = TmMatchRoundPlayerExt;
+    type Row = TabTmMatchRoundPlayerExt;
     type EventContext = super::EventContext;
 
     fn count(&self) -> u64 {
         self.imp.count()
     }
-    fn iter(&self) -> impl Iterator<Item = TmMatchRoundPlayerExt> + '_ {
+    fn iter(&self) -> impl Iterator<Item = TabTmMatchRoundPlayerExt> + '_ {
         self.imp.iter()
     }
 
@@ -83,32 +83,32 @@ impl<'ctx> __sdk::Table for MatchRoundExtTableHandle<'ctx> {
 
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
-    let _table = client_cache.get_or_make_table::<TmMatchRoundPlayerExt>("match_round_ext");
+    let _table = client_cache.get_or_make_table::<TabTmMatchRoundPlayerExt>("match_round_ext");
 }
 
 #[doc(hidden)]
 pub(super) fn parse_table_update(
     raw_updates: __ws::v2::TableUpdate,
-) -> __sdk::Result<__sdk::TableUpdate<TmMatchRoundPlayerExt>> {
+) -> __sdk::Result<__sdk::TableUpdate<TabTmMatchRoundPlayerExt>> {
     __sdk::TableUpdate::parse_table_update(raw_updates).map_err(|e| {
-        __sdk::InternalError::failed_parse("TableUpdate<TmMatchRoundPlayerExt>", "TableUpdate")
+        __sdk::InternalError::failed_parse("TableUpdate<TabTmMatchRoundPlayerExt>", "TableUpdate")
             .with_cause(e)
             .into()
     })
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for query builder access to the table `TmMatchRoundPlayerExt`.
+/// Extension trait for query builder access to the table `TabTmMatchRoundPlayerExt`.
 ///
 /// Implemented for [`__sdk::QueryTableAccessor`].
 pub trait match_round_extQueryTableAccess {
     #[allow(non_snake_case)]
-    /// Get a query builder for the table `TmMatchRoundPlayerExt`.
-    fn match_round_ext(&self) -> __sdk::__query_builder::Table<TmMatchRoundPlayerExt>;
+    /// Get a query builder for the table `TabTmMatchRoundPlayerExt`.
+    fn match_round_ext(&self) -> __sdk::__query_builder::Table<TabTmMatchRoundPlayerExt>;
 }
 
 impl match_round_extQueryTableAccess for __sdk::QueryTableAccessor {
-    fn match_round_ext(&self) -> __sdk::__query_builder::Table<TmMatchRoundPlayerExt> {
+    fn match_round_ext(&self) -> __sdk::__query_builder::Table<TabTmMatchRoundPlayerExt> {
         __sdk::__query_builder::Table::new("match_round_ext")
     }
 }

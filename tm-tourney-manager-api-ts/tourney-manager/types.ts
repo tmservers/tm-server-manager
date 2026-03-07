@@ -75,14 +75,15 @@ export type CompetitionConnection = __Infer<typeof CompetitionConnection>;
 export const CompetitionConnectionData = __t.object("CompetitionConnectionData", {
   competitionId: __t.u32(),
   connectionId: __t.u32(),
-  countTop: __t.option(__t.u8()),
-  countBottom: __t.option(__t.u8()),
-  customList: __t.byteArray(),
+  get options() {
+    return CompetitionConnectionDataOption;
+  },
 });
 export type CompetitionConnectionData = __Infer<typeof CompetitionConnectionData>;
 
 // The tagged union or sum type for the algebraic type `CompetitionConnectionDataOption`.
 export const CompetitionConnectionDataOption = __t.enum("CompetitionConnectionDataOption", {
+  None: __t.unit(),
   All: __t.unit(),
   First: __t.u8(),
   Last: __t.u8(),
@@ -1056,6 +1057,26 @@ export const TabCompetitionNodePosition = __t.object("TabCompetitionNodePosition
 });
 export type TabCompetitionNodePosition = __Infer<typeof TabCompetitionNodePosition>;
 
+export const TabTmMatchRoundPlayer = __t.object("TabTmMatchRoundPlayer", {
+  internalAccountId: __t.u32(),
+  matchId: __t.u32(),
+  time: __t.i32(),
+  points: __t.i32(),
+  round: __t.u16(),
+});
+export type TabTmMatchRoundPlayer = __Infer<typeof TabTmMatchRoundPlayer>;
+
+export const TabTmMatchRoundPlayerExt = __t.object("TabTmMatchRoundPlayerExt", {
+  get roundActions() {
+    return __t.array(PlayerAction);
+  },
+  internalAccountId: __t.u32(),
+  matchId: __t.u32(),
+  round: __t.u16(),
+  id: __t.u32(),
+});
+export type TabTmMatchRoundPlayerExt = __Infer<typeof TabTmMatchRoundPlayerExt>;
+
 export const Team = __t.object("Team", {
   id: __t.u32(),
   name: __t.string(),
@@ -1097,24 +1118,14 @@ export const TmMatchEvent = __t.object("TmMatchEvent", {
 export type TmMatchEvent = __Infer<typeof TmMatchEvent>;
 
 export const TmMatchRoundPlayer = __t.object("TmMatchRoundPlayer", {
-  internalAccountId: __t.u32(),
+  accountId: __t.uuid(),
   matchId: __t.u32(),
   time: __t.i32(),
   points: __t.i32(),
   round: __t.u16(),
+  position: __t.u16(),
 });
 export type TmMatchRoundPlayer = __Infer<typeof TmMatchRoundPlayer>;
-
-export const TmMatchRoundPlayerExt = __t.object("TmMatchRoundPlayerExt", {
-  get roundActions() {
-    return __t.array(PlayerAction);
-  },
-  internalAccountId: __t.u32(),
-  matchId: __t.u32(),
-  round: __t.u16(),
-  id: __t.u32(),
-});
-export type TmMatchRoundPlayerExt = __Infer<typeof TmMatchRoundPlayerExt>;
 
 export const TmMatchState = __t.object("TmMatchState", {
   mapId: __t.uuid(),

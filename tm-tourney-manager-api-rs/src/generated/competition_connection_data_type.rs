@@ -4,14 +4,14 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
+use super::competition_connection_data_option_type::CompetitionConnectionDataOption;
+
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct CompetitionConnectionData {
     pub competition_id: u32,
     pub connection_id: u32,
-    pub count_top: Option<u8>,
-    pub count_bottom: Option<u8>,
-    pub custom_list: Vec<u8>,
+    pub options: CompetitionConnectionDataOption,
 }
 
 impl __sdk::InModule for CompetitionConnectionData {
@@ -24,9 +24,8 @@ impl __sdk::InModule for CompetitionConnectionData {
 pub struct CompetitionConnectionDataCols {
     pub competition_id: __sdk::__query_builder::Col<CompetitionConnectionData, u32>,
     pub connection_id: __sdk::__query_builder::Col<CompetitionConnectionData, u32>,
-    pub count_top: __sdk::__query_builder::Col<CompetitionConnectionData, Option<u8>>,
-    pub count_bottom: __sdk::__query_builder::Col<CompetitionConnectionData, Option<u8>>,
-    pub custom_list: __sdk::__query_builder::Col<CompetitionConnectionData, Vec<u8>>,
+    pub options:
+        __sdk::__query_builder::Col<CompetitionConnectionData, CompetitionConnectionDataOption>,
 }
 
 impl __sdk::__query_builder::HasCols for CompetitionConnectionData {
@@ -35,9 +34,7 @@ impl __sdk::__query_builder::HasCols for CompetitionConnectionData {
         CompetitionConnectionDataCols {
             competition_id: __sdk::__query_builder::Col::new(table_name, "competition_id"),
             connection_id: __sdk::__query_builder::Col::new(table_name, "connection_id"),
-            count_top: __sdk::__query_builder::Col::new(table_name, "count_top"),
-            count_bottom: __sdk::__query_builder::Col::new(table_name, "count_bottom"),
-            custom_list: __sdk::__query_builder::Col::new(table_name, "custom_list"),
+            options: __sdk::__query_builder::Col::new(table_name, "options"),
         }
     }
 }

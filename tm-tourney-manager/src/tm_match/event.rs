@@ -8,7 +8,7 @@ use crate::{
     raw_server::tab_raw_server_occupation,
     tm_match::{
         leaderboard::{
-            TmMatchRoundPlayer, TmMatchRoundPlayerExt, tab_tm_match_round_player,
+            TabTmMatchRoundPlayer, TabTmMatchRoundPlayerExt, tab_tm_match_round_player,
             tab_tm_match_round_player_ext,
         },
         state::{TmMatchState, tab_tm_match_state, tab_tm_match_state__view},
@@ -53,7 +53,7 @@ pub(crate) fn handle_match_event(
 
             ctx.db
                 .tab_tm_match_round_player_ext()
-                .try_insert(TmMatchRoundPlayerExt::new(
+                .try_insert(TabTmMatchRoundPlayerExt::new(
                     match_id,
                     internal_account_id,
                     round,
@@ -61,7 +61,7 @@ pub(crate) fn handle_match_event(
 
             ctx.db
                 .tab_tm_match_round_player()
-                .try_insert(TmMatchRoundPlayer::new(
+                .try_insert(TabTmMatchRoundPlayer::new(
                     match_id,
                     internal_account_id,
                     round,

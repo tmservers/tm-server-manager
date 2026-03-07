@@ -1,6 +1,9 @@
 use spacetimedb::{ReducerContext, SpacetimeType, ViewContext, reducer, table, view};
 
-use crate::authorization::Authorization;
+use crate::{
+    authorization::Authorization, raw_server::player::PermittedPlayer,
+    tm_match::leaderboard::TmMatchRoundPlayer,
+};
 
 #[derive(Debug)]
 #[table(accessor=tab_competition_connection_data)]
@@ -8,11 +11,9 @@ pub struct CompetitionConnectionData {
     #[index(btree)]
     competition_id: u32,
     #[primary_key]
-    connection_id: u32,
+    pub connection_id: u32,
 
-    count_top: Option<u8>,
-    count_bottom: Option<u8>,
-    custom_list: Vec<u8>,
+    options: CompetitionConnectionDataOption,
 }
 
 impl CompetitionConnectionData {
@@ -20,15 +21,41 @@ impl CompetitionConnectionData {
         CompetitionConnectionData {
             competition_id,
             connection_id,
-            count_top: Some(1),
-            count_bottom: None,
-            custom_list: Vec::new(),
+            options: CompetitionConnectionDataOption::None,
         }
+    }
+
+    pub(super) fn apply_match(&self, tm_match: Vec<TmMatchRoundPlayer>) -> Vec<PermittedPlayer> {
+        let players = match &self.options {
+            CompetitionConnectionDataOption::None => return Vec::new(),
+            CompetitionConnectionDataOption::All => tm_match,
+            CompetitionConnectionDataOption::First(f) => {
+                tm_match.into_iter().take(*f as usize).collect()
+            }
+            CompetitionConnectionDataOption::Last(l) => {
+                tm_match.into_iter().rev().take(*l as usize).collect()
+            }
+            CompetitionConnectionDataOption::Custom(items) => {
+                let mut players = Vec::with_capacity(items.len());
+                for item in items {
+                    if let Some(player) = tm_match.get(*item as usize) {
+                        players.push(*player);
+                    }
+                }
+                players
+            }
+        };
+        players
+            .into_iter()
+            .map(|p| PermittedPlayer::new(p.account_id, false, false))
+            .collect()
     }
 }
 
 #[derive(Debug, SpacetimeType)]
 pub enum CompetitionConnectionDataOption {
+    //TODO evaluate this appraoch.
+    None,
     All,
     First(u8),
     Last(u8),

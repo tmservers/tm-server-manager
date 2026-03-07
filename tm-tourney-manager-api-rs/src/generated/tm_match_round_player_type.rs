@@ -7,11 +7,12 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct TmMatchRoundPlayer {
-    pub internal_account_id: u32,
+    pub account_id: __sdk::Uuid,
     pub match_id: u32,
     pub time: i32,
     pub points: i32,
     pub round: u16,
+    pub position: u16,
 }
 
 impl __sdk::InModule for TmMatchRoundPlayer {
@@ -22,39 +23,24 @@ impl __sdk::InModule for TmMatchRoundPlayer {
 ///
 /// Provides typed access to columns for query building.
 pub struct TmMatchRoundPlayerCols {
-    pub internal_account_id: __sdk::__query_builder::Col<TmMatchRoundPlayer, u32>,
+    pub account_id: __sdk::__query_builder::Col<TmMatchRoundPlayer, __sdk::Uuid>,
     pub match_id: __sdk::__query_builder::Col<TmMatchRoundPlayer, u32>,
     pub time: __sdk::__query_builder::Col<TmMatchRoundPlayer, i32>,
     pub points: __sdk::__query_builder::Col<TmMatchRoundPlayer, i32>,
     pub round: __sdk::__query_builder::Col<TmMatchRoundPlayer, u16>,
+    pub position: __sdk::__query_builder::Col<TmMatchRoundPlayer, u16>,
 }
 
 impl __sdk::__query_builder::HasCols for TmMatchRoundPlayer {
     type Cols = TmMatchRoundPlayerCols;
     fn cols(table_name: &'static str) -> Self::Cols {
         TmMatchRoundPlayerCols {
-            internal_account_id: __sdk::__query_builder::Col::new(
-                table_name,
-                "internal_account_id",
-            ),
+            account_id: __sdk::__query_builder::Col::new(table_name, "account_id"),
             match_id: __sdk::__query_builder::Col::new(table_name, "match_id"),
             time: __sdk::__query_builder::Col::new(table_name, "time"),
             points: __sdk::__query_builder::Col::new(table_name, "points"),
             round: __sdk::__query_builder::Col::new(table_name, "round"),
+            position: __sdk::__query_builder::Col::new(table_name, "position"),
         }
     }
 }
-
-/// Indexed column accessor struct for the table `TmMatchRoundPlayer`.
-///
-/// Provides typed access to indexed columns for query building.
-pub struct TmMatchRoundPlayerIxCols {}
-
-impl __sdk::__query_builder::HasIxCols for TmMatchRoundPlayer {
-    type IxCols = TmMatchRoundPlayerIxCols;
-    fn ix_cols(table_name: &'static str) -> Self::IxCols {
-        TmMatchRoundPlayerIxCols {}
-    }
-}
-
-impl __sdk::__query_builder::CanBeLookupTable for TmMatchRoundPlayer {}

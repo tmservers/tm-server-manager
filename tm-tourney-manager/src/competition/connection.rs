@@ -1,19 +1,26 @@
 use std::collections::{HashMap, HashSet};
 
 use petgraph::acyclic::Acyclic;
-use spacetimedb::{ReducerContext, SpacetimeType, Table, ViewContext, reducer, view};
+use spacetimedb::{DbContext, ReducerContext, SpacetimeType, Table, ViewContext, reducer, view};
 
 use crate::{
     authorization::Authorization,
     competition::{
-        connection::connection_data::{CompetitionConnectionData, tab_competition_connection_data},
-        tab_competition,
+        connection::connection_data::{
+            CompetitionConnectionData, tab_competition_connection_data,
+            tab_competition_connection_data__view,
+        },
+        tab_competition, tab_competition__view,
     },
     portal::tab_portal,
     project::permissions::ProjectPermissionsV1,
+    raw_server::player::PermittedPlayer,
     registration::tab_registration,
     scheduling::tab_schedule,
-    tm_match::{match_set_preparation, tab_tm_match},
+    tm_match::{
+        leaderboard::{match_leaderboard, tab_tm_match_round_player__view},
+        match_set_preparation, tab_tm_match, tab_tm_match__view,
+    },
 };
 
 pub(super) mod connection_data;
@@ -58,6 +65,44 @@ impl TabCompetitionConnection {
 
     pub(crate) fn is_data(&self) -> bool {
         self.connection_settings == ConnectionSettings::Data
+    }
+
+    pub(crate) fn is_waiting(&self) -> bool {
+        self.connection_settings == ConnectionSettings::Waiting
+    }
+
+    pub(crate) fn get_permitted_players(self, ctx: &ViewContext) -> Vec<PermittedPlayer> {
+        if self.is_waiting() {
+            return Vec::new();
+        }
+
+        //TODO apply filter from the connection data settings.
+        self.get_permitted_players_filter(ctx)
+    }
+
+    pub(crate) fn get_permitted_players_filter(&self, ctx: &ViewContext) -> Vec<PermittedPlayer> {
+        match self.node_from() {
+            NodeKindHandle::MatchV1(m) => {
+                let rules = ctx
+                    .db
+                    .tab_competition_connection_data()
+                    .connection_id()
+                    .find(self.id)
+                    .unwrap();
+
+                let leaderboard = match_leaderboard(&ctx.as_anonymous_read_only());
+
+                //TODO maybe factor this out into a trait and impl it for the respective thing
+                // maybe we also need to split the data portion out into separate tables for each connection.
+                rules.apply_match(leaderboard)
+            }
+            NodeKindHandle::CompetitionV1(c) => todo!(),
+            NodeKindHandle::MonitoringV1(_) => todo!(),
+            NodeKindHandle::ServerV1(_) => todo!(),
+            NodeKindHandle::SchedulingV1(_) => todo!(),
+            NodeKindHandle::PortalV1(_) => todo!(),
+            NodeKindHandle::RegistrationV1(_) => todo!(),
+        }
     }
 }
 
@@ -433,7 +478,7 @@ pub fn internal_graph_resolution_node_finished(
             };
         } else {
             log::info!(
-                "There aare still nodes that are not finished!, Pending Nodes: {pending_connections:?}"
+                "There are still nodes that are not finished!, Pending Nodes: {pending_connections:?}"
             );
         }
     }
