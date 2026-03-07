@@ -1,11 +1,13 @@
-use spacetimedb_sdk::Uuid;
+use spacetimedb_sdk::{Table, Uuid};
 use tm_server_controller::{
     ClientError,
     callbacks::TypedCallbacks,
     method::{ModeScriptMethodsXmlRpc, XmlRpcMethods},
 };
-use tm_server_types::event::{EndRoundStart, StartMatch, StartRound, StartServer};
-use tm_tourney_manager_api_rs::{post_event, raw_server_player_add};
+use tm_server_types::event::{EndRoundStart, PlayerConnect, StartRound, StartServer};
+use tm_tourney_manager_api_rs::{
+    RawServerAllowedPlayersTableAccess, post_event, raw_server_player_add,
+};
 
 use crate::{SERVER_CONFIG, SPACETIME, TRACKMANIA, TRACKMANIA_FILES};
 
@@ -34,6 +36,7 @@ pub async fn setup_state_synchronization() {
         }
     });
 
+    // Sync the replay of every round to the server.
     server.on_end_round_start(async |event: &EndRoundStart| {
         let file_name = format!("{}{}", event.count, event.time);
         if let Err(error) = server.save_current_replay(&file_name).await {
@@ -59,6 +62,33 @@ pub async fn setup_state_synchronization() {
         if let Err(error) = std::fs::remove_file(&full_path) {
             tracing::error!("Failed to delete the current replay file! Reason: {error}")
         };
+    });
+
+    server.on_player_connect(async |event: &PlayerConnect| {
+        let Some(player) = SPACETIME
+            .wait()
+            .db
+            .raw_server_allowed_players()
+            .iter()
+            .find(|p| Uuid::parse_str(&event.account_id).unwrap() == p.account_id)
+        else {
+            tracing::warn!("Player tried to connect without the required permissions.");
+            if let Err(error) = TRACKMANIA
+                .wait()
+                .kick(event.account_id.clone(), "Not allowed to join the server.")
+                .await
+            {
+                tracing::error!("Could not kick player: {error}")
+            };
+
+            return;
+        };
+        if player.only_spectator {
+            tracing::warn!(
+                "Player tried to connect as a player but is only allowed as a spectator."
+            );
+            //TODO force to spectator.
+        }
     });
 
     server.on_start_server_start(async |event: &StartServer| {
@@ -124,4 +154,8 @@ pub(super) async fn sync_players() {
         );
         std::process::exit(1)
     }
+}
+
+pub fn check_allowed_players() {
+    //TODO make the async context, get all players from the server. build a map with the allowed players and kick everybody thats not allowed anymore.
 }

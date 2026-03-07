@@ -15,6 +15,7 @@ import {
 } from "./types";
 
 export default {
+  connectionId: __t.u32(),
   get option() {
     return CompetitionConnectionDataOption;
   },

@@ -9,12 +9,14 @@ use super::competition_connection_data_option_type::CompetitionConnectionDataOpt
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct CompetitionConnectionDataUpdateArgs {
+    pub connection_id: u32,
     pub option: CompetitionConnectionDataOption,
 }
 
 impl From<CompetitionConnectionDataUpdateArgs> for super::Reducer {
     fn from(args: CompetitionConnectionDataUpdateArgs) -> Self {
         Self::CompetitionConnectionDataUpdate {
+            connection_id: args.connection_id,
             option: args.option,
         }
     }
@@ -37,9 +39,10 @@ pub trait competition_connection_data_update {
     /// /// Use [`competition_connection_data_update:competition_connection_data_update_then`] to run a callback after the reducer completes.
     fn competition_connection_data_update(
         &self,
+        connection_id: u32,
         option: CompetitionConnectionDataOption,
     ) -> __sdk::Result<()> {
-        self.competition_connection_data_update_then(option, |_, _| {})
+        self.competition_connection_data_update_then(connection_id, option, |_, _| {})
     }
 
     /// Request that the remote module invoke the reducer `competition_connection_data_update` to run as soon as possible,
@@ -50,6 +53,7 @@ pub trait competition_connection_data_update {
     ///  and its status can be observed with the `callback`.
     fn competition_connection_data_update_then(
         &self,
+        connection_id: u32,
         option: CompetitionConnectionDataOption,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
@@ -61,13 +65,19 @@ pub trait competition_connection_data_update {
 impl competition_connection_data_update for super::RemoteReducers {
     fn competition_connection_data_update_then(
         &self,
+        connection_id: u32,
         option: CompetitionConnectionDataOption,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     ) -> __sdk::Result<()> {
-        self.imp
-            .invoke_reducer_with_callback(CompetitionConnectionDataUpdateArgs { option }, callback)
+        self.imp.invoke_reducer_with_callback(
+            CompetitionConnectionDataUpdateArgs {
+                connection_id,
+                option,
+            },
+            callback,
+        )
     }
 }

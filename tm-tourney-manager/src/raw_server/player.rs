@@ -157,14 +157,5 @@ fn raw_server_allowed_players(ctx: &ViewContext) -> Vec<PermittedPlayer> {
         map.extend(permitted_players);
     }
 
-    /* for depending_node in depending_nodes {
-
-        // lets assume this is a match for now TODO
-        let split = depending_node.split();
-        let tm_match = match_leaderboard(&ctx.as_anonymous_read_only())
-            .into_iter()
-            .map(|p| p.);
-    } */
-
     map.into_values().collect()
 }

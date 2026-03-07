@@ -10,15 +10,19 @@ use tm_server_controller::{
 };
 use tm_server_types::config::ServerConfig;
 use tm_tourney_manager_api_rs::{
-    DbConnection, ErrorContext, RawServerConfigTableAccess, RawServerMethodCallTableAccess,
-    login_as_server, raw_server_configQueryTableAccess, raw_server_method_callQueryTableAccess,
+    DbConnection, ErrorContext, RawServerAllowedPlayersTableAccess, RawServerConfigTableAccess,
+    RawServerMethodCallTableAccess, login_as_server, raw_server_allowed_playersQueryTableAccess,
+    raw_server_configQueryTableAccess, raw_server_method_callQueryTableAccess,
 };
 use tokio::{signal, sync::Mutex};
 use tracing::{instrument, warn};
 
 use crate::{
-    chat::setup_chat, config::config_update, methods::method_call_received,
-    state::setup_state_synchronization, telemetry::init_tracing_subscriber,
+    chat::setup_chat,
+    config::config_update,
+    methods::method_call_received,
+    state::{check_allowed_players, setup_state_synchronization},
+    telemetry::init_tracing_subscriber,
 };
 
 mod chat;
@@ -158,27 +162,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         //TODO remove
         /*  _ = server.get_callbacks_list_disabled().await?;
         _ = server.get_callbacks_list().await?; */
-
-        /* server.on_event(|event| {
-            let event = event.clone();
-            tokio::spawn(async move {
-                let server = TRACKMANIA.wait();
-
-                //TODO reenable automatic kicking
-                if let tm_server_controller::event::Event::PlayerConenct(player) = &event
-                    && player.account_id != "bla"
-                    && !player.is_spectator
-                {
-                    _ = server
-                        .kick(
-                            player.account_id.clone(),
-                            Some("You are not on the whitelist! :("),
-                        )
-                        .await;
-                    tracing::error!("player successfully kicked {}", &player.account_id);
-                };
-            });
-        }) */
     }
 
     setup_state_synchronization().await;
@@ -190,13 +173,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         _ = spacetime
             .subscription_builder()
             .on_applied(|_| tracing::debug!("Subscription successfully applied!"))
-            .on_error(|_, mhm| tracing::error!("Subscription failed: {mhm:?}"))
-            .add_query(|ctx| ctx.from.raw_server_method_call().build())
-            .add_query(|ctx| ctx.from.raw_server_config().build())
+            .on_error(|_, error| tracing::error!("Subscription failed: {error:?}"))
+            .add_query(|ctx| ctx.from.raw_server_method_call())
+            .add_query(|ctx| ctx.from.raw_server_config())
+            .add_query(|ctx| ctx.from.raw_server_allowed_players())
             .subscribe();
 
         //TODO switch to this_server if on_update callbacks are there
         spacetime.db.raw_server_config().on_insert(config_update);
+
+        spacetime
+            .db
+            .raw_server_allowed_players()
+            .on_delete(|_, _| check_allowed_players());
 
         spacetime
             .db

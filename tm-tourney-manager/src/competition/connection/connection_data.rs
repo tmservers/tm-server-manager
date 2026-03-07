@@ -1,7 +1,8 @@
 use spacetimedb::{ReducerContext, SpacetimeType, ViewContext, reducer, table, view};
 
 use crate::{
-    authorization::Authorization, raw_server::player::PermittedPlayer,
+    authorization::Authorization, competition::connection::tab_competition_connection,
+    project::permissions::ProjectPermissionsV1, raw_server::player::PermittedPlayer,
     tm_match::leaderboard::TmMatchRoundPlayer,
 };
 
@@ -21,7 +22,7 @@ impl CompetitionConnectionData {
         CompetitionConnectionData {
             competition_id,
             connection_id,
-            options: CompetitionConnectionDataOption::None,
+            options: CompetitionConnectionDataOption::All,
         }
     }
 
@@ -54,7 +55,7 @@ impl CompetitionConnectionData {
 
 #[derive(Debug, SpacetimeType)]
 pub enum CompetitionConnectionDataOption {
-    //TODO evaluate this appraoch.
+    //TODO evaluate this appraoch. probably its bad
     None,
     All,
     First(u8),
@@ -75,10 +76,33 @@ pub fn competition_connection_data(ctx: &ViewContext) -> Vec<CompetitionConnecti
 #[reducer]
 fn competition_connection_data_update(
     ctx: &ReducerContext,
+    connection_id: u32,
     option: CompetitionConnectionDataOption,
 ) -> Result<(), String> {
-    let user = ctx.get_user()?;
+    let account_id = ctx.get_user_account()?;
 
-    //ctx.db.tab_competition_connection_data().
+    let Some(connection) = ctx.db.tab_competition_connection().id().find(connection_id) else {
+        return Err("connection could not be found!".into());
+    };
+    ctx.auth_builder(connection.project_id, account_id)?
+        .permission(ProjectPermissionsV1::COMPETITION_CONNECTION_EDIT)
+        .authorize()?;
+
+    let Some(mut data) = ctx
+        .db
+        .tab_competition_connection_data()
+        .connection_id()
+        .find(connection_id)
+    else {
+        return Err("Connection could not be found.".into());
+    };
+
+    data.options = option;
+
+    ctx.db
+        .tab_competition_connection_data()
+        .connection_id()
+        .update(data);
+
     Ok(())
 }

@@ -154,7 +154,7 @@ pub trait XmlRpcMethods {
     async fn kick(
         &self,
         account_id: impl Into<String>,
-        message: Option<impl Into<String>>,
+        message: impl Into<String>,
     ) -> Result<bool, ClientError>;
 
     async fn add_guest(&self, player: &str) -> Result<bool, ClientError>;
@@ -215,21 +215,10 @@ impl XmlRpcMethods for TrackmaniaServer {
     async fn kick(
         &self,
         account_id: impl Into<String>,
-        message: Option<impl Into<String>>,
+        message: impl Into<String>,
     ) -> Result<bool, ClientError> {
         let login = account_id_to_login(&account_id.into());
-        self.call(
-            "Kick",
-            (
-                login,
-                if let Some(msg) = message {
-                    msg.into()
-                } else {
-                    "".to_string()
-                },
-            ),
-        )
-        .await
+        self.call("Kick", (login, message.into())).await
     }
 
     async fn add_guest(&self, login: &str) -> Result<bool, ClientError> {

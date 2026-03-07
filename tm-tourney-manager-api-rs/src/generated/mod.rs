@@ -415,6 +415,7 @@ pub use way_point_type::WayPoint;
 
 pub enum Reducer {
     CompetitionConnectionDataUpdate {
+        connection_id: u32,
         option: CompetitionConnectionDataOption,
     },
     CompetitionCreate {
@@ -650,8 +651,12 @@ impl __sdk::Reducer for Reducer {
     #[allow(clippy::clone_on_copy)]
     fn args_bsatn(&self) -> Result<Vec<u8>, __sats::bsatn::EncodeError> {
         match self {
-            Reducer::CompetitionConnectionDataUpdate { option } => __sats::bsatn::to_vec(
+            Reducer::CompetitionConnectionDataUpdate {
+                connection_id,
+                option,
+            } => __sats::bsatn::to_vec(
                 &competition_connection_data_update_reducer::CompetitionConnectionDataUpdateArgs {
+                    connection_id: connection_id.clone(),
                     option: option.clone(),
                 },
             ),
