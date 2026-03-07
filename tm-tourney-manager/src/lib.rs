@@ -48,12 +48,6 @@ fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
             return Ok(());
         }
         if jwt.issuer() == "https://auth.spacetimedb.com" {
-            #[cfg(feature = "production")]
-            {
-                //TODO
-                log::error!("TODO implement the token parsing and checking");
-                return Err("TODO actualy implament the right issuer handling");
-            }
             // This is only that the batch scripts can run while developing.
             // The production feature flag is enforced in CI.
             #[cfg(not(feature = "production"))]
@@ -84,6 +78,12 @@ fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
 
                 return Ok(());
             }
+        }
+
+        if jwt.issuer() == "https://auth.spacetimedb.com/oidc" {
+            //TODO
+            log::error!("TODO implement the token parsing and checking");
+            return Err("TODO actualy implament the right issuer handling".into());
         }
 
         Err("Tried to connect with the wrong issuer.".into())
