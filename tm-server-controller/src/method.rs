@@ -198,6 +198,13 @@ pub trait XmlRpcMethods {
         hide_on_click: bool,
     ) -> Result<bool, ClientError>;
 
+    async fn send_open_link_to_account(
+        &self,
+        account: impl Into<String>,
+        link: impl Into<String>,
+        link_type: i32,
+    ) -> Result<bool, ClientError>;
+
     // Make receivers more generic with: <T: Iterator<Item = impl for<'a> Into<&'a str>>>
     // Because its option there is a type inference issue sadly
     async fn chat_forward_to_account(
@@ -271,6 +278,20 @@ impl XmlRpcMethods for TrackmaniaServer {
         self.call(
             "SendDisplayManialinkPage",
             (content, timeout, hide_on_click),
+        )
+        .await
+    }
+
+    /// Link type can be 0 for external browser and 1 for the internal browser
+    async fn send_open_link_to_account(
+        &self,
+        account: impl Into<String>,
+        link: impl Into<String>,
+        link_type: i32,
+    ) -> Result<bool, ClientError> {
+        self.call(
+            "SendOpenLinkToLogin",
+            (account_id_to_login(&account.into()), link.into(), link_type),
         )
         .await
     }

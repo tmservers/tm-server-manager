@@ -16,6 +16,20 @@ pub async fn setup_state_synchronization() {
 
     sync_players().await;
 
+    // Send players to correct server.
+    /* if let Err(error) = server
+        .send_open_link_to_account(
+            "3467014a-c1cc-4aae-99fe-6beb5eca232a",
+            "#qjoin=6cD4GLl8TH-pYYg2Cvqgrg@Trackmania",
+            1,
+            //"https://trackmania.io/#/player/3467014a-c1cc-4aae-99fe-6beb5eca232a",
+            //0,
+        )
+        .await
+    {
+        tracing::error!("Could not send link: {error}")
+    }; */
+
     // Sync all events to spacetimedb.
     server.on_event(|event| {
         let spacetime = SPACETIME.wait();

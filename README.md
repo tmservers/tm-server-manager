@@ -14,6 +14,44 @@ This has a few advantages:
 - `tm-tourney-manager`: SpacetimeDB module to host and configure Trackmania tournaments in a flexible and as unopinionated interface as possible. 
 - `tm-tourney-manager-api-{ts|rs|cs}`: Houses the generated types from tm-tourney-manager in its own package to have a strong versioned dependency for clients developed for the project.
 
+# Docker Compose Example to connect a server.
+```yml
+services:
+  # The standard trackmania server.
+  tm1:
+    image: evoesports/trackmania:2026-01-28
+    restart: unless-stopped
+    ports:
+      - 2350:2350/udp
+      - 2350:2350/tcp
+    environment:
+      TM_MASTERSERVER_LOGIN: ""
+      TM_MASTERSERVER_PASSWORD: ""
+      TM_SYSTEM_XMLRPC_ALLOWREMOTE: "True"
+    volumes:
+      - UserData:/server/UserData
+  # The bridge required to connect. Acts as the server controller.
+  tm1bridge:
+    image: # TODO its not published yet
+    restart: unless-stopped
+    environment:
+      # The url used to connect to the trackmania server. (match name to service name)
+      TM_SERVER_URL: 'tm1:5000'
+      # You have to put in the same credentials as for the server above. 
+      TM_MASTERSERVER_LOGIN: ''
+      TM_MASTERSERVER_PASSWORD: ''
+      # The account_id under which your server will be available. (can be obtained from trackmania.io)
+      TM_ACCOUNT_ID: ''
+    depends_on:
+      - tm1
+    volumes:
+      - UserData:/UserData
+
+volumes:
+    UserData: {}
+```
+
+
 # Contributing and project Governance 
 Contributions are very welcome but features are best discussed in a issue beforehand to avoid dissapointment in case the design is not ideal.
 The project also wont babysit contributions or tolerate obvious AI slop so please be concious about that before submitting a pull request. 
