@@ -2,19 +2,17 @@ use spacetimedb::{AnonymousViewContext, Identity, Query, Uuid, table, view};
 
 #[table(accessor= tab_user)]
 pub struct UserV1 {
-    //ubisoft id of the user
+    name: String,
+    club_tag: String,
+    zone: String,
+
+    //account_id of the user
     #[unique]
     pub account_id: Uuid,
 
     #[auto_inc]
     #[primary_key]
     pub internal_id: u32,
-
-    name: String,
-
-    //raw version of the club tag.
-    club_tag: String,
-    online: bool,
 }
 
 impl UserV1 {
@@ -24,7 +22,7 @@ impl UserV1 {
             account_id,
             name,
             club_tag: "".into(),
-            online: true,
+            zone: "".into(),
         }
     }
 

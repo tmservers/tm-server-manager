@@ -29,7 +29,7 @@ const CASE_CONVERSION_POLICY: CaseConversionPolicy = CaseConversionPolicy::None;
 struct SpacetimeAuthClaims {
     preferred_username: String,
     login_method: String,
-    project_id: String,
+    // Trackmania account_id
     provider_id: String,
 }
 
@@ -47,43 +47,60 @@ fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
             log::info!("Connected Annonymously");
             return Ok(());
         }
+        // This is only that the batch scripts can run while developing.
+        // The production feature flag is enforced in CI.
+        #[cfg(not(feature = "production"))]
         if jwt.issuer() == "https://auth.spacetimedb.com" {
-            // This is only that the batch scripts can run while developing.
-            // The production feature flag is enforced in CI.
-            #[cfg(not(feature = "production"))]
-            {
-                log::warn!("Connected as Mr.Joermungandr in a development environment!");
-                let account_id: Uuid =
-                    Uuid::parse_str("3467014a-c1cc-4aae-99fe-6beb5eca232a").unwrap();
+            log::warn!("Connected as Mr.Joermungandr in a development environment!");
+            let account_id: Uuid = Uuid::parse_str("3467014a-c1cc-4aae-99fe-6beb5eca232a").unwrap();
 
-                let preferred_username = String::from("Mr.Joermungandr");
+            let preferred_username = String::from("Mr.Joermungandr");
 
-                if let Some(user) = ctx.db.tab_user().account_id().find(account_id) {
-                    //TODO check if user name changed and update on demand. also update the identity if applicable.
-                    ctx.db
-                        .tab_user_identity()
-                        .account_id()
-                        .insert_or_update(UserIdentity::new(account_id, ctx.sender()));
-                    Ok::<(), String>(())
-                } else {
-                    ctx.db
-                        .tab_user()
-                        .try_insert(UserStruct::new(account_id, preferred_username))?;
-                    ctx.db
-                        .tab_user_identity()
-                        .try_insert(UserIdentity::new(account_id, ctx.sender()))?;
+            if ctx.db.tab_user().account_id().find(account_id).is_some() {
+                ctx.db
+                    .tab_user_identity()
+                    .account_id()
+                    .insert_or_update(UserIdentity::new(account_id, ctx.sender()));
+                Ok::<(), String>(())
+            } else {
+                ctx.db
+                    .tab_user()
+                    .try_insert(UserStruct::new(account_id, preferred_username))?;
+                ctx.db
+                    .tab_user_identity()
+                    .try_insert(UserIdentity::new(account_id, ctx.sender()))?;
 
-                    Ok(())
-                }?;
+                Ok(())
+            }?;
 
-                return Ok(());
-            }
+            return Ok(());
         }
 
         if jwt.issuer() == "https://auth.spacetimedb.com/oidc" {
-            //TODO
-            log::error!("TODO implement the token parsing and checking");
-            return Err("TODO actualy implament the right issuer handling".into());
+            let claims = unsafe {
+                json::from_str::<SpacetimeAuthClaims>(&mut jwt.raw_payload().to_string())
+                    .map_err(|e| e.to_string())?
+            };
+
+            if claims.login_method != "trackmania" {
+                return Err(format!(
+                    "Invalid login_method in token. Cannot login with the {} provider.",
+                    claims.login_method
+                ));
+            }
+
+            let account_id = Uuid::parse_str(&claims.provider_id).map_err(|e| e.to_string())?;
+
+            ctx.db
+                .tab_user()
+                .account_id()
+                .try_insert_or_update(UserStruct::new(account_id, claims.preferred_username))?;
+            ctx.db
+                .tab_user_identity()
+                .account_id()
+                .try_insert_or_update(UserIdentity::new(account_id, ctx.sender()))?;
+
+            return Ok(());
         }
 
         Err("Tried to connect with the wrong issuer.".into())
