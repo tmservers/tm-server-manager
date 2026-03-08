@@ -142,7 +142,7 @@ pub fn match_create(
     ctx: &ReducerContext,
     name: String,
     competition_id: u32,
-    with_template: Option<u32>,
+    with_template: u32,
 ) -> Result<(), String> {
     let user = ctx.get_user_account()?;
 
@@ -168,8 +168,8 @@ pub fn match_create(
     };
 
     // Try to load template if provided
-    if let Some(template) = with_template {
-        let Some(template) = ctx.db.tab_match_template().id().find(template) else {
+    if with_template != 0 {
+        let Some(template) = ctx.db.tab_match_template().id().find(with_template) else {
             return Err("Template not found.".into());
         };
         tm_match.match_config = template.get_config_id()

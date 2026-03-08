@@ -20,13 +20,13 @@ spacetime call tm-tourney-manager competition_create "Double Elimination Bracket
 # Upper R1
 # 8 matches, Match IDs 1-8
 for i in {1..8}; do
-  spacetime call tm-tourney-manager match_create "Upper R1 M$i" 2 null
+  spacetime call tm-tourney-manager match_create "Upper R1 M$i" 2 0
 done
 
 # Upper R2
 # 4 matches, Match IDs 9-12
 for i in {1..4}; do
-  spacetime call tm-tourney-manager match_create "Upper R2 M$i" 2 null
+  spacetime call tm-tourney-manager match_create "Upper R2 M$i" 2 0
 done
 
 # Upper R2 connections
@@ -62,7 +62,7 @@ done
 # Lower R1
 # 4 matches, Match IDs 13-16
 for i in {1..4}; do
-  spacetime call tm-tourney-manager match_create "Lower R1 M$i" 2 null
+  spacetime call tm-tourney-manager match_create "Lower R1 M$i" 2 0
 done
 
 # Lower R1 connections
@@ -99,7 +99,7 @@ done
 # Lower R2
 # 4 matches, Match IDs 17-20
 for i in {1..4}; do
-  spacetime call tm-tourney-manager match_create "Lower R2 M$i" 2 null
+  spacetime call tm-tourney-manager match_create "Lower R2 M$i" 2 0
 done
 
 # Lower R2 connections
@@ -138,7 +138,7 @@ done
 # Upper R3
 # 2 matches, Match IDs 21-22
 for i in {1..2}; do
-  spacetime call tm-tourney-manager match_create "Upper R3 M$i" 2 null
+  spacetime call tm-tourney-manager match_create "Upper R3 M$i" 2 0
 done
 
 # Upper R3 connections
@@ -167,7 +167,7 @@ done
 # Lower R3
 # 2 matches, Match IDs 23-24
 for i in {1..2}; do
-  spacetime call tm-tourney-manager match_create "Lower R3 M$i" 2 null
+  spacetime call tm-tourney-manager match_create "Lower R3 M$i" 2 0
 done
 
 # Lower R3 connections
@@ -186,7 +186,7 @@ done
 # Lower R4
 # 2 matches, Match IDs 25-26
 for i in {1..2}; do
-  spacetime call tm-tourney-manager match_create "Lower R4 M$i" 2 null
+  spacetime call tm-tourney-manager match_create "Lower R4 M$i" 2 0
 done
 
 # Lower R4 connections
@@ -204,7 +204,7 @@ done
 
 # Upper Final
 # 1 match, Match ID 27
-spacetime call tm-tourney-manager match_create "Upper Final" 2 null
+spacetime call tm-tourney-manager match_create "Upper Final" 2 0
 
 # Upper Final connections
 # Winners of Upper R3 to Upper Final
@@ -226,7 +226,7 @@ done
 
 # Lower Final
 # 1 match, Match ID 28
-spacetime call tm-tourney-manager match_create "Lower Final" 2 null
+spacetime call tm-tourney-manager match_create "Lower Final" 2 0
 
 # Lower Final connections
 # Winners of Lower R4 to Lower Final
@@ -240,7 +240,7 @@ done
 
 # Consolidation Final
 # 1 match, Match ID 29
-spacetime call tm-tourney-manager match_create "Consolidation Final" 2 null
+spacetime call tm-tourney-manager match_create "Consolidation Final" 2 0
 
 # Consolidation Final connections
 # Losers of Upper Final and Winners of Lower Final to Consolidation Final
@@ -254,7 +254,7 @@ done
 
 # Grand Final
 # 1 match, Match ID 30
-spacetime call tm-tourney-manager match_create "Grand Final" 2 null
+spacetime call tm-tourney-manager match_create "Grand Final" 2 0
 
 # Grand Final connections
 # Winners of Upper Final and Winners of Consolidation Final to Grand Final
