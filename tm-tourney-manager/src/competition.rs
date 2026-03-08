@@ -13,6 +13,8 @@ pub mod connection;
 /// Always
 #[table(accessor= tab_competition)]
 pub struct CompetitionV1 {
+    name: String,
+
     #[auto_inc]
     #[primary_key]
     pub id: u32,
@@ -20,18 +22,15 @@ pub struct CompetitionV1 {
     project_id: u32,
     parent_id: u32,
 
-    name: String,
-
     // Necessary to hide and mark as immutable
     status: CompetitionStatus,
     // inheriting_permissions: bool,
 
-    
     // The two timestamps to display players in which time range the competiion is taking place.
-    starting_at: Option<Timestamp>,
-    ending_at: Option<Timestamp>,
+    //starting_at: Option<Timestamp>,
+    //ending_at: Option<Timestamp>,
 
-    registration_settings: RegistrationSettings,
+    //registration_settings: RegistrationSettings,
     // TODO Can capture a server at the end of the registration to serve
     // as a lobby server which automatically delegates players to their
     // corresponding desination server based on active matches.
@@ -57,19 +56,19 @@ impl CompetitionV1 {
     pub unsafe fn new(name: String, parent_id: u32, project_id: u32) -> Self {
         Self {
             id: 0,
-            project_id: project_id,
+            project_id,
             parent_id,
             name,
             status: CompetitionStatus::Planning,
-            starting_at: None,
-            ending_at: None,
-            registration_settings: RegistrationSettings::None,
+            // starting_at: None,
+            //ending_at: None,
+            //registration_settings: RegistrationSettings::None,
         }
     }
 
-    pub(crate) fn registration_settings(&self) -> &RegistrationSettings {
+    /* pub(crate) fn registration_settings(&self) -> &RegistrationSettings {
         &self.registration_settings
-    }
+    } */
 }
 
 #[derive(Debug, SpacetimeType)]
@@ -136,7 +135,7 @@ pub fn competition_edit_name(
     Ok(())
 }
 
-#[reducer]
+/* #[reducer]
 pub fn competition_registration_settings(
     ctx: &ReducerContext,
     competition_id: u32,
@@ -158,7 +157,7 @@ pub fn competition_registration_settings(
     ctx.db.tab_competition().id().update(competition);
 
     Ok(())
-}
+} */
 
 #[view(accessor=competition,public)]
 pub fn competition(ctx: &AnonymousViewContext) -> impl Query<CompetitionV1> {
