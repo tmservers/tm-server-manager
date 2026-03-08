@@ -29,15 +29,6 @@ pub struct RegistrationTeamSettings {
     registration_deadline: Timestamp,
 }
 
-//TODO make this a table somehow.
-#[derive(Debug, SpacetimeType)]
-pub struct TeamInfo {
-    registered_at: Timestamp,
-    name: String,
-    creator: String,
-    members: Vec<String>,
-}
-
 #[table(accessor=tab_registration)]
 pub struct Registration {
     name: String,

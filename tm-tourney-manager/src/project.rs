@@ -270,3 +270,14 @@ pub fn my_project(ctx: &ViewContext) -> Vec<MyProjectV1> {
         })
         .collect()
 }
+
+#[table(accessor=tab_test_tournament)]
+struct TestTournament {
+    name: String,
+
+    #[auto_inc]
+    #[primary_key]
+    id: u32,
+
+    root_id: u32,
+}

@@ -4,20 +4,20 @@ use spacetimedb::{AnonymousViewContext, SpacetimeType, Uuid, table, view};
 
 use crate::{tm_match::state::tab_tm_match_state__view, user::tab_user__view};
 
-#[derive(Debug, SpacetimeType)]
+#[derive(Debug, SpacetimeType, Clone, Copy)]
 pub(super) enum PlayerAction {
     GiveUp,
     Respawn(PlayerActionRespawn),
     Checkpoint(PlayerActionCheckpoint),
 }
 
-#[derive(Debug, SpacetimeType)]
+#[derive(Debug, SpacetimeType, Clone, Copy)]
 pub(super) struct PlayerActionRespawn {
     speed: f32,
     standing: bool,
 }
 
-#[derive(Debug, SpacetimeType)]
+#[derive(Debug, SpacetimeType, Clone, Copy)]
 pub(super) struct PlayerActionCheckpoint {
     speed: f32,
     time: u32,
@@ -63,11 +63,10 @@ pub struct TabTmMatchRoundPlayerExt {
 
     internal_account_id: u32,
     match_id: u32,
-    round: u16,
-
     #[auto_inc]
     #[primary_key]
     pub id: u32,
+    round: u16,
 }
 
 impl TabTmMatchRoundPlayerExt {
@@ -116,6 +115,15 @@ pub struct TmMatchRoundPlayer {
 
     round: u16,
     position: u16,
+}
+
+#[derive(Debug, SpacetimeType, Clone)]
+pub struct TmMatchRoundPlayerExt {
+    round_actions: Vec<PlayerAction>,
+
+    pub account_id: Uuid,
+    match_id: u32,
+    round: u16,
 }
 
 /// Accumulates points of all previous rounds.
@@ -189,7 +197,7 @@ pub fn match_leaderboard(
 #[view(accessor=match_round,public)]
 pub fn match_round(
     ctx: &AnonymousViewContext, /*, match_id: u32, round: u16 */
-) -> Vec<TabTmMatchRoundPlayer> {
+) -> Vec<TmMatchRoundPlayer> {
     let match_id = 1u32;
     let mut round = 0u16;
 
@@ -200,11 +208,31 @@ pub fn match_round(
         round = state.get_round();
     }
 
-    ctx.db
+    let mut standings = ctx
+        .db
         .tab_tm_match_round_player()
         .match_round()
         .filter((match_id, round))
-        .collect()
+        .map(|p| TmMatchRoundPlayer {
+            account_id: ctx
+                .db
+                .tab_user()
+                .internal_id()
+                .find(p.internal_account_id)
+                .unwrap()
+                .account_id,
+            match_id,
+            time: p.time,
+            points: p.points,
+            round: p.round,
+            position: 0,
+        })
+        .collect::<Vec<_>>();
+    standings.sort_by_key(|v| v.points);
+    for (position, entry) in standings.iter_mut().enumerate() {
+        entry.position = (position + 1) as u16;
+    }
+    standings
 }
 
 /// If round 0 is supplied we take the current round.

@@ -11,9 +11,9 @@ import {
 } from "spacetimedb";
 
 export default __t.row({
-  accountId: __t.uuid().name("account_id"),
-  internalId: __t.u32().name("internal_id"),
   name: __t.string(),
   clubTag: __t.string().name("club_tag"),
-  online: __t.bool(),
+  zone: __t.string(),
+  accountId: __t.uuid().name("account_id"),
+  internalId: __t.u32().name("internal_id"),
 });

@@ -7,7 +7,7 @@ use spacetimedb::{
 
 use crate::{
     authorization::Authorization,
-    competition::connection::{NodeType, tab_competition_connection__view},
+    competition::connection::{NodeKindHandle, NodeType, tab_competition_connection__view},
     raw_server::{tab_raw_server__view, tab_raw_server_occupation__view},
     tm_match::{leaderboard::match_leaderboard, tab_tm_match__view},
 };
@@ -146,7 +146,7 @@ fn raw_server_allowed_players(ctx: &ViewContext) -> Vec<PermittedPlayer> {
         .db
         .tab_competition_connection()
         .origin_nodes_of()
-        .filter(occupation.match_id)
+        .filter(NodeKindHandle::MatchV1(occupation.match_id).split())
         .filter(|c| c.is_data());
 
     for node in depending_nodes {

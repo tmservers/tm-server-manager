@@ -1072,8 +1072,8 @@ export const TabTmMatchRoundPlayerExt = __t.object("TabTmMatchRoundPlayerExt", {
   },
   internalAccountId: __t.u32(),
   matchId: __t.u32(),
-  round: __t.u16(),
   id: __t.u32(),
+  round: __t.u16(),
 });
 export type TabTmMatchRoundPlayerExt = __Infer<typeof TabTmMatchRoundPlayerExt>;
 
@@ -1085,6 +1085,13 @@ export const Team = __t.object("Team", {
   matchPoints: __t.u32(),
 });
 export type Team = __Infer<typeof Team>;
+
+export const TestTournament = __t.object("TestTournament", {
+  name: __t.string(),
+  id: __t.u32(),
+  rootId: __t.u32(),
+});
+export type TestTournament = __Infer<typeof TestTournament>;
 
 export const TimeAttack = __t.object("TimeAttack", {
   timeLimit: __t.i32(),
@@ -1218,11 +1225,11 @@ export const UserIdentity = __t.object("UserIdentity", {
 export type UserIdentity = __Infer<typeof UserIdentity>;
 
 export const UserV1 = __t.object("UserV1", {
-  accountId: __t.uuid(),
-  internalId: __t.u32(),
   name: __t.string(),
   clubTag: __t.string(),
-  online: __t.bool(),
+  zone: __t.string(),
+  accountId: __t.uuid(),
+  internalId: __t.u32(),
 });
 export type UserV1 = __Infer<typeof UserV1>;
 

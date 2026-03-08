@@ -12,8 +12,8 @@ pub struct TabTmMatchRoundPlayerExt {
     pub round_actions: Vec<PlayerAction>,
     pub internal_account_id: u32,
     pub match_id: u32,
-    pub round: u16,
     pub id: u32,
+    pub round: u16,
 }
 
 impl __sdk::InModule for TabTmMatchRoundPlayerExt {
@@ -27,8 +27,8 @@ pub struct TabTmMatchRoundPlayerExtCols {
     pub round_actions: __sdk::__query_builder::Col<TabTmMatchRoundPlayerExt, Vec<PlayerAction>>,
     pub internal_account_id: __sdk::__query_builder::Col<TabTmMatchRoundPlayerExt, u32>,
     pub match_id: __sdk::__query_builder::Col<TabTmMatchRoundPlayerExt, u32>,
-    pub round: __sdk::__query_builder::Col<TabTmMatchRoundPlayerExt, u16>,
     pub id: __sdk::__query_builder::Col<TabTmMatchRoundPlayerExt, u32>,
+    pub round: __sdk::__query_builder::Col<TabTmMatchRoundPlayerExt, u16>,
 }
 
 impl __sdk::__query_builder::HasCols for TabTmMatchRoundPlayerExt {
@@ -41,8 +41,8 @@ impl __sdk::__query_builder::HasCols for TabTmMatchRoundPlayerExt {
                 "internal_account_id",
             ),
             match_id: __sdk::__query_builder::Col::new(table_name, "match_id"),
-            round: __sdk::__query_builder::Col::new(table_name, "round"),
             id: __sdk::__query_builder::Col::new(table_name, "id"),
+            round: __sdk::__query_builder::Col::new(table_name, "round"),
         }
     }
 }

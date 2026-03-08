@@ -20,6 +20,6 @@ export default __t.row({
   },
   internalAccountId: __t.u32().name("internal_account_id"),
   matchId: __t.u32().name("match_id"),
-  round: __t.u16(),
   id: __t.u32(),
+  round: __t.u16(),
 });

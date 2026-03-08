@@ -176,6 +176,7 @@ pub mod tab_competition_node_position_type;
 pub mod tab_tm_match_round_player_ext_type;
 pub mod tab_tm_match_round_player_type;
 pub mod team_type;
+pub mod test_tournament_type;
 pub mod this_raw_server_table;
 pub mod time_attack_type;
 pub mod tm_comp_record_type;
@@ -376,6 +377,7 @@ pub use tab_competition_node_position_type::TabCompetitionNodePosition;
 pub use tab_tm_match_round_player_ext_type::TabTmMatchRoundPlayerExt;
 pub use tab_tm_match_round_player_type::TabTmMatchRoundPlayer;
 pub use team_type::Team;
+pub use test_tournament_type::TestTournament;
 pub use this_raw_server_table::*;
 pub use time_attack_type::TimeAttack;
 pub use tm_comp_record_type::TmCompRecord;
@@ -981,7 +983,7 @@ pub struct DbUpdate {
     map_record: __sdk::TableUpdate<TmRecord>,
     match_leaderboard: __sdk::TableUpdate<TmMatchRoundPlayer>,
     match_record: __sdk::TableUpdate<TmRecord>,
-    match_round: __sdk::TableUpdate<TabTmMatchRoundPlayer>,
+    match_round: __sdk::TableUpdate<TmMatchRoundPlayer>,
     match_round_ext: __sdk::TableUpdate<TabTmMatchRoundPlayerExt>,
     match_state: __sdk::TableUpdate<TmMatchState>,
     my_jobs: __sdk::TableUpdate<TmWorkerJobs>,
@@ -1152,7 +1154,7 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.match_record =
             cache.apply_diff_to_table::<TmRecord>("match_record", &self.match_record);
         diff.match_round =
-            cache.apply_diff_to_table::<TabTmMatchRoundPlayer>("match_round", &self.match_round);
+            cache.apply_diff_to_table::<TmMatchRoundPlayer>("match_round", &self.match_round);
         diff.match_round_ext = cache.apply_diff_to_table::<TabTmMatchRoundPlayerExt>(
             "match_round_ext",
             &self.match_round_ext,
@@ -1416,7 +1418,7 @@ pub struct AppliedDiff<'r> {
     map_record: __sdk::TableAppliedDiff<'r, TmRecord>,
     match_leaderboard: __sdk::TableAppliedDiff<'r, TmMatchRoundPlayer>,
     match_record: __sdk::TableAppliedDiff<'r, TmRecord>,
-    match_round: __sdk::TableAppliedDiff<'r, TabTmMatchRoundPlayer>,
+    match_round: __sdk::TableAppliedDiff<'r, TmMatchRoundPlayer>,
     match_round_ext: __sdk::TableAppliedDiff<'r, TabTmMatchRoundPlayerExt>,
     match_state: __sdk::TableAppliedDiff<'r, TmMatchState>,
     my_jobs: __sdk::TableAppliedDiff<'r, TmWorkerJobs>,
@@ -1482,7 +1484,7 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             event,
         );
         callbacks.invoke_table_row_callbacks::<TmRecord>("match_record", &self.match_record, event);
-        callbacks.invoke_table_row_callbacks::<TabTmMatchRoundPlayer>(
+        callbacks.invoke_table_row_callbacks::<TmMatchRoundPlayer>(
             "match_round",
             &self.match_round,
             event,
