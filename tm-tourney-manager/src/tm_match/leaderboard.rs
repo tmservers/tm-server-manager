@@ -107,13 +107,14 @@ impl TabTmMatchRoundPlayerExt {
 pub struct TmMatchRoundPlayer {
     pub account_id: Uuid,
 
+    id: u32,
     // We can most likely omit this match_id because we already query after the match so it should be obvious.
     // For now its not really an issue but maybe this can be replaced with something else.
     match_id: u32,
     // We can most likely omit this. maybe we could include the best match round time? -> then we should rename.
     time: i32,
     // The points of the round.
-    points: i32,
+    score: i32,
 
     round: u16,
     position: u16,
@@ -122,8 +123,7 @@ pub struct TmMatchRoundPlayer {
 #[derive(Debug, SpacetimeType, Clone)]
 pub struct TmMatchRoundPlayerExt {
     round_actions: Vec<PlayerAction>,
-
-    pub account_id: Uuid,
+    id: u32,
     match_id: u32,
     round: u16,
 }
@@ -178,15 +178,16 @@ pub fn match_leaderboard(
                 .find(p.internal_account_id)
                 .unwrap()
                 .account_id,
+            id: p.id,
             match_id,
             time: p.time,
-            points: p.points,
+            score: p.points,
             round: p.round,
             position: 0,
         })
         .collect::<Vec<_>>();
 
-    standings.sort_by_key(|v| v.points);
+    standings.sort_by_key(|v| v.score);
     for (position, entry) in standings.iter_mut().enumerate() {
         entry.position = (position + 1) as u16;
     }
@@ -224,13 +225,14 @@ pub fn match_round(
                 .unwrap()
                 .account_id,
             match_id,
+            id: p.id,
             time: p.time,
-            points: p.points,
+            score: p.points,
             round: p.round,
             position: 0,
         })
         .collect::<Vec<_>>();
-    standings.sort_by_key(|v| v.points);
+    standings.sort_by_key(|v| v.score);
     for (position, entry) in standings.iter_mut().enumerate() {
         entry.position = (position + 1) as u16;
     }
@@ -241,7 +243,7 @@ pub fn match_round(
 #[view(accessor=match_round_ext,public)]
 pub fn match_round_ext(
     ctx: &AnonymousViewContext, /* match_id: u32, round: u16 */
-) -> Vec<TabTmMatchRoundPlayerExt> {
+) -> Vec<TmMatchRoundPlayerExt> {
     let match_id = 1u32;
     let mut round = 0u16;
 
@@ -256,5 +258,11 @@ pub fn match_round_ext(
         .tab_tm_match_round_player_ext()
         .match_round()
         .filter((match_id, round))
+        .map(|p| TmMatchRoundPlayerExt {
+            round_actions: p.round_actions,
+            id: p.id,
+            match_id,
+            round,
+        })
         .collect()
 }

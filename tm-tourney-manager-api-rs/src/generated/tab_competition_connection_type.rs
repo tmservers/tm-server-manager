@@ -17,6 +17,7 @@ pub struct TabCompetitionConnection {
     pub connection_from_variant: u8,
     pub connection_to_variant: u8,
     pub connection_settings: ConnectionSettings,
+    pub connection_settings_ready: bool,
 }
 
 impl __sdk::InModule for TabCompetitionConnection {
@@ -36,6 +37,7 @@ pub struct TabCompetitionConnectionCols {
     pub connection_to_variant: __sdk::__query_builder::Col<TabCompetitionConnection, u8>,
     pub connection_settings:
         __sdk::__query_builder::Col<TabCompetitionConnection, ConnectionSettings>,
+    pub connection_settings_ready: __sdk::__query_builder::Col<TabCompetitionConnection, bool>,
 }
 
 impl __sdk::__query_builder::HasCols for TabCompetitionConnection {
@@ -58,6 +60,10 @@ impl __sdk::__query_builder::HasCols for TabCompetitionConnection {
             connection_settings: __sdk::__query_builder::Col::new(
                 table_name,
                 "connection_settings",
+            ),
+            connection_settings_ready: __sdk::__query_builder::Col::new(
+                table_name,
+                "connection_settings_ready",
             ),
         }
     }

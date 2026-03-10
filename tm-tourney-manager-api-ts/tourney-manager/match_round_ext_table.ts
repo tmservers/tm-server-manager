@@ -18,8 +18,7 @@ export default __t.row({
   get roundActions() {
     return __t.array(PlayerAction).name("round_actions");
   },
-  internalAccountId: __t.u32().name("internal_account_id"),
-  matchId: __t.u32().name("match_id"),
   id: __t.u32(),
+  matchId: __t.u32().name("match_id"),
   round: __t.u16(),
 });

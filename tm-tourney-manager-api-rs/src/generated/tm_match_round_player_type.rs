@@ -8,9 +8,10 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[sats(crate = __lib)]
 pub struct TmMatchRoundPlayer {
     pub account_id: __sdk::Uuid,
+    pub id: u32,
     pub match_id: u32,
     pub time: i32,
-    pub points: i32,
+    pub score: i32,
     pub round: u16,
     pub position: u16,
 }
@@ -24,9 +25,10 @@ impl __sdk::InModule for TmMatchRoundPlayer {
 /// Provides typed access to columns for query building.
 pub struct TmMatchRoundPlayerCols {
     pub account_id: __sdk::__query_builder::Col<TmMatchRoundPlayer, __sdk::Uuid>,
+    pub id: __sdk::__query_builder::Col<TmMatchRoundPlayer, u32>,
     pub match_id: __sdk::__query_builder::Col<TmMatchRoundPlayer, u32>,
     pub time: __sdk::__query_builder::Col<TmMatchRoundPlayer, i32>,
-    pub points: __sdk::__query_builder::Col<TmMatchRoundPlayer, i32>,
+    pub score: __sdk::__query_builder::Col<TmMatchRoundPlayer, i32>,
     pub round: __sdk::__query_builder::Col<TmMatchRoundPlayer, u16>,
     pub position: __sdk::__query_builder::Col<TmMatchRoundPlayer, u16>,
 }
@@ -36,9 +38,10 @@ impl __sdk::__query_builder::HasCols for TmMatchRoundPlayer {
     fn cols(table_name: &'static str) -> Self::Cols {
         TmMatchRoundPlayerCols {
             account_id: __sdk::__query_builder::Col::new(table_name, "account_id"),
+            id: __sdk::__query_builder::Col::new(table_name, "id"),
             match_id: __sdk::__query_builder::Col::new(table_name, "match_id"),
             time: __sdk::__query_builder::Col::new(table_name, "time"),
-            points: __sdk::__query_builder::Col::new(table_name, "points"),
+            score: __sdk::__query_builder::Col::new(table_name, "score"),
             round: __sdk::__query_builder::Col::new(table_name, "round"),
             position: __sdk::__query_builder::Col::new(table_name, "position"),
         }
