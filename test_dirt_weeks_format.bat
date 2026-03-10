@@ -14,24 +14,24 @@ spacetime call tm-tourney-manager connection_create "{""MatchV1"": 2 }" "{""Matc
 
 
 :: Template for a Match Format
-spacetime call tm-tourney-manager competition_create "Match Template" 1 0
-spacetime call tm-tourney-manager registration_create "Registration" 3 0
-spacetime call tm-tourney-manager match_create "Seeding" 3 0
+spacetime call tm-tourney-manager competition_template_create "Match Template" 1 0
+spacetime call tm-tourney-manager registration_template_create "Registration" 3 0
+spacetime call tm-tourney-manager match_template_create "Seeding" 3 0
 spacetime call tm-tourney-manager connection_create "{""RegistrationV1"": 1 }" "{""MatchV1"": 4 }" "{""Data"": {}}"
     :: Template for a Division Format
-spacetime call tm-tourney-manager competition_create "Division Template" 3 0
-spacetime call tm-tourney-manager match_create "Round 1: Match 1" 4 0
-spacetime call tm-tourney-manager match_create "Round 1: Match 2" 4 0
-spacetime call tm-tourney-manager match_create "Round 1: Match 3" 4 0
-spacetime call tm-tourney-manager match_create "Round 1: Match 4" 4 0
+spacetime call tm-tourney-manager competition_template_create "Division Template" 3 0
+spacetime call tm-tourney-manager match_template_create "Round 1: Match 1" 4 0
+spacetime call tm-tourney-manager match_template_create "Round 1: Match 2" 4 0
+spacetime call tm-tourney-manager match_template_create "Round 1: Match 3" 4 0
+spacetime call tm-tourney-manager match_template_create "Round 1: Match 4" 4 0
 spacetime call tm-tourney-manager connection_create "{""CompetitionV1"": 4 }" "{""MatchV1"": 5 }" "{""Data"": {}}"
 spacetime call tm-tourney-manager connection_create "{""CompetitionV1"": 4 }" "{""MatchV1"": 6 }" "{""Data"": {}}"
 spacetime call tm-tourney-manager connection_create "{""CompetitionV1"": 4 }" "{""MatchV1"": 7 }" "{""Data"": {}}"
 spacetime call tm-tourney-manager connection_create "{""CompetitionV1"": 4 }" "{""MatchV1"": 8 }" "{""Data"": {}}"
-spacetime call tm-tourney-manager match_create "Round 2: Match 1" 4 0
-spacetime call tm-tourney-manager match_create "Round 2: Match 2" 4 0
-spacetime call tm-tourney-manager match_create "Round 2: Match 3" 4 0
-spacetime call tm-tourney-manager match_create "Round 2: Match 4" 4 0
+spacetime call tm-tourney-manager match_template_create "Round 2: Match 1" 4 0
+spacetime call tm-tourney-manager match_template_create "Round 2: Match 2" 4 0
+spacetime call tm-tourney-manager match_template_create "Round 2: Match 3" 4 0
+spacetime call tm-tourney-manager match_template_create "Round 2: Match 4" 4 0
 spacetime call tm-tourney-manager connection_create "{""MatchV1"": 5 }" "{""MatchV1"": 9 }" "{""Data"": {}}"
 spacetime call tm-tourney-manager connection_create "{""MatchV1"": 5 }" "{""MatchV1"": 10 }" "{""Data"": {}}"
 spacetime call tm-tourney-manager connection_create "{""MatchV1"": 5 }" "{""MatchV1"": 11 }" "{""Data"": {}}"

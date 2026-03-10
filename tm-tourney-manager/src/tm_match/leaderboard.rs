@@ -29,6 +29,10 @@ pub(super) struct PlayerActionCheckpoint {
     index(accessor=match_round_player, hash(columns=[match_id,round,internal_account_id]))
 )]
 pub struct TabTmMatchRoundPlayer {
+    #[auto_inc]
+    #[primary_key]
+    pub id: u32,
+
     internal_account_id: u32,
 
     match_id: u32,
@@ -37,8 +41,6 @@ pub struct TabTmMatchRoundPlayer {
     points: i32,
 
     round: u16,
-    // maybe accumulate this in the view.
-    // match_points: i32,
 }
 
 impl TabTmMatchRoundPlayer {
@@ -49,6 +51,7 @@ impl TabTmMatchRoundPlayer {
             round,
             time: 0,
             points: 0,
+            id: 0,
         }
     }
 }
@@ -63,20 +66,19 @@ pub struct TabTmMatchRoundPlayerExt {
 
     internal_account_id: u32,
     match_id: u32,
-    #[auto_inc]
     #[primary_key]
     pub id: u32,
     round: u16,
 }
 
 impl TabTmMatchRoundPlayerExt {
-    pub fn new(match_id: u32, internal_account_id: u32, round: u16) -> Self {
+    pub fn new(id: u32, match_id: u32, internal_account_id: u32, round: u16) -> Self {
         Self {
             internal_account_id,
             match_id,
             round,
             round_actions: Vec::new(),
-            id: 0,
+            id,
         }
     }
 

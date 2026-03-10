@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use petgraph::acyclic::Acyclic;
-use spacetimedb::{DbContext, ReducerContext, SpacetimeType, Table, ViewContext, reducer, view};
+use spacetimedb::{ReducerContext, SpacetimeType, Table, ViewContext, reducer, view};
 
 use crate::{
     authorization::Authorization,
@@ -10,17 +10,14 @@ use crate::{
             CompetitionConnectionData, tab_competition_connection_data,
             tab_competition_connection_data__view,
         },
-        tab_competition, tab_competition__view,
+        tab_competition,
     },
     portal::tab_portal,
     project::permissions::ProjectPermissionsV1,
     raw_server::player::PermittedPlayer,
     registration::tab_registration,
     scheduling::tab_schedule,
-    tm_match::{
-        leaderboard::{match_leaderboard, tab_tm_match_round_player__view},
-        match_set_preparation, tab_tm_match, tab_tm_match__view,
-    },
+    tm_match::{leaderboard::match_leaderboard, match_set_preparation, tab_tm_match},
 };
 
 pub(super) mod connection_data;
@@ -31,11 +28,6 @@ pub(crate) mod node_position;
     index(accessor=target_nodes_of,hash(columns=[connection_from_variant,connection_from])),
     index(accessor=origin_nodes_of,hash(columns=[connection_to_variant,connection_to]))
 )]
-/* #[spacetimedb::table(accessor= tab_competition_connection_template,
-    index(accessor=connection_exists,hash(columns=[connection_from_variant,connection_to_variant,connection_from,connection_to])),
-    index(accessor=target_nodes_of,hash(columns=[connection_from_variant,connection_from])),
-    index(accessor=origin_nodes_of,hash(columns=[connection_to_variant,connection_to]))
-)] */
 #[derive(Debug, Clone, Copy)]
 pub struct TabCompetitionConnection {
     // We need this that the Data variant can reference this.
@@ -55,8 +47,7 @@ pub struct TabCompetitionConnection {
     connection_to_variant: u8,
 
     connection_settings: ConnectionSettings,
-    /* //Wheter the connection has served its purpose and can be skipped.
-    //template: bool, */
+    connection_settings_ready: bool,
 }
 
 impl TabCompetitionConnection {
@@ -441,6 +432,7 @@ pub fn connection_create(
             connection_from_variant,
             connection_to_variant,
             connection_settings: setting,
+            connection_settings_ready: false,
         })?;
 
     //If we insert Data Settings we also need to add a row in the data table.

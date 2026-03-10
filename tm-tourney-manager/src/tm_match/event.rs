@@ -51,17 +51,18 @@ pub(crate) fn handle_match_event(
                 .unwrap()
                 .get_round();
 
+            let player =
+                ctx.db
+                    .tab_tm_match_round_player()
+                    .try_insert(TabTmMatchRoundPlayer::new(
+                        match_id,
+                        internal_account_id,
+                        round,
+                    ))?;
             ctx.db
                 .tab_tm_match_round_player_ext()
                 .try_insert(TabTmMatchRoundPlayerExt::new(
-                    match_id,
-                    internal_account_id,
-                    round,
-                ))?;
-
-            ctx.db
-                .tab_tm_match_round_player()
-                .try_insert(TabTmMatchRoundPlayer::new(
+                    player.id,
                     match_id,
                     internal_account_id,
                     round,
