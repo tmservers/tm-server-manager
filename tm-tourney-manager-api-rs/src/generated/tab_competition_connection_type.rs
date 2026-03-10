@@ -10,14 +10,13 @@ use super::connection_settings_type::ConnectionSettings;
 #[sats(crate = __lib)]
 pub struct TabCompetitionConnection {
     pub id: u32,
-    pub competition_id: u32,
+    pub parent_id: u32,
     pub project_id: u32,
     pub connection_from: u32,
     pub connection_to: u32,
     pub connection_from_variant: u8,
     pub connection_to_variant: u8,
     pub connection_settings: ConnectionSettings,
-    pub resolved: bool,
 }
 
 impl __sdk::InModule for TabCompetitionConnection {
@@ -29,7 +28,7 @@ impl __sdk::InModule for TabCompetitionConnection {
 /// Provides typed access to columns for query building.
 pub struct TabCompetitionConnectionCols {
     pub id: __sdk::__query_builder::Col<TabCompetitionConnection, u32>,
-    pub competition_id: __sdk::__query_builder::Col<TabCompetitionConnection, u32>,
+    pub parent_id: __sdk::__query_builder::Col<TabCompetitionConnection, u32>,
     pub project_id: __sdk::__query_builder::Col<TabCompetitionConnection, u32>,
     pub connection_from: __sdk::__query_builder::Col<TabCompetitionConnection, u32>,
     pub connection_to: __sdk::__query_builder::Col<TabCompetitionConnection, u32>,
@@ -37,7 +36,6 @@ pub struct TabCompetitionConnectionCols {
     pub connection_to_variant: __sdk::__query_builder::Col<TabCompetitionConnection, u8>,
     pub connection_settings:
         __sdk::__query_builder::Col<TabCompetitionConnection, ConnectionSettings>,
-    pub resolved: __sdk::__query_builder::Col<TabCompetitionConnection, bool>,
 }
 
 impl __sdk::__query_builder::HasCols for TabCompetitionConnection {
@@ -45,7 +43,7 @@ impl __sdk::__query_builder::HasCols for TabCompetitionConnection {
     fn cols(table_name: &'static str) -> Self::Cols {
         TabCompetitionConnectionCols {
             id: __sdk::__query_builder::Col::new(table_name, "id"),
-            competition_id: __sdk::__query_builder::Col::new(table_name, "competition_id"),
+            parent_id: __sdk::__query_builder::Col::new(table_name, "parent_id"),
             project_id: __sdk::__query_builder::Col::new(table_name, "project_id"),
             connection_from: __sdk::__query_builder::Col::new(table_name, "connection_from"),
             connection_to: __sdk::__query_builder::Col::new(table_name, "connection_to"),
@@ -61,7 +59,6 @@ impl __sdk::__query_builder::HasCols for TabCompetitionConnection {
                 table_name,
                 "connection_settings",
             ),
-            resolved: __sdk::__query_builder::Col::new(table_name, "resolved"),
         }
     }
 }
@@ -70,16 +67,16 @@ impl __sdk::__query_builder::HasCols for TabCompetitionConnection {
 ///
 /// Provides typed access to indexed columns for query building.
 pub struct TabCompetitionConnectionIxCols {
-    pub competition_id: __sdk::__query_builder::IxCol<TabCompetitionConnection, u32>,
     pub id: __sdk::__query_builder::IxCol<TabCompetitionConnection, u32>,
+    pub parent_id: __sdk::__query_builder::IxCol<TabCompetitionConnection, u32>,
 }
 
 impl __sdk::__query_builder::HasIxCols for TabCompetitionConnection {
     type IxCols = TabCompetitionConnectionIxCols;
     fn ix_cols(table_name: &'static str) -> Self::IxCols {
         TabCompetitionConnectionIxCols {
-            competition_id: __sdk::__query_builder::IxCol::new(table_name, "competition_id"),
             id: __sdk::__query_builder::IxCol::new(table_name, "id"),
+            parent_id: __sdk::__query_builder::IxCol::new(table_name, "parent_id"),
         }
     }
 }

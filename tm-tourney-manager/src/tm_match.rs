@@ -1,5 +1,5 @@
 use spacetimedb::{Query, ReducerContext, SpacetimeType, Table, ViewContext, reducer, table, view};
-use tm_server_types::{config::ServerConfig, event::Event};
+use tm_server_types::config::ServerConfig;
 
 use crate::{
     authorization::Authorization,
@@ -16,16 +16,14 @@ use crate::{
         servers::{project_available_server_pool, tab_project_server},
     },
     raw_server::{
-        RawServerOccupation, RawServerV1,
+        RawServerOccupation,
         config::{RawServerConfig, tab_raw_server_config},
-        tab_raw_server, tab_raw_server_occupation, user_available_server_pool,
-        user_raw_server_pool,
+        tab_raw_server, tab_raw_server_occupation,
     },
     tm_match::{
         state::{TmMatchState, tab_tm_match_state},
-        template::tab_match_template,
+        template::match_template_instantiate,
     },
-    user::user,
 };
 
 pub mod event;
@@ -54,6 +52,7 @@ pub mod template;
 /// - *End.* The match has concluded. Loads the post_match_config if it is present. Releases
 /// the captured server. Advances to [MatchStatus::Ended].
 #[table(accessor= tab_tm_match)]
+//#[table(accessor=tab_match_template)]
 pub struct TmMatchV1 {
     name: String,
 
@@ -63,7 +62,8 @@ pub struct TmMatchV1 {
 
     /// The project this match is associated with.
     project_id: u32,
-    competition_id: u32,
+    #[index(hash)]
+    parent_id: u32,
 
     /// The moment the server is captured by the match the pre_match_config gets loaded in.
     /// Only if it is defined. Useful for hiding project maps till the actual start.
@@ -76,6 +76,7 @@ pub struct TmMatchV1 {
     status: MatchStatus,
 
     auto_provision_server: bool,
+    template: bool,
 }
 
 impl TmMatchV1 {
@@ -115,7 +116,18 @@ impl TmMatchV1 {
     }
 
     pub fn get_comp_id(&self) -> u32 {
-        self.competition_id
+        self.parent_id
+    }
+
+    pub fn is_template(&self) -> bool {
+        self.template
+    }
+
+    pub(crate) fn instantiate(mut self, parent_id: u32) -> Self {
+        self.template = false;
+        self.parent_id = parent_id;
+        self.id = 0;
+        self
     }
 
     pub(crate) fn end_match(&mut self) {
@@ -141,12 +153,12 @@ pub enum MatchStatus {
 pub fn match_create(
     ctx: &ReducerContext,
     name: String,
-    competition_id: u32,
+    parent_id: u32,
     with_template: u32,
 ) -> Result<(), String> {
     let user = ctx.get_user_account()?;
 
-    let Some(parent_competition) = ctx.db.tab_competition().id().find(competition_id) else {
+    let Some(parent_competition) = ctx.db.tab_competition().id().find(parent_id) else {
         return Err("Invalid competition".into());
     };
 
@@ -154,35 +166,39 @@ pub fn match_create(
         .permission(ProjectPermissionsV1::MATCH_CREATE)
         .authorize()?;
 
-    // Create an uncommitted match
-    let mut tm_match = TmMatchV1 {
-        id: 0,
-        competition_id,
-        project_id: parent_competition.get_project(),
-        name,
-        status: MatchStatus::Configuring,
-        pre_match_config: 0,
-        match_config: 0,
-        post_match_config: 0,
-        auto_provision_server: true,
-    };
+    if parent_competition.is_template() {
+        return Err(
+            "Cannot add a normal match to a template. Try do add a template match to id.".into(),
+        );
+    }
 
     // Try to load template if provided
     if with_template != 0 {
-        let Some(template) = ctx.db.tab_match_template().id().find(with_template) else {
-            return Err("Template not found.".into());
+        match_template_instantiate(ctx, with_template)?;
+    } else {
+        // Create an uncommitted match
+        let tm_match = TmMatchV1 {
+            id: 0,
+            parent_id,
+            project_id: parent_competition.get_project(),
+            name,
+            status: MatchStatus::Configuring,
+            pre_match_config: 0,
+            match_config: 0,
+            post_match_config: 0,
+            auto_provision_server: true,
+            template: false,
         };
-        tm_match.match_config = template.get_config_id()
+
+        let tm_match = ctx.db.tab_tm_match().try_insert(tm_match)?;
+
+        ctx.db
+            .tab_competition_node_position()
+            .try_insert(TabCompetitionNodePosition::new(
+                NodeKindHandle::MatchV1(tm_match.id),
+                tm_match.parent_id,
+            ))?;
     }
-
-    let tm_match = ctx.db.tab_tm_match().try_insert(tm_match)?;
-
-    ctx.db
-        .tab_competition_node_position()
-        .try_insert(TabCompetitionNodePosition::new(
-            NodeKindHandle::MatchV1(tm_match.id),
-            tm_match.competition_id,
-        ))?;
 
     Ok(())
 }
@@ -441,10 +457,10 @@ pub fn match_delete(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
     for node in ctx
         .db
         .tab_competition_connection()
-        .competition_id()
-        .filter(tm_match.competition_id)
+        .parent_id()
+        .filter(tm_match.parent_id)
     {
-        if node.node_from() == node_ref || node.node_to() == node_ref {
+        if node.connection_origin() == node_ref || node.connection_target() == node_ref {
             ctx.db.tab_competition_connection().delete(node);
         }
     }

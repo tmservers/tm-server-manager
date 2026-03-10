@@ -11,6 +11,6 @@ import {
 } from "spacetimedb";
 
 export default {
-  competitionId: __t.u32(),
+  parentId: __t.u32(),
   scheduledAt: __t.timestamp(),
 };

@@ -18,11 +18,14 @@ pub struct Portal {
     #[primary_key]
     pub id: u32,
 
+    #[index(hash)]
     parent_id: u32,
     project_id: u32,
 
     target_id: u32,
     target_variant: u8,
+
+    template: bool,
 }
 
 impl Portal {
@@ -32,6 +35,10 @@ impl Portal {
 
     pub(crate) fn get_project(&self) -> u32 {
         self.project_id
+    }
+
+    pub(crate) fn is_template(&self) -> bool {
+        self.template
     }
 }
 
@@ -68,6 +75,7 @@ fn portal_create(
         project_id: competition.get_project(),
         target_id,
         target_variant,
+        template: false,
     })?;
 
     Ok(())

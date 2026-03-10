@@ -13,6 +13,7 @@ pub struct Portal {
     pub project_id: u32,
     pub target_id: u32,
     pub target_variant: u8,
+    pub template: bool,
 }
 
 impl __sdk::InModule for Portal {
@@ -29,6 +30,7 @@ pub struct PortalCols {
     pub project_id: __sdk::__query_builder::Col<Portal, u32>,
     pub target_id: __sdk::__query_builder::Col<Portal, u32>,
     pub target_variant: __sdk::__query_builder::Col<Portal, u8>,
+    pub template: __sdk::__query_builder::Col<Portal, bool>,
 }
 
 impl __sdk::__query_builder::HasCols for Portal {
@@ -41,6 +43,7 @@ impl __sdk::__query_builder::HasCols for Portal {
             project_id: __sdk::__query_builder::Col::new(table_name, "project_id"),
             target_id: __sdk::__query_builder::Col::new(table_name, "target_id"),
             target_variant: __sdk::__query_builder::Col::new(table_name, "target_variant"),
+            template: __sdk::__query_builder::Col::new(table_name, "template"),
         }
     }
 }
@@ -50,6 +53,7 @@ impl __sdk::__query_builder::HasCols for Portal {
 /// Provides typed access to indexed columns for query building.
 pub struct PortalIxCols {
     pub id: __sdk::__query_builder::IxCol<Portal, u32>,
+    pub parent_id: __sdk::__query_builder::IxCol<Portal, u32>,
 }
 
 impl __sdk::__query_builder::HasIxCols for Portal {
@@ -57,6 +61,7 @@ impl __sdk::__query_builder::HasIxCols for Portal {
     fn ix_cols(table_name: &'static str) -> Self::IxCols {
         PortalIxCols {
             id: __sdk::__query_builder::IxCol::new(table_name, "id"),
+            parent_id: __sdk::__query_builder::IxCol::new(table_name, "parent_id"),
         }
     }
 }

@@ -10,13 +10,7 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-import {
-  RegistrationSettings,
-} from "./types";
-
 export default {
-  competitionId: __t.u32(),
-  get registrationSettings() {
-    return RegistrationSettings;
-  },
+  name: __t.string(),
+  parentId: __t.u32(),
 };

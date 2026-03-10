@@ -5,19 +5,16 @@
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 use super::competition_status_type::CompetitionStatus;
-use super::registration_settings_type::RegistrationSettings;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct CompetitionV1 {
+    pub name: String,
     pub id: u32,
     pub project_id: u32,
     pub parent_id: u32,
-    pub name: String,
     pub status: CompetitionStatus,
-    pub starting_at: Option<__sdk::Timestamp>,
-    pub ending_at: Option<__sdk::Timestamp>,
-    pub registration_settings: RegistrationSettings,
+    pub template: bool,
 }
 
 impl __sdk::InModule for CompetitionV1 {
@@ -28,31 +25,24 @@ impl __sdk::InModule for CompetitionV1 {
 ///
 /// Provides typed access to columns for query building.
 pub struct CompetitionV1Cols {
+    pub name: __sdk::__query_builder::Col<CompetitionV1, String>,
     pub id: __sdk::__query_builder::Col<CompetitionV1, u32>,
     pub project_id: __sdk::__query_builder::Col<CompetitionV1, u32>,
     pub parent_id: __sdk::__query_builder::Col<CompetitionV1, u32>,
-    pub name: __sdk::__query_builder::Col<CompetitionV1, String>,
     pub status: __sdk::__query_builder::Col<CompetitionV1, CompetitionStatus>,
-    pub starting_at: __sdk::__query_builder::Col<CompetitionV1, Option<__sdk::Timestamp>>,
-    pub ending_at: __sdk::__query_builder::Col<CompetitionV1, Option<__sdk::Timestamp>>,
-    pub registration_settings: __sdk::__query_builder::Col<CompetitionV1, RegistrationSettings>,
+    pub template: __sdk::__query_builder::Col<CompetitionV1, bool>,
 }
 
 impl __sdk::__query_builder::HasCols for CompetitionV1 {
     type Cols = CompetitionV1Cols;
     fn cols(table_name: &'static str) -> Self::Cols {
         CompetitionV1Cols {
+            name: __sdk::__query_builder::Col::new(table_name, "name"),
             id: __sdk::__query_builder::Col::new(table_name, "id"),
             project_id: __sdk::__query_builder::Col::new(table_name, "project_id"),
             parent_id: __sdk::__query_builder::Col::new(table_name, "parent_id"),
-            name: __sdk::__query_builder::Col::new(table_name, "name"),
             status: __sdk::__query_builder::Col::new(table_name, "status"),
-            starting_at: __sdk::__query_builder::Col::new(table_name, "starting_at"),
-            ending_at: __sdk::__query_builder::Col::new(table_name, "ending_at"),
-            registration_settings: __sdk::__query_builder::Col::new(
-                table_name,
-                "registration_settings",
-            ),
+            template: __sdk::__query_builder::Col::new(table_name, "template"),
         }
     }
 }
@@ -62,6 +52,7 @@ impl __sdk::__query_builder::HasCols for CompetitionV1 {
 /// Provides typed access to indexed columns for query building.
 pub struct CompetitionV1IxCols {
     pub id: __sdk::__query_builder::IxCol<CompetitionV1, u32>,
+    pub parent_id: __sdk::__query_builder::IxCol<CompetitionV1, u32>,
 }
 
 impl __sdk::__query_builder::HasIxCols for CompetitionV1 {
@@ -69,6 +60,7 @@ impl __sdk::__query_builder::HasIxCols for CompetitionV1 {
     fn ix_cols(table_name: &'static str) -> Self::IxCols {
         CompetitionV1IxCols {
             id: __sdk::__query_builder::IxCol::new(table_name, "id"),
+            parent_id: __sdk::__query_builder::IxCol::new(table_name, "parent_id"),
         }
     }
 }

@@ -4,20 +4,18 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::server_config_type::ServerConfig;
-
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct MatchTemplateCreateArgs {
     pub name: String,
-    pub config: ServerConfig,
+    pub parent_id: u32,
 }
 
 impl From<MatchTemplateCreateArgs> for super::Reducer {
     fn from(args: MatchTemplateCreateArgs) -> Self {
         Self::MatchTemplateCreate {
             name: args.name,
-            config: args.config,
+            parent_id: args.parent_id,
         }
     }
 }
@@ -37,8 +35,8 @@ pub trait match_template_create {
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
     /// /// Use [`match_template_create:match_template_create_then`] to run a callback after the reducer completes.
-    fn match_template_create(&self, name: String, config: ServerConfig) -> __sdk::Result<()> {
-        self.match_template_create_then(name, config, |_, _| {})
+    fn match_template_create(&self, name: String, parent_id: u32) -> __sdk::Result<()> {
+        self.match_template_create_then(name, parent_id, |_, _| {})
     }
 
     /// Request that the remote module invoke the reducer `match_template_create` to run as soon as possible,
@@ -50,7 +48,7 @@ pub trait match_template_create {
     fn match_template_create_then(
         &self,
         name: String,
-        config: ServerConfig,
+        parent_id: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -62,13 +60,13 @@ impl match_template_create for super::RemoteReducers {
     fn match_template_create_then(
         &self,
         name: String,
-        config: ServerConfig,
+        parent_id: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     ) -> __sdk::Result<()> {
         self.imp
-            .invoke_reducer_with_callback(MatchTemplateCreateArgs { name, config }, callback)
+            .invoke_reducer_with_callback(MatchTemplateCreateArgs { name, parent_id }, callback)
     }
 }

@@ -15,17 +15,31 @@ pub struct ScheduleV1 {
 
     scheduled_at: ScheduleAt,
 
-    competition_id: u32,
+    #[index(hash)]
+    parent_id: u32,
     project_id: u32,
+
+    template: bool,
 }
 
 impl ScheduleV1 {
-    pub(crate) fn get_comp_id(&self) -> u32 {
-        self.competition_id
+    pub(crate) fn parent_id(&self) -> u32 {
+        self.parent_id
     }
 
     pub(crate) fn get_project(&self) -> u32 {
         self.project_id
+    }
+
+    pub(crate) fn is_template(&self) -> bool {
+        self.template
+    }
+
+    pub(crate) fn instantiate(mut self, parent_id: u32) -> Self {
+        self.template = false;
+        self.parent_id = parent_id;
+        self.scheduled_id = 0;
+        self
     }
 }
 
@@ -47,18 +61,19 @@ pub(crate) fn on_schedule_triggered(ctx: &ReducerContext, arg: ScheduleV1) -> Re
 #[reducer]
 pub fn create_schedule(
     ctx: &ReducerContext,
-    competition_id: u32,
+    parent_id: u32,
     scheduled_at: Timestamp,
 ) -> Result<(), String> {
-    let Some(parent_competition) = ctx.db.tab_competition().id().find(competition_id) else {
+    let Some(parent_competition) = ctx.db.tab_competition().id().find(parent_id) else {
         return Err("Invalid competition".into());
     };
 
     let schedule = ScheduleV1 {
         scheduled_id: 0,
         scheduled_at: ScheduleAt::Time(scheduled_at),
-        competition_id,
+        parent_id,
         project_id: parent_competition.get_project(),
+        template: false,
     };
 
     ctx.db.tab_schedule().try_insert(schedule)?;

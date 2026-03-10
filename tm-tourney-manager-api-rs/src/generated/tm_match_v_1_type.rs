@@ -12,12 +12,13 @@ pub struct TmMatchV1 {
     pub name: String,
     pub id: u32,
     pub project_id: u32,
-    pub competition_id: u32,
+    pub parent_id: u32,
     pub pre_match_config: u32,
     pub match_config: u32,
     pub post_match_config: u32,
     pub status: MatchStatus,
     pub auto_provision_server: bool,
+    pub template: bool,
 }
 
 impl __sdk::InModule for TmMatchV1 {
@@ -31,12 +32,13 @@ pub struct TmMatchV1Cols {
     pub name: __sdk::__query_builder::Col<TmMatchV1, String>,
     pub id: __sdk::__query_builder::Col<TmMatchV1, u32>,
     pub project_id: __sdk::__query_builder::Col<TmMatchV1, u32>,
-    pub competition_id: __sdk::__query_builder::Col<TmMatchV1, u32>,
+    pub parent_id: __sdk::__query_builder::Col<TmMatchV1, u32>,
     pub pre_match_config: __sdk::__query_builder::Col<TmMatchV1, u32>,
     pub match_config: __sdk::__query_builder::Col<TmMatchV1, u32>,
     pub post_match_config: __sdk::__query_builder::Col<TmMatchV1, u32>,
     pub status: __sdk::__query_builder::Col<TmMatchV1, MatchStatus>,
     pub auto_provision_server: __sdk::__query_builder::Col<TmMatchV1, bool>,
+    pub template: __sdk::__query_builder::Col<TmMatchV1, bool>,
 }
 
 impl __sdk::__query_builder::HasCols for TmMatchV1 {
@@ -46,7 +48,7 @@ impl __sdk::__query_builder::HasCols for TmMatchV1 {
             name: __sdk::__query_builder::Col::new(table_name, "name"),
             id: __sdk::__query_builder::Col::new(table_name, "id"),
             project_id: __sdk::__query_builder::Col::new(table_name, "project_id"),
-            competition_id: __sdk::__query_builder::Col::new(table_name, "competition_id"),
+            parent_id: __sdk::__query_builder::Col::new(table_name, "parent_id"),
             pre_match_config: __sdk::__query_builder::Col::new(table_name, "pre_match_config"),
             match_config: __sdk::__query_builder::Col::new(table_name, "match_config"),
             post_match_config: __sdk::__query_builder::Col::new(table_name, "post_match_config"),
@@ -55,6 +57,7 @@ impl __sdk::__query_builder::HasCols for TmMatchV1 {
                 table_name,
                 "auto_provision_server",
             ),
+            template: __sdk::__query_builder::Col::new(table_name, "template"),
         }
     }
 }
@@ -64,6 +67,7 @@ impl __sdk::__query_builder::HasCols for TmMatchV1 {
 /// Provides typed access to indexed columns for query building.
 pub struct TmMatchV1IxCols {
     pub id: __sdk::__query_builder::IxCol<TmMatchV1, u32>,
+    pub parent_id: __sdk::__query_builder::IxCol<TmMatchV1, u32>,
 }
 
 impl __sdk::__query_builder::HasIxCols for TmMatchV1 {
@@ -71,6 +75,7 @@ impl __sdk::__query_builder::HasIxCols for TmMatchV1 {
     fn ix_cols(table_name: &'static str) -> Self::IxCols {
         TmMatchV1IxCols {
             id: __sdk::__query_builder::IxCol::new(table_name, "id"),
+            parent_id: __sdk::__query_builder::IxCol::new(table_name, "parent_id"),
         }
     }
 }

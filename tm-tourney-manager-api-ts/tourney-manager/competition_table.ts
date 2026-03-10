@@ -11,21 +11,16 @@ import {
 } from "spacetimedb";
 import {
   CompetitionStatus,
-  RegistrationSettings,
 } from "./types";
 
 
 export default __t.row({
+  name: __t.string(),
   id: __t.u32(),
   projectId: __t.u32().name("project_id"),
   parentId: __t.u32().name("parent_id"),
-  name: __t.string(),
   get status() {
     return CompetitionStatus;
   },
-  startingAt: __t.option(__t.timestamp()).name("starting_at"),
-  endingAt: __t.option(__t.timestamp()).name("ending_at"),
-  get registrationSettings() {
-    return RegistrationSettings.name("registration_settings");
-  },
+  template: __t.bool(),
 });

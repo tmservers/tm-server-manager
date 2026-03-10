@@ -5,10 +5,10 @@ spacetime generate --yes --lang typescript --out-dir tm-tourney-manager-api-ts/t
 spacetime call tm-tourney-manager create_project "Dirt Weeks 26'" "The Dirt Weeks are nice." "{""__timestamp_micros_since_unix_epoch__"": 1767132984000000 }" "{""__timestamp_micros_since_unix_epoch__"": 1767233084000000 }"
 
 :: Template for a Discovery
-spacetime call tm-tourney-manager competition_create "Discovery Template" 1 0
-spacetime call tm-tourney-manager match_create "Discovery Time Attack" 2 0
-spacetime call tm-tourney-manager match_create "Discovery Rounds" 2 0
-spacetime call tm-tourney-manager match_create "Discovery Playoff" 2 0
+spacetime call tm-tourney-manager competition_template_create "Discovery Template" 1 0
+spacetime call tm-tourney-manager match_template_create "Discovery Time Attack" 2 0
+spacetime call tm-tourney-manager match_template_create "Discovery Rounds" 2 0
+spacetime call tm-tourney-manager match_template_create "Discovery Playoff" 2 0
 spacetime call tm-tourney-manager connection_create "{""MatchV1"": 1 }" "{""MatchV1"": 2 }" "{""Data"": {}}"
 spacetime call tm-tourney-manager connection_create "{""MatchV1"": 2 }" "{""MatchV1"": 3 }" "{""Data"": {}}"
 

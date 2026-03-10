@@ -13,6 +13,7 @@ import {
 export default __t.row({
   scheduledId: __t.u64().name("scheduled_id"),
   scheduledAt: __t.scheduleAt().name("scheduled_at"),
-  competitionId: __t.u32().name("competition_id"),
+  parentId: __t.u32().name("parent_id"),
   projectId: __t.u32().name("project_id"),
+  template: __t.bool(),
 });

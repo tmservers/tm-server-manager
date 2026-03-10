@@ -39,7 +39,7 @@ import CompetitionCreateReducer from "./competition_create_reducer";
 import CompetitionEditNameReducer from "./competition_edit_name_reducer";
 import CompetitionNodePositionUpdateReducer from "./competition_node_position_update_reducer";
 import CompetitionNodePositionsUpdateReducer from "./competition_node_positions_update_reducer";
-import CompetitionRegistrationSettingsReducer from "./competition_registration_settings_reducer";
+import CompetitionTemplateCreateReducer from "./competition_template_create_reducer";
 import ConnectionCreateReducer from "./connection_create_reducer";
 import CreateEnvVarReducer from "./create_env_var_reducer";
 import CreateMonitorReducer from "./create_monitor_reducer";
@@ -340,7 +340,7 @@ const reducersSchema = __reducers(
   __reducerSchema("competition_edit_name", CompetitionEditNameReducer),
   __reducerSchema("competition_node_position_update", CompetitionNodePositionUpdateReducer),
   __reducerSchema("competition_node_positions_update", CompetitionNodePositionsUpdateReducer),
-  __reducerSchema("competition_registration_settings", CompetitionRegistrationSettingsReducer),
+  __reducerSchema("competition_template_create", CompetitionTemplateCreateReducer),
   __reducerSchema("connection_create", ConnectionCreateReducer),
   __reducerSchema("create_env_var", CreateEnvVarReducer),
   __reducerSchema("create_monitor", CreateMonitorReducer),

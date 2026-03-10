@@ -8,15 +8,15 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[sats(crate = __lib)]
 pub(super) struct MatchCreateArgs {
     pub name: String,
-    pub competition_id: u32,
-    pub with_template: Option<u32>,
+    pub parent_id: u32,
+    pub with_template: u32,
 }
 
 impl From<MatchCreateArgs> for super::Reducer {
     fn from(args: MatchCreateArgs) -> Self {
         Self::MatchCreate {
             name: args.name,
-            competition_id: args.competition_id,
+            parent_id: args.parent_id,
             with_template: args.with_template,
         }
     }
@@ -37,13 +37,8 @@ pub trait match_create {
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
     /// /// Use [`match_create:match_create_then`] to run a callback after the reducer completes.
-    fn match_create(
-        &self,
-        name: String,
-        competition_id: u32,
-        with_template: Option<u32>,
-    ) -> __sdk::Result<()> {
-        self.match_create_then(name, competition_id, with_template, |_, _| {})
+    fn match_create(&self, name: String, parent_id: u32, with_template: u32) -> __sdk::Result<()> {
+        self.match_create_then(name, parent_id, with_template, |_, _| {})
     }
 
     /// Request that the remote module invoke the reducer `match_create` to run as soon as possible,
@@ -55,8 +50,8 @@ pub trait match_create {
     fn match_create_then(
         &self,
         name: String,
-        competition_id: u32,
-        with_template: Option<u32>,
+        parent_id: u32,
+        with_template: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -68,8 +63,8 @@ impl match_create for super::RemoteReducers {
     fn match_create_then(
         &self,
         name: String,
-        competition_id: u32,
-        with_template: Option<u32>,
+        parent_id: u32,
+        with_template: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -78,7 +73,7 @@ impl match_create for super::RemoteReducers {
         self.imp.invoke_reducer_with_callback(
             MatchCreateArgs {
                 name,
-                competition_id,
+                parent_id,
                 with_template,
             },
             callback,

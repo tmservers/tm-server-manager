@@ -9,10 +9,22 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
+import {
+  MatchStatus,
+} from "./types";
+
 
 export default __t.row({
   name: __t.string(),
-  creator: __t.uuid(),
   id: __t.u32(),
-  configId: __t.u32().name("config_id"),
+  projectId: __t.u32().name("project_id"),
+  parentId: __t.u32().name("parent_id"),
+  preMatchConfig: __t.u32().name("pre_match_config"),
+  matchConfig: __t.u32().name("match_config"),
+  postMatchConfig: __t.u32().name("post_match_config"),
+  get status() {
+    return MatchStatus;
+  },
+  autoProvisionServer: __t.bool().name("auto_provision_server"),
+  template: __t.bool(),
 });

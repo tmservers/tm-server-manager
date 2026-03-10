@@ -1,17 +1,19 @@
 use spacetimedb::{
-    AnonymousViewContext, Query, ReducerContext, SpacetimeType, Table, Timestamp, reducer, table,
-    view,
+    AnonymousViewContext, Query, ReducerContext, SpacetimeType, Table, reducer, table, view,
 };
 
 use crate::{
-    authorization::Authorization, project::permissions::ProjectPermissionsV1,
-    registration::RegistrationSettings,
+    authorization::Authorization, competition::template::competition_template_instantiate,
+    project::permissions::ProjectPermissionsV1,
 };
 
 pub mod connection;
+mod template;
 
 /// Always
+#[derive(Debug, Clone)]
 #[table(accessor= tab_competition)]
+//#[table(accessor= tab_competition_template)]
 pub struct CompetitionV1 {
     name: String,
 
@@ -20,21 +22,12 @@ pub struct CompetitionV1 {
     pub id: u32,
 
     project_id: u32,
+    #[index(hash)]
     parent_id: u32,
 
     // Necessary to hide and mark as immutable
     status: CompetitionStatus,
-    // inheriting_permissions: bool,
-
-    // The two timestamps to display players in which time range the competiion is taking place.
-    //starting_at: Option<Timestamp>,
-    //ending_at: Option<Timestamp>,
-
-    //registration_settings: RegistrationSettings,
-    // TODO Can capture a server at the end of the registration to serve
-    // as a lobby server which automatically delegates players to their
-    // corresponding desination server based on active matches.
-    //lobby: Option<u32>,
+    template: bool,
 }
 
 impl CompetitionV1 {
@@ -50,6 +43,17 @@ impl CompetitionV1 {
         &self.name
     }
 
+    pub fn is_template(&self) -> bool {
+        self.template
+    }
+
+    fn instantiate(mut self, new_parent: u32) -> Self {
+        self.template = false;
+        self.id = 0;
+        self.parent_id = new_parent;
+        self
+    }
+
     /// # Safety
     /// The new competition has to be commited to spacetime db through the `competition_create` reducer.
     /// Otherwise the id is invalid.
@@ -60,18 +64,26 @@ impl CompetitionV1 {
             parent_id,
             name,
             status: CompetitionStatus::Planning,
-            // starting_at: None,
-            //ending_at: None,
-            //registration_settings: RegistrationSettings::None,
+            template: false,
         }
     }
 
-    /* pub(crate) fn registration_settings(&self) -> &RegistrationSettings {
-        &self.registration_settings
-    } */
+    /// # Safety
+    /// The new competition has to be commited to spacetime db through the `competition_create` reducer.
+    /// Otherwise the id is invalid.
+    pub unsafe fn new_template(name: String, parent_id: u32, project_id: u32) -> Self {
+        Self {
+            id: 0,
+            project_id,
+            parent_id,
+            name,
+            status: CompetitionStatus::Planning,
+            template: true,
+        }
+    }
 }
 
-#[derive(Debug, SpacetimeType)]
+#[derive(Debug, SpacetimeType, Clone, Copy)]
 pub enum CompetitionStatus {
     /// If you just created the competition it will be in the planning phase.
     /// Here you can set everything up as you like.
@@ -104,10 +116,14 @@ pub fn competition_create(
         .permission(ProjectPermissionsV1::COMPETITION_CREATE)
         .authorize()?;
 
-    //SAFETY: The competition gets commnited afterwards.
-    let new_competition =
-        unsafe { CompetitionV1::new(name, parent_id, parent_competition.get_project()) };
-    ctx.db.tab_competition().try_insert(new_competition)?;
+    if with_template != 0 {
+        competition_template_instantiate(ctx, parent_id, with_template)?;
+    } else {
+        //SAFETY: The competition gets commnited afterwards.
+        let new_competition =
+            unsafe { CompetitionV1::new(name, parent_id, parent_competition.get_project()) };
+        ctx.db.tab_competition().try_insert(new_competition)?;
+    }
 
     Ok(())
 }
@@ -134,30 +150,6 @@ pub fn competition_edit_name(
 
     Ok(())
 }
-
-/* #[reducer]
-pub fn competition_registration_settings(
-    ctx: &ReducerContext,
-    competition_id: u32,
-    registration_settings: RegistrationSettings,
-) -> Result<(), String> {
-    let user = ctx.get_user()?;
-
-    // If parent is valid it is guaranteed that it has a valid project associated with it.
-    let Some(mut competition) = ctx.db.tab_competition().id().find(competition_id) else {
-        return Err("Invalid competition".into());
-    };
-
-    ctx.auth_builder(competition.project_id, user.account_id)?
-        .permission(ProjectPermissionsV1::COMPETITION_EDIT_REGISTRATION)
-        .authorize()?;
-
-    competition.registration_settings = registration_settings;
-
-    ctx.db.tab_competition().id().update(competition);
-
-    Ok(())
-} */
 
 #[view(accessor=competition,public)]
 pub fn competition(ctx: &AnonymousViewContext) -> impl Query<CompetitionV1> {

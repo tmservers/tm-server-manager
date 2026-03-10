@@ -2,7 +2,8 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN YOUR MODULE SOURCE CODE INSTEAD.
 
 #![allow(unused, clippy::all)]
-use super::match_template_type::MatchTemplate;
+use super::match_status_type::MatchStatus;
+use super::tm_match_v_1_type::TmMatchV1;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 /// Table handle for the table `my_match_template`.
@@ -14,7 +15,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 /// but to directly chain method calls,
 /// like `ctx.db.my_match_template().on_insert(...)`.
 pub struct MyMatchTemplateTableHandle<'ctx> {
-    imp: __sdk::TableHandle<MatchTemplate>,
+    imp: __sdk::TableHandle<TmMatchV1>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -31,7 +32,7 @@ pub trait MyMatchTemplateTableAccess {
 impl MyMatchTemplateTableAccess for super::RemoteTables {
     fn my_match_template(&self) -> MyMatchTemplateTableHandle<'_> {
         MyMatchTemplateTableHandle {
-            imp: self.imp.get_table::<MatchTemplate>("my_match_template"),
+            imp: self.imp.get_table::<TmMatchV1>("my_match_template"),
             ctx: std::marker::PhantomData,
         }
     }
@@ -41,13 +42,13 @@ pub struct MyMatchTemplateInsertCallbackId(__sdk::CallbackId);
 pub struct MyMatchTemplateDeleteCallbackId(__sdk::CallbackId);
 
 impl<'ctx> __sdk::Table for MyMatchTemplateTableHandle<'ctx> {
-    type Row = MatchTemplate;
+    type Row = TmMatchV1;
     type EventContext = super::EventContext;
 
     fn count(&self) -> u64 {
         self.imp.count()
     }
-    fn iter(&self) -> impl Iterator<Item = MatchTemplate> + '_ {
+    fn iter(&self) -> impl Iterator<Item = TmMatchV1> + '_ {
         self.imp.iter()
     }
 
@@ -80,32 +81,32 @@ impl<'ctx> __sdk::Table for MyMatchTemplateTableHandle<'ctx> {
 
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
-    let _table = client_cache.get_or_make_table::<MatchTemplate>("my_match_template");
+    let _table = client_cache.get_or_make_table::<TmMatchV1>("my_match_template");
 }
 
 #[doc(hidden)]
 pub(super) fn parse_table_update(
     raw_updates: __ws::v2::TableUpdate,
-) -> __sdk::Result<__sdk::TableUpdate<MatchTemplate>> {
+) -> __sdk::Result<__sdk::TableUpdate<TmMatchV1>> {
     __sdk::TableUpdate::parse_table_update(raw_updates).map_err(|e| {
-        __sdk::InternalError::failed_parse("TableUpdate<MatchTemplate>", "TableUpdate")
+        __sdk::InternalError::failed_parse("TableUpdate<TmMatchV1>", "TableUpdate")
             .with_cause(e)
             .into()
     })
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for query builder access to the table `MatchTemplate`.
+/// Extension trait for query builder access to the table `TmMatchV1`.
 ///
 /// Implemented for [`__sdk::QueryTableAccessor`].
 pub trait my_match_templateQueryTableAccess {
     #[allow(non_snake_case)]
-    /// Get a query builder for the table `MatchTemplate`.
-    fn my_match_template(&self) -> __sdk::__query_builder::Table<MatchTemplate>;
+    /// Get a query builder for the table `TmMatchV1`.
+    fn my_match_template(&self) -> __sdk::__query_builder::Table<TmMatchV1>;
 }
 
 impl my_match_templateQueryTableAccess for __sdk::QueryTableAccessor {
-    fn my_match_template(&self) -> __sdk::__query_builder::Table<MatchTemplate> {
+    fn my_match_template(&self) -> __sdk::__query_builder::Table<TmMatchV1> {
         __sdk::__query_builder::Table::new("my_match_template")
     }
 }

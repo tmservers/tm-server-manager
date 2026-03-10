@@ -112,18 +112,14 @@ export const CompetitionStatus = __t.enum("CompetitionStatus", {
 export type CompetitionStatus = __Infer<typeof CompetitionStatus>;
 
 export const CompetitionV1 = __t.object("CompetitionV1", {
+  name: __t.string(),
   id: __t.u32(),
   projectId: __t.u32(),
   parentId: __t.u32(),
-  name: __t.string(),
   get status() {
     return CompetitionStatus;
   },
-  startingAt: __t.option(__t.timestamp()),
-  endingAt: __t.option(__t.timestamp()),
-  get registrationSettings() {
-    return RegistrationSettings;
-  },
+  template: __t.bool(),
 });
 export type CompetitionV1 = __Infer<typeof CompetitionV1>;
 
@@ -437,14 +433,6 @@ export const MatchStatus = __t.enum("MatchStatus", {
 });
 export type MatchStatus = __Infer<typeof MatchStatus>;
 
-export const MatchTemplate = __t.object("MatchTemplate", {
-  name: __t.string(),
-  creator: __t.uuid(),
-  id: __t.u32(),
-  configId: __t.u32(),
-});
-export type MatchTemplate = __Infer<typeof MatchTemplate>;
-
 // The tagged union or sum type for the algebraic type `MethodCall`.
 export const MethodCall = __t.enum("MethodCall", {
   ListMethods: __t.unit(),
@@ -687,6 +675,7 @@ export const Portal = __t.object("Portal", {
   projectId: __t.u32(),
   targetId: __t.u32(),
   targetVariant: __t.u8(),
+  template: __t.bool(),
 });
 export type Portal = __Infer<typeof Portal>;
 
@@ -820,6 +809,7 @@ export const Registration = __t.object("Registration", {
   get registrationState() {
     return RegistrationState;
   },
+  template: __t.bool(),
 });
 export type Registration = __Infer<typeof Registration>;
 
@@ -941,8 +931,9 @@ export type RoundsPerMap = __Infer<typeof RoundsPerMap>;
 export const ScheduleV1 = __t.object("ScheduleV1", {
   scheduledId: __t.u64(),
   scheduledAt: __t.scheduleAt(),
-  competitionId: __t.u32(),
+  parentId: __t.u32(),
   projectId: __t.u32(),
+  template: __t.bool(),
 });
 export type ScheduleV1 = __Infer<typeof ScheduleV1>;
 
@@ -1033,7 +1024,7 @@ export type StartTurn = __Infer<typeof StartTurn>;
 
 export const TabCompetitionConnection = __t.object("TabCompetitionConnection", {
   id: __t.u32(),
-  competitionId: __t.u32(),
+  parentId: __t.u32(),
   projectId: __t.u32(),
   connectionFrom: __t.u32(),
   connectionTo: __t.u32(),
@@ -1042,7 +1033,6 @@ export const TabCompetitionConnection = __t.object("TabCompetitionConnection", {
   get connectionSettings() {
     return ConnectionSettings;
   },
-  resolved: __t.bool(),
 });
 export type TabCompetitionConnection = __Infer<typeof TabCompetitionConnection>;
 
@@ -1149,7 +1139,7 @@ export const TmMatchV1 = __t.object("TmMatchV1", {
   name: __t.string(),
   id: __t.u32(),
   projectId: __t.u32(),
-  competitionId: __t.u32(),
+  parentId: __t.u32(),
   preMatchConfig: __t.u32(),
   matchConfig: __t.u32(),
   postMatchConfig: __t.u32(),
@@ -1157,6 +1147,7 @@ export const TmMatchV1 = __t.object("TmMatchV1", {
     return MatchStatus;
   },
   autoProvisionServer: __t.bool(),
+  template: __t.bool(),
 });
 export type TmMatchV1 = __Infer<typeof TmMatchV1>;
 

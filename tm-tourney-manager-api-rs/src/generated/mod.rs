@@ -23,9 +23,9 @@ pub mod competition_node_position_type;
 pub mod competition_node_position_update_reducer;
 pub mod competition_node_positions_update_reducer;
 pub mod competition_record_table;
-pub mod competition_registration_settings_reducer;
 pub mod competition_status_type;
 pub mod competition_table;
+pub mod competition_template_create_reducer;
 pub mod competition_v_1_type;
 pub mod connection_create_reducer;
 pub mod connection_settings_type;
@@ -71,7 +71,6 @@ pub mod match_set_preparation_reducer;
 pub mod match_state_table;
 pub mod match_status_type;
 pub mod match_template_create_reducer;
-pub mod match_template_type;
 pub mod match_try_start_reducer;
 pub mod match_update_config_reducer;
 pub mod match_update_pre_config_reducer;
@@ -224,9 +223,9 @@ pub use competition_node_position_type::CompetitionNodePosition;
 pub use competition_node_position_update_reducer::competition_node_position_update;
 pub use competition_node_positions_update_reducer::competition_node_positions_update;
 pub use competition_record_table::*;
-pub use competition_registration_settings_reducer::competition_registration_settings;
 pub use competition_status_type::CompetitionStatus;
 pub use competition_table::*;
+pub use competition_template_create_reducer::competition_template_create;
 pub use competition_v_1_type::CompetitionV1;
 pub use connection_create_reducer::connection_create;
 pub use connection_settings_type::ConnectionSettings;
@@ -272,7 +271,6 @@ pub use match_set_preparation_reducer::match_set_preparation;
 pub use match_state_table::*;
 pub use match_status_type::MatchStatus;
 pub use match_template_create_reducer::match_template_create;
-pub use match_template_type::MatchTemplate;
 pub use match_try_start_reducer::match_try_start;
 pub use match_update_config_reducer::match_update_config;
 pub use match_update_pre_config_reducer::match_update_pre_config;
@@ -436,9 +434,9 @@ pub enum Reducer {
     CompetitionNodePositionsUpdate {
         positions: Vec<NodePositionUpdate>,
     },
-    CompetitionRegistrationSettings {
-        competition_id: u32,
-        registration_settings: RegistrationSettings,
+    CompetitionTemplateCreate {
+        name: String,
+        parent_id: u32,
     },
     ConnectionCreate {
         connection_from: NodeKindHandle,
@@ -460,7 +458,7 @@ pub enum Reducer {
         ending_at: __sdk::Timestamp,
     },
     CreateSchedule {
-        competition_id: u32,
+        parent_id: u32,
         scheduled_at: __sdk::Timestamp,
     },
     CreateTeam {
@@ -477,8 +475,8 @@ pub enum Reducer {
     },
     MatchCreate {
         name: String,
-        competition_id: u32,
-        with_template: Option<u32>,
+        parent_id: u32,
+        with_template: u32,
     },
     MatchDelete {
         match_id: u32,
@@ -488,7 +486,7 @@ pub enum Reducer {
     },
     MatchTemplateCreate {
         name: String,
-        config: ServerConfig,
+        parent_id: u32,
     },
     MatchTryStart {
         match_id: u32,
@@ -607,7 +605,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::CompetitionEditName { .. } => "competition_edit_name",
             Reducer::CompetitionNodePositionUpdate { .. } => "competition_node_position_update",
             Reducer::CompetitionNodePositionsUpdate { .. } => "competition_node_positions_update",
-            Reducer::CompetitionRegistrationSettings { .. } => "competition_registration_settings",
+            Reducer::CompetitionTemplateCreate { .. } => "competition_template_create",
             Reducer::ConnectionCreate { .. } => "connection_create",
             Reducer::CreateEnvVar { .. } => "create_env_var",
             Reducer::CreateMonitor { .. } => "create_monitor",
@@ -689,13 +687,10 @@ impl __sdk::Reducer for Reducer {
                     positions: positions.clone(),
                 },
             ),
-            Reducer::CompetitionRegistrationSettings {
-                competition_id,
-                registration_settings,
-            } => __sats::bsatn::to_vec(
-                &competition_registration_settings_reducer::CompetitionRegistrationSettingsArgs {
-                    competition_id: competition_id.clone(),
-                    registration_settings: registration_settings.clone(),
+            Reducer::CompetitionTemplateCreate { name, parent_id } => __sats::bsatn::to_vec(
+                &competition_template_create_reducer::CompetitionTemplateCreateArgs {
+                    name: name.clone(),
+                    parent_id: parent_id.clone(),
                 },
             ),
             Reducer::ConnectionCreate {
@@ -732,10 +727,10 @@ impl __sdk::Reducer for Reducer {
                 ending_at: ending_at.clone(),
             }),
             Reducer::CreateSchedule {
-                competition_id,
+                parent_id,
                 scheduled_at,
             } => __sats::bsatn::to_vec(&create_schedule_reducer::CreateScheduleArgs {
-                competition_id: competition_id.clone(),
+                parent_id: parent_id.clone(),
                 scheduled_at: scheduled_at.clone(),
             }),
             Reducer::CreateTeam {
@@ -760,11 +755,11 @@ impl __sdk::Reducer for Reducer {
             }
             Reducer::MatchCreate {
                 name,
-                competition_id,
+                parent_id,
                 with_template,
             } => __sats::bsatn::to_vec(&match_create_reducer::MatchCreateArgs {
                 name: name.clone(),
-                competition_id: competition_id.clone(),
+                parent_id: parent_id.clone(),
                 with_template: with_template.clone(),
             }),
             Reducer::MatchDelete { match_id } => {
@@ -777,10 +772,10 @@ impl __sdk::Reducer for Reducer {
                     match_id: match_id.clone(),
                 })
             }
-            Reducer::MatchTemplateCreate { name, config } => {
+            Reducer::MatchTemplateCreate { name, parent_id } => {
                 __sats::bsatn::to_vec(&match_template_create_reducer::MatchTemplateCreateArgs {
                     name: name.clone(),
-                    config: config.clone(),
+                    parent_id: parent_id.clone(),
                 })
             }
             Reducer::MatchTryStart { match_id } => {
@@ -987,7 +982,7 @@ pub struct DbUpdate {
     match_round_ext: __sdk::TableUpdate<TabTmMatchRoundPlayerExt>,
     match_state: __sdk::TableUpdate<TmMatchState>,
     my_jobs: __sdk::TableUpdate<TmWorkerJobs>,
-    my_match_template: __sdk::TableUpdate<MatchTemplate>,
+    my_match_template: __sdk::TableUpdate<TmMatchV1>,
     my_project: __sdk::TableUpdate<MyProjectV1>,
     project: __sdk::TableUpdate<ProjectV1>,
     project_available_server_pool: __sdk::TableUpdate<RawServerV1>,
@@ -1162,8 +1157,8 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.match_state =
             cache.apply_diff_to_table::<TmMatchState>("match_state", &self.match_state);
         diff.my_jobs = cache.apply_diff_to_table::<TmWorkerJobs>("my_jobs", &self.my_jobs);
-        diff.my_match_template = cache
-            .apply_diff_to_table::<MatchTemplate>("my_match_template", &self.my_match_template);
+        diff.my_match_template =
+            cache.apply_diff_to_table::<TmMatchV1>("my_match_template", &self.my_match_template);
         diff.my_project = cache.apply_diff_to_table::<MyProjectV1>("my_project", &self.my_project);
         diff.project = cache.apply_diff_to_table::<ProjectV1>("project", &self.project);
         diff.project_available_server_pool = cache.apply_diff_to_table::<RawServerV1>(
@@ -1422,7 +1417,7 @@ pub struct AppliedDiff<'r> {
     match_round_ext: __sdk::TableAppliedDiff<'r, TabTmMatchRoundPlayerExt>,
     match_state: __sdk::TableAppliedDiff<'r, TmMatchState>,
     my_jobs: __sdk::TableAppliedDiff<'r, TmWorkerJobs>,
-    my_match_template: __sdk::TableAppliedDiff<'r, MatchTemplate>,
+    my_match_template: __sdk::TableAppliedDiff<'r, TmMatchV1>,
     my_project: __sdk::TableAppliedDiff<'r, MyProjectV1>,
     project: __sdk::TableAppliedDiff<'r, ProjectV1>,
     project_available_server_pool: __sdk::TableAppliedDiff<'r, RawServerV1>,
@@ -1500,7 +1495,7 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             event,
         );
         callbacks.invoke_table_row_callbacks::<TmWorkerJobs>("my_jobs", &self.my_jobs, event);
-        callbacks.invoke_table_row_callbacks::<MatchTemplate>(
+        callbacks.invoke_table_row_callbacks::<TmMatchV1>(
             "my_match_template",
             &self.my_match_template,
             event,

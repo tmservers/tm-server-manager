@@ -16,6 +16,7 @@ pub struct Registration {
     pub project_id: u32,
     pub settings: RegistrationSettings,
     pub registration_state: RegistrationState,
+    pub template: bool,
 }
 
 impl __sdk::InModule for Registration {
@@ -32,6 +33,7 @@ pub struct RegistrationCols {
     pub project_id: __sdk::__query_builder::Col<Registration, u32>,
     pub settings: __sdk::__query_builder::Col<Registration, RegistrationSettings>,
     pub registration_state: __sdk::__query_builder::Col<Registration, RegistrationState>,
+    pub template: __sdk::__query_builder::Col<Registration, bool>,
 }
 
 impl __sdk::__query_builder::HasCols for Registration {
@@ -44,6 +46,7 @@ impl __sdk::__query_builder::HasCols for Registration {
             project_id: __sdk::__query_builder::Col::new(table_name, "project_id"),
             settings: __sdk::__query_builder::Col::new(table_name, "settings"),
             registration_state: __sdk::__query_builder::Col::new(table_name, "registration_state"),
+            template: __sdk::__query_builder::Col::new(table_name, "template"),
         }
     }
 }
@@ -53,6 +56,7 @@ impl __sdk::__query_builder::HasCols for Registration {
 /// Provides typed access to indexed columns for query building.
 pub struct RegistrationIxCols {
     pub id: __sdk::__query_builder::IxCol<Registration, u32>,
+    pub parent_id: __sdk::__query_builder::IxCol<Registration, u32>,
 }
 
 impl __sdk::__query_builder::HasIxCols for Registration {
@@ -60,6 +64,7 @@ impl __sdk::__query_builder::HasIxCols for Registration {
     fn ix_cols(table_name: &'static str) -> Self::IxCols {
         RegistrationIxCols {
             id: __sdk::__query_builder::IxCol::new(table_name, "id"),
+            parent_id: __sdk::__query_builder::IxCol::new(table_name, "parent_id"),
         }
     }
 }

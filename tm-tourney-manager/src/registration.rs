@@ -37,12 +37,15 @@ pub struct Registration {
     #[primary_key]
     pub id: u32,
 
+    #[index(hash)]
     parent_id: u32,
     project_id: u32,
 
     settings: RegistrationSettings,
 
     registration_state: RegistrationState,
+
+    template: bool,
 }
 
 impl Registration {
@@ -52,6 +55,17 @@ impl Registration {
 
     pub(crate) fn get_project(&self) -> u32 {
         self.project_id
+    }
+
+    pub(crate) fn is_template(&self) -> bool {
+        self.template
+    }
+
+    pub(crate) fn instantiate(mut self, parent_id: u32) -> Self {
+        self.parent_id = parent_id;
+        self.id = 0;
+        self.template = false;
+        self
     }
 }
 
@@ -88,6 +102,7 @@ fn registration_create(
         project_id: parent_competition.get_project(),
         settings: RegistrationSettings::None,
         registration_state: RegistrationState::Configuring,
+        template: false,
     })?;
 
     Ok(())
