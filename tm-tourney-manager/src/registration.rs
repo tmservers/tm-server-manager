@@ -1,4 +1,4 @@
-use spacetimedb::{ReducerContext, SpacetimeType, Table, Timestamp, reducer, table};
+use spacetimedb::{ReducerContext, SpacetimeType, Table, TimeDuration, Timestamp, reducer, table};
 
 use crate::{
     authorization::Authorization, competition::tab_competition,
@@ -10,23 +10,26 @@ mod team;
 
 #[derive(Debug, SpacetimeType)]
 pub enum RegistrationSettings {
-    Players(RegistrationPlayerSettings),
-    Team(RegistrationTeamSettings),
-    None,
+    Player(RegistrationSettingsPlayer),
+    Team(RegistrationSettingsTeam),
 }
 
 #[derive(Debug, SpacetimeType)]
-pub struct RegistrationPlayerSettings {
-    player_limit: Option<u32>,
-    registration_deadline: Timestamp,
+pub struct RegistrationSettingsPlayer {
+    player_limit: u32,
 }
 
 #[derive(Debug, SpacetimeType)]
-pub struct RegistrationTeamSettings {
-    team_limit: Option<u32>,
+pub struct RegistrationSettingsTeam {
+    team_limit: u32,
     team_size_min: u8,
     team_size_max: u8,
-    registration_deadline: Timestamp,
+}
+
+#[derive(Debug, SpacetimeType)]
+pub enum RegistrationDeadline {
+    Relative(TimeDuration),
+    Abosulute(Timestamp),
 }
 
 #[table(accessor=tab_registration)]
@@ -43,7 +46,9 @@ pub struct Registration {
 
     settings: RegistrationSettings,
 
-    registration_state: RegistrationState,
+    deadline: RegistrationDeadline,
+
+    state: RegistrationState,
 
     template: bool,
 }
@@ -61,10 +66,10 @@ impl Registration {
         self.template
     }
 
-    pub(crate) fn instantiate(mut self, parent_id: u32) -> Self {
+    pub(crate) fn instantiate(mut self, parent_id: u32, stay_template: bool) -> Self {
         self.parent_id = parent_id;
         self.id = 0;
-        self.template = false;
+        self.template = stay_template;
         self
     }
 }
@@ -100,9 +105,11 @@ fn registration_create(
         id: 0,
         parent_id,
         project_id: parent_competition.get_project(),
-        settings: RegistrationSettings::None,
-        registration_state: RegistrationState::Configuring,
+        settings: RegistrationSettings::Player(RegistrationSettingsPlayer { player_limit: 100 }),
+        state: RegistrationState::Configuring,
         template: false,
+        // 3.47 Days of relate duration.
+        deadline: RegistrationDeadline::Relative(TimeDuration::from_micros(300000000000)),
     })?;
 
     Ok(())

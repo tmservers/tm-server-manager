@@ -4,17 +4,14 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::registration_settings_player_type::RegistrationSettingsPlayer;
-use super::registration_settings_team_type::RegistrationSettingsTeam;
-
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub enum RegistrationSettings {
-    Player(RegistrationSettingsPlayer),
-
-    Team(RegistrationSettingsTeam),
+pub struct RegistrationSettingsTeam {
+    pub team_limit: u32,
+    pub team_size_min: u8,
+    pub team_size_max: u8,
 }
 
-impl __sdk::InModule for RegistrationSettings {
+impl __sdk::InModule for RegistrationSettingsTeam {
     type Module = super::RemoteModule;
 }

@@ -415,6 +415,14 @@ export const MapsPerMatch = __t.enum("MapsPerMatch", {
 });
 export type MapsPerMatch = __Infer<typeof MapsPerMatch>;
 
+export const MatchEvent = __t.object("MatchEvent", {
+  matchId: __t.u32(),
+  get event() {
+    return Event;
+  },
+});
+export type MatchEvent = __Infer<typeof MatchEvent>;
+
 export const MatchGhost = __t.object("MatchGhost", {
   projectId: __t.u32(),
   matchId: __t.u32(),
@@ -422,6 +430,38 @@ export const MatchGhost = __t.object("MatchGhost", {
   uid: __t.uuid(),
 });
 export type MatchGhost = __Infer<typeof MatchGhost>;
+
+export const MatchRoundPlayer = __t.object("MatchRoundPlayer", {
+  accountId: __t.uuid(),
+  id: __t.u32(),
+  matchId: __t.u32(),
+  time: __t.i32(),
+  score: __t.i32(),
+  round: __t.u16(),
+  position: __t.u16(),
+});
+export type MatchRoundPlayer = __Infer<typeof MatchRoundPlayer>;
+
+export const MatchRoundPlayerExt = __t.object("MatchRoundPlayerExt", {
+  get roundActions() {
+    return __t.array(PlayerAction);
+  },
+  id: __t.u32(),
+  matchId: __t.u32(),
+  round: __t.u16(),
+});
+export type MatchRoundPlayerExt = __Infer<typeof MatchRoundPlayerExt>;
+
+export const MatchState = __t.object("MatchState", {
+  mapId: __t.uuid(),
+  matchId: __t.u32(),
+  restarted: __t.u16(),
+  round: __t.u16(),
+  warmup: __t.u16(),
+  isWarmup: __t.bool(),
+  paused: __t.bool(),
+});
+export type MatchState = __Infer<typeof MatchState>;
 
 // The tagged union or sum type for the algebraic type `MatchStatus`.
 export const MatchStatus = __t.enum("MatchStatus", {
@@ -806,30 +846,45 @@ export const Registration = __t.object("Registration", {
   get settings() {
     return RegistrationSettings;
   },
-  get registrationState() {
+  get deadline() {
+    return RegistrationDeadline;
+  },
+  get state() {
     return RegistrationState;
   },
   template: __t.bool(),
 });
 export type Registration = __Infer<typeof Registration>;
 
-export const RegistrationPlayerSettings = __t.object("RegistrationPlayerSettings", {
-  playerLimit: __t.option(__t.u32()),
-  registrationDeadline: __t.timestamp(),
+// The tagged union or sum type for the algebraic type `RegistrationDeadline`.
+export const RegistrationDeadline = __t.enum("RegistrationDeadline", {
+  Relative: __t.timeDuration(),
+  Abosulute: __t.timestamp(),
 });
-export type RegistrationPlayerSettings = __Infer<typeof RegistrationPlayerSettings>;
+export type RegistrationDeadline = __Infer<typeof RegistrationDeadline>;
 
 // The tagged union or sum type for the algebraic type `RegistrationSettings`.
 export const RegistrationSettings = __t.enum("RegistrationSettings", {
-  get Players() {
-    return RegistrationPlayerSettings;
+  get Player() {
+    return RegistrationSettingsPlayer;
   },
   get Team() {
-    return RegistrationTeamSettings;
+    return RegistrationSettingsTeam;
   },
-  None: __t.unit(),
 });
 export type RegistrationSettings = __Infer<typeof RegistrationSettings>;
+
+export const RegistrationSettingsPlayer = __t.object("RegistrationSettingsPlayer", {
+  playerLimit: __t.u32(),
+});
+export type RegistrationSettingsPlayer = __Infer<typeof RegistrationSettingsPlayer>;
+
+export const RegistrationSettingsTeam = __t.object("RegistrationSettingsTeam", {
+  teamLimit: __t.u32(),
+  teamSizeMin: __t.u8(),
+  teamSizeMax: __t.u8(),
+});
+export type RegistrationSettingsTeam = __Infer<typeof RegistrationSettingsTeam>;
 
 // The tagged union or sum type for the algebraic type `RegistrationState`.
 export const RegistrationState = __t.enum("RegistrationState", {
@@ -840,14 +895,6 @@ export const RegistrationState = __t.enum("RegistrationState", {
   Locked: __t.unit(),
 });
 export type RegistrationState = __Infer<typeof RegistrationState>;
-
-export const RegistrationTeamSettings = __t.object("RegistrationTeamSettings", {
-  teamLimit: __t.option(__t.u32()),
-  teamSizeMin: __t.u8(),
-  teamSizeMax: __t.u8(),
-  registrationDeadline: __t.timestamp(),
-});
-export type RegistrationTeamSettings = __Infer<typeof RegistrationTeamSettings>;
 
 export const Respawn = __t.object("Respawn", {
   accountId: __t.string(),
@@ -1048,7 +1095,7 @@ export const TabCompetitionNodePosition = __t.object("TabCompetitionNodePosition
 });
 export type TabCompetitionNodePosition = __Infer<typeof TabCompetitionNodePosition>;
 
-export const TabTmMatchRoundPlayer = __t.object("TabTmMatchRoundPlayer", {
+export const TabMatchRoundPlayer = __t.object("TabMatchRoundPlayer", {
   id: __t.u32(),
   internalAccountId: __t.u32(),
   matchId: __t.u32(),
@@ -1056,9 +1103,9 @@ export const TabTmMatchRoundPlayer = __t.object("TabTmMatchRoundPlayer", {
   points: __t.i32(),
   round: __t.u16(),
 });
-export type TabTmMatchRoundPlayer = __Infer<typeof TabTmMatchRoundPlayer>;
+export type TabMatchRoundPlayer = __Infer<typeof TabMatchRoundPlayer>;
 
-export const TabTmMatchRoundPlayerExt = __t.object("TabTmMatchRoundPlayerExt", {
+export const TabMatchRoundPlayerExt = __t.object("TabMatchRoundPlayerExt", {
   get roundActions() {
     return __t.array(PlayerAction);
   },
@@ -1067,7 +1114,7 @@ export const TabTmMatchRoundPlayerExt = __t.object("TabTmMatchRoundPlayerExt", {
   id: __t.u32(),
   round: __t.u16(),
 });
-export type TabTmMatchRoundPlayerExt = __Infer<typeof TabTmMatchRoundPlayerExt>;
+export type TabMatchRoundPlayerExt = __Infer<typeof TabMatchRoundPlayerExt>;
 
 export const Team = __t.object("Team", {
   id: __t.u32(),
@@ -1107,46 +1154,6 @@ export const TmMapRecord = __t.object("TmMapRecord", {
   time: __t.u32(),
 });
 export type TmMapRecord = __Infer<typeof TmMapRecord>;
-
-export const TmMatchEvent = __t.object("TmMatchEvent", {
-  matchId: __t.u32(),
-  get event() {
-    return Event;
-  },
-});
-export type TmMatchEvent = __Infer<typeof TmMatchEvent>;
-
-export const TmMatchRoundPlayer = __t.object("TmMatchRoundPlayer", {
-  accountId: __t.uuid(),
-  id: __t.u32(),
-  matchId: __t.u32(),
-  time: __t.i32(),
-  score: __t.i32(),
-  round: __t.u16(),
-  position: __t.u16(),
-});
-export type TmMatchRoundPlayer = __Infer<typeof TmMatchRoundPlayer>;
-
-export const TmMatchRoundPlayerExt = __t.object("TmMatchRoundPlayerExt", {
-  get roundActions() {
-    return __t.array(PlayerAction);
-  },
-  id: __t.u32(),
-  matchId: __t.u32(),
-  round: __t.u16(),
-});
-export type TmMatchRoundPlayerExt = __Infer<typeof TmMatchRoundPlayerExt>;
-
-export const TmMatchState = __t.object("TmMatchState", {
-  mapId: __t.uuid(),
-  matchId: __t.u32(),
-  restarted: __t.u16(),
-  round: __t.u16(),
-  warmup: __t.u16(),
-  isWarmup: __t.bool(),
-  paused: __t.bool(),
-});
-export type TmMatchState = __Infer<typeof TmMatchState>;
 
 export const TmMatchV1 = __t.object("TmMatchV1", {
   name: __t.string(),

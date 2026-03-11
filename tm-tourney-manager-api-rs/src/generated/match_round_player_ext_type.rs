@@ -8,31 +8,31 @@ use super::player_action_type::PlayerAction;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct TmMatchRoundPlayerExt {
+pub struct MatchRoundPlayerExt {
     pub round_actions: Vec<PlayerAction>,
     pub id: u32,
     pub match_id: u32,
     pub round: u16,
 }
 
-impl __sdk::InModule for TmMatchRoundPlayerExt {
+impl __sdk::InModule for MatchRoundPlayerExt {
     type Module = super::RemoteModule;
 }
 
-/// Column accessor struct for the table `TmMatchRoundPlayerExt`.
+/// Column accessor struct for the table `MatchRoundPlayerExt`.
 ///
 /// Provides typed access to columns for query building.
-pub struct TmMatchRoundPlayerExtCols {
-    pub round_actions: __sdk::__query_builder::Col<TmMatchRoundPlayerExt, Vec<PlayerAction>>,
-    pub id: __sdk::__query_builder::Col<TmMatchRoundPlayerExt, u32>,
-    pub match_id: __sdk::__query_builder::Col<TmMatchRoundPlayerExt, u32>,
-    pub round: __sdk::__query_builder::Col<TmMatchRoundPlayerExt, u16>,
+pub struct MatchRoundPlayerExtCols {
+    pub round_actions: __sdk::__query_builder::Col<MatchRoundPlayerExt, Vec<PlayerAction>>,
+    pub id: __sdk::__query_builder::Col<MatchRoundPlayerExt, u32>,
+    pub match_id: __sdk::__query_builder::Col<MatchRoundPlayerExt, u32>,
+    pub round: __sdk::__query_builder::Col<MatchRoundPlayerExt, u16>,
 }
 
-impl __sdk::__query_builder::HasCols for TmMatchRoundPlayerExt {
-    type Cols = TmMatchRoundPlayerExtCols;
+impl __sdk::__query_builder::HasCols for MatchRoundPlayerExt {
+    type Cols = MatchRoundPlayerExtCols;
     fn cols(table_name: &'static str) -> Self::Cols {
-        TmMatchRoundPlayerExtCols {
+        MatchRoundPlayerExtCols {
             round_actions: __sdk::__query_builder::Col::new(table_name, "round_actions"),
             id: __sdk::__query_builder::Col::new(table_name, "id"),
             match_id: __sdk::__query_builder::Col::new(table_name, "match_id"),

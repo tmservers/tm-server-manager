@@ -3,7 +3,7 @@ use spacetimedb::{ReducerContext, SpacetimeType, ViewContext, reducer, table, vi
 use crate::{
     authorization::Authorization, competition::connection::tab_competition_connection,
     project::permissions::ProjectPermissionsV1, raw_server::player::PermittedPlayer,
-    tm_match::leaderboard::TmMatchRoundPlayer,
+    tm_match::leaderboard::MatchRoundPlayer,
 };
 
 #[derive(Debug)]
@@ -26,7 +26,7 @@ impl CompetitionConnectionData {
         }
     }
 
-    pub(super) fn apply_match(&self, tm_match: Vec<TmMatchRoundPlayer>) -> Vec<PermittedPlayer> {
+    pub(super) fn apply_match(&self, tm_match: Vec<MatchRoundPlayer>) -> Vec<PermittedPlayer> {
         let players = match &self.options {
             CompetitionConnectionDataOption::None => return Vec::new(),
             CompetitionConnectionDataOption::All => tm_match,

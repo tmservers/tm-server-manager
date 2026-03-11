@@ -10,8 +10,8 @@ use crate::{
     },
     tm_match::{
         event::handle_match_event,
-        state::{TmMatchState, tab_tm_match_state},
-        tab_tm_match,
+        state::{MatchState, tab_match_state},
+        tab_match,
     },
 };
 
@@ -41,7 +41,7 @@ pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
         .tab_raw_server_occupation()
         .server_id()
         .find(server.id)
-        && let Some(tm_match) = ctx.db.tab_tm_match().id().find(occupation.match_id)
+        && let Some(tm_match) = ctx.db.tab_match().id().find(occupation.match_id)
         && tm_match.is_live()
     {
         handle_match_event(ctx, tm_match.id, event)?

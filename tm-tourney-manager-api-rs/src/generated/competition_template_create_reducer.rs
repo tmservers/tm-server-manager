@@ -9,6 +9,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 pub(super) struct CompetitionTemplateCreateArgs {
     pub name: String,
     pub parent_id: u32,
+    pub with_template: u32,
 }
 
 impl From<CompetitionTemplateCreateArgs> for super::Reducer {
@@ -16,6 +17,7 @@ impl From<CompetitionTemplateCreateArgs> for super::Reducer {
         Self::CompetitionTemplateCreate {
             name: args.name,
             parent_id: args.parent_id,
+            with_template: args.with_template,
         }
     }
 }
@@ -35,8 +37,13 @@ pub trait competition_template_create {
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
     /// /// Use [`competition_template_create:competition_template_create_then`] to run a callback after the reducer completes.
-    fn competition_template_create(&self, name: String, parent_id: u32) -> __sdk::Result<()> {
-        self.competition_template_create_then(name, parent_id, |_, _| {})
+    fn competition_template_create(
+        &self,
+        name: String,
+        parent_id: u32,
+        with_template: u32,
+    ) -> __sdk::Result<()> {
+        self.competition_template_create_then(name, parent_id, with_template, |_, _| {})
     }
 
     /// Request that the remote module invoke the reducer `competition_template_create` to run as soon as possible,
@@ -49,6 +56,7 @@ pub trait competition_template_create {
         &self,
         name: String,
         parent_id: u32,
+        with_template: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -61,13 +69,18 @@ impl competition_template_create for super::RemoteReducers {
         &self,
         name: String,
         parent_id: u32,
+        with_template: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     ) -> __sdk::Result<()> {
         self.imp.invoke_reducer_with_callback(
-            CompetitionTemplateCreateArgs { name, parent_id },
+            CompetitionTemplateCreateArgs {
+                name,
+                parent_id,
+                with_template,
+            },
             callback,
         )
     }

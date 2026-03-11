@@ -17,7 +17,7 @@ use crate::{
     raw_server::player::PermittedPlayer,
     registration::tab_registration,
     scheduling::tab_schedule,
-    tm_match::{leaderboard::match_leaderboard, match_set_preparation, tab_tm_match},
+    tm_match::{leaderboard::match_leaderboard, match_set_preparation, tab_match},
 };
 
 pub(super) mod connection_data;
@@ -149,7 +149,7 @@ impl NodeKindHandle {
     pub(crate) fn get_competition(&self, ctx: &ReducerContext) -> Result<u32, String> {
         match self {
             NodeKindHandle::MatchV1(m) => {
-                if let Some(ma) = ctx.db.tab_tm_match().id().find(m) {
+                if let Some(ma) = ctx.db.tab_match().id().find(m) {
                     Ok(ma.get_comp_id())
                 } else {
                     Err("Match couldnt be found.".into())
@@ -197,7 +197,7 @@ impl NodeKindHandle {
     pub(crate) fn get_project(&self, ctx: &ReducerContext) -> u32 {
         match self {
             NodeKindHandle::MatchV1(m) => {
-                if let Some(ma) = ctx.db.tab_tm_match().id().find(m) {
+                if let Some(ma) = ctx.db.tab_match().id().find(m) {
                     ma.get_project()
                 } else {
                     u32::MAX
@@ -262,7 +262,7 @@ impl NodeKindHandle {
     pub(crate) fn is_template(&self, ctx: &ReducerContext) -> bool {
         match self {
             NodeKindHandle::MatchV1(m) => {
-                let node = ctx.db.tab_tm_match().id().find(m).unwrap();
+                let node = ctx.db.tab_match().id().find(m).unwrap();
                 node.is_template()
             }
             NodeKindHandle::CompetitionV1(c) => {

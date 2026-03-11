@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use spacetimedb::{AnonymousViewContext, SpacetimeType, Uuid, table, view};
 
-use crate::{tm_match::state::tab_tm_match_state__view, user::tab_user__view};
+use crate::{tm_match::state::tab_match_state__view, user::tab_user__view};
 
 #[derive(Debug, SpacetimeType, Clone, Copy)]
 pub(super) enum PlayerAction {
@@ -23,12 +23,12 @@ pub(super) struct PlayerActionCheckpoint {
     time: u32,
 }
 
-#[table(accessor= tab_tm_match_round_player,
+#[table(accessor= tab_match_round_player,
     index(accessor=match_round, hash(columns=[match_id,round])),
     index(accessor=match_round_range, btree(columns=[match_id,round])),
     index(accessor=match_round_player, hash(columns=[match_id,round,internal_account_id]))
 )]
-pub struct TabTmMatchRoundPlayer {
+pub struct TabMatchRoundPlayer {
     #[auto_inc]
     #[primary_key]
     pub id: u32,
@@ -43,7 +43,7 @@ pub struct TabTmMatchRoundPlayer {
     round: u16,
 }
 
-impl TabTmMatchRoundPlayer {
+impl TabMatchRoundPlayer {
     pub fn new(match_id: u32, internal_account_id: u32, round: u16) -> Self {
         Self {
             internal_account_id,
@@ -56,12 +56,12 @@ impl TabTmMatchRoundPlayer {
     }
 }
 
-#[table(accessor= tab_tm_match_round_player_ext,
+#[table(accessor= tab_match_round_player_ext,
     index(accessor=match_round, hash(columns=[match_id,round])),
     index(accessor=match_round_range, btree(columns=[match_id,round])),
     index(accessor=match_round_player, hash(columns=[match_id,round,internal_account_id]))
 )]
-pub struct TabTmMatchRoundPlayerExt {
+pub struct TabMatchRoundPlayerExt {
     round_actions: Vec<PlayerAction>,
 
     internal_account_id: u32,
@@ -71,7 +71,7 @@ pub struct TabTmMatchRoundPlayerExt {
     round: u16,
 }
 
-impl TabTmMatchRoundPlayerExt {
+impl TabMatchRoundPlayerExt {
     pub fn new(id: u32, match_id: u32, internal_account_id: u32, round: u16) -> Self {
         Self {
             internal_account_id,
@@ -104,7 +104,7 @@ impl TabTmMatchRoundPlayerExt {
 }
 
 #[derive(Debug, SpacetimeType, Clone, Copy)]
-pub struct TmMatchRoundPlayer {
+pub struct MatchRoundPlayer {
     pub account_id: Uuid,
 
     id: u32,
@@ -121,7 +121,7 @@ pub struct TmMatchRoundPlayer {
 }
 
 #[derive(Debug, SpacetimeType, Clone)]
-pub struct TmMatchRoundPlayerExt {
+pub struct MatchRoundPlayerExt {
     round_actions: Vec<PlayerAction>,
     id: u32,
     match_id: u32,
@@ -134,28 +134,28 @@ pub struct TmMatchRoundPlayerExt {
 #[view(accessor=match_leaderboard,public)]
 pub fn match_leaderboard(
     ctx: &AnonymousViewContext, /*, match_id: u32, round: u16 */
-) -> Vec<TmMatchRoundPlayer> {
+) -> Vec<MatchRoundPlayer> {
     let match_id = 1u32;
     let mut round = 0u16;
-    let entries: Vec<TabTmMatchRoundPlayer> = if round == 0 {
-        let Some(state) = ctx.db.tab_tm_match_state().match_id().find(match_id) else {
+    let entries: Vec<TabMatchRoundPlayer> = if round == 0 {
+        let Some(state) = ctx.db.tab_match_state().match_id().find(match_id) else {
             return Vec::new();
         };
         round = state.get_round();
         ctx.db
-            .tab_tm_match_round_player()
+            .tab_match_round_player()
             .match_round_range()
             .filter((match_id, 1..round))
             .collect()
     } else {
         ctx.db
-            .tab_tm_match_round_player()
+            .tab_match_round_player()
             .match_round_range()
             .filter((match_id, 1..=round))
             .collect()
     };
 
-    let mut map = HashMap::<u32, TabTmMatchRoundPlayer>::new();
+    let mut map = HashMap::<u32, TabMatchRoundPlayer>::new();
 
     for entry in entries {
         map.entry(entry.internal_account_id)
@@ -170,7 +170,7 @@ pub fn match_leaderboard(
 
     let mut standings = map
         .into_values()
-        .map(|p| TmMatchRoundPlayer {
+        .map(|p| MatchRoundPlayer {
             account_id: ctx
                 .db
                 .tab_user()
@@ -200,12 +200,12 @@ pub fn match_leaderboard(
 #[view(accessor=match_round,public)]
 pub fn match_round(
     ctx: &AnonymousViewContext, /*, match_id: u32, round: u16 */
-) -> Vec<TmMatchRoundPlayer> {
+) -> Vec<MatchRoundPlayer> {
     let match_id = 1u32;
     let mut round = 0u16;
 
     if round == 0 {
-        let Some(state) = ctx.db.tab_tm_match_state().match_id().find(match_id) else {
+        let Some(state) = ctx.db.tab_match_state().match_id().find(match_id) else {
             return Vec::new();
         };
         round = state.get_round();
@@ -213,10 +213,10 @@ pub fn match_round(
 
     let mut standings = ctx
         .db
-        .tab_tm_match_round_player()
+        .tab_match_round_player()
         .match_round()
         .filter((match_id, round))
-        .map(|p| TmMatchRoundPlayer {
+        .map(|p| MatchRoundPlayer {
             account_id: ctx
                 .db
                 .tab_user()
@@ -243,22 +243,22 @@ pub fn match_round(
 #[view(accessor=match_round_ext,public)]
 pub fn match_round_ext(
     ctx: &AnonymousViewContext, /* match_id: u32, round: u16 */
-) -> Vec<TmMatchRoundPlayerExt> {
+) -> Vec<MatchRoundPlayerExt> {
     let match_id = 1u32;
     let mut round = 0u16;
 
     if round == 0 {
-        let Some(state) = ctx.db.tab_tm_match_state().match_id().find(match_id) else {
+        let Some(state) = ctx.db.tab_match_state().match_id().find(match_id) else {
             return Vec::new();
         };
         round = state.get_round();
     }
 
     ctx.db
-        .tab_tm_match_round_player_ext()
+        .tab_match_round_player_ext()
         .match_round()
         .filter((match_id, round))
-        .map(|p| TmMatchRoundPlayerExt {
+        .map(|p| MatchRoundPlayerExt {
             round_actions: p.round_actions,
             id: p.id,
             match_id,

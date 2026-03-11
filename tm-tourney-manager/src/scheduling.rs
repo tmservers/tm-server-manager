@@ -35,8 +35,8 @@ impl ScheduleV1 {
         self.template
     }
 
-    pub(crate) fn instantiate(mut self, parent_id: u32) -> Self {
-        self.template = false;
+    pub(crate) fn instantiate(mut self, parent_id: u32, stay_template: bool) -> Self {
+        self.template = stay_template;
         self.parent_id = parent_id;
         self.scheduled_id = 0;
         self

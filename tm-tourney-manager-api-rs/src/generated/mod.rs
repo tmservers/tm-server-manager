@@ -62,13 +62,17 @@ pub mod maps_per_match_type;
 pub mod match_assign_server_reducer;
 pub mod match_create_reducer;
 pub mod match_delete_reducer;
+pub mod match_event_type;
 pub mod match_ghost_type;
 pub mod match_leaderboard_table;
 pub mod match_record_table;
 pub mod match_round_ext_table;
+pub mod match_round_player_ext_type;
+pub mod match_round_player_type;
 pub mod match_round_table;
 pub mod match_set_preparation_reducer;
 pub mod match_state_table;
+pub mod match_state_type;
 pub mod match_status_type;
 pub mod match_template_create_reducer;
 pub mod match_try_start_reducer;
@@ -144,10 +148,11 @@ pub mod registered_player_table;
 pub mod registered_player_type;
 pub mod registered_team_type;
 pub mod registration_create_reducer;
-pub mod registration_player_settings_type;
+pub mod registration_deadline_type;
+pub mod registration_settings_player_type;
+pub mod registration_settings_team_type;
 pub mod registration_settings_type;
 pub mod registration_state_type;
-pub mod registration_team_settings_type;
 pub mod registration_type;
 pub mod respawn_behaviour_type;
 pub mod respawn_type;
@@ -172,8 +177,8 @@ pub mod start_server_type;
 pub mod start_turn_type;
 pub mod tab_competition_connection_type;
 pub mod tab_competition_node_position_type;
-pub mod tab_tm_match_round_player_ext_type;
-pub mod tab_tm_match_round_player_type;
+pub mod tab_match_round_player_ext_type;
+pub mod tab_match_round_player_type;
 pub mod team_type;
 pub mod test_tournament_type;
 pub mod this_raw_server_table;
@@ -181,10 +186,6 @@ pub mod time_attack_type;
 pub mod tm_comp_record_type;
 pub mod tm_map_record_table;
 pub mod tm_map_record_type;
-pub mod tm_match_event_type;
-pub mod tm_match_round_player_ext_type;
-pub mod tm_match_round_player_type;
-pub mod tm_match_state_type;
 pub mod tm_match_table;
 pub mod tm_match_v_1_type;
 pub mod tm_monitoring_type;
@@ -263,13 +264,17 @@ pub use maps_per_match_type::MapsPerMatch;
 pub use match_assign_server_reducer::match_assign_server;
 pub use match_create_reducer::match_create;
 pub use match_delete_reducer::match_delete;
+pub use match_event_type::MatchEvent;
 pub use match_ghost_type::MatchGhost;
 pub use match_leaderboard_table::*;
 pub use match_record_table::*;
 pub use match_round_ext_table::*;
+pub use match_round_player_ext_type::MatchRoundPlayerExt;
+pub use match_round_player_type::MatchRoundPlayer;
 pub use match_round_table::*;
 pub use match_set_preparation_reducer::match_set_preparation;
 pub use match_state_table::*;
+pub use match_state_type::MatchState;
 pub use match_status_type::MatchStatus;
 pub use match_template_create_reducer::match_template_create;
 pub use match_try_start_reducer::match_try_start;
@@ -345,10 +350,11 @@ pub use registered_player_table::*;
 pub use registered_player_type::RegisteredPlayer;
 pub use registered_team_type::RegisteredTeam;
 pub use registration_create_reducer::registration_create;
-pub use registration_player_settings_type::RegistrationPlayerSettings;
+pub use registration_deadline_type::RegistrationDeadline;
+pub use registration_settings_player_type::RegistrationSettingsPlayer;
+pub use registration_settings_team_type::RegistrationSettingsTeam;
 pub use registration_settings_type::RegistrationSettings;
 pub use registration_state_type::RegistrationState;
-pub use registration_team_settings_type::RegistrationTeamSettings;
 pub use registration_type::Registration;
 pub use respawn_behaviour_type::RespawnBehaviour;
 pub use respawn_type::Respawn;
@@ -373,8 +379,8 @@ pub use start_server_type::StartServer;
 pub use start_turn_type::StartTurn;
 pub use tab_competition_connection_type::TabCompetitionConnection;
 pub use tab_competition_node_position_type::TabCompetitionNodePosition;
-pub use tab_tm_match_round_player_ext_type::TabTmMatchRoundPlayerExt;
-pub use tab_tm_match_round_player_type::TabTmMatchRoundPlayer;
+pub use tab_match_round_player_ext_type::TabMatchRoundPlayerExt;
+pub use tab_match_round_player_type::TabMatchRoundPlayer;
 pub use team_type::Team;
 pub use test_tournament_type::TestTournament;
 pub use this_raw_server_table::*;
@@ -382,10 +388,6 @@ pub use time_attack_type::TimeAttack;
 pub use tm_comp_record_type::TmCompRecord;
 pub use tm_map_record_table::*;
 pub use tm_map_record_type::TmMapRecord;
-pub use tm_match_event_type::TmMatchEvent;
-pub use tm_match_round_player_ext_type::TmMatchRoundPlayerExt;
-pub use tm_match_round_player_type::TmMatchRoundPlayer;
-pub use tm_match_state_type::TmMatchState;
 pub use tm_match_table::*;
 pub use tm_match_v_1_type::TmMatchV1;
 pub use tm_monitoring_type::TmMonitoring;
@@ -439,6 +441,7 @@ pub enum Reducer {
     CompetitionTemplateCreate {
         name: String,
         parent_id: u32,
+        with_template: u32,
     },
     ConnectionCreate {
         connection_from: NodeKindHandle,
@@ -689,10 +692,15 @@ impl __sdk::Reducer for Reducer {
                     positions: positions.clone(),
                 },
             ),
-            Reducer::CompetitionTemplateCreate { name, parent_id } => __sats::bsatn::to_vec(
+            Reducer::CompetitionTemplateCreate {
+                name,
+                parent_id,
+                with_template,
+            } => __sats::bsatn::to_vec(
                 &competition_template_create_reducer::CompetitionTemplateCreateArgs {
                     name: name.clone(),
                     parent_id: parent_id.clone(),
+                    with_template: with_template.clone(),
                 },
             ),
             Reducer::ConnectionCreate {
@@ -978,11 +986,11 @@ pub struct DbUpdate {
     competition_node_position: __sdk::TableUpdate<CompetitionNodePosition>,
     competition_record: __sdk::TableUpdate<TmRecord>,
     map_record: __sdk::TableUpdate<TmRecord>,
-    match_leaderboard: __sdk::TableUpdate<TmMatchRoundPlayer>,
+    match_leaderboard: __sdk::TableUpdate<MatchRoundPlayer>,
     match_record: __sdk::TableUpdate<TmRecord>,
-    match_round: __sdk::TableUpdate<TmMatchRoundPlayer>,
-    match_round_ext: __sdk::TableUpdate<TmMatchRoundPlayerExt>,
-    match_state: __sdk::TableUpdate<TmMatchState>,
+    match_round: __sdk::TableUpdate<MatchRoundPlayer>,
+    match_round_ext: __sdk::TableUpdate<MatchRoundPlayerExt>,
+    match_state: __sdk::TableUpdate<MatchState>,
     my_jobs: __sdk::TableUpdate<TmWorkerJobs>,
     my_match_template: __sdk::TableUpdate<TmMatchV1>,
     my_project: __sdk::TableUpdate<MyProjectV1>,
@@ -1144,18 +1152,16 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.competition_record =
             cache.apply_diff_to_table::<TmRecord>("competition_record", &self.competition_record);
         diff.map_record = cache.apply_diff_to_table::<TmRecord>("map_record", &self.map_record);
-        diff.match_leaderboard = cache.apply_diff_to_table::<TmMatchRoundPlayer>(
-            "match_leaderboard",
-            &self.match_leaderboard,
-        );
+        diff.match_leaderboard = cache
+            .apply_diff_to_table::<MatchRoundPlayer>("match_leaderboard", &self.match_leaderboard);
         diff.match_record =
             cache.apply_diff_to_table::<TmRecord>("match_record", &self.match_record);
         diff.match_round =
-            cache.apply_diff_to_table::<TmMatchRoundPlayer>("match_round", &self.match_round);
+            cache.apply_diff_to_table::<MatchRoundPlayer>("match_round", &self.match_round);
         diff.match_round_ext = cache
-            .apply_diff_to_table::<TmMatchRoundPlayerExt>("match_round_ext", &self.match_round_ext);
+            .apply_diff_to_table::<MatchRoundPlayerExt>("match_round_ext", &self.match_round_ext);
         diff.match_state =
-            cache.apply_diff_to_table::<TmMatchState>("match_state", &self.match_state);
+            cache.apply_diff_to_table::<MatchState>("match_state", &self.match_state);
         diff.my_jobs = cache.apply_diff_to_table::<TmWorkerJobs>("my_jobs", &self.my_jobs);
         diff.my_match_template =
             cache.apply_diff_to_table::<TmMatchV1>("my_match_template", &self.my_match_template);
@@ -1411,11 +1417,11 @@ pub struct AppliedDiff<'r> {
     competition_node_position: __sdk::TableAppliedDiff<'r, CompetitionNodePosition>,
     competition_record: __sdk::TableAppliedDiff<'r, TmRecord>,
     map_record: __sdk::TableAppliedDiff<'r, TmRecord>,
-    match_leaderboard: __sdk::TableAppliedDiff<'r, TmMatchRoundPlayer>,
+    match_leaderboard: __sdk::TableAppliedDiff<'r, MatchRoundPlayer>,
     match_record: __sdk::TableAppliedDiff<'r, TmRecord>,
-    match_round: __sdk::TableAppliedDiff<'r, TmMatchRoundPlayer>,
-    match_round_ext: __sdk::TableAppliedDiff<'r, TmMatchRoundPlayerExt>,
-    match_state: __sdk::TableAppliedDiff<'r, TmMatchState>,
+    match_round: __sdk::TableAppliedDiff<'r, MatchRoundPlayer>,
+    match_round_ext: __sdk::TableAppliedDiff<'r, MatchRoundPlayerExt>,
+    match_state: __sdk::TableAppliedDiff<'r, MatchState>,
     my_jobs: __sdk::TableAppliedDiff<'r, TmWorkerJobs>,
     my_match_template: __sdk::TableAppliedDiff<'r, TmMatchV1>,
     my_project: __sdk::TableAppliedDiff<'r, MyProjectV1>,
@@ -1473,27 +1479,23 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             event,
         );
         callbacks.invoke_table_row_callbacks::<TmRecord>("map_record", &self.map_record, event);
-        callbacks.invoke_table_row_callbacks::<TmMatchRoundPlayer>(
+        callbacks.invoke_table_row_callbacks::<MatchRoundPlayer>(
             "match_leaderboard",
             &self.match_leaderboard,
             event,
         );
         callbacks.invoke_table_row_callbacks::<TmRecord>("match_record", &self.match_record, event);
-        callbacks.invoke_table_row_callbacks::<TmMatchRoundPlayer>(
+        callbacks.invoke_table_row_callbacks::<MatchRoundPlayer>(
             "match_round",
             &self.match_round,
             event,
         );
-        callbacks.invoke_table_row_callbacks::<TmMatchRoundPlayerExt>(
+        callbacks.invoke_table_row_callbacks::<MatchRoundPlayerExt>(
             "match_round_ext",
             &self.match_round_ext,
             event,
         );
-        callbacks.invoke_table_row_callbacks::<TmMatchState>(
-            "match_state",
-            &self.match_state,
-            event,
-        );
+        callbacks.invoke_table_row_callbacks::<MatchState>("match_state", &self.match_state, event);
         callbacks.invoke_table_row_callbacks::<TmWorkerJobs>("my_jobs", &self.my_jobs, event);
         callbacks.invoke_table_row_callbacks::<TmMatchV1>(
             "my_match_template",

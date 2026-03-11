@@ -8,18 +8,18 @@ use crate::{
     raw_server::tab_raw_server_occupation,
     tm_match::{
         leaderboard::{
-            TabTmMatchRoundPlayer, TabTmMatchRoundPlayerExt, tab_tm_match_round_player,
-            tab_tm_match_round_player_ext,
+            TabMatchRoundPlayer, TabMatchRoundPlayerExt, tab_match_round_player,
+            tab_match_round_player_ext,
         },
-        state::{TmMatchState, tab_tm_match_state, tab_tm_match_state__view},
-        tab_tm_match,
+        state::{MatchState, tab_match_state, tab_match_state__view},
+        tab_match,
     },
     user::tab_user,
 };
 
 #[derive(Debug)]
-#[table(accessor = tab_tm_match_event)]
-struct TmMatchEvent {
+#[table(accessor = tab_match_event)]
+struct MatchEvent {
     #[index(hash)]
     pub(crate) match_id: u32,
 
@@ -45,23 +45,23 @@ pub(crate) fn handle_match_event(
 
             let round = ctx
                 .db
-                .tab_tm_match_state()
+                .tab_match_state()
                 .match_id()
                 .find(match_id)
                 .unwrap()
                 .get_round();
 
-            let player =
-                ctx.db
-                    .tab_tm_match_round_player()
-                    .try_insert(TabTmMatchRoundPlayer::new(
-                        match_id,
-                        internal_account_id,
-                        round,
-                    ))?;
+            let player = ctx
+                .db
+                .tab_match_round_player()
+                .try_insert(TabMatchRoundPlayer::new(
+                    match_id,
+                    internal_account_id,
+                    round,
+                ))?;
             ctx.db
-                .tab_tm_match_round_player_ext()
-                .try_insert(TabTmMatchRoundPlayerExt::new(
+                .tab_match_round_player_ext()
+                .try_insert(TabMatchRoundPlayerExt::new(
                     player.id,
                     match_id,
                     internal_account_id,
@@ -80,7 +80,7 @@ pub(crate) fn handle_match_event(
 
             let round = ctx
                 .db
-                .tab_tm_match_state()
+                .tab_match_state()
                 .match_id()
                 .find(match_id)
                 .unwrap()
@@ -88,7 +88,7 @@ pub(crate) fn handle_match_event(
 
             let mut entry = ctx
                 .db
-                .tab_tm_match_round_player_ext()
+                .tab_match_round_player_ext()
                 .match_round_player()
                 .filter((match_id, round, internal_account_id))
                 .next()
@@ -96,7 +96,7 @@ pub(crate) fn handle_match_event(
 
             entry.add_checkpoint(way_point.speed, way_point.racetime);
 
-            ctx.db.tab_tm_match_round_player_ext().id().update(entry);
+            ctx.db.tab_match_round_player_ext().id().update(entry);
         }
         Event::Respawn(respawn) => {
             let account_id = Uuid::parse_str(&respawn.account_id).unwrap();
@@ -110,7 +110,7 @@ pub(crate) fn handle_match_event(
 
             let round = ctx
                 .db
-                .tab_tm_match_state()
+                .tab_match_state()
                 .match_id()
                 .find(match_id)
                 .unwrap()
@@ -118,7 +118,7 @@ pub(crate) fn handle_match_event(
 
             let mut entry = ctx
                 .db
-                .tab_tm_match_round_player_ext()
+                .tab_match_round_player_ext()
                 .match_round_player()
                 .filter((match_id, round, internal_account_id))
                 .next()
@@ -126,7 +126,7 @@ pub(crate) fn handle_match_event(
 
             entry.add_respawn(respawn.speed);
 
-            ctx.db.tab_tm_match_round_player_ext().id().update(entry);
+            ctx.db.tab_match_round_player_ext().id().update(entry);
         }
         Event::GiveUp(give_up) => {
             let account_id = Uuid::parse_str(&give_up.account_id).unwrap();
@@ -140,7 +140,7 @@ pub(crate) fn handle_match_event(
 
             let round = ctx
                 .db
-                .tab_tm_match_state()
+                .tab_match_state()
                 .match_id()
                 .find(match_id)
                 .unwrap()
@@ -148,7 +148,7 @@ pub(crate) fn handle_match_event(
 
             let mut entry = ctx
                 .db
-                .tab_tm_match_round_player_ext()
+                .tab_match_round_player_ext()
                 .match_round_player()
                 .filter((match_id, round, internal_account_id))
                 .next()
@@ -156,40 +156,30 @@ pub(crate) fn handle_match_event(
 
             entry.give_up();
 
-            ctx.db.tab_tm_match_round_player_ext().id().update(entry);
+            ctx.db.tab_match_round_player_ext().id().update(entry);
         }
         Event::StartMapStart(start_map) => {
-            let mut state = ctx
-                .db
-                .tab_tm_match_state()
-                .match_id()
-                .find(match_id)
-                .unwrap();
+            let mut state = ctx.db.tab_match_state().match_id().find(match_id).unwrap();
 
             //TODO set correct active map.
             //state.set_map(start_map.map.uid);
 
-            ctx.db.tab_tm_match_state().match_id().update(state);
+            ctx.db.tab_match_state().match_id().update(state);
         }
         Event::StartRoundStart(_) => {
-            let mut state = ctx
-                .db
-                .tab_tm_match_state()
-                .match_id()
-                .find(match_id)
-                .unwrap();
+            let mut state = ctx.db.tab_match_state().match_id().find(match_id).unwrap();
 
             //TODO there could be some weirdities with paused or warmup
             state.new_round();
 
-            ctx.db.tab_tm_match_state().match_id().update(state);
+            ctx.db.tab_match_state().match_id().update(state);
         }
         Event::EndMatchEnd(_) => {
-            let Some(mut tm_match) = ctx.db.tab_tm_match().id().find(match_id) else {
+            let Some(mut tm_match) = ctx.db.tab_match().id().find(match_id) else {
                 return Err("Match not found".into());
             };
             tm_match.end_match();
-            let tm_match = ctx.db.tab_tm_match().id().update(tm_match);
+            let tm_match = ctx.db.tab_match().id().update(tm_match);
 
             internal_graph_resolution_node_finished(
                 ctx,
@@ -204,59 +194,39 @@ pub(crate) fn handle_match_event(
             log::info!("The match {match_id} has successfully ended!");
         }
         Event::WarmupStart => {
-            let mut state = ctx
-                .db
-                .tab_tm_match_state()
-                .match_id()
-                .find(match_id)
-                .unwrap();
+            let mut state = ctx.db.tab_match_state().match_id().find(match_id).unwrap();
 
             state.set_wu(true);
 
-            ctx.db.tab_tm_match_state().match_id().update(state);
+            ctx.db.tab_match_state().match_id().update(state);
         }
         Event::WarmupEnd => {
-            let mut state = ctx
-                .db
-                .tab_tm_match_state()
-                .match_id()
-                .find(match_id)
-                .unwrap();
+            let mut state = ctx.db.tab_match_state().match_id().find(match_id).unwrap();
 
             state.set_wu(false);
 
-            ctx.db.tab_tm_match_state().match_id().update(state);
+            ctx.db.tab_match_state().match_id().update(state);
         }
         Event::WarmupStartRound(_) => {
-            let mut state = ctx
-                .db
-                .tab_tm_match_state()
-                .match_id()
-                .find(match_id)
-                .unwrap();
+            let mut state = ctx.db.tab_match_state().match_id().find(match_id).unwrap();
 
             state.new_wu_round();
 
-            ctx.db.tab_tm_match_state().match_id().update(state);
+            ctx.db.tab_match_state().match_id().update(state);
         }
         Event::Pause(pause) => {
-            let mut state = ctx
-                .db
-                .tab_tm_match_state()
-                .match_id()
-                .find(match_id)
-                .unwrap();
+            let mut state = ctx.db.tab_match_state().match_id().find(match_id).unwrap();
 
             state.set_pause(pause.active);
 
-            ctx.db.tab_tm_match_state().match_id().update(state);
+            ctx.db.tab_match_state().match_id().update(state);
         }
         _ => (),
     }
 
     ctx.db
-        .tab_tm_match_event()
-        .try_insert(TmMatchEvent { match_id, event })?;
+        .tab_match_event()
+        .try_insert(MatchEvent { match_id, event })?;
 
     Ok(())
 }

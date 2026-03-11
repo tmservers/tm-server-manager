@@ -47,8 +47,8 @@ impl CompetitionV1 {
         self.template
     }
 
-    fn instantiate(mut self, new_parent: u32) -> Self {
-        self.template = false;
+    fn instantiate(mut self, new_parent: u32, stay_template: bool) -> Self {
+        self.template = stay_template;
         self.id = 0;
         self.parent_id = new_parent;
         self
@@ -117,7 +117,7 @@ pub fn competition_create(
         .authorize()?;
 
     if with_template != 0 {
-        competition_template_instantiate(ctx, parent_id, with_template)?;
+        competition_template_instantiate(ctx, parent_id, with_template, name)?;
     } else {
         //SAFETY: The competition gets commnited afterwards.
         let new_competition =

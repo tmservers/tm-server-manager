@@ -6,7 +6,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct TmMatchState {
+pub struct MatchState {
     pub map_id: __sdk::Uuid,
     pub match_id: u32,
     pub restarted: u16,
@@ -16,27 +16,27 @@ pub struct TmMatchState {
     pub paused: bool,
 }
 
-impl __sdk::InModule for TmMatchState {
+impl __sdk::InModule for MatchState {
     type Module = super::RemoteModule;
 }
 
-/// Column accessor struct for the table `TmMatchState`.
+/// Column accessor struct for the table `MatchState`.
 ///
 /// Provides typed access to columns for query building.
-pub struct TmMatchStateCols {
-    pub map_id: __sdk::__query_builder::Col<TmMatchState, __sdk::Uuid>,
-    pub match_id: __sdk::__query_builder::Col<TmMatchState, u32>,
-    pub restarted: __sdk::__query_builder::Col<TmMatchState, u16>,
-    pub round: __sdk::__query_builder::Col<TmMatchState, u16>,
-    pub warmup: __sdk::__query_builder::Col<TmMatchState, u16>,
-    pub is_warmup: __sdk::__query_builder::Col<TmMatchState, bool>,
-    pub paused: __sdk::__query_builder::Col<TmMatchState, bool>,
+pub struct MatchStateCols {
+    pub map_id: __sdk::__query_builder::Col<MatchState, __sdk::Uuid>,
+    pub match_id: __sdk::__query_builder::Col<MatchState, u32>,
+    pub restarted: __sdk::__query_builder::Col<MatchState, u16>,
+    pub round: __sdk::__query_builder::Col<MatchState, u16>,
+    pub warmup: __sdk::__query_builder::Col<MatchState, u16>,
+    pub is_warmup: __sdk::__query_builder::Col<MatchState, bool>,
+    pub paused: __sdk::__query_builder::Col<MatchState, bool>,
 }
 
-impl __sdk::__query_builder::HasCols for TmMatchState {
-    type Cols = TmMatchStateCols;
+impl __sdk::__query_builder::HasCols for MatchState {
+    type Cols = MatchStateCols;
     fn cols(table_name: &'static str) -> Self::Cols {
-        TmMatchStateCols {
+        MatchStateCols {
             map_id: __sdk::__query_builder::Col::new(table_name, "map_id"),
             match_id: __sdk::__query_builder::Col::new(table_name, "match_id"),
             restarted: __sdk::__query_builder::Col::new(table_name, "restarted"),
@@ -48,20 +48,20 @@ impl __sdk::__query_builder::HasCols for TmMatchState {
     }
 }
 
-/// Indexed column accessor struct for the table `TmMatchState`.
+/// Indexed column accessor struct for the table `MatchState`.
 ///
 /// Provides typed access to indexed columns for query building.
-pub struct TmMatchStateIxCols {
-    pub match_id: __sdk::__query_builder::IxCol<TmMatchState, u32>,
+pub struct MatchStateIxCols {
+    pub match_id: __sdk::__query_builder::IxCol<MatchState, u32>,
 }
 
-impl __sdk::__query_builder::HasIxCols for TmMatchState {
-    type IxCols = TmMatchStateIxCols;
+impl __sdk::__query_builder::HasIxCols for MatchState {
+    type IxCols = MatchStateIxCols;
     fn ix_cols(table_name: &'static str) -> Self::IxCols {
-        TmMatchStateIxCols {
+        MatchStateIxCols {
             match_id: __sdk::__query_builder::IxCol::new(table_name, "match_id"),
         }
     }
 }
 
-impl __sdk::__query_builder::CanBeLookupTable for TmMatchState {}
+impl __sdk::__query_builder::CanBeLookupTable for MatchState {}

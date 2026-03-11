@@ -6,7 +6,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct TmMatchRoundPlayer {
+pub struct MatchRoundPlayer {
     pub account_id: __sdk::Uuid,
     pub id: u32,
     pub match_id: u32,
@@ -16,27 +16,27 @@ pub struct TmMatchRoundPlayer {
     pub position: u16,
 }
 
-impl __sdk::InModule for TmMatchRoundPlayer {
+impl __sdk::InModule for MatchRoundPlayer {
     type Module = super::RemoteModule;
 }
 
-/// Column accessor struct for the table `TmMatchRoundPlayer`.
+/// Column accessor struct for the table `MatchRoundPlayer`.
 ///
 /// Provides typed access to columns for query building.
-pub struct TmMatchRoundPlayerCols {
-    pub account_id: __sdk::__query_builder::Col<TmMatchRoundPlayer, __sdk::Uuid>,
-    pub id: __sdk::__query_builder::Col<TmMatchRoundPlayer, u32>,
-    pub match_id: __sdk::__query_builder::Col<TmMatchRoundPlayer, u32>,
-    pub time: __sdk::__query_builder::Col<TmMatchRoundPlayer, i32>,
-    pub score: __sdk::__query_builder::Col<TmMatchRoundPlayer, i32>,
-    pub round: __sdk::__query_builder::Col<TmMatchRoundPlayer, u16>,
-    pub position: __sdk::__query_builder::Col<TmMatchRoundPlayer, u16>,
+pub struct MatchRoundPlayerCols {
+    pub account_id: __sdk::__query_builder::Col<MatchRoundPlayer, __sdk::Uuid>,
+    pub id: __sdk::__query_builder::Col<MatchRoundPlayer, u32>,
+    pub match_id: __sdk::__query_builder::Col<MatchRoundPlayer, u32>,
+    pub time: __sdk::__query_builder::Col<MatchRoundPlayer, i32>,
+    pub score: __sdk::__query_builder::Col<MatchRoundPlayer, i32>,
+    pub round: __sdk::__query_builder::Col<MatchRoundPlayer, u16>,
+    pub position: __sdk::__query_builder::Col<MatchRoundPlayer, u16>,
 }
 
-impl __sdk::__query_builder::HasCols for TmMatchRoundPlayer {
-    type Cols = TmMatchRoundPlayerCols;
+impl __sdk::__query_builder::HasCols for MatchRoundPlayer {
+    type Cols = MatchRoundPlayerCols;
     fn cols(table_name: &'static str) -> Self::Cols {
-        TmMatchRoundPlayerCols {
+        MatchRoundPlayerCols {
             account_id: __sdk::__query_builder::Col::new(table_name, "account_id"),
             id: __sdk::__query_builder::Col::new(table_name, "id"),
             match_id: __sdk::__query_builder::Col::new(table_name, "match_id"),

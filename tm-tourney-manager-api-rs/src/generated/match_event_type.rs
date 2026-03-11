@@ -8,47 +8,47 @@ use super::event_type::Event;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct TmMatchEvent {
+pub struct MatchEvent {
     pub match_id: u32,
     pub event: Event,
 }
 
-impl __sdk::InModule for TmMatchEvent {
+impl __sdk::InModule for MatchEvent {
     type Module = super::RemoteModule;
 }
 
-/// Column accessor struct for the table `TmMatchEvent`.
+/// Column accessor struct for the table `MatchEvent`.
 ///
 /// Provides typed access to columns for query building.
-pub struct TmMatchEventCols {
-    pub match_id: __sdk::__query_builder::Col<TmMatchEvent, u32>,
-    pub event: __sdk::__query_builder::Col<TmMatchEvent, Event>,
+pub struct MatchEventCols {
+    pub match_id: __sdk::__query_builder::Col<MatchEvent, u32>,
+    pub event: __sdk::__query_builder::Col<MatchEvent, Event>,
 }
 
-impl __sdk::__query_builder::HasCols for TmMatchEvent {
-    type Cols = TmMatchEventCols;
+impl __sdk::__query_builder::HasCols for MatchEvent {
+    type Cols = MatchEventCols;
     fn cols(table_name: &'static str) -> Self::Cols {
-        TmMatchEventCols {
+        MatchEventCols {
             match_id: __sdk::__query_builder::Col::new(table_name, "match_id"),
             event: __sdk::__query_builder::Col::new(table_name, "event"),
         }
     }
 }
 
-/// Indexed column accessor struct for the table `TmMatchEvent`.
+/// Indexed column accessor struct for the table `MatchEvent`.
 ///
 /// Provides typed access to indexed columns for query building.
-pub struct TmMatchEventIxCols {
-    pub match_id: __sdk::__query_builder::IxCol<TmMatchEvent, u32>,
+pub struct MatchEventIxCols {
+    pub match_id: __sdk::__query_builder::IxCol<MatchEvent, u32>,
 }
 
-impl __sdk::__query_builder::HasIxCols for TmMatchEvent {
-    type IxCols = TmMatchEventIxCols;
+impl __sdk::__query_builder::HasIxCols for MatchEvent {
+    type IxCols = MatchEventIxCols;
     fn ix_cols(table_name: &'static str) -> Self::IxCols {
-        TmMatchEventIxCols {
+        MatchEventIxCols {
             match_id: __sdk::__query_builder::IxCol::new(table_name, "match_id"),
         }
     }
 }
 
-impl __sdk::__query_builder::CanBeLookupTable for TmMatchEvent {}
+impl __sdk::__query_builder::CanBeLookupTable for MatchEvent {}

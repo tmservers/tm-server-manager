@@ -1,8 +1,8 @@
 use spacetimedb::{AnonymousViewContext, Query, Uuid, table, view};
 
 #[derive(Debug, Copy, Clone)]
-#[table(accessor=tab_tm_match_state)]
-pub struct TmMatchState {
+#[table(accessor=tab_match_state)]
+pub struct MatchState {
     map_id: Uuid,
     #[primary_key]
     pub(crate) match_id: u32,
@@ -13,7 +13,7 @@ pub struct TmMatchState {
     paused: bool,
 }
 
-impl TmMatchState {
+impl MatchState {
     pub fn new(match_id: u32) -> Self {
         Self {
             match_id,
@@ -48,9 +48,9 @@ impl TmMatchState {
 }
 
 #[view(accessor=match_state,public)]
-pub fn match_state(ctx: &AnonymousViewContext /* match_id:u32 */) -> impl Query<TmMatchState> {
+pub fn match_state(ctx: &AnonymousViewContext /* match_id:u32 */) -> impl Query<MatchState> {
     let match_id = 1u32;
     ctx.from
-        .tab_tm_match_state()
+        .tab_match_state()
         .r#where(|c| c.match_id.eq(match_id))
 }

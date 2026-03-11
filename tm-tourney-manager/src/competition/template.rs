@@ -12,7 +12,7 @@ use crate::{
     project::permissions::ProjectPermissionsV1,
     registration::tab_registration,
     scheduling::tab_schedule,
-    tm_match::tab_tm_match,
+    tm_match::tab_match,
 };
 
 #[reducer]
@@ -20,6 +20,7 @@ pub fn competition_template_create(
     ctx: &ReducerContext,
     name: String,
     parent_id: u32,
+    with_template: u32,
 ) -> Result<(), String> {
     let account_id = ctx.get_user_account()?;
 
@@ -33,18 +34,25 @@ pub fn competition_template_create(
         .permission(ProjectPermissionsV1::COMPETITION_CREATE)
         .authorize()?;
 
-    //SAFETY: The competition gets commnited afterwards.
-    let new_competition =
-        unsafe { CompetitionV1::new_template(name, parent_id, parent_competition.get_project()) };
-    ctx.db.tab_competition().try_insert(new_competition)?;
+    if with_template != 0 {
+        competition_template_instantiate(ctx, parent_id, with_template, name)?;
+    } else {
+        //SAFETY: The competition gets commnited afterwards.
+        let new_competition = unsafe {
+            CompetitionV1::new_template(name, parent_id, parent_competition.get_project())
+        };
+
+        ctx.db.tab_competition().try_insert(new_competition)?;
+    }
 
     Ok(())
 }
 
 pub(super) fn competition_template_instantiate(
     ctx: &ReducerContext,
-    target: u32,
+    target_id: u32,
     template_id: u32,
+    name: String,
 ) -> Result<(), String> {
     let account_id = ctx.get_user_account()?;
 
@@ -57,7 +65,18 @@ pub(super) fn competition_template_instantiate(
         return Err("Cannot instantiate a template from a non template competition.".into());
     }
 
-    if ctx
+    // If parent is valid it is guaranteed that it has a valid project associated with it.
+    let Some(target_competition) = ctx.db.tab_competition().id().find(target_id) else {
+        return Err("Invalid parent_id".into());
+    };
+
+    let stay_template = target_competition.is_template();
+    /* if target_competition.is_template() {
+        return Err("Cannot do that");
+    } */
+
+    //TODO this would make sense in another variation
+    /* if ctx
         .db
         .tab_competition()
         .id()
@@ -66,7 +85,7 @@ pub(super) fn competition_template_instantiate(
         .is_template()
     {
         return Err("Cannot instantiate a non root competition as a template. This restriction might get lifted in the future".into());
-    }
+    } */
 
     //TODO evaluate if other permission would be better.
     ctx.auth_builder(competition_template.project_id, account_id)?
@@ -82,7 +101,7 @@ pub(super) fn competition_template_instantiate(
 
     let matches = ctx
         .db
-        .tab_tm_match()
+        .tab_match()
         .parent_id()
         .filter(competition_template.id);
     let competitions = ctx
@@ -103,29 +122,32 @@ pub(super) fn competition_template_instantiate(
     //TODO rest of node types
 
     // Instanatiate the top level node.
-    let new_comp = competition_template.instantiate(target);
+    let mut new_comp = competition_template.instantiate(target_id, stay_template);
+    new_comp.name = name;
     let new_comp = ctx.db.tab_competition().try_insert(new_comp)?;
 
     let mut match_map = HashMap::new();
     for old_match in matches {
         let old_id = old_match.id;
-        let new_match = old_match.instantiate(new_comp.id);
-        let new_match = ctx.db.tab_tm_match().try_insert(new_match)?;
+        let new_match = old_match.instantiate(new_comp.id, stay_template);
+        let new_match = ctx.db.tab_match().try_insert(new_match)?;
         match_map.insert(old_id, new_match);
     }
 
     let mut competition_map = HashMap::new();
     for old_competition in competitions {
         let old_id = old_competition.id;
-        let new_competition = old_competition.instantiate(new_comp.id);
+        let old_name = old_competition.name.clone();
+        let new_competition = old_competition.instantiate(new_comp.id, stay_template);
         let new_competition = ctx.db.tab_competition().try_insert(new_competition)?;
+        competition_template_instantiate(ctx, new_competition.id, old_id, old_name)?;
         competition_map.insert(old_id, new_competition);
     }
 
     let mut registration_map = HashMap::new();
     for old_registration in registrations {
         let old_id = old_registration.id;
-        let new_registration = old_registration.instantiate(new_comp.id);
+        let new_registration = old_registration.instantiate(new_comp.id, stay_template);
         let new_registration = ctx.db.tab_registration().try_insert(new_registration)?;
         registration_map.insert(old_id, new_registration);
     }
@@ -133,7 +155,7 @@ pub(super) fn competition_template_instantiate(
     let mut schedule_map = HashMap::new();
     for old_schedule in schedules {
         let old_id = old_schedule.scheduled_id as u32;
-        let new_schedule = old_schedule.instantiate(new_comp.id);
+        let new_schedule = old_schedule.instantiate(new_comp.id, stay_template);
         let new_schedule = ctx.db.tab_schedule().try_insert(new_schedule)?;
         schedule_map.insert(old_id, new_schedule);
     }

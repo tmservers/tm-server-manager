@@ -2,7 +2,7 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN YOUR MODULE SOURCE CODE INSTEAD.
 
 #![allow(unused, clippy::all)]
-use super::tm_match_state_type::TmMatchState;
+use super::match_state_type::MatchState;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 /// Table handle for the table `match_state`.
@@ -14,7 +14,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 /// but to directly chain method calls,
 /// like `ctx.db.match_state().on_insert(...)`.
 pub struct MatchStateTableHandle<'ctx> {
-    imp: __sdk::TableHandle<TmMatchState>,
+    imp: __sdk::TableHandle<MatchState>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -31,7 +31,7 @@ pub trait MatchStateTableAccess {
 impl MatchStateTableAccess for super::RemoteTables {
     fn match_state(&self) -> MatchStateTableHandle<'_> {
         MatchStateTableHandle {
-            imp: self.imp.get_table::<TmMatchState>("match_state"),
+            imp: self.imp.get_table::<MatchState>("match_state"),
             ctx: std::marker::PhantomData,
         }
     }
@@ -41,13 +41,13 @@ pub struct MatchStateInsertCallbackId(__sdk::CallbackId);
 pub struct MatchStateDeleteCallbackId(__sdk::CallbackId);
 
 impl<'ctx> __sdk::Table for MatchStateTableHandle<'ctx> {
-    type Row = TmMatchState;
+    type Row = MatchState;
     type EventContext = super::EventContext;
 
     fn count(&self) -> u64 {
         self.imp.count()
     }
-    fn iter(&self) -> impl Iterator<Item = TmMatchState> + '_ {
+    fn iter(&self) -> impl Iterator<Item = MatchState> + '_ {
         self.imp.iter()
     }
 
@@ -80,32 +80,32 @@ impl<'ctx> __sdk::Table for MatchStateTableHandle<'ctx> {
 
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
-    let _table = client_cache.get_or_make_table::<TmMatchState>("match_state");
+    let _table = client_cache.get_or_make_table::<MatchState>("match_state");
 }
 
 #[doc(hidden)]
 pub(super) fn parse_table_update(
     raw_updates: __ws::v2::TableUpdate,
-) -> __sdk::Result<__sdk::TableUpdate<TmMatchState>> {
+) -> __sdk::Result<__sdk::TableUpdate<MatchState>> {
     __sdk::TableUpdate::parse_table_update(raw_updates).map_err(|e| {
-        __sdk::InternalError::failed_parse("TableUpdate<TmMatchState>", "TableUpdate")
+        __sdk::InternalError::failed_parse("TableUpdate<MatchState>", "TableUpdate")
             .with_cause(e)
             .into()
     })
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for query builder access to the table `TmMatchState`.
+/// Extension trait for query builder access to the table `MatchState`.
 ///
 /// Implemented for [`__sdk::QueryTableAccessor`].
 pub trait match_stateQueryTableAccess {
     #[allow(non_snake_case)]
-    /// Get a query builder for the table `TmMatchState`.
-    fn match_state(&self) -> __sdk::__query_builder::Table<TmMatchState>;
+    /// Get a query builder for the table `MatchState`.
+    fn match_state(&self) -> __sdk::__query_builder::Table<MatchState>;
 }
 
 impl match_stateQueryTableAccess for __sdk::QueryTableAccessor {
-    fn match_state(&self) -> __sdk::__query_builder::Table<TmMatchState> {
+    fn match_state(&self) -> __sdk::__query_builder::Table<MatchState> {
         __sdk::__query_builder::Table::new("match_state")
     }
 }

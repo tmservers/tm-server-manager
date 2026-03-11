@@ -21,7 +21,7 @@ use crate::{
         tab_raw_server, tab_raw_server_occupation,
     },
     tm_match::{
-        state::{TmMatchState, tab_tm_match_state},
+        state::{MatchState, tab_match_state},
         template::match_template_instantiate,
     },
 };
@@ -51,7 +51,7 @@ pub mod template;
 /// If the ephemeral state matches the desired state. Advances to [MatchStatus::Live].
 /// - *End.* The match has concluded. Loads the post_match_config if it is present. Releases
 /// the captured server. Advances to [MatchStatus::Ended].
-#[table(accessor= tab_tm_match)]
+#[table(accessor= tab_match)]
 //#[table(accessor=tab_match_template)]
 pub struct TmMatchV1 {
     name: String,
@@ -77,6 +77,7 @@ pub struct TmMatchV1 {
 
     auto_provision_server: bool,
     template: bool,
+    restricted: bool,
 }
 
 impl TmMatchV1 {
@@ -123,8 +124,8 @@ impl TmMatchV1 {
         self.template
     }
 
-    pub(crate) fn instantiate(mut self, parent_id: u32) -> Self {
-        self.template = false;
+    pub(crate) fn instantiate(mut self, parent_id: u32, stay_template: bool) -> Self {
+        self.template = stay_template;
         self.parent_id = parent_id;
         self.id = 0;
         self
@@ -188,9 +189,10 @@ pub fn match_create(
             post_match_config: 0,
             auto_provision_server: true,
             template: false,
+            restricted: true,
         };
 
-        let tm_match = ctx.db.tab_tm_match().try_insert(tm_match)?;
+        let tm_match = ctx.db.tab_match().try_insert(tm_match)?;
 
         ctx.db
             .tab_competition_node_position()
@@ -212,7 +214,7 @@ pub fn match_create(
 pub fn match_assign_server(ctx: &ReducerContext, to: u32, server_id: u32) -> Result<(), String> {
     let user_account = ctx.get_user_account()?;
 
-    let Some(tm_match) = ctx.db.tab_tm_match().id().find(to) else {
+    let Some(tm_match) = ctx.db.tab_match().id().find(to) else {
         return Err("Supplied match was not found!".into());
     };
 
@@ -290,11 +292,11 @@ pub fn match_update_pre_config(
     config_id: u32,
 ) -> Result<(), String> {
     ctx.get_user()?;
-    if let Some(mut tm_match) = ctx.db.tab_tm_match().id().find(id)
+    if let Some(mut tm_match) = ctx.db.tab_match().id().find(id)
         && tm_match.status == MatchStatus::Configuring
     {
         tm_match.pre_match_config = config_id;
-        ctx.db.tab_tm_match().id().update(tm_match);
+        ctx.db.tab_match().id().update(tm_match);
         Ok(())
     } else {
         Err(format!("Match with id: {id} not found."))
@@ -308,7 +310,7 @@ pub fn match_update_config(
     config: ServerConfig,
 ) -> Result<(), String> {
     ctx.get_user()?;
-    if let Some(mut tm_match) = ctx.db.tab_tm_match().id().find(id)
+    if let Some(mut tm_match) = ctx.db.tab_match().id().find(id)
         && tm_match.status == MatchStatus::Configuring
     {
         //TODO cleanup old/orphaned configs. Should i do this with a mapping table or just always instantiate the config or keep track of this in the match?
@@ -318,7 +320,7 @@ pub fn match_update_config(
             .tab_raw_server_config()
             .try_insert(RawServerConfig::new(config))?;
         tm_match.match_config = cfg.id;
-        ctx.db.tab_tm_match().id().update(tm_match);
+        ctx.db.tab_match().id().update(tm_match);
         Ok(())
     } else {
         Err(format!("Match with id: {id} not found."))
@@ -331,7 +333,7 @@ pub fn match_update_config(
 pub fn match_set_preparation(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
     let user = ctx.get_user_account()?;
 
-    let Some(mut tm_match) = ctx.db.tab_tm_match().id().find(match_id) else {
+    let Some(mut tm_match) = ctx.db.tab_match().id().find(match_id) else {
         return Err("Match not found!".into());
     };
 
@@ -354,11 +356,11 @@ pub fn match_set_preparation(ctx: &ReducerContext, match_id: u32) -> Result<(), 
         .is_some()
     {
         tm_match.status = MatchStatus::Preparation;
-        ctx.db.tab_tm_match().id().update(tm_match);
+        ctx.db.tab_match().id().update(tm_match);
 
         ctx.db
-            .tab_tm_match_state()
-            .try_insert(TmMatchState::new(match_id))?;
+            .tab_match_state()
+            .try_insert(MatchState::new(match_id))?;
 
         return Ok(());
     }
@@ -374,11 +376,11 @@ pub fn match_set_preparation(ctx: &ReducerContext, match_id: u32) -> Result<(), 
             .try_insert(RawServerOccupation::new(match_id, available_servers[0].id))?;
 
         tm_match.status = MatchStatus::Preparation;
-        ctx.db.tab_tm_match().id().update(tm_match);
+        ctx.db.tab_match().id().update(tm_match);
 
         ctx.db
-            .tab_tm_match_state()
-            .try_insert(TmMatchState::new(match_id))?;
+            .tab_match_state()
+            .try_insert(MatchState::new(match_id))?;
 
         Ok(())
     } else {
@@ -392,7 +394,7 @@ pub fn match_set_preparation(ctx: &ReducerContext, match_id: u32) -> Result<(), 
 pub fn match_try_start(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
     let user = ctx.get_user_account()?;
 
-    let Some(mut tm_match) = ctx.db.tab_tm_match().id().find(match_id) else {
+    let Some(mut tm_match) = ctx.db.tab_match().id().find(match_id) else {
         return Err("Match not found!".into());
     };
 
@@ -417,11 +419,11 @@ pub fn match_try_start(ctx: &ReducerContext, match_id: u32) -> Result<(), String
 
     //TODO this is depending on player state (e.g. is there need to be specific players present are all there?)
     tm_match.status = MatchStatus::Live;
-    ctx.db.tab_tm_match().id().update(tm_match);
+    ctx.db.tab_match().id().update(tm_match);
 
     ctx.db
-        .tab_tm_match_state()
-        .try_insert(TmMatchState::new(match_id))?;
+        .tab_match_state()
+        .try_insert(MatchState::new(match_id))?;
 
     Ok(())
 }
@@ -430,7 +432,7 @@ pub fn match_try_start(ctx: &ReducerContext, match_id: u32) -> Result<(), String
 pub fn match_delete(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
     let user = ctx.get_user_account()?;
 
-    let Some(tm_match) = ctx.db.tab_tm_match().id().find(match_id) else {
+    let Some(tm_match) = ctx.db.tab_match().id().find(match_id) else {
         return Err(format!("Match with id: {match_id} not found."));
     };
 
@@ -438,7 +440,7 @@ pub fn match_delete(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
         .permission(ProjectPermissionsV1::MATCH_DELETE)
         .authorize()?;
 
-    if !ctx.db.tab_tm_match().id().delete(match_id) {
+    if !ctx.db.tab_match().id().delete(match_id) {
         return Err(format!("Match with id: {match_id} not found."));
     }
 
@@ -470,5 +472,5 @@ pub fn match_delete(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
 
 #[view(accessor=tm_match,public)]
 fn tm_match(ctx: &ViewContext) -> impl Query<TmMatchV1> {
-    ctx.from.tab_tm_match()
+    ctx.from.tab_match()
 }

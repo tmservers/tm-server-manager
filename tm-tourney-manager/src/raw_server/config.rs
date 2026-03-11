@@ -4,7 +4,7 @@ use tm_server_types::config::ServerConfig;
 use crate::{
     authorization::Authorization,
     raw_server::{tab_raw_server__view, tab_raw_server_occupation__view},
-    tm_match::tab_tm_match__view,
+    tm_match::tab_match__view,
 };
 
 #[table(accessor=tab_raw_server_config)]
@@ -72,11 +72,7 @@ fn raw_server_config(ctx: &ViewContext) -> Option<ServerConfig> {
         .server_id()
         .find(server.id)?;
 
-    let tm_match = ctx
-        .db
-        .tab_tm_match()
-        .id()
-        .find(server_occupation.match_id)?;
+    let tm_match = ctx.db.tab_match().id().find(server_occupation.match_id)?;
 
     let config = ctx
         .db

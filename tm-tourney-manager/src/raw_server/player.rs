@@ -9,7 +9,7 @@ use crate::{
     authorization::Authorization,
     competition::connection::{NodeKindHandle, NodeType, tab_competition_connection__view},
     raw_server::{tab_raw_server__view, tab_raw_server_occupation__view},
-    tm_match::{leaderboard::match_leaderboard, tab_tm_match__view},
+    tm_match::{leaderboard::match_leaderboard, tab_match__view},
 };
 
 #[derive(Debug)]

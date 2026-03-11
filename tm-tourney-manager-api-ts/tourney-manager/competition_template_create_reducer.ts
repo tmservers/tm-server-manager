@@ -13,4 +13,5 @@ import {
 export default {
   name: __t.string(),
   parentId: __t.u32(),
+  withTemplate: __t.u32(),
 };
