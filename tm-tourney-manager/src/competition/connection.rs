@@ -16,7 +16,7 @@ use crate::{
     project::permissions::ProjectPermissionsV1,
     raw_server::player::PermittedPlayer,
     registration::tab_registration,
-    scheduling::tab_schedule,
+    schedule::tab_schedule,
     tm_match::{leaderboard::match_leaderboard, match_set_preparation, tab_match},
 };
 
@@ -95,7 +95,7 @@ impl TabCompetitionConnection {
             NodeKindHandle::CompetitionV1(c) => todo!(),
             NodeKindHandle::MonitoringV1(_) => todo!(),
             NodeKindHandle::ServerV1(_) => todo!(),
-            NodeKindHandle::SchedulingV1(_) => todo!(),
+            NodeKindHandle::ScheduleV1(_) => todo!(),
             NodeKindHandle::PortalV1(_) => todo!(),
             NodeKindHandle::RegistrationV1(_) => todo!(),
         }
@@ -129,7 +129,7 @@ pub enum NodeKindHandle {
     CompetitionV1(u32),
     MonitoringV1(u32),
     ServerV1(u32),
-    SchedulingV1(u32),
+    ScheduleV1(u32),
     PortalV1(u32),
     RegistrationV1(u32),
 }
@@ -167,7 +167,7 @@ impl NodeKindHandle {
                     Err("Competition could not be found".into())
                 }
             }
-            NodeKindHandle::SchedulingV1(sched) => {
+            NodeKindHandle::ScheduleV1(sched) => {
                 if let Some(ma) = ctx.db.tab_schedule().scheduled_id().find(*sched as u64) {
                     Ok(ma.parent_id())
                 } else {
@@ -210,7 +210,7 @@ impl NodeKindHandle {
                     u32::MAX
                 }
             }
-            NodeKindHandle::SchedulingV1(sched) => {
+            NodeKindHandle::ScheduleV1(sched) => {
                 if let Some(ma) = ctx.db.tab_schedule().scheduled_id().find(*sched as u64) {
                     ma.get_project()
                 } else {
@@ -240,7 +240,7 @@ impl NodeKindHandle {
         match self {
             NodeKindHandle::MatchV1(m) => (1, m),
             NodeKindHandle::CompetitionV1(c) => (2, c),
-            NodeKindHandle::SchedulingV1(s) => (3, s),
+            NodeKindHandle::ScheduleV1(s) => (3, s),
             NodeKindHandle::MonitoringV1(_) => todo!(),
             NodeKindHandle::ServerV1(_) => todo!(),
             NodeKindHandle::PortalV1(p) => (6, p),
@@ -252,7 +252,7 @@ impl NodeKindHandle {
         match variant {
             1 => Self::MatchV1(value),
             2 => Self::CompetitionV1(value),
-            3 => Self::SchedulingV1(value),
+            3 => Self::ScheduleV1(value),
             6 => Self::PortalV1(value),
             7 => Self::RegistrationV1(value),
             _ => unreachable!(),
@@ -269,7 +269,7 @@ impl NodeKindHandle {
                 let node = ctx.db.tab_competition().id().find(c).unwrap();
                 node.is_template()
             }
-            NodeKindHandle::SchedulingV1(sched) => {
+            NodeKindHandle::ScheduleV1(sched) => {
                 let node = ctx
                     .db
                     .tab_schedule()
@@ -303,7 +303,7 @@ impl NodeType for NodeKindHandle {
             NodeKindHandle::CompetitionV1(_) => todo!(),
             NodeKindHandle::MonitoringV1(_) => todo!(),
             NodeKindHandle::ServerV1(_) => todo!(),
-            NodeKindHandle::SchedulingV1(_) => todo!(),
+            NodeKindHandle::ScheduleV1(_) => todo!(),
             NodeKindHandle::PortalV1(_) => todo!(),
             NodeKindHandle::RegistrationV1(_) => todo!(),
         }

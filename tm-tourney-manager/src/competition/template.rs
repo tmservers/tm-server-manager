@@ -11,7 +11,7 @@ use crate::{
     },
     project::permissions::ProjectPermissionsV1,
     registration::tab_registration,
-    scheduling::tab_schedule,
+    schedule::tab_schedule,
     tm_match::tab_match,
 };
 
@@ -168,7 +168,7 @@ pub(super) fn competition_template_instantiate(
             NodeKindHandle::CompetitionV1(i) => competition_map.get(&i).unwrap().id,
             NodeKindHandle::MonitoringV1(_) => todo!(),
             NodeKindHandle::ServerV1(_) => todo!(),
-            NodeKindHandle::SchedulingV1(i) => schedule_map.get(&i).unwrap().scheduled_id as u32,
+            NodeKindHandle::ScheduleV1(i) => schedule_map.get(&i).unwrap().scheduled_id as u32,
             NodeKindHandle::PortalV1(_) => todo!(),
             NodeKindHandle::RegistrationV1(i) => registration_map.get(&i).unwrap().id,
         };
@@ -179,7 +179,7 @@ pub(super) fn competition_template_instantiate(
             NodeKindHandle::CompetitionV1(i) => competition_map.get(&i).unwrap().id,
             NodeKindHandle::MonitoringV1(_) => todo!(),
             NodeKindHandle::ServerV1(_) => todo!(),
-            NodeKindHandle::SchedulingV1(i) => schedule_map.get(&i).unwrap().scheduled_id as u32,
+            NodeKindHandle::ScheduleV1(i) => schedule_map.get(&i).unwrap().scheduled_id as u32,
             NodeKindHandle::PortalV1(_) => todo!(),
             NodeKindHandle::RegistrationV1(i) => registration_map.get(&i).unwrap().id,
         };

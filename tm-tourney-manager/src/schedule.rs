@@ -7,7 +7,7 @@ use crate::competition::{
     tab_competition,
 };
 
-#[table(accessor= tab_schedule, scheduled(on_schedule_triggered))]
+#[table(accessor= tab_schedule, /* scheduled(on_schedule_triggered) */)]
 pub struct ScheduleV1 {
     #[primary_key]
     #[auto_inc]
@@ -43,7 +43,7 @@ impl ScheduleV1 {
     }
 }
 
-#[spacetimedb::reducer]
+/* #[spacetimedb::reducer]
 pub(crate) fn on_schedule_triggered(ctx: &ReducerContext, arg: ScheduleV1) -> Result<(), String> {
     if !ctx.sender_auth().is_internal() {
         return Err("Only the Databse is permitted to call this reducer.".into());
@@ -52,11 +52,11 @@ pub(crate) fn on_schedule_triggered(ctx: &ReducerContext, arg: ScheduleV1) -> Re
     internal_graph_resolution_node_finished(
         ctx,
         //arg.competition_id,
-        NodeKindHandle::SchedulingV1(arg.scheduled_id as u32),
+        NodeKindHandle::ScheduleV1(arg.scheduled_id as u32),
     )?;
 
     Ok(())
-}
+} */
 
 #[reducer]
 pub fn create_schedule(

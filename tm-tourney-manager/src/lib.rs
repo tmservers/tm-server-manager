@@ -15,7 +15,7 @@ pub mod project;
 pub mod raw_server;
 pub mod record;
 pub mod registration;
-pub mod scheduling;
+pub mod schedule;
 pub mod tm_match;
 pub mod tm_server;
 pub mod user;

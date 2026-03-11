@@ -67,6 +67,7 @@ spacetime call tm-tourney-manager connection_create "{""MatchV1"": 4 }" "{""Comp
 :: Template end
 
 :: Make the actual format.
+spacetime call tm-tourney-manager schedule_create "Start Discovery 1" 1 0
 spacetime call tm-tourney-manager competition_create "Discovery 1" 1 2
 spacetime call tm-tourney-manager competition_create "Discovery 2" 1 2
 spacetime call tm-tourney-manager competition_create "Matches: Week 2" 1 3
