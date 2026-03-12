@@ -167,8 +167,8 @@ impl NodeKindHandle {
                     Err("Competition could not be found".into())
                 }
             }
-            NodeKindHandle::ScheduleV1(sched) => {
-                if let Some(ma) = ctx.db.tab_schedule().scheduled_id().find(*sched as u64) {
+            NodeKindHandle::ScheduleV1(s) => {
+                if let Some(ma) = ctx.db.tab_schedule().id().find(s) {
                     Ok(ma.parent_id())
                 } else {
                     Err("Schedule could not be found.".into())
@@ -210,8 +210,8 @@ impl NodeKindHandle {
                     u32::MAX
                 }
             }
-            NodeKindHandle::ScheduleV1(sched) => {
-                if let Some(ma) = ctx.db.tab_schedule().scheduled_id().find(*sched as u64) {
+            NodeKindHandle::ScheduleV1(s) => {
+                if let Some(ma) = ctx.db.tab_schedule().id().find(s) {
                     ma.get_project()
                 } else {
                     u32::MAX
@@ -269,13 +269,8 @@ impl NodeKindHandle {
                 let node = ctx.db.tab_competition().id().find(c).unwrap();
                 node.is_template()
             }
-            NodeKindHandle::ScheduleV1(sched) => {
-                let node = ctx
-                    .db
-                    .tab_schedule()
-                    .scheduled_id()
-                    .find(*sched as u64)
-                    .unwrap();
+            NodeKindHandle::ScheduleV1(s) => {
+                let node = ctx.db.tab_schedule().id().find(s).unwrap();
                 node.is_template()
             }
             NodeKindHandle::MonitoringV1(_) => todo!(),

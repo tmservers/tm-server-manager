@@ -154,7 +154,7 @@ pub(super) fn competition_template_instantiate(
 
     let mut schedule_map = HashMap::new();
     for old_schedule in schedules {
-        let old_id = old_schedule.scheduled_id as u32;
+        let old_id = old_schedule.id as u32;
         let new_schedule = old_schedule.instantiate(new_comp.id, stay_template);
         let new_schedule = ctx.db.tab_schedule().try_insert(new_schedule)?;
         schedule_map.insert(old_id, new_schedule);
@@ -168,7 +168,7 @@ pub(super) fn competition_template_instantiate(
             NodeKindHandle::CompetitionV1(i) => competition_map.get(&i).unwrap().id,
             NodeKindHandle::MonitoringV1(_) => todo!(),
             NodeKindHandle::ServerV1(_) => todo!(),
-            NodeKindHandle::ScheduleV1(i) => schedule_map.get(&i).unwrap().scheduled_id as u32,
+            NodeKindHandle::ScheduleV1(i) => schedule_map.get(&i).unwrap().id as u32,
             NodeKindHandle::PortalV1(_) => todo!(),
             NodeKindHandle::RegistrationV1(i) => registration_map.get(&i).unwrap().id,
         };
@@ -179,7 +179,7 @@ pub(super) fn competition_template_instantiate(
             NodeKindHandle::CompetitionV1(i) => competition_map.get(&i).unwrap().id,
             NodeKindHandle::MonitoringV1(_) => todo!(),
             NodeKindHandle::ServerV1(_) => todo!(),
-            NodeKindHandle::ScheduleV1(i) => schedule_map.get(&i).unwrap().scheduled_id as u32,
+            NodeKindHandle::ScheduleV1(i) => schedule_map.get(&i).unwrap().id as u32,
             NodeKindHandle::PortalV1(_) => todo!(),
             NodeKindHandle::RegistrationV1(i) => registration_map.get(&i).unwrap().id,
         };
