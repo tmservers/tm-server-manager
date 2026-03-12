@@ -1,8 +1,11 @@
 use spacetimedb::{ReducerContext, SpacetimeType, ViewContext, reducer, view};
 
 use crate::{
-    authorization::Authorization, competition::connection::NodeKindHandle,
-    project::permissions::ProjectPermissionsV1,
+    authorization::Authorization,
+    competition::{
+        CompetitionPermissionsV1,
+        connection::{NodeKindHandle, connection_data::competition_connection_data},
+    },
 };
 
 #[spacetimedb::table(accessor= tab_competition_node_position,index(accessor=node_position,hash(columns=[node_variant,node_id])))]
@@ -77,9 +80,9 @@ fn competition_node_position_update(
     position: Vec2,
 ) -> Result<(), String> {
     let user_account = ctx.get_user_account()?;
-    let project_id = node.get_project(ctx);
-    ctx.auth_builder(project_id, user_account)?
-        .permission(ProjectPermissionsV1::COMPETITION_LAYOUT_EDIT)
+    let competition_id = node.get_competition(ctx)?;
+    ctx.auth_builder(competition_id, user_account)?
+        .permission(CompetitionPermissionsV1::COMPETITION_LAYOUT_EDIT)
         .authorize()?;
 
     let Some(mut node) = ctx
@@ -108,9 +111,9 @@ fn competition_node_positions_update(
     let user_account = ctx.get_user_account()?;
 
     for item in &positions {
-        let project_id = item.node.get_project(ctx);
-        ctx.auth_builder(project_id, user_account)?
-            .permission(ProjectPermissionsV1::COMPETITION_LAYOUT_EDIT)
+        let competition_id = item.node.get_competition(ctx)?;
+        ctx.auth_builder(competition_id, user_account)?
+            .permission(CompetitionPermissionsV1::COMPETITION_LAYOUT_EDIT)
             .authorize()?;
     }
 

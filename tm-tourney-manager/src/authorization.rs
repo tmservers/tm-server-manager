@@ -1,13 +1,13 @@
 use std::ops::{Add, BitAnd, BitOr, Not};
 
-use spacetimedb::{JwtClaims, ProcedureContext, ReducerContext, TxContext, Uuid, ViewContext};
+use spacetimedb::{ReducerContext, Uuid, ViewContext};
 
 use crate::{
-    project::{
-        permissions::ProjectPermissionsV1,
+    competition::{
+        CompetitionPermissionsV1,
         roles::{
-            tab_project_role, tab_project_role__view, tab_project_role_member,
-            tab_project_role_member__view,
+            tab_competition_role, tab_competition_role__view, tab_competition_role_member,
+            tab_competition_role_member__view,
         },
     },
     raw_server::{RawServerV1, tab_raw_server, tab_raw_server__view},
@@ -25,7 +25,7 @@ pub(crate) trait Authorization {
         &self,
         project_id: u32,
         account_id: Uuid,
-    ) -> Result<AuthBuilder<ProjectPermissionsV1>, String>;
+    ) -> Result<AuthBuilder<CompetitionPermissionsV1>, String>;
 }
 
 impl Authorization for ReducerContext {
@@ -67,16 +67,21 @@ impl Authorization for ReducerContext {
 
     fn auth_builder(
         &self,
-        project_id: u32,
+        competition_id: u32,
         account_id: Uuid,
-    ) -> Result<AuthBuilder<ProjectPermissionsV1>, String> {
+    ) -> Result<AuthBuilder<CompetitionPermissionsV1>, String> {
         let permissions = self
             .db
-            .tab_project_role_member()
+            .tab_competition_role_member()
             .user_roles()
-            .filter((project_id, account_id))
-            .fold(ProjectPermissionsV1::default(), |acc, member| {
-                if let Some(role) = self.db.tab_project_role().id().find(member.get_role_id()) {
+            .filter((competition_id, account_id))
+            .fold(CompetitionPermissionsV1::default(), |acc, member| {
+                if let Some(role) = self
+                    .db
+                    .tab_competition_role()
+                    .id()
+                    .find(member.get_role_id())
+                {
                     return acc | role.get_permissions1();
                 }
                 acc
@@ -126,16 +131,21 @@ impl Authorization for ViewContext {
 
     fn auth_builder(
         &self,
-        project_id: u32,
+        competition_id: u32,
         account_id: Uuid,
-    ) -> Result<AuthBuilder<ProjectPermissionsV1>, String> {
+    ) -> Result<AuthBuilder<CompetitionPermissionsV1>, String> {
         let permissions = self
             .db
-            .tab_project_role_member()
+            .tab_competition_role_member()
             .user_roles()
-            .filter((project_id, account_id))
-            .fold(ProjectPermissionsV1::default(), |acc, member| {
-                if let Some(role) = self.db.tab_project_role().id().find(member.get_role_id()) {
+            .filter((competition_id, account_id))
+            .fold(CompetitionPermissionsV1::default(), |acc, member| {
+                if let Some(role) = self
+                    .db
+                    .tab_competition_role()
+                    .id()
+                    .find(member.get_role_id())
+                {
                     return acc | role.get_permissions1();
                 }
                 acc

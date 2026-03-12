@@ -4,11 +4,14 @@ use spacetimedb::{
 
 use crate::{
     authorization::Authorization, competition::template::competition_template_instantiate,
-    project::permissions::ProjectPermissionsV1,
 };
 
 pub mod connection;
+mod permissions;
+pub mod roles;
+pub mod server_pool;
 mod template;
+pub(crate) use permissions::CompetitionPermissionsV1;
 
 /// Always
 #[derive(Debug, Clone)]
@@ -21,7 +24,6 @@ pub struct CompetitionV1 {
     #[primary_key]
     pub id: u32,
 
-    project_id: u32,
     #[index(hash)]
     parent_id: u32,
 
@@ -31,10 +33,6 @@ pub struct CompetitionV1 {
 }
 
 impl CompetitionV1 {
-    pub(crate) fn get_project(&self) -> u32 {
-        self.project_id
-    }
-
     pub(crate) fn get_comp_id(&self) -> u32 {
         self.parent_id
     }
@@ -57,10 +55,9 @@ impl CompetitionV1 {
     /// # Safety
     /// The new competition has to be commited to spacetime db through the `competition_create` reducer.
     /// Otherwise the id is invalid.
-    pub unsafe fn new(name: String, parent_id: u32, project_id: u32) -> Self {
+    pub unsafe fn new(name: String, parent_id: u32) -> Self {
         Self {
             id: 0,
-            project_id,
             parent_id,
             name,
             status: CompetitionStatus::Planning,
@@ -71,10 +68,9 @@ impl CompetitionV1 {
     /// # Safety
     /// The new competition has to be commited to spacetime db through the `competition_create` reducer.
     /// Otherwise the id is invalid.
-    pub unsafe fn new_template(name: String, parent_id: u32, project_id: u32) -> Self {
+    pub unsafe fn new_template(name: String, parent_id: u32) -> Self {
         Self {
             id: 0,
-            project_id,
             parent_id,
             name,
             status: CompetitionStatus::Planning,
@@ -112,16 +108,15 @@ pub fn competition_create(
         return Err("Invalid parent_id".into());
     };
 
-    ctx.auth_builder(parent_competition.project_id, account_id)?
-        .permission(ProjectPermissionsV1::COMPETITION_CREATE)
+    ctx.auth_builder(parent_competition.id, account_id)?
+        .permission(CompetitionPermissionsV1::COMPETITION_CREATE)
         .authorize()?;
 
     if with_template != 0 {
         competition_template_instantiate(ctx, parent_id, with_template, name)?;
     } else {
         //SAFETY: The competition gets commnited afterwards.
-        let new_competition =
-            unsafe { CompetitionV1::new(name, parent_id, parent_competition.get_project()) };
+        let new_competition = unsafe { CompetitionV1::new(name, parent_id) };
         ctx.db.tab_competition().try_insert(new_competition)?;
     }
 
@@ -140,8 +135,8 @@ pub fn competition_edit_name(
         return Err("Invalid competition".into());
     };
 
-    ctx.auth_builder(competition.project_id, account_id)?
-        .permission(ProjectPermissionsV1::COMPETITION_EDIT_NAME)
+    ctx.auth_builder(competition.id, account_id)?
+        .permission(CompetitionPermissionsV1::COMPETITION_EDIT_NAME)
         .authorize()?;
 
     competition.name = name;

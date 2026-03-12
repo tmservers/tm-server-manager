@@ -6,7 +6,6 @@ use spacetimedb::{
 use crate::{
     authorization::Authorization,
     competition::{CompetitionV1, tab_competition},
-    project::permissions::ProjectPermissionsV1,
     user::{tab_user__view, tab_user_identity__view},
 };
 
@@ -80,7 +79,7 @@ fn create_project(
     })?;
 
     //SAFETY: Comitted afterwards
-    let competition = unsafe { CompetitionV1::new(name, 0, project.id) };
+    let competition = unsafe { CompetitionV1::new(name, 0) };
     ctx.db.tab_competition().try_insert(competition)?;
 
     Ok(())
@@ -89,9 +88,9 @@ fn create_project(
 #[spacetimedb::reducer]
 fn project_edit_name(ctx: &ReducerContext, project_id: u32, name: String) -> Result<(), String> {
     let user = ctx.get_user()?;
-    ctx.auth_builder(project_id, user.account_id)?
-        .permission(ProjectPermissionsV1::PROJECT_EDIT_NAME)
-        .authorize()?;
+    /* ctx.auth_builder(project_id, user.account_id)?
+    .permission(CompetitionPermissionsV1::PROJECT_EDIT_NAME)
+    .authorize()?; */
 
     let Some(mut project) = ctx.db.tab_project().id().find(project_id) else {
         return Err("Supplied project_id incorrect.".into());
@@ -111,9 +110,9 @@ fn project_edit_description(
     description: String,
 ) -> Result<(), String> {
     let user = ctx.get_user()?;
-    ctx.auth_builder(project_id, user.account_id)?
-        .permission(ProjectPermissionsV1::PROJECT_EDIT_DESCRIPTION)
-        .authorize()?;
+    /* ctx.auth_builder(project_id, user.account_id)?
+    .permission(CompetitionPermissionsV1::PROJECT_EDIT_DESCRIPTION)
+    .authorize()?; */
 
     let Some(mut project) = ctx.db.tab_project().id().find(project_id) else {
         return Err("Supplied project_id incorrect.".into());
@@ -134,9 +133,9 @@ fn project_edit_dates(
     ending_at: Timestamp,
 ) -> Result<(), String> {
     let user = ctx.get_user()?;
-    ctx.auth_builder(project_id, user.account_id)?
-        .permission(ProjectPermissionsV1::PROJECT_EDIT_DATE)
-        .authorize()?;
+    /* ctx.auth_builder(project_id, user.account_id)?
+    .permission(CompetitionPermissionsV1::PROJECT_EDIT_DATE)
+    .authorize()?; */
 
     let Some(mut project) = ctx.db.tab_project().id().find(project_id) else {
         return Err("Supplied project_id incorrect.".into());
@@ -181,7 +180,7 @@ fn project_edit_dates(
     project = ctx.db.tab_project().id().update(project);
 
     // Schedule the next status change if applicable
-    status_schedule::schedule_project_status_change(ctx, &project)?;
+    //  status_schedule::schedule_project_status_change(ctx, &project)?;
 
     Ok(())
 }
@@ -211,7 +210,7 @@ fn project_update_status(ctx: &ReducerContext, project_id: u32) -> Result<(), St
     project = ctx.db.tab_project().id().update(project);
 
     // Schedule the next status change
-    status_schedule::schedule_project_status_change(ctx, &project)?;
+    //status_schedule::schedule_project_status_change(ctx, &project)?;
 
     Ok(())
 }

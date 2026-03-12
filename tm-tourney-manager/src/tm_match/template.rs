@@ -2,8 +2,7 @@ use spacetimedb::{Query, ReducerContext, Table, ViewContext, reducer, view};
 
 use crate::{
     authorization::Authorization,
-    competition::tab_competition,
-    project::permissions::ProjectPermissionsV1,
+    competition::{CompetitionPermissionsV1, tab_competition},
     tm_match::{MatchStatus, TmMatchV1, tab_match, tab_match__query},
 };
 
@@ -15,14 +14,13 @@ fn match_template_create(ctx: &ReducerContext, name: String, parent_id: u32) -> 
         return Err("Invalid competition".into());
     };
 
-    ctx.auth_builder(parent_competition.get_project(), user)?
-        .permission(ProjectPermissionsV1::MATCH_CREATE)
+    ctx.auth_builder(parent_id, user)?
+        .permission(CompetitionPermissionsV1::MATCH_CREATE)
         .authorize()?;
 
     ctx.db.tab_match().try_insert(TmMatchV1 {
         id: 0,
         parent_id,
-        project_id: parent_competition.get_project(),
         name,
         status: MatchStatus::Configuring,
         pre_match_config: 0,

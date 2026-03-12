@@ -1,8 +1,8 @@
 use spacetimedb::{ReducerContext, SpacetimeType, Table, TimeDuration, Timestamp, reducer, table};
 
 use crate::{
-    authorization::Authorization, competition::tab_competition,
-    project::permissions::ProjectPermissionsV1,
+    authorization::Authorization,
+    competition::{CompetitionPermissionsV1, tab_competition},
 };
 
 mod player;
@@ -42,7 +42,6 @@ pub struct Registration {
 
     #[index(hash)]
     parent_id: u32,
-    project_id: u32,
 
     settings: RegistrationSettings,
 
@@ -56,10 +55,6 @@ pub struct Registration {
 impl Registration {
     pub(crate) fn get_comp_id(&self) -> u32 {
         self.parent_id
-    }
-
-    pub(crate) fn get_project(&self) -> u32 {
-        self.project_id
     }
 
     pub(crate) fn is_template(&self) -> bool {
@@ -92,19 +87,14 @@ fn registration_create(
 ) -> Result<(), String> {
     let user = ctx.get_user_account()?;
 
-    let Some(parent_competition) = ctx.db.tab_competition().id().find(parent_id) else {
-        return Err("Invalid competition".into());
-    };
-
-    ctx.auth_builder(parent_competition.get_project(), user)?
-        .permission(ProjectPermissionsV1::REGISTRATION_CREATE)
+    ctx.auth_builder(parent_id, user)?
+        .permission(CompetitionPermissionsV1::REGISTRATION_CREATE)
         .authorize()?;
 
     ctx.db.tab_registration().try_insert(Registration {
         name,
         id: 0,
         parent_id,
-        project_id: parent_competition.get_project(),
         settings: RegistrationSettings::Player(RegistrationSettingsPlayer { player_limit: 100 }),
         state: RegistrationState::Configuring,
         template: false,

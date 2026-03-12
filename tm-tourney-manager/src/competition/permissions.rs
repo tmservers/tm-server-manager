@@ -1,4 +1,4 @@
-/* use std::ops::{Add, BitAnd, BitOr, Not};
+use std::ops::{Add, BitAnd, BitOr, Not};
 
 use crate::authorization::PermissionType;
 
@@ -8,9 +8,9 @@ pub(crate) struct CompetitionPermissionsV1(pub(super) u64);
 impl CompetitionPermissionsV1 {
     pub const OWNER: CompetitionPermissionsV1 = CompetitionPermissionsV1(0b1);
 
-    pub const PROJECT_EDIT_NAME: CompetitionPermissionsV1 = CompetitionPermissionsV1(0b10);
-    pub const PROJECT_EDIT_DATE: CompetitionPermissionsV1 = CompetitionPermissionsV1(0b100);
-    pub const PROJECT_EDIT_DESCRIPTION: CompetitionPermissionsV1 = CompetitionPermissionsV1(0b1000);
+    //pub const PROJECT_EDIT_NAME: CompetitionPermissionsV1 = CompetitionPermissionsV1(0b10);
+    //pub const PROJECT_EDIT_DATE: CompetitionPermissionsV1 = CompetitionPermissionsV1(0b100);
+    //pub const PROJECT_EDIT_DESCRIPTION: CompetitionPermissionsV1 = CompetitionPermissionsV1(0b1000);
 
     pub const COMPETITION_CREATE: CompetitionPermissionsV1 = CompetitionPermissionsV1(0b100000);
     pub const COMPETITION_EDIT_NAME: CompetitionPermissionsV1 = CompetitionPermissionsV1(0b1000000);
@@ -86,4 +86,3 @@ impl BitOr for CompetitionPermissionsV1 {
         CompetitionPermissionsV1(self.0 | rhs.0)
     }
 }
- */

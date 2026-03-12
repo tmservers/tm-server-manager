@@ -4,16 +4,14 @@ use tm_server_types::config::ServerConfig;
 use crate::{
     authorization::Authorization,
     competition::{
+        CompetitionPermissionsV1,
         connection::{
             NodeKindHandle,
             node_position::{TabCompetitionNodePosition, tab_competition_node_position},
             tab_competition_connection,
         },
+        server_pool::{competition_available_server_pool, tab_competition_server},
         tab_competition,
-    },
-    project::{
-        permissions::ProjectPermissionsV1,
-        servers::{project_available_server_pool, tab_project_server},
     },
     raw_server::{
         RawServerOccupation,
@@ -60,8 +58,6 @@ pub struct TmMatchV1 {
     #[primary_key]
     pub(crate) id: u32,
 
-    /// The project this match is associated with.
-    project_id: u32,
     #[index(hash)]
     parent_id: u32,
 
@@ -112,10 +108,6 @@ impl TmMatchV1 {
         self.status == MatchStatus::Live
     }
 
-    pub fn get_project(&self) -> u32 {
-        self.project_id
-    }
-
     pub fn get_comp_id(&self) -> u32 {
         self.parent_id
     }
@@ -163,8 +155,8 @@ pub fn match_create(
         return Err("Invalid competition".into());
     };
 
-    ctx.auth_builder(parent_competition.get_project(), user)?
-        .permission(ProjectPermissionsV1::MATCH_CREATE)
+    ctx.auth_builder(parent_id, user)?
+        .permission(CompetitionPermissionsV1::MATCH_CREATE)
         .authorize()?;
 
     if parent_competition.is_template() {
@@ -181,7 +173,6 @@ pub fn match_create(
         let tm_match = TmMatchV1 {
             id: 0,
             parent_id,
-            project_id: parent_competition.get_project(),
             name,
             status: MatchStatus::Configuring,
             pre_match_config: 0,
@@ -218,8 +209,8 @@ pub fn match_assign_server(ctx: &ReducerContext, to: u32, server_id: u32) -> Res
         return Err("Supplied match was not found!".into());
     };
 
-    ctx.auth_builder(tm_match.project_id, user_account)?
-        .permission(ProjectPermissionsV1::MATCH_ASSIGN_SERVER)
+    ctx.auth_builder(tm_match.parent_id, user_account)?
+        .permission(CompetitionPermissionsV1::MATCH_ASSIGN_SERVER)
         .authorize()?;
 
     if tm_match.status != MatchStatus::Configuring {
@@ -243,12 +234,10 @@ pub fn match_assign_server(ctx: &ReducerContext, to: u32, server_id: u32) -> Res
         return Err("Server with id was not found!".into());
     };
 
-    if !ctx
-        .db
-        .tab_project_server()
-        .project_id()
-        .filter(tm_match.project_id)
-        .any(|s| s.server_id == server_id)
+    //TODO recurse upwards through the competition tree.
+    if competition_available_server_pool(&ctx.as_read_only())
+        .into_iter()
+        .any(|s| s.id == server_id)
     {
         return Err("Server is not lended to the project".into());
     }
@@ -337,8 +326,8 @@ pub fn match_set_preparation(ctx: &ReducerContext, match_id: u32) -> Result<(), 
         return Err("Match not found!".into());
     };
 
-    ctx.auth_builder(tm_match.project_id, user)?
-        .permission(ProjectPermissionsV1::MATCH_CONFIGURE)
+    ctx.auth_builder(tm_match.parent_id, user)?
+        .permission(CompetitionPermissionsV1::MATCH_CONFIGURE)
         .authorize()?;
 
     if tm_match.match_config == 0 {
@@ -366,7 +355,7 @@ pub fn match_set_preparation(ctx: &ReducerContext, match_id: u32) -> Result<(), 
     }
 
     if tm_match.auto_provision_server {
-        let available_servers = project_available_server_pool(&ctx.as_read_only());
+        let available_servers = competition_available_server_pool(&ctx.as_read_only());
         if available_servers.is_empty() {
             return Err("No server is assigned to the match and there are no servers left to auto provision. Cannot start the match!".into());
         }
@@ -398,8 +387,8 @@ pub fn match_try_start(ctx: &ReducerContext, match_id: u32) -> Result<(), String
         return Err("Match not found!".into());
     };
 
-    ctx.auth_builder(tm_match.project_id, user)?
-        .permission(ProjectPermissionsV1::MATCH_CONFIGURE)
+    ctx.auth_builder(tm_match.parent_id, user)?
+        .permission(CompetitionPermissionsV1::MATCH_CONFIGURE)
         .authorize()?;
 
     if tm_match.match_config == 0 {
@@ -436,8 +425,8 @@ pub fn match_delete(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
         return Err(format!("Match with id: {match_id} not found."));
     };
 
-    ctx.auth_builder(tm_match.project_id, user)?
-        .permission(ProjectPermissionsV1::MATCH_DELETE)
+    ctx.auth_builder(tm_match.parent_id, user)?
+        .permission(CompetitionPermissionsV1::MATCH_DELETE)
         .authorize()?;
 
     if !ctx.db.tab_match().id().delete(match_id) {

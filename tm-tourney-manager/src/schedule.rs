@@ -6,10 +6,10 @@ use spacetimedb::{
 use crate::{
     authorization::Authorization,
     competition::{
+        CompetitionPermissionsV1,
         connection::{NodeKindHandle, internal_graph_resolution_node_finished},
         tab_competition,
     },
-    project::permissions::ProjectPermissionsV1,
 };
 
 #[table(accessor= tab_schedule, /* scheduled(on_schedule_triggered) */)]
@@ -22,7 +22,6 @@ pub struct ScheduleV1 {
 
     #[index(hash)]
     parent_id: u32,
-    project_id: u32,
 
     settings: ScheduleSettings,
 
@@ -34,10 +33,6 @@ pub struct ScheduleV1 {
 impl ScheduleV1 {
     pub(crate) fn parent_id(&self) -> u32 {
         self.parent_id
-    }
-
-    pub(crate) fn get_project(&self) -> u32 {
-        self.project_id
     }
 
     pub(crate) fn is_template(&self) -> bool {
@@ -120,19 +115,14 @@ pub fn schedule_create(
 ) -> Result<(), String> {
     let user = ctx.get_user_account()?;
 
-    let Some(parent_competition) = ctx.db.tab_competition().id().find(parent_id) else {
-        return Err("Invalid competition".into());
-    };
-
     //TODO permission fix
-    ctx.auth_builder(parent_competition.get_project(), user)?
-        .permission(ProjectPermissionsV1::MATCH_CREATE)
+    ctx.auth_builder(parent_id, user)?
+        .permission(CompetitionPermissionsV1::MATCH_CREATE)
         .authorize()?;
 
     let schedule = ScheduleV1 {
         id: 0,
         parent_id,
-        project_id: parent_competition.get_project(),
         template: false,
         settings: ScheduleSettings::Absolute(ctx.timestamp),
         state: ScheduleState::Configuring,
@@ -153,8 +143,8 @@ pub fn schedule_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> 
     };
 
     //TODO permission fix
-    ctx.auth_builder(schedule.get_project(), user)?
-        .permission(ProjectPermissionsV1::MATCH_CREATE)
+    ctx.auth_builder(schedule.parent_id, user)?
+        .permission(CompetitionPermissionsV1::MATCH_CREATE)
         .authorize()?;
 
     if schedule.state == ScheduleState::Waiting {

@@ -6,14 +6,12 @@ use spacetimedb::{ReducerContext, SpacetimeType, Table, ViewContext, reducer, vi
 use crate::{
     authorization::Authorization,
     competition::{
-        connection::connection_data::{
+        CompetitionPermissionsV1, connection::connection_data::{
             CompetitionConnectionData, tab_competition_connection_data,
             tab_competition_connection_data__view,
-        },
-        tab_competition,
+        }, tab_competition
     },
     portal::tab_portal,
-    project::permissions::ProjectPermissionsV1,
     raw_server::player::PermittedPlayer,
     registration::tab_registration,
     schedule::tab_schedule,
@@ -37,9 +35,6 @@ pub struct TabCompetitionConnection {
 
     #[index(hash)]
     parent_id: u32,
-
-    //Maybe not necessary if we can expose another view with arg or something like that.
-    project_id: u32,
 
     connection_from: u32,
     connection_to: u32,
@@ -193,7 +188,7 @@ impl NodeKindHandle {
         }
     }
 
-    /// Safety: can only be called when you know the competiiton exists
+    /* /// Safety: can only be called when you know the competiiton exists
     pub(crate) fn get_project(&self, ctx: &ReducerContext) -> u32 {
         match self {
             NodeKindHandle::MatchV1(m) => {
@@ -234,7 +229,7 @@ impl NodeKindHandle {
                 }
             }
         }
-    }
+    } */
 
     pub(crate) fn split(self) -> (u8, u32) {
         match self {
@@ -334,10 +329,8 @@ pub fn connection_create(
         );
     }
 
-    let project_id = connection_from.get_project(ctx);
-
-    ctx.auth_builder(project_id, account_id)?
-        .permission(ProjectPermissionsV1::COMPETITION_CONNECTION_EDIT)
+    ctx.auth_builder(from_comp, account_id)?
+        .permission(CompetitionPermissionsV1::COMPETITION_CONNECTION_EDIT)
         .authorize()?;
 
     let mut set = HashSet::new();
@@ -420,7 +413,6 @@ pub fn connection_create(
         .tab_competition_connection()
         .try_insert(TabCompetitionConnection {
             id: 0,
-            project_id,
             parent_id: from_comp,
             connection_from,
             connection_to,
@@ -448,7 +440,6 @@ pub fn connection_create(
 
 #[derive(Debug, SpacetimeType)]
 pub struct CompetitionConnection {
-    project_id: u32,
     competition_id: u32,
 
     connection_from: NodeKindHandle,
@@ -468,7 +459,6 @@ pub fn competition_connection(
         .parent_id()
         .filter(competition_id)
         .map(|v| CompetitionConnection {
-            project_id: v.project_id,
             competition_id: v.parent_id,
             connection_from: NodeKindHandle::combine(v.connection_from_variant, v.connection_from),
             connection_to: NodeKindHandle::combine(v.connection_to_variant, v.connection_to),
@@ -487,7 +477,6 @@ pub fn internal_graph_resolution_node_finished(
         .target_nodes_of()
         .filter(trigger.split())
         .map(|t| CompetitionConnection {
-            project_id: t.project_id,
             competition_id: t.parent_id,
             connection_from: NodeKindHandle::combine(t.connection_from_variant, t.connection_from),
             connection_to: NodeKindHandle::combine(t.connection_to_variant, t.connection_to),

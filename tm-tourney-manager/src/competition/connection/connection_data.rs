@@ -1,8 +1,9 @@
 use spacetimedb::{ReducerContext, SpacetimeType, ViewContext, reducer, table, view};
 
 use crate::{
-    authorization::Authorization, competition::connection::tab_competition_connection,
-    project::permissions::ProjectPermissionsV1, raw_server::player::PermittedPlayer,
+    authorization::Authorization,
+    competition::{CompetitionPermissionsV1, connection::tab_competition_connection},
+    raw_server::player::PermittedPlayer,
     tm_match::leaderboard::MatchRoundPlayer,
 };
 
@@ -84,8 +85,8 @@ fn competition_connection_data_update(
     let Some(connection) = ctx.db.tab_competition_connection().id().find(connection_id) else {
         return Err("connection could not be found!".into());
     };
-    ctx.auth_builder(connection.project_id, account_id)?
-        .permission(ProjectPermissionsV1::COMPETITION_CONNECTION_EDIT)
+    ctx.auth_builder(connection.parent_id, account_id)?
+        .permission(CompetitionPermissionsV1::COMPETITION_CONNECTION_EDIT)
         .authorize()?;
 
     let Some(mut data) = ctx

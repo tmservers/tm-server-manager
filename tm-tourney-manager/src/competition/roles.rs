@@ -1,11 +1,9 @@
-/* use spacetimedb::{ReducerContext, Table, Uuid, reducer, table};
+use spacetimedb::{ReducerContext, Table, Uuid, reducer, table};
 
-use crate::{
-    authorization::Authorization, project::permissions::CompetitionPermissionsV1, user::tab_user,
-};
+use crate::{authorization::Authorization, competition::CompetitionPermissionsV1, user::tab_user};
 
-#[table(accessor= tab_project_role)]
-pub struct ProjectRole {
+#[table(accessor= tab_competition_role)]
+pub struct CompetitionRole {
     name: String,
 
     #[auto_inc]
@@ -13,19 +11,19 @@ pub struct ProjectRole {
     pub(crate) id: u32,
 
     #[index(hash)]
-    project_id: u32,
+    competition_id: u32,
 
     permissions: u64,
 }
 
-impl ProjectRole {
+impl CompetitionRole {
     pub(crate) fn get_permissions1(&self) -> CompetitionPermissionsV1 {
         CompetitionPermissionsV1(self.permissions)
     }
 }
 
-#[table(accessor= tab_project_role_member,index(accessor= user_roles , hash(columns= [role_id,account_id])))]
-pub struct ProjectRoleMember {
+#[table(accessor= tab_competition_role_member,index(accessor= user_roles , hash(columns= [role_id,account_id])))]
+pub struct CompetitionRoleMember {
     #[index(hash)]
     role_id: u32,
 
@@ -33,14 +31,14 @@ pub struct ProjectRoleMember {
     account_id: u32,
 }
 
-impl ProjectRoleMember {
+impl CompetitionRoleMember {
     pub fn get_role_id(&self) -> u32 {
         self.role_id
     }
 }
 
-#[table(accessor= tab_project_member,index(accessor= user_roles , hash(columns= [project_id,account_id])))]
-pub struct ProjectMember {
+#[table(accessor= tab_competition_member,index(accessor= user_roles , hash(columns= [competition_id,account_id])))]
+pub struct CompetitionMember {
     permissions: u64,
 
     #[auto_inc]
@@ -48,20 +46,20 @@ pub struct ProjectMember {
     id: u32,
 
     #[index(hash)]
-    project_id: u32,
+    competition_id: u32,
 
     #[index(hash)]
     account_id: u32,
 }
 
 #[reducer]
-pub fn project_member_add(
+pub fn member_add(
     ctx: &ReducerContext,
-    project_id: u32,
+    competition_id: u32,
     account_id: Uuid,
 ) -> Result<(), String> {
     let request_account_id = ctx.get_user_account()?;
-    ctx.auth_builder(project_id, request_account_id)?
+    ctx.auth_builder(competition_id, request_account_id)?
         //.permission(ProjectPermissionsV1::Pro)
         .authorize()?;
 
@@ -69,47 +67,48 @@ pub fn project_member_add(
         return Err("Account not found. If this is unexpected make sure the player has logged into the network once.".into());
     };
 
-    ctx.db.tab_project_member().try_insert(ProjectMember {
-        project_id,
-        account_id: user.internal_id,
-        permissions: 0,
-        id: 0,
-    })?;
+    ctx.db
+        .tab_competition_member()
+        .try_insert(CompetitionMember {
+            competition_id,
+            account_id: user.internal_id,
+            permissions: 0,
+            id: 0,
+        })?;
 
     Ok(())
 }
 
 #[reducer]
-pub fn project_member_remove(ctx: &ReducerContext, member_id: u32) -> Result<(), String> {
-    let Some(project_member) = ctx.db.tab_project_member().id().find(member_id) else {
+pub fn member_remove(ctx: &ReducerContext, member_id: u32) -> Result<(), String> {
+    let Some(project_member) = ctx.db.tab_competition_member().id().find(member_id) else {
         return Err("Member with id not found!".into());
     };
 
     let account_id = ctx.get_user_account()?;
-    ctx.auth_builder(project_member.project_id, account_id)?
+    ctx.auth_builder(project_member.competition_id, account_id)?
         //.permission(ProjectPermissionsV1::Pro)
         .authorize()?;
 
-    ctx.db.tab_project_member().id().delete(project_member.id);
+    ctx.db
+        .tab_competition_member()
+        .id()
+        .delete(project_member.id);
 
     Ok(())
 }
 
 #[reducer]
-pub fn project_role_create(
-    ctx: &ReducerContext,
-    project_id: u32,
-    name: String,
-) -> Result<(), String> {
+pub fn role_create(ctx: &ReducerContext, competition_id: u32, name: String) -> Result<(), String> {
     let account_id = ctx.get_user_account()?;
-    ctx.auth_builder(project_id, account_id)?
+    ctx.auth_builder(competition_id, account_id)?
         //.permission(ProjectPermissionsV1::Pro)
         .authorize()?;
 
-    ctx.db.tab_project_role().try_insert(ProjectRole {
+    ctx.db.tab_competition_role().try_insert(CompetitionRole {
         name,
         id: 0,
-        project_id,
+        competition_id,
         permissions: 0,
     })?;
 
@@ -117,37 +116,42 @@ pub fn project_role_create(
 }
 
 #[reducer]
-pub fn project_role_remove(ctx: &ReducerContext, role_id: u32) -> Result<(), String> {
-    let Some(role) = ctx.db.tab_project_role().id().find(role_id) else {
+pub fn role_remove(ctx: &ReducerContext, role_id: u32) -> Result<(), String> {
+    let Some(role) = ctx.db.tab_competition_role().id().find(role_id) else {
         return Err("Could not find role with id".into());
     };
 
     let account_id = ctx.get_user_account()?;
-    ctx.auth_builder(role.project_id, account_id)?
+    ctx.auth_builder(role.competition_id, account_id)?
         //.permission(ProjectPermissionsV1::Pro)
         .authorize()?;
 
-    ctx.db.tab_project_role().id().delete(role_id);
+    ctx.db.tab_competition_role().id().delete(role_id);
 
-    for user in ctx.db.tab_project_role_member().role_id().filter(role_id) {
-        ctx.db.tab_project_role_member().delete(user);
+    for user in ctx
+        .db
+        .tab_competition_role_member()
+        .role_id()
+        .filter(role_id)
+    {
+        ctx.db.tab_competition_role_member().delete(user);
     }
 
     Ok(())
 }
 
 #[reducer]
-pub fn project_role_member_assign(
+pub fn role_member_assign(
     ctx: &ReducerContext,
     role_id: u32,
     account_id: Uuid,
 ) -> Result<(), String> {
-    let Some(role) = ctx.db.tab_project_role().id().find(role_id) else {
+    let Some(role) = ctx.db.tab_competition_role().id().find(role_id) else {
         return Err("Could not find role with id".into());
     };
 
     let request_account_id = ctx.get_user_account()?;
-    ctx.auth_builder(role.project_id, request_account_id)?
+    ctx.auth_builder(role.competition_id, request_account_id)?
         //.permission(ProjectPermissionsV1::Pro)
         .authorize()?;
 
@@ -156,8 +160,8 @@ pub fn project_role_member_assign(
     };
 
     ctx.db
-        .tab_project_role_member()
-        .try_insert(ProjectRoleMember {
+        .tab_competition_role_member()
+        .try_insert(CompetitionRoleMember {
             role_id,
             account_id: user.internal_id,
         })?;
@@ -166,17 +170,17 @@ pub fn project_role_member_assign(
 }
 
 #[reducer]
-pub fn project_role_member_remove(
+pub fn role_member_remove(
     ctx: &ReducerContext,
     role_id: u32,
     account_id: Uuid,
 ) -> Result<(), String> {
-    let Some(role) = ctx.db.tab_project_role().id().find(role_id) else {
+    let Some(role) = ctx.db.tab_competition_role().id().find(role_id) else {
         return Err("Could not find role with id".into());
     };
 
     let request_account_id = ctx.get_user_account()?;
-    ctx.auth_builder(role.project_id, request_account_id)?
+    ctx.auth_builder(role.competition_id, request_account_id)?
         //.permission(ProjectPermissionsV1::Pro)
         .authorize()?;
 
@@ -184,9 +188,14 @@ pub fn project_role_member_remove(
         return Err("Account id could not be found. If this is unexpected ensure the user has logged into the system once.".into());
     };
 
-    for member in ctx.db.tab_project_role_member().role_id().filter(role_id) {
+    for member in ctx
+        .db
+        .tab_competition_role_member()
+        .role_id()
+        .filter(role_id)
+    {
         if member.account_id == user.internal_id {
-            ctx.db.tab_project_role_member().delete(member);
+            ctx.db.tab_competition_role_member().delete(member);
             break;
         }
     }
@@ -195,46 +204,45 @@ pub fn project_role_member_remove(
 }
 
 #[reducer]
-pub fn project_role_assign_permission(
+pub fn role_assign_permission(
     ctx: &ReducerContext,
     role_id: u32,
     new_permissions: u64,
 ) -> Result<(), String> {
-    let Some(mut role) = ctx.db.tab_project_role().id().find(role_id) else {
+    let Some(mut role) = ctx.db.tab_competition_role().id().find(role_id) else {
         return Err("Could not find role with id".into());
     };
 
     let account_id = ctx.get_user_account()?;
-    ctx.auth_builder(role.project_id, account_id)?
+    ctx.auth_builder(role.competition_id, account_id)?
         //.permission
         .authorize()?;
 
     role.permissions = new_permissions;
 
-    ctx.db.tab_project_role().id().update(role);
+    ctx.db.tab_competition_role().id().update(role);
 
     Ok(())
 }
 
 #[reducer]
-pub fn project_member_assign_permission(
+pub fn member_assign_permission(
     ctx: &ReducerContext,
     member_id: u32,
     new_permissions: u64,
 ) -> Result<(), String> {
-    let Some(mut member) = ctx.db.tab_project_member().id().find(member_id) else {
+    let Some(mut member) = ctx.db.tab_competition_member().id().find(member_id) else {
         return Err("Could not find role with id".into());
     };
 
     let account_id = ctx.get_user_account()?;
-    ctx.auth_builder(member.project_id, account_id)?
+    ctx.auth_builder(member.competition_id, account_id)?
         //.permission
         .authorize()?;
 
     member.permissions = new_permissions;
 
-    ctx.db.tab_project_member().id().update(member);
+    ctx.db.tab_competition_member().id().update(member);
 
     Ok(())
 }
- */

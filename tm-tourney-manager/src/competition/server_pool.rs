@@ -1,29 +1,34 @@
-/* use spacetimedb::{ReducerContext, Table, ViewContext, reducer, table, view};
+use spacetimedb::{ReducerContext, Table, ViewContext, reducer, table, view};
 
 use crate::{
-    authorization::Authorization, competition::CompetitionPermissionsV1, raw_server::{
+    authorization::Authorization,
+    competition::CompetitionPermissionsV1,
+    raw_server::{
         RawServerV1, tab_raw_server, tab_raw_server__view, tab_raw_server_occupation__view,
-        user_raw_server_pool,
-    }
+    },
 };
 
-#[table(accessor=tab_project_server)]
-pub struct ProjectServer {
+#[table(accessor=tab_competition_server)]
+pub struct CompetitionServer {
     #[index(hash)]
-    pub project_id: u32,
+    pub competition_id: u32,
     #[index(hash)]
     pub server_id: u32,
 }
 
 /// Allows a user to lend a server he owns to a project.
 #[reducer]
-fn lend_raw_server(ctx: &ReducerContext, server_id: u32, project_id: u32) -> Result<(), String> {
+fn lend_raw_server(
+    ctx: &ReducerContext,
+    server_id: u32,
+    competition_id: u32,
+) -> Result<(), String> {
     let user_account = ctx.get_user_account()?;
-    ctx.auth_builder(project_id, user_account)?
+    ctx.auth_builder(competition_id, user_account)?
         .permission(CompetitionPermissionsV1::RAW_SERVER_ADD)
         .authorize()?;
 
-    let Some(server) = ctx.db.tab_raw_server().id().find(project_id) else {
+    let Some(server) = ctx.db.tab_raw_server().id().find(competition_id) else {
         return Err("Server not found".into());
     };
 
@@ -33,18 +38,20 @@ fn lend_raw_server(ctx: &ReducerContext, server_id: u32, project_id: u32) -> Res
 
     if ctx
         .db
-        .tab_project_server()
+        .tab_competition_server()
         .server_id()
         .filter(server_id)
-        .any(|s| s.project_id == project_id)
+        .any(|s| s.competition_id == competition_id)
     {
         return Err("Server was already lended to project.".into());
     }
 
-    ctx.db.tab_project_server().try_insert(ProjectServer {
-        project_id,
-        server_id,
-    })?;
+    ctx.db
+        .tab_competition_server()
+        .try_insert(CompetitionServer {
+            competition_id,
+            server_id,
+        })?;
 
     Ok(())
 }
@@ -52,28 +59,32 @@ fn lend_raw_server(ctx: &ReducerContext, server_id: u32, project_id: u32) -> Res
 /// Allows a user to delete a server.
 /// This can be either the owner of the server or an authorized project member
 #[reducer]
-fn revoke_raw_server(ctx: &ReducerContext, server_id: u32, project_id: u32) -> Result<(), String> {
+fn revoke_raw_server(
+    ctx: &ReducerContext,
+    server_id: u32,
+    competition_id: u32,
+) -> Result<(), String> {
     let user_account = ctx.get_user_account()?;
 
-    let Some(server) = ctx.db.tab_raw_server().id().find(project_id) else {
+    let Some(server) = ctx.db.tab_raw_server().id().find(competition_id) else {
         return Err("Server not found".into());
     };
 
     // If the server owner requests a deletion it always passes.
     if server.account_id == user_account {
-        ctx.db.tab_project_server().delete(ProjectServer {
-            project_id,
+        ctx.db.tab_competition_server().delete(CompetitionServer {
+            competition_id,
             server_id,
         });
         return Ok(());
     }
 
-    ctx.auth_builder(project_id, user_account)?
+    ctx.auth_builder(competition_id, user_account)?
         .permission(CompetitionPermissionsV1::RAW_SERVER_REVOKE)
         .authorize()?;
 
-    ctx.db.tab_project_server().delete(ProjectServer {
-        project_id,
+    ctx.db.tab_competition_server().delete(CompetitionServer {
+        competition_id,
         server_id,
     });
 
@@ -81,21 +92,23 @@ fn revoke_raw_server(ctx: &ReducerContext, server_id: u32, project_id: u32) -> R
 }
 
 /// The Raw server pool are all servers of an account which are verified.
-#[view(accessor= project_available_server_pool, public)]
-pub(crate) fn project_available_server_pool(
-    ctx: &ViewContext, /* project_id: u32 */
+#[view(accessor= competition_available_server_pool, public)]
+pub(crate) fn competition_available_server_pool(
+    ctx: &ViewContext, /* competition_id: u32 */
 ) -> Vec<RawServerV1> {
-    let project_id = 1u32; //TODO replace with arg
+    let comeptition_id = 1u32; //TODO replace with arg
     let Ok(account_id) = ctx.get_user_account() else {
         return Vec::new();
     };
     //TODO which perissino should we use for this??
     //ctx.auth_builder(project_id, account_id)?.permission(ProjectPermissionsV1::SER)
 
+    //TODO recurse upwards to catch all inherited servers.
+
     ctx.db
-        .tab_project_server()
-        .project_id()
-        .filter(project_id)
+        .tab_competition_server()
+        .competition_id()
+        .filter(comeptition_id)
         .filter_map(|s| {
             let server = ctx.db.tab_raw_server().id().find(s.server_id).unwrap();
             if !server.is_verified() {
@@ -115,4 +128,3 @@ pub(crate) fn project_available_server_pool(
         })
         .collect()
 }
- */

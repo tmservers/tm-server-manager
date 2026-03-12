@@ -5,11 +5,10 @@ use spacetimedb::{ReducerContext, Table, reducer};
 use crate::{
     authorization::Authorization,
     competition::{
-        CompetitionV1,
+        CompetitionPermissionsV1, CompetitionV1,
         connection::{NodeKindHandle, tab_competition_connection},
         tab_competition,
     },
-    project::permissions::ProjectPermissionsV1,
     registration::tab_registration,
     schedule::tab_schedule,
     tm_match::tab_match,
@@ -24,23 +23,16 @@ pub fn competition_template_create(
 ) -> Result<(), String> {
     let account_id = ctx.get_user_account()?;
 
-    // If parent is valid it is guaranteed that it has a valid project associated with it.
-    let Some(parent_competition) = ctx.db.tab_competition().id().find(parent_id) else {
-        return Err("Invalid parent_id".into());
-    };
-
     //TODO make separate permission?
-    ctx.auth_builder(parent_competition.project_id, account_id)?
-        .permission(ProjectPermissionsV1::COMPETITION_CREATE)
+    ctx.auth_builder(parent_id, account_id)?
+        .permission(CompetitionPermissionsV1::COMPETITION_CREATE)
         .authorize()?;
 
     if with_template != 0 {
         competition_template_instantiate(ctx, parent_id, with_template, name)?;
     } else {
         //SAFETY: The competition gets commnited afterwards.
-        let new_competition = unsafe {
-            CompetitionV1::new_template(name, parent_id, parent_competition.get_project())
-        };
+        let new_competition = unsafe { CompetitionV1::new_template(name, parent_id) };
 
         ctx.db.tab_competition().try_insert(new_competition)?;
     }
@@ -88,8 +80,8 @@ pub(super) fn competition_template_instantiate(
     } */
 
     //TODO evaluate if other permission would be better.
-    ctx.auth_builder(competition_template.project_id, account_id)?
-        .permission(ProjectPermissionsV1::COMPETITION_CREATE)
+    ctx.auth_builder(competition_template.id, account_id)?
+        .permission(CompetitionPermissionsV1::COMPETITION_CREATE)
         .authorize()?;
 
     // Collect all node types which are inside the template.

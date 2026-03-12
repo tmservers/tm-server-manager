@@ -3,7 +3,6 @@ use spacetimedb::{ReducerContext, Table, ViewContext, reducer, table, view};
 use crate::{
     authorization::Authorization,
     competition::{connection::NodeKindHandle, tab_competition},
-    project::permissions::ProjectPermissionsV1,
 };
 
 /// A portal can only reach one level deeper?
@@ -20,7 +19,6 @@ pub struct Portal {
 
     #[index(hash)]
     parent_id: u32,
-    project_id: u32,
 
     target_id: u32,
     target_variant: u8,
@@ -33,10 +31,6 @@ impl Portal {
         self.parent_id
     }
 
-    pub(crate) fn get_project(&self) -> u32 {
-        self.project_id
-    }
-
     pub(crate) fn is_template(&self) -> bool {
         self.template
     }
@@ -46,14 +40,14 @@ impl Portal {
 fn portal_create(
     ctx: &ReducerContext,
     name: String,
-    competition_id: u32,
+    parent_id: u32,
     target: NodeKindHandle,
 ) -> Result<(), String> {
     let account_id = ctx.get_user_account()?;
-    let Some(competition) = ctx.db.tab_competition().id().find(competition_id) else {
+    let Some(competition) = ctx.db.tab_competition().id().find(parent_id) else {
         return Err("Could not find supplied competition_id".into());
     };
-    ctx.auth_builder(competition.get_project(), account_id)?
+    ctx.auth_builder(parent_id, account_id)?
         //.permission(ProjectPermissionsV1::PORTAL_CREATE)
         .authorize()?;
 
@@ -71,8 +65,7 @@ fn portal_create(
     ctx.db.tab_portal().try_insert(Portal {
         name,
         id: 0,
-        parent_id: competition_id,
-        project_id: competition.get_project(),
+        parent_id: parent_id,
         target_id,
         target_variant,
         template: false,
