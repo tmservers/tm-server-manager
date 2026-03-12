@@ -8,11 +8,10 @@ use crate::{
     competition::{
         CompetitionPermissionsV1,
         connection::{NodeKindHandle, internal_graph_resolution_node_finished},
-        tab_competition,
     },
 };
 
-#[table(accessor= tab_schedule, /* scheduled(on_schedule_triggered) */)]
+#[table(accessor= tab_schedule)]
 pub struct ScheduleV1 {
     name: String,
 

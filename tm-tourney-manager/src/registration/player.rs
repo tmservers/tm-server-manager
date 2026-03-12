@@ -24,10 +24,10 @@ pub fn register_player(ctx: &ReducerContext, registration_id: u32) -> Result<(),
     let user = ctx.get_user()?;
 
     let Some(registration) = ctx.db.tab_registration().id().find(registration_id) else {
-        return Err("Tried to register for a competition that doesnt exist.".into());
+        return Err("Tried to register but the registration id does not exist.".into());
     };
 
-    //TODO validate in the compeition that registration is allowed.
+    //TODO validate that registration is allowed.
 
     if ctx
         .db
@@ -36,7 +36,7 @@ pub fn register_player(ctx: &ReducerContext, registration_id: u32) -> Result<(),
         .filter(registration_id)
         .any(|p| p.account_id == user.account_id)
     {
-        return Err("User is already registered for competition!".to_string());
+        return Err("User is already registered for registration_id!".to_string());
     }
 
     ctx.db

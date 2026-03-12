@@ -1,7 +1,4 @@
-use std::{
-    ops::{Add, BitAnd, BitOr, Not},
-    task::Context,
-};
+use std::ops::{Add, BitAnd, BitOr, Not};
 
 use spacetimedb::{DbContext, ReducerContext, Uuid, ViewContext};
 
@@ -26,9 +23,9 @@ pub(crate) trait Authorization {
     fn get_worker(&self) -> Result<TmWorker, String>;
 
     fn auth_builder(
-        &self,
+        &'_ self,
         competition_id: u32,
-    ) -> AuthBuilder<CompetitionPermissionsV1, Self::Context>;
+    ) -> AuthBuilder<'_, CompetitionPermissionsV1, Self::Context>;
 }
 
 impl Authorization for ReducerContext {
@@ -71,9 +68,9 @@ impl Authorization for ReducerContext {
     }
 
     fn auth_builder(
-        &self,
+        &'_ self,
         competition_id: u32,
-    ) -> AuthBuilder<CompetitionPermissionsV1, ReducerContext> {
+    ) -> AuthBuilder<'_, CompetitionPermissionsV1, ReducerContext> {
         AuthBuilder::<CompetitionPermissionsV1, ReducerContext>::new(competition_id, self)
     }
 }
@@ -118,9 +115,9 @@ impl Authorization for ViewContext {
     }
 
     fn auth_builder(
-        &self,
+        &'_ self,
         competition_id: u32,
-    ) -> AuthBuilder<CompetitionPermissionsV1, ViewContext> {
+    ) -> AuthBuilder<'_, CompetitionPermissionsV1, ViewContext> {
         AuthBuilder::<CompetitionPermissionsV1, ViewContext>::new(competition_id, self)
     }
 }
@@ -171,6 +168,7 @@ impl<'a> AuthBuilder<'a, CompetitionPermissionsV1, ReducerContext> {
         else {
             return Err("Identity not associated with a user account.".into());
         };
+        //TODO inherit permissions from the whole competition tree. Also accumulate the user permissions on top of the role ones.
         let permissions = self
             .ctx
             .db

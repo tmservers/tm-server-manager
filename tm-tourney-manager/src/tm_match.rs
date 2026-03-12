@@ -10,7 +10,7 @@ use crate::{
             node_position::{TabCompetitionNodePosition, tab_competition_node_position},
             tab_competition_connection,
         },
-        server_pool::{competition_available_server_pool, tab_competition_server},
+        server_pool::competition_available_server_pool,
         tab_competition,
     },
     raw_server::{
