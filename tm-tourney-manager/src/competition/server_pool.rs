@@ -23,8 +23,8 @@ fn lend_raw_server(
     server_id: u32,
     competition_id: u32,
 ) -> Result<(), String> {
-    let user_account = ctx.get_user_account()?;
-    ctx.auth_builder(competition_id, user_account)?
+    let account_id = ctx
+        .auth_builder(competition_id)
         .permission(CompetitionPermissionsV1::RAW_SERVER_ADD)
         .authorize()?;
 
@@ -32,7 +32,7 @@ fn lend_raw_server(
         return Err("Server not found".into());
     };
 
-    if server.account_id != user_account {
+    if server.account_id != account_id {
         return Err("Not the owner of the server!".into());
     }
 
@@ -79,7 +79,7 @@ fn revoke_raw_server(
         return Ok(());
     }
 
-    ctx.auth_builder(competition_id, user_account)?
+    ctx.auth_builder(competition_id)
         .permission(CompetitionPermissionsV1::RAW_SERVER_REVOKE)
         .authorize()?;
 

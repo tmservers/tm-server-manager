@@ -80,12 +80,10 @@ fn competition_connection_data_update(
     connection_id: u32,
     option: CompetitionConnectionDataOption,
 ) -> Result<(), String> {
-    let account_id = ctx.get_user_account()?;
-
     let Some(connection) = ctx.db.tab_competition_connection().id().find(connection_id) else {
         return Err("connection could not be found!".into());
     };
-    ctx.auth_builder(connection.parent_id, account_id)?
+    ctx.auth_builder(connection.parent_id)
         .permission(CompetitionPermissionsV1::COMPETITION_CONNECTION_EDIT)
         .authorize()?;
 

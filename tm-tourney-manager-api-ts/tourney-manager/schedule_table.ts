@@ -9,11 +9,21 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
+import {
+  ScheduleSettings,
+  ScheduleState,
+} from "./types";
+
 
 export default __t.row({
-  scheduledId: __t.u64().name("scheduled_id"),
-  scheduledAt: __t.scheduleAt().name("scheduled_at"),
+  name: __t.string(),
+  id: __t.u32(),
   parentId: __t.u32().name("parent_id"),
-  projectId: __t.u32().name("project_id"),
+  get settings() {
+    return ScheduleSettings;
+  },
+  get state() {
+    return ScheduleState;
+  },
   template: __t.bool(),
 });

@@ -4,13 +4,17 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
+use super::schedule_settings_type::ScheduleSettings;
+use super::schedule_state_type::ScheduleState;
+
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct ScheduleV1 {
-    pub scheduled_id: u64,
-    pub scheduled_at: __sdk::ScheduleAt,
+    pub name: String,
+    pub id: u32,
     pub parent_id: u32,
-    pub project_id: u32,
+    pub settings: ScheduleSettings,
+    pub state: ScheduleState,
     pub template: bool,
 }
 
@@ -22,10 +26,11 @@ impl __sdk::InModule for ScheduleV1 {
 ///
 /// Provides typed access to columns for query building.
 pub struct ScheduleV1Cols {
-    pub scheduled_id: __sdk::__query_builder::Col<ScheduleV1, u64>,
-    pub scheduled_at: __sdk::__query_builder::Col<ScheduleV1, __sdk::ScheduleAt>,
+    pub name: __sdk::__query_builder::Col<ScheduleV1, String>,
+    pub id: __sdk::__query_builder::Col<ScheduleV1, u32>,
     pub parent_id: __sdk::__query_builder::Col<ScheduleV1, u32>,
-    pub project_id: __sdk::__query_builder::Col<ScheduleV1, u32>,
+    pub settings: __sdk::__query_builder::Col<ScheduleV1, ScheduleSettings>,
+    pub state: __sdk::__query_builder::Col<ScheduleV1, ScheduleState>,
     pub template: __sdk::__query_builder::Col<ScheduleV1, bool>,
 }
 
@@ -33,10 +38,11 @@ impl __sdk::__query_builder::HasCols for ScheduleV1 {
     type Cols = ScheduleV1Cols;
     fn cols(table_name: &'static str) -> Self::Cols {
         ScheduleV1Cols {
-            scheduled_id: __sdk::__query_builder::Col::new(table_name, "scheduled_id"),
-            scheduled_at: __sdk::__query_builder::Col::new(table_name, "scheduled_at"),
+            name: __sdk::__query_builder::Col::new(table_name, "name"),
+            id: __sdk::__query_builder::Col::new(table_name, "id"),
             parent_id: __sdk::__query_builder::Col::new(table_name, "parent_id"),
-            project_id: __sdk::__query_builder::Col::new(table_name, "project_id"),
+            settings: __sdk::__query_builder::Col::new(table_name, "settings"),
+            state: __sdk::__query_builder::Col::new(table_name, "state"),
             template: __sdk::__query_builder::Col::new(table_name, "template"),
         }
     }
@@ -46,16 +52,16 @@ impl __sdk::__query_builder::HasCols for ScheduleV1 {
 ///
 /// Provides typed access to indexed columns for query building.
 pub struct ScheduleV1IxCols {
+    pub id: __sdk::__query_builder::IxCol<ScheduleV1, u32>,
     pub parent_id: __sdk::__query_builder::IxCol<ScheduleV1, u32>,
-    pub scheduled_id: __sdk::__query_builder::IxCol<ScheduleV1, u64>,
 }
 
 impl __sdk::__query_builder::HasIxCols for ScheduleV1 {
     type IxCols = ScheduleV1IxCols;
     fn ix_cols(table_name: &'static str) -> Self::IxCols {
         ScheduleV1IxCols {
+            id: __sdk::__query_builder::IxCol::new(table_name, "id"),
             parent_id: __sdk::__query_builder::IxCol::new(table_name, "parent_id"),
-            scheduled_id: __sdk::__query_builder::IxCol::new(table_name, "scheduled_id"),
         }
     }
 }

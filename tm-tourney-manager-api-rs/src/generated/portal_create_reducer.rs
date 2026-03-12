@@ -10,7 +10,7 @@ use super::node_kind_handle_type::NodeKindHandle;
 #[sats(crate = __lib)]
 pub(super) struct PortalCreateArgs {
     pub name: String,
-    pub competition_id: u32,
+    pub parent_id: u32,
     pub target: NodeKindHandle,
 }
 
@@ -18,7 +18,7 @@ impl From<PortalCreateArgs> for super::Reducer {
     fn from(args: PortalCreateArgs) -> Self {
         Self::PortalCreate {
             name: args.name,
-            competition_id: args.competition_id,
+            parent_id: args.parent_id,
             target: args.target,
         }
     }
@@ -42,10 +42,10 @@ pub trait portal_create {
     fn portal_create(
         &self,
         name: String,
-        competition_id: u32,
+        parent_id: u32,
         target: NodeKindHandle,
     ) -> __sdk::Result<()> {
-        self.portal_create_then(name, competition_id, target, |_, _| {})
+        self.portal_create_then(name, parent_id, target, |_, _| {})
     }
 
     /// Request that the remote module invoke the reducer `portal_create` to run as soon as possible,
@@ -57,7 +57,7 @@ pub trait portal_create {
     fn portal_create_then(
         &self,
         name: String,
-        competition_id: u32,
+        parent_id: u32,
         target: NodeKindHandle,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
@@ -70,7 +70,7 @@ impl portal_create for super::RemoteReducers {
     fn portal_create_then(
         &self,
         name: String,
-        competition_id: u32,
+        parent_id: u32,
         target: NodeKindHandle,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
@@ -80,7 +80,7 @@ impl portal_create for super::RemoteReducers {
         self.imp.invoke_reducer_with_callback(
             PortalCreateArgs {
                 name,
-                competition_id,
+                parent_id,
                 target,
             },
             callback,

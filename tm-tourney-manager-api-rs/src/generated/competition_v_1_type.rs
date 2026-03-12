@@ -11,7 +11,6 @@ use super::competition_status_type::CompetitionStatus;
 pub struct CompetitionV1 {
     pub name: String,
     pub id: u32,
-    pub project_id: u32,
     pub parent_id: u32,
     pub status: CompetitionStatus,
     pub template: bool,
@@ -27,7 +26,6 @@ impl __sdk::InModule for CompetitionV1 {
 pub struct CompetitionV1Cols {
     pub name: __sdk::__query_builder::Col<CompetitionV1, String>,
     pub id: __sdk::__query_builder::Col<CompetitionV1, u32>,
-    pub project_id: __sdk::__query_builder::Col<CompetitionV1, u32>,
     pub parent_id: __sdk::__query_builder::Col<CompetitionV1, u32>,
     pub status: __sdk::__query_builder::Col<CompetitionV1, CompetitionStatus>,
     pub template: __sdk::__query_builder::Col<CompetitionV1, bool>,
@@ -39,7 +37,6 @@ impl __sdk::__query_builder::HasCols for CompetitionV1 {
         CompetitionV1Cols {
             name: __sdk::__query_builder::Col::new(table_name, "name"),
             id: __sdk::__query_builder::Col::new(table_name, "id"),
-            project_id: __sdk::__query_builder::Col::new(table_name, "project_id"),
             parent_id: __sdk::__query_builder::Col::new(table_name, "parent_id"),
             status: __sdk::__query_builder::Col::new(table_name, "status"),
             template: __sdk::__query_builder::Col::new(table_name, "template"),

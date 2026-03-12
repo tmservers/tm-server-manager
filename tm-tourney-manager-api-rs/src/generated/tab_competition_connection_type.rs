@@ -11,7 +11,6 @@ use super::connection_settings_type::ConnectionSettings;
 pub struct TabCompetitionConnection {
     pub id: u32,
     pub parent_id: u32,
-    pub project_id: u32,
     pub connection_from: u32,
     pub connection_to: u32,
     pub connection_from_variant: u8,
@@ -30,7 +29,6 @@ impl __sdk::InModule for TabCompetitionConnection {
 pub struct TabCompetitionConnectionCols {
     pub id: __sdk::__query_builder::Col<TabCompetitionConnection, u32>,
     pub parent_id: __sdk::__query_builder::Col<TabCompetitionConnection, u32>,
-    pub project_id: __sdk::__query_builder::Col<TabCompetitionConnection, u32>,
     pub connection_from: __sdk::__query_builder::Col<TabCompetitionConnection, u32>,
     pub connection_to: __sdk::__query_builder::Col<TabCompetitionConnection, u32>,
     pub connection_from_variant: __sdk::__query_builder::Col<TabCompetitionConnection, u8>,
@@ -46,7 +44,6 @@ impl __sdk::__query_builder::HasCols for TabCompetitionConnection {
         TabCompetitionConnectionCols {
             id: __sdk::__query_builder::Col::new(table_name, "id"),
             parent_id: __sdk::__query_builder::Col::new(table_name, "parent_id"),
-            project_id: __sdk::__query_builder::Col::new(table_name, "project_id"),
             connection_from: __sdk::__query_builder::Col::new(table_name, "connection_from"),
             connection_to: __sdk::__query_builder::Col::new(table_name, "connection_to"),
             connection_from_variant: __sdk::__query_builder::Col::new(

@@ -149,13 +149,11 @@ pub fn match_create(
     parent_id: u32,
     with_template: u32,
 ) -> Result<(), String> {
-    let user = ctx.get_user_account()?;
-
     let Some(parent_competition) = ctx.db.tab_competition().id().find(parent_id) else {
         return Err("Invalid competition".into());
     };
 
-    ctx.auth_builder(parent_id, user)?
+    ctx.auth_builder(parent_id)
         .permission(CompetitionPermissionsV1::MATCH_CREATE)
         .authorize()?;
 
@@ -203,13 +201,11 @@ pub fn match_create(
 /// and the server is lended to the project.
 #[reducer]
 pub fn match_assign_server(ctx: &ReducerContext, to: u32, server_id: u32) -> Result<(), String> {
-    let user_account = ctx.get_user_account()?;
-
     let Some(tm_match) = ctx.db.tab_match().id().find(to) else {
         return Err("Supplied match was not found!".into());
     };
 
-    ctx.auth_builder(tm_match.parent_id, user_account)?
+    ctx.auth_builder(tm_match.parent_id)
         .permission(CompetitionPermissionsV1::MATCH_ASSIGN_SERVER)
         .authorize()?;
 
@@ -320,13 +316,11 @@ pub fn match_update_config(
 /// This can also serve as a manual override for scheduled matches.
 #[reducer]
 pub fn match_set_preparation(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
-    let user = ctx.get_user_account()?;
-
     let Some(mut tm_match) = ctx.db.tab_match().id().find(match_id) else {
         return Err("Match not found!".into());
     };
 
-    ctx.auth_builder(tm_match.parent_id, user)?
+    ctx.auth_builder(tm_match.parent_id)
         .permission(CompetitionPermissionsV1::MATCH_CONFIGURE)
         .authorize()?;
 
@@ -381,13 +375,11 @@ pub fn match_set_preparation(ctx: &ReducerContext, match_id: u32) -> Result<(), 
 /// This can also serve as a manual override for scheduled matches.
 #[reducer]
 pub fn match_try_start(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
-    let user = ctx.get_user_account()?;
-
     let Some(mut tm_match) = ctx.db.tab_match().id().find(match_id) else {
         return Err("Match not found!".into());
     };
 
-    ctx.auth_builder(tm_match.parent_id, user)?
+    ctx.auth_builder(tm_match.parent_id)
         .permission(CompetitionPermissionsV1::MATCH_CONFIGURE)
         .authorize()?;
 
@@ -419,13 +411,11 @@ pub fn match_try_start(ctx: &ReducerContext, match_id: u32) -> Result<(), String
 
 #[reducer]
 pub fn match_delete(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
-    let user = ctx.get_user_account()?;
-
     let Some(tm_match) = ctx.db.tab_match().id().find(match_id) else {
         return Err(format!("Match with id: {match_id} not found."));
     };
 
-    ctx.auth_builder(tm_match.parent_id, user)?
+    ctx.auth_builder(tm_match.parent_id)
         .permission(CompetitionPermissionsV1::MATCH_DELETE)
         .authorize()?;
 

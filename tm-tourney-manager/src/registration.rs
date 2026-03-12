@@ -85,9 +85,7 @@ fn registration_create(
     parent_id: u32,
     with_template: u32,
 ) -> Result<(), String> {
-    let user = ctx.get_user_account()?;
-
-    ctx.auth_builder(parent_id, user)?
+    ctx.auth_builder(parent_id)
         .permission(CompetitionPermissionsV1::REGISTRATION_CREATE)
         .authorize()?;
 

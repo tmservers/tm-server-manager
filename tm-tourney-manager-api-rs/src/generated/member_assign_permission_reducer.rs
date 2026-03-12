@@ -6,46 +6,49 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub(super) struct ProjectMemberRemoveArgs {
+pub(super) struct MemberAssignPermissionArgs {
     pub member_id: u32,
+    pub new_permissions: u64,
 }
 
-impl From<ProjectMemberRemoveArgs> for super::Reducer {
-    fn from(args: ProjectMemberRemoveArgs) -> Self {
-        Self::ProjectMemberRemove {
+impl From<MemberAssignPermissionArgs> for super::Reducer {
+    fn from(args: MemberAssignPermissionArgs) -> Self {
+        Self::MemberAssignPermission {
             member_id: args.member_id,
+            new_permissions: args.new_permissions,
         }
     }
 }
 
-impl __sdk::InModule for ProjectMemberRemoveArgs {
+impl __sdk::InModule for MemberAssignPermissionArgs {
     type Module = super::RemoteModule;
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the reducer `project_member_remove`.
+/// Extension trait for access to the reducer `member_assign_permission`.
 ///
 /// Implemented for [`super::RemoteReducers`].
-pub trait project_member_remove {
-    /// Request that the remote module invoke the reducer `project_member_remove` to run as soon as possible.
+pub trait member_assign_permission {
+    /// Request that the remote module invoke the reducer `member_assign_permission` to run as soon as possible.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
-    /// /// Use [`project_member_remove:project_member_remove_then`] to run a callback after the reducer completes.
-    fn project_member_remove(&self, member_id: u32) -> __sdk::Result<()> {
-        self.project_member_remove_then(member_id, |_, _| {})
+    /// /// Use [`member_assign_permission:member_assign_permission_then`] to run a callback after the reducer completes.
+    fn member_assign_permission(&self, member_id: u32, new_permissions: u64) -> __sdk::Result<()> {
+        self.member_assign_permission_then(member_id, new_permissions, |_, _| {})
     }
 
-    /// Request that the remote module invoke the reducer `project_member_remove` to run as soon as possible,
+    /// Request that the remote module invoke the reducer `member_assign_permission` to run as soon as possible,
     /// registering `callback` to run when we are notified that the reducer completed.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed with the `callback`.
-    fn project_member_remove_then(
+    fn member_assign_permission_then(
         &self,
         member_id: u32,
+        new_permissions: u64,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -53,16 +56,22 @@ pub trait project_member_remove {
     ) -> __sdk::Result<()>;
 }
 
-impl project_member_remove for super::RemoteReducers {
-    fn project_member_remove_then(
+impl member_assign_permission for super::RemoteReducers {
+    fn member_assign_permission_then(
         &self,
         member_id: u32,
+        new_permissions: u64,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     ) -> __sdk::Result<()> {
-        self.imp
-            .invoke_reducer_with_callback(ProjectMemberRemoveArgs { member_id }, callback)
+        self.imp.invoke_reducer_with_callback(
+            MemberAssignPermissionArgs {
+                member_id,
+                new_permissions,
+            },
+            callback,
+        )
     }
 }

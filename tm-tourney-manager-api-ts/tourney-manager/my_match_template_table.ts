@@ -17,7 +17,6 @@ import {
 export default __t.row({
   name: __t.string(),
   id: __t.u32(),
-  projectId: __t.u32().name("project_id"),
   parentId: __t.u32().name("parent_id"),
   preMatchConfig: __t.u32().name("pre_match_config"),
   matchConfig: __t.u32().name("match_config"),
@@ -27,4 +26,5 @@ export default __t.row({
   },
   autoProvisionServer: __t.bool().name("auto_provision_server"),
   template: __t.bool(),
+  restricted: __t.bool(),
 });

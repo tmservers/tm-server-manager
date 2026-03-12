@@ -10,6 +10,7 @@ pub mod ban_args_type;
 pub mod chat_send_server_message_to_user_args_type;
 pub mod chat_send_to_user_args_type;
 pub mod common_type;
+pub mod competition_available_server_pool_table;
 pub mod competition_connection_data_option_type;
 pub mod competition_connection_data_table;
 pub mod competition_connection_data_type;
@@ -18,11 +19,15 @@ pub mod competition_connection_table;
 pub mod competition_connection_type;
 pub mod competition_create_reducer;
 pub mod competition_edit_name_reducer;
+pub mod competition_member_type;
 pub mod competition_node_position_table;
 pub mod competition_node_position_type;
 pub mod competition_node_position_update_reducer;
 pub mod competition_node_positions_update_reducer;
 pub mod competition_record_table;
+pub mod competition_role_member_type;
+pub mod competition_role_type;
+pub mod competition_server_type;
 pub mod competition_status_type;
 pub mod competition_table;
 pub mod competition_template_create_reducer;
@@ -32,7 +37,6 @@ pub mod connection_settings_type;
 pub mod create_env_var_reducer;
 pub mod create_monitor_reducer;
 pub mod create_project_reducer;
-pub mod create_schedule_reducer;
 pub mod create_team_reducer;
 pub mod custom_type;
 pub mod end_map_end_type;
@@ -78,6 +82,9 @@ pub mod match_template_create_reducer;
 pub mod match_try_start_reducer;
 pub mod match_update_config_reducer;
 pub mod match_update_pre_config_reducer;
+pub mod member_add_reducer;
+pub mod member_assign_permission_reducer;
+pub mod member_remove_reducer;
 pub mod method_call_type;
 pub mod method_error_type;
 pub mod method_response_type;
@@ -110,23 +117,9 @@ pub mod portal_type;
 pub mod post_event_reducer;
 pub mod post_record_reducer;
 pub mod post_round_replay_procedure;
-pub mod project_available_server_pool_table;
 pub mod project_edit_dates_reducer;
 pub mod project_edit_description_reducer;
 pub mod project_edit_name_reducer;
-pub mod project_member_add_reducer;
-pub mod project_member_assign_permission_reducer;
-pub mod project_member_remove_reducer;
-pub mod project_member_type;
-pub mod project_role_assign_permission_reducer;
-pub mod project_role_create_reducer;
-pub mod project_role_member_assign_reducer;
-pub mod project_role_member_remove_reducer;
-pub mod project_role_member_type;
-pub mod project_role_remove_reducer;
-pub mod project_role_type;
-pub mod project_server_type;
-pub mod project_status_schedule_v_1_type;
 pub mod project_status_type;
 pub mod project_table;
 pub mod project_update_status_reducer;
@@ -158,9 +151,19 @@ pub mod respawn_behaviour_type;
 pub mod respawn_type;
 pub mod reverse_cup_type;
 pub mod revoke_raw_server_reducer;
+pub mod role_assign_permission_reducer;
+pub mod role_create_reducer;
+pub mod role_member_assign_reducer;
+pub mod role_member_remove_reducer;
+pub mod role_remove_reducer;
 pub mod round_time_type;
 pub mod rounds_per_map_type;
 pub mod rounds_type;
+pub mod schedule_configured_reducer;
+pub mod schedule_create_reducer;
+pub mod schedule_exec_v_1_type;
+pub mod schedule_settings_type;
+pub mod schedule_state_type;
 pub mod schedule_table;
 pub mod schedule_v_1_type;
 pub mod scores_type;
@@ -212,6 +215,7 @@ pub use ban_args_type::BanArgs;
 pub use chat_send_server_message_to_user_args_type::ChatSendServerMessageToUserArgs;
 pub use chat_send_to_user_args_type::ChatSendToUserArgs;
 pub use common_type::Common;
+pub use competition_available_server_pool_table::*;
 pub use competition_connection_data_option_type::CompetitionConnectionDataOption;
 pub use competition_connection_data_table::*;
 pub use competition_connection_data_type::CompetitionConnectionData;
@@ -220,11 +224,15 @@ pub use competition_connection_table::*;
 pub use competition_connection_type::CompetitionConnection;
 pub use competition_create_reducer::competition_create;
 pub use competition_edit_name_reducer::competition_edit_name;
+pub use competition_member_type::CompetitionMember;
 pub use competition_node_position_table::*;
 pub use competition_node_position_type::CompetitionNodePosition;
 pub use competition_node_position_update_reducer::competition_node_position_update;
 pub use competition_node_positions_update_reducer::competition_node_positions_update;
 pub use competition_record_table::*;
+pub use competition_role_member_type::CompetitionRoleMember;
+pub use competition_role_type::CompetitionRole;
+pub use competition_server_type::CompetitionServer;
 pub use competition_status_type::CompetitionStatus;
 pub use competition_table::*;
 pub use competition_template_create_reducer::competition_template_create;
@@ -234,7 +242,6 @@ pub use connection_settings_type::ConnectionSettings;
 pub use create_env_var_reducer::create_env_var;
 pub use create_monitor_reducer::create_monitor;
 pub use create_project_reducer::create_project;
-pub use create_schedule_reducer::create_schedule;
 pub use create_team_reducer::create_team;
 pub use custom_type::Custom;
 pub use end_map_end_type::EndMapEnd;
@@ -280,6 +287,9 @@ pub use match_template_create_reducer::match_template_create;
 pub use match_try_start_reducer::match_try_start;
 pub use match_update_config_reducer::match_update_config;
 pub use match_update_pre_config_reducer::match_update_pre_config;
+pub use member_add_reducer::member_add;
+pub use member_assign_permission_reducer::member_assign_permission;
+pub use member_remove_reducer::member_remove;
 pub use method_call_type::MethodCall;
 pub use method_error_type::MethodError;
 pub use method_response_type::MethodResponse;
@@ -312,23 +322,9 @@ pub use portal_type::Portal;
 pub use post_event_reducer::post_event;
 pub use post_record_reducer::post_record;
 pub use post_round_replay_procedure::post_round_replay;
-pub use project_available_server_pool_table::*;
 pub use project_edit_dates_reducer::project_edit_dates;
 pub use project_edit_description_reducer::project_edit_description;
 pub use project_edit_name_reducer::project_edit_name;
-pub use project_member_add_reducer::project_member_add;
-pub use project_member_assign_permission_reducer::project_member_assign_permission;
-pub use project_member_remove_reducer::project_member_remove;
-pub use project_member_type::ProjectMember;
-pub use project_role_assign_permission_reducer::project_role_assign_permission;
-pub use project_role_create_reducer::project_role_create;
-pub use project_role_member_assign_reducer::project_role_member_assign;
-pub use project_role_member_remove_reducer::project_role_member_remove;
-pub use project_role_member_type::ProjectRoleMember;
-pub use project_role_remove_reducer::project_role_remove;
-pub use project_role_type::ProjectRole;
-pub use project_server_type::ProjectServer;
-pub use project_status_schedule_v_1_type::ProjectStatusScheduleV1;
 pub use project_status_type::ProjectStatus;
 pub use project_table::*;
 pub use project_update_status_reducer::project_update_status;
@@ -360,9 +356,19 @@ pub use respawn_behaviour_type::RespawnBehaviour;
 pub use respawn_type::Respawn;
 pub use reverse_cup_type::ReverseCup;
 pub use revoke_raw_server_reducer::revoke_raw_server;
+pub use role_assign_permission_reducer::role_assign_permission;
+pub use role_create_reducer::role_create;
+pub use role_member_assign_reducer::role_member_assign;
+pub use role_member_remove_reducer::role_member_remove;
+pub use role_remove_reducer::role_remove;
 pub use round_time_type::RoundTime;
 pub use rounds_per_map_type::RoundsPerMap;
 pub use rounds_type::Rounds;
+pub use schedule_configured_reducer::schedule_configured;
+pub use schedule_create_reducer::schedule_create;
+pub use schedule_exec_v_1_type::ScheduleExecV1;
+pub use schedule_settings_type::ScheduleSettings;
+pub use schedule_state_type::ScheduleState;
 pub use schedule_table::*;
 pub use schedule_v_1_type::ScheduleV1;
 pub use scores_type::Scores;
@@ -462,17 +468,13 @@ pub enum Reducer {
         starting_at: __sdk::Timestamp,
         ending_at: __sdk::Timestamp,
     },
-    CreateSchedule {
-        parent_id: u32,
-        scheduled_at: __sdk::Timestamp,
-    },
     CreateTeam {
         competition_id: u32,
         name: String,
     },
     LendRawServer {
         server_id: u32,
-        project_id: u32,
+        competition_id: u32,
     },
     MatchAssignServer {
         to: u32,
@@ -504,9 +506,20 @@ pub enum Reducer {
         id: u32,
         config_id: u32,
     },
+    MemberAdd {
+        competition_id: u32,
+        account_id: __sdk::Uuid,
+    },
+    MemberAssignPermission {
+        member_id: u32,
+        new_permissions: u64,
+    },
+    MemberRemove {
+        member_id: u32,
+    },
     PortalCreate {
         name: String,
-        competition_id: u32,
+        parent_id: u32,
         target: NodeKindHandle,
     },
     PostEvent {
@@ -529,36 +542,6 @@ pub enum Reducer {
     ProjectEditName {
         project_id: u32,
         name: String,
-    },
-    ProjectMemberAdd {
-        project_id: u32,
-        account_id: __sdk::Uuid,
-    },
-    ProjectMemberAssignPermission {
-        member_id: u32,
-        new_permissions: u64,
-    },
-    ProjectMemberRemove {
-        member_id: u32,
-    },
-    ProjectRoleAssignPermission {
-        role_id: u32,
-        new_permissions: u64,
-    },
-    ProjectRoleCreate {
-        project_id: u32,
-        name: String,
-    },
-    ProjectRoleMemberAssign {
-        role_id: u32,
-        account_id: __sdk::Uuid,
-    },
-    ProjectRoleMemberRemove {
-        role_id: u32,
-        account_id: __sdk::Uuid,
-    },
-    ProjectRoleRemove {
-        role_id: u32,
     },
     ProjectUpdateStatus {
         project_id: u32,
@@ -583,7 +566,33 @@ pub enum Reducer {
     },
     RevokeRawServer {
         server_id: u32,
-        project_id: u32,
+        competition_id: u32,
+    },
+    RoleAssignPermission {
+        role_id: u32,
+        new_permissions: u64,
+    },
+    RoleCreate {
+        competition_id: u32,
+        name: String,
+    },
+    RoleMemberAssign {
+        role_id: u32,
+        account_id: __sdk::Uuid,
+    },
+    RoleMemberRemove {
+        role_id: u32,
+        account_id: __sdk::Uuid,
+    },
+    RoleRemove {
+        role_id: u32,
+    },
+    ScheduleConfigured {
+        id: u32,
+    },
+    ScheduleCreate {
+        name: String,
+        parent_id: u32,
     },
     ServerMethodCall {
         server_login: String,
@@ -615,7 +624,6 @@ impl __sdk::Reducer for Reducer {
             Reducer::CreateEnvVar { .. } => "create_env_var",
             Reducer::CreateMonitor { .. } => "create_monitor",
             Reducer::CreateProject { .. } => "create_project",
-            Reducer::CreateSchedule { .. } => "create_schedule",
             Reducer::CreateTeam { .. } => "create_team",
             Reducer::LendRawServer { .. } => "lend_raw_server",
             Reducer::MatchAssignServer { .. } => "match_assign_server",
@@ -626,20 +634,15 @@ impl __sdk::Reducer for Reducer {
             Reducer::MatchTryStart { .. } => "match_try_start",
             Reducer::MatchUpdateConfig { .. } => "match_update_config",
             Reducer::MatchUpdatePreConfig { .. } => "match_update_pre_config",
+            Reducer::MemberAdd { .. } => "member_add",
+            Reducer::MemberAssignPermission { .. } => "member_assign_permission",
+            Reducer::MemberRemove { .. } => "member_remove",
             Reducer::PortalCreate { .. } => "portal_create",
             Reducer::PostEvent { .. } => "post_event",
             Reducer::PostRecord { .. } => "post_record",
             Reducer::ProjectEditDates { .. } => "project_edit_dates",
             Reducer::ProjectEditDescription { .. } => "project_edit_description",
             Reducer::ProjectEditName { .. } => "project_edit_name",
-            Reducer::ProjectMemberAdd { .. } => "project_member_add",
-            Reducer::ProjectMemberAssignPermission { .. } => "project_member_assign_permission",
-            Reducer::ProjectMemberRemove { .. } => "project_member_remove",
-            Reducer::ProjectRoleAssignPermission { .. } => "project_role_assign_permission",
-            Reducer::ProjectRoleCreate { .. } => "project_role_create",
-            Reducer::ProjectRoleMemberAssign { .. } => "project_role_member_assign",
-            Reducer::ProjectRoleMemberRemove { .. } => "project_role_member_remove",
-            Reducer::ProjectRoleRemove { .. } => "project_role_remove",
             Reducer::ProjectUpdateStatus { .. } => "project_update_status",
             Reducer::RawServerPlayerAdd { .. } => "raw_server_player_add",
             Reducer::RawServerPlayerRemove { .. } => "raw_server_player_remove",
@@ -647,6 +650,13 @@ impl __sdk::Reducer for Reducer {
             Reducer::RegisterPlayer { .. } => "register_player",
             Reducer::RegistrationCreate { .. } => "registration_create",
             Reducer::RevokeRawServer { .. } => "revoke_raw_server",
+            Reducer::RoleAssignPermission { .. } => "role_assign_permission",
+            Reducer::RoleCreate { .. } => "role_create",
+            Reducer::RoleMemberAssign { .. } => "role_member_assign",
+            Reducer::RoleMemberRemove { .. } => "role_member_remove",
+            Reducer::RoleRemove { .. } => "role_remove",
+            Reducer::ScheduleConfigured { .. } => "schedule_configured",
+            Reducer::ScheduleCreate { .. } => "schedule_create",
             Reducer::ServerMethodCall { .. } => "server_method_call",
             Reducer::ServerMethodResponse { .. } => "server_method_response",
             Reducer::UnregisterPlayer { .. } => "unregister_player",
@@ -736,13 +746,6 @@ impl __sdk::Reducer for Reducer {
                 starting_at: starting_at.clone(),
                 ending_at: ending_at.clone(),
             }),
-            Reducer::CreateSchedule {
-                parent_id,
-                scheduled_at,
-            } => __sats::bsatn::to_vec(&create_schedule_reducer::CreateScheduleArgs {
-                parent_id: parent_id.clone(),
-                scheduled_at: scheduled_at.clone(),
-            }),
             Reducer::CreateTeam {
                 competition_id,
                 name,
@@ -752,10 +755,10 @@ impl __sdk::Reducer for Reducer {
             }),
             Reducer::LendRawServer {
                 server_id,
-                project_id,
+                competition_id,
             } => __sats::bsatn::to_vec(&lend_raw_server_reducer::LendRawServerArgs {
                 server_id: server_id.clone(),
-                project_id: project_id.clone(),
+                competition_id: competition_id.clone(),
             }),
             Reducer::MatchAssignServer { to, server_id } => {
                 __sats::bsatn::to_vec(&match_assign_server_reducer::MatchAssignServerArgs {
@@ -805,13 +808,34 @@ impl __sdk::Reducer for Reducer {
                     config_id: config_id.clone(),
                 })
             }
+            Reducer::MemberAdd {
+                competition_id,
+                account_id,
+            } => __sats::bsatn::to_vec(&member_add_reducer::MemberAddArgs {
+                competition_id: competition_id.clone(),
+                account_id: account_id.clone(),
+            }),
+            Reducer::MemberAssignPermission {
+                member_id,
+                new_permissions,
+            } => __sats::bsatn::to_vec(
+                &member_assign_permission_reducer::MemberAssignPermissionArgs {
+                    member_id: member_id.clone(),
+                    new_permissions: new_permissions.clone(),
+                },
+            ),
+            Reducer::MemberRemove { member_id } => {
+                __sats::bsatn::to_vec(&member_remove_reducer::MemberRemoveArgs {
+                    member_id: member_id.clone(),
+                })
+            }
             Reducer::PortalCreate {
                 name,
-                competition_id,
+                parent_id,
                 target,
             } => __sats::bsatn::to_vec(&portal_create_reducer::PortalCreateArgs {
                 name: name.clone(),
-                competition_id: competition_id.clone(),
+                parent_id: parent_id.clone(),
                 target: target.clone(),
             }),
             Reducer::PostEvent { event } => {
@@ -852,65 +876,6 @@ impl __sdk::Reducer for Reducer {
                     name: name.clone(),
                 })
             }
-            Reducer::ProjectMemberAdd {
-                project_id,
-                account_id,
-            } => __sats::bsatn::to_vec(&project_member_add_reducer::ProjectMemberAddArgs {
-                project_id: project_id.clone(),
-                account_id: account_id.clone(),
-            }),
-            Reducer::ProjectMemberAssignPermission {
-                member_id,
-                new_permissions,
-            } => __sats::bsatn::to_vec(
-                &project_member_assign_permission_reducer::ProjectMemberAssignPermissionArgs {
-                    member_id: member_id.clone(),
-                    new_permissions: new_permissions.clone(),
-                },
-            ),
-            Reducer::ProjectMemberRemove { member_id } => {
-                __sats::bsatn::to_vec(&project_member_remove_reducer::ProjectMemberRemoveArgs {
-                    member_id: member_id.clone(),
-                })
-            }
-            Reducer::ProjectRoleAssignPermission {
-                role_id,
-                new_permissions,
-            } => __sats::bsatn::to_vec(
-                &project_role_assign_permission_reducer::ProjectRoleAssignPermissionArgs {
-                    role_id: role_id.clone(),
-                    new_permissions: new_permissions.clone(),
-                },
-            ),
-            Reducer::ProjectRoleCreate { project_id, name } => {
-                __sats::bsatn::to_vec(&project_role_create_reducer::ProjectRoleCreateArgs {
-                    project_id: project_id.clone(),
-                    name: name.clone(),
-                })
-            }
-            Reducer::ProjectRoleMemberAssign {
-                role_id,
-                account_id,
-            } => __sats::bsatn::to_vec(
-                &project_role_member_assign_reducer::ProjectRoleMemberAssignArgs {
-                    role_id: role_id.clone(),
-                    account_id: account_id.clone(),
-                },
-            ),
-            Reducer::ProjectRoleMemberRemove {
-                role_id,
-                account_id,
-            } => __sats::bsatn::to_vec(
-                &project_role_member_remove_reducer::ProjectRoleMemberRemoveArgs {
-                    role_id: role_id.clone(),
-                    account_id: account_id.clone(),
-                },
-            ),
-            Reducer::ProjectRoleRemove { role_id } => {
-                __sats::bsatn::to_vec(&project_role_remove_reducer::ProjectRoleRemoveArgs {
-                    role_id: role_id.clone(),
-                })
-            }
             Reducer::ProjectUpdateStatus { project_id } => {
                 __sats::bsatn::to_vec(&project_update_status_reducer::ProjectUpdateStatusArgs {
                     project_id: project_id.clone(),
@@ -949,11 +914,55 @@ impl __sdk::Reducer for Reducer {
             }),
             Reducer::RevokeRawServer {
                 server_id,
-                project_id,
+                competition_id,
             } => __sats::bsatn::to_vec(&revoke_raw_server_reducer::RevokeRawServerArgs {
                 server_id: server_id.clone(),
-                project_id: project_id.clone(),
+                competition_id: competition_id.clone(),
             }),
+            Reducer::RoleAssignPermission {
+                role_id,
+                new_permissions,
+            } => __sats::bsatn::to_vec(&role_assign_permission_reducer::RoleAssignPermissionArgs {
+                role_id: role_id.clone(),
+                new_permissions: new_permissions.clone(),
+            }),
+            Reducer::RoleCreate {
+                competition_id,
+                name,
+            } => __sats::bsatn::to_vec(&role_create_reducer::RoleCreateArgs {
+                competition_id: competition_id.clone(),
+                name: name.clone(),
+            }),
+            Reducer::RoleMemberAssign {
+                role_id,
+                account_id,
+            } => __sats::bsatn::to_vec(&role_member_assign_reducer::RoleMemberAssignArgs {
+                role_id: role_id.clone(),
+                account_id: account_id.clone(),
+            }),
+            Reducer::RoleMemberRemove {
+                role_id,
+                account_id,
+            } => __sats::bsatn::to_vec(&role_member_remove_reducer::RoleMemberRemoveArgs {
+                role_id: role_id.clone(),
+                account_id: account_id.clone(),
+            }),
+            Reducer::RoleRemove { role_id } => {
+                __sats::bsatn::to_vec(&role_remove_reducer::RoleRemoveArgs {
+                    role_id: role_id.clone(),
+                })
+            }
+            Reducer::ScheduleConfigured { id } => {
+                __sats::bsatn::to_vec(&schedule_configured_reducer::ScheduleConfiguredArgs {
+                    id: id.clone(),
+                })
+            }
+            Reducer::ScheduleCreate { name, parent_id } => {
+                __sats::bsatn::to_vec(&schedule_create_reducer::ScheduleCreateArgs {
+                    name: name.clone(),
+                    parent_id: parent_id.clone(),
+                })
+            }
             Reducer::ServerMethodCall { server_login, call } => {
                 __sats::bsatn::to_vec(&server_method_call_reducer::ServerMethodCallArgs {
                     server_login: server_login.clone(),
@@ -981,6 +990,7 @@ impl __sdk::Reducer for Reducer {
 #[doc(hidden)]
 pub struct DbUpdate {
     competition: __sdk::TableUpdate<CompetitionV1>,
+    competition_available_server_pool: __sdk::TableUpdate<RawServerV1>,
     competition_connection: __sdk::TableUpdate<CompetitionConnection>,
     competition_connection_data: __sdk::TableUpdate<CompetitionConnectionData>,
     competition_node_position: __sdk::TableUpdate<CompetitionNodePosition>,
@@ -995,7 +1005,6 @@ pub struct DbUpdate {
     my_match_template: __sdk::TableUpdate<TmMatchV1>,
     my_project: __sdk::TableUpdate<MyProjectV1>,
     project: __sdk::TableUpdate<ProjectV1>,
-    project_available_server_pool: __sdk::TableUpdate<RawServerV1>,
     raw_server_allowed_players: __sdk::TableUpdate<PermittedPlayer>,
     raw_server_config: __sdk::TableUpdate<ServerConfig>,
     raw_server_current_players: __sdk::TableUpdate<RawServerPlayer>,
@@ -1020,6 +1029,11 @@ impl TryFrom<__ws::v2::TransactionUpdate> for DbUpdate {
                 "competition" => db_update
                     .competition
                     .append(competition_table::parse_table_update(table_update)?),
+                "competition_available_server_pool" => {
+                    db_update.competition_available_server_pool.append(
+                        competition_available_server_pool_table::parse_table_update(table_update)?,
+                    )
+                }
                 "competition_connection" => db_update.competition_connection.append(
                     competition_connection_table::parse_table_update(table_update)?,
                 ),
@@ -1062,9 +1076,6 @@ impl TryFrom<__ws::v2::TransactionUpdate> for DbUpdate {
                 "project" => db_update
                     .project
                     .append(project_table::parse_table_update(table_update)?),
-                "project_available_server_pool" => db_update.project_available_server_pool.append(
-                    project_available_server_pool_table::parse_table_update(table_update)?,
-                ),
                 "raw_server_allowed_players" => db_update.raw_server_allowed_players.append(
                     raw_server_allowed_players_table::parse_table_update(table_update)?,
                 ),
@@ -1137,6 +1148,10 @@ impl __sdk::DbUpdate for DbUpdate {
             .with_updates_by_pk(|row| &row.id);
         diff.competition =
             cache.apply_diff_to_table::<CompetitionV1>("competition", &self.competition);
+        diff.competition_available_server_pool = cache.apply_diff_to_table::<RawServerV1>(
+            "competition_available_server_pool",
+            &self.competition_available_server_pool,
+        );
         diff.competition_connection = cache.apply_diff_to_table::<CompetitionConnection>(
             "competition_connection",
             &self.competition_connection,
@@ -1167,10 +1182,6 @@ impl __sdk::DbUpdate for DbUpdate {
             cache.apply_diff_to_table::<TmMatchV1>("my_match_template", &self.my_match_template);
         diff.my_project = cache.apply_diff_to_table::<MyProjectV1>("my_project", &self.my_project);
         diff.project = cache.apply_diff_to_table::<ProjectV1>("project", &self.project);
-        diff.project_available_server_pool = cache.apply_diff_to_table::<RawServerV1>(
-            "project_available_server_pool",
-            &self.project_available_server_pool,
-        );
         diff.raw_server_allowed_players = cache.apply_diff_to_table::<PermittedPlayer>(
             "raw_server_allowed_players",
             &self.raw_server_allowed_players,
@@ -1211,6 +1222,9 @@ impl __sdk::DbUpdate for DbUpdate {
             match &table_rows.table[..] {
                 "competition" => db_update
                     .competition
+                    .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
+                "competition_available_server_pool" => db_update
+                    .competition_available_server_pool
                     .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
                 "competition_connection" => db_update
                     .competition_connection
@@ -1253,9 +1267,6 @@ impl __sdk::DbUpdate for DbUpdate {
                     .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
                 "project" => db_update
                     .project
-                    .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
-                "project_available_server_pool" => db_update
-                    .project_available_server_pool
                     .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
                 "raw_server_allowed_players" => db_update
                     .raw_server_allowed_players
@@ -1312,6 +1323,9 @@ impl __sdk::DbUpdate for DbUpdate {
                 "competition" => db_update
                     .competition
                     .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
+                "competition_available_server_pool" => db_update
+                    .competition_available_server_pool
+                    .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
                 "competition_connection" => db_update
                     .competition_connection
                     .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
@@ -1353,9 +1367,6 @@ impl __sdk::DbUpdate for DbUpdate {
                     .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
                 "project" => db_update
                     .project
-                    .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
-                "project_available_server_pool" => db_update
-                    .project_available_server_pool
                     .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
                 "raw_server_allowed_players" => db_update
                     .raw_server_allowed_players
@@ -1412,6 +1423,7 @@ impl __sdk::DbUpdate for DbUpdate {
 #[doc(hidden)]
 pub struct AppliedDiff<'r> {
     competition: __sdk::TableAppliedDiff<'r, CompetitionV1>,
+    competition_available_server_pool: __sdk::TableAppliedDiff<'r, RawServerV1>,
     competition_connection: __sdk::TableAppliedDiff<'r, CompetitionConnection>,
     competition_connection_data: __sdk::TableAppliedDiff<'r, CompetitionConnectionData>,
     competition_node_position: __sdk::TableAppliedDiff<'r, CompetitionNodePosition>,
@@ -1426,7 +1438,6 @@ pub struct AppliedDiff<'r> {
     my_match_template: __sdk::TableAppliedDiff<'r, TmMatchV1>,
     my_project: __sdk::TableAppliedDiff<'r, MyProjectV1>,
     project: __sdk::TableAppliedDiff<'r, ProjectV1>,
-    project_available_server_pool: __sdk::TableAppliedDiff<'r, RawServerV1>,
     raw_server_allowed_players: __sdk::TableAppliedDiff<'r, PermittedPlayer>,
     raw_server_config: __sdk::TableAppliedDiff<'r, ServerConfig>,
     raw_server_current_players: __sdk::TableAppliedDiff<'r, RawServerPlayer>,
@@ -1456,6 +1467,11 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
         callbacks.invoke_table_row_callbacks::<CompetitionV1>(
             "competition",
             &self.competition,
+            event,
+        );
+        callbacks.invoke_table_row_callbacks::<RawServerV1>(
+            "competition_available_server_pool",
+            &self.competition_available_server_pool,
             event,
         );
         callbacks.invoke_table_row_callbacks::<CompetitionConnection>(
@@ -1504,11 +1520,6 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
         );
         callbacks.invoke_table_row_callbacks::<MyProjectV1>("my_project", &self.my_project, event);
         callbacks.invoke_table_row_callbacks::<ProjectV1>("project", &self.project, event);
-        callbacks.invoke_table_row_callbacks::<RawServerV1>(
-            "project_available_server_pool",
-            &self.project_available_server_pool,
-            event,
-        );
         callbacks.invoke_table_row_callbacks::<PermittedPlayer>(
             "raw_server_allowed_players",
             &self.raw_server_allowed_players,
@@ -2207,6 +2218,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
 
     fn register_tables(client_cache: &mut __sdk::ClientCache<Self>) {
         competition_table::register_table(client_cache);
+        competition_available_server_pool_table::register_table(client_cache);
         competition_connection_table::register_table(client_cache);
         competition_connection_data_table::register_table(client_cache);
         competition_node_position_table::register_table(client_cache);
@@ -2221,7 +2233,6 @@ impl __sdk::SpacetimeModule for RemoteModule {
         my_match_template_table::register_table(client_cache);
         my_project_table::register_table(client_cache);
         project_table::register_table(client_cache);
-        project_available_server_pool_table::register_table(client_cache);
         raw_server_allowed_players_table::register_table(client_cache);
         raw_server_config_table::register_table(client_cache);
         raw_server_current_players_table::register_table(client_cache);
@@ -2238,6 +2249,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
     }
     const ALL_TABLE_NAMES: &'static [&'static str] = &[
         "competition",
+        "competition_available_server_pool",
         "competition_connection",
         "competition_connection_data",
         "competition_node_position",
@@ -2252,7 +2264,6 @@ impl __sdk::SpacetimeModule for RemoteModule {
         "my_match_template",
         "my_project",
         "project",
-        "project_available_server_pool",
         "raw_server_allowed_players",
         "raw_server_config",
         "raw_server_current_players",

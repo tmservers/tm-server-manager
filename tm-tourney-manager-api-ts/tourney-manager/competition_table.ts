@@ -17,7 +17,6 @@ import {
 export default __t.row({
   name: __t.string(),
   id: __t.u32(),
-  projectId: __t.u32().name("project_id"),
   parentId: __t.u32().name("parent_id"),
   get status() {
     return CompetitionStatus;

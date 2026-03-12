@@ -11,6 +11,5 @@ import {
 } from "spacetimedb";
 
 export default {
-  projectId: __t.u32(),
-  name: __t.string(),
+  id: __t.u32(),
 };

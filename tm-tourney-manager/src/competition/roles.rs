@@ -58,8 +58,7 @@ pub fn member_add(
     competition_id: u32,
     account_id: Uuid,
 ) -> Result<(), String> {
-    let request_account_id = ctx.get_user_account()?;
-    ctx.auth_builder(competition_id, request_account_id)?
+    ctx.auth_builder(competition_id)
         //.permission(ProjectPermissionsV1::Pro)
         .authorize()?;
 
@@ -85,8 +84,7 @@ pub fn member_remove(ctx: &ReducerContext, member_id: u32) -> Result<(), String>
         return Err("Member with id not found!".into());
     };
 
-    let account_id = ctx.get_user_account()?;
-    ctx.auth_builder(project_member.competition_id, account_id)?
+    ctx.auth_builder(project_member.competition_id)
         //.permission(ProjectPermissionsV1::Pro)
         .authorize()?;
 
@@ -100,8 +98,7 @@ pub fn member_remove(ctx: &ReducerContext, member_id: u32) -> Result<(), String>
 
 #[reducer]
 pub fn role_create(ctx: &ReducerContext, competition_id: u32, name: String) -> Result<(), String> {
-    let account_id = ctx.get_user_account()?;
-    ctx.auth_builder(competition_id, account_id)?
+    ctx.auth_builder(competition_id)
         //.permission(ProjectPermissionsV1::Pro)
         .authorize()?;
 
@@ -121,8 +118,7 @@ pub fn role_remove(ctx: &ReducerContext, role_id: u32) -> Result<(), String> {
         return Err("Could not find role with id".into());
     };
 
-    let account_id = ctx.get_user_account()?;
-    ctx.auth_builder(role.competition_id, account_id)?
+    ctx.auth_builder(role.competition_id)
         //.permission(ProjectPermissionsV1::Pro)
         .authorize()?;
 
@@ -150,8 +146,7 @@ pub fn role_member_assign(
         return Err("Could not find role with id".into());
     };
 
-    let request_account_id = ctx.get_user_account()?;
-    ctx.auth_builder(role.competition_id, request_account_id)?
+    ctx.auth_builder(role.competition_id)
         //.permission(ProjectPermissionsV1::Pro)
         .authorize()?;
 
@@ -179,8 +174,7 @@ pub fn role_member_remove(
         return Err("Could not find role with id".into());
     };
 
-    let request_account_id = ctx.get_user_account()?;
-    ctx.auth_builder(role.competition_id, request_account_id)?
+    ctx.auth_builder(role.competition_id)
         //.permission(ProjectPermissionsV1::Pro)
         .authorize()?;
 
@@ -213,8 +207,7 @@ pub fn role_assign_permission(
         return Err("Could not find role with id".into());
     };
 
-    let account_id = ctx.get_user_account()?;
-    ctx.auth_builder(role.competition_id, account_id)?
+    ctx.auth_builder(role.competition_id)
         //.permission
         .authorize()?;
 
@@ -235,8 +228,7 @@ pub fn member_assign_permission(
         return Err("Could not find role with id".into());
     };
 
-    let account_id = ctx.get_user_account()?;
-    ctx.auth_builder(member.competition_id, account_id)?
+    ctx.auth_builder(member.competition_id)
         //.permission
         .authorize()?;
 

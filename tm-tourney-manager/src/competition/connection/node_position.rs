@@ -79,9 +79,8 @@ fn competition_node_position_update(
     node: NodeKindHandle,
     position: Vec2,
 ) -> Result<(), String> {
-    let user_account = ctx.get_user_account()?;
     let competition_id = node.get_competition(ctx)?;
-    ctx.auth_builder(competition_id, user_account)?
+    ctx.auth_builder(competition_id)
         .permission(CompetitionPermissionsV1::COMPETITION_LAYOUT_EDIT)
         .authorize()?;
 
@@ -108,11 +107,9 @@ fn competition_node_positions_update(
     ctx: &ReducerContext,
     positions: Vec<NodePositionUpdate>,
 ) -> Result<(), String> {
-    let user_account = ctx.get_user_account()?;
-
     for item in &positions {
         let competition_id = item.node.get_competition(ctx)?;
-        ctx.auth_builder(competition_id, user_account)?
+        ctx.auth_builder(competition_id)
             .permission(CompetitionPermissionsV1::COMPETITION_LAYOUT_EDIT)
             .authorize()?;
     }

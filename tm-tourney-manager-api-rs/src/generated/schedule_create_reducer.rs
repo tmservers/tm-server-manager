@@ -6,49 +6,49 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub(super) struct CreateScheduleArgs {
+pub(super) struct ScheduleCreateArgs {
+    pub name: String,
     pub parent_id: u32,
-    pub scheduled_at: __sdk::Timestamp,
 }
 
-impl From<CreateScheduleArgs> for super::Reducer {
-    fn from(args: CreateScheduleArgs) -> Self {
-        Self::CreateSchedule {
+impl From<ScheduleCreateArgs> for super::Reducer {
+    fn from(args: ScheduleCreateArgs) -> Self {
+        Self::ScheduleCreate {
+            name: args.name,
             parent_id: args.parent_id,
-            scheduled_at: args.scheduled_at,
         }
     }
 }
 
-impl __sdk::InModule for CreateScheduleArgs {
+impl __sdk::InModule for ScheduleCreateArgs {
     type Module = super::RemoteModule;
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the reducer `create_schedule`.
+/// Extension trait for access to the reducer `schedule_create`.
 ///
 /// Implemented for [`super::RemoteReducers`].
-pub trait create_schedule {
-    /// Request that the remote module invoke the reducer `create_schedule` to run as soon as possible.
+pub trait schedule_create {
+    /// Request that the remote module invoke the reducer `schedule_create` to run as soon as possible.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
-    /// /// Use [`create_schedule:create_schedule_then`] to run a callback after the reducer completes.
-    fn create_schedule(&self, parent_id: u32, scheduled_at: __sdk::Timestamp) -> __sdk::Result<()> {
-        self.create_schedule_then(parent_id, scheduled_at, |_, _| {})
+    /// /// Use [`schedule_create:schedule_create_then`] to run a callback after the reducer completes.
+    fn schedule_create(&self, name: String, parent_id: u32) -> __sdk::Result<()> {
+        self.schedule_create_then(name, parent_id, |_, _| {})
     }
 
-    /// Request that the remote module invoke the reducer `create_schedule` to run as soon as possible,
+    /// Request that the remote module invoke the reducer `schedule_create` to run as soon as possible,
     /// registering `callback` to run when we are notified that the reducer completed.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed with the `callback`.
-    fn create_schedule_then(
+    fn schedule_create_then(
         &self,
+        name: String,
         parent_id: u32,
-        scheduled_at: __sdk::Timestamp,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -56,22 +56,17 @@ pub trait create_schedule {
     ) -> __sdk::Result<()>;
 }
 
-impl create_schedule for super::RemoteReducers {
-    fn create_schedule_then(
+impl schedule_create for super::RemoteReducers {
+    fn schedule_create_then(
         &self,
+        name: String,
         parent_id: u32,
-        scheduled_at: __sdk::Timestamp,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     ) -> __sdk::Result<()> {
-        self.imp.invoke_reducer_with_callback(
-            CreateScheduleArgs {
-                parent_id,
-                scheduled_at,
-            },
-            callback,
-        )
+        self.imp
+            .invoke_reducer_with_callback(ScheduleCreateArgs { name, parent_id }, callback)
     }
 }

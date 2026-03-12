@@ -8,13 +8,7 @@ use crate::{
 
 #[reducer]
 fn match_template_create(ctx: &ReducerContext, name: String, parent_id: u32) -> Result<(), String> {
-    let user = ctx.get_user_account()?;
-
-    let Some(parent_competition) = ctx.db.tab_competition().id().find(parent_id) else {
-        return Err("Invalid competition".into());
-    };
-
-    ctx.auth_builder(parent_id, user)?
+    ctx.auth_builder(parent_id)
         .permission(CompetitionPermissionsV1::MATCH_CREATE)
         .authorize()?;
 

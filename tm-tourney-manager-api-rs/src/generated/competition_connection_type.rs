@@ -10,7 +10,6 @@ use super::node_kind_handle_type::NodeKindHandle;
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct CompetitionConnection {
-    pub project_id: u32,
     pub competition_id: u32,
     pub connection_from: NodeKindHandle,
     pub connection_to: NodeKindHandle,
@@ -25,7 +24,6 @@ impl __sdk::InModule for CompetitionConnection {
 ///
 /// Provides typed access to columns for query building.
 pub struct CompetitionConnectionCols {
-    pub project_id: __sdk::__query_builder::Col<CompetitionConnection, u32>,
     pub competition_id: __sdk::__query_builder::Col<CompetitionConnection, u32>,
     pub connection_from: __sdk::__query_builder::Col<CompetitionConnection, NodeKindHandle>,
     pub connection_to: __sdk::__query_builder::Col<CompetitionConnection, NodeKindHandle>,
@@ -36,7 +34,6 @@ impl __sdk::__query_builder::HasCols for CompetitionConnection {
     type Cols = CompetitionConnectionCols;
     fn cols(table_name: &'static str) -> Self::Cols {
         CompetitionConnectionCols {
-            project_id: __sdk::__query_builder::Col::new(table_name, "project_id"),
             competition_id: __sdk::__query_builder::Col::new(table_name, "competition_id"),
             connection_from: __sdk::__query_builder::Col::new(table_name, "connection_from"),
             connection_to: __sdk::__query_builder::Col::new(table_name, "connection_to"),

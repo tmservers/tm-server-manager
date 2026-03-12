@@ -43,11 +43,10 @@ fn portal_create(
     parent_id: u32,
     target: NodeKindHandle,
 ) -> Result<(), String> {
-    let account_id = ctx.get_user_account()?;
     let Some(competition) = ctx.db.tab_competition().id().find(parent_id) else {
         return Err("Could not find supplied competition_id".into());
     };
-    ctx.auth_builder(parent_id, account_id)?
+    ctx.auth_builder(parent_id)
         //.permission(ProjectPermissionsV1::PORTAL_CREATE)
         .authorize()?;
 

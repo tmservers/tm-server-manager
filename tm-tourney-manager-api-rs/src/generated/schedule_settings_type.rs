@@ -6,22 +6,12 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub enum NodeKindHandle {
-    MatchV1(u32),
+pub enum ScheduleSettings {
+    Absolute(__sdk::Timestamp),
 
-    CompetitionV1(u32),
-
-    MonitoringV1(u32),
-
-    ServerV1(u32),
-
-    ScheduleV1(u32),
-
-    PortalV1(u32),
-
-    RegistrationV1(u32),
+    Relative(__sdk::TimeDuration),
 }
 
-impl __sdk::InModule for NodeKindHandle {
+impl __sdk::InModule for ScheduleSettings {
     type Module = super::RemoteModule;
 }

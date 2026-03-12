@@ -6,53 +6,49 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub(super) struct ProjectRoleMemberAssignArgs {
+pub(super) struct RoleAssignPermissionArgs {
     pub role_id: u32,
-    pub account_id: __sdk::Uuid,
+    pub new_permissions: u64,
 }
 
-impl From<ProjectRoleMemberAssignArgs> for super::Reducer {
-    fn from(args: ProjectRoleMemberAssignArgs) -> Self {
-        Self::ProjectRoleMemberAssign {
+impl From<RoleAssignPermissionArgs> for super::Reducer {
+    fn from(args: RoleAssignPermissionArgs) -> Self {
+        Self::RoleAssignPermission {
             role_id: args.role_id,
-            account_id: args.account_id,
+            new_permissions: args.new_permissions,
         }
     }
 }
 
-impl __sdk::InModule for ProjectRoleMemberAssignArgs {
+impl __sdk::InModule for RoleAssignPermissionArgs {
     type Module = super::RemoteModule;
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the reducer `project_role_member_assign`.
+/// Extension trait for access to the reducer `role_assign_permission`.
 ///
 /// Implemented for [`super::RemoteReducers`].
-pub trait project_role_member_assign {
-    /// Request that the remote module invoke the reducer `project_role_member_assign` to run as soon as possible.
+pub trait role_assign_permission {
+    /// Request that the remote module invoke the reducer `role_assign_permission` to run as soon as possible.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
-    /// /// Use [`project_role_member_assign:project_role_member_assign_then`] to run a callback after the reducer completes.
-    fn project_role_member_assign(
-        &self,
-        role_id: u32,
-        account_id: __sdk::Uuid,
-    ) -> __sdk::Result<()> {
-        self.project_role_member_assign_then(role_id, account_id, |_, _| {})
+    /// /// Use [`role_assign_permission:role_assign_permission_then`] to run a callback after the reducer completes.
+    fn role_assign_permission(&self, role_id: u32, new_permissions: u64) -> __sdk::Result<()> {
+        self.role_assign_permission_then(role_id, new_permissions, |_, _| {})
     }
 
-    /// Request that the remote module invoke the reducer `project_role_member_assign` to run as soon as possible,
+    /// Request that the remote module invoke the reducer `role_assign_permission` to run as soon as possible,
     /// registering `callback` to run when we are notified that the reducer completed.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed with the `callback`.
-    fn project_role_member_assign_then(
+    fn role_assign_permission_then(
         &self,
         role_id: u32,
-        account_id: __sdk::Uuid,
+        new_permissions: u64,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -60,20 +56,20 @@ pub trait project_role_member_assign {
     ) -> __sdk::Result<()>;
 }
 
-impl project_role_member_assign for super::RemoteReducers {
-    fn project_role_member_assign_then(
+impl role_assign_permission for super::RemoteReducers {
+    fn role_assign_permission_then(
         &self,
         role_id: u32,
-        account_id: __sdk::Uuid,
+        new_permissions: u64,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     ) -> __sdk::Result<()> {
         self.imp.invoke_reducer_with_callback(
-            ProjectRoleMemberAssignArgs {
+            RoleAssignPermissionArgs {
                 role_id,
-                account_id,
+                new_permissions,
             },
             callback,
         )

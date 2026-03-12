@@ -6,50 +6,46 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub(super) struct ProjectRoleMemberRemoveArgs {
+pub(super) struct RoleMemberRemoveArgs {
     pub role_id: u32,
     pub account_id: __sdk::Uuid,
 }
 
-impl From<ProjectRoleMemberRemoveArgs> for super::Reducer {
-    fn from(args: ProjectRoleMemberRemoveArgs) -> Self {
-        Self::ProjectRoleMemberRemove {
+impl From<RoleMemberRemoveArgs> for super::Reducer {
+    fn from(args: RoleMemberRemoveArgs) -> Self {
+        Self::RoleMemberRemove {
             role_id: args.role_id,
             account_id: args.account_id,
         }
     }
 }
 
-impl __sdk::InModule for ProjectRoleMemberRemoveArgs {
+impl __sdk::InModule for RoleMemberRemoveArgs {
     type Module = super::RemoteModule;
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the reducer `project_role_member_remove`.
+/// Extension trait for access to the reducer `role_member_remove`.
 ///
 /// Implemented for [`super::RemoteReducers`].
-pub trait project_role_member_remove {
-    /// Request that the remote module invoke the reducer `project_role_member_remove` to run as soon as possible.
+pub trait role_member_remove {
+    /// Request that the remote module invoke the reducer `role_member_remove` to run as soon as possible.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
-    /// /// Use [`project_role_member_remove:project_role_member_remove_then`] to run a callback after the reducer completes.
-    fn project_role_member_remove(
-        &self,
-        role_id: u32,
-        account_id: __sdk::Uuid,
-    ) -> __sdk::Result<()> {
-        self.project_role_member_remove_then(role_id, account_id, |_, _| {})
+    /// /// Use [`role_member_remove:role_member_remove_then`] to run a callback after the reducer completes.
+    fn role_member_remove(&self, role_id: u32, account_id: __sdk::Uuid) -> __sdk::Result<()> {
+        self.role_member_remove_then(role_id, account_id, |_, _| {})
     }
 
-    /// Request that the remote module invoke the reducer `project_role_member_remove` to run as soon as possible,
+    /// Request that the remote module invoke the reducer `role_member_remove` to run as soon as possible,
     /// registering `callback` to run when we are notified that the reducer completed.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed with the `callback`.
-    fn project_role_member_remove_then(
+    fn role_member_remove_then(
         &self,
         role_id: u32,
         account_id: __sdk::Uuid,
@@ -60,8 +56,8 @@ pub trait project_role_member_remove {
     ) -> __sdk::Result<()>;
 }
 
-impl project_role_member_remove for super::RemoteReducers {
-    fn project_role_member_remove_then(
+impl role_member_remove for super::RemoteReducers {
+    fn role_member_remove_then(
         &self,
         role_id: u32,
         account_id: __sdk::Uuid,
@@ -71,7 +67,7 @@ impl project_role_member_remove for super::RemoteReducers {
             + 'static,
     ) -> __sdk::Result<()> {
         self.imp.invoke_reducer_with_callback(
-            ProjectRoleMemberRemoveArgs {
+            RoleMemberRemoveArgs {
                 role_id,
                 account_id,
             },

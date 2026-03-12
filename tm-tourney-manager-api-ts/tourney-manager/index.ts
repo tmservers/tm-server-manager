@@ -44,7 +44,6 @@ import ConnectionCreateReducer from "./connection_create_reducer";
 import CreateEnvVarReducer from "./create_env_var_reducer";
 import CreateMonitorReducer from "./create_monitor_reducer";
 import CreateProjectReducer from "./create_project_reducer";
-import CreateScheduleReducer from "./create_schedule_reducer";
 import CreateTeamReducer from "./create_team_reducer";
 import LendRawServerReducer from "./lend_raw_server_reducer";
 import MatchAssignServerReducer from "./match_assign_server_reducer";
@@ -55,20 +54,15 @@ import MatchTemplateCreateReducer from "./match_template_create_reducer";
 import MatchTryStartReducer from "./match_try_start_reducer";
 import MatchUpdateConfigReducer from "./match_update_config_reducer";
 import MatchUpdatePreConfigReducer from "./match_update_pre_config_reducer";
+import MemberAddReducer from "./member_add_reducer";
+import MemberAssignPermissionReducer from "./member_assign_permission_reducer";
+import MemberRemoveReducer from "./member_remove_reducer";
 import PortalCreateReducer from "./portal_create_reducer";
 import PostEventReducer from "./post_event_reducer";
 import PostRecordReducer from "./post_record_reducer";
 import ProjectEditDatesReducer from "./project_edit_dates_reducer";
 import ProjectEditDescriptionReducer from "./project_edit_description_reducer";
 import ProjectEditNameReducer from "./project_edit_name_reducer";
-import ProjectMemberAddReducer from "./project_member_add_reducer";
-import ProjectMemberAssignPermissionReducer from "./project_member_assign_permission_reducer";
-import ProjectMemberRemoveReducer from "./project_member_remove_reducer";
-import ProjectRoleAssignPermissionReducer from "./project_role_assign_permission_reducer";
-import ProjectRoleCreateReducer from "./project_role_create_reducer";
-import ProjectRoleMemberAssignReducer from "./project_role_member_assign_reducer";
-import ProjectRoleMemberRemoveReducer from "./project_role_member_remove_reducer";
-import ProjectRoleRemoveReducer from "./project_role_remove_reducer";
 import ProjectUpdateStatusReducer from "./project_update_status_reducer";
 import RawServerPlayerAddReducer from "./raw_server_player_add_reducer";
 import RawServerPlayerRemoveReducer from "./raw_server_player_remove_reducer";
@@ -76,6 +70,13 @@ import RawServerVerifyReducer from "./raw_server_verify_reducer";
 import RegisterPlayerReducer from "./register_player_reducer";
 import RegistrationCreateReducer from "./registration_create_reducer";
 import RevokeRawServerReducer from "./revoke_raw_server_reducer";
+import RoleAssignPermissionReducer from "./role_assign_permission_reducer";
+import RoleCreateReducer from "./role_create_reducer";
+import RoleMemberAssignReducer from "./role_member_assign_reducer";
+import RoleMemberRemoveReducer from "./role_member_remove_reducer";
+import RoleRemoveReducer from "./role_remove_reducer";
+import ScheduleConfiguredReducer from "./schedule_configured_reducer";
+import ScheduleCreateReducer from "./schedule_create_reducer";
 import ServerMethodCallReducer from "./server_method_call_reducer";
 import ServerMethodResponseReducer from "./server_method_response_reducer";
 import UnregisterPlayerReducer from "./unregister_player_reducer";
@@ -87,6 +88,7 @@ import * as PostRoundReplayProcedure from "./post_round_replay_procedure";
 
 // Import all table schema definitions
 import CompetitionRow from "./competition_table";
+import CompetitionAvailableServerPoolRow from "./competition_available_server_pool_table";
 import CompetitionConnectionRow from "./competition_connection_table";
 import CompetitionConnectionDataRow from "./competition_connection_data_table";
 import CompetitionNodePositionRow from "./competition_node_position_table";
@@ -101,7 +103,6 @@ import MyJobsRow from "./my_jobs_table";
 import MyMatchTemplateRow from "./my_match_template_table";
 import MyProjectRow from "./my_project_table";
 import ProjectRow from "./project_table";
-import ProjectAvailableServerPoolRow from "./project_available_server_pool_table";
 import RawServerAllowedPlayersRow from "./raw_server_allowed_players_table";
 import RawServerConfigRow from "./raw_server_config_table";
 import RawServerCurrentPlayersRow from "./raw_server_current_players_table";
@@ -142,6 +143,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, CompetitionRow),
+  competition_available_server_pool: __table({
+    name: 'competition_available_server_pool',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, CompetitionAvailableServerPoolRow),
   competition_connection: __table({
     name: 'competition_connection',
     indexes: [
@@ -240,13 +248,6 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, ProjectRow),
-  project_available_server_pool: __table({
-    name: 'project_available_server_pool',
-    indexes: [
-    ],
-    constraints: [
-    ],
-  }, ProjectAvailableServerPoolRow),
   raw_server_allowed_players: __table({
     name: 'raw_server_allowed_players',
     indexes: [
@@ -345,7 +346,6 @@ const reducersSchema = __reducers(
   __reducerSchema("create_env_var", CreateEnvVarReducer),
   __reducerSchema("create_monitor", CreateMonitorReducer),
   __reducerSchema("create_project", CreateProjectReducer),
-  __reducerSchema("create_schedule", CreateScheduleReducer),
   __reducerSchema("create_team", CreateTeamReducer),
   __reducerSchema("lend_raw_server", LendRawServerReducer),
   __reducerSchema("match_assign_server", MatchAssignServerReducer),
@@ -356,20 +356,15 @@ const reducersSchema = __reducers(
   __reducerSchema("match_try_start", MatchTryStartReducer),
   __reducerSchema("match_update_config", MatchUpdateConfigReducer),
   __reducerSchema("match_update_pre_config", MatchUpdatePreConfigReducer),
+  __reducerSchema("member_add", MemberAddReducer),
+  __reducerSchema("member_assign_permission", MemberAssignPermissionReducer),
+  __reducerSchema("member_remove", MemberRemoveReducer),
   __reducerSchema("portal_create", PortalCreateReducer),
   __reducerSchema("post_event", PostEventReducer),
   __reducerSchema("post_record", PostRecordReducer),
   __reducerSchema("project_edit_dates", ProjectEditDatesReducer),
   __reducerSchema("project_edit_description", ProjectEditDescriptionReducer),
   __reducerSchema("project_edit_name", ProjectEditNameReducer),
-  __reducerSchema("project_member_add", ProjectMemberAddReducer),
-  __reducerSchema("project_member_assign_permission", ProjectMemberAssignPermissionReducer),
-  __reducerSchema("project_member_remove", ProjectMemberRemoveReducer),
-  __reducerSchema("project_role_assign_permission", ProjectRoleAssignPermissionReducer),
-  __reducerSchema("project_role_create", ProjectRoleCreateReducer),
-  __reducerSchema("project_role_member_assign", ProjectRoleMemberAssignReducer),
-  __reducerSchema("project_role_member_remove", ProjectRoleMemberRemoveReducer),
-  __reducerSchema("project_role_remove", ProjectRoleRemoveReducer),
   __reducerSchema("project_update_status", ProjectUpdateStatusReducer),
   __reducerSchema("raw_server_player_add", RawServerPlayerAddReducer),
   __reducerSchema("raw_server_player_remove", RawServerPlayerRemoveReducer),
@@ -377,6 +372,13 @@ const reducersSchema = __reducers(
   __reducerSchema("register_player", RegisterPlayerReducer),
   __reducerSchema("registration_create", RegistrationCreateReducer),
   __reducerSchema("revoke_raw_server", RevokeRawServerReducer),
+  __reducerSchema("role_assign_permission", RoleAssignPermissionReducer),
+  __reducerSchema("role_create", RoleCreateReducer),
+  __reducerSchema("role_member_assign", RoleMemberAssignReducer),
+  __reducerSchema("role_member_remove", RoleMemberRemoveReducer),
+  __reducerSchema("role_remove", RoleRemoveReducer),
+  __reducerSchema("schedule_configured", ScheduleConfiguredReducer),
+  __reducerSchema("schedule_create", ScheduleCreateReducer),
   __reducerSchema("server_method_call", ServerMethodCallReducer),
   __reducerSchema("server_method_response", ServerMethodResponseReducer),
   __reducerSchema("unregister_player", UnregisterPlayerReducer),

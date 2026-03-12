@@ -6,48 +6,48 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub(super) struct ProjectRoleCreateArgs {
-    pub project_id: u32,
+pub(super) struct RoleCreateArgs {
+    pub competition_id: u32,
     pub name: String,
 }
 
-impl From<ProjectRoleCreateArgs> for super::Reducer {
-    fn from(args: ProjectRoleCreateArgs) -> Self {
-        Self::ProjectRoleCreate {
-            project_id: args.project_id,
+impl From<RoleCreateArgs> for super::Reducer {
+    fn from(args: RoleCreateArgs) -> Self {
+        Self::RoleCreate {
+            competition_id: args.competition_id,
             name: args.name,
         }
     }
 }
 
-impl __sdk::InModule for ProjectRoleCreateArgs {
+impl __sdk::InModule for RoleCreateArgs {
     type Module = super::RemoteModule;
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the reducer `project_role_create`.
+/// Extension trait for access to the reducer `role_create`.
 ///
 /// Implemented for [`super::RemoteReducers`].
-pub trait project_role_create {
-    /// Request that the remote module invoke the reducer `project_role_create` to run as soon as possible.
+pub trait role_create {
+    /// Request that the remote module invoke the reducer `role_create` to run as soon as possible.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
-    /// /// Use [`project_role_create:project_role_create_then`] to run a callback after the reducer completes.
-    fn project_role_create(&self, project_id: u32, name: String) -> __sdk::Result<()> {
-        self.project_role_create_then(project_id, name, |_, _| {})
+    /// /// Use [`role_create:role_create_then`] to run a callback after the reducer completes.
+    fn role_create(&self, competition_id: u32, name: String) -> __sdk::Result<()> {
+        self.role_create_then(competition_id, name, |_, _| {})
     }
 
-    /// Request that the remote module invoke the reducer `project_role_create` to run as soon as possible,
+    /// Request that the remote module invoke the reducer `role_create` to run as soon as possible,
     /// registering `callback` to run when we are notified that the reducer completed.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed with the `callback`.
-    fn project_role_create_then(
+    fn role_create_then(
         &self,
-        project_id: u32,
+        competition_id: u32,
         name: String,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
@@ -56,17 +56,22 @@ pub trait project_role_create {
     ) -> __sdk::Result<()>;
 }
 
-impl project_role_create for super::RemoteReducers {
-    fn project_role_create_then(
+impl role_create for super::RemoteReducers {
+    fn role_create_then(
         &self,
-        project_id: u32,
+        competition_id: u32,
         name: String,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     ) -> __sdk::Result<()> {
-        self.imp
-            .invoke_reducer_with_callback(ProjectRoleCreateArgs { project_id, name }, callback)
+        self.imp.invoke_reducer_with_callback(
+            RoleCreateArgs {
+                competition_id,
+                name,
+            },
+            callback,
+        )
     }
 }

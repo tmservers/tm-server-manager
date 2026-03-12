@@ -6,46 +6,44 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub(super) struct ProjectRoleRemoveArgs {
-    pub role_id: u32,
+pub(super) struct ScheduleConfiguredArgs {
+    pub id: u32,
 }
 
-impl From<ProjectRoleRemoveArgs> for super::Reducer {
-    fn from(args: ProjectRoleRemoveArgs) -> Self {
-        Self::ProjectRoleRemove {
-            role_id: args.role_id,
-        }
+impl From<ScheduleConfiguredArgs> for super::Reducer {
+    fn from(args: ScheduleConfiguredArgs) -> Self {
+        Self::ScheduleConfigured { id: args.id }
     }
 }
 
-impl __sdk::InModule for ProjectRoleRemoveArgs {
+impl __sdk::InModule for ScheduleConfiguredArgs {
     type Module = super::RemoteModule;
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the reducer `project_role_remove`.
+/// Extension trait for access to the reducer `schedule_configured`.
 ///
 /// Implemented for [`super::RemoteReducers`].
-pub trait project_role_remove {
-    /// Request that the remote module invoke the reducer `project_role_remove` to run as soon as possible.
+pub trait schedule_configured {
+    /// Request that the remote module invoke the reducer `schedule_configured` to run as soon as possible.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
-    /// /// Use [`project_role_remove:project_role_remove_then`] to run a callback after the reducer completes.
-    fn project_role_remove(&self, role_id: u32) -> __sdk::Result<()> {
-        self.project_role_remove_then(role_id, |_, _| {})
+    /// /// Use [`schedule_configured:schedule_configured_then`] to run a callback after the reducer completes.
+    fn schedule_configured(&self, id: u32) -> __sdk::Result<()> {
+        self.schedule_configured_then(id, |_, _| {})
     }
 
-    /// Request that the remote module invoke the reducer `project_role_remove` to run as soon as possible,
+    /// Request that the remote module invoke the reducer `schedule_configured` to run as soon as possible,
     /// registering `callback` to run when we are notified that the reducer completed.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed with the `callback`.
-    fn project_role_remove_then(
+    fn schedule_configured_then(
         &self,
-        role_id: u32,
+        id: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -53,16 +51,16 @@ pub trait project_role_remove {
     ) -> __sdk::Result<()>;
 }
 
-impl project_role_remove for super::RemoteReducers {
-    fn project_role_remove_then(
+impl schedule_configured for super::RemoteReducers {
+    fn schedule_configured_then(
         &self,
-        role_id: u32,
+        id: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     ) -> __sdk::Result<()> {
         self.imp
-            .invoke_reducer_with_callback(ProjectRoleRemoveArgs { role_id }, callback)
+            .invoke_reducer_with_callback(ScheduleConfiguredArgs { id }, callback)
     }
 }

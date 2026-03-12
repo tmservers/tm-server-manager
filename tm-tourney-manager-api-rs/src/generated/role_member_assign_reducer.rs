@@ -6,53 +6,49 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub(super) struct ProjectMemberAssignPermissionArgs {
-    pub member_id: u32,
-    pub new_permissions: u64,
+pub(super) struct RoleMemberAssignArgs {
+    pub role_id: u32,
+    pub account_id: __sdk::Uuid,
 }
 
-impl From<ProjectMemberAssignPermissionArgs> for super::Reducer {
-    fn from(args: ProjectMemberAssignPermissionArgs) -> Self {
-        Self::ProjectMemberAssignPermission {
-            member_id: args.member_id,
-            new_permissions: args.new_permissions,
+impl From<RoleMemberAssignArgs> for super::Reducer {
+    fn from(args: RoleMemberAssignArgs) -> Self {
+        Self::RoleMemberAssign {
+            role_id: args.role_id,
+            account_id: args.account_id,
         }
     }
 }
 
-impl __sdk::InModule for ProjectMemberAssignPermissionArgs {
+impl __sdk::InModule for RoleMemberAssignArgs {
     type Module = super::RemoteModule;
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the reducer `project_member_assign_permission`.
+/// Extension trait for access to the reducer `role_member_assign`.
 ///
 /// Implemented for [`super::RemoteReducers`].
-pub trait project_member_assign_permission {
-    /// Request that the remote module invoke the reducer `project_member_assign_permission` to run as soon as possible.
+pub trait role_member_assign {
+    /// Request that the remote module invoke the reducer `role_member_assign` to run as soon as possible.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
-    /// /// Use [`project_member_assign_permission:project_member_assign_permission_then`] to run a callback after the reducer completes.
-    fn project_member_assign_permission(
-        &self,
-        member_id: u32,
-        new_permissions: u64,
-    ) -> __sdk::Result<()> {
-        self.project_member_assign_permission_then(member_id, new_permissions, |_, _| {})
+    /// /// Use [`role_member_assign:role_member_assign_then`] to run a callback after the reducer completes.
+    fn role_member_assign(&self, role_id: u32, account_id: __sdk::Uuid) -> __sdk::Result<()> {
+        self.role_member_assign_then(role_id, account_id, |_, _| {})
     }
 
-    /// Request that the remote module invoke the reducer `project_member_assign_permission` to run as soon as possible,
+    /// Request that the remote module invoke the reducer `role_member_assign` to run as soon as possible,
     /// registering `callback` to run when we are notified that the reducer completed.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed with the `callback`.
-    fn project_member_assign_permission_then(
+    fn role_member_assign_then(
         &self,
-        member_id: u32,
-        new_permissions: u64,
+        role_id: u32,
+        account_id: __sdk::Uuid,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -60,20 +56,20 @@ pub trait project_member_assign_permission {
     ) -> __sdk::Result<()>;
 }
 
-impl project_member_assign_permission for super::RemoteReducers {
-    fn project_member_assign_permission_then(
+impl role_member_assign for super::RemoteReducers {
+    fn role_member_assign_then(
         &self,
-        member_id: u32,
-        new_permissions: u64,
+        role_id: u32,
+        account_id: __sdk::Uuid,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     ) -> __sdk::Result<()> {
         self.imp.invoke_reducer_with_callback(
-            ProjectMemberAssignPermissionArgs {
-                member_id,
-                new_permissions,
+            RoleMemberAssignArgs {
+                role_id,
+                account_id,
             },
             callback,
         )

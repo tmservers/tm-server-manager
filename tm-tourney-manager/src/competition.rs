@@ -101,14 +101,12 @@ pub fn competition_create(
     parent_id: u32,
     with_template: u32,
 ) -> Result<(), String> {
-    let account_id = ctx.get_user_account()?;
-
     // If parent is valid it is guaranteed that it has a valid project associated with it.
     let Some(parent_competition) = ctx.db.tab_competition().id().find(parent_id) else {
         return Err("Invalid parent_id".into());
     };
 
-    ctx.auth_builder(parent_competition.id, account_id)?
+    ctx.auth_builder(parent_competition.id)
         .permission(CompetitionPermissionsV1::COMPETITION_CREATE)
         .authorize()?;
 
@@ -129,13 +127,11 @@ pub fn competition_edit_name(
     competition_id: u32,
     name: String,
 ) -> Result<(), String> {
-    let account_id = ctx.get_user_account()?;
-
     let Some(mut competition) = ctx.db.tab_competition().id().find(competition_id) else {
         return Err("Invalid competition".into());
     };
 
-    ctx.auth_builder(competition.id, account_id)?
+    ctx.auth_builder(competition.id)
         .permission(CompetitionPermissionsV1::COMPETITION_EDIT_NAME)
         .authorize()?;
 

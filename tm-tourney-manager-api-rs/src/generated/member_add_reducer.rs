@@ -6,53 +6,49 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub(super) struct ProjectRoleAssignPermissionArgs {
-    pub role_id: u32,
-    pub new_permissions: u64,
+pub(super) struct MemberAddArgs {
+    pub competition_id: u32,
+    pub account_id: __sdk::Uuid,
 }
 
-impl From<ProjectRoleAssignPermissionArgs> for super::Reducer {
-    fn from(args: ProjectRoleAssignPermissionArgs) -> Self {
-        Self::ProjectRoleAssignPermission {
-            role_id: args.role_id,
-            new_permissions: args.new_permissions,
+impl From<MemberAddArgs> for super::Reducer {
+    fn from(args: MemberAddArgs) -> Self {
+        Self::MemberAdd {
+            competition_id: args.competition_id,
+            account_id: args.account_id,
         }
     }
 }
 
-impl __sdk::InModule for ProjectRoleAssignPermissionArgs {
+impl __sdk::InModule for MemberAddArgs {
     type Module = super::RemoteModule;
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the reducer `project_role_assign_permission`.
+/// Extension trait for access to the reducer `member_add`.
 ///
 /// Implemented for [`super::RemoteReducers`].
-pub trait project_role_assign_permission {
-    /// Request that the remote module invoke the reducer `project_role_assign_permission` to run as soon as possible.
+pub trait member_add {
+    /// Request that the remote module invoke the reducer `member_add` to run as soon as possible.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
-    /// /// Use [`project_role_assign_permission:project_role_assign_permission_then`] to run a callback after the reducer completes.
-    fn project_role_assign_permission(
-        &self,
-        role_id: u32,
-        new_permissions: u64,
-    ) -> __sdk::Result<()> {
-        self.project_role_assign_permission_then(role_id, new_permissions, |_, _| {})
+    /// /// Use [`member_add:member_add_then`] to run a callback after the reducer completes.
+    fn member_add(&self, competition_id: u32, account_id: __sdk::Uuid) -> __sdk::Result<()> {
+        self.member_add_then(competition_id, account_id, |_, _| {})
     }
 
-    /// Request that the remote module invoke the reducer `project_role_assign_permission` to run as soon as possible,
+    /// Request that the remote module invoke the reducer `member_add` to run as soon as possible,
     /// registering `callback` to run when we are notified that the reducer completed.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed with the `callback`.
-    fn project_role_assign_permission_then(
+    fn member_add_then(
         &self,
-        role_id: u32,
-        new_permissions: u64,
+        competition_id: u32,
+        account_id: __sdk::Uuid,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -60,20 +56,20 @@ pub trait project_role_assign_permission {
     ) -> __sdk::Result<()>;
 }
 
-impl project_role_assign_permission for super::RemoteReducers {
-    fn project_role_assign_permission_then(
+impl member_add for super::RemoteReducers {
+    fn member_add_then(
         &self,
-        role_id: u32,
-        new_permissions: u64,
+        competition_id: u32,
+        account_id: __sdk::Uuid,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     ) -> __sdk::Result<()> {
         self.imp.invoke_reducer_with_callback(
-            ProjectRoleAssignPermissionArgs {
-                role_id,
-                new_permissions,
+            MemberAddArgs {
+                competition_id,
+                account_id,
             },
             callback,
         )

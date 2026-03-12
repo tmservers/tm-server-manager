@@ -6,49 +6,49 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct ProjectRoleMember {
+pub struct CompetitionRoleMember {
     pub role_id: u32,
     pub account_id: u32,
 }
 
-impl __sdk::InModule for ProjectRoleMember {
+impl __sdk::InModule for CompetitionRoleMember {
     type Module = super::RemoteModule;
 }
 
-/// Column accessor struct for the table `ProjectRoleMember`.
+/// Column accessor struct for the table `CompetitionRoleMember`.
 ///
 /// Provides typed access to columns for query building.
-pub struct ProjectRoleMemberCols {
-    pub role_id: __sdk::__query_builder::Col<ProjectRoleMember, u32>,
-    pub account_id: __sdk::__query_builder::Col<ProjectRoleMember, u32>,
+pub struct CompetitionRoleMemberCols {
+    pub role_id: __sdk::__query_builder::Col<CompetitionRoleMember, u32>,
+    pub account_id: __sdk::__query_builder::Col<CompetitionRoleMember, u32>,
 }
 
-impl __sdk::__query_builder::HasCols for ProjectRoleMember {
-    type Cols = ProjectRoleMemberCols;
+impl __sdk::__query_builder::HasCols for CompetitionRoleMember {
+    type Cols = CompetitionRoleMemberCols;
     fn cols(table_name: &'static str) -> Self::Cols {
-        ProjectRoleMemberCols {
+        CompetitionRoleMemberCols {
             role_id: __sdk::__query_builder::Col::new(table_name, "role_id"),
             account_id: __sdk::__query_builder::Col::new(table_name, "account_id"),
         }
     }
 }
 
-/// Indexed column accessor struct for the table `ProjectRoleMember`.
+/// Indexed column accessor struct for the table `CompetitionRoleMember`.
 ///
 /// Provides typed access to indexed columns for query building.
-pub struct ProjectRoleMemberIxCols {
-    pub account_id: __sdk::__query_builder::IxCol<ProjectRoleMember, u32>,
-    pub role_id: __sdk::__query_builder::IxCol<ProjectRoleMember, u32>,
+pub struct CompetitionRoleMemberIxCols {
+    pub account_id: __sdk::__query_builder::IxCol<CompetitionRoleMember, u32>,
+    pub role_id: __sdk::__query_builder::IxCol<CompetitionRoleMember, u32>,
 }
 
-impl __sdk::__query_builder::HasIxCols for ProjectRoleMember {
-    type IxCols = ProjectRoleMemberIxCols;
+impl __sdk::__query_builder::HasIxCols for CompetitionRoleMember {
+    type IxCols = CompetitionRoleMemberIxCols;
     fn ix_cols(table_name: &'static str) -> Self::IxCols {
-        ProjectRoleMemberIxCols {
+        CompetitionRoleMemberIxCols {
             account_id: __sdk::__query_builder::IxCol::new(table_name, "account_id"),
             role_id: __sdk::__query_builder::IxCol::new(table_name, "role_id"),
         }
     }
 }
 
-impl __sdk::__query_builder::CanBeLookupTable for ProjectRoleMember {}
+impl __sdk::__query_builder::CanBeLookupTable for CompetitionRoleMember {}

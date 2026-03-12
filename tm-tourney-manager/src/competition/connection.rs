@@ -6,10 +6,12 @@ use spacetimedb::{ReducerContext, SpacetimeType, Table, ViewContext, reducer, vi
 use crate::{
     authorization::Authorization,
     competition::{
-        CompetitionPermissionsV1, connection::connection_data::{
+        CompetitionPermissionsV1,
+        connection::connection_data::{
             CompetitionConnectionData, tab_competition_connection_data,
             tab_competition_connection_data__view,
-        }, tab_competition
+        },
+        tab_competition,
     },
     portal::tab_portal,
     raw_server::player::PermittedPlayer,
@@ -308,8 +310,6 @@ pub fn connection_create(
     connection_to: NodeKindHandle,
     setting: ConnectionSettings,
 ) -> Result<(), String> {
-    let account_id = ctx.get_user()?.account_id;
-
     if connection_from == connection_to {
         return Err("Cannot connect a Node to itself.".into());
     }
@@ -329,7 +329,7 @@ pub fn connection_create(
         );
     }
 
-    ctx.auth_builder(from_comp, account_id)?
+    ctx.auth_builder(from_comp)
         .permission(CompetitionPermissionsV1::COMPETITION_CONNECTION_EDIT)
         .authorize()?;
 

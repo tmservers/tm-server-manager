@@ -21,10 +21,8 @@ pub fn competition_template_create(
     parent_id: u32,
     with_template: u32,
 ) -> Result<(), String> {
-    let account_id = ctx.get_user_account()?;
-
     //TODO make separate permission?
-    ctx.auth_builder(parent_id, account_id)?
+    ctx.auth_builder(parent_id)
         .permission(CompetitionPermissionsV1::COMPETITION_CREATE)
         .authorize()?;
 
@@ -80,7 +78,7 @@ pub(super) fn competition_template_instantiate(
     } */
 
     //TODO evaluate if other permission would be better.
-    ctx.auth_builder(competition_template.id, account_id)?
+    ctx.auth_builder(competition_template.id)
         .permission(CompetitionPermissionsV1::COMPETITION_CREATE)
         .authorize()?;
 

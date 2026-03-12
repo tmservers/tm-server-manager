@@ -12,5 +12,5 @@ import {
 
 export default {
   serverId: __t.u32(),
-  projectId: __t.u32(),
+  competitionId: __t.u32(),
 };

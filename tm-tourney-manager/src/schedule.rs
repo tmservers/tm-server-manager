@@ -113,10 +113,8 @@ pub fn schedule_create(
     parent_id: u32,
     //settings: ScheduleSettings,
 ) -> Result<(), String> {
-    let user = ctx.get_user_account()?;
-
     //TODO permission fix
-    ctx.auth_builder(parent_id, user)?
+    ctx.auth_builder(parent_id)
         .permission(CompetitionPermissionsV1::MATCH_CREATE)
         .authorize()?;
 
@@ -136,14 +134,12 @@ pub fn schedule_create(
 
 #[reducer]
 pub fn schedule_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> {
-    let user = ctx.get_user_account()?;
-
     let Some(schedule) = ctx.db.tab_schedule().id().find(id) else {
         return Err("Invalid schedule".into());
     };
 
     //TODO permission fix
-    ctx.auth_builder(schedule.parent_id, user)?
+    ctx.auth_builder(schedule.parent_id)
         .permission(CompetitionPermissionsV1::MATCH_CREATE)
         .authorize()?;
 

@@ -8,14 +8,14 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[sats(crate = __lib)]
 pub(super) struct RevokeRawServerArgs {
     pub server_id: u32,
-    pub project_id: u32,
+    pub competition_id: u32,
 }
 
 impl From<RevokeRawServerArgs> for super::Reducer {
     fn from(args: RevokeRawServerArgs) -> Self {
         Self::RevokeRawServer {
             server_id: args.server_id,
-            project_id: args.project_id,
+            competition_id: args.competition_id,
         }
     }
 }
@@ -35,8 +35,8 @@ pub trait revoke_raw_server {
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
     /// /// Use [`revoke_raw_server:revoke_raw_server_then`] to run a callback after the reducer completes.
-    fn revoke_raw_server(&self, server_id: u32, project_id: u32) -> __sdk::Result<()> {
-        self.revoke_raw_server_then(server_id, project_id, |_, _| {})
+    fn revoke_raw_server(&self, server_id: u32, competition_id: u32) -> __sdk::Result<()> {
+        self.revoke_raw_server_then(server_id, competition_id, |_, _| {})
     }
 
     /// Request that the remote module invoke the reducer `revoke_raw_server` to run as soon as possible,
@@ -48,7 +48,7 @@ pub trait revoke_raw_server {
     fn revoke_raw_server_then(
         &self,
         server_id: u32,
-        project_id: u32,
+        competition_id: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -60,7 +60,7 @@ impl revoke_raw_server for super::RemoteReducers {
     fn revoke_raw_server_then(
         &self,
         server_id: u32,
-        project_id: u32,
+        competition_id: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -69,7 +69,7 @@ impl revoke_raw_server for super::RemoteReducers {
         self.imp.invoke_reducer_with_callback(
             RevokeRawServerArgs {
                 server_id,
-                project_id,
+                competition_id,
             },
             callback,
         )
