@@ -69,6 +69,7 @@ import RawServerPlayerRemoveReducer from "./raw_server_player_remove_reducer";
 import RawServerVerifyReducer from "./raw_server_verify_reducer";
 import RegisterPlayerReducer from "./register_player_reducer";
 import RegistrationCreateReducer from "./registration_create_reducer";
+import RegistrationTemplateCreateReducer from "./registration_template_create_reducer";
 import RevokeRawServerReducer from "./revoke_raw_server_reducer";
 import RoleAssignPermissionReducer from "./role_assign_permission_reducer";
 import RoleCreateReducer from "./role_create_reducer";
@@ -371,6 +372,7 @@ const reducersSchema = __reducers(
   __reducerSchema("raw_server_verify", RawServerVerifyReducer),
   __reducerSchema("register_player", RegisterPlayerReducer),
   __reducerSchema("registration_create", RegistrationCreateReducer),
+  __reducerSchema("registration_template_create", RegistrationTemplateCreateReducer),
   __reducerSchema("revoke_raw_server", RevokeRawServerReducer),
   __reducerSchema("role_assign_permission", RoleAssignPermissionReducer),
   __reducerSchema("role_create", RoleCreateReducer),

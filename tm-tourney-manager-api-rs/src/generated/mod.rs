@@ -146,6 +146,7 @@ pub mod registration_settings_player_type;
 pub mod registration_settings_team_type;
 pub mod registration_settings_type;
 pub mod registration_state_type;
+pub mod registration_template_create_reducer;
 pub mod registration_type;
 pub mod respawn_behaviour_type;
 pub mod respawn_type;
@@ -351,6 +352,7 @@ pub use registration_settings_player_type::RegistrationSettingsPlayer;
 pub use registration_settings_team_type::RegistrationSettingsTeam;
 pub use registration_settings_type::RegistrationSettings;
 pub use registration_state_type::RegistrationState;
+pub use registration_template_create_reducer::registration_template_create;
 pub use registration_type::Registration;
 pub use respawn_behaviour_type::RespawnBehaviour;
 pub use respawn_type::Respawn;
@@ -564,6 +566,10 @@ pub enum Reducer {
         parent_id: u32,
         with_template: u32,
     },
+    RegistrationTemplateCreate {
+        name: String,
+        parent_id: u32,
+    },
     RevokeRawServer {
         server_id: u32,
         competition_id: u32,
@@ -649,6 +655,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::RawServerVerify { .. } => "raw_server_verify",
             Reducer::RegisterPlayer { .. } => "register_player",
             Reducer::RegistrationCreate { .. } => "registration_create",
+            Reducer::RegistrationTemplateCreate { .. } => "registration_template_create",
             Reducer::RevokeRawServer { .. } => "revoke_raw_server",
             Reducer::RoleAssignPermission { .. } => "role_assign_permission",
             Reducer::RoleCreate { .. } => "role_create",
@@ -912,6 +919,12 @@ impl __sdk::Reducer for Reducer {
                 parent_id: parent_id.clone(),
                 with_template: with_template.clone(),
             }),
+            Reducer::RegistrationTemplateCreate { name, parent_id } => __sats::bsatn::to_vec(
+                &registration_template_create_reducer::RegistrationTemplateCreateArgs {
+                    name: name.clone(),
+                    parent_id: parent_id.clone(),
+                },
+            ),
             Reducer::RevokeRawServer {
                 server_id,
                 competition_id,

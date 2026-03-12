@@ -41,6 +41,7 @@ import RawServerPlayerRemoveReducer from "../raw_server_player_remove_reducer";
 import RawServerVerifyReducer from "../raw_server_verify_reducer";
 import RegisterPlayerReducer from "../register_player_reducer";
 import RegistrationCreateReducer from "../registration_create_reducer";
+import RegistrationTemplateCreateReducer from "../registration_template_create_reducer";
 import RevokeRawServerReducer from "../revoke_raw_server_reducer";
 import RoleAssignPermissionReducer from "../role_assign_permission_reducer";
 import RoleCreateReducer from "../role_create_reducer";
@@ -88,6 +89,7 @@ export type RawServerPlayerRemoveParams = __Infer<typeof RawServerPlayerRemoveRe
 export type RawServerVerifyParams = __Infer<typeof RawServerVerifyReducer>;
 export type RegisterPlayerParams = __Infer<typeof RegisterPlayerReducer>;
 export type RegistrationCreateParams = __Infer<typeof RegistrationCreateReducer>;
+export type RegistrationTemplateCreateParams = __Infer<typeof RegistrationTemplateCreateReducer>;
 export type RevokeRawServerParams = __Infer<typeof RevokeRawServerReducer>;
 export type RoleAssignPermissionParams = __Infer<typeof RoleAssignPermissionReducer>;
 export type RoleCreateParams = __Infer<typeof RoleCreateReducer>;

@@ -7,6 +7,7 @@ use crate::{
 
 mod player;
 mod team;
+mod template;
 
 #[derive(Debug, SpacetimeType)]
 pub enum RegistrationSettings {

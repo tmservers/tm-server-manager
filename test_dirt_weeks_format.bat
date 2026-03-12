@@ -9,7 +9,7 @@ spacetime call tm-tourney-manager competition_template_create "Discovery Templat
 spacetime call tm-tourney-manager match_template_create "Time Attack" 2 0
 spacetime call tm-tourney-manager match_template_create "Rounds" 2 0
 spacetime call tm-tourney-manager match_template_create "Playoff" 2 0
-spacetime call tm-tourney-manager connection_create "{""CompetitionV1"": 2 }" "{""MatchV1"": 1 }" "{""Wait"": {}}"
+spacetime call tm-tourney-manager connection_create "{""CompetitionV1"": 2 }" "{""MatchV1"": 1 }" "{""Waiting"": {}}"
 spacetime call tm-tourney-manager connection_create "{""MatchV1"": 1 }" "{""MatchV1"": 2 }" "{""Data"": {}}"
 spacetime call tm-tourney-manager connection_create "{""MatchV1"": 2 }" "{""MatchV1"": 3 }" "{""Data"": {}}"
 
