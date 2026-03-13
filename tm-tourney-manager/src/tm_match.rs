@@ -5,11 +5,8 @@ use crate::{
     authorization::Authorization,
     competition::{
         CompetitionPermissionsV1,
-        connection::{
-            NodeKindHandle,
-            node_position::{TabCompetitionNodePosition, tab_competition_node_position},
-            tab_competition_connection,
-        },
+        connection::tab_competition_connection,
+        node::{NodeKindHandle, TabCompetitionNodePosition, tab_competition_node_position},
         server_pool::competition_available_server_pool,
         tab_competition,
     },

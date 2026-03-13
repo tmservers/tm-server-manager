@@ -8,15 +8,20 @@ use crate::{
 
 #[table(accessor=tab_registered_player)]
 pub struct RegisteredPlayer {
-    #[index(btree)]
-    registration_id: u32,
     account_id: Uuid,
     registered_at: Timestamp,
+    #[index(hash)]
+    registration_id: u32,
 }
 
 #[view(accessor=registered_player,public)]
-pub fn registered_player(ctx: &AnonymousViewContext) -> impl Query<RegisteredPlayer> {
-    ctx.from.tab_registered_player().build()
+pub fn registered_player(
+    ctx: &AnonymousViewContext, /* ,registration_id: u32 */
+) -> impl Query<RegisteredPlayer> {
+    let registration_id = 1u32;
+    ctx.from
+        .tab_registered_player()
+        .r#where(|c| c.registration_id.eq(registration_id))
 }
 
 #[reducer]

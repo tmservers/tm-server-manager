@@ -11,7 +11,7 @@ import {
 } from "spacetimedb";
 
 export default __t.row({
-  registrationId: __t.u32().name("registration_id"),
   accountId: __t.uuid().name("account_id"),
   registeredAt: __t.timestamp().name("registered_at"),
+  registrationId: __t.u32().name("registration_id"),
 });

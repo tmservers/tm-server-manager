@@ -6,7 +6,8 @@ use crate::{
     authorization::Authorization, competition::template::competition_template_instantiate,
 };
 
-pub mod connection;
+pub(super) mod connection;
+pub(super) mod node;
 mod permissions;
 pub mod roles;
 pub mod server_pool;

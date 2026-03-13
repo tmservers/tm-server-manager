@@ -2,7 +2,7 @@ use spacetimedb::{ReducerContext, Table, ViewContext, reducer, table, view};
 
 use crate::{
     authorization::Authorization,
-    competition::{connection::NodeKindHandle, tab_competition},
+    competition::{node::NodeKindHandle, tab_competition},
 };
 
 /// A portal can only reach one level deeper?

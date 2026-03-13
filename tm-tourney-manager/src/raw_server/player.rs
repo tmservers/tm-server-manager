@@ -7,7 +7,7 @@ use spacetimedb::{
 
 use crate::{
     authorization::Authorization,
-    competition::connection::{NodeKindHandle, NodeType, tab_competition_connection__view},
+    competition::{connection::tab_competition_connection__view, node::NodeKindHandle},
     raw_server::{tab_raw_server__view, tab_raw_server_occupation__view},
     tm_match::{leaderboard::match_leaderboard, tab_match__view},
 };
@@ -142,6 +142,7 @@ fn raw_server_allowed_players(ctx: &ViewContext) -> Vec<PermittedPlayer> {
     };
 
     let mut map: HashMap<Uuid, PermittedPlayer> = HashMap::new();
+    //TODO dont filter for match here.
     let depending_nodes = ctx
         .db
         .tab_competition_connection()

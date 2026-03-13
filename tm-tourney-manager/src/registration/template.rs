@@ -4,8 +4,8 @@ use crate::{
     authorization::Authorization,
     competition::CompetitionPermissionsV1,
     registration::{
-        Registration, RegistrationDeadline, RegistrationSettings, RegistrationSettingsPlayer,
-        RegistrationState, tab_registration,
+        Registration, RegistrationSettings, RegistrationSettingsPlayer, RegistrationState,
+        tab_registration,
     },
 };
 
@@ -26,8 +26,8 @@ fn registration_template_create(
         settings: RegistrationSettings::Player(RegistrationSettingsPlayer { player_limit: 100 }),
         state: RegistrationState::Configuring,
         template: true,
-        // 3.47 Days of relate duration.
-        deadline: RegistrationDeadline::Relative(TimeDuration::from_micros(300000000000)),
+        // 3.47 Days of relative duration.
+        //deadline: RegistrationDeadline::Relative(TimeDuration::from_micros(300000000000)),
     })?;
 
     Ok(())

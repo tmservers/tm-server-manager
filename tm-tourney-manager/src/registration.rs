@@ -27,11 +27,11 @@ pub struct RegistrationSettingsTeam {
     team_size_max: u8,
 }
 
-#[derive(Debug, SpacetimeType)]
+/* #[derive(Debug, SpacetimeType)]
 pub enum RegistrationDeadline {
     Relative(TimeDuration),
     Abosulute(Timestamp),
-}
+} */
 
 #[table(accessor=tab_registration)]
 pub struct Registration {
@@ -46,8 +46,7 @@ pub struct Registration {
 
     settings: RegistrationSettings,
 
-    deadline: RegistrationDeadline,
-
+    //deadline: RegistrationDeadline,
     state: RegistrationState,
 
     template: bool,
@@ -98,7 +97,7 @@ fn registration_create(
         state: RegistrationState::Configuring,
         template: false,
         // 3.47 Days of relate duration.
-        deadline: RegistrationDeadline::Relative(TimeDuration::from_micros(300000000000)),
+        //deadline: RegistrationDeadline::Relative(TimeDuration::from_micros(300000000000)),
     })?;
 
     Ok(())

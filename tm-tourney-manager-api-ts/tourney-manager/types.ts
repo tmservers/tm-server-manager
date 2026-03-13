@@ -151,8 +151,9 @@ export type CompetitionV1 = __Infer<typeof CompetitionV1>;
 
 // The tagged union or sum type for the algebraic type `ConnectionSettings`.
 export const ConnectionSettings = __t.enum("ConnectionSettings", {
-  Waiting: __t.unit(),
+  Wait: __t.unit(),
   Data: __t.unit(),
+  Action: __t.unit(),
 });
 export type ConnectionSettings = __Infer<typeof ConnectionSettings>;
 
@@ -810,9 +811,9 @@ export const RawServerV1 = __t.object("RawServerV1", {
 export type RawServerV1 = __Infer<typeof RawServerV1>;
 
 export const RegisteredPlayer = __t.object("RegisteredPlayer", {
-  registrationId: __t.u32(),
   accountId: __t.uuid(),
   registeredAt: __t.timestamp(),
+  registrationId: __t.u32(),
 });
 export type RegisteredPlayer = __Infer<typeof RegisteredPlayer>;
 
@@ -832,22 +833,12 @@ export const Registration = __t.object("Registration", {
   get settings() {
     return RegistrationSettings;
   },
-  get deadline() {
-    return RegistrationDeadline;
-  },
   get state() {
     return RegistrationState;
   },
   template: __t.bool(),
 });
 export type Registration = __Infer<typeof Registration>;
-
-// The tagged union or sum type for the algebraic type `RegistrationDeadline`.
-export const RegistrationDeadline = __t.enum("RegistrationDeadline", {
-  Relative: __t.timeDuration(),
-  Abosulute: __t.timestamp(),
-});
-export type RegistrationDeadline = __Infer<typeof RegistrationDeadline>;
 
 // The tagged union or sum type for the algebraic type `RegistrationSettings`.
 export const RegistrationSettings = __t.enum("RegistrationSettings", {

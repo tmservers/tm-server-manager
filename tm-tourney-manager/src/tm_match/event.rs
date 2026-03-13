@@ -4,7 +4,7 @@ use spacetimedb::{
 use tm_server_types::event::Event;
 
 use crate::{
-    competition::connection::{NodeKindHandle, internal_graph_resolution_node_finished},
+    competition::{connection::internal_graph_resolution_node_finished, node::NodeKindHandle},
     raw_server::tab_raw_server_occupation,
     tm_match::{
         leaderboard::{

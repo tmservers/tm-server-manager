@@ -6,8 +6,8 @@ use spacetimedb::{
 use crate::{
     authorization::Authorization,
     competition::{
-        CompetitionPermissionsV1,
-        connection::{NodeKindHandle, internal_graph_resolution_node_finished},
+        CompetitionPermissionsV1, connection::internal_graph_resolution_node_finished,
+        node::NodeKindHandle,
     },
 };
 

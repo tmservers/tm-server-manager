@@ -2,10 +2,7 @@ use spacetimedb::{ReducerContext, SpacetimeType, ViewContext, reducer, view};
 
 use crate::{
     authorization::Authorization,
-    competition::{
-        CompetitionPermissionsV1,
-        connection::{NodeKindHandle, connection_data::competition_connection_data},
-    },
+    competition::{CompetitionPermissionsV1, node::NodeKindHandle},
 };
 
 #[spacetimedb::table(accessor= tab_competition_node_position,index(accessor=node_position,hash(columns=[node_variant,node_id])))]

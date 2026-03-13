@@ -5,9 +5,8 @@ use spacetimedb::{ReducerContext, Table, reducer};
 use crate::{
     authorization::Authorization,
     competition::{
-        CompetitionPermissionsV1, CompetitionV1,
-        connection::{NodeKindHandle, tab_competition_connection},
-        tab_competition,
+        CompetitionPermissionsV1, CompetitionV1, connection::tab_competition_connection,
+        node::NodeKindHandle, tab_competition,
     },
     registration::tab_registration,
     schedule::tab_schedule,
