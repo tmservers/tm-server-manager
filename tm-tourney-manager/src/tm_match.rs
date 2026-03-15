@@ -5,7 +5,7 @@ use crate::{
     authorization::Authorization,
     competition::{
         CompetitionPermissionsV1,
-        connection::tab_competition_connection,
+        connection::tab_connection,
         node::{NodeKindHandle, TabCompetitionNodePosition, tab_competition_node_position},
         server_pool::competition_available_server_pool,
         tab_competition,
@@ -434,12 +434,12 @@ pub fn match_delete(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
 
     for node in ctx
         .db
-        .tab_competition_connection()
+        .tab_connection()
         .parent_id()
         .filter(tm_match.parent_id)
     {
         if node.connection_origin() == node_ref || node.connection_target() == node_ref {
-            ctx.db.tab_competition_connection().delete(node);
+            ctx.db.tab_connection().delete(node);
         }
     }
 

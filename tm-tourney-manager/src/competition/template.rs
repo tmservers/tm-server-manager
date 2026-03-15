@@ -5,7 +5,7 @@ use spacetimedb::{ReducerContext, Table, reducer};
 use crate::{
     authorization::Authorization,
     competition::{
-        CompetitionPermissionsV1, CompetitionV1, connection::tab_competition_connection,
+        CompetitionPermissionsV1, CompetitionV1, connection::tab_connection,
         node::NodeKindHandle, tab_competition,
     },
     registration::tab_registration,
@@ -84,7 +84,7 @@ pub(super) fn competition_template_instantiate(
     // Collect all node types which are inside the template.
     let connections = ctx
         .db
-        .tab_competition_connection()
+        .tab_connection()
         .parent_id()
         .filter(competition_template.id);
 
@@ -177,7 +177,7 @@ pub(super) fn competition_template_instantiate(
         new_connection.update_origin(new_origin);
         new_connection.update_target(new_target);
         ctx.db
-            .tab_competition_connection()
+            .tab_connection()
             .try_insert(new_connection)?;
     }
 

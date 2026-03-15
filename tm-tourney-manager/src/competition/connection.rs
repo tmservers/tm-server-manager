@@ -7,10 +7,7 @@ use crate::{
     authorization::Authorization,
     competition::{
         CompetitionPermissionsV1,
-        connection::data::{
-            CompetitionConnectionData, tab_competition_connection_data,
-            tab_competition_connection_data__view,
-        },
+        connection::data::{ConnectionData, tab_connection_data, tab_connection_data__view},
         node::{NodeKindHandle, NodeType},
     },
     raw_server::player::PermittedPlayer,
@@ -20,13 +17,13 @@ use crate::{
 pub(super) mod action;
 pub(super) mod data;
 
-#[spacetimedb::table(accessor= tab_competition_connection,
+#[spacetimedb::table(accessor= tab_connection,
     index(accessor=connection_exists,hash(columns=[connection_from_variant,connection_to_variant,connection_from,connection_to])),
     index(accessor=target_nodes_of,hash(columns=[connection_from_variant,connection_from])),
     index(accessor=origin_nodes_of,hash(columns=[connection_to_variant,connection_to]))
 )]
 #[derive(Debug, Clone, Copy)]
-pub struct TabCompetitionConnection {
+pub struct TabConnection {
     // We need this that the Data variant can reference this.
     #[auto_inc]
     #[primary_key]
@@ -41,10 +38,10 @@ pub struct TabCompetitionConnection {
     connection_to_variant: u8,
 
     connection_settings: ConnectionSettings,
-    connection_settings_ready: bool,
+    connection_settings_configuring: bool,
 }
 
-impl TabCompetitionConnection {
+impl TabConnection {
     pub(crate) fn connection_origin(&self) -> NodeKindHandle {
         NodeKindHandle::combine(self.connection_from_variant, self.connection_from)
     }
@@ -79,7 +76,7 @@ impl TabCompetitionConnection {
             NodeKindHandle::MatchV1(m) => {
                 let rules = ctx
                     .db
-                    .tab_competition_connection_data()
+                    .tab_connection_data()
                     .connection_id()
                     .find(self.id)
                     .unwrap();
@@ -160,7 +157,7 @@ pub fn connection_create(
     let (split_connection_to_variant, split_connection_to) = connection_to.split();
     if ctx
         .db
-        .tab_competition_connection()
+        .tab_connection()
         .connection_exists()
         .filter((
             split_connection_from_variant,
@@ -176,7 +173,7 @@ pub fn connection_create(
 
     let competition_connections = ctx
         .db
-        .tab_competition_connection()
+        .tab_connection()
         .parent_id()
         .filter(from_comp)
         .collect::<Vec<_>>();
@@ -227,30 +224,24 @@ pub fn connection_create(
 
     let (connection_from_variant, connection_from) = connection_from.split();
     let (connection_to_variant, connection_to) = connection_to.split();
-    let connection = ctx
-        .db
-        .tab_competition_connection()
-        .try_insert(TabCompetitionConnection {
-            id: 0,
-            parent_id: from_comp,
-            connection_from,
-            connection_to,
-            connection_from_variant,
-            connection_to_variant,
-            connection_settings: setting,
-            connection_settings_ready: false,
-        })?;
+    let connection = ctx.db.tab_connection().try_insert(TabConnection {
+        id: 0,
+        parent_id: from_comp,
+        connection_from,
+        connection_to,
+        connection_from_variant,
+        connection_to_variant,
+        connection_settings: setting,
+        connection_settings_configuring: true,
+    })?;
 
     //If we insert Data Settings we also need to add a row in the data table.
     match connection.connection_settings {
         ConnectionSettings::Wait => (),
         ConnectionSettings::Data => {
             ctx.db
-                .tab_competition_connection_data()
-                .try_insert(CompetitionConnectionData::new(
-                    connection.id,
-                    connection.parent_id,
-                ))?;
+                .tab_connection_data()
+                .try_insert(ConnectionData::new(connection.id, connection.parent_id))?;
         }
         ConnectionSettings::Action => {
             todo!()
@@ -262,6 +253,7 @@ pub fn connection_create(
 
 #[derive(Debug, SpacetimeType)]
 pub struct CompetitionConnection {
+    //TOD= maybe omit this
     competition_id: u32,
 
     connection_from: NodeKindHandle,
@@ -277,7 +269,7 @@ pub fn competition_connection(
     let competition_id = 1u32;
 
     ctx.db
-        .tab_competition_connection()
+        .tab_connection()
         .parent_id()
         .filter(competition_id)
         .map(|v| CompetitionConnection {
@@ -295,7 +287,7 @@ pub fn internal_graph_resolution_node_finished(
 ) -> Result<(), String> {
     let affected_connections = ctx
         .db
-        .tab_competition_connection()
+        .tab_connection()
         .target_nodes_of()
         .filter(trigger.split())
         .map(|t| CompetitionConnection {
@@ -308,7 +300,7 @@ pub fn internal_graph_resolution_node_finished(
     for affected_connection in affected_connections.map(|c| c.connection_to) {
         let pending_connections = ctx
             .db
-            .tab_competition_connection()
+            .tab_connection()
             .origin_nodes_of()
             .filter(affected_connection.split())
             .collect::<Vec<_>>();
@@ -317,7 +309,7 @@ pub fn internal_graph_resolution_node_finished(
             if let Err(error) = affected_connection.ready(ctx) {
                 //TODO maybe add a table for node problems?
                 // maybe there also should be a intended to progress state in the nodes.
-                log::error!("Node shoud have been started but could because: {error}")
+                log::error!("Node shoud have been started but could not because: {error}")
             };
         } else {
             log::info!(
