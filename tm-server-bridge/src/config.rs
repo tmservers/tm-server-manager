@@ -1,17 +1,17 @@
 use nadeo_api::{NadeoRequest, auth::AuthType, request::Method};
 use serde::{Deserialize, Serialize};
 use tm_server_controller::{ClientError, method::XmlRpcMethods};
+use tm_server_manager_api_rs::EventContext;
 use tm_server_types::config::ServerConfig;
-use tm_tourney_manager_api_rs::EventContext;
 use tokio::sync::Mutex;
 
 use crate::{NADEO, SERVER_CONFIG, TRACKMANIA, TRACKMANIA_FILES};
 
-pub fn config_update(_: &EventContext, new_config: &tm_tourney_manager_api_rs::ServerConfig) {
+pub fn config_update(_: &EventContext, new_config: &tm_server_manager_api_rs::ServerConfig) {
     //SAFETY: Same type but rust can't know that.
     let configuration = unsafe {
         std::mem::transmute::<
-            tm_tourney_manager_api_rs::ServerConfig,
+            tm_server_manager_api_rs::ServerConfig,
             tm_server_controller::config::ServerConfig,
         >(new_config.clone())
     };

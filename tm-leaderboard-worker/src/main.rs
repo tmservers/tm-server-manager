@@ -6,7 +6,7 @@ use nadeo_api_rs::{
 };
 use spacetimedb_sdk::db_context::DbContext;
 use spacetimedb_sdk::{Table, Uuid};
-use tm_tourney_manager_api_rs::{DbConnection, MyJobsTableAccess, login_as_worker, post_record};
+use tm_server_manager_api_rs::{DbConnection, MyJobsTableAccess, login_as_worker, post_record};
 use tokio::{
     signal,
     sync::Mutex,

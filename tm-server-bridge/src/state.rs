@@ -5,7 +5,7 @@ use tm_server_controller::{
     method::{ModeScriptMethodsXmlRpc, XmlRpcMethods},
 };
 use tm_server_types::event::{EndRoundStart, PlayerConnect, StartRound, StartServer};
-use tm_tourney_manager_api_rs::{
+use tm_server_manager_api_rs::{
     RawServerAllowedPlayersTableAccess, post_event, raw_server_player_add,
 };
 
@@ -40,7 +40,7 @@ pub async fn setup_state_synchronization() {
                 unsafe {
                     std::mem::transmute::<
                         tm_server_controller::event::Event,
-                        tm_tourney_manager_api_rs::Event,
+                        tm_server_manager_api_rs::Event,
                     >(event.clone())
                 },
             )

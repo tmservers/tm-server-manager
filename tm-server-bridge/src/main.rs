@@ -8,12 +8,12 @@ use tm_server_controller::{
     TrackmaniaServer,
     method::{ModeScriptMethodsXmlRpc, XmlRpcMethods},
 };
-use tm_server_types::config::ServerConfig;
-use tm_tourney_manager_api_rs::{
+use tm_server_manager_api_rs::{
     DbConnection, ErrorContext, RawServerAllowedPlayersTableAccess, RawServerConfigTableAccess,
     RawServerMethodCallTableAccess, login_as_server, raw_server_allowed_playersQueryTableAccess,
     raw_server_configQueryTableAccess, raw_server_method_callQueryTableAccess,
 };
+use tm_server_types::config::ServerConfig;
 use tokio::{signal, sync::Mutex};
 use tracing::{instrument, warn};
 

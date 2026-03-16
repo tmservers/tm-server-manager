@@ -1,5 +1,5 @@
 /* #[cfg(test)]
-use tm_tourney_manager_api_rs::*;
+use tm_server_manager_api_rs::*;
 
 #[cfg(test)]
 const PROJECT_NAME: &str = "tm-server-manager";

@@ -1,4 +1,4 @@
-use tm_tourney_manager_api_rs::DbConnection;
+use tm_server_manager_api_rs::DbConnection;
 
 pub(crate) fn test() -> DatabaseRunner {
     use testcontainers::{
