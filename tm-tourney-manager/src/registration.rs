@@ -89,6 +89,17 @@ fn registration_create(
         .permission(CompetitionPermissionsV1::REGISTRATION_CREATE)
         .authorize()?;
 
+    if ctx
+        .db
+        .tab_competition()
+        .id()
+        .find(parent_id)
+        .unwrap()
+        .is_template()
+    {
+        return Err("Cannot add a normal node to a match".into());
+    };
+
     ctx.db.tab_registration().try_insert(Registration {
         name,
         id: 0,

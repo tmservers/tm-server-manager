@@ -22,6 +22,7 @@ use crate::{
 };
 
 pub mod event;
+pub mod replay;
 pub mod leaderboard;
 pub mod players;
 pub mod state;

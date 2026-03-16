@@ -2,7 +2,7 @@ use spacetimedb::{ReducerContext, Table, ViewContext, reducer, table, view};
 
 use crate::{
     authorization::Authorization,
-    competition::{node::NodeKindHandle, tab_competition},
+    competition::{CompetitionPermissionsV1, node::NodeKindHandle, tab_competition},
 };
 
 /// A portal can only reach one level deeper?
@@ -47,8 +47,19 @@ fn portal_create(
         return Err("Could not find supplied competition_id".into());
     };
     ctx.auth_builder(parent_id)
-        //.permission(ProjectPermissionsV1::PORTAL_CREATE)
+        .permission(CompetitionPermissionsV1::PORTAL_CREATE)
         .authorize()?;
+
+    if ctx
+        .db
+        .tab_competition()
+        .id()
+        .find(parent_id)
+        .unwrap()
+        .is_template()
+    {
+        return Err("Cannot add a normal node to a match".into());
+    };
 
     let target_competition_id = target.get_competition(ctx)?;
 

@@ -15,10 +15,17 @@ pub struct TabConnectionAction {
 #[derive(Debug, SpacetimeType)]
 enum ConnectionAction {
     MatchV1(ConnectionActionMatch),
+    RegistrationV1(ConnectionActionRegistration),
 }
 
 #[derive(Debug, SpacetimeType)]
 enum ConnectionActionMatch {
     TryStart,
     ForceStart,
+}
+
+#[derive(Debug, SpacetimeType)]
+enum ConnectionActionRegistration {
+    Open,
+    Close,
 }

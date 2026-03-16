@@ -35,6 +35,12 @@ impl CompetitionPermissionsV1 {
 
     pub const REGISTRATION_CREATE: CompetitionPermissionsV1 =
         CompetitionPermissionsV1(0b10000000000000000);
+
+    pub const SCHEDULE_CREATE: CompetitionPermissionsV1 =
+        CompetitionPermissionsV1(0b100000000000000000);
+
+    pub const PORTAL_CREATE: CompetitionPermissionsV1 =
+        CompetitionPermissionsV1(0b1000000000000000000);
 }
 
 impl PermissionType for CompetitionPermissionsV1 {

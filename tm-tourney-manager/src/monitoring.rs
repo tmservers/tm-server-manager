@@ -39,7 +39,7 @@ pub struct MonitoringSettingsMap {
     // filter:
 }
 
-#[reducer]
+/* #[reducer]
 pub fn create_monitor(
     ctx: &ReducerContext,
     competition: u32,
@@ -67,4 +67,4 @@ pub fn create_monitor(
     }
 
     Ok(())
-}
+} */

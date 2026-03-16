@@ -7,8 +7,7 @@ use crate::{
 
 pub mod authorization;
 pub mod competition;
-pub mod environment;
-pub mod ghosts;
+pub mod env;
 pub mod monitoring;
 pub mod portal;
 pub mod project;

@@ -7,10 +7,11 @@ pub(crate) struct Env {
     pub(crate) value: String,
 }
 
-//Allows module owners to
 #[reducer]
-fn create_env_var(ctx: &ReducerContext, key: String, value: String) -> Result<(), String> {
-    //TODO only modult owners should be able to do this.
+fn set_env_var(ctx: &ReducerContext, key: String, value: String) -> Result<(), String> {
+    if !ctx.sender_auth().is_internal() {
+        return Err("Not permitted to set environment variable.".into());
+    }
 
     ctx.db.env().try_insert(Env { key, value })?;
 

@@ -7,7 +7,7 @@ use crate::{
     authorization::Authorization,
     competition::{
         CompetitionPermissionsV1, connection::internal_graph_resolution_node_finished,
-        node::NodeKindHandle,
+        node::NodeKindHandle, tab_competition,
     },
 };
 
@@ -110,12 +110,22 @@ pub fn schedule_create(
     ctx: &ReducerContext,
     name: String,
     parent_id: u32,
-    //settings: ScheduleSettings,
+    with_template: u32,
 ) -> Result<(), String> {
-    //TODO permission fix
     ctx.auth_builder(parent_id)
-        .permission(CompetitionPermissionsV1::MATCH_CREATE)
+        .permission(CompetitionPermissionsV1::SCHEDULE_CREATE)
         .authorize()?;
+
+    if ctx
+        .db
+        .tab_competition()
+        .id()
+        .find(parent_id)
+        .unwrap()
+        .is_template()
+    {
+        return Err("Cannot add a normal node to a match".into());
+    };
 
     let schedule = ScheduleV1 {
         id: 0,
