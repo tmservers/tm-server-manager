@@ -1,0 +1,58 @@
+name: SpacetimeDB Publish
+
+on:
+  release:
+    types: [published]
+env:
+  DATABASE_NAME: ${{ vars.DATABASE_NAME }}
+  PUBLISH_DIR: ${{ vars.PUBLISH_DIR }}
+  TOKEN: ${{ github.token }}
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: "Install Binaryen"
+        run: sudo apt-get -y install binaryen
+
+      - name: Install SpacetimeDB
+        run: curl -sSf https://install.spacetimedb.com | sh -s -- --yes
+
+      - name: Login to SpacetimeDB CLI
+        env:
+          SPACETIMEDB_TOKEN: ${{ secrets.SPACETIMEDB_TOKEN }}
+        run: |
+          if [[ -z "$SPACETIMEDB_TOKEN" ]]; then
+            printf "SPACETIMEDB_TOKEN is not set in repository secrets.\nYou can find this value via running: spacetime login show --token\n" >&2
+            exit 1
+          fi
+          spacetime login --token "$SPACETIMEDB_TOKEN"
+
+      - name: Build project (choose ONE stack below)
+        run: |
+          set -euo pipefail
+          cd "$PUBLISH_DIR"
+
+          ################################################################################
+          # Install Rust and build (UNCOMMENT this block if your project is Rust)
+          ################################################################################
+          echo "Setting up Rust toolchain…"
+          rustup --version >/dev/null 2>&1 || curl https://sh.rustup.rs -sSf | sh -s -- -y
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+          rustc --version
+          cargo --version
+          rustup target add wasm32-unknown-unknown
+          cargo build --release
+
+      - name: Publish database
+        run: |
+          set -euo pipefail
+          echo "Publishing '$DATABASE_NAME' to maincloud..."
+          spacetime publish -s maincloud -p tm-tourney-manager "$DATABASE_NAME" -y
