@@ -22,9 +22,9 @@ use crate::{
 };
 
 pub mod event;
-pub mod replay;
 pub mod leaderboard;
 pub mod players;
+pub mod replay;
 pub mod state;
 pub mod template;
 
@@ -70,8 +70,9 @@ pub struct TmMatchV1 {
     status: MatchStatus,
 
     auto_provision_server: bool,
+    //Whether the match is open for all to join or restricted.
+    open: bool,
     template: bool,
-    restricted: bool,
 }
 
 impl TmMatchV1 {
@@ -176,7 +177,7 @@ pub fn match_create(
             post_match_config: 0,
             auto_provision_server: true,
             template: false,
-            restricted: true,
+            open: false,
         };
 
         let tm_match = ctx.db.tab_match().try_insert(tm_match)?;

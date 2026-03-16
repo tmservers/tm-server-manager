@@ -22,7 +22,7 @@ fn match_template_create(ctx: &ReducerContext, name: String, parent_id: u32) -> 
         post_match_config: 0,
         auto_provision_server: true,
         template: true,
-        restricted: true,
+        open: false,
     })?;
 
     Ok(())
