@@ -56,8 +56,7 @@ fn connect_to_db() -> DbConnection {
         .on_disconnect(on_disconnected)
         .with_database_name(std::env::var("SPACETIMEDB_MODULE").unwrap_or("tmservers".to_string()))
         .with_uri(
-            std::env::var("SPACETIMEDB_URL")
-                .unwrap_or("https://maincloud.spacetimedb.com".to_string()),
+            std::env::var("SPACETIMEDB_URL").unwrap_or("wss://connect.tmservers.live".to_string()),
         )
         .build()
         .expect("Failed to connect to SpacetimeDB. Aborting.")
