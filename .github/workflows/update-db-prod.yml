@@ -3,6 +3,7 @@ name: SpacetimeDB Publish
 on:
   release:
     types: [published]
+  workflow_dispatch:
 env:
   DATABASE_NAME: ${{ vars.DATABASE_NAME }}
   PUBLISH_DIR: ${{ vars.PUBLISH_DIR }}
