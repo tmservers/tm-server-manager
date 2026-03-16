@@ -1,8 +1,8 @@
-use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
+use base64::Engine;
 use spacetimedb::http::Request;
-use spacetimedb::{Identity, Query, ReducerContext, Table, Uuid, ViewContext, reducer, table};
-use spacetimedb::{ProcedureContext, view};
+use spacetimedb::{reducer, table, Identity, Query, ReducerContext, Table, Uuid, ViewContext};
+use spacetimedb::{view, ProcedureContext};
 use tm_server_types::{config::ServerConfig, event::Event};
 
 use crate::authorization::Authorization;
@@ -116,7 +116,7 @@ pub fn login_as_server(
             ),
         )
         .header("Content-Type", "application/json")
-        .header("User-Agent", "tm-tourney-manager | central")
+        .header("User-Agent", "tm-server-manager | central")
         .body(r#"{ "audience": "NadeoServices" }"#)
         //TODO see what would be a good error message
         .map_err(|e| e.to_string())?;

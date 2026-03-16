@@ -1,5 +1,5 @@
 [package]
-name = "tm-tourney-manager-api-rs"
+name = "tm-server-manager-api-rs"
 authors.workspace = true
 categories.workspace = true
 keywords.workspace = true

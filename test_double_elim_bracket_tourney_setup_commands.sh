@@ -2,31 +2,31 @@
 set -e  # stop on errors (except where overridden)
 
 # Try to delete DB if it exists (ignore errors if not found)
-spacetime delete tm-tourney-manager || true
+spacetime delete tm-server-manager || true
 
 # Publish module as "tourney-manager"
-spacetime publish --break-clients --delete-data=on-conflict -y -p tm-tourney-manager tm-tourney-manager
+spacetime publish --break-clients --delete-data=on-conflict -y -p tm-server-manager tm-server-manager
 
 # Generate Rust and TS client APIs
-spacetime generate --yes --lang rust --out-dir tm-tourney-manager-api-rs/src/generated --module-path tm-tourney-manager
-spacetime generate --yes --lang typescript --out-dir tm-tourney-manager-api-ts/tourney-manager --module-path tm-tourney-manager
+spacetime generate --yes --lang rust --out-dir tm-server-manager-api-rs/src/generated --module-path tm-server-manager
+spacetime generate --yes --lang typescript --out-dir tm-server-manager-api-ts/tourney-manager --module-path tm-server-manager
 
 # Create project
-spacetime call tm-tourney-manager create_project "Double Elimination" "This is a beautiful project" '{"__timestamp_micros_since_unix_epoch__": 1777132984000000}' '{"__timestamp_micros_since_unix_epoch__": 1777233084000000}'
+spacetime call tm-server-manager create_project "Double Elimination" "This is a beautiful project" '{"__timestamp_micros_since_unix_epoch__": 1777132984000000}' '{"__timestamp_micros_since_unix_epoch__": 1777233084000000}'
 
 # Double elimination bracket
-spacetime call tm-tourney-manager competition_create "Double Elimination Bracket" 1 0
+spacetime call tm-server-manager competition_create "Double Elimination Bracket" 1 0
 
 # Upper R1
 # 8 matches, Match IDs 1-8
 for i in {1..8}; do
-  spacetime call tm-tourney-manager match_create "Upper R1 M$i" 2 0
+  spacetime call tm-server-manager match_create "Upper R1 M$i" 2 0
 done
 
 # Upper R2
 # 4 matches, Match IDs 9-12
 for i in {1..4}; do
-  spacetime call tm-tourney-manager match_create "Upper R2 M$i" 2 0
+  spacetime call tm-server-manager match_create "Upper R2 M$i" 2 0
 done
 
 # Upper R2 connections
@@ -45,13 +45,13 @@ for match in {9..12}; do
   for target in {1..8}; do
     # If target is one of the winners for this match, create Data connection
     if [[ " ${winners[@]} " =~ " ${target} " ]]; then
-      spacetime call tm-tourney-manager connection_create \
+      spacetime call tm-server-manager connection_create \
         "{\"MatchV1\": $match }" \
         "{\"MatchV1\": $target }" \
         '{"Data": {}}'
     # Otherwise, create Waiting connection
     else
-      spacetime call tm-tourney-manager connection_create \
+      spacetime call tm-server-manager connection_create \
         "{\"MatchV1\": $match }" \
         "{\"MatchV1\": $target }" \
         '{"Waiting": {}}'
@@ -62,7 +62,7 @@ done
 # Lower R1
 # 4 matches, Match IDs 13-16
 for i in {1..4}; do
-  spacetime call tm-tourney-manager match_create "Lower R1 M$i" 2 0
+  spacetime call tm-server-manager match_create "Lower R1 M$i" 2 0
 done
 
 # Lower R1 connections
@@ -81,13 +81,13 @@ for match in {13..16}; do
   for target in {1..8}; do
     # If target is one of the losers for this match, create Data connection
     if [[ " ${losers[@]} " =~ " ${target} " ]]; then
-      spacetime call tm-tourney-manager connection_create \
+      spacetime call tm-server-manager connection_create \
         "{\"MatchV1\": $match }" \
         "{\"MatchV1\": $target }" \
         '{"Data": {}}'
     # Otherwise, create Waiting connection
     else
-      spacetime call tm-tourney-manager connection_create \
+      spacetime call tm-server-manager connection_create \
         "{\"MatchV1\": $match }" \
         "{\"MatchV1\": $target }" \
         '{"Waiting": {}}'
@@ -99,7 +99,7 @@ done
 # Lower R2
 # 4 matches, Match IDs 17-20
 for i in {1..4}; do
-  spacetime call tm-tourney-manager match_create "Lower R2 M$i" 2 0
+  spacetime call tm-server-manager match_create "Lower R2 M$i" 2 0
 done
 
 # Lower R2 connections
@@ -120,13 +120,13 @@ for match in {17..20}; do
   for target in {9..16}; do
     # If target is one of the winners or losers for this match, create Data connection
     if [[ " ${lower_winners[@]} " =~ " ${target} " ]] || [[ " ${upper_losers[@]} " =~ " ${target} " ]]; then
-      spacetime call tm-tourney-manager connection_create \
+      spacetime call tm-server-manager connection_create \
         "{\"MatchV1\": $match }" \
         "{\"MatchV1\": $target }" \
         '{"Data": {}}'
     # Otherwise, create Waiting connection
     else
-      spacetime call tm-tourney-manager connection_create \
+      spacetime call tm-server-manager connection_create \
         "{\"MatchV1\": $match }" \
         "{\"MatchV1\": $target }" \
         '{"Waiting": {}}'
@@ -138,7 +138,7 @@ done
 # Upper R3
 # 2 matches, Match IDs 21-22
 for i in {1..2}; do
-  spacetime call tm-tourney-manager match_create "Upper R3 M$i" 2 0
+  spacetime call tm-server-manager match_create "Upper R3 M$i" 2 0
 done
 
 # Upper R3 connections
@@ -147,7 +147,7 @@ done
 # Upper R3 M2 gets winners of Upper R2 matches 1, 2, 3, 4
 for match in {21..22}; do
   for target in {9..12}; do
-    spacetime call tm-tourney-manager connection_create \
+    spacetime call tm-server-manager connection_create \
       "{\"MatchV1\": $match }" \
       "{\"MatchV1\": $target }" \
       '{"Data": {}}'
@@ -157,7 +157,7 @@ done
 # Upper round 3 also has to wait on Lower R2
 for match in {21..22}; do
   for target in {17..20}; do
-    spacetime call tm-tourney-manager connection_create \
+    spacetime call tm-server-manager connection_create \
       "{\"MatchV1\": $match }" \
       "{\"MatchV1\": $target }" \
       '{"Waiting": {}}'
@@ -167,7 +167,7 @@ done
 # Lower R3
 # 2 matches, Match IDs 23-24
 for i in {1..2}; do
-  spacetime call tm-tourney-manager match_create "Lower R3 M$i" 2 0
+  spacetime call tm-server-manager match_create "Lower R3 M$i" 2 0
 done
 
 # Lower R3 connections
@@ -176,7 +176,7 @@ done
 # Lower R3 M2 gets winners of Lower R2 matches 1, 2, 3, 4
 for match in {23..24}; do
   for target in {17..20}; do
-    spacetime call tm-tourney-manager connection_create \
+    spacetime call tm-server-manager connection_create \
       "{\"MatchV1\": $match }" \
       "{\"MatchV1\": $target }" \
       '{"Data": {}}'
@@ -186,7 +186,7 @@ done
 # Lower R4
 # 2 matches, Match IDs 25-26
 for i in {1..2}; do
-  spacetime call tm-tourney-manager match_create "Lower R4 M$i" 2 0
+  spacetime call tm-server-manager match_create "Lower R4 M$i" 2 0
 done
 
 # Lower R4 connections
@@ -195,7 +195,7 @@ done
 # Lower R4 M2 gets winners of Lower R3 match 1, 2 and losers of Upper R3 match 1, 2
 for match in {25..26}; do
   for target in {21..24}; do
-    spacetime call tm-tourney-manager connection_create \
+    spacetime call tm-server-manager connection_create \
       "{\"MatchV1\": $match }" \
       "{\"MatchV1\": $target }" \
       '{"Data": {}}'
@@ -204,13 +204,13 @@ done
 
 # Upper Final
 # 1 match, Match ID 27
-spacetime call tm-tourney-manager match_create "Upper Final" 2 0
+spacetime call tm-server-manager match_create "Upper Final" 2 0
 
 # Upper Final connections
 # Winners of Upper R3 to Upper Final
 # Upper Final gets winners of Upper R3 match 1, 2
 for target in {21..22}; do
-  spacetime call tm-tourney-manager connection_create \
+  spacetime call tm-server-manager connection_create \
     '{"MatchV1": 27 }' \
     "{\"MatchV1\": $target }" \
     '{"Data": {}}'
@@ -218,7 +218,7 @@ done
 
 # Upper Final also has to wait on Lower R4
 for target in {25..26}; do
-  spacetime call tm-tourney-manager connection_create \
+  spacetime call tm-server-manager connection_create \
     '{"MatchV1": 27 }' \
     "{\"MatchV1\": $target }" \
     '{"Waiting": {}}'
@@ -226,13 +226,13 @@ done
 
 # Lower Final
 # 1 match, Match ID 28
-spacetime call tm-tourney-manager match_create "Lower Final" 2 0
+spacetime call tm-server-manager match_create "Lower Final" 2 0
 
 # Lower Final connections
 # Winners of Lower R4 to Lower Final
 # Lower Final gets winners of Lower R4 match 1, 2
 for target in {25..26}; do
-  spacetime call tm-tourney-manager connection_create \
+  spacetime call tm-server-manager connection_create \
     '{"MatchV1": 28 }' \
     "{\"MatchV1\": $target }" \
     '{"Data": {}}'
@@ -240,13 +240,13 @@ done
 
 # Consolidation Final
 # 1 match, Match ID 29
-spacetime call tm-tourney-manager match_create "Consolidation Final" 2 0
+spacetime call tm-server-manager match_create "Consolidation Final" 2 0
 
 # Consolidation Final connections
 # Losers of Upper Final and Winners of Lower Final to Consolidation Final
 # Consolidation Final gets loser of Upper Final and winner of Lower Final
 for target in {27,28}; do
-  spacetime call tm-tourney-manager connection_create \
+  spacetime call tm-server-manager connection_create \
     '{"MatchV1": 29 }' \
     "{\"MatchV1\": $target }" \
     '{"Data": {}}'
@@ -254,17 +254,17 @@ done
 
 # Grand Final
 # 1 match, Match ID 30
-spacetime call tm-tourney-manager match_create "Grand Final" 2 0
+spacetime call tm-server-manager match_create "Grand Final" 2 0
 
 # Grand Final connections
 # Winners of Upper Final and Winners of Consolidation Final to Grand Final
 # Grand Final gets winner of Upper Final and winner of Consolidation Final
 for target in {27,29}; do
-  spacetime call tm-tourney-manager connection_create \
+  spacetime call tm-server-manager connection_create \
     '{"MatchV1": 30 }' \
     "{\"MatchV1\": $target }" \
     '{"Data": {}}'
 done
 
 # Create match template
-spacetime call tm-tourney-manager match_create_template "Rounds Template" '{ "options": {}, "common": { "chat_time": 10, "respawn_behaviour": { "Default": {} }, "delay_before_next_map": 2000, "synchronize_players_at_map_start": true, "synchronize_players_at_round_start": true, "trust_client_simulation": true, "use_crude_extrapolation": true, "warmup_duration": { "BasedOnMedal": {} }, "warmup_timeout": { "BasedOnMedal": {} }, "warmup_number": 0, "deco_image_url_checkpoint": "", "deco_image_url_decal_sponsor_4x1": "", "deco_image_url_screen_16x1": "", "deco_image_url_screen_16x9": "", "deco_image_url_screen_8x1": "", "deco_image_url_who_am_i_url": "", "force_laps_number": { "Validation": {} }}, "mode": { "Rounds": { "finish_timeout": { "BasedOnMedal": {} }, "maps_per_match": { "One": {} }, "points_limit": { "PointsLimit": 50 }, "use_custom_points_repartition": false, "points_repartition": [10, 6, 4, 3, 2, 1], "rounds_per_map": { "Unlimited": {} }, "use_tie_breaker": true }}, "maps": { "start": 0, "map_uids": ["olsKnq_qAghcVAnEkoeUnVHFZei"] }}'\
+spacetime call tm-server-manager match_create_template "Rounds Template" '{ "options": {}, "common": { "chat_time": 10, "respawn_behaviour": { "Default": {} }, "delay_before_next_map": 2000, "synchronize_players_at_map_start": true, "synchronize_players_at_round_start": true, "trust_client_simulation": true, "use_crude_extrapolation": true, "warmup_duration": { "BasedOnMedal": {} }, "warmup_timeout": { "BasedOnMedal": {} }, "warmup_number": 0, "deco_image_url_checkpoint": "", "deco_image_url_decal_sponsor_4x1": "", "deco_image_url_screen_16x1": "", "deco_image_url_screen_16x9": "", "deco_image_url_screen_8x1": "", "deco_image_url_who_am_i_url": "", "force_laps_number": { "Validation": {} }}, "mode": { "Rounds": { "finish_timeout": { "BasedOnMedal": {} }, "maps_per_match": { "One": {} }, "points_limit": { "PointsLimit": 50 }, "use_custom_points_repartition": false, "points_repartition": [10, 6, 4, 3, 2, 1], "rounds_per_map": { "Unlimited": {} }, "use_tie_breaker": true }}, "maps": { "start": 0, "map_uids": ["olsKnq_qAghcVAnEkoeUnVHFZei"] }}'\

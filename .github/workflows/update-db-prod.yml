@@ -50,10 +50,10 @@ jobs:
           rustc --version
           cargo --version
           rustup target add wasm32-unknown-unknown
-          cargo build -p tm-tourney-manager --release
+          cargo build -p tm-server-manager --release
 
       - name: Publish database
         run: |
           set -euo pipefail
           echo "Publishing '$DATABASE_NAME' to maincloud..."
-          spacetime publish -s maincloud -p tm-tourney-manager "$DATABASE_NAME" -y
+          spacetime publish -s maincloud -p tm-server-manager "$DATABASE_NAME" -y

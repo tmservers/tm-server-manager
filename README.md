@@ -1,4 +1,4 @@
-# Trackmania Tournament Manager (WIP)
+# Trackmania Server Manager (WIP)
 The Goal of this project is to provide an unified backend for organizing all sort of trackmania tournaments.
 Concretly it is implemented as a spacetimedb module allowing self-hosting or relying on a centrally hosted instance on spacetimes "maincloud".
 This has a few advantages:
@@ -11,8 +11,8 @@ This has a few advantages:
 - `tm-server-types`: Provides type abstractions over GBX Remote 2 for use by all other crates or standalone.
 - `tm-server-client`: General purpose GBX Remote 2 protocol iplementation. Used to interact with a Trackmania server over xml-rpc.
 - `tm-server-bridge`: Implements a so called "sidecar" for spacetimedb taking the role of a "trackmania server as a db client". That means it subscribes to events from the tourney manager instance to synchronize the state and control the associated tm-server.
-- `tm-tourney-manager`: SpacetimeDB module to host and configure Trackmania tournaments in a flexible and as unopinionated interface as possible. 
-- `tm-tourney-manager-api-{ts|rs|cs}`: Houses the generated types from tm-tourney-manager in its own package to have a strong versioned dependency for clients developed for the project.
+- `tm-server-manager`: SpacetimeDB module to host and configure Trackmania tournaments in a flexible and as unopinionated interface as possible. 
+- `tm-server-manager-api-{ts|rs|cs}`: Houses the generated types from tm-server-manager in its own package to have a strong versioned dependency for clients developed for the project.
 
 # Docker Compose Example to connect a server.
 ```yml

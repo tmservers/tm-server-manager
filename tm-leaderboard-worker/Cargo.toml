@@ -16,4 +16,4 @@ tokio.workspace = true
 dotenvy.workspace = true
 nadeo-api-rs = "*"
 spacetimedb-sdk.workspace = true
-tm-tourney-manager-api-rs.workspace = true
+tm-server-manager-api-rs.workspace = true

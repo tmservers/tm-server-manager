@@ -1,4 +1,4 @@
-# tm-tourney-manager-api-ts
+# tm-server-manager-api-ts
 
 Companion package to the `spacetimedb` package to provide the generated api bindings for your integration.
 

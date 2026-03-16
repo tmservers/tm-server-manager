@@ -45,7 +45,7 @@ pub fn login_as_worker(
             ),
         )
         .header("Content-Type", "application/json")
-        .header("User-Agent", "tm-tourney-manager | central")
+        .header("User-Agent", "tm-server-manager | central")
         .body(r#"{ "audience": "NadeoServices" }"#)
         .unwrap();
     let result = ctx.http.send(request).unwrap();

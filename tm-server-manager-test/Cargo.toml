@@ -1,5 +1,5 @@
 [package]
-name = "tm-tourney-manager-test"
+name = "tm-server-manager-test"
 publish = false
 
 version.workspace = true
@@ -13,5 +13,5 @@ edition.workspace = true
 [dependencies]
 testcontainers.workspace = true
 spacetimedb-sdk.workspace = true
-tm-tourney-manager-api-rs.workspace = true
+tm-server-manager-api-rs.workspace = true
 insta.workspace = true

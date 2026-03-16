@@ -1,4 +1,4 @@
 /target
-/tm-tourney-manager/.env
+/tm-server-manager/.env
 /tm-server-bridge/.env
 /tm-leaderboard-worker/.env

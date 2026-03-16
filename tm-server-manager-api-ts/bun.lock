@@ -2,7 +2,7 @@
   "lockfileVersion": 1,
   "workspaces": {
     "": {
-      "name": "tm-tourney-manager-api-ts",
+      "name": "tm-server-manager-api-ts",
       "dependencies": {
         "spacetimedb": "1.10.0",
       },

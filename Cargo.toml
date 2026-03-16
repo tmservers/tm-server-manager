@@ -5,9 +5,9 @@ members = [
     "tm-server-bridge",
     "tm-server-controller",
     "tm-server-types",
-    "tm-tourney-manager",
-    "tm-tourney-manager-api-rs",
-    "tm-tourney-manager-test",
+    "tm-server-manager",
+    "tm-server-manager-api-rs",
+    "tm-server-manager-test",
 ]
 resolver = "3"
 
@@ -22,7 +22,7 @@ categories = [
     "trackmania",
 ]
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/kistz/tm-tourney-manager"
+repository = "https://github.com/tmservers/tm-server-manager"
 edition = "2024"
 
 
@@ -56,7 +56,7 @@ spacetimedb-sdk = { version = "2.0.2", git = "https://github.com/kistz/Spacetime
 # Worspace Deps
 #==============
 gbx-rs = { path = "./gbx-rs" }
-tm-tourney-manager-api-rs = { path = "./tm-tourney-manager-api-rs", version = "0.1.0-dev" }
+tm-server-manager-api-rs = { path = "./tm-server-manager-api-rs", version = "0.1.0-dev" }
 tm-server-types = { path = "./tm-server-types", version = "0.1.0-dev" }
 tm-server-controller = { path = "./tm-server-controller", version = "0.1.0-dev" }
 

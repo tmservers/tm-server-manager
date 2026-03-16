@@ -2,7 +2,7 @@
 use tm_tourney_manager_api_rs::*;
 
 #[cfg(test)]
-const PROJECT_NAME: &str = "tm-tourney-manager";
+const PROJECT_NAME: &str = "tm-server-manager";
 
 #[cfg(test)]
 mod setup;

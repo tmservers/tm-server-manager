@@ -3775,7 +3775,7 @@ dependencies = [
  "dotenvy",
  "nadeo-api-rs",
  "spacetimedb-sdk",
- "tm-tourney-manager-api-rs",
+ "tm-server-manager-api-rs",
  "tokio",
 ]
 
@@ -3790,8 +3790,8 @@ dependencies = [
  "spacetimedb-sdk",
  "testcontainers",
  "tm-server-controller",
+ "tm-server-manager-api-rs",
  "tm-server-types",
- "tm-tourney-manager-api-rs",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -3818,19 +3818,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "tm-server-types"
-version = "0.1.0-dev"
-dependencies = [
- "base64 0.22.1",
- "dxr",
- "serde",
- "simd-json",
- "spacetimedb-lib",
- "uuid",
-]
-
-[[package]]
-name = "tm-tourney-manager"
+name = "tm-server-manager"
 version = "0.1.0-dev"
 dependencies = [
  "base64 0.22.1",
@@ -3844,20 +3832,32 @@ dependencies = [
 ]
 
 [[package]]
-name = "tm-tourney-manager-api-rs"
+name = "tm-server-manager-api-rs"
 version = "0.1.0-dev"
 dependencies = [
  "spacetimedb-sdk",
 ]
 
 [[package]]
-name = "tm-tourney-manager-test"
+name = "tm-server-manager-test"
 version = "0.1.0-dev"
 dependencies = [
  "insta",
  "spacetimedb-sdk",
  "testcontainers",
- "tm-tourney-manager-api-rs",
+ "tm-server-manager-api-rs",
+]
+
+[[package]]
+name = "tm-server-types"
+version = "0.1.0-dev"
+dependencies = [
+ "base64 0.22.1",
+ "dxr",
+ "serde",
+ "simd-json",
+ "spacetimedb-lib",
+ "uuid",
 ]
 
 [[package]]

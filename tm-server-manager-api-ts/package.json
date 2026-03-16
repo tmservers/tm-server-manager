@@ -1,5 +1,5 @@
 {
-  "name": "tm-tourney-manager-api-ts",
+  "name": "tm-server-manager-api-ts",
   "description": "API bindings for the tm-tounrey-manager project",
   "version": "0.0.12",
   "type": "module",
@@ -24,7 +24,7 @@
   },
   "license": "(MIT OR Apache-2.0)",
   "repository": {
-    "url": "https://github.com/kistz/tm-tourney-manager"
+    "url": "https://github.com/kistz/tm-server-manager"
   },
   "author": {
     "name": "Kilian Strunz",

@@ -1,5 +1,5 @@
 [package]
-name = "tm-tourney-manager"
+name = "tm-server-manager"
 publish = false
 
 version.workspace = true

@@ -26,7 +26,7 @@ fn connect_to_db() -> DbConnection {
         //.on_disconnect(on_disconnected)
         //.on_connect(|c, i, w| println!("{i}"))
         .with_database_name(
-            std::env::var("SPACETIMEDB_MODULE").unwrap_or("tm-tourney-manager".to_string()),
+            std::env::var("SPACETIMEDB_MODULE").unwrap_or("tm-server-manager".to_string()),
         )
         .with_uri(std::env::var("SPACETIMEDB_URL").unwrap_or("http://localhost:1234".to_string()))
         .build()
@@ -66,7 +66,7 @@ async fn main() {
             u: tm_server_login,
             p: tm_server_password,
         },
-        UserAgentDetails::new("tm-tourney-manager", "", "0"),
+        UserAgentDetails::new("tm-server-manager", "", "0"),
         2,
     )
     .await
