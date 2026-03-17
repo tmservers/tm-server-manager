@@ -3,9 +3,9 @@ use spacetimedb::{AnonymousViewContext, Query, Uuid, table, view};
 #[derive(Debug, Copy, Clone)]
 #[table(accessor=tab_match_state)]
 pub struct MatchState {
-    map_id: Uuid,
     #[primary_key]
     pub(crate) match_id: u32,
+    map_id: u32,
     restarted: u16,
     round: u16,
     warmup: u16,
@@ -22,12 +22,16 @@ impl MatchState {
             warmup: 0,
             is_warmup: false,
             paused: false,
-            map_id: Uuid::NIL,
+            map_id: 0,
         }
     }
 
     pub(crate) fn set_wu(&mut self, active: bool) {
         self.is_warmup = active;
+    }
+
+    pub(crate) fn set_map(&mut self, id: u32) {
+        self.map_id = id;
     }
 
     pub(crate) fn set_pause(&mut self, paused: bool) {
@@ -52,9 +56,12 @@ impl MatchState {
 }
 
 #[view(accessor=match_state,public)]
-pub fn match_state(ctx: &AnonymousViewContext /* match_id:u32 */) -> impl Query<MatchState> {
+pub fn match_state(ctx: &AnonymousViewContext /* match_id:u32 */) -> Option<MatchState> {
     let match_id = 1u32;
-    ctx.from
+    //TODO map the internal map id to string.
+    ctx.db
         .tab_match_state()
-        .r#where(|c| c.match_id.eq(match_id))
+        .match_id()
+        .find(match_id)
+        .map(|a| a)
 }

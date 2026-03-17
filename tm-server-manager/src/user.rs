@@ -57,13 +57,13 @@ pub struct UserIdsMap {
     #[primary_key]
     pub account_id: Uuid,
     #[unique]
-    pub internal_id: u32,
+    pub user_id: u32,
 }
 
 impl UserIdsMap {
     pub fn new(account_id: Uuid, internal_id: u32) -> Self {
         Self {
-            internal_id,
+            user_id: internal_id,
             account_id,
         }
     }

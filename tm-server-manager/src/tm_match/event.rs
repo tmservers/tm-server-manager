@@ -5,6 +5,7 @@ use tm_server_types::event::Event;
 
 use crate::{
     competition::{connection::internal_graph_resolution_node_finished, node::NodeKindHandle},
+    maps::{TabTmMap, tab_tm_map},
     raw_server::tab_raw_server_occupation,
     tm_match::{
         leaderboard::{
@@ -47,7 +48,7 @@ pub(crate) fn handle_match_event(
                     .account_id()
                     .find(account_id)
                     .unwrap()
-                    .internal_id;
+                    .user_id;
 
                 let round = state.get_round();
 
@@ -79,7 +80,7 @@ pub(crate) fn handle_match_event(
                     .account_id()
                     .find(account_id)
                     .unwrap()
-                    .internal_id;
+                    .user_id;
 
                 let round = state.get_round();
 
@@ -106,7 +107,7 @@ pub(crate) fn handle_match_event(
                     .account_id()
                     .find(account_id)
                     .unwrap()
-                    .internal_id;
+                    .user_id;
 
                 let round = state.get_round();
 
@@ -133,7 +134,7 @@ pub(crate) fn handle_match_event(
                     .account_id()
                     .find(account_id)
                     .unwrap()
-                    .internal_id;
+                    .user_id;
 
                 let round = state.get_round();
 
@@ -151,17 +152,35 @@ pub(crate) fn handle_match_event(
             }
         }
         Event::StartMapStart(start_map) => {
-            let state = ctx.db.tab_match_state().match_id().find(match_id).unwrap();
-            //TODO how to get the maps id from the nadeo services or should we just do uid based?
-            /* start_map.map.author_account_id
-            start_map.map.author_time
-            start_map.map.gold_time
-            start_map.map.silver_time
-            start_map.map.bronze_time
-            start_map.map.name
-            start_map.map.uid */
-            //TODO set correct active map.
-            //state.set_map(start_map.map.uid);
+            let mut state = ctx.db.tab_match_state().match_id().find(match_id).unwrap();
+
+            let account_id = Uuid::parse_str(&start_map.map.author_account_id).unwrap();
+            let user_id = ctx
+                .db
+                .tab_user_ids_map()
+                .account_id()
+                .find(account_id)
+                .unwrap()
+                .user_id;
+
+            let map = ctx
+                .db
+                .tab_tm_map()
+                .uid()
+                .find(&start_map.map.uid)
+                .unwrap_or_else(|| {
+                    log::error!("Map uid could not be found for the StartMap callback. This should not be possible since matches have only known maps conifgured! Map: {}",start_map.map.uid);
+                    ctx.db.tab_tm_map().insert(TabTmMap::new(
+                        start_map.map.name.clone(),
+                        start_map.map.uid.clone(),
+                        user_id,
+                        start_map.map.author_time,
+                        start_map.map.gold_time,
+                        start_map.map.silver_time,
+                        start_map.map.bronze_time,
+                    ))
+                });
+            state.set_map(map.id);
 
             ctx.db.tab_match_state().match_id().update(state);
         }
