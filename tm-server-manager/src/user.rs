@@ -6,7 +6,6 @@ pub struct UserV1 {
     club_tag: String,
     zone: String,
 
-    //account_id of the user
     #[unique]
     pub account_id: Uuid,
 
@@ -31,10 +30,10 @@ impl UserV1 {
     }
 }
 
-#[view(accessor=user,public)]
+/* #[view(accessor=user,public)]
 pub fn user(ctx: &AnonymousViewContext) -> impl Query<UserV1> {
     ctx.from.tab_user()
-}
+} */
 
 #[table(accessor= tab_user_identity)]
 pub struct UserIdentity {
@@ -48,6 +47,23 @@ impl UserIdentity {
     pub fn new(account_id: Uuid, identity: Identity) -> Self {
         Self {
             identity,
+            account_id,
+        }
+    }
+}
+
+#[table(accessor= tab_user_ids_map)]
+pub struct UserIdsMap {
+    #[primary_key]
+    pub account_id: Uuid,
+    #[unique]
+    pub internal_id: u32,
+}
+
+impl UserIdsMap {
+    pub fn new(account_id: Uuid, internal_id: u32) -> Self {
+        Self {
+            internal_id,
             account_id,
         }
     }

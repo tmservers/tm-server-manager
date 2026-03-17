@@ -6,8 +6,8 @@ pub struct PlayerDestination {
     desination_server_id: u32,
 }
 
-#[view(accessor=my_player_destination,public)]
+/* #[view(accessor=my_player_destination,public)]
 fn my_player_destination(ctx: &ViewContext) -> impl Query<PlayerDestination> {
     //ctx.
     todo!()
-}
+} */

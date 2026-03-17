@@ -45,6 +45,10 @@ impl MatchState {
     pub(super) fn get_round(&self) -> u16 {
         self.round
     }
+
+    pub(super) fn live_round(&self) -> bool {
+        !self.is_warmup && !self.paused
+    }
 }
 
 #[view(accessor=match_state,public)]
