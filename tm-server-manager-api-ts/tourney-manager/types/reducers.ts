@@ -13,8 +13,6 @@ import CompetitionNodePositionUpdateReducer from "../competition_node_position_u
 import CompetitionNodePositionsUpdateReducer from "../competition_node_positions_update_reducer";
 import CompetitionTemplateCreateReducer from "../competition_template_create_reducer";
 import ConnectionCreateReducer from "../connection_create_reducer";
-import CreateEnvVarReducer from "../create_env_var_reducer";
-import CreateMonitorReducer from "../create_monitor_reducer";
 import CreateProjectReducer from "../create_project_reducer";
 import CreateTeamReducer from "../create_team_reducer";
 import LendRawServerReducer from "../lend_raw_server_reducer";
@@ -52,6 +50,7 @@ import ScheduleConfiguredReducer from "../schedule_configured_reducer";
 import ScheduleCreateReducer from "../schedule_create_reducer";
 import ServerMethodCallReducer from "../server_method_call_reducer";
 import ServerMethodResponseReducer from "../server_method_response_reducer";
+import SetEnvVarReducer from "../set_env_var_reducer";
 import UnregisterPlayerReducer from "../unregister_player_reducer";
 
 export type CompetitionConnectionDataUpdateParams = __Infer<typeof CompetitionConnectionDataUpdateReducer>;
@@ -61,8 +60,6 @@ export type CompetitionNodePositionUpdateParams = __Infer<typeof CompetitionNode
 export type CompetitionNodePositionsUpdateParams = __Infer<typeof CompetitionNodePositionsUpdateReducer>;
 export type CompetitionTemplateCreateParams = __Infer<typeof CompetitionTemplateCreateReducer>;
 export type ConnectionCreateParams = __Infer<typeof ConnectionCreateReducer>;
-export type CreateEnvVarParams = __Infer<typeof CreateEnvVarReducer>;
-export type CreateMonitorParams = __Infer<typeof CreateMonitorReducer>;
 export type CreateProjectParams = __Infer<typeof CreateProjectReducer>;
 export type CreateTeamParams = __Infer<typeof CreateTeamReducer>;
 export type LendRawServerParams = __Infer<typeof LendRawServerReducer>;
@@ -100,5 +97,6 @@ export type ScheduleConfiguredParams = __Infer<typeof ScheduleConfiguredReducer>
 export type ScheduleCreateParams = __Infer<typeof ScheduleCreateReducer>;
 export type ServerMethodCallParams = __Infer<typeof ServerMethodCallReducer>;
 export type ServerMethodResponseParams = __Infer<typeof ServerMethodResponseReducer>;
+export type SetEnvVarParams = __Infer<typeof SetEnvVarReducer>;
 export type UnregisterPlayerParams = __Infer<typeof UnregisterPlayerReducer>;
 

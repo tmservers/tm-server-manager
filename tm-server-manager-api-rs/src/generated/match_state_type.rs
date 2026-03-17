@@ -7,8 +7,8 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct MatchState {
-    pub map_id: __sdk::Uuid,
     pub match_id: u32,
+    pub map_id: u32,
     pub restarted: u16,
     pub round: u16,
     pub warmup: u16,
@@ -24,8 +24,8 @@ impl __sdk::InModule for MatchState {
 ///
 /// Provides typed access to columns for query building.
 pub struct MatchStateCols {
-    pub map_id: __sdk::__query_builder::Col<MatchState, __sdk::Uuid>,
     pub match_id: __sdk::__query_builder::Col<MatchState, u32>,
+    pub map_id: __sdk::__query_builder::Col<MatchState, u32>,
     pub restarted: __sdk::__query_builder::Col<MatchState, u16>,
     pub round: __sdk::__query_builder::Col<MatchState, u16>,
     pub warmup: __sdk::__query_builder::Col<MatchState, u16>,
@@ -37,8 +37,8 @@ impl __sdk::__query_builder::HasCols for MatchState {
     type Cols = MatchStateCols;
     fn cols(table_name: &'static str) -> Self::Cols {
         MatchStateCols {
-            map_id: __sdk::__query_builder::Col::new(table_name, "map_id"),
             match_id: __sdk::__query_builder::Col::new(table_name, "match_id"),
+            map_id: __sdk::__query_builder::Col::new(table_name, "map_id"),
             restarted: __sdk::__query_builder::Col::new(table_name, "restarted"),
             round: __sdk::__query_builder::Col::new(table_name, "round"),
             warmup: __sdk::__query_builder::Col::new(table_name, "warmup"),

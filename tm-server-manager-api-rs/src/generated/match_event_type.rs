@@ -9,8 +9,9 @@ use super::event_type::Event;
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct MatchEvent {
-    pub match_id: u32,
     pub event: Event,
+    pub id: u64,
+    pub match_id: u32,
 }
 
 impl __sdk::InModule for MatchEvent {
@@ -21,16 +22,18 @@ impl __sdk::InModule for MatchEvent {
 ///
 /// Provides typed access to columns for query building.
 pub struct MatchEventCols {
-    pub match_id: __sdk::__query_builder::Col<MatchEvent, u32>,
     pub event: __sdk::__query_builder::Col<MatchEvent, Event>,
+    pub id: __sdk::__query_builder::Col<MatchEvent, u64>,
+    pub match_id: __sdk::__query_builder::Col<MatchEvent, u32>,
 }
 
 impl __sdk::__query_builder::HasCols for MatchEvent {
     type Cols = MatchEventCols;
     fn cols(table_name: &'static str) -> Self::Cols {
         MatchEventCols {
-            match_id: __sdk::__query_builder::Col::new(table_name, "match_id"),
             event: __sdk::__query_builder::Col::new(table_name, "event"),
+            id: __sdk::__query_builder::Col::new(table_name, "id"),
+            match_id: __sdk::__query_builder::Col::new(table_name, "match_id"),
         }
     }
 }
@@ -39,6 +42,7 @@ impl __sdk::__query_builder::HasCols for MatchEvent {
 ///
 /// Provides typed access to indexed columns for query building.
 pub struct MatchEventIxCols {
+    pub id: __sdk::__query_builder::IxCol<MatchEvent, u64>,
     pub match_id: __sdk::__query_builder::IxCol<MatchEvent, u32>,
 }
 
@@ -46,6 +50,7 @@ impl __sdk::__query_builder::HasIxCols for MatchEvent {
     type IxCols = MatchEventIxCols;
     fn ix_cols(table_name: &'static str) -> Self::IxCols {
         MatchEventIxCols {
+            id: __sdk::__query_builder::IxCol::new(table_name, "id"),
             match_id: __sdk::__query_builder::IxCol::new(table_name, "match_id"),
         }
     }

@@ -71,25 +71,6 @@ export const CompetitionConnection = __t.object("CompetitionConnection", {
 });
 export type CompetitionConnection = __Infer<typeof CompetitionConnection>;
 
-export const CompetitionConnectionData = __t.object("CompetitionConnectionData", {
-  competitionId: __t.u32(),
-  connectionId: __t.u32(),
-  get options() {
-    return CompetitionConnectionDataOption;
-  },
-});
-export type CompetitionConnectionData = __Infer<typeof CompetitionConnectionData>;
-
-// The tagged union or sum type for the algebraic type `CompetitionConnectionDataOption`.
-export const CompetitionConnectionDataOption = __t.enum("CompetitionConnectionDataOption", {
-  None: __t.unit(),
-  All: __t.unit(),
-  First: __t.u8(),
-  Last: __t.u8(),
-  Custom: __t.byteArray(),
-});
-export type CompetitionConnectionDataOption = __Infer<typeof CompetitionConnectionDataOption>;
-
 export const CompetitionMember = __t.object("CompetitionMember", {
   permissions: __t.u64(),
   id: __t.u32(),
@@ -148,6 +129,50 @@ export const CompetitionV1 = __t.object("CompetitionV1", {
   template: __t.bool(),
 });
 export type CompetitionV1 = __Infer<typeof CompetitionV1>;
+
+// The tagged union or sum type for the algebraic type `ConnectionAction`.
+export const ConnectionAction = __t.enum("ConnectionAction", {
+  get MatchV1() {
+    return ConnectionActionMatch;
+  },
+  get RegistrationV1() {
+    return ConnectionActionRegistration;
+  },
+});
+export type ConnectionAction = __Infer<typeof ConnectionAction>;
+
+// The tagged union or sum type for the algebraic type `ConnectionActionMatch`.
+export const ConnectionActionMatch = __t.enum("ConnectionActionMatch", {
+  TryStart: __t.unit(),
+  ForceStart: __t.unit(),
+});
+export type ConnectionActionMatch = __Infer<typeof ConnectionActionMatch>;
+
+// The tagged union or sum type for the algebraic type `ConnectionActionRegistration`.
+export const ConnectionActionRegistration = __t.enum("ConnectionActionRegistration", {
+  Open: __t.unit(),
+  Close: __t.unit(),
+});
+export type ConnectionActionRegistration = __Infer<typeof ConnectionActionRegistration>;
+
+export const ConnectionData = __t.object("ConnectionData", {
+  competitionId: __t.u32(),
+  connectionId: __t.u32(),
+  get options() {
+    return ConnectionDataOption;
+  },
+});
+export type ConnectionData = __Infer<typeof ConnectionData>;
+
+// The tagged union or sum type for the algebraic type `ConnectionDataOption`.
+export const ConnectionDataOption = __t.enum("ConnectionDataOption", {
+  None: __t.unit(),
+  All: __t.unit(),
+  First: __t.u8(),
+  Last: __t.u8(),
+  Custom: __t.byteArray(),
+});
+export type ConnectionDataOption = __Infer<typeof ConnectionDataOption>;
 
 // The tagged union or sum type for the algebraic type `ConnectionSettings`.
 export const ConnectionSettings = __t.enum("ConnectionSettings", {
@@ -443,20 +468,13 @@ export const MapsPerMatch = __t.enum("MapsPerMatch", {
 export type MapsPerMatch = __Infer<typeof MapsPerMatch>;
 
 export const MatchEvent = __t.object("MatchEvent", {
-  matchId: __t.u32(),
   get event() {
     return Event;
   },
+  id: __t.u64(),
+  matchId: __t.u32(),
 });
 export type MatchEvent = __Infer<typeof MatchEvent>;
-
-export const MatchGhost = __t.object("MatchGhost", {
-  projectId: __t.u32(),
-  matchId: __t.u32(),
-  playerId: __t.uuid(),
-  uid: __t.uuid(),
-});
-export type MatchGhost = __Infer<typeof MatchGhost>;
 
 export const MatchRoundPlayer = __t.object("MatchRoundPlayer", {
   accountId: __t.uuid(),
@@ -479,9 +497,17 @@ export const MatchRoundPlayerExt = __t.object("MatchRoundPlayerExt", {
 });
 export type MatchRoundPlayerExt = __Infer<typeof MatchRoundPlayerExt>;
 
-export const MatchState = __t.object("MatchState", {
-  mapId: __t.uuid(),
+export const MatchRoundReplay = __t.object("MatchRoundReplay", {
   matchId: __t.u32(),
+  round: __t.u8(),
+  mapUid: __t.uuid(),
+  objectId: __t.uuid(),
+});
+export type MatchRoundReplay = __Infer<typeof MatchRoundReplay>;
+
+export const MatchState = __t.object("MatchState", {
+  matchId: __t.u32(),
+  mapId: __t.u32(),
   restarted: __t.u16(),
   round: __t.u16(),
   warmup: __t.u16(),
@@ -705,6 +731,12 @@ export const PlayerConnect = __t.object("PlayerConnect", {
   isSpectator: __t.bool(),
 });
 export type PlayerConnect = __Infer<typeof PlayerConnect>;
+
+export const PlayerDestination = __t.object("PlayerDestination", {
+  internalAccountId: __t.u32(),
+  desinationServerId: __t.u32(),
+});
+export type PlayerDestination = __Infer<typeof PlayerDestination>;
 
 export const PlayerDisconnect = __t.object("PlayerDisconnect", {
   accountId: __t.string(),
@@ -1073,20 +1105,6 @@ export const StartTurn = __t.object("StartTurn", {
 });
 export type StartTurn = __Infer<typeof StartTurn>;
 
-export const TabCompetitionConnection = __t.object("TabCompetitionConnection", {
-  id: __t.u32(),
-  parentId: __t.u32(),
-  connectionFrom: __t.u32(),
-  connectionTo: __t.u32(),
-  connectionFromVariant: __t.u8(),
-  connectionToVariant: __t.u8(),
-  get connectionSettings() {
-    return ConnectionSettings;
-  },
-  connectionSettingsReady: __t.bool(),
-});
-export type TabCompetitionConnection = __Infer<typeof TabCompetitionConnection>;
-
 export const TabCompetitionNodePosition = __t.object("TabCompetitionNodePosition", {
   get position() {
     return Vec2;
@@ -1097,6 +1115,29 @@ export const TabCompetitionNodePosition = __t.object("TabCompetitionNodePosition
   nodeVariant: __t.u8(),
 });
 export type TabCompetitionNodePosition = __Infer<typeof TabCompetitionNodePosition>;
+
+export const TabConnection = __t.object("TabConnection", {
+  id: __t.u32(),
+  parentId: __t.u32(),
+  connectionFrom: __t.u32(),
+  connectionTo: __t.u32(),
+  connectionFromVariant: __t.u8(),
+  connectionToVariant: __t.u8(),
+  get connectionSettings() {
+    return ConnectionSettings;
+  },
+  connectionSettingsConfiguring: __t.bool(),
+});
+export type TabConnection = __Infer<typeof TabConnection>;
+
+export const TabConnectionAction = __t.object("TabConnectionAction", {
+  competitionId: __t.u32(),
+  connectionId: __t.u32(),
+  get lifecycleAction() {
+    return ConnectionAction;
+  },
+});
+export type TabConnectionAction = __Infer<typeof TabConnectionAction>;
 
 export const TabMatchRoundPlayer = __t.object("TabMatchRoundPlayer", {
   id: __t.u32(),
@@ -1118,6 +1159,19 @@ export const TabMatchRoundPlayerExt = __t.object("TabMatchRoundPlayerExt", {
   round: __t.u16(),
 });
 export type TabMatchRoundPlayerExt = __Infer<typeof TabMatchRoundPlayerExt>;
+
+export const TabTmMap = __t.object("TabTmMap", {
+  name: __t.string(),
+  uid: __t.string(),
+  id: __t.u32(),
+  authorUserId: __t.u32(),
+  authorTime: __t.u32(),
+  goldTime: __t.u32(),
+  silverTime: __t.u32(),
+  bronzeTime: __t.u32(),
+  internal: __t.bool(),
+});
+export type TabTmMap = __Infer<typeof TabTmMap>;
 
 export const Team = __t.object("Team", {
   id: __t.u32(),
@@ -1169,8 +1223,8 @@ export const TmMatchV1 = __t.object("TmMatchV1", {
     return MatchStatus;
   },
   autoProvisionServer: __t.bool(),
+  open: __t.bool(),
   template: __t.bool(),
-  restricted: __t.bool(),
 });
 export type TmMatchV1 = __Infer<typeof TmMatchV1>;
 
@@ -1237,6 +1291,12 @@ export const UserIdentity = __t.object("UserIdentity", {
   accountId: __t.uuid(),
 });
 export type UserIdentity = __Infer<typeof UserIdentity>;
+
+export const UserIdsMap = __t.object("UserIdsMap", {
+  accountId: __t.uuid(),
+  userId: __t.u32(),
+});
+export type UserIdsMap = __Infer<typeof UserIdsMap>;
 
 export const UserV1 = __t.object("UserV1", {
   name: __t.string(),

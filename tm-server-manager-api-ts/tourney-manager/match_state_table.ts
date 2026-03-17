@@ -11,8 +11,8 @@ import {
 } from "spacetimedb";
 
 export default __t.row({
-  mapId: __t.uuid().name("map_id"),
   matchId: __t.u32().name("match_id"),
+  mapId: __t.u32().name("map_id"),
   restarted: __t.u16(),
   round: __t.u16(),
   warmup: __t.u16(),

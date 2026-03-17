@@ -2,8 +2,8 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN YOUR MODULE SOURCE CODE INSTEAD.
 
 #![allow(unused, clippy::all)]
-use super::competition_connection_data_option_type::CompetitionConnectionDataOption;
-use super::competition_connection_data_type::CompetitionConnectionData;
+use super::connection_data_option_type::ConnectionDataOption;
+use super::connection_data_type::ConnectionData;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 /// Table handle for the table `competition_connection_data`.
@@ -15,7 +15,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 /// but to directly chain method calls,
 /// like `ctx.db.competition_connection_data().on_insert(...)`.
 pub struct CompetitionConnectionDataTableHandle<'ctx> {
-    imp: __sdk::TableHandle<CompetitionConnectionData>,
+    imp: __sdk::TableHandle<ConnectionData>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -34,7 +34,7 @@ impl CompetitionConnectionDataTableAccess for super::RemoteTables {
         CompetitionConnectionDataTableHandle {
             imp: self
                 .imp
-                .get_table::<CompetitionConnectionData>("competition_connection_data"),
+                .get_table::<ConnectionData>("competition_connection_data"),
             ctx: std::marker::PhantomData,
         }
     }
@@ -44,13 +44,13 @@ pub struct CompetitionConnectionDataInsertCallbackId(__sdk::CallbackId);
 pub struct CompetitionConnectionDataDeleteCallbackId(__sdk::CallbackId);
 
 impl<'ctx> __sdk::Table for CompetitionConnectionDataTableHandle<'ctx> {
-    type Row = CompetitionConnectionData;
+    type Row = ConnectionData;
     type EventContext = super::EventContext;
 
     fn count(&self) -> u64 {
         self.imp.count()
     }
-    fn iter(&self) -> impl Iterator<Item = CompetitionConnectionData> + '_ {
+    fn iter(&self) -> impl Iterator<Item = ConnectionData> + '_ {
         self.imp.iter()
     }
 
@@ -83,37 +83,32 @@ impl<'ctx> __sdk::Table for CompetitionConnectionDataTableHandle<'ctx> {
 
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
-    let _table =
-        client_cache.get_or_make_table::<CompetitionConnectionData>("competition_connection_data");
+    let _table = client_cache.get_or_make_table::<ConnectionData>("competition_connection_data");
 }
 
 #[doc(hidden)]
 pub(super) fn parse_table_update(
     raw_updates: __ws::v2::TableUpdate,
-) -> __sdk::Result<__sdk::TableUpdate<CompetitionConnectionData>> {
+) -> __sdk::Result<__sdk::TableUpdate<ConnectionData>> {
     __sdk::TableUpdate::parse_table_update(raw_updates).map_err(|e| {
-        __sdk::InternalError::failed_parse("TableUpdate<CompetitionConnectionData>", "TableUpdate")
+        __sdk::InternalError::failed_parse("TableUpdate<ConnectionData>", "TableUpdate")
             .with_cause(e)
             .into()
     })
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for query builder access to the table `CompetitionConnectionData`.
+/// Extension trait for query builder access to the table `ConnectionData`.
 ///
 /// Implemented for [`__sdk::QueryTableAccessor`].
 pub trait competition_connection_dataQueryTableAccess {
     #[allow(non_snake_case)]
-    /// Get a query builder for the table `CompetitionConnectionData`.
-    fn competition_connection_data(
-        &self,
-    ) -> __sdk::__query_builder::Table<CompetitionConnectionData>;
+    /// Get a query builder for the table `ConnectionData`.
+    fn competition_connection_data(&self) -> __sdk::__query_builder::Table<ConnectionData>;
 }
 
 impl competition_connection_dataQueryTableAccess for __sdk::QueryTableAccessor {
-    fn competition_connection_data(
-        &self,
-    ) -> __sdk::__query_builder::Table<CompetitionConnectionData> {
+    fn competition_connection_data(&self) -> __sdk::__query_builder::Table<ConnectionData> {
         __sdk::__query_builder::Table::new("competition_connection_data")
     }
 }

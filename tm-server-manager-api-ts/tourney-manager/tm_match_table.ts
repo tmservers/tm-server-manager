@@ -25,6 +25,6 @@ export default __t.row({
     return MatchStatus;
   },
   autoProvisionServer: __t.bool().name("auto_provision_server"),
+  open: __t.bool(),
   template: __t.bool(),
-  restricted: __t.bool(),
 });

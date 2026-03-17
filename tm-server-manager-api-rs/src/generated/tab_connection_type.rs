@@ -8,7 +8,7 @@ use super::connection_settings_type::ConnectionSettings;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct TabCompetitionConnection {
+pub struct TabConnection {
     pub id: u32,
     pub parent_id: u32,
     pub connection_from: u32,
@@ -16,32 +16,31 @@ pub struct TabCompetitionConnection {
     pub connection_from_variant: u8,
     pub connection_to_variant: u8,
     pub connection_settings: ConnectionSettings,
-    pub connection_settings_ready: bool,
+    pub connection_settings_configuring: bool,
 }
 
-impl __sdk::InModule for TabCompetitionConnection {
+impl __sdk::InModule for TabConnection {
     type Module = super::RemoteModule;
 }
 
-/// Column accessor struct for the table `TabCompetitionConnection`.
+/// Column accessor struct for the table `TabConnection`.
 ///
 /// Provides typed access to columns for query building.
-pub struct TabCompetitionConnectionCols {
-    pub id: __sdk::__query_builder::Col<TabCompetitionConnection, u32>,
-    pub parent_id: __sdk::__query_builder::Col<TabCompetitionConnection, u32>,
-    pub connection_from: __sdk::__query_builder::Col<TabCompetitionConnection, u32>,
-    pub connection_to: __sdk::__query_builder::Col<TabCompetitionConnection, u32>,
-    pub connection_from_variant: __sdk::__query_builder::Col<TabCompetitionConnection, u8>,
-    pub connection_to_variant: __sdk::__query_builder::Col<TabCompetitionConnection, u8>,
-    pub connection_settings:
-        __sdk::__query_builder::Col<TabCompetitionConnection, ConnectionSettings>,
-    pub connection_settings_ready: __sdk::__query_builder::Col<TabCompetitionConnection, bool>,
+pub struct TabConnectionCols {
+    pub id: __sdk::__query_builder::Col<TabConnection, u32>,
+    pub parent_id: __sdk::__query_builder::Col<TabConnection, u32>,
+    pub connection_from: __sdk::__query_builder::Col<TabConnection, u32>,
+    pub connection_to: __sdk::__query_builder::Col<TabConnection, u32>,
+    pub connection_from_variant: __sdk::__query_builder::Col<TabConnection, u8>,
+    pub connection_to_variant: __sdk::__query_builder::Col<TabConnection, u8>,
+    pub connection_settings: __sdk::__query_builder::Col<TabConnection, ConnectionSettings>,
+    pub connection_settings_configuring: __sdk::__query_builder::Col<TabConnection, bool>,
 }
 
-impl __sdk::__query_builder::HasCols for TabCompetitionConnection {
-    type Cols = TabCompetitionConnectionCols;
+impl __sdk::__query_builder::HasCols for TabConnection {
+    type Cols = TabConnectionCols;
     fn cols(table_name: &'static str) -> Self::Cols {
-        TabCompetitionConnectionCols {
+        TabConnectionCols {
             id: __sdk::__query_builder::Col::new(table_name, "id"),
             parent_id: __sdk::__query_builder::Col::new(table_name, "parent_id"),
             connection_from: __sdk::__query_builder::Col::new(table_name, "connection_from"),
@@ -58,30 +57,30 @@ impl __sdk::__query_builder::HasCols for TabCompetitionConnection {
                 table_name,
                 "connection_settings",
             ),
-            connection_settings_ready: __sdk::__query_builder::Col::new(
+            connection_settings_configuring: __sdk::__query_builder::Col::new(
                 table_name,
-                "connection_settings_ready",
+                "connection_settings_configuring",
             ),
         }
     }
 }
 
-/// Indexed column accessor struct for the table `TabCompetitionConnection`.
+/// Indexed column accessor struct for the table `TabConnection`.
 ///
 /// Provides typed access to indexed columns for query building.
-pub struct TabCompetitionConnectionIxCols {
-    pub id: __sdk::__query_builder::IxCol<TabCompetitionConnection, u32>,
-    pub parent_id: __sdk::__query_builder::IxCol<TabCompetitionConnection, u32>,
+pub struct TabConnectionIxCols {
+    pub id: __sdk::__query_builder::IxCol<TabConnection, u32>,
+    pub parent_id: __sdk::__query_builder::IxCol<TabConnection, u32>,
 }
 
-impl __sdk::__query_builder::HasIxCols for TabCompetitionConnection {
-    type IxCols = TabCompetitionConnectionIxCols;
+impl __sdk::__query_builder::HasIxCols for TabConnection {
+    type IxCols = TabConnectionIxCols;
     fn ix_cols(table_name: &'static str) -> Self::IxCols {
-        TabCompetitionConnectionIxCols {
+        TabConnectionIxCols {
             id: __sdk::__query_builder::IxCol::new(table_name, "id"),
             parent_id: __sdk::__query_builder::IxCol::new(table_name, "parent_id"),
         }
     }
 }
 
-impl __sdk::__query_builder::CanBeLookupTable for TabCompetitionConnection {}
+impl __sdk::__query_builder::CanBeLookupTable for TabConnection {}

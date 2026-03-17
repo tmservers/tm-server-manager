@@ -17,8 +17,8 @@ pub struct TmMatchV1 {
     pub post_match_config: u32,
     pub status: MatchStatus,
     pub auto_provision_server: bool,
+    pub open: bool,
     pub template: bool,
-    pub restricted: bool,
 }
 
 impl __sdk::InModule for TmMatchV1 {
@@ -37,8 +37,8 @@ pub struct TmMatchV1Cols {
     pub post_match_config: __sdk::__query_builder::Col<TmMatchV1, u32>,
     pub status: __sdk::__query_builder::Col<TmMatchV1, MatchStatus>,
     pub auto_provision_server: __sdk::__query_builder::Col<TmMatchV1, bool>,
+    pub open: __sdk::__query_builder::Col<TmMatchV1, bool>,
     pub template: __sdk::__query_builder::Col<TmMatchV1, bool>,
-    pub restricted: __sdk::__query_builder::Col<TmMatchV1, bool>,
 }
 
 impl __sdk::__query_builder::HasCols for TmMatchV1 {
@@ -56,8 +56,8 @@ impl __sdk::__query_builder::HasCols for TmMatchV1 {
                 table_name,
                 "auto_provision_server",
             ),
+            open: __sdk::__query_builder::Col::new(table_name, "open"),
             template: __sdk::__query_builder::Col::new(table_name, "template"),
-            restricted: __sdk::__query_builder::Col::new(table_name, "restricted"),
         }
     }
 }

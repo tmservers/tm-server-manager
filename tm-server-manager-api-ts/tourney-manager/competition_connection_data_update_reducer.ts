@@ -11,12 +11,12 @@ import {
 } from "spacetimedb";
 
 import {
-  CompetitionConnectionDataOption,
+  ConnectionDataOption,
 } from "./types";
 
 export default {
   connectionId: __t.u32(),
   get option() {
-    return CompetitionConnectionDataOption;
+    return ConnectionDataOption;
   },
 };

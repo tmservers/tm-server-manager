@@ -4,53 +4,51 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::monitoring_settings_type::MonitoringSettings;
-
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub(super) struct CreateMonitorArgs {
-    pub competition: u32,
-    pub settings: MonitoringSettings,
+pub(super) struct SetEnvVarArgs {
+    pub key: String,
+    pub value: String,
 }
 
-impl From<CreateMonitorArgs> for super::Reducer {
-    fn from(args: CreateMonitorArgs) -> Self {
-        Self::CreateMonitor {
-            competition: args.competition,
-            settings: args.settings,
+impl From<SetEnvVarArgs> for super::Reducer {
+    fn from(args: SetEnvVarArgs) -> Self {
+        Self::SetEnvVar {
+            key: args.key,
+            value: args.value,
         }
     }
 }
 
-impl __sdk::InModule for CreateMonitorArgs {
+impl __sdk::InModule for SetEnvVarArgs {
     type Module = super::RemoteModule;
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the reducer `create_monitor`.
+/// Extension trait for access to the reducer `set_env_var`.
 ///
 /// Implemented for [`super::RemoteReducers`].
-pub trait create_monitor {
-    /// Request that the remote module invoke the reducer `create_monitor` to run as soon as possible.
+pub trait set_env_var {
+    /// Request that the remote module invoke the reducer `set_env_var` to run as soon as possible.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
-    /// /// Use [`create_monitor:create_monitor_then`] to run a callback after the reducer completes.
-    fn create_monitor(&self, competition: u32, settings: MonitoringSettings) -> __sdk::Result<()> {
-        self.create_monitor_then(competition, settings, |_, _| {})
+    /// /// Use [`set_env_var:set_env_var_then`] to run a callback after the reducer completes.
+    fn set_env_var(&self, key: String, value: String) -> __sdk::Result<()> {
+        self.set_env_var_then(key, value, |_, _| {})
     }
 
-    /// Request that the remote module invoke the reducer `create_monitor` to run as soon as possible,
+    /// Request that the remote module invoke the reducer `set_env_var` to run as soon as possible,
     /// registering `callback` to run when we are notified that the reducer completed.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed with the `callback`.
-    fn create_monitor_then(
+    fn set_env_var_then(
         &self,
-        competition: u32,
-        settings: MonitoringSettings,
+        key: String,
+        value: String,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -58,22 +56,17 @@ pub trait create_monitor {
     ) -> __sdk::Result<()>;
 }
 
-impl create_monitor for super::RemoteReducers {
-    fn create_monitor_then(
+impl set_env_var for super::RemoteReducers {
+    fn set_env_var_then(
         &self,
-        competition: u32,
-        settings: MonitoringSettings,
+        key: String,
+        value: String,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     ) -> __sdk::Result<()> {
-        self.imp.invoke_reducer_with_callback(
-            CreateMonitorArgs {
-                competition,
-                settings,
-            },
-            callback,
-        )
+        self.imp
+            .invoke_reducer_with_callback(SetEnvVarArgs { key, value }, callback)
     }
 }

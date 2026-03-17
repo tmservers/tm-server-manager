@@ -10,7 +10,7 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 import {
-  CompetitionConnectionDataOption,
+  ConnectionDataOption,
 } from "./types";
 
 
@@ -18,6 +18,6 @@ export default __t.row({
   competitionId: __t.u32().name("competition_id"),
   connectionId: __t.u32().name("connection_id"),
   get options() {
-    return CompetitionConnectionDataOption;
+    return ConnectionDataOption;
   },
 });

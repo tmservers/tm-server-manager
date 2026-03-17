@@ -4,13 +4,13 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::competition_connection_data_option_type::CompetitionConnectionDataOption;
+use super::connection_data_option_type::ConnectionDataOption;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct CompetitionConnectionDataUpdateArgs {
     pub connection_id: u32,
-    pub option: CompetitionConnectionDataOption,
+    pub option: ConnectionDataOption,
 }
 
 impl From<CompetitionConnectionDataUpdateArgs> for super::Reducer {
@@ -40,7 +40,7 @@ pub trait competition_connection_data_update {
     fn competition_connection_data_update(
         &self,
         connection_id: u32,
-        option: CompetitionConnectionDataOption,
+        option: ConnectionDataOption,
     ) -> __sdk::Result<()> {
         self.competition_connection_data_update_then(connection_id, option, |_, _| {})
     }
@@ -54,7 +54,7 @@ pub trait competition_connection_data_update {
     fn competition_connection_data_update_then(
         &self,
         connection_id: u32,
-        option: CompetitionConnectionDataOption,
+        option: ConnectionDataOption,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -66,7 +66,7 @@ impl competition_connection_data_update for super::RemoteReducers {
     fn competition_connection_data_update_then(
         &self,
         connection_id: u32,
-        option: CompetitionConnectionDataOption,
+        option: ConnectionDataOption,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
