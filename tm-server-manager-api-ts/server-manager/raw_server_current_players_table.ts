@@ -11,11 +11,7 @@ import {
 } from "spacetimedb";
 
 export default __t.row({
-  accountId: __t.uuid().name("account_id"),
-  ghost: __t.uuid(),
-  mapUid: __t.string().name("map_uid"),
-  zone: __t.string(),
-  playerName: __t.string().name("player_name"),
-  timestamp: __t.timestamp(),
-  time: __t.u32(),
+  accountId: __t.uuid().primaryKey().name("account_id"),
+  serverId: __t.u32().name("server_id"),
+  spectator: __t.bool(),
 });

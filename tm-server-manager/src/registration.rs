@@ -3,7 +3,7 @@ use spacetimedb::{ReducerContext, SpacetimeType, Table, TimeDuration, Timestamp,
 use crate::{
     authorization::Authorization,
     competition::{CompetitionPermissionsV1, tab_competition},
-    registration::player::tab_registered_player,
+    registration::player::tab_registeration_player,
 };
 
 mod player;
@@ -62,20 +62,32 @@ impl Registration {
         self
     }
 
-    pub(crate) fn player_registration_allowed(&self, ctx: &ReducerContext) -> bool {
-        self.state == RegistrationState::Ongoing
-            && !self.template
-            && match &self.settings {
-                RegistrationSettings::Player(registration_settings_player) => {
-                    ctx.db
-                        .tab_registered_player()
-                        .registration_id()
-                        .filter(self.id)
-                        .count()
-                        < registration_settings_player.player_limit as usize
+    pub(crate) fn player_registration_allowed(&self, ctx: &ReducerContext) -> Result<(), String> {
+        if self.template {
+            return Err("Cannot register for a template.".into());
+        }
+        if self.state != RegistrationState::Ongoing {
+            return Err("Registration is not ongoing.".into());
+        }
+        match &self.settings {
+            RegistrationSettings::Player(registration_settings_player) => {
+                if ctx
+                    .db
+                    .tab_registeration_player()
+                    .registration_id()
+                    .filter(self.id)
+                    .count()
+                    < registration_settings_player.player_limit as usize
+                {
+                    Ok(())
+                } else {
+                    Err("Registration maximum players exceeded.".into())
                 }
-                RegistrationSettings::Team(_) => false,
             }
+            RegistrationSettings::Team(_) => {
+                Err("Tried to register as a player but it is a team registration.".into())
+            }
+        }
     }
 
     pub(crate) fn team_registration_allowed(&self, ctx: &ReducerContext) -> bool {
@@ -169,7 +181,8 @@ fn registration_create(
     Ok(())
 }
 
-#[reducer]
+//TODO codegen bug
+/* #[reducer]
 fn registration_settings(
     ctx: &ReducerContext,
     id: u32,
@@ -186,6 +199,58 @@ fn registration_settings(
     registration.can_change_settings()?;
 
     registration.settings = settings;
+
+    ctx.db.tab_registration().id().update(registration);
+
+    Ok(())
+}
+ */
+
+#[reducer]
+fn registration_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> {
+    let Some(mut registration) = ctx.db.tab_registration().id().find(id) else {
+        return Err("Registration not found.".into());
+    };
+
+    ctx.auth_builder(registration.parent_id)
+        .permission(CompetitionPermissionsV1::REGISTRATION_CREATE)
+        .authorize()?;
+
+    registration.state = RegistrationState::Upcoming;
+
+    ctx.db.tab_registration().id().update(registration);
+
+    Ok(())
+}
+
+#[reducer]
+fn registration_start(ctx: &ReducerContext, id: u32) -> Result<(), String> {
+    let Some(mut registration) = ctx.db.tab_registration().id().find(id) else {
+        return Err("Registration not found.".into());
+    };
+
+    ctx.auth_builder(registration.parent_id)
+        .permission(CompetitionPermissionsV1::REGISTRATION_CREATE)
+        .authorize()?;
+
+    registration.state = RegistrationState::Ongoing;
+
+    ctx.db.tab_registration().id().update(registration);
+
+    Ok(())
+}
+
+#[reducer]
+fn registration_end(ctx: &ReducerContext, id: u32) -> Result<(), String> {
+    let Some(mut registration) = ctx.db.tab_registration().id().find(id) else {
+        return Err("Registration not found.".into());
+    };
+
+    ctx.auth_builder(registration.parent_id)
+        .permission(CompetitionPermissionsV1::REGISTRATION_CREATE)
+        .authorize()?;
+
+    registration.state = RegistrationState::Ended;
 
     ctx.db.tab_registration().id().update(registration);
 

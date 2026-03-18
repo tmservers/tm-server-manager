@@ -80,6 +80,23 @@ impl<'ctx> __sdk::Table for RawServerCurrentPlayersTableHandle<'ctx> {
     }
 }
 
+pub struct RawServerCurrentPlayersUpdateCallbackId(__sdk::CallbackId);
+
+impl<'ctx> __sdk::TableWithPrimaryKey for RawServerCurrentPlayersTableHandle<'ctx> {
+    type UpdateCallbackId = RawServerCurrentPlayersUpdateCallbackId;
+
+    fn on_update(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row, &Self::Row) + Send + 'static,
+    ) -> RawServerCurrentPlayersUpdateCallbackId {
+        RawServerCurrentPlayersUpdateCallbackId(self.imp.on_update(Box::new(callback)))
+    }
+
+    fn remove_on_update(&self, callback: RawServerCurrentPlayersUpdateCallbackId) {
+        self.imp.remove_on_update(callback.0)
+    }
+}
+
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
     let _table = client_cache.get_or_make_table::<RawServerPlayer>("raw_server_current_players");

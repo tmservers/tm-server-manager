@@ -6,49 +6,44 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub(super) struct CreateTeamArgs {
-    pub registration_id: u32,
-    pub name: String,
+pub(super) struct MatchConfiguredArgs {
+    pub id: u32,
 }
 
-impl From<CreateTeamArgs> for super::Reducer {
-    fn from(args: CreateTeamArgs) -> Self {
-        Self::CreateTeam {
-            registration_id: args.registration_id,
-            name: args.name,
-        }
+impl From<MatchConfiguredArgs> for super::Reducer {
+    fn from(args: MatchConfiguredArgs) -> Self {
+        Self::MatchConfigured { id: args.id }
     }
 }
 
-impl __sdk::InModule for CreateTeamArgs {
+impl __sdk::InModule for MatchConfiguredArgs {
     type Module = super::RemoteModule;
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the reducer `create_team`.
+/// Extension trait for access to the reducer `match_configured`.
 ///
 /// Implemented for [`super::RemoteReducers`].
-pub trait create_team {
-    /// Request that the remote module invoke the reducer `create_team` to run as soon as possible.
+pub trait match_configured {
+    /// Request that the remote module invoke the reducer `match_configured` to run as soon as possible.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
-    /// /// Use [`create_team:create_team_then`] to run a callback after the reducer completes.
-    fn create_team(&self, registration_id: u32, name: String) -> __sdk::Result<()> {
-        self.create_team_then(registration_id, name, |_, _| {})
+    /// /// Use [`match_configured:match_configured_then`] to run a callback after the reducer completes.
+    fn match_configured(&self, id: u32) -> __sdk::Result<()> {
+        self.match_configured_then(id, |_, _| {})
     }
 
-    /// Request that the remote module invoke the reducer `create_team` to run as soon as possible,
+    /// Request that the remote module invoke the reducer `match_configured` to run as soon as possible,
     /// registering `callback` to run when we are notified that the reducer completed.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed with the `callback`.
-    fn create_team_then(
+    fn match_configured_then(
         &self,
-        registration_id: u32,
-        name: String,
+        id: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -56,22 +51,16 @@ pub trait create_team {
     ) -> __sdk::Result<()>;
 }
 
-impl create_team for super::RemoteReducers {
-    fn create_team_then(
+impl match_configured for super::RemoteReducers {
+    fn match_configured_then(
         &self,
-        registration_id: u32,
-        name: String,
+        id: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     ) -> __sdk::Result<()> {
-        self.imp.invoke_reducer_with_callback(
-            CreateTeamArgs {
-                registration_id,
-                name,
-            },
-            callback,
-        )
+        self.imp
+            .invoke_reducer_with_callback(MatchConfiguredArgs { id }, callback)
     }
 }

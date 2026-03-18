@@ -4,12 +4,12 @@ set -e  # stop on errors (except where overridden)
 # Try to delete DB if it exists (ignore errors if not found)
 spacetime delete tm-server-manager || true
 
-# Publish module as "tourney-manager"
+# Publish module as "server-manager"
 spacetime publish --break-clients --delete-data=on-conflict -y -p tm-server-manager tm-server-manager
 
 # Generate Rust and TS client APIs
 spacetime generate --yes --lang rust --out-dir tm-server-manager-api-rs/src/generated --module-path tm-server-manager
-spacetime generate --yes --lang typescript --out-dir tm-server-manager-api-ts/tourney-manager --module-path tm-server-manager
+spacetime generate --yes --lang typescript --out-dir tm-server-manager-api-ts/server-manager --module-path tm-server-manager
 
 # Create project
 spacetime call tm-server-manager create_project "My project" "This is a beautiful project" '{"__timestamp_micros_since_unix_epoch__": 1777132984000000}' '{"__timestamp_micros_since_unix_epoch__": 1777233084000000}'
@@ -28,10 +28,10 @@ spacetime call tm-server-manager match_create "" 3 0
 spacetime call tm-server-manager match_create "" 3 0
 spacetime call tm-server-manager match_create "" 3 0
 
-spacetime call tm-server-manager connection_create '{"MatchV1": 5 }' '{"MatchV1": 3 }' '{"Waiting": {}}'
-spacetime call tm-server-manager connection_create '{"MatchV1": 5 }' '{"MatchV1": 4 }' '{"Waiting": {}}'
-# spacetime call tm-server-manager connection_create '{"MatchV1": 6 }' '{"MatchV1": 4 }' '{"Waiting": {}}'
-# spacetime call tm-server-manager connection_create '{"MatchV1": 6 }' '{"MatchV1": 3 }' '{"Waiting": {}}'
+spacetime call tm-server-manager connection_create '{"MatchV1": 5 }' '{"MatchV1": 3 }' '{"Wait": {}}'
+spacetime call tm-server-manager connection_create '{"MatchV1": 5 }' '{"MatchV1": 4 }' '{"Wait": {}}'
+# spacetime call tm-server-manager connection_create '{"MatchV1": 6 }' '{"MatchV1": 4 }' '{"Wait": {}}'
+# spacetime call tm-server-manager connection_create '{"MatchV1": 6 }' '{"MatchV1": 3 }' '{"Wait": {}}'
 
 # Playoffs for Division 1
 spacetime call tm-server-manager competition_create "Playoffs" 2 0

@@ -79,9 +79,57 @@ impl<'ctx> __sdk::Table for MyMatchTemplateTableHandle<'ctx> {
     }
 }
 
+pub struct MyMatchTemplateUpdateCallbackId(__sdk::CallbackId);
+
+impl<'ctx> __sdk::TableWithPrimaryKey for MyMatchTemplateTableHandle<'ctx> {
+    type UpdateCallbackId = MyMatchTemplateUpdateCallbackId;
+
+    fn on_update(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row, &Self::Row) + Send + 'static,
+    ) -> MyMatchTemplateUpdateCallbackId {
+        MyMatchTemplateUpdateCallbackId(self.imp.on_update(Box::new(callback)))
+    }
+
+    fn remove_on_update(&self, callback: MyMatchTemplateUpdateCallbackId) {
+        self.imp.remove_on_update(callback.0)
+    }
+}
+
+/// Access to the `id` unique index on the table `my_match_template`,
+/// which allows point queries on the field of the same name
+/// via the [`MyMatchTemplateIdUnique::find`] method.
+///
+/// Users are encouraged not to explicitly reference this type,
+/// but to directly chain method calls,
+/// like `ctx.db.my_match_template().id().find(...)`.
+pub struct MyMatchTemplateIdUnique<'ctx> {
+    imp: __sdk::UniqueConstraintHandle<TmMatchV1, u32>,
+    phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
+}
+
+impl<'ctx> MyMatchTemplateTableHandle<'ctx> {
+    /// Get a handle on the `id` unique index on the table `my_match_template`.
+    pub fn id(&self) -> MyMatchTemplateIdUnique<'ctx> {
+        MyMatchTemplateIdUnique {
+            imp: self.imp.get_unique_constraint::<u32>("id"),
+            phantom: std::marker::PhantomData,
+        }
+    }
+}
+
+impl<'ctx> MyMatchTemplateIdUnique<'ctx> {
+    /// Find the subscribed row whose `id` column value is equal to `col_val`,
+    /// if such a row is present in the client cache.
+    pub fn find(&self, col_val: &u32) -> Option<TmMatchV1> {
+        self.imp.find(col_val)
+    }
+}
+
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
     let _table = client_cache.get_or_make_table::<TmMatchV1>("my_match_template");
+    _table.add_unique_constraint::<u32>("id", |row| &row.id);
 }
 
 #[doc(hidden)]

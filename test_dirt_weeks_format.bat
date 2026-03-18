@@ -1,6 +1,6 @@
 spacetime publish --break-clients -c -y -p tm-server-manager tm-server-manager
 cargo r --manifest-path ../SpacetimeDB\Cargo.toml -p spacetimedb-cli generate --yes --lang rust --out-dir tm-server-manager-api-rs/src/generated --module-path tm-server-manager
-spacetime generate --yes --lang typescript --out-dir tm-server-manager-api-ts/tourney-manager --module-path tm-server-manager
+spacetime generate --yes --lang typescript --out-dir tm-server-manager-api-ts/server-manager --module-path tm-server-manager
 
 spacetime call tm-server-manager create_project "Dirt Weeks 26'" "The Dirt Weeks are nice." "{""__timestamp_micros_since_unix_epoch__"": 1767132984000000 }" "{""__timestamp_micros_since_unix_epoch__"": 1767233084000000 }"
 
@@ -9,7 +9,7 @@ spacetime call tm-server-manager competition_template_create "Discovery Template
 spacetime call tm-server-manager match_template_create "Time Attack" 2 0
 spacetime call tm-server-manager match_template_create "Rounds" 2 0
 spacetime call tm-server-manager match_template_create "Playoff" 2 0
-spacetime call tm-server-manager connection_create "{""CompetitionV1"": 2 }" "{""MatchV1"": 1 }" "{""Waiting"": {}}"
+spacetime call tm-server-manager connection_create "{""CompetitionV1"": 2 }" "{""MatchV1"": 1 }" "{""Wait"": {}}"
 spacetime call tm-server-manager connection_create "{""MatchV1"": 1 }" "{""MatchV1"": 2 }" "{""Data"": {}}"
 spacetime call tm-server-manager connection_create "{""MatchV1"": 2 }" "{""MatchV1"": 3 }" "{""Data"": {}}"
 

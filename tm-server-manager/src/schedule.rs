@@ -187,7 +187,8 @@ pub fn schedule_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> 
     Ok(())
 }
 
-#[reducer]
+//TODO codegen bug
+/* #[reducer]
 pub fn schedule_settings(
     ctx: &ReducerContext,
     id: u32,
@@ -207,7 +208,7 @@ pub fn schedule_settings(
 
     Ok(())
 }
-
+ */
 #[reducer]
 pub fn schedule_try_run(ctx: &ReducerContext, id: u32) -> Result<(), String> {
     let Some(mut schedule) = ctx.db.tab_schedule().id().find(id) else {

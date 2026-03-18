@@ -81,9 +81,57 @@ impl<'ctx> __sdk::Table for CompetitionConnectionDataTableHandle<'ctx> {
     }
 }
 
+pub struct CompetitionConnectionDataUpdateCallbackId(__sdk::CallbackId);
+
+impl<'ctx> __sdk::TableWithPrimaryKey for CompetitionConnectionDataTableHandle<'ctx> {
+    type UpdateCallbackId = CompetitionConnectionDataUpdateCallbackId;
+
+    fn on_update(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row, &Self::Row) + Send + 'static,
+    ) -> CompetitionConnectionDataUpdateCallbackId {
+        CompetitionConnectionDataUpdateCallbackId(self.imp.on_update(Box::new(callback)))
+    }
+
+    fn remove_on_update(&self, callback: CompetitionConnectionDataUpdateCallbackId) {
+        self.imp.remove_on_update(callback.0)
+    }
+}
+
+/// Access to the `connection_id` unique index on the table `competition_connection_data`,
+/// which allows point queries on the field of the same name
+/// via the [`CompetitionConnectionDataConnectionIdUnique::find`] method.
+///
+/// Users are encouraged not to explicitly reference this type,
+/// but to directly chain method calls,
+/// like `ctx.db.competition_connection_data().connection_id().find(...)`.
+pub struct CompetitionConnectionDataConnectionIdUnique<'ctx> {
+    imp: __sdk::UniqueConstraintHandle<ConnectionData, u32>,
+    phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
+}
+
+impl<'ctx> CompetitionConnectionDataTableHandle<'ctx> {
+    /// Get a handle on the `connection_id` unique index on the table `competition_connection_data`.
+    pub fn connection_id(&self) -> CompetitionConnectionDataConnectionIdUnique<'ctx> {
+        CompetitionConnectionDataConnectionIdUnique {
+            imp: self.imp.get_unique_constraint::<u32>("connection_id"),
+            phantom: std::marker::PhantomData,
+        }
+    }
+}
+
+impl<'ctx> CompetitionConnectionDataConnectionIdUnique<'ctx> {
+    /// Find the subscribed row whose `connection_id` column value is equal to `col_val`,
+    /// if such a row is present in the client cache.
+    pub fn find(&self, col_val: &u32) -> Option<ConnectionData> {
+        self.imp.find(col_val)
+    }
+}
+
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
     let _table = client_cache.get_or_make_table::<ConnectionData>("competition_connection_data");
+    _table.add_unique_constraint::<u32>("connection_id", |row| &row.connection_id);
 }
 
 #[doc(hidden)]

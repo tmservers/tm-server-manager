@@ -4,21 +4,21 @@ use spacetimedb::{
 
 use crate::{authorization::Authorization, registration::tab_registration};
 
-#[table(accessor=tab_registered_player)]
-pub struct RegisteredPlayer {
+#[table(accessor=tab_registeration_player)]
+pub struct RegisterationPlayer {
     account_id: Uuid,
     registered_at: Timestamp,
     #[index(hash)]
     registration_id: u32,
 }
 
-#[view(accessor=registered_player,public)]
-pub fn registered_player(
+#[view(accessor=registration_player,public)]
+pub fn registration_player(
     ctx: &AnonymousViewContext, /* ,registration_id: u32 */
-) -> impl Query<RegisteredPlayer> {
-    let registration_id = 1u32;
+) -> impl Query<RegisterationPlayer> {
+    let registration_id = 2u32;
     ctx.from
-        .tab_registered_player()
+        .tab_registeration_player()
         .r#where(|c| c.registration_id.eq(registration_id))
 }
 
@@ -30,13 +30,11 @@ pub fn register_player(ctx: &ReducerContext, registration_id: u32) -> Result<(),
         return Err("Tried to register but the registration id does not exist.".into());
     };
 
-    if !registration.player_registration_allowed(ctx) {
-        return Err("Match cannot be registered for.".into());
-    }
+    registration.player_registration_allowed(ctx)?;
 
     if ctx
         .db
-        .tab_registered_player()
+        .tab_registeration_player()
         .registration_id()
         .filter(registration_id)
         .any(|p| p.account_id == user.account_id)
@@ -45,8 +43,8 @@ pub fn register_player(ctx: &ReducerContext, registration_id: u32) -> Result<(),
     }
 
     ctx.db
-        .tab_registered_player()
-        .try_insert(RegisteredPlayer {
+        .tab_registeration_player()
+        .try_insert(RegisterationPlayer {
             registration_id,
             account_id: user.account_id,
             registered_at: ctx.timestamp,
@@ -63,13 +61,11 @@ pub fn unregister_player(ctx: &ReducerContext, registration_id: u32) -> Result<(
         return Err("Tried to register for a competition that doesnt exist.".into());
     };
 
-    if !registration.player_registration_allowed(ctx) {
-        return Err("Registration is not open.".into());
-    }
+    registration.player_registration_allowed(ctx)?;
 
     let Some(registred_user) = ctx
         .db
-        .tab_registered_player()
+        .tab_registeration_player()
         .registration_id()
         .filter(registration_id)
         .find(|p| p.account_id == account_id)
@@ -77,7 +73,7 @@ pub fn unregister_player(ctx: &ReducerContext, registration_id: u32) -> Result<(
         return Err("User is already registered for competition!".to_string());
     };
 
-    if !ctx.db.tab_registered_player().delete(registred_user) {
+    if !ctx.db.tab_registeration_player().delete(registred_user) {
         return Err(format!(
             "Unexpected error occured deleting the user {} from {}",
             account_id, registration_id

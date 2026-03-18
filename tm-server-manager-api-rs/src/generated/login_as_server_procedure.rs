@@ -35,14 +35,6 @@ pub trait login_as_server {
             + Send
             + 'static,
     );
-
-    #[allow(async_fn_in_trait)]
-    async fn login_as_server_async(
-        &self,
-        login: String,
-        password: String,
-        account_id: __sdk::Uuid,
-    ) -> Result<Result<(), String>, __sdk::InternalError>;
 }
 
 impl login_as_server for super::RemoteProcedures {
@@ -66,23 +58,5 @@ impl login_as_server for super::RemoteProcedures {
                 },
                 __callback,
             );
-    }
-
-    async fn login_as_server_async(
-        &self,
-        login: String,
-        password: String,
-        account_id: __sdk::Uuid,
-    ) -> Result<Result<(), String>, __sdk::InternalError> {
-        self.imp
-            .invoke_procedure_async::<_, Result<(), String>>(
-                "login_as_server",
-                LoginAsServerArgs {
-                    login,
-                    password,
-                    account_id,
-                },
-            )
-            .await
     }
 }

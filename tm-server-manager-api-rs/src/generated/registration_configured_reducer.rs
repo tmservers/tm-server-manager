@@ -6,49 +6,44 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub(super) struct RawServerPlayerAddArgs {
-    pub account_id: __sdk::Uuid,
-    pub spectator: bool,
+pub(super) struct RegistrationConfiguredArgs {
+    pub id: u32,
 }
 
-impl From<RawServerPlayerAddArgs> for super::Reducer {
-    fn from(args: RawServerPlayerAddArgs) -> Self {
-        Self::RawServerPlayerAdd {
-            account_id: args.account_id,
-            spectator: args.spectator,
-        }
+impl From<RegistrationConfiguredArgs> for super::Reducer {
+    fn from(args: RegistrationConfiguredArgs) -> Self {
+        Self::RegistrationConfigured { id: args.id }
     }
 }
 
-impl __sdk::InModule for RawServerPlayerAddArgs {
+impl __sdk::InModule for RegistrationConfiguredArgs {
     type Module = super::RemoteModule;
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the reducer `raw_server_player_add`.
+/// Extension trait for access to the reducer `registration_configured`.
 ///
 /// Implemented for [`super::RemoteReducers`].
-pub trait raw_server_player_add {
-    /// Request that the remote module invoke the reducer `raw_server_player_add` to run as soon as possible.
+pub trait registration_configured {
+    /// Request that the remote module invoke the reducer `registration_configured` to run as soon as possible.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
-    /// /// Use [`raw_server_player_add:raw_server_player_add_then`] to run a callback after the reducer completes.
-    fn raw_server_player_add(&self, account_id: __sdk::Uuid, spectator: bool) -> __sdk::Result<()> {
-        self.raw_server_player_add_then(account_id, spectator, |_, _| {})
+    /// /// Use [`registration_configured:registration_configured_then`] to run a callback after the reducer completes.
+    fn registration_configured(&self, id: u32) -> __sdk::Result<()> {
+        self.registration_configured_then(id, |_, _| {})
     }
 
-    /// Request that the remote module invoke the reducer `raw_server_player_add` to run as soon as possible,
+    /// Request that the remote module invoke the reducer `registration_configured` to run as soon as possible,
     /// registering `callback` to run when we are notified that the reducer completed.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed with the `callback`.
-    fn raw_server_player_add_then(
+    fn registration_configured_then(
         &self,
-        account_id: __sdk::Uuid,
-        spectator: bool,
+        id: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -56,22 +51,16 @@ pub trait raw_server_player_add {
     ) -> __sdk::Result<()>;
 }
 
-impl raw_server_player_add for super::RemoteReducers {
-    fn raw_server_player_add_then(
+impl registration_configured for super::RemoteReducers {
+    fn registration_configured_then(
         &self,
-        account_id: __sdk::Uuid,
-        spectator: bool,
+        id: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     ) -> __sdk::Result<()> {
-        self.imp.invoke_reducer_with_callback(
-            RawServerPlayerAddArgs {
-                account_id,
-                spectator,
-            },
-            callback,
-        )
+        self.imp
+            .invoke_reducer_with_callback(RegistrationConfiguredArgs { id }, callback)
     }
 }

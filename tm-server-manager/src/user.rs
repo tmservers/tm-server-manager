@@ -1,4 +1,8 @@
-use spacetimedb::{AnonymousViewContext, Identity, Query, Uuid, table, view};
+use spacetimedb::{
+    AnonymousViewContext, Identity, Query, QueryBuilder, Table, Uuid, ViewContext, table, view,
+};
+
+use crate::authorization::Authorization;
 
 #[table(accessor= tab_user)]
 pub struct UserV1 {
@@ -30,10 +34,13 @@ impl UserV1 {
     }
 }
 
-/* #[view(accessor=user,public)]
-pub fn user(ctx: &AnonymousViewContext) -> impl Query<UserV1> {
-    ctx.from.tab_user()
-} */
+#[view(accessor=my_user,public)]
+pub fn my_user(ctx: &ViewContext) -> Option<UserV1> {
+    let Ok(user) = ctx.get_user_account() else {
+        return None;
+    };
+    ctx.db.tab_user().account_id().find(user)
+}
 
 #[table(accessor= tab_user_identity)]
 pub struct UserIdentity {

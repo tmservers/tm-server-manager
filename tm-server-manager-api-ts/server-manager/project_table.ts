@@ -10,21 +10,18 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 import {
-  MatchStatus,
+  ProjectStatus,
 } from "./types";
 
 
 export default __t.row({
   name: __t.string(),
-  id: __t.u32(),
-  parentId: __t.u32().name("parent_id"),
-  preMatchConfig: __t.u32().name("pre_match_config"),
-  matchConfig: __t.u32().name("match_config"),
-  postMatchConfig: __t.u32().name("post_match_config"),
+  description: __t.string(),
+  creatorAccountId: __t.uuid().name("creator_account_id"),
+  startingAt: __t.timestamp().name("starting_at"),
+  endingAt: __t.timestamp().name("ending_at"),
+  id: __t.u32().primaryKey(),
   get status() {
-    return MatchStatus;
+    return ProjectStatus;
   },
-  autoProvisionServer: __t.bool().name("auto_provision_server"),
-  open: __t.bool(),
-  template: __t.bool(),
 });

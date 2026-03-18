@@ -11,6 +11,6 @@ import {
 } from "spacetimedb";
 
 export default {
-  accountId: __t.uuid(),
-  spectator: __t.bool(),
+  registrationId: __t.u32(),
+  name: __t.string(),
 };

@@ -24,7 +24,6 @@ pub struct RawServerPlayer {
     spectator: bool,
 }
 
-#[reducer]
 pub(super) fn raw_server_player_add(
     ctx: &ReducerContext,
     account_id: Uuid,
@@ -68,7 +67,6 @@ pub(super) fn raw_server_player_add(
     }
 }
 
-#[reducer]
 pub(super) fn raw_server_player_remove(
     ctx: &ReducerContext,
     account_id: Uuid,
@@ -158,5 +156,9 @@ fn raw_server_allowed_players(ctx: &ViewContext) -> Vec<PermittedPlayer> {
         map.extend(permitted_players);
     }
 
-    map.into_values().collect()
+    let values = map.into_values().collect();
+
+    log::warn!("{:?}", values);
+
+    values
 }

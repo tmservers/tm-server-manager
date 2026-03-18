@@ -12,7 +12,7 @@ pub enum ScheduleState {
 
     Waiting,
 
-    Ended,
+    Finished,
 
     Locked,
 }

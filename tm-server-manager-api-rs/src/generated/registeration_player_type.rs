@@ -6,29 +6,29 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct RegisteredPlayer {
+pub struct RegisterationPlayer {
     pub account_id: __sdk::Uuid,
     pub registered_at: __sdk::Timestamp,
     pub registration_id: u32,
 }
 
-impl __sdk::InModule for RegisteredPlayer {
+impl __sdk::InModule for RegisterationPlayer {
     type Module = super::RemoteModule;
 }
 
-/// Column accessor struct for the table `RegisteredPlayer`.
+/// Column accessor struct for the table `RegisterationPlayer`.
 ///
 /// Provides typed access to columns for query building.
-pub struct RegisteredPlayerCols {
-    pub account_id: __sdk::__query_builder::Col<RegisteredPlayer, __sdk::Uuid>,
-    pub registered_at: __sdk::__query_builder::Col<RegisteredPlayer, __sdk::Timestamp>,
-    pub registration_id: __sdk::__query_builder::Col<RegisteredPlayer, u32>,
+pub struct RegisterationPlayerCols {
+    pub account_id: __sdk::__query_builder::Col<RegisterationPlayer, __sdk::Uuid>,
+    pub registered_at: __sdk::__query_builder::Col<RegisterationPlayer, __sdk::Timestamp>,
+    pub registration_id: __sdk::__query_builder::Col<RegisterationPlayer, u32>,
 }
 
-impl __sdk::__query_builder::HasCols for RegisteredPlayer {
-    type Cols = RegisteredPlayerCols;
+impl __sdk::__query_builder::HasCols for RegisterationPlayer {
+    type Cols = RegisterationPlayerCols;
     fn cols(table_name: &'static str) -> Self::Cols {
-        RegisteredPlayerCols {
+        RegisterationPlayerCols {
             account_id: __sdk::__query_builder::Col::new(table_name, "account_id"),
             registered_at: __sdk::__query_builder::Col::new(table_name, "registered_at"),
             registration_id: __sdk::__query_builder::Col::new(table_name, "registration_id"),
@@ -36,20 +36,20 @@ impl __sdk::__query_builder::HasCols for RegisteredPlayer {
     }
 }
 
-/// Indexed column accessor struct for the table `RegisteredPlayer`.
+/// Indexed column accessor struct for the table `RegisterationPlayer`.
 ///
 /// Provides typed access to indexed columns for query building.
-pub struct RegisteredPlayerIxCols {
-    pub registration_id: __sdk::__query_builder::IxCol<RegisteredPlayer, u32>,
+pub struct RegisterationPlayerIxCols {
+    pub registration_id: __sdk::__query_builder::IxCol<RegisterationPlayer, u32>,
 }
 
-impl __sdk::__query_builder::HasIxCols for RegisteredPlayer {
-    type IxCols = RegisteredPlayerIxCols;
+impl __sdk::__query_builder::HasIxCols for RegisterationPlayer {
+    type IxCols = RegisterationPlayerIxCols;
     fn ix_cols(table_name: &'static str) -> Self::IxCols {
-        RegisteredPlayerIxCols {
+        RegisterationPlayerIxCols {
             registration_id: __sdk::__query_builder::IxCol::new(table_name, "registration_id"),
         }
     }
 }
 
-impl __sdk::__query_builder::CanBeLookupTable for RegisteredPlayer {}
+impl __sdk::__query_builder::CanBeLookupTable for RegisterationPlayer {}

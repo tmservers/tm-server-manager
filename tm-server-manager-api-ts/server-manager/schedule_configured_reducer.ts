@@ -11,5 +11,5 @@ import {
 } from "spacetimedb";
 
 export default {
-  accountId: __t.uuid(),
+  id: __t.u32(),
 };

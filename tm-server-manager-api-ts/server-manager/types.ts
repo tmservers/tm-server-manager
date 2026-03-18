@@ -519,6 +519,7 @@ export type MatchState = __Infer<typeof MatchState>;
 // The tagged union or sum type for the algebraic type `MatchStatus`.
 export const MatchStatus = __t.enum("MatchStatus", {
   Configuring: __t.unit(),
+  Configured: __t.unit(),
   Preparation: __t.unit(),
   Live: __t.unit(),
   Ended: __t.unit(),
@@ -842,18 +843,17 @@ export const RawServerV1 = __t.object("RawServerV1", {
 });
 export type RawServerV1 = __Infer<typeof RawServerV1>;
 
-export const RegisteredPlayer = __t.object("RegisteredPlayer", {
+export const RegisterationPlayer = __t.object("RegisterationPlayer", {
   accountId: __t.uuid(),
   registeredAt: __t.timestamp(),
   registrationId: __t.u32(),
 });
-export type RegisteredPlayer = __Infer<typeof RegisteredPlayer>;
+export type RegisterationPlayer = __Infer<typeof RegisterationPlayer>;
 
 export const RegisteredTeam = __t.object("RegisteredTeam", {
   name: __t.string(),
-  accountId: __t.uuid(),
   registeredAt: __t.timestamp(),
-  competitionId: __t.u32(),
+  registrationId: __t.u32(),
   id: __t.u32(),
 });
 export type RegisteredTeam = __Infer<typeof RegisteredTeam>;
@@ -1001,7 +1001,7 @@ export type ScheduleSettings = __Infer<typeof ScheduleSettings>;
 export const ScheduleState = __t.enum("ScheduleState", {
   Configuring: __t.unit(),
   Waiting: __t.unit(),
-  Ended: __t.unit(),
+  Finished: __t.unit(),
   Locked: __t.unit(),
 });
 export type ScheduleState = __Infer<typeof ScheduleState>;
@@ -1241,11 +1241,11 @@ export const TmMonitoring = __t.object("TmMonitoring", {
 export type TmMonitoring = __Infer<typeof TmMonitoring>;
 
 export const TmRecord = __t.object("TmRecord", {
-  accountId: __t.uuid(),
-  ghost: __t.uuid(),
   mapUid: __t.string(),
   zone: __t.string(),
   playerName: __t.string(),
+  accountId: __t.uuid(),
+  ghost: __t.uuid(),
   timestamp: __t.timestamp(),
   time: __t.u32(),
 });

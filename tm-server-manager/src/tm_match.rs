@@ -48,7 +48,6 @@ pub mod template;
 /// - *End.* The match has concluded. Loads the post_match_config if it is present. Releases
 /// the captured server. Advances to [MatchStatus::Ended].
 #[table(accessor= tab_match)]
-//#[table(accessor=tab_match_template)]
 pub struct TmMatchV1 {
     name: String,
 
@@ -80,6 +79,9 @@ impl TmMatchV1 {
         match self.status {
             MatchStatus::Configuring => {
                 panic!("should not ask for a config if match is configuring.")
+            }
+            MatchStatus::Configured => {
+                panic!("should not ask for a config if match is configured.")
             }
             MatchStatus::Preparation => {
                 if self.pre_match_config != 0 {
@@ -131,6 +133,7 @@ impl TmMatchV1 {
 pub enum MatchStatus {
     /// Allows to change all associated configurations of the Match.
     Configuring,
+    Configured,
     /// No changes to the pre_match configuration can be made anymore.
     Preparation,
     /// No changes to the match configuration can be made anymore.
@@ -139,6 +142,19 @@ pub enum MatchStatus {
     /// Loads the post match config if present.
     Ended,
     Locked,
+}
+
+impl MatchStatus {
+    fn before_preparation(&self) -> bool {
+        match self {
+            MatchStatus::Configuring => true,
+            MatchStatus::Configured => true,
+            MatchStatus::Preparation => false,
+            MatchStatus::Live => false,
+            MatchStatus::Ended => false,
+            MatchStatus::Locked => false,
+        }
+    }
 }
 
 #[reducer]
@@ -208,9 +224,9 @@ pub fn match_assign_server(ctx: &ReducerContext, to: u32, server_id: u32) -> Res
         .permission(CompetitionPermissionsV1::MATCH_ASSIGN_SERVER)
         .authorize()?;
 
-    if tm_match.status != MatchStatus::Configuring {
+    if tm_match.status != MatchStatus::Configuring && tm_match.status != MatchStatus::Configured {
         return Err(
-            "Match is currently not getting configured so assigning a new server is possible."
+            "Match is currently not getting configured so assigning a new server is impossible."
                 .into(),
         );
     }
@@ -245,29 +261,25 @@ pub fn match_assign_server(ctx: &ReducerContext, to: u32, server_id: u32) -> Res
     Ok(())
 }
 
-//TODO reevaluate if this is necessary.
-// This is because maybe it just is automatically upcomoing if all conncetions resolve?
-/* #[reducer]
+#[reducer]
 pub fn match_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> {
-    let user_account = ctx.get_user_account()?;
-    let Some(mut tm_match) = ctx.db.tab_tm_match().id().find(id) else {
+    let Some(mut tm_match) = ctx.db.tab_match().id().find(id) else {
         return Err("Match was mot found!".into());
     };
 
-    ctx.auth_builder(tm_match.project_id, user_account)?
-        .permission(ProjectPermissionsV1::MATCH_CONFIGURE)
+    ctx.auth_builder(tm_match.parent_id)
+        .permission(CompetitionPermissionsV1::MATCH_CONFIGURE)
         .authorize()?;
 
-    if tm_match.status == MatchStatus::Configuring && tm_match.match_config != 0 {
-        tm_match.status = MatchStatus::Upcoming;
-
-        ctx.db.tab_tm_match().id().update(tm_match);
-
-        Ok(())
-    } else {
-        Err("Not all condidiions were met".into())
+    if tm_match.status != MatchStatus::Configuring {
+        return Err("Match is not in configuring state".into());
     }
-} */
+    tm_match.status = MatchStatus::Configured;
+
+    ctx.db.tab_match().id().update(tm_match);
+
+    Ok(())
+}
 
 #[reducer]
 pub fn match_update_pre_config(
@@ -293,22 +305,27 @@ pub fn match_update_config(
     id: u32,
     config: ServerConfig,
 ) -> Result<(), String> {
-    ctx.get_user()?;
-    if let Some(mut tm_match) = ctx.db.tab_match().id().find(id)
-        && tm_match.status == MatchStatus::Configuring
-    {
-        //TODO cleanup old/orphaned configs. Should i do this with a mapping table or just always instantiate the config or keep track of this in the match?
-        //TODO also check if it is empty (0) or if smth was there before.
-        let cfg = ctx
-            .db
-            .tab_raw_server_config()
-            .try_insert(RawServerConfig::new(config))?;
-        tm_match.match_config = cfg.id;
-        ctx.db.tab_match().id().update(tm_match);
-        Ok(())
-    } else {
-        Err(format!("Match with id: {id} not found."))
+    let Some(mut tm_match) = ctx.db.tab_match().id().find(id) else {
+        return Err("Match was mot found!".into());
+    };
+
+    ctx.auth_builder(tm_match.parent_id)
+        .permission(CompetitionPermissionsV1::MATCH_CONFIGURE)
+        .authorize()?;
+
+    if !tm_match.status.before_preparation() {
+        return Err("Too late to set configuration".into());
     }
+
+    //TODO cleanup old/orphaned configs. Should i do this with a mapping table or just always instantiate the config or keep track of this in the match?
+    //TODO also check if it is empty (0) or if smth was there before.
+    let cfg = ctx
+        .db
+        .tab_raw_server_config()
+        .try_insert(RawServerConfig::new(config))?;
+    tm_match.match_config = cfg.id;
+    ctx.db.tab_match().id().update(tm_match);
+    Ok(())
 }
 
 /// If the match is fully configured and ready start.
@@ -319,15 +336,22 @@ pub fn match_set_preparation(ctx: &ReducerContext, match_id: u32) -> Result<(), 
         return Err("Match not found!".into());
     };
 
-    ctx.auth_builder(tm_match.parent_id)
-        .permission(CompetitionPermissionsV1::MATCH_CONFIGURE)
-        .authorize()?;
+    if tm_match.is_template() {
+        return Err("Method cannot be called on templates.".into());
+    }
 
+    if tm_match.status == MatchStatus::Configuring {
+        return Err("Match is still getting configured.".into());
+    }
     if tm_match.match_config == 0 {
         return Err(
             "Match needs a configuration in order to advance to the upcoming state.".into(),
         );
     }
+
+    ctx.auth_builder(tm_match.parent_id)
+        .permission(CompetitionPermissionsV1::MATCH_CONFIGURE)
+        .authorize()?;
 
     if ctx
         .db
@@ -378,13 +402,17 @@ pub fn match_try_start(ctx: &ReducerContext, match_id: u32) -> Result<(), String
         return Err("Match not found!".into());
     };
 
+    if tm_match.is_template() {
+        return Err("Method cannot be called on templates.".into());
+    }
+
+    if tm_match.status != MatchStatus::Preparation {
+        return Err("Match needs to be prepared in order to be started.".into());
+    }
+
     ctx.auth_builder(tm_match.parent_id)
         .permission(CompetitionPermissionsV1::MATCH_CONFIGURE)
         .authorize()?;
-
-    if tm_match.match_config == 0 {
-        return Err("Match needs a configuration in order to be started.".into());
-    }
 
     if ctx
         .db
@@ -448,7 +476,7 @@ pub fn match_delete(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
     Ok(())
 }
 
-#[view(accessor=tm_match,public)]
+/* #[view(accessor=tm_match,public)]
 fn tm_match(ctx: &ViewContext) -> impl Query<TmMatchV1> {
     ctx.from.tab_match()
-}
+} */
