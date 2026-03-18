@@ -1,14 +1,16 @@
 use spacetimedb::{ReducerContext, Table, Timestamp, Uuid, reducer, table};
 
-use crate::{authorization::Authorization, competition::tab_competition};
+use crate::{
+    authorization::Authorization, competition::tab_competition, registration::tab_registration,
+};
 
 #[table(accessor=tab_registered_team)]
 pub struct RegisteredTeam {
     name: String,
-    account_id: Uuid,
+    //account_id: Uuid,
     registered_at: Timestamp,
     #[index(btree)]
-    competition_id: u32,
+    registration_id: u32,
 
     #[auto_inc]
     #[primary_key]
@@ -16,31 +18,33 @@ pub struct RegisteredTeam {
 }
 
 #[reducer]
-pub fn create_team(ctx: &ReducerContext, competition_id: u32, name: String) -> Result<(), String> {
+pub fn create_team(ctx: &ReducerContext, registration_id: u32, name: String) -> Result<(), String> {
     let user = ctx.get_user()?;
 
-    let Some(competition) = ctx.db.tab_competition().id().find(competition_id) else {
-        return Err("Tried to register for a competition that doesnt exist.".into());
+    let Some(registration) = ctx.db.tab_registration().id().find(registration_id) else {
+        return Err("Tried to register for a registration that doesnt exist.".into());
     };
 
-    //TODO validate in the compeition that registration is allowed.
-
-    if ctx
-        .db
-        .tab_registered_team()
-        .competition_id()
-        .filter(competition_id)
-        .any(|p| p.account_id == user.account_id)
-    {
-        return Err(format!(
-            "User is already registered for competition {} ({competition_id})",
-            competition.get_name()
-        ));
+    if registration.team_registration_allowed(ctx) {
+        return Err("Team registration not open.".into());
     }
 
+    /* if ctx
+        .db
+        .tab_registered_team()
+        .registration_id()
+        .filter(registration_id)
+    //.any(|p| p.account_id == user.account_id)
+    {
+        return Err(format!(
+            "User is already registered for registration {} ({registration_id})",
+            registration.name
+        ));
+    } */
+
     ctx.db.tab_registered_team().try_insert(RegisteredTeam {
-        competition_id,
-        account_id: user.account_id,
+        registration_id,
+        //account_id: user.account_id,
         name,
         registered_at: ctx.timestamp,
         id: 0,

@@ -44,10 +44,18 @@ impl ScheduleV1 {
         self.id = 0;
         self
     }
+
+    pub(crate) fn can_mutate_settings(&self) -> Result<(), String> {
+        if !self.state.before_live() {
+            return Err("Schedule is not before live.".into());
+        }
+        //TODO maybe there are more states?
+        Ok(())
+    }
 }
 
 #[derive(Debug, SpacetimeType, Clone, Copy)]
-enum ScheduleSettings {
+pub enum ScheduleSettings {
     Absolute(Timestamp),
     Relative(TimeDuration),
     //TODO when there are connections
@@ -64,20 +72,31 @@ impl ScheduleSettings {
     }
 }
 
-#[derive(Debug, SpacetimeType)]
+/* #[derive(Debug, SpacetimeType)]
 enum RoundedSettings {
     NextFullHour,
     Next15Minutes,
     Next10Minutes,
     Next5Minutes,
-}
+} */
 
 #[derive(Debug, SpacetimeType, PartialEq, Eq, Clone, Copy)]
 enum ScheduleState {
     Configuring,
     Waiting,
-    Ended,
+    Finished,
     Locked,
+}
+
+impl ScheduleState {
+    fn before_live(&self) -> bool {
+        match self {
+            ScheduleState::Configuring => true,
+            ScheduleState::Waiting => true,
+            ScheduleState::Finished => false,
+            ScheduleState::Locked => false,
+        }
+    }
 }
 
 #[table(accessor= tab_schedule_exec, scheduled(on_schedule_exec))]
@@ -127,36 +146,89 @@ pub fn schedule_create(
         return Err("Cannot add a normal node to a match".into());
     };
 
-    let schedule = ScheduleV1 {
-        id: 0,
-        parent_id,
-        template: false,
-        settings: ScheduleSettings::Absolute(ctx.timestamp),
-        state: ScheduleState::Configuring,
-        name,
-    };
+    if with_template != 0 {
+        let Some(schedule) = ctx.db.tab_schedule().id().find(with_template) else {
+            return Err("Template not found!".into());
+        };
+        //TODO do we have access to this template?
+        let new_registration = schedule.instantiate(parent_id, false);
+        ctx.db.tab_schedule().try_insert(new_registration)?;
+    } else {
+        let schedule = ScheduleV1 {
+            id: 0,
+            parent_id,
+            template: false,
+            settings: ScheduleSettings::Absolute(ctx.timestamp),
+            state: ScheduleState::Configuring,
+            name,
+        };
 
-    ctx.db.tab_schedule().try_insert(schedule)?;
-
+        ctx.db.tab_schedule().try_insert(schedule)?;
+    }
     Ok(())
 }
 
 #[reducer]
 pub fn schedule_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> {
-    let Some(schedule) = ctx.db.tab_schedule().id().find(id) else {
+    let Some(mut schedule) = ctx.db.tab_schedule().id().find(id) else {
         return Err("Invalid schedule".into());
     };
 
-    //TODO permission fix
     ctx.auth_builder(schedule.parent_id)
-        .permission(CompetitionPermissionsV1::MATCH_CREATE)
+        .permission(CompetitionPermissionsV1::SCHEDULE_CREATE)
         .authorize()?;
 
-    if schedule.state == ScheduleState::Waiting {
+    if schedule.state != ScheduleState::Configuring {
         return Err("Schedule is already configured".into());
     }
 
+    schedule.state = ScheduleState::Waiting;
+
+    Ok(())
+}
+
+#[reducer]
+pub fn schedule_settings(
+    ctx: &ReducerContext,
+    id: u32,
+    settings: ScheduleSettings,
+) -> Result<(), String> {
+    let Some(mut schedule) = ctx.db.tab_schedule().id().find(id) else {
+        return Err("Invalid schedule".into());
+    };
+
+    ctx.auth_builder(schedule.parent_id)
+        .permission(CompetitionPermissionsV1::SCHEDULE_CREATE)
+        .authorize()?;
+
+    schedule.can_mutate_settings()?;
+
+    schedule.settings = settings;
+
+    Ok(())
+}
+
+#[reducer]
+pub fn schedule_try_run(ctx: &ReducerContext, id: u32) -> Result<(), String> {
+    let Some(mut schedule) = ctx.db.tab_schedule().id().find(id) else {
+        return Err("Invalid schedule".into());
+    };
+
+    ctx.auth_builder(schedule.parent_id)
+        .permission(CompetitionPermissionsV1::SCHEDULE_CREATE)
+        .authorize()?;
+
+    if schedule.state != ScheduleState::Waiting {
+        return Err("Schedule cannot be started".into());
+    }
+
     let timestamp = schedule.settings.eval(ctx.timestamp);
+
+    //TODO maybe check if timestamp is in the past?
+
+    schedule.state = ScheduleState::Waiting;
+
+    ctx.db.tab_schedule().id().update(schedule);
 
     ctx.db.tab_schedule_exec().try_insert(ScheduleExecV1 {
         scheduled_id: id as u64,
@@ -166,7 +238,12 @@ pub fn schedule_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> 
     Ok(())
 }
 
-#[view(accessor= schedule,public)]
-pub fn schedule(ctx: &ViewContext) -> impl Query<ScheduleV1> {
-    ctx.from.tab_schedule()
+#[view(accessor=comeptition_schedules,public)]
+pub fn comeptition_schedules(
+    ctx: &ViewContext, /* , competition_id: u32 */
+) -> impl Query<ScheduleV1> {
+    let competition_id = 1u32;
+    ctx.from
+        .tab_schedule()
+        .r#where(|f| f.parent_id.eq(competition_id))
 }

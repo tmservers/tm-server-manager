@@ -3,7 +3,6 @@ use base64::prelude::BASE64_STANDARD;
 use spacetimedb::http::Request;
 use spacetimedb::{Identity, Query, ReducerContext, Table, Uuid, ViewContext, reducer, table};
 use spacetimedb::{ProcedureContext, view};
-use tm_server_types::{config::ServerConfig, event::Event};
 
 use crate::authorization::Authorization;
 

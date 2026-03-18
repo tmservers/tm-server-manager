@@ -26,8 +26,6 @@ fn registration_template_create(
         settings: RegistrationSettings::Player(RegistrationSettingsPlayer { player_limit: 100 }),
         state: RegistrationState::Configuring,
         template: true,
-        // 3.47 Days of relative duration.
-        //deadline: RegistrationDeadline::Relative(TimeDuration::from_micros(300000000000)),
     })?;
 
     Ok(())

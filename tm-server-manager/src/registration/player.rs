@@ -2,9 +2,7 @@ use spacetimedb::{
     AnonymousViewContext, Query, ReducerContext, Table, Timestamp, Uuid, reducer, table, view,
 };
 
-use crate::{
-    authorization::Authorization, competition::tab_competition, registration::tab_registration,
-};
+use crate::{authorization::Authorization, registration::tab_registration};
 
 #[table(accessor=tab_registered_player)]
 pub struct RegisteredPlayer {
@@ -32,7 +30,9 @@ pub fn register_player(ctx: &ReducerContext, registration_id: u32) -> Result<(),
         return Err("Tried to register but the registration id does not exist.".into());
     };
 
-    //TODO validate that registration is allowed.
+    if !registration.player_registration_allowed(ctx) {
+        return Err("Match cannot be registered for.".into());
+    }
 
     if ctx
         .db
@@ -63,7 +63,9 @@ pub fn unregister_player(ctx: &ReducerContext, registration_id: u32) -> Result<(
         return Err("Tried to register for a competition that doesnt exist.".into());
     };
 
-    //TODO check if the registration period is over yet -> probably shouldnt be allowed to unregister if period is over.
+    if !registration.player_registration_allowed(ctx) {
+        return Err("Registration is not open.".into());
+    }
 
     let Some(registred_user) = ctx
         .db
