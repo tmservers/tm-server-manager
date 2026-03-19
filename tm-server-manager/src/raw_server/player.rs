@@ -24,6 +24,7 @@ pub struct RawServerPlayer {
     spectator: bool,
 }
 
+#[reducer]
 pub(super) fn raw_server_player_add(
     ctx: &ReducerContext,
     account_id: Uuid,

@@ -40,7 +40,7 @@ COPY . ./
 RUN set -x && cargo fetch
 
 # Run the release build for package cmdb.
-RUN cargo build -p tm-server-bridge --release --target x86_64-unknown-linux-musl
+RUN cargo build -p tm-server-bridge --release --features="docker" --target x86_64-unknown-linux-musl
 
 # Move binary up to root level directory for easy access
 RUN mv /app/target/x86_64-unknown-linux-musl/release/tm-server-bridge /tm-server-bridge

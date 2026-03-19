@@ -34,7 +34,7 @@ nadeo-api = "*"
 # against it and otherwise it wont be found.
 # The other builds continue to work tho so for now deciding to not 
 # feature gate it and enable it iin all cases.
-openssl = { version = "0.10", features = ["vendored"] }
+openssl = { version = "0.10", features = ["vendored"], optional = true }
 
 
 [dev-dependencies]
@@ -43,3 +43,5 @@ testcontainers = { version = "*", features = ["blocking"] }
 
 [features]
 tracing = []
+# Required for docker build to vendor openssl
+docker = ["dep:openssl"]
