@@ -7,7 +7,10 @@ use crate::{
     authorization::Authorization,
     competition::{
         CompetitionPermissionsV1,
-        connection::data::{ConnectionData, tab_connection_data, tab_connection_data__view},
+        connection::{
+            action::try_exec_action,
+            data::{ConnectionData, tab_connection_data, tab_connection_data__view},
+        },
         node::{NodeKindHandle, NodeType},
     },
     raw_server::player::PermittedPlayer,
@@ -265,7 +268,7 @@ pub fn connection_create(
 pub struct CompetitionConnection {
     //TODO maybe omit this
     //competition_id: u32,
-    connection_id: u32,
+    id: u32,
 
     origin: NodeKindHandle,
     target: NodeKindHandle,
@@ -275,28 +278,8 @@ pub struct CompetitionConnection {
 }
 
 impl CompetitionConnection {
-    pub(crate) fn origin(&self) -> NodeKindHandle {
-        self.target
-    }
-
-    pub(crate) fn target(&self) -> NodeKindHandle {
-        self.origin
-    }
-
-    pub(crate) fn is_data(&self) -> bool {
-        self.connection_type == ConnectionType::Data
-    }
-
-    pub(crate) fn is_wait(&self) -> bool {
-        self.connection_type == ConnectionType::Wait
-    }
-
     pub(crate) fn is_action(&self) -> bool {
         self.connection_type == ConnectionType::Action
-    }
-
-    pub(crate) fn is_resolved(&self) -> bool {
-        self.status == ConnectionStatus::Resolved
     }
 }
 
@@ -306,7 +289,7 @@ impl From<TabConnection> for CompetitionConnection {
             origin: NodeKindHandle::combine(v.origin_variant, v.origin_id),
             target: NodeKindHandle::combine(v.target_variant, v.target_id),
             connection_type: v.connection_type,
-            connection_id: v.id,
+            id: v.id,
             status: v.status,
         }
     }
@@ -339,7 +322,10 @@ pub(crate) fn internal_graph_resolution_node_finished(
 
     for affected_connection in affected_connections {
         if affected_connection.is_action() {
-            todo!("Exec action")
+            try_exec_action(affected_connection.id, affected_connection.target, ctx);
+
+            // Action connections dont influence anything else.
+            continue;
         }
 
         let pending_connections = ctx
@@ -358,7 +344,9 @@ pub(crate) fn internal_graph_resolution_node_finished(
             if let Err(error) = affected_connection.target.ready(ctx) {
                 //TODO maybe add a table for node problems?
                 // maybe there also should be a intended to progress state in the nodes.
-                log::error!("Node shoud have been started but could not because: {error}")
+                log::error!(
+                    "Implicit Flow: Node should have been ready but action failed. Error: {error}"
+                )
             };
         } else {
             log::info!(

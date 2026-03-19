@@ -32,7 +32,6 @@ impl ConnectionData {
 
     pub(super) fn apply_match(&self, tm_match: Vec<MatchRoundPlayer>) -> Vec<PermittedPlayer> {
         let players = match &self.options {
-            ConnectionDataOption::None => return Vec::new(),
             ConnectionDataOption::All => tm_match,
             ConnectionDataOption::First(f) => tm_match.into_iter().take(*f as usize).collect(),
             ConnectionDataOption::Last(l) => tm_match.into_iter().rev().take(*l as usize).collect(),
@@ -55,8 +54,6 @@ impl ConnectionData {
 
 #[derive(Debug, SpacetimeType)]
 pub enum ConnectionDataOption {
-    //TODO evaluate this appraoch. probably its bad
-    None,
     All,
     First(u8),
     Last(u8),
