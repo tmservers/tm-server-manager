@@ -18,9 +18,9 @@ pub(super) mod action;
 pub(super) mod data;
 
 #[spacetimedb::table(accessor= tab_connection,
-    index(accessor=connection_exists,hash(columns=[connection_from_variant,connection_to_variant,connection_from,connection_to])),
-    index(accessor=target_nodes_of,hash(columns=[connection_from_variant,connection_from])),
-    index(accessor=origin_nodes_of,hash(columns=[connection_to_variant,connection_to]))
+    index(accessor=connection_exists,hash(columns=[origin_variant,target_variant,origin_id,target_id])),
+    index(accessor=targets_of,hash(columns=[origin_variant,origin_id])),
+    index(accessor=origins_of,hash(columns=[target_variant,target_id]))
 )]
 #[derive(Debug, Clone, Copy)]
 pub struct TabConnection {
@@ -32,34 +32,38 @@ pub struct TabConnection {
     #[index(hash)]
     parent_id: u32,
 
-    connection_from: u32,
-    connection_to: u32,
-    connection_from_variant: u8,
-    connection_to_variant: u8,
+    origin_id: u32,
+    target_id: u32,
+    origin_variant: u8,
+    target_variant: u8,
 
-    connection_settings: ConnectionSettings,
-    connection_settings_configuring: bool,
+    connection_type: ConnectionType,
+    status: ConnectionStatus,
 }
 
 impl TabConnection {
     pub(crate) fn connection_origin(&self) -> NodeKindHandle {
-        NodeKindHandle::combine(self.connection_from_variant, self.connection_from)
+        NodeKindHandle::combine(self.origin_variant, self.origin_id)
     }
 
     pub(crate) fn connection_target(&self) -> NodeKindHandle {
-        NodeKindHandle::combine(self.connection_to_variant, self.connection_to)
+        NodeKindHandle::combine(self.target_variant, self.target_id)
     }
 
     pub(crate) fn is_data(&self) -> bool {
-        self.connection_settings == ConnectionSettings::Data
+        self.connection_type == ConnectionType::Data
     }
 
     pub(crate) fn is_wait(&self) -> bool {
-        self.connection_settings == ConnectionSettings::Wait
+        self.connection_type == ConnectionType::Wait
     }
 
     pub(crate) fn is_action(&self) -> bool {
-        self.connection_settings == ConnectionSettings::Action
+        self.connection_type == ConnectionType::Action
+    }
+
+    pub(crate) fn is_resolved(&self) -> bool {
+        self.status == ConnectionStatus::Resolved
     }
 
     pub(crate) fn get_permitted_players(self, ctx: &ViewContext) -> Vec<PermittedPlayer> {
@@ -67,7 +71,6 @@ impl TabConnection {
             return Vec::new();
         }
 
-        //TODO apply filter from the connection data settings.
         self.get_permitted_players_filter(ctx)
     }
 
@@ -103,16 +106,23 @@ impl TabConnection {
     }
 
     pub(crate) fn update_origin(&mut self, new_origin: u32) {
-        self.connection_from = new_origin;
+        self.origin_id = new_origin;
     }
 
     pub(crate) fn update_target(&mut self, new_target: u32) {
-        self.connection_to = new_target;
+        self.target_id = new_target;
     }
 }
 
 #[derive(Debug, SpacetimeType, Clone, Copy, PartialEq, Eq)]
-pub enum ConnectionSettings {
+pub enum ConnectionStatus {
+    Configuring,
+    Configured,
+    Resolved,
+}
+
+#[derive(Debug, SpacetimeType, Clone, Copy, PartialEq, Eq)]
+pub enum ConnectionType {
     Wait,
     Data,
     Action,
@@ -122,16 +132,16 @@ pub enum ConnectionSettings {
 #[reducer]
 pub fn connection_create(
     ctx: &ReducerContext,
-    connection_from: NodeKindHandle,
-    connection_to: NodeKindHandle,
-    setting: ConnectionSettings,
+    origin: NodeKindHandle,
+    target: NodeKindHandle,
+    setting: ConnectionType,
 ) -> Result<(), String> {
-    if connection_from == connection_to {
+    if origin == target {
         return Err("Cannot connect a Node to itself.".into());
     }
 
-    let from_comp = connection_from.get_competition(ctx)?;
-    let to_comp = connection_to.get_competition(ctx)?;
+    let from_comp = origin.get_competition(ctx)?;
+    let to_comp = target.get_competition(ctx)?;
 
     if from_comp != to_comp {
         return Err(
@@ -139,7 +149,7 @@ pub fn connection_create(
         );
     }
 
-    if connection_from.is_template(ctx) != connection_to.is_template(ctx) {
+    if origin.is_template(ctx) != target.is_template(ctx) {
         return Err(
             "Not allowed to form a connection between template and non template nodes.".into(),
         );
@@ -150,11 +160,11 @@ pub fn connection_create(
         .authorize()?;
 
     let mut set = HashSet::new();
-    set.insert(connection_from);
-    set.insert(connection_to);
+    set.insert(origin);
+    set.insert(target);
 
-    let (split_connection_from_variant, split_connection_from) = connection_from.split();
-    let (split_connection_to_variant, split_connection_to) = connection_to.split();
+    let (split_connection_from_variant, split_connection_from) = origin.split();
+    let (split_connection_to_variant, split_connection_to) = target.split();
     if ctx
         .db
         .tab_connection()
@@ -180,12 +190,12 @@ pub fn connection_create(
 
     for connection in &competition_connections {
         set.insert(NodeKindHandle::combine(
-            connection.connection_from_variant,
-            connection.connection_from,
+            connection.origin_variant,
+            connection.origin_id,
         ));
         set.insert(NodeKindHandle::combine(
-            connection.connection_to_variant,
-            connection.connection_to,
+            connection.target_variant,
+            connection.target_id,
         ));
     }
 
@@ -205,7 +215,7 @@ pub fn connection_create(
             (
                 *map.get(&c.connection_origin()).unwrap(),
                 *map.get(&c.connection_target()).unwrap(),
-                c.connection_settings,
+                c.connection_type,
             )
         })
         .collect::<Vec<_>>();
@@ -216,34 +226,34 @@ pub fn connection_create(
     let mut graph = Acyclic::try_from_graph(graph).map_err(|e| format!("{e:?}"))?;
     graph
         .try_add_edge(
-            *map.get(&connection_from).unwrap(),
-            *map.get(&connection_to).unwrap(),
+            *map.get(&origin).unwrap(),
+            *map.get(&target).unwrap(),
             setting,
         )
         .map_err(|e| format!("{e:?}"))?;
 
-    let (connection_from_variant, connection_from) = connection_from.split();
-    let (connection_to_variant, connection_to) = connection_to.split();
+    let (origin_variant, origin_id) = origin.split();
+    let (target_variant, target_id) = target.split();
     let connection = ctx.db.tab_connection().try_insert(TabConnection {
         id: 0,
         parent_id: from_comp,
-        connection_from,
-        connection_to,
-        connection_from_variant,
-        connection_to_variant,
-        connection_settings: setting,
-        connection_settings_configuring: true,
+        origin_id,
+        target_id,
+        origin_variant,
+        target_variant,
+        connection_type: setting,
+        status: ConnectionStatus::Configuring,
     })?;
 
     //If we insert Data Settings we also need to add a row in the data table.
-    match connection.connection_settings {
-        ConnectionSettings::Wait => (),
-        ConnectionSettings::Data => {
+    match connection.connection_type {
+        ConnectionType::Wait => (),
+        ConnectionType::Data => {
             ctx.db
                 .tab_connection_data()
                 .try_insert(ConnectionData::new(connection.id, connection.parent_id))?;
         }
-        ConnectionSettings::Action => {
+        ConnectionType::Action => {
             todo!()
         }
     }
@@ -253,13 +263,53 @@ pub fn connection_create(
 
 #[derive(Debug, SpacetimeType)]
 pub struct CompetitionConnection {
-    //TOD= maybe omit this
-    competition_id: u32,
+    //TODO maybe omit this
+    //competition_id: u32,
+    connection_id: u32,
 
-    connection_from: NodeKindHandle,
-    connection_to: NodeKindHandle,
+    origin: NodeKindHandle,
+    target: NodeKindHandle,
 
-    connection_settings: ConnectionSettings,
+    connection_type: ConnectionType,
+    status: ConnectionStatus,
+}
+
+impl CompetitionConnection {
+    pub(crate) fn origin(&self) -> NodeKindHandle {
+        self.target
+    }
+
+    pub(crate) fn target(&self) -> NodeKindHandle {
+        self.origin
+    }
+
+    pub(crate) fn is_data(&self) -> bool {
+        self.connection_type == ConnectionType::Data
+    }
+
+    pub(crate) fn is_wait(&self) -> bool {
+        self.connection_type == ConnectionType::Wait
+    }
+
+    pub(crate) fn is_action(&self) -> bool {
+        self.connection_type == ConnectionType::Action
+    }
+
+    pub(crate) fn is_resolved(&self) -> bool {
+        self.status == ConnectionStatus::Resolved
+    }
+}
+
+impl From<TabConnection> for CompetitionConnection {
+    fn from(v: TabConnection) -> Self {
+        CompetitionConnection {
+            origin: NodeKindHandle::combine(v.origin_variant, v.origin_id),
+            target: NodeKindHandle::combine(v.target_variant, v.target_id),
+            connection_type: v.connection_type,
+            connection_id: v.id,
+            status: v.status,
+        }
+    }
 }
 
 #[view(accessor=competition_connection,public)]
@@ -272,41 +322,40 @@ pub fn competition_connection(
         .tab_connection()
         .parent_id()
         .filter(competition_id)
-        .map(|v| CompetitionConnection {
-            competition_id: v.parent_id,
-            connection_from: NodeKindHandle::combine(v.connection_from_variant, v.connection_from),
-            connection_to: NodeKindHandle::combine(v.connection_to_variant, v.connection_to),
-            connection_settings: v.connection_settings,
-        })
+        .map(CompetitionConnection::from)
         .collect()
 }
 
-pub fn internal_graph_resolution_node_finished(
+pub(crate) fn internal_graph_resolution_node_finished(
     ctx: &ReducerContext,
     trigger: NodeKindHandle,
 ) -> Result<(), String> {
     let affected_connections = ctx
         .db
         .tab_connection()
-        .target_nodes_of()
+        .targets_of()
         .filter(trigger.split())
-        .map(|t| CompetitionConnection {
-            competition_id: t.parent_id,
-            connection_from: NodeKindHandle::combine(t.connection_from_variant, t.connection_from),
-            connection_to: NodeKindHandle::combine(t.connection_to_variant, t.connection_to),
-            connection_settings: t.connection_settings,
-        });
+        .map(CompetitionConnection::from);
 
-    for affected_connection in affected_connections.map(|c| c.connection_to) {
+    for affected_connection in affected_connections {
+        if affected_connection.is_action() {
+            todo!("Exec action")
+        }
+
         let pending_connections = ctx
             .db
             .tab_connection()
-            .origin_nodes_of()
-            .filter(affected_connection.split())
+            .origins_of()
+            .filter(affected_connection.target.split())
+            // Action connections dont influence the implicit advance flow.
+            // If the connection is resolved we discard it so if everything is resolved we have an empty array.
+            .filter(|c| !c.is_action() && !c.is_resolved())
             .collect::<Vec<_>>();
+
+        // When no more pending connections are left it is safe to implicitly start depending nodes.
         if pending_connections.is_empty() {
             log::warn!("The node can be started now.");
-            if let Err(error) = affected_connection.ready(ctx) {
+            if let Err(error) = affected_connection.target.ready(ctx) {
                 //TODO maybe add a table for node problems?
                 // maybe there also should be a intended to progress state in the nodes.
                 log::error!("Node shoud have been started but could not because: {error}")

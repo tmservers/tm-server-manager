@@ -7,7 +7,7 @@ pub struct TabConnectionAction {
     #[primary_key]
     pub connection_id: u32,
 
-    lifecycle_action: ConnectionAction,
+    action: ConnectionAction,
 }
 
 // Versioning works be e.g.:

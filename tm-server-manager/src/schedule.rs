@@ -56,6 +56,7 @@ impl ScheduleV1 {
 
 #[derive(Debug, SpacetimeType, Clone, Copy)]
 pub enum ScheduleSettings {
+    Manual,
     Absolute(Timestamp),
     Relative(TimeDuration),
     //TODO when there are connections
@@ -65,6 +66,7 @@ pub enum ScheduleSettings {
 impl ScheduleSettings {
     fn eval(&self, now: Timestamp) -> Timestamp {
         match self {
+            ScheduleSettings::Manual => unreachable!(),
             ScheduleSettings::Absolute(timestamp) => *timestamp,
             ScheduleSettings::Relative(time_duration) => now + *time_duration,
             //ScheduleSettings::Rounded(rounded_settings) => todo!(),
@@ -226,6 +228,8 @@ pub fn schedule_try_run(ctx: &ReducerContext, id: u32) -> Result<(), String> {
     let timestamp = schedule.settings.eval(ctx.timestamp);
 
     //TODO maybe check if timestamp is in the past?
+
+    //TODO manual schedule exec mode.
 
     schedule.state = ScheduleState::Waiting;
 

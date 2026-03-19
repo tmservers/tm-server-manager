@@ -145,7 +145,7 @@ fn raw_server_allowed_players(ctx: &ViewContext) -> Vec<PermittedPlayer> {
     let depending_nodes = ctx
         .db
         .tab_connection()
-        .origin_nodes_of()
+        .origins_of()
         .filter(NodeKindHandle::MatchV1(occupation.match_id).split())
         .filter(|c| c.is_data());
 
