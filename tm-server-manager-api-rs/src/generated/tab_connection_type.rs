@@ -4,19 +4,20 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::connection_settings_type::ConnectionSettings;
+use super::connection_status_type::ConnectionStatus;
+use super::connection_type_type::ConnectionType;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct TabConnection {
     pub id: u32,
     pub parent_id: u32,
-    pub connection_from: u32,
-    pub connection_to: u32,
-    pub connection_from_variant: u8,
-    pub connection_to_variant: u8,
-    pub connection_settings: ConnectionSettings,
-    pub connection_settings_configuring: bool,
+    pub origin_id: u32,
+    pub target_id: u32,
+    pub origin_variant: u8,
+    pub target_variant: u8,
+    pub connection_type: ConnectionType,
+    pub status: ConnectionStatus,
 }
 
 impl __sdk::InModule for TabConnection {
@@ -29,12 +30,12 @@ impl __sdk::InModule for TabConnection {
 pub struct TabConnectionCols {
     pub id: __sdk::__query_builder::Col<TabConnection, u32>,
     pub parent_id: __sdk::__query_builder::Col<TabConnection, u32>,
-    pub connection_from: __sdk::__query_builder::Col<TabConnection, u32>,
-    pub connection_to: __sdk::__query_builder::Col<TabConnection, u32>,
-    pub connection_from_variant: __sdk::__query_builder::Col<TabConnection, u8>,
-    pub connection_to_variant: __sdk::__query_builder::Col<TabConnection, u8>,
-    pub connection_settings: __sdk::__query_builder::Col<TabConnection, ConnectionSettings>,
-    pub connection_settings_configuring: __sdk::__query_builder::Col<TabConnection, bool>,
+    pub origin_id: __sdk::__query_builder::Col<TabConnection, u32>,
+    pub target_id: __sdk::__query_builder::Col<TabConnection, u32>,
+    pub origin_variant: __sdk::__query_builder::Col<TabConnection, u8>,
+    pub target_variant: __sdk::__query_builder::Col<TabConnection, u8>,
+    pub connection_type: __sdk::__query_builder::Col<TabConnection, ConnectionType>,
+    pub status: __sdk::__query_builder::Col<TabConnection, ConnectionStatus>,
 }
 
 impl __sdk::__query_builder::HasCols for TabConnection {
@@ -43,24 +44,12 @@ impl __sdk::__query_builder::HasCols for TabConnection {
         TabConnectionCols {
             id: __sdk::__query_builder::Col::new(table_name, "id"),
             parent_id: __sdk::__query_builder::Col::new(table_name, "parent_id"),
-            connection_from: __sdk::__query_builder::Col::new(table_name, "connection_from"),
-            connection_to: __sdk::__query_builder::Col::new(table_name, "connection_to"),
-            connection_from_variant: __sdk::__query_builder::Col::new(
-                table_name,
-                "connection_from_variant",
-            ),
-            connection_to_variant: __sdk::__query_builder::Col::new(
-                table_name,
-                "connection_to_variant",
-            ),
-            connection_settings: __sdk::__query_builder::Col::new(
-                table_name,
-                "connection_settings",
-            ),
-            connection_settings_configuring: __sdk::__query_builder::Col::new(
-                table_name,
-                "connection_settings_configuring",
-            ),
+            origin_id: __sdk::__query_builder::Col::new(table_name, "origin_id"),
+            target_id: __sdk::__query_builder::Col::new(table_name, "target_id"),
+            origin_variant: __sdk::__query_builder::Col::new(table_name, "origin_variant"),
+            target_variant: __sdk::__query_builder::Col::new(table_name, "target_variant"),
+            connection_type: __sdk::__query_builder::Col::new(table_name, "connection_type"),
+            status: __sdk::__query_builder::Col::new(table_name, "status"),
         }
     }
 }

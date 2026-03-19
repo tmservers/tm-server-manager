@@ -14,6 +14,7 @@ use crate::{
         node::{NodeKindHandle, NodeType},
     },
     raw_server::player::PermittedPlayer,
+    registration::player::registration_player,
     tm_match::leaderboard::match_leaderboard,
 };
 
@@ -98,7 +99,20 @@ impl TabConnection {
             NodeKindHandle::ServerV1(_) => todo!(),
             NodeKindHandle::ScheduleV1(_) => todo!(),
             NodeKindHandle::PortalV1(_) => todo!(),
-            NodeKindHandle::RegistrationV1(_) => todo!(),
+            NodeKindHandle::RegistrationV1(_) => {
+                let rules = ctx
+                    .db
+                    .tab_connection_data()
+                    .connection_id()
+                    .find(self.id)
+                    .unwrap();
+
+                let leaderboard = registration_player(&ctx.as_anonymous_read_only());
+
+                //TODO maybe factor this out into a trait and impl it for the respective thing
+                // maybe we also need to split the data portion out into separate tables for each connection.
+                rules.apply_registration(leaderboard)
+            }
         }
     }
 

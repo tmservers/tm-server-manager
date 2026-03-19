@@ -5,14 +5,11 @@
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 use super::registration_settings_player_type::RegistrationSettingsPlayer;
-use super::registration_settings_team_type::RegistrationSettingsTeam;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub enum RegistrationSettings {
     Player(RegistrationSettingsPlayer),
-
-    Team(RegistrationSettingsTeam),
 }
 
 impl __sdk::InModule for RegistrationSettings {

@@ -7,6 +7,7 @@ use crate::{
         connection::{CompetitionConnection, tab_connection},
     },
     raw_server::player::PermittedPlayer,
+    registration::player::RegisterationPlayer,
     tm_match::leaderboard::MatchRoundPlayer,
 };
 
@@ -30,15 +31,49 @@ impl ConnectionData {
         }
     }
 
+    pub(crate) fn instantiate(mut self, connection_id: u32, competition_id: u32) -> Self {
+        self.competition_id = competition_id;
+        self.connection_id = connection_id;
+        self
+    }
+
     pub(super) fn apply_match(&self, tm_match: Vec<MatchRoundPlayer>) -> Vec<PermittedPlayer> {
         let players = match &self.options {
             ConnectionDataOption::All => tm_match,
-            ConnectionDataOption::First(f) => tm_match.into_iter().take(*f as usize).collect(),
-            ConnectionDataOption::Last(l) => tm_match.into_iter().rev().take(*l as usize).collect(),
+            ConnectionDataOption::FirstN(f) => tm_match.into_iter().take(*f as usize).collect(),
+            ConnectionDataOption::LastN(l) => {
+                tm_match.into_iter().rev().take(*l as usize).collect()
+            }
             ConnectionDataOption::Custom(items) => {
                 let mut players = Vec::with_capacity(items.len());
                 for item in items {
                     if let Some(player) = tm_match.get(*item as usize) {
+                        players.push(*player);
+                    }
+                }
+                players
+            }
+        };
+        players
+            .into_iter()
+            .map(|p| PermittedPlayer::new(p.account_id, false, false))
+            .collect()
+    }
+
+    pub(super) fn apply_registration(
+        &self,
+        registration: Vec<RegisterationPlayer>,
+    ) -> Vec<PermittedPlayer> {
+        let players = match &self.options {
+            ConnectionDataOption::All => registration,
+            ConnectionDataOption::FirstN(f) => registration.into_iter().take(*f as usize).collect(),
+            ConnectionDataOption::LastN(l) => {
+                registration.into_iter().rev().take(*l as usize).collect()
+            }
+            ConnectionDataOption::Custom(items) => {
+                let mut players = Vec::with_capacity(items.len());
+                for item in items {
+                    if let Some(player) = registration.get(*item as usize) {
                         players.push(*player);
                     }
                 }
@@ -55,8 +90,8 @@ impl ConnectionData {
 #[derive(Debug, SpacetimeType)]
 pub enum ConnectionDataOption {
     All,
-    First(u8),
-    Last(u8),
+    FirstN(u8),
+    LastN(u8),
     Custom(Vec<u8>),
 }
 

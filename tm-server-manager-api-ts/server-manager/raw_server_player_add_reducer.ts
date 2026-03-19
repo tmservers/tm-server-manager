@@ -10,19 +10,7 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-import {
-  NodeKindHandle,
-  ConnectionType,
-} from "./types";
-
 export default {
-  get origin() {
-    return NodeKindHandle;
-  },
-  get target() {
-    return NodeKindHandle;
-  },
-  get setting() {
-    return ConnectionType;
-  },
+  accountId: __t.uuid(),
+  spectator: __t.bool(),
 };

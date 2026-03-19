@@ -6,12 +6,15 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct RegistrationSettingsTeam {
-    pub team_limit: u32,
-    pub team_size_min: u8,
-    pub team_size_max: u8,
+#[derive(Copy, Eq, Hash)]
+pub enum ConnectionStatus {
+    Configuring,
+
+    Configured,
+
+    Resolved,
 }
 
-impl __sdk::InModule for RegistrationSettingsTeam {
+impl __sdk::InModule for ConnectionStatus {
     type Module = super::RemoteModule;
 }

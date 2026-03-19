@@ -5,21 +5,29 @@ use spacetimedb::{
 use crate::{authorization::Authorization, registration::tab_registration};
 
 #[table(accessor=tab_registeration_player)]
+#[derive(Debug, Clone, Copy)]
 pub struct RegisterationPlayer {
-    account_id: Uuid,
-    registered_at: Timestamp,
+    pub account_id: Uuid,
+    pub registered_at: Timestamp,
     #[index(hash)]
-    registration_id: u32,
+    pub registration_id: u32,
 }
 
 #[view(accessor=registration_player,public)]
 pub fn registration_player(
     ctx: &AnonymousViewContext, /* ,registration_id: u32 */
-) -> impl Query<RegisterationPlayer> {
+) -> Vec<RegisterationPlayer> {
     let registration_id = 2u32;
-    ctx.from
+    let mut registered = ctx
+        .db
         .tab_registeration_player()
-        .r#where(|c| c.registration_id.eq(registration_id))
+        .registration_id()
+        .filter(registration_id)
+        .collect::<Vec<_>>();
+
+    registered.sort_by_key(|f| f.registered_at);
+
+    registered
 }
 
 #[reducer]

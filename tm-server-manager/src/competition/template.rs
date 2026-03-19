@@ -5,8 +5,10 @@ use spacetimedb::{ReducerContext, Table, reducer};
 use crate::{
     authorization::Authorization,
     competition::{
-        CompetitionPermissionsV1, CompetitionV1, connection::tab_connection,
-        node::NodeKindHandle, tab_competition,
+        CompetitionPermissionsV1, CompetitionV1,
+        connection::{data::tab_connection_data, tab_connection},
+        node::NodeKindHandle,
+        tab_competition,
     },
     registration::tab_registration,
     schedule::tab_schedule,
@@ -157,7 +159,7 @@ pub(super) fn competition_template_instantiate(
             NodeKindHandle::CompetitionV1(i) => competition_map.get(&i).unwrap().id,
             NodeKindHandle::MonitoringV1(_) => todo!(),
             NodeKindHandle::ServerV1(_) => todo!(),
-            NodeKindHandle::ScheduleV1(i) => schedule_map.get(&i).unwrap().id as u32,
+            NodeKindHandle::ScheduleV1(i) => schedule_map.get(&i).unwrap().id,
             NodeKindHandle::PortalV1(_) => todo!(),
             NodeKindHandle::RegistrationV1(i) => registration_map.get(&i).unwrap().id,
         };
@@ -168,7 +170,7 @@ pub(super) fn competition_template_instantiate(
             NodeKindHandle::CompetitionV1(i) => competition_map.get(&i).unwrap().id,
             NodeKindHandle::MonitoringV1(_) => todo!(),
             NodeKindHandle::ServerV1(_) => todo!(),
-            NodeKindHandle::ScheduleV1(i) => schedule_map.get(&i).unwrap().id as u32,
+            NodeKindHandle::ScheduleV1(i) => schedule_map.get(&i).unwrap().id,
             NodeKindHandle::PortalV1(_) => todo!(),
             NodeKindHandle::RegistrationV1(i) => registration_map.get(&i).unwrap().id,
         };
@@ -176,9 +178,21 @@ pub(super) fn competition_template_instantiate(
         let mut new_connection = old_connection.instantiate(new_comp.id);
         new_connection.update_origin(new_origin);
         new_connection.update_target(new_target);
-        ctx.db
-            .tab_connection()
-            .try_insert(new_connection)?;
+        let new_connection = ctx.db.tab_connection().try_insert(new_connection)?;
+
+        if old_connection.is_data() {
+            let old_connection_data = ctx
+                .db
+                .tab_connection_data()
+                .connection_id()
+                .find(old_connection.id)
+                .unwrap();
+            let new_connection_data =
+                old_connection_data.instantiate(new_connection.id, new_comp.id);
+            ctx.db
+                .tab_connection_data()
+                .try_insert(new_connection_data)?;
+        }
     }
 
     Ok(())

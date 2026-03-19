@@ -11,7 +11,7 @@ use super::connection_action_type::ConnectionAction;
 pub struct TabConnectionAction {
     pub competition_id: u32,
     pub connection_id: u32,
-    pub lifecycle_action: ConnectionAction,
+    pub action: ConnectionAction,
 }
 
 impl __sdk::InModule for TabConnectionAction {
@@ -24,7 +24,7 @@ impl __sdk::InModule for TabConnectionAction {
 pub struct TabConnectionActionCols {
     pub competition_id: __sdk::__query_builder::Col<TabConnectionAction, u32>,
     pub connection_id: __sdk::__query_builder::Col<TabConnectionAction, u32>,
-    pub lifecycle_action: __sdk::__query_builder::Col<TabConnectionAction, ConnectionAction>,
+    pub action: __sdk::__query_builder::Col<TabConnectionAction, ConnectionAction>,
 }
 
 impl __sdk::__query_builder::HasCols for TabConnectionAction {
@@ -33,7 +33,7 @@ impl __sdk::__query_builder::HasCols for TabConnectionAction {
         TabConnectionActionCols {
             competition_id: __sdk::__query_builder::Col::new(table_name, "competition_id"),
             connection_id: __sdk::__query_builder::Col::new(table_name, "connection_id"),
-            lifecycle_action: __sdk::__query_builder::Col::new(table_name, "lifecycle_action"),
+            action: __sdk::__query_builder::Col::new(table_name, "action"),
         }
     }
 }

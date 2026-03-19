@@ -58,15 +58,18 @@ export const Common = __t.object("Common", {
 export type Common = __Infer<typeof Common>;
 
 export const CompetitionConnection = __t.object("CompetitionConnection", {
-  competitionId: __t.u32(),
-  get connectionFrom() {
+  id: __t.u32(),
+  get origin() {
     return NodeKindHandle;
   },
-  get connectionTo() {
+  get target() {
     return NodeKindHandle;
   },
-  get connectionSettings() {
-    return ConnectionSettings;
+  get connectionType() {
+    return ConnectionType;
+  },
+  get status() {
+    return ConnectionStatus;
   },
 });
 export type CompetitionConnection = __Infer<typeof CompetitionConnection>;
@@ -166,21 +169,28 @@ export type ConnectionData = __Infer<typeof ConnectionData>;
 
 // The tagged union or sum type for the algebraic type `ConnectionDataOption`.
 export const ConnectionDataOption = __t.enum("ConnectionDataOption", {
-  None: __t.unit(),
   All: __t.unit(),
-  First: __t.u8(),
-  Last: __t.u8(),
+  FirstN: __t.u8(),
+  LastN: __t.u8(),
   Custom: __t.byteArray(),
 });
 export type ConnectionDataOption = __Infer<typeof ConnectionDataOption>;
 
-// The tagged union or sum type for the algebraic type `ConnectionSettings`.
-export const ConnectionSettings = __t.enum("ConnectionSettings", {
+// The tagged union or sum type for the algebraic type `ConnectionStatus`.
+export const ConnectionStatus = __t.enum("ConnectionStatus", {
+  Configuring: __t.unit(),
+  Configured: __t.unit(),
+  Resolved: __t.unit(),
+});
+export type ConnectionStatus = __Infer<typeof ConnectionStatus>;
+
+// The tagged union or sum type for the algebraic type `ConnectionType`.
+export const ConnectionType = __t.enum("ConnectionType", {
   Wait: __t.unit(),
   Data: __t.unit(),
   Action: __t.unit(),
 });
-export type ConnectionSettings = __Infer<typeof ConnectionSettings>;
+export type ConnectionType = __Infer<typeof ConnectionType>;
 
 export const Custom = __t.object("Custom", {
   name: __t.string(),
@@ -877,9 +887,6 @@ export const RegistrationSettings = __t.enum("RegistrationSettings", {
   get Player() {
     return RegistrationSettingsPlayer;
   },
-  get Team() {
-    return RegistrationSettingsTeam;
-  },
 });
 export type RegistrationSettings = __Infer<typeof RegistrationSettings>;
 
@@ -887,13 +894,6 @@ export const RegistrationSettingsPlayer = __t.object("RegistrationSettingsPlayer
   playerLimit: __t.u32(),
 });
 export type RegistrationSettingsPlayer = __Infer<typeof RegistrationSettingsPlayer>;
-
-export const RegistrationSettingsTeam = __t.object("RegistrationSettingsTeam", {
-  teamLimit: __t.u32(),
-  teamSizeMin: __t.u8(),
-  teamSizeMax: __t.u8(),
-});
-export type RegistrationSettingsTeam = __Infer<typeof RegistrationSettingsTeam>;
 
 // The tagged union or sum type for the algebraic type `RegistrationState`.
 export const RegistrationState = __t.enum("RegistrationState", {
@@ -992,6 +992,7 @@ export type ScheduleExecV1 = __Infer<typeof ScheduleExecV1>;
 
 // The tagged union or sum type for the algebraic type `ScheduleSettings`.
 export const ScheduleSettings = __t.enum("ScheduleSettings", {
+  Manual: __t.unit(),
   Absolute: __t.timestamp(),
   Relative: __t.timeDuration(),
 });
@@ -1119,21 +1120,23 @@ export type TabCompetitionNodePosition = __Infer<typeof TabCompetitionNodePositi
 export const TabConnection = __t.object("TabConnection", {
   id: __t.u32(),
   parentId: __t.u32(),
-  connectionFrom: __t.u32(),
-  connectionTo: __t.u32(),
-  connectionFromVariant: __t.u8(),
-  connectionToVariant: __t.u8(),
-  get connectionSettings() {
-    return ConnectionSettings;
+  originId: __t.u32(),
+  targetId: __t.u32(),
+  originVariant: __t.u8(),
+  targetVariant: __t.u8(),
+  get connectionType() {
+    return ConnectionType;
   },
-  connectionSettingsConfiguring: __t.bool(),
+  get status() {
+    return ConnectionStatus;
+  },
 });
 export type TabConnection = __Infer<typeof TabConnection>;
 
 export const TabConnectionAction = __t.object("TabConnectionAction", {
   competitionId: __t.u32(),
   connectionId: __t.u32(),
-  get lifecycleAction() {
+  get action() {
     return ConnectionAction;
   },
 });

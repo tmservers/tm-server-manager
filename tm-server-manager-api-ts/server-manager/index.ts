@@ -63,6 +63,7 @@ import ProjectEditDatesReducer from "./project_edit_dates_reducer";
 import ProjectEditDescriptionReducer from "./project_edit_description_reducer";
 import ProjectEditNameReducer from "./project_edit_name_reducer";
 import ProjectUpdateStatusReducer from "./project_update_status_reducer";
+import RawServerPlayerAddReducer from "./raw_server_player_add_reducer";
 import RawServerVerifyReducer from "./raw_server_verify_reducer";
 import RegisterPlayerReducer from "./register_player_reducer";
 import RegistrationConfiguredReducer from "./registration_configured_reducer";
@@ -360,6 +361,7 @@ const reducersSchema = __reducers(
   __reducerSchema("project_edit_description", ProjectEditDescriptionReducer),
   __reducerSchema("project_edit_name", ProjectEditNameReducer),
   __reducerSchema("project_update_status", ProjectUpdateStatusReducer),
+  __reducerSchema("raw_server_player_add", RawServerPlayerAddReducer),
   __reducerSchema("raw_server_verify", RawServerVerifyReducer),
   __reducerSchema("register_player", RegisterPlayerReducer),
   __reducerSchema("registration_configured", RegistrationConfiguredReducer),

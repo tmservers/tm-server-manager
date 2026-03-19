@@ -4,22 +4,22 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::connection_settings_type::ConnectionSettings;
+use super::connection_type_type::ConnectionType;
 use super::node_kind_handle_type::NodeKindHandle;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct ConnectionCreateArgs {
-    pub connection_from: NodeKindHandle,
-    pub connection_to: NodeKindHandle,
-    pub setting: ConnectionSettings,
+    pub origin: NodeKindHandle,
+    pub target: NodeKindHandle,
+    pub setting: ConnectionType,
 }
 
 impl From<ConnectionCreateArgs> for super::Reducer {
     fn from(args: ConnectionCreateArgs) -> Self {
         Self::ConnectionCreate {
-            connection_from: args.connection_from,
-            connection_to: args.connection_to,
+            origin: args.origin,
+            target: args.target,
             setting: args.setting,
         }
     }
@@ -42,11 +42,11 @@ pub trait connection_create {
     /// /// Use [`connection_create:connection_create_then`] to run a callback after the reducer completes.
     fn connection_create(
         &self,
-        connection_from: NodeKindHandle,
-        connection_to: NodeKindHandle,
-        setting: ConnectionSettings,
+        origin: NodeKindHandle,
+        target: NodeKindHandle,
+        setting: ConnectionType,
     ) -> __sdk::Result<()> {
-        self.connection_create_then(connection_from, connection_to, setting, |_, _| {})
+        self.connection_create_then(origin, target, setting, |_, _| {})
     }
 
     /// Request that the remote module invoke the reducer `connection_create` to run as soon as possible,
@@ -57,9 +57,9 @@ pub trait connection_create {
     ///  and its status can be observed with the `callback`.
     fn connection_create_then(
         &self,
-        connection_from: NodeKindHandle,
-        connection_to: NodeKindHandle,
-        setting: ConnectionSettings,
+        origin: NodeKindHandle,
+        target: NodeKindHandle,
+        setting: ConnectionType,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -70,9 +70,9 @@ pub trait connection_create {
 impl connection_create for super::RemoteReducers {
     fn connection_create_then(
         &self,
-        connection_from: NodeKindHandle,
-        connection_to: NodeKindHandle,
-        setting: ConnectionSettings,
+        origin: NodeKindHandle,
+        target: NodeKindHandle,
+        setting: ConnectionType,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -80,8 +80,8 @@ impl connection_create for super::RemoteReducers {
     ) -> __sdk::Result<()> {
         self.imp.invoke_reducer_with_callback(
             ConnectionCreateArgs {
-                connection_from,
-                connection_to,
+                origin,
+                target,
                 setting,
             },
             callback,

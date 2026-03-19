@@ -6,14 +6,15 @@ use crate::{
     registration::player::tab_registeration_player,
 };
 
-mod player;
+pub mod player;
 mod team;
 mod template;
 
 #[derive(Debug, SpacetimeType)]
 pub enum RegistrationSettings {
     Player(RegistrationSettingsPlayer),
-    Team(RegistrationSettingsTeam),
+    //TODO
+    //Team(RegistrationSettingsTeam),
 }
 
 #[derive(Debug, SpacetimeType)]
@@ -83,10 +84,9 @@ impl Registration {
                 } else {
                     Err("Registration maximum players exceeded.".into())
                 }
-            }
-            RegistrationSettings::Team(_) => {
-                Err("Tried to register as a player but it is a team registration.".into())
-            }
+            } /* RegistrationSettings::Team(_) => {
+                  Err("Tried to register as a player but it is a team registration.".into())
+              } */
         }
     }
 

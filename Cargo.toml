@@ -45,11 +45,11 @@ petgraph = { version = "0.8.3", features = ['all'] }
 #============
 # SpacetimeDB
 #============
-spacetimedb = { version = "2.0.2", features = [
+spacetimedb = { version = "2.0.5", features = [
     "unstable",
 ], git = "https://github.com/kistz/SpacetimeDB.git", branch = "async-procedures" }
-spacetimedb-lib = { version = "2.0.2", git = "https://github.com/kistz/SpacetimeDB.git", branch = "async-procedures" }
-spacetimedb-sdk = { version = "2.0.2", git = "https://github.com/kistz/SpacetimeDB.git", branch = "async-procedures" }
+spacetimedb-lib = { version = "2.0.5", git = "https://github.com/kistz/SpacetimeDB.git", branch = "async-procedures" }
+spacetimedb-sdk = { version = "2.0.5", git = "https://github.com/kistz/SpacetimeDB.git", branch = "async-procedures" }
 
 
 #==============

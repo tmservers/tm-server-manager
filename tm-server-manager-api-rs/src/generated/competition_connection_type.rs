@@ -4,16 +4,18 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::connection_settings_type::ConnectionSettings;
+use super::connection_status_type::ConnectionStatus;
+use super::connection_type_type::ConnectionType;
 use super::node_kind_handle_type::NodeKindHandle;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct CompetitionConnection {
-    pub competition_id: u32,
-    pub connection_from: NodeKindHandle,
-    pub connection_to: NodeKindHandle,
-    pub connection_settings: ConnectionSettings,
+    pub id: u32,
+    pub origin: NodeKindHandle,
+    pub target: NodeKindHandle,
+    pub connection_type: ConnectionType,
+    pub status: ConnectionStatus,
 }
 
 impl __sdk::InModule for CompetitionConnection {
@@ -24,23 +26,22 @@ impl __sdk::InModule for CompetitionConnection {
 ///
 /// Provides typed access to columns for query building.
 pub struct CompetitionConnectionCols {
-    pub competition_id: __sdk::__query_builder::Col<CompetitionConnection, u32>,
-    pub connection_from: __sdk::__query_builder::Col<CompetitionConnection, NodeKindHandle>,
-    pub connection_to: __sdk::__query_builder::Col<CompetitionConnection, NodeKindHandle>,
-    pub connection_settings: __sdk::__query_builder::Col<CompetitionConnection, ConnectionSettings>,
+    pub id: __sdk::__query_builder::Col<CompetitionConnection, u32>,
+    pub origin: __sdk::__query_builder::Col<CompetitionConnection, NodeKindHandle>,
+    pub target: __sdk::__query_builder::Col<CompetitionConnection, NodeKindHandle>,
+    pub connection_type: __sdk::__query_builder::Col<CompetitionConnection, ConnectionType>,
+    pub status: __sdk::__query_builder::Col<CompetitionConnection, ConnectionStatus>,
 }
 
 impl __sdk::__query_builder::HasCols for CompetitionConnection {
     type Cols = CompetitionConnectionCols;
     fn cols(table_name: &'static str) -> Self::Cols {
         CompetitionConnectionCols {
-            competition_id: __sdk::__query_builder::Col::new(table_name, "competition_id"),
-            connection_from: __sdk::__query_builder::Col::new(table_name, "connection_from"),
-            connection_to: __sdk::__query_builder::Col::new(table_name, "connection_to"),
-            connection_settings: __sdk::__query_builder::Col::new(
-                table_name,
-                "connection_settings",
-            ),
+            id: __sdk::__query_builder::Col::new(table_name, "id"),
+            origin: __sdk::__query_builder::Col::new(table_name, "origin"),
+            target: __sdk::__query_builder::Col::new(table_name, "target"),
+            connection_type: __sdk::__query_builder::Col::new(table_name, "connection_type"),
+            status: __sdk::__query_builder::Col::new(table_name, "status"),
         }
     }
 }
