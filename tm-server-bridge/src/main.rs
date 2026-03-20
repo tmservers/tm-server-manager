@@ -21,7 +21,7 @@ use crate::{
     chat::setup_chat,
     config::config_update,
     methods::method_call_received,
-    state::{check_allowed_players, setup_state_synchronization},
+    state::{check_allowed_players, check_players_have_destination, setup_state_synchronization},
     telemetry::init_tracing_subscriber,
 };
 
@@ -176,6 +176,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             .add_query(|ctx| ctx.from.raw_server_method_call())
             .add_query(|ctx| ctx.from.raw_server_config())
             .add_query(|ctx| ctx.from.raw_server_allowed_players())
+            .add_query(|ctx| ctx.from.raw_server_player_destination())
             .subscribe();
 
         //TODO switch to this_server if on_update callbacks are there
@@ -190,6 +191,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             .db
             .raw_server_method_call()
             .on_insert(method_call_received);
+
+        spacetime
+            .db
+            .raw_server_player_destination()
+            .on_insert(check_players_have_destination());
     }
 
     match signal::ctrl_c().await {

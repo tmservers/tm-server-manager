@@ -26,14 +26,14 @@ pub(super) struct PlayerActionCheckpoint {
 #[table(accessor= tab_match_round_player,
     index(accessor=match_round, hash(columns=[match_id,round])),
     index(accessor=match_round_range, btree(columns=[match_id,round])),
-    index(accessor=match_round_player, hash(columns=[match_id,round,internal_account_id]))
+    index(accessor=match_round_player, hash(columns=[match_id,round,user_id]))
 )]
 pub struct TabMatchRoundPlayer {
     #[auto_inc]
     #[primary_key]
     pub id: u32,
 
-    internal_account_id: u32,
+    user_id: u32,
 
     match_id: u32,
     time: i32,
@@ -44,9 +44,9 @@ pub struct TabMatchRoundPlayer {
 }
 
 impl TabMatchRoundPlayer {
-    pub fn new(match_id: u32, internal_account_id: u32, round: u16) -> Self {
+    pub fn new(match_id: u32, user_id: u32, round: u16) -> Self {
         Self {
-            internal_account_id,
+            user_id,
             match_id,
             round,
             time: 0,
@@ -59,12 +59,12 @@ impl TabMatchRoundPlayer {
 #[table(accessor= tab_match_round_player_ext,
     index(accessor=match_round, hash(columns=[match_id,round])),
     index(accessor=match_round_range, btree(columns=[match_id,round])),
-    index(accessor=match_round_player, hash(columns=[match_id,round,internal_account_id]))
+    index(accessor=match_round_player, hash(columns=[match_id,round,user_id]))
 )]
 pub struct TabMatchRoundPlayerExt {
     round_actions: Vec<PlayerAction>,
 
-    internal_account_id: u32,
+    user_id: u32,
     match_id: u32,
     #[primary_key]
     pub id: u32,
@@ -72,9 +72,9 @@ pub struct TabMatchRoundPlayerExt {
 }
 
 impl TabMatchRoundPlayerExt {
-    pub fn new(id: u32, match_id: u32, internal_account_id: u32, round: u16) -> Self {
+    pub fn new(id: u32, match_id: u32, user_id: u32, round: u16) -> Self {
         Self {
-            internal_account_id,
+            user_id,
             match_id,
             round,
             round_actions: Vec::new(),
@@ -158,7 +158,7 @@ pub fn match_leaderboard(
     let mut map = HashMap::<u32, TabMatchRoundPlayer>::new();
 
     for entry in entries {
-        map.entry(entry.internal_account_id)
+        map.entry(entry.user_id)
             .and_modify(|e| {
                 e.points += entry.points;
                 if entry.round > e.round {
@@ -175,7 +175,7 @@ pub fn match_leaderboard(
                 .db
                 .tab_user()
                 .internal_id()
-                .find(p.internal_account_id)
+                .find(p.user_id)
                 .unwrap()
                 .account_id,
             id: p.id,
@@ -221,7 +221,7 @@ pub fn match_round(
                 .db
                 .tab_user()
                 .internal_id()
-                .find(p.internal_account_id)
+                .find(p.user_id)
                 .unwrap()
                 .account_id,
             match_id,

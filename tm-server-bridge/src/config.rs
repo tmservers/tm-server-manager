@@ -1,6 +1,6 @@
 use nadeo_api::{NadeoRequest, auth::AuthType, request::Method};
 use serde::{Deserialize, Serialize};
-use tm_server_controller::{ClientError, method::XmlRpcMethods};
+use tm_server_controller::method::XmlRpcMethods;
 use tm_server_manager_api_rs::EventContext;
 use tm_server_types::config::ServerConfig;
 use tokio::sync::Mutex;
@@ -72,7 +72,7 @@ pub async fn configure(server_config: ServerConfig) {
 
         _ = local_server.restart_map().await;
         //TODO remove.
-        let _: Result<(), ClientError> = local_server.call("GetModeScriptSettings", ()).await;
+        //let _: Result<(), ClientError> = local_server.call("GetModeScriptSettings", ()).await;
 
         tracing::info!("Loaded new configuration");
     } else {

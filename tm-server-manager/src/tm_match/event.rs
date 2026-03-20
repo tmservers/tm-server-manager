@@ -42,7 +42,7 @@ pub(crate) fn handle_match_event(
             let state = ctx.db.tab_match_state().match_id().find(match_id).unwrap();
             if state.live_round() {
                 let account_id = Uuid::parse_str(&start_line.account_id).unwrap();
-                let internal_account_id = ctx
+                let user_id = ctx
                     .db
                     .tab_user_ids_map()
                     .account_id()
@@ -52,21 +52,14 @@ pub(crate) fn handle_match_event(
 
                 let round = state.get_round();
 
-                let player =
-                    ctx.db
-                        .tab_match_round_player()
-                        .try_insert(TabMatchRoundPlayer::new(
-                            match_id,
-                            internal_account_id,
-                            round,
-                        ))?;
+                let player = ctx
+                    .db
+                    .tab_match_round_player()
+                    .try_insert(TabMatchRoundPlayer::new(match_id, user_id, round))?;
                 ctx.db
                     .tab_match_round_player_ext()
                     .try_insert(TabMatchRoundPlayerExt::new(
-                        player.id,
-                        match_id,
-                        internal_account_id,
-                        round,
+                        player.id, match_id, user_id, round,
                     ))?;
             }
         }
@@ -74,7 +67,7 @@ pub(crate) fn handle_match_event(
             let state = ctx.db.tab_match_state().match_id().find(match_id).unwrap();
             if state.live_round() {
                 let account_id = Uuid::parse_str(&way_point.account_id).unwrap();
-                let internal_account_id = ctx
+                let user_id = ctx
                     .db
                     .tab_user_ids_map()
                     .account_id()
@@ -88,7 +81,7 @@ pub(crate) fn handle_match_event(
                     .db
                     .tab_match_round_player_ext()
                     .match_round_player()
-                    .filter((match_id, round, internal_account_id))
+                    .filter((match_id, round, user_id))
                     .next()
                     .unwrap();
 
@@ -101,7 +94,7 @@ pub(crate) fn handle_match_event(
             let state = ctx.db.tab_match_state().match_id().find(match_id).unwrap();
             if state.live_round() {
                 let account_id = Uuid::parse_str(&respawn.account_id).unwrap();
-                let internal_account_id = ctx
+                let user_id = ctx
                     .db
                     .tab_user_ids_map()
                     .account_id()
@@ -115,7 +108,7 @@ pub(crate) fn handle_match_event(
                     .db
                     .tab_match_round_player_ext()
                     .match_round_player()
-                    .filter((match_id, round, internal_account_id))
+                    .filter((match_id, round, user_id))
                     .next()
                     .unwrap();
 
@@ -128,7 +121,7 @@ pub(crate) fn handle_match_event(
             let state = ctx.db.tab_match_state().match_id().find(match_id).unwrap();
             if state.live_round() {
                 let account_id = Uuid::parse_str(&give_up.account_id).unwrap();
-                let internal_account_id = ctx
+                let user_id = ctx
                     .db
                     .tab_user_ids_map()
                     .account_id()
@@ -142,7 +135,7 @@ pub(crate) fn handle_match_event(
                     .db
                     .tab_match_round_player_ext()
                     .match_round_player()
-                    .filter((match_id, round, internal_account_id))
+                    .filter((match_id, round, user_id))
                     .next()
                     .unwrap();
 
@@ -193,6 +186,11 @@ pub(crate) fn handle_match_event(
             }
         }
         Event::EndMatchEnd(_) => {
+            let state = ctx.db.tab_match_state().match_id().find(match_id).unwrap();
+            if state.get_round() == 0 {
+                log::info!("Match said it ended but we are on round 0 so it is probably wrong.")
+            }
+
             let Some(mut tm_match) = ctx.db.tab_match().id().find(match_id) else {
                 return Err("Match not found".into());
             };

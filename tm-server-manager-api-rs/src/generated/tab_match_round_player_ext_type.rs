@@ -10,7 +10,7 @@ use super::player_action_type::PlayerAction;
 #[sats(crate = __lib)]
 pub struct TabMatchRoundPlayerExt {
     pub round_actions: Vec<PlayerAction>,
-    pub internal_account_id: u32,
+    pub user_id: u32,
     pub match_id: u32,
     pub id: u32,
     pub round: u16,
@@ -25,7 +25,7 @@ impl __sdk::InModule for TabMatchRoundPlayerExt {
 /// Provides typed access to columns for query building.
 pub struct TabMatchRoundPlayerExtCols {
     pub round_actions: __sdk::__query_builder::Col<TabMatchRoundPlayerExt, Vec<PlayerAction>>,
-    pub internal_account_id: __sdk::__query_builder::Col<TabMatchRoundPlayerExt, u32>,
+    pub user_id: __sdk::__query_builder::Col<TabMatchRoundPlayerExt, u32>,
     pub match_id: __sdk::__query_builder::Col<TabMatchRoundPlayerExt, u32>,
     pub id: __sdk::__query_builder::Col<TabMatchRoundPlayerExt, u32>,
     pub round: __sdk::__query_builder::Col<TabMatchRoundPlayerExt, u16>,
@@ -36,9 +36,9 @@ impl __sdk::__query_builder::HasCols for TabMatchRoundPlayerExt {
     fn cols(table_name: &'static str) -> Self::Cols {
         TabMatchRoundPlayerExtCols {
             round_actions: __sdk::__query_builder::Col::new(table_name, "round_actions"),
-            internal_account_id: __sdk::__query_builder::Col::new(
+            user_id: __sdk::__query_builder::Col::new(
                 table_name,
-                "internal_account_id",
+                "user_id",
             ),
             match_id: __sdk::__query_builder::Col::new(table_name, "match_id"),
             id: __sdk::__query_builder::Col::new(table_name, "id"),

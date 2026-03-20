@@ -4,9 +4,12 @@ use tm_server_controller::{
     callbacks::TypedCallbacks,
     method::{ModeScriptMethodsXmlRpc, XmlRpcMethods},
 };
-use tm_server_types::event::{EndRoundStart, PlayerConnect, StartRound, StartServer};
 use tm_server_manager_api_rs::{
     RawServerAllowedPlayersTableAccess, post_event, raw_server_player_add,
+};
+use tm_server_types::{
+    base::account_id_to_login,
+    event::{EndRoundStart, PlayerConnect, StartMatch, StartRound, StartServer},
 };
 
 use crate::{SERVER_CONFIG, SPACETIME, TRACKMANIA, TRACKMANIA_FILES};
@@ -15,20 +18,6 @@ pub async fn setup_state_synchronization() {
     let server = TRACKMANIA.wait();
 
     sync_players().await;
-
-    // Send players to correct server.
-    /* if let Err(error) = server
-        .send_open_link_to_account(
-            "3467014a-c1cc-4aae-99fe-6beb5eca232a",
-            "#qjoin=6cD4GLl8TH-pYYg2Cvqgrg@Trackmania",
-            1,
-            //"https://trackmania.io/#/player/3467014a-c1cc-4aae-99fe-6beb5eca232a",
-            //0,
-        )
-        .await
-    {
-        tracing::error!("Could not send link: {error}")
-    }; */
 
     // Sync all events to spacetimedb.
     server.on_event(|event| {
@@ -79,6 +68,7 @@ pub async fn setup_state_synchronization() {
     });
 
     server.on_player_connect(async |event: &PlayerConnect| {
+        // Server allowlist.
         let Some(player) = SPACETIME
             .wait()
             .db
@@ -103,6 +93,29 @@ pub async fn setup_state_synchronization() {
             );
             //TODO force to spectator.
         }
+
+        // Player destination
+        if let Some(player) = SPACETIME
+            .wait()
+            .db
+            .raw_server_player_destination()
+            .iter()
+            .find(|p| Uuid::parse_str(&event.account_id).unwrap() == p.account_id)
+        {
+            if let Err(error) = server
+                .send_open_link_to_account(
+                    player.account_id,
+                    format!(
+                        "#qjoin={}@Trackmania",
+                        account_id_to_login(player.server_account_id.to_string())
+                    ),
+                    1,
+                )
+                .await
+            {
+                tracing::error!("Could not send link: {error}")
+            };
+        }
     });
 
     server.on_start_server_start(async |event: &StartServer| {
@@ -126,7 +139,7 @@ pub async fn setup_state_synchronization() {
         }
     });
 
-    server.on_start_round_start(async |_: &StartRound| {
+    server.on_start_match_start(async |_: &StartMatch| {
         //We need to load the settings again because we changed the script.
         if let Err(error) = TRACKMANIA
             .wait()
@@ -136,7 +149,7 @@ pub async fn setup_state_synchronization() {
             tracing::error!("{error}")
         };
         //TODO remove.
-        let _: Result<(), ClientError> = TRACKMANIA.wait().call("GetModeScriptSettings", ()).await;
+        //let _: Result<(), ClientError> = TRACKMANIA.wait().call("GetModeScriptSettings", ()).await;
     });
 }
 
@@ -172,4 +185,8 @@ pub(super) async fn sync_players() {
 
 pub fn check_allowed_players() {
     //TODO make the async context, get all players from the server. build a map with the allowed players and kick everybody thats not allowed anymore.
+}
+
+pub fn check_players_have_destination() {
+    //TODO make async context and move the player.
 }

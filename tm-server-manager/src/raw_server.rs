@@ -1,5 +1,6 @@
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
+use serde::Deserialize;
 use spacetimedb::http::Request;
 use spacetimedb::{Identity, Query, ReducerContext, Table, Uuid, ViewContext, reducer, table};
 use spacetimedb::{ProcedureContext, view};
@@ -21,9 +22,11 @@ pub struct RawServerV1 {
     #[unique]
     pub server_login: String,
 
+    server_account_id: Uuid,
+
     /// Each server also has a ubisoft account associated with it.
     #[index(hash)]
-    pub(crate) account_id: Uuid,
+    pub(crate) user_account_id: Uuid,
 
     #[auto_inc]
     #[primary_key]
@@ -103,7 +106,7 @@ pub fn login_as_server(
     ctx: &mut ProcedureContext,
     login: String,
     password: String,
-    account_id: Uuid,
+    user_account_id: Uuid,
 ) -> Result<(), String> {
     let request = Request::builder()
         .method("POST")
@@ -132,10 +135,27 @@ pub fn login_as_server(
         return Err("Server registration failed because credential were wrong".into());
     }
 
+    #[derive(Debug, Deserialize)]
+    struct NadeoServerClaims {
+        account_id: String,
+    }
+
+    let mut body_string = result.into_body().into_string_lossy();
+
+    //TODO check if this is the right claim.
+    log::error!("{body_string}");
+
+    let claims = unsafe {
+        json::from_str::<NadeoServerClaims>(&mut body_string).map_err(|e| e.to_string())?
+    };
+
+    let server_account_id = Uuid::parse_str(&claims.account_id).unwrap();
     let identity = ctx.sender();
 
+    //TODO this path is not finshed yet
     ctx.try_with_tx::<(), String>(|ctx| {
         if let Some(mut server) = ctx.db.tab_raw_server().server_login().find(&login) {
+            //TODO check if the associated user stayed the same.
             // The new identity is assigned to the server.
             server.set_identity(identity);
             server.set_online();
@@ -145,7 +165,8 @@ pub fn login_as_server(
             let server = ctx.db.tab_raw_server().try_insert(RawServerV1 {
                 id: 0,
                 server_login: login.clone(),
-                account_id,
+                server_account_id,
+                user_account_id,
                 identity,
                 capturable: true,
                 verified: false,
@@ -176,7 +197,7 @@ pub(crate) fn user_raw_server_pool(ctx: &ViewContext) -> Vec<RawServerV1> {
     //TODO maybe switch to query builder if possible
     ctx.db
         .tab_raw_server()
-        .account_id()
+        .user_account_id()
         .filter(user.account_id)
         .filter(|s| s.verified)
         .collect()
@@ -191,7 +212,7 @@ pub(crate) fn user_available_server_pool(ctx: &ViewContext) -> Vec<RawServerV1> 
 
     ctx.db
         .tab_raw_server()
-        .account_id()
+        .user_account_id()
         .filter(user.account_id)
         .filter(|s| s.verified)
         .filter(|s| {
@@ -213,7 +234,7 @@ fn user_raw_server_pool_unverified(ctx: &ViewContext) -> Vec<RawServerV1> {
     //TODO maybe switch to query builder if possible
     ctx.db
         .tab_raw_server()
-        .account_id()
+        .user_account_id()
         .filter(user.account_id)
         .filter(|s| !s.verified)
         .collect()
@@ -230,7 +251,7 @@ fn raw_server_verify(ctx: &ReducerContext, server_id: u32) -> Result<(), String>
         .find(server_id)
         .ok_or("Couldnt find server with login")?;
 
-    if server.account_id == user.account_id {
+    if server.user_account_id == user.account_id {
         if server.verified {
             Err("Server was already verified.".into())
         } else {

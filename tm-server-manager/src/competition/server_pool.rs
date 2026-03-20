@@ -32,7 +32,7 @@ fn lend_raw_server(
         return Err("Server not found".into());
     };
 
-    if server.account_id != account_id {
+    if server.user_account_id != account_id {
         return Err("Not the owner of the server!".into());
     }
 
@@ -71,7 +71,7 @@ fn revoke_raw_server(
     };
 
     // If the server owner requests a deletion it always passes.
-    if server.account_id == user_account {
+    if server.user_account_id == user_account {
         ctx.db.tab_competition_server().delete(CompetitionServer {
             competition_id,
             server_id,

@@ -7,7 +7,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct PlayerDestination {
-    pub internal_account_id: u32,
+    pub user_id: u32,
     pub desination_server_id: u32,
 }
 
@@ -19,7 +19,7 @@ impl __sdk::InModule for PlayerDestination {
 ///
 /// Provides typed access to columns for query building.
 pub struct PlayerDestinationCols {
-    pub internal_account_id: __sdk::__query_builder::Col<PlayerDestination, u32>,
+    pub user_id: __sdk::__query_builder::Col<PlayerDestination, u32>,
     pub desination_server_id: __sdk::__query_builder::Col<PlayerDestination, u32>,
 }
 
@@ -27,9 +27,9 @@ impl __sdk::__query_builder::HasCols for PlayerDestination {
     type Cols = PlayerDestinationCols;
     fn cols(table_name: &'static str) -> Self::Cols {
         PlayerDestinationCols {
-            internal_account_id: __sdk::__query_builder::Col::new(
+            user_id: __sdk::__query_builder::Col::new(
                 table_name,
-                "internal_account_id",
+                "user_id",
             ),
             desination_server_id: __sdk::__query_builder::Col::new(
                 table_name,

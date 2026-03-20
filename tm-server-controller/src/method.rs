@@ -200,7 +200,7 @@ pub trait XmlRpcMethods {
 
     async fn send_open_link_to_account(
         &self,
-        account: impl Into<String>,
+        account_id: impl Into<String>,
         link: impl Into<String>,
         link_type: i32,
     ) -> Result<bool, ClientError>;

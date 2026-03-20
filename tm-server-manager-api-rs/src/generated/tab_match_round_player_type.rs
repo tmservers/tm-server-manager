@@ -8,7 +8,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[sats(crate = __lib)]
 pub struct TabMatchRoundPlayer {
     pub id: u32,
-    pub internal_account_id: u32,
+    pub user_id: u32,
     pub match_id: u32,
     pub time: i32,
     pub points: i32,
@@ -24,7 +24,7 @@ impl __sdk::InModule for TabMatchRoundPlayer {
 /// Provides typed access to columns for query building.
 pub struct TabMatchRoundPlayerCols {
     pub id: __sdk::__query_builder::Col<TabMatchRoundPlayer, u32>,
-    pub internal_account_id: __sdk::__query_builder::Col<TabMatchRoundPlayer, u32>,
+    pub user_id: __sdk::__query_builder::Col<TabMatchRoundPlayer, u32>,
     pub match_id: __sdk::__query_builder::Col<TabMatchRoundPlayer, u32>,
     pub time: __sdk::__query_builder::Col<TabMatchRoundPlayer, i32>,
     pub points: __sdk::__query_builder::Col<TabMatchRoundPlayer, i32>,
@@ -36,9 +36,9 @@ impl __sdk::__query_builder::HasCols for TabMatchRoundPlayer {
     fn cols(table_name: &'static str) -> Self::Cols {
         TabMatchRoundPlayerCols {
             id: __sdk::__query_builder::Col::new(table_name, "id"),
-            internal_account_id: __sdk::__query_builder::Col::new(
+            user_id: __sdk::__query_builder::Col::new(
                 table_name,
-                "internal_account_id",
+                "user_id",
             ),
             match_id: __sdk::__query_builder::Col::new(table_name, "match_id"),
             time: __sdk::__query_builder::Col::new(table_name, "time"),
