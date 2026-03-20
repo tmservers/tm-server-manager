@@ -9,7 +9,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 struct LoginAsServerArgs {
     pub login: String,
     pub password: String,
-    pub account_id: __sdk::Uuid,
+    pub user_account_id: __sdk::Uuid,
 }
 
 impl __sdk::InModule for LoginAsServerArgs {
@@ -21,15 +21,15 @@ impl __sdk::InModule for LoginAsServerArgs {
 ///
 /// Implemented for [`super::RemoteProcedures`].
 pub trait login_as_server {
-    fn login_as_server(&self, login: String, password: String, account_id: __sdk::Uuid) {
-        self.login_as_server_then(login, password, account_id, |_, _| {});
+    fn login_as_server(&self, login: String, password: String, user_account_id: __sdk::Uuid) {
+        self.login_as_server_then(login, password, user_account_id, |_, _| {});
     }
 
     fn login_as_server_then(
         &self,
         login: String,
         password: String,
-        account_id: __sdk::Uuid,
+        user_account_id: __sdk::Uuid,
 
         __callback: impl FnOnce(&super::ProcedureEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -41,7 +41,7 @@ pub trait login_as_server {
         &self,
         login: String,
         password: String,
-        account_id: __sdk::Uuid,
+        user_account_id: __sdk::Uuid,
     ) -> Result<Result<(), String>, __sdk::InternalError>;
 }
 
@@ -50,7 +50,7 @@ impl login_as_server for super::RemoteProcedures {
         &self,
         login: String,
         password: String,
-        account_id: __sdk::Uuid,
+        user_account_id: __sdk::Uuid,
 
         __callback: impl FnOnce(&super::ProcedureEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -62,7 +62,7 @@ impl login_as_server for super::RemoteProcedures {
                 LoginAsServerArgs {
                     login,
                     password,
-                    account_id,
+                    user_account_id,
                 },
                 __callback,
             );
@@ -72,7 +72,7 @@ impl login_as_server for super::RemoteProcedures {
         &self,
         login: String,
         password: String,
-        account_id: __sdk::Uuid,
+        user_account_id: __sdk::Uuid,
     ) -> Result<Result<(), String>, __sdk::InternalError> {
         self.imp
             .invoke_procedure_async::<_, Result<(), String>>(
@@ -80,7 +80,7 @@ impl login_as_server for super::RemoteProcedures {
                 LoginAsServerArgs {
                     login,
                     password,
-                    account_id,
+                    user_account_id,
                 },
             )
             .await

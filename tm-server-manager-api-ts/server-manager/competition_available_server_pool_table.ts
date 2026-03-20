@@ -13,7 +13,8 @@ import {
 export default __t.row({
   identity: __t.identity(),
   serverLogin: __t.string().name("server_login"),
-  accountId: __t.uuid().name("account_id"),
+  serverAccountId: __t.uuid().name("server_account_id"),
+  userAccountId: __t.uuid().name("user_account_id"),
   id: __t.u32(),
   online: __t.bool(),
   capturable: __t.bool(),

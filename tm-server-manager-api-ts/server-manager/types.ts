@@ -744,8 +744,8 @@ export const PlayerConnect = __t.object("PlayerConnect", {
 export type PlayerConnect = __Infer<typeof PlayerConnect>;
 
 export const PlayerDestination = __t.object("PlayerDestination", {
-  internalAccountId: __t.u32(),
-  desinationServerId: __t.u32(),
+  accountId: __t.uuid(),
+  serverAccountId: __t.uuid(),
 });
 export type PlayerDestination = __Infer<typeof PlayerDestination>;
 
@@ -845,7 +845,8 @@ export type RawServerPlayer = __Infer<typeof RawServerPlayer>;
 export const RawServerV1 = __t.object("RawServerV1", {
   identity: __t.identity(),
   serverLogin: __t.string(),
-  accountId: __t.uuid(),
+  serverAccountId: __t.uuid(),
+  userAccountId: __t.uuid(),
   id: __t.u32(),
   online: __t.bool(),
   capturable: __t.bool(),
@@ -1144,7 +1145,7 @@ export type TabConnectionAction = __Infer<typeof TabConnectionAction>;
 
 export const TabMatchRoundPlayer = __t.object("TabMatchRoundPlayer", {
   id: __t.u32(),
-  internalAccountId: __t.u32(),
+  userId: __t.u32(),
   matchId: __t.u32(),
   time: __t.i32(),
   points: __t.i32(),
@@ -1156,12 +1157,19 @@ export const TabMatchRoundPlayerExt = __t.object("TabMatchRoundPlayerExt", {
   get roundActions() {
     return __t.array(PlayerAction);
   },
-  internalAccountId: __t.u32(),
+  userId: __t.u32(),
   matchId: __t.u32(),
   id: __t.u32(),
   round: __t.u16(),
 });
 export type TabMatchRoundPlayerExt = __Infer<typeof TabMatchRoundPlayerExt>;
+
+export const TabPlayerDestination = __t.object("TabPlayerDestination", {
+  competitionId: __t.u32(),
+  destinationServerId: __t.u32(),
+  userId: __t.u32(),
+});
+export type TabPlayerDestination = __Infer<typeof TabPlayerDestination>;
 
 export const TabTmMap = __t.object("TabTmMap", {
   name: __t.string(),

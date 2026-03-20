@@ -138,6 +138,7 @@ pub mod raw_server_method_call_table;
 pub mod raw_server_method_call_type;
 pub mod raw_server_occupation_type;
 pub mod raw_server_player_add_reducer;
+pub mod raw_server_player_destination_table;
 pub mod raw_server_player_type;
 pub mod raw_server_v_1_type;
 pub mod raw_server_verify_reducer;
@@ -191,6 +192,7 @@ pub mod tab_connection_action_type;
 pub mod tab_connection_type;
 pub mod tab_match_round_player_ext_type;
 pub mod tab_match_round_player_type;
+pub mod tab_player_destination_type;
 pub mod tab_tm_map_type;
 pub mod team_type;
 pub mod test_tournament_type;
@@ -352,6 +354,7 @@ pub use raw_server_method_call_table::*;
 pub use raw_server_method_call_type::RawServerMethodCall;
 pub use raw_server_occupation_type::RawServerOccupation;
 pub use raw_server_player_add_reducer::raw_server_player_add;
+pub use raw_server_player_destination_table::*;
 pub use raw_server_player_type::RawServerPlayer;
 pub use raw_server_v_1_type::RawServerV1;
 pub use raw_server_verify_reducer::raw_server_verify;
@@ -405,6 +408,7 @@ pub use tab_connection_action_type::TabConnectionAction;
 pub use tab_connection_type::TabConnection;
 pub use tab_match_round_player_ext_type::TabMatchRoundPlayerExt;
 pub use tab_match_round_player_type::TabMatchRoundPlayer;
+pub use tab_player_destination_type::TabPlayerDestination;
 pub use tab_tm_map_type::TabTmMap;
 pub use team_type::Team;
 pub use test_tournament_type::TestTournament;
@@ -1066,6 +1070,7 @@ pub struct DbUpdate {
     raw_server_config: __sdk::TableUpdate<ServerConfig>,
     raw_server_current_players: __sdk::TableUpdate<RawServerPlayer>,
     raw_server_method_call: __sdk::TableUpdate<RawServerMethodCall>,
+    raw_server_player_destination: __sdk::TableUpdate<PlayerDestination>,
     registration_player: __sdk::TableUpdate<RegisterationPlayer>,
     this_raw_server: __sdk::TableUpdate<RawServerV1>,
     tm_map_record: __sdk::TableUpdate<TmMapRecord>,
@@ -1147,6 +1152,9 @@ impl TryFrom<__ws::v2::TransactionUpdate> for DbUpdate {
                 ),
                 "raw_server_method_call" => db_update.raw_server_method_call.append(
                     raw_server_method_call_table::parse_table_update(table_update)?,
+                ),
+                "raw_server_player_destination" => db_update.raw_server_player_destination.append(
+                    raw_server_player_destination_table::parse_table_update(table_update)?,
                 ),
                 "registration_player" => db_update
                     .registration_player
@@ -1259,6 +1267,10 @@ impl __sdk::DbUpdate for DbUpdate {
             "raw_server_method_call",
             &self.raw_server_method_call,
         );
+        diff.raw_server_player_destination = cache.apply_diff_to_table::<PlayerDestination>(
+            "raw_server_player_destination",
+            &self.raw_server_player_destination,
+        );
         diff.registration_player = cache.apply_diff_to_table::<RegisterationPlayer>(
             "registration_player",
             &self.registration_player,
@@ -1347,6 +1359,9 @@ impl __sdk::DbUpdate for DbUpdate {
                     .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
                 "raw_server_method_call" => db_update
                     .raw_server_method_call
+                    .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
+                "raw_server_player_destination" => db_update
+                    .raw_server_player_destination
                     .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
                 "registration_player" => db_update
                     .registration_player
@@ -1445,6 +1460,9 @@ impl __sdk::DbUpdate for DbUpdate {
                 "raw_server_method_call" => db_update
                     .raw_server_method_call
                     .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
+                "raw_server_player_destination" => db_update
+                    .raw_server_player_destination
+                    .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
                 "registration_player" => db_update
                     .registration_player
                     .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
@@ -1500,6 +1518,7 @@ pub struct AppliedDiff<'r> {
     raw_server_config: __sdk::TableAppliedDiff<'r, ServerConfig>,
     raw_server_current_players: __sdk::TableAppliedDiff<'r, RawServerPlayer>,
     raw_server_method_call: __sdk::TableAppliedDiff<'r, RawServerMethodCall>,
+    raw_server_player_destination: __sdk::TableAppliedDiff<'r, PlayerDestination>,
     registration_player: __sdk::TableAppliedDiff<'r, RegisterationPlayer>,
     this_raw_server: __sdk::TableAppliedDiff<'r, RawServerV1>,
     tm_map_record: __sdk::TableAppliedDiff<'r, TmMapRecord>,
@@ -1599,6 +1618,11 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
         callbacks.invoke_table_row_callbacks::<RawServerMethodCall>(
             "raw_server_method_call",
             &self.raw_server_method_call,
+            event,
+        );
+        callbacks.invoke_table_row_callbacks::<PlayerDestination>(
+            "raw_server_player_destination",
+            &self.raw_server_player_destination,
             event,
         );
         callbacks.invoke_table_row_callbacks::<RegisterationPlayer>(
@@ -2298,6 +2322,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
         raw_server_config_table::register_table(client_cache);
         raw_server_current_players_table::register_table(client_cache);
         raw_server_method_call_table::register_table(client_cache);
+        raw_server_player_destination_table::register_table(client_cache);
         registration_player_table::register_table(client_cache);
         this_raw_server_table::register_table(client_cache);
         tm_map_record_table::register_table(client_cache);
@@ -2328,6 +2353,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
         "raw_server_config",
         "raw_server_current_players",
         "raw_server_method_call",
+        "raw_server_player_destination",
         "registration_player",
         "this_raw_server",
         "tm_map_record",

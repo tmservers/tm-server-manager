@@ -113,6 +113,7 @@ import RawServerAllowedPlayersRow from "./raw_server_allowed_players_table";
 import RawServerConfigRow from "./raw_server_config_table";
 import RawServerCurrentPlayersRow from "./raw_server_current_players_table";
 import RawServerMethodCallRow from "./raw_server_method_call_table";
+import RawServerPlayerDestinationRow from "./raw_server_player_destination_table";
 import RegistrationPlayerRow from "./registration_player_table";
 import ThisRawServerRow from "./this_raw_server_table";
 import TmMapRecordRow from "./tm_map_record_table";
@@ -293,6 +294,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, RawServerMethodCallRow),
+  raw_server_player_destination: __table({
+    name: 'raw_server_player_destination',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, RawServerPlayerDestinationRow),
   registration_player: __table({
     name: 'registration_player',
     indexes: [

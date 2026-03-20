@@ -7,8 +7,8 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct PlayerDestination {
-    pub user_id: u32,
-    pub desination_server_id: u32,
+    pub account_id: __sdk::Uuid,
+    pub server_account_id: __sdk::Uuid,
 }
 
 impl __sdk::InModule for PlayerDestination {
@@ -19,36 +19,16 @@ impl __sdk::InModule for PlayerDestination {
 ///
 /// Provides typed access to columns for query building.
 pub struct PlayerDestinationCols {
-    pub user_id: __sdk::__query_builder::Col<PlayerDestination, u32>,
-    pub desination_server_id: __sdk::__query_builder::Col<PlayerDestination, u32>,
+    pub account_id: __sdk::__query_builder::Col<PlayerDestination, __sdk::Uuid>,
+    pub server_account_id: __sdk::__query_builder::Col<PlayerDestination, __sdk::Uuid>,
 }
 
 impl __sdk::__query_builder::HasCols for PlayerDestination {
     type Cols = PlayerDestinationCols;
     fn cols(table_name: &'static str) -> Self::Cols {
         PlayerDestinationCols {
-            user_id: __sdk::__query_builder::Col::new(
-                table_name,
-                "user_id",
-            ),
-            desination_server_id: __sdk::__query_builder::Col::new(
-                table_name,
-                "desination_server_id",
-            ),
+            account_id: __sdk::__query_builder::Col::new(table_name, "account_id"),
+            server_account_id: __sdk::__query_builder::Col::new(table_name, "server_account_id"),
         }
     }
 }
-
-/// Indexed column accessor struct for the table `PlayerDestination`.
-///
-/// Provides typed access to indexed columns for query building.
-pub struct PlayerDestinationIxCols {}
-
-impl __sdk::__query_builder::HasIxCols for PlayerDestination {
-    type IxCols = PlayerDestinationIxCols;
-    fn ix_cols(table_name: &'static str) -> Self::IxCols {
-        PlayerDestinationIxCols {}
-    }
-}
-
-impl __sdk::__query_builder::CanBeLookupTable for PlayerDestination {}

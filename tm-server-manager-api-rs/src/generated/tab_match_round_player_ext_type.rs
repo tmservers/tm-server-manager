@@ -36,10 +36,7 @@ impl __sdk::__query_builder::HasCols for TabMatchRoundPlayerExt {
     fn cols(table_name: &'static str) -> Self::Cols {
         TabMatchRoundPlayerExtCols {
             round_actions: __sdk::__query_builder::Col::new(table_name, "round_actions"),
-            user_id: __sdk::__query_builder::Col::new(
-                table_name,
-                "user_id",
-            ),
+            user_id: __sdk::__query_builder::Col::new(table_name, "user_id"),
             match_id: __sdk::__query_builder::Col::new(table_name, "match_id"),
             id: __sdk::__query_builder::Col::new(table_name, "id"),
             round: __sdk::__query_builder::Col::new(table_name, "round"),

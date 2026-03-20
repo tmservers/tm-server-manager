@@ -9,7 +9,8 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 pub struct RawServerV1 {
     pub identity: __sdk::Identity,
     pub server_login: String,
-    pub account_id: __sdk::Uuid,
+    pub server_account_id: __sdk::Uuid,
+    pub user_account_id: __sdk::Uuid,
     pub id: u32,
     pub online: bool,
     pub capturable: bool,
@@ -26,7 +27,8 @@ impl __sdk::InModule for RawServerV1 {
 pub struct RawServerV1Cols {
     pub identity: __sdk::__query_builder::Col<RawServerV1, __sdk::Identity>,
     pub server_login: __sdk::__query_builder::Col<RawServerV1, String>,
-    pub account_id: __sdk::__query_builder::Col<RawServerV1, __sdk::Uuid>,
+    pub server_account_id: __sdk::__query_builder::Col<RawServerV1, __sdk::Uuid>,
+    pub user_account_id: __sdk::__query_builder::Col<RawServerV1, __sdk::Uuid>,
     pub id: __sdk::__query_builder::Col<RawServerV1, u32>,
     pub online: __sdk::__query_builder::Col<RawServerV1, bool>,
     pub capturable: __sdk::__query_builder::Col<RawServerV1, bool>,
@@ -39,7 +41,8 @@ impl __sdk::__query_builder::HasCols for RawServerV1 {
         RawServerV1Cols {
             identity: __sdk::__query_builder::Col::new(table_name, "identity"),
             server_login: __sdk::__query_builder::Col::new(table_name, "server_login"),
-            account_id: __sdk::__query_builder::Col::new(table_name, "account_id"),
+            server_account_id: __sdk::__query_builder::Col::new(table_name, "server_account_id"),
+            user_account_id: __sdk::__query_builder::Col::new(table_name, "user_account_id"),
             id: __sdk::__query_builder::Col::new(table_name, "id"),
             online: __sdk::__query_builder::Col::new(table_name, "online"),
             capturable: __sdk::__query_builder::Col::new(table_name, "capturable"),
@@ -52,20 +55,20 @@ impl __sdk::__query_builder::HasCols for RawServerV1 {
 ///
 /// Provides typed access to indexed columns for query building.
 pub struct RawServerV1IxCols {
-    pub account_id: __sdk::__query_builder::IxCol<RawServerV1, __sdk::Uuid>,
     pub id: __sdk::__query_builder::IxCol<RawServerV1, u32>,
     pub identity: __sdk::__query_builder::IxCol<RawServerV1, __sdk::Identity>,
     pub server_login: __sdk::__query_builder::IxCol<RawServerV1, String>,
+    pub user_account_id: __sdk::__query_builder::IxCol<RawServerV1, __sdk::Uuid>,
 }
 
 impl __sdk::__query_builder::HasIxCols for RawServerV1 {
     type IxCols = RawServerV1IxCols;
     fn ix_cols(table_name: &'static str) -> Self::IxCols {
         RawServerV1IxCols {
-            account_id: __sdk::__query_builder::IxCol::new(table_name, "account_id"),
             id: __sdk::__query_builder::IxCol::new(table_name, "id"),
             identity: __sdk::__query_builder::IxCol::new(table_name, "identity"),
             server_login: __sdk::__query_builder::IxCol::new(table_name, "server_login"),
+            user_account_id: __sdk::__query_builder::IxCol::new(table_name, "user_account_id"),
         }
     }
 }

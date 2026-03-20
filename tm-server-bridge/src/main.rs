@@ -10,8 +10,9 @@ use tm_server_controller::{
 };
 use tm_server_manager_api_rs::{
     DbConnection, ErrorContext, RawServerAllowedPlayersTableAccess, RawServerConfigTableAccess,
-    RawServerMethodCallTableAccess, login_as_server, raw_server_allowed_playersQueryTableAccess,
-    raw_server_configQueryTableAccess, raw_server_method_callQueryTableAccess,
+    RawServerMethodCallTableAccess, RawServerPlayerDestinationTableAccess, login_as_server,
+    raw_server_allowed_playersQueryTableAccess, raw_server_configQueryTableAccess,
+    raw_server_method_callQueryTableAccess, raw_server_player_destinationQueryTableAccess,
 };
 use tm_server_types::config::ServerConfig;
 use tokio::{signal, sync::Mutex};
@@ -195,7 +196,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         spacetime
             .db
             .raw_server_player_destination()
-            .on_insert(check_players_have_destination());
+            .on_insert(|_, _| check_players_have_destination());
     }
 
     match signal::ctrl_c().await {

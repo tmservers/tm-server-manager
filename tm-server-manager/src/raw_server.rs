@@ -136,8 +136,14 @@ pub fn login_as_server(
     }
 
     #[derive(Debug, Deserialize)]
+    struct NadeoServerToken {
+        #[allow(nonstandard_style)]
+        accessToken: String,
+    }
+
+    #[derive(Debug, Deserialize)]
     struct NadeoServerClaims {
-        account_id: String,
+        sub: String,
     }
 
     let mut body_string = result.into_body().into_string_lossy();
@@ -145,11 +151,13 @@ pub fn login_as_server(
     //TODO check if this is the right claim.
     log::error!("{body_string}");
 
+    let mut token =
+        unsafe { json::from_str::<NadeoServerToken>(&mut body_string).map_err(|e| e.to_string())? };
     let claims = unsafe {
-        json::from_str::<NadeoServerClaims>(&mut body_string).map_err(|e| e.to_string())?
+        json::from_str::<NadeoServerClaims>(&mut token.accessToken).map_err(|e| e.to_string())?
     };
 
-    let server_account_id = Uuid::parse_str(&claims.account_id).unwrap();
+    let server_account_id = Uuid::parse_str(&claims.sub).unwrap();
     let identity = ctx.sender();
 
     //TODO this path is not finshed yet

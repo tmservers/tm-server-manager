@@ -5,7 +5,8 @@ use tm_server_controller::{
     method::{ModeScriptMethodsXmlRpc, XmlRpcMethods},
 };
 use tm_server_manager_api_rs::{
-    RawServerAllowedPlayersTableAccess, post_event, raw_server_player_add,
+    RawServerAllowedPlayersTableAccess, RawServerPlayerDestinationTableAccess, post_event,
+    raw_server_player_add,
 };
 use tm_server_types::{
     base::account_id_to_login,
@@ -68,6 +69,27 @@ pub async fn setup_state_synchronization() {
     });
 
     server.on_player_connect(async |event: &PlayerConnect| {
+        // Player destination
+        if let Some(player) = SPACETIME
+            .wait()
+            .db
+            .raw_server_player_destination()
+            .iter()
+            .find(|p| Uuid::parse_str(&event.account_id).unwrap() == p.account_id)
+            && let Err(error) = server
+                .send_open_link_to_account(
+                    player.account_id.to_string(),
+                    format!(
+                        "#qjoin={}@Trackmania",
+                        account_id_to_login(&player.server_account_id.to_string())
+                    ),
+                    1,
+                )
+                .await
+            {
+                tracing::error!("Could not send link: {error}")
+            };
+
         // Server allowlist.
         let Some(player) = SPACETIME
             .wait()
@@ -92,29 +114,6 @@ pub async fn setup_state_synchronization() {
                 "Player tried to connect as a player but is only allowed as a spectator."
             );
             //TODO force to spectator.
-        }
-
-        // Player destination
-        if let Some(player) = SPACETIME
-            .wait()
-            .db
-            .raw_server_player_destination()
-            .iter()
-            .find(|p| Uuid::parse_str(&event.account_id).unwrap() == p.account_id)
-        {
-            if let Err(error) = server
-                .send_open_link_to_account(
-                    player.account_id,
-                    format!(
-                        "#qjoin={}@Trackmania",
-                        account_id_to_login(player.server_account_id.to_string())
-                    ),
-                    1,
-                )
-                .await
-            {
-                tracing::error!("Could not send link: {error}")
-            };
         }
     });
 
