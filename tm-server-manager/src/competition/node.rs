@@ -185,7 +185,7 @@ impl NodeType for NodeKindHandle {
     fn ready(&self, ctx: &ReducerContext) -> Result<(), String> {
         match self {
             NodeKindHandle::MatchV1(match_id) => match_set_preparation(ctx, *match_id),
-            NodeKindHandle::CompetitionV1(_) => todo!(),
+            NodeKindHandle::CompetitionV1(c) => todo!(), //TODO we currently fail here.
             NodeKindHandle::MonitoringV1(_) => todo!(),
             NodeKindHandle::ServerV1(_) => todo!(),
             NodeKindHandle::ScheduleV1(_) => todo!(),

@@ -10,10 +10,10 @@ use tm_server_manager_api_rs::{
 };
 use tm_server_types::{
     base::account_id_to_login,
-    event::{EndRoundStart, PlayerConnect, StartMatch, StartRound, StartServer},
+    event::{EndRoundStart, PlayerConnect, StartMatch, StartServer},
 };
 
-use crate::{SERVER_CONFIG, SPACETIME, TRACKMANIA, TRACKMANIA_FILES};
+use crate::{SERVER_METADATA, SPACETIME, TRACKMANIA, TRACKMANIA_FILES};
 
 pub async fn setup_state_synchronization() {
     let server = TRACKMANIA.wait();
@@ -86,9 +86,9 @@ pub async fn setup_state_synchronization() {
                     1,
                 )
                 .await
-            {
-                tracing::error!("Could not send link: {error}")
-            };
+        {
+            tracing::error!("Could not send link: {error}")
+        };
 
         // Server allowlist.
         let Some(player) = SPACETIME
@@ -120,12 +120,16 @@ pub async fn setup_state_synchronization() {
     server.on_start_server_start(async |event: &StartServer| {
         if event.mode.updated {
             tracing::error!("Mode Script was updated");
+
+            let config = unsafe {
+                std::mem::transmute::<
+                    tm_server_manager_api_rs::ServerConfig,
+                    tm_server_controller::config::ServerConfig,
+                >(SERVER_METADATA.wait().lock().await.config.clone())
+            };
+
             //We need to load the settings again because we changed the script.
-            if let Err(error) = TRACKMANIA
-                .wait()
-                .set_mode_script_settings(SERVER_CONFIG.wait().lock().await.clone())
-                .await
-            {
+            if let Err(error) = TRACKMANIA.wait().set_mode_script_settings(config).await {
                 tracing::error!("{error}")
             };
 
@@ -140,11 +144,15 @@ pub async fn setup_state_synchronization() {
 
     server.on_start_match_start(async |_: &StartMatch| {
         //We need to load the settings again because we changed the script.
-        if let Err(error) = TRACKMANIA
-            .wait()
-            .set_mode_script_settings(SERVER_CONFIG.wait().lock().await.clone())
-            .await
-        {
+
+        let config = unsafe {
+            std::mem::transmute::<
+                tm_server_manager_api_rs::ServerConfig,
+                tm_server_controller::config::ServerConfig,
+            >(SERVER_METADATA.wait().lock().await.config.clone())
+        };
+
+        if let Err(error) = TRACKMANIA.wait().set_mode_script_settings(config).await {
             tracing::error!("{error}")
         };
         //TODO remove.

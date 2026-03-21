@@ -1,10 +1,10 @@
-use spacetimedb::{ReducerContext, Table, Uuid, ViewContext, reducer, table, view};
+use spacetimedb::{ReducerContext, SpacetimeType, Table, Uuid, ViewContext, reducer, table, view};
 use tm_server_types::config::ServerConfig;
 
 use crate::{
     authorization::Authorization,
     raw_server::{tab_raw_server__view, tab_raw_server_occupation__view},
-    tm_match::tab_match__view,
+    tm_match::{MatchStatus, tab_match__view},
 };
 
 #[table(accessor=tab_raw_server_config)]
@@ -62,8 +62,15 @@ pub fn create_server_config(ctx: &ReducerContext, config: ServerConfig) -> Resul
     Ok(())
 } */
 
+#[derive(Debug, SpacetimeType)]
+struct ServerMetadata {
+    config: ServerConfig,
+    open: bool,
+    status: MatchStatus,
+}
+
 #[view(accessor=raw_server_config,public)]
-fn raw_server_config(ctx: &ViewContext) -> Option<ServerConfig> {
+fn raw_server_config(ctx: &ViewContext) -> Option<ServerMetadata> {
     let server = ctx.db.tab_raw_server().identity().find(ctx.sender())?;
 
     let server_occupation = ctx
@@ -80,5 +87,9 @@ fn raw_server_config(ctx: &ViewContext) -> Option<ServerConfig> {
         .id()
         .find(tm_match.get_config_id())?;
 
-    Some(config.config)
+    Some(ServerMetadata {
+        config: config.config,
+        open: tm_match.is_open(),
+        status: tm_match.status(),
+    })
 }

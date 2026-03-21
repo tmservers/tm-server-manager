@@ -61,7 +61,7 @@ impl CompetitionV1 {
             id: 0,
             parent_id,
             name,
-            status: CompetitionStatus::Planning,
+            status: CompetitionStatus::Configuring,
             template: false,
         }
     }
@@ -74,7 +74,7 @@ impl CompetitionV1 {
             id: 0,
             parent_id,
             name,
-            status: CompetitionStatus::Planning,
+            status: CompetitionStatus::Configuring,
             template: true,
         }
     }
@@ -82,16 +82,14 @@ impl CompetitionV1 {
 
 #[derive(Debug, SpacetimeType, Clone, Copy)]
 pub enum CompetitionStatus {
-    /// If you just created the competition it will be in the planning phase.
-    /// Here you can set everything up as you like.
-    /// The competition is not visible to the public.
-    Planning,
-    Registration,
+    Configuring,
+    Configured,
     /// Once the competition is ongoing the configuration is immutable.
     /// That means it will play through the configured stages and advancing logic.
     Ongoing,
     /// The whole competition is now immutable.
     Completed,
+    Locked,
 }
 
 /// Adds a new Competition to the specified project.

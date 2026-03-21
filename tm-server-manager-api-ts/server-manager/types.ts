@@ -1053,6 +1053,17 @@ export const ServerConfig = __t.object("ServerConfig", {
 });
 export type ServerConfig = __Infer<typeof ServerConfig>;
 
+export const ServerMetadata = __t.object("ServerMetadata", {
+  get config() {
+    return ServerConfig;
+  },
+  open: __t.bool(),
+  get status() {
+    return MatchStatus;
+  },
+});
+export type ServerMetadata = __Infer<typeof ServerMetadata>;
+
 export const ServerModeInfo = __t.object("ServerModeInfo", {
   updated: __t.bool(),
   name: __t.string(),

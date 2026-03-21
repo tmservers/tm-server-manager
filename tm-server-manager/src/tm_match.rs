@@ -109,6 +109,14 @@ impl TmMatchV1 {
         self.status == MatchStatus::Live
     }
 
+    pub fn is_open(&self) -> bool {
+        self.open
+    }
+
+    pub fn status(&self) -> MatchStatus {
+        self.status
+    }
+
     pub fn get_comp_id(&self) -> u32 {
         self.parent_id
     }
@@ -129,7 +137,7 @@ impl TmMatchV1 {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, SpacetimeType)]
+#[derive(Debug, PartialEq, Eq, SpacetimeType, Clone, Copy)]
 pub enum MatchStatus {
     /// Allows to change all associated configurations of the Match.
     Configuring,

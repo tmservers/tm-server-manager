@@ -1,30 +1,23 @@
 use nadeo_api::{NadeoRequest, auth::AuthType, request::Method};
 use serde::{Deserialize, Serialize};
 use tm_server_controller::method::XmlRpcMethods;
-use tm_server_manager_api_rs::EventContext;
-use tm_server_types::config::ServerConfig;
+use tm_server_manager_api_rs::{EventContext, ServerMetadata};
 use tokio::sync::Mutex;
 
-use crate::{NADEO, SERVER_CONFIG, TRACKMANIA, TRACKMANIA_FILES};
+use crate::{NADEO, SERVER_METADATA, TRACKMANIA, TRACKMANIA_FILES};
 
-pub fn config_update(_: &EventContext, new_config: &tm_server_manager_api_rs::ServerConfig) {
-    //SAFETY: Same type but rust can't know that.
-    let configuration = unsafe {
-        std::mem::transmute::<
-            tm_server_manager_api_rs::ServerConfig,
-            tm_server_controller::config::ServerConfig,
-        >(new_config.clone())
-    };
-
+pub fn metadata_update(_: &EventContext, new_metadata: &tm_server_manager_api_rs::ServerMetadata) {
     tokio::task::block_in_place(move || {
-        let old_config = SERVER_CONFIG.get();
+        let old_metadata = SERVER_METADATA.get();
         tokio::runtime::Handle::current().block_on(async move {
             let server = TRACKMANIA.wait();
 
             _ = server
                 .chat_send_server_massage("[tmservers.live] New configuration is loading.")
                 .await;
-            if old_config.is_some() && *old_config.unwrap().lock().await == configuration {
+            if old_metadata.is_some()
+                && old_metadata.unwrap().lock().await.config == new_metadata.config
+            {
                 _ = server.restart_map().await;
                 _ = server
                     .chat_send_server_massage(
@@ -33,7 +26,7 @@ pub fn config_update(_: &EventContext, new_config: &tm_server_manager_api_rs::Se
                     .await;
                 return;
             }
-            if configure(configuration).await {
+            if configure(new_metadata.clone()).await {
                 _ = server.restart_map().await;
             }
 
@@ -44,8 +37,15 @@ pub fn config_update(_: &EventContext, new_config: &tm_server_manager_api_rs::Se
     });
 }
 
-pub async fn configure(server_config: ServerConfig) -> bool {
+pub async fn configure(server_metadata: ServerMetadata) -> bool {
     let local_server = TRACKMANIA.wait();
+
+    let server_config = unsafe {
+        std::mem::transmute::<
+            tm_server_manager_api_rs::ServerConfig,
+            tm_server_controller::config::ServerConfig,
+        >(server_metadata.config.clone())
+    };
 
     let config = server_config.into_xml();
 
@@ -68,11 +68,11 @@ pub async fn configure(server_config: ServerConfig) -> bool {
     // The i32 is the map count which is not important to verify.
     if loaded.is_ok() {
         {
-            let mut locked = SERVER_CONFIG
-                .get_or_init(|| Mutex::new(server_config.clone()))
+            let mut locked = SERVER_METADATA
+                .get_or_init(|| Mutex::new(server_metadata.clone()))
                 .lock()
                 .await;
-            *locked = server_config;
+            *locked = server_metadata;
         }
 
         //TODO remove.

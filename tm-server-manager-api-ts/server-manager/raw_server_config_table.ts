@@ -10,24 +10,17 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 import {
-  ServerOptions,
-  Common,
-  ModeSettings,
-  MapPoolConfig,
+  ServerConfig,
+  MatchStatus,
 } from "./types";
 
 
 export default __t.row({
-  get options() {
-    return ServerOptions;
+  get config() {
+    return ServerConfig;
   },
-  get common() {
-    return Common;
-  },
-  get mode() {
-    return ModeSettings;
-  },
-  get maps() {
-    return MapPoolConfig;
+  open: __t.bool(),
+  get status() {
+    return MatchStatus;
   },
 });

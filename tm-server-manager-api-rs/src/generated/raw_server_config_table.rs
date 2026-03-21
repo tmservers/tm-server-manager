@@ -2,11 +2,9 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN YOUR MODULE SOURCE CODE INSTEAD.
 
 #![allow(unused, clippy::all)]
-use super::common_type::Common;
-use super::map_pool_config_type::MapPoolConfig;
-use super::mode_settings_type::ModeSettings;
+use super::match_status_type::MatchStatus;
 use super::server_config_type::ServerConfig;
-use super::server_options_type::ServerOptions;
+use super::server_metadata_type::ServerMetadata;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 /// Table handle for the table `raw_server_config`.
@@ -18,7 +16,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 /// but to directly chain method calls,
 /// like `ctx.db.raw_server_config().on_insert(...)`.
 pub struct RawServerConfigTableHandle<'ctx> {
-    imp: __sdk::TableHandle<ServerConfig>,
+    imp: __sdk::TableHandle<ServerMetadata>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -35,7 +33,7 @@ pub trait RawServerConfigTableAccess {
 impl RawServerConfigTableAccess for super::RemoteTables {
     fn raw_server_config(&self) -> RawServerConfigTableHandle<'_> {
         RawServerConfigTableHandle {
-            imp: self.imp.get_table::<ServerConfig>("raw_server_config"),
+            imp: self.imp.get_table::<ServerMetadata>("raw_server_config"),
             ctx: std::marker::PhantomData,
         }
     }
@@ -45,13 +43,13 @@ pub struct RawServerConfigInsertCallbackId(__sdk::CallbackId);
 pub struct RawServerConfigDeleteCallbackId(__sdk::CallbackId);
 
 impl<'ctx> __sdk::Table for RawServerConfigTableHandle<'ctx> {
-    type Row = ServerConfig;
+    type Row = ServerMetadata;
     type EventContext = super::EventContext;
 
     fn count(&self) -> u64 {
         self.imp.count()
     }
-    fn iter(&self) -> impl Iterator<Item = ServerConfig> + '_ {
+    fn iter(&self) -> impl Iterator<Item = ServerMetadata> + '_ {
         self.imp.iter()
     }
 
@@ -84,32 +82,32 @@ impl<'ctx> __sdk::Table for RawServerConfigTableHandle<'ctx> {
 
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
-    let _table = client_cache.get_or_make_table::<ServerConfig>("raw_server_config");
+    let _table = client_cache.get_or_make_table::<ServerMetadata>("raw_server_config");
 }
 
 #[doc(hidden)]
 pub(super) fn parse_table_update(
     raw_updates: __ws::v2::TableUpdate,
-) -> __sdk::Result<__sdk::TableUpdate<ServerConfig>> {
+) -> __sdk::Result<__sdk::TableUpdate<ServerMetadata>> {
     __sdk::TableUpdate::parse_table_update(raw_updates).map_err(|e| {
-        __sdk::InternalError::failed_parse("TableUpdate<ServerConfig>", "TableUpdate")
+        __sdk::InternalError::failed_parse("TableUpdate<ServerMetadata>", "TableUpdate")
             .with_cause(e)
             .into()
     })
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for query builder access to the table `ServerConfig`.
+/// Extension trait for query builder access to the table `ServerMetadata`.
 ///
 /// Implemented for [`__sdk::QueryTableAccessor`].
 pub trait raw_server_configQueryTableAccess {
     #[allow(non_snake_case)]
-    /// Get a query builder for the table `ServerConfig`.
-    fn raw_server_config(&self) -> __sdk::__query_builder::Table<ServerConfig>;
+    /// Get a query builder for the table `ServerMetadata`.
+    fn raw_server_config(&self) -> __sdk::__query_builder::Table<ServerMetadata>;
 }
 
 impl raw_server_configQueryTableAccess for __sdk::QueryTableAccessor {
-    fn raw_server_config(&self) -> __sdk::__query_builder::Table<ServerConfig> {
+    fn raw_server_config(&self) -> __sdk::__query_builder::Table<ServerMetadata> {
         __sdk::__query_builder::Table::new("raw_server_config")
     }
 }

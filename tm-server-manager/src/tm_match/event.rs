@@ -15,7 +15,7 @@ use crate::{
         state::{MatchState, tab_match_state, tab_match_state__view},
         tab_match,
     },
-    user::{tab_user, tab_user_ids_map},
+    user::{UserIdsMap, UserV1, tab_user, tab_user_ids_map},
 };
 
 #[derive(Debug)]
@@ -148,13 +148,22 @@ pub(crate) fn handle_match_event(
             let mut state = ctx.db.tab_match_state().match_id().find(match_id).unwrap();
 
             let account_id = Uuid::parse_str(&start_map.map.author_account_id).unwrap();
-            let user_id = ctx
+            let account = ctx
                 .db
                 .tab_user_ids_map()
                 .account_id()
                 .find(account_id)
-                .unwrap()
-                .user_id;
+                .unwrap_or_else(|| {
+                    let user = ctx.db.tab_user().account_id().insert_or_update(UserV1::new(
+                        account_id,
+                        start_map.map.author_nickname.clone(),
+                    ));
+                    ctx.db
+                        .tab_user_ids_map()
+                        .account_id()
+                        .insert_or_update(UserIdsMap::new(account_id, user.internal_id))
+                });
+            let user_id = account.user_id;
 
             let map = ctx
                 .db
@@ -184,6 +193,9 @@ pub(crate) fn handle_match_event(
 
                 ctx.db.tab_match_state().match_id().update(state);
             }
+        }
+        Event::StartMatchStart(_) => {
+            log::info!("Match {match_id} has started!")
         }
         Event::EndMatchEnd(_) => {
             let state = ctx.db.tab_match_state().match_id().find(match_id).unwrap();

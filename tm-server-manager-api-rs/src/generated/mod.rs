@@ -176,6 +176,7 @@ pub mod schedule_try_run_reducer;
 pub mod schedule_v_1_type;
 pub mod scores_type;
 pub mod server_config_type;
+pub mod server_metadata_type;
 pub mod server_method_call_reducer;
 pub mod server_method_response_reducer;
 pub mod server_mode_info_type;
@@ -392,6 +393,7 @@ pub use schedule_try_run_reducer::schedule_try_run;
 pub use schedule_v_1_type::ScheduleV1;
 pub use scores_type::Scores;
 pub use server_config_type::ServerConfig;
+pub use server_metadata_type::ServerMetadata;
 pub use server_method_call_reducer::server_method_call;
 pub use server_method_response_reducer::server_method_response;
 pub use server_mode_info_type::ServerModeInfo;
@@ -1067,7 +1069,7 @@ pub struct DbUpdate {
     my_user: __sdk::TableUpdate<UserV1>,
     project: __sdk::TableUpdate<ProjectV1>,
     raw_server_allowed_players: __sdk::TableUpdate<PermittedPlayer>,
-    raw_server_config: __sdk::TableUpdate<ServerConfig>,
+    raw_server_config: __sdk::TableUpdate<ServerMetadata>,
     raw_server_current_players: __sdk::TableUpdate<RawServerPlayer>,
     raw_server_method_call: __sdk::TableUpdate<RawServerMethodCall>,
     raw_server_player_destination: __sdk::TableUpdate<PlayerDestination>,
@@ -1255,8 +1257,8 @@ impl __sdk::DbUpdate for DbUpdate {
             "raw_server_allowed_players",
             &self.raw_server_allowed_players,
         );
-        diff.raw_server_config =
-            cache.apply_diff_to_table::<ServerConfig>("raw_server_config", &self.raw_server_config);
+        diff.raw_server_config = cache
+            .apply_diff_to_table::<ServerMetadata>("raw_server_config", &self.raw_server_config);
         diff.raw_server_current_players = cache
             .apply_diff_to_table::<RawServerPlayer>(
                 "raw_server_current_players",
@@ -1515,7 +1517,7 @@ pub struct AppliedDiff<'r> {
     my_user: __sdk::TableAppliedDiff<'r, UserV1>,
     project: __sdk::TableAppliedDiff<'r, ProjectV1>,
     raw_server_allowed_players: __sdk::TableAppliedDiff<'r, PermittedPlayer>,
-    raw_server_config: __sdk::TableAppliedDiff<'r, ServerConfig>,
+    raw_server_config: __sdk::TableAppliedDiff<'r, ServerMetadata>,
     raw_server_current_players: __sdk::TableAppliedDiff<'r, RawServerPlayer>,
     raw_server_method_call: __sdk::TableAppliedDiff<'r, RawServerMethodCall>,
     raw_server_player_destination: __sdk::TableAppliedDiff<'r, PlayerDestination>,
@@ -1605,7 +1607,7 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             &self.raw_server_allowed_players,
             event,
         );
-        callbacks.invoke_table_row_callbacks::<ServerConfig>(
+        callbacks.invoke_table_row_callbacks::<ServerMetadata>(
             "raw_server_config",
             &self.raw_server_config,
             event,

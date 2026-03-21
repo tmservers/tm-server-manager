@@ -66,6 +66,10 @@ impl TabConnection {
         self.connection_type == ConnectionType::Action
     }
 
+    pub(crate) fn resolve(&mut self) {
+        self.status = ConnectionStatus::Resolved
+    }
+
     pub(crate) fn is_resolved(&self) -> bool {
         self.status == ConnectionStatus::Resolved
     }
@@ -332,7 +336,11 @@ pub(crate) fn internal_graph_resolution_node_finished(
         .tab_connection()
         .targets_of()
         .filter(trigger.split())
-        .map(CompetitionConnection::from);
+        .map(|mut c| {
+            c.resolve();
+            ctx.db.tab_connection().id().update(c);
+            CompetitionConnection::from(c)
+        });
 
     for affected_connection in affected_connections {
         if affected_connection.is_action() {

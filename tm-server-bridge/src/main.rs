@@ -10,17 +10,16 @@ use tm_server_controller::{
 };
 use tm_server_manager_api_rs::{
     DbConnection, ErrorContext, RawServerAllowedPlayersTableAccess, RawServerConfigTableAccess,
-    RawServerMethodCallTableAccess, RawServerPlayerDestinationTableAccess, login_as_server,
-    raw_server_allowed_playersQueryTableAccess, raw_server_configQueryTableAccess,
+    RawServerMethodCallTableAccess, RawServerPlayerDestinationTableAccess, ServerMetadata,
+    login_as_server, raw_server_allowed_playersQueryTableAccess, raw_server_configQueryTableAccess,
     raw_server_method_callQueryTableAccess, raw_server_player_destinationQueryTableAccess,
 };
-use tm_server_types::config::ServerConfig;
 use tokio::{signal, sync::Mutex};
 use tracing::{instrument, warn};
 
 use crate::{
     chat::setup_chat,
-    config::config_update,
+    config::metadata_update,
     methods::method_call_received,
     state::{check_allowed_players, check_players_have_destination, setup_state_synchronization},
     telemetry::init_tracing_subscriber,
@@ -47,7 +46,7 @@ static NADEO: OnceLock<Mutex<NadeoClient>> = OnceLock::new();
 /// Path to the Filesystem of the trackmnia server UserData.
 static TRACKMANIA_FILES: OnceLock<String> = OnceLock::new();
 
-static SERVER_CONFIG: OnceLock<Mutex<ServerConfig>> = OnceLock::new();
+static SERVER_METADATA: OnceLock<Mutex<ServerMetadata>> = OnceLock::new();
 
 /// Load credentials from a file and connect to the database.
 #[instrument(level = "debug")]
@@ -181,7 +180,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             .subscribe();
 
         //TODO switch to this_server if on_update callbacks are there
-        spacetime.db.raw_server_config().on_insert(config_update);
+        spacetime.db.raw_server_config().on_insert(metadata_update);
 
         spacetime
             .db

@@ -21,25 +21,3 @@ pub struct ServerConfig {
 impl __sdk::InModule for ServerConfig {
     type Module = super::RemoteModule;
 }
-
-/// Column accessor struct for the table `ServerConfig`.
-///
-/// Provides typed access to columns for query building.
-pub struct ServerConfigCols {
-    pub options: __sdk::__query_builder::Col<ServerConfig, ServerOptions>,
-    pub common: __sdk::__query_builder::Col<ServerConfig, Common>,
-    pub mode: __sdk::__query_builder::Col<ServerConfig, ModeSettings>,
-    pub maps: __sdk::__query_builder::Col<ServerConfig, MapPoolConfig>,
-}
-
-impl __sdk::__query_builder::HasCols for ServerConfig {
-    type Cols = ServerConfigCols;
-    fn cols(table_name: &'static str) -> Self::Cols {
-        ServerConfigCols {
-            options: __sdk::__query_builder::Col::new(table_name, "options"),
-            common: __sdk::__query_builder::Col::new(table_name, "common"),
-            mode: __sdk::__query_builder::Col::new(table_name, "mode"),
-            maps: __sdk::__query_builder::Col::new(table_name, "maps"),
-        }
-    }
-}
