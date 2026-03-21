@@ -8,7 +8,7 @@ pub use core::TrackmaniaServer;
 pub use tm_server_types::*;
 
 #[tokio::test]
-async fn server_connect_and_authenticate() {
+async fn server_connect_and_authenticate() -> Result<(), ClientError> {
     use testcontainers::{
         GenericImage, ImageExt,
         core::{IntoContainerPort, WaitFor},
@@ -42,7 +42,7 @@ async fn server_connect_and_authenticate() {
 
     println!("{:?}", tm_url);
 
-    let server = TrackmaniaServer::new(tm_url).await;
+    let server = TrackmaniaServer::new(tm_url).await?;
     let success: Result<bool, ClientError> = server.call("SetApiVersion", "2025-07-04").await;
 
     println!("{:?}", success);
@@ -52,4 +52,6 @@ async fn server_connect_and_authenticate() {
         .await;
     println!("{:?}", success);
     assert!(success.is_ok() && success.unwrap());
+
+    Ok(())
 }

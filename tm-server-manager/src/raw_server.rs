@@ -1,9 +1,10 @@
 use base64::Engine;
-use base64::prelude::BASE64_STANDARD;
+use base64::prelude::{BASE64_STANDARD, BASE64_URL_SAFE, BASE64_URL_SAFE_NO_PAD};
 use serde::Deserialize;
 use spacetimedb::http::Request;
 use spacetimedb::{Identity, Query, ReducerContext, Table, Uuid, ViewContext, reducer, table};
 use spacetimedb::{ProcedureContext, view};
+use tm_server_types::base::account_id_to_login;
 
 use crate::authorization::Authorization;
 
@@ -136,8 +137,8 @@ pub fn login_as_server(
     }
 
     #[derive(Debug, Deserialize)]
+    #[allow(non_snake_case)]
     struct NadeoServerToken {
-        #[allow(nonstandard_style)]
         accessToken: String,
     }
 
@@ -148,14 +149,11 @@ pub fn login_as_server(
 
     let mut body_string = result.into_body().into_string_lossy();
 
-    //TODO check if this is the right claim.
-    log::error!("{body_string}");
-
-    let mut token =
+    let token =
         unsafe { json::from_str::<NadeoServerToken>(&mut body_string).map_err(|e| e.to_string())? };
-    let claims = unsafe {
-        json::from_str::<NadeoServerClaims>(&mut token.accessToken).map_err(|e| e.to_string())?
-    };
+    let payload = token.accessToken.split(".").collect::<Vec<_>>()[1].to_string();
+    let mut payload = BASE64_URL_SAFE_NO_PAD.decode(payload).unwrap();
+    let claims = json::from_slice::<NadeoServerClaims>(&mut payload).map_err(|e| e.to_string())?;
 
     let server_account_id = Uuid::parse_str(&claims.sub).unwrap();
     let identity = ctx.sender();

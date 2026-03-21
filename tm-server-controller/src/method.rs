@@ -395,15 +395,16 @@ impl TypeMethodCall for MethodCall {
     }
 }
 
-impl Into<MethodResponse> for ClientError {
-    fn into(self) -> MethodResponse {
-        match self {
+impl From<ClientError> for MethodResponse {
+    fn from(value: ClientError) -> Self {
+        match value {
             ClientError::Fault { fault } => MethodResponse::Error(MethodError {
                 code: fault.code(),
                 message: fault.string().into(),
             }),
             ClientError::RPC { error } => MethodResponse::RpcError(error.to_string()),
             ClientError::Incomplete => MethodResponse::RpcError("Incomplete".into()),
+            ClientError::Connection { error } => MethodResponse::RpcError(error),
         }
     }
 }

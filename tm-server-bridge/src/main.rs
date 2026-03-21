@@ -110,7 +110,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     //Connect to the Trackmania server
     {
-        let server = TrackmaniaServer::new(tm_server_url).await;
+        let server = TrackmaniaServer::new(tm_server_url).await?;
         _ = TRACKMANIA.set(server);
     }
 

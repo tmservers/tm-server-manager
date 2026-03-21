@@ -114,17 +114,38 @@ pub struct TrackmaniaServer {
 }
 
 impl TrackmaniaServer {
-    pub async fn new(url: impl Into<String>) -> Self {
-        let stream = BufWriter::new(TcpStream::connect(url.into()).await.unwrap());
+    pub async fn new(url: impl Into<String>) -> Result<Self, ClientError> {
+        let stream = BufWriter::new(TcpStream::connect(url.into()).await.map_err(|e| {
+            ClientError::Connection {
+                error: e.to_string(),
+            }
+        })?);
 
         let (mut reader, writer) = io::split(stream);
 
         // Expect the "GbxRemote 2" handshake message.
         let mut buf = vec![0; 15];
-        let _ = reader.read(&mut buf).await;
+        let read = reader
+            .read(&mut buf)
+            .await
+            .map_err(|e| ClientError::Connection {
+                error: e.to_string(),
+            })?;
+
+        if read != 15 {
+            return Err(ClientError::Connection {
+                error: format!("Expected 15 bytes got {}", read),
+            });
+        }
 
         let size = u32::from_le_bytes([buf[0], buf[1], buf[2], buf[3]]);
         let call = String::from_utf8(buf[4..((size + 4) as usize)].to_vec()).unwrap();
+
+        if call != "GBXRemote 2" {
+            return Err(ClientError::Connection {
+                error: format!("Expected handshake of value: GMXRemote 2 got: {}", call),
+            });
+        }
 
         info!("Connected to: {call}");
 
@@ -152,7 +173,7 @@ impl TrackmaniaServer {
             global_callback_sender,
             reader,
         );
-        client
+        Ok(client)
     }
 
     /// Internal helper to setup the thread which is responsible for sending messages to the server.
@@ -281,9 +302,11 @@ impl TrackmaniaServer {
                     // there is, this means that the peer closed the socket while
                     // sending a frame.
                     if buffer.is_empty() {
+                        //TODO do not exit the process but instead call closure that users must set on connect.
                         error!("The Trackmania server ended the connection.");
                         std::process::exit(1);
                     } else {
+                        //TODO do not exit the process but instead call closure that users must set on connect.
                         error!("connection reset by peer");
                         std::process::exit(1);
                     }
@@ -391,14 +414,14 @@ impl TrackmaniaServer {
 #[derive(Debug, Error)]
 pub enum ClientError {
     /// Error variant for XML-RPC server faults.
-    #[error("{}", fault)]
+    #[error("Trackmania server fault: {}", fault)]
     Fault {
         /// Fault returned by the server.
         #[from]
         fault: Fault,
     },
     /// Error variant for XML-RPC errors.
-    #[error("{}", error)]
+    #[error("XML-RPC error: {}", error)]
     RPC {
         /// XML-RPC parsing error.
         #[from]
@@ -406,6 +429,11 @@ pub enum ClientError {
     },
     #[error("request incomplete")]
     Incomplete,
+    #[error("Connection error: {}", error)]
+    Connection {
+        /// XML-RPC parsing error.
+        error: String,
+    },
 }
 
 #[allow(unused)]

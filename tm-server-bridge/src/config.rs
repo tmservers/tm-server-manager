@@ -19,18 +19,23 @@ pub fn config_update(_: &EventContext, new_config: &tm_server_manager_api_rs::Se
     tokio::task::block_in_place(move || {
         let old_config = SERVER_CONFIG.get();
         tokio::runtime::Handle::current().block_on(async move {
-            {
-                if old_config.is_some() && *old_config.unwrap().lock().await == configuration {
-                    return;
-                }
-            }
-
             let server = TRACKMANIA.wait();
 
             _ = server
                 .chat_send_server_massage("[tmservers.live] New configuration is loading.")
                 .await;
-            configure(configuration).await;
+            if old_config.is_some() && *old_config.unwrap().lock().await == configuration {
+                _ = server.restart_map().await;
+                _ = server
+                    .chat_send_server_massage(
+                        "[tmservers.live] Configuration stayed the same restarting regardless.",
+                    )
+                    .await;
+                return;
+            }
+            if configure(configuration).await {
+                _ = server.restart_map().await;
+            }
 
             _ = server
                 .chat_send_server_massage("[tmservers.live] New configuration loaded.")
@@ -39,7 +44,7 @@ pub fn config_update(_: &EventContext, new_config: &tm_server_manager_api_rs::Se
     });
 }
 
-pub async fn configure(server_config: ServerConfig) {
+pub async fn configure(server_config: ServerConfig) -> bool {
     let local_server = TRACKMANIA.wait();
 
     let config = server_config.into_xml();
@@ -50,7 +55,7 @@ pub async fn configure(server_config: ServerConfig) {
 
     if let Err(error) = std::fs::write(&full_path, config) {
         tracing::error!("Could not write the configuration file: {error}");
-        return;
+        return false;
     }
 
     // Load all maps to make them accessible locally
@@ -70,13 +75,14 @@ pub async fn configure(server_config: ServerConfig) {
             *locked = server_config;
         }
 
-        _ = local_server.restart_map().await;
         //TODO remove.
         //let _: Result<(), ClientError> = local_server.call("GetModeScriptSettings", ()).await;
 
         tracing::info!("Loaded new configuration");
+        true
     } else {
-        tracing::error!("There was an error loading the new configuration file. {loaded:?}")
+        tracing::error!("There was an error loading the new configuration file. {loaded:?}");
+        false
     }
 }
 

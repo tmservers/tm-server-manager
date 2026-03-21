@@ -2,7 +2,10 @@ use spacetimedb::{CaseConversionPolicy, ReducerContext, Table, Uuid};
 
 use crate::{
     raw_server::tab_raw_server,
-    user::{UserIdentity, UserV1 as UserStruct, tab_user as db_user, tab_user_identity},
+    user::{
+        UserIdentity, UserIdsMap, UserV1 as UserStruct, tab_user as db_user, tab_user_identity,
+        tab_user_ids_map,
+    },
 };
 
 pub mod authorization;
@@ -51,27 +54,24 @@ fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
         // The production feature flag is enforced in CI.
         #[cfg(not(feature = "production"))]
         if jwt.issuer() == "https://auth.spacetimedb.com" {
-            log::warn!("Connected as Mr.Joermungandr in a development environment!");
+            log::warn!("Connected as test user Mr.Joermungandr in a development environment!");
             let account_id: Uuid = Uuid::parse_str("3467014a-c1cc-4aae-99fe-6beb5eca232a").unwrap();
 
             let preferred_username = String::from("Mr.Joermungandr");
 
-            if ctx.db.tab_user().account_id().find(account_id).is_some() {
-                ctx.db
-                    .tab_user_identity()
-                    .account_id()
-                    .insert_or_update(UserIdentity::new(account_id, ctx.sender()));
-                Ok::<(), String>(())
-            } else {
-                ctx.db
-                    .tab_user()
-                    .try_insert(UserStruct::new(account_id, preferred_username))?;
-                ctx.db
-                    .tab_user_identity()
-                    .try_insert(UserIdentity::new(account_id, ctx.sender()))?;
-
-                Ok(())
-            }?;
+            let user = ctx
+                .db
+                .tab_user()
+                .account_id()
+                .try_insert_or_update(UserStruct::new(account_id, preferred_username))?;
+            ctx.db
+                .tab_user_identity()
+                .account_id()
+                .try_insert_or_update(UserIdentity::new(account_id, ctx.sender()))?;
+            ctx.db
+                .tab_user_ids_map()
+                .account_id()
+                .try_insert_or_update(UserIdsMap::new(account_id, user.internal_id))?;
 
             return Ok(());
         }
@@ -91,7 +91,8 @@ fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
 
             let account_id = Uuid::parse_str(&claims.provider_id).map_err(|e| e.to_string())?;
 
-            ctx.db
+            let user = ctx
+                .db
                 .tab_user()
                 .account_id()
                 .try_insert_or_update(UserStruct::new(account_id, claims.preferred_username))?;
@@ -99,6 +100,10 @@ fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
                 .tab_user_identity()
                 .account_id()
                 .try_insert_or_update(UserIdentity::new(account_id, ctx.sender()))?;
+            ctx.db
+                .tab_user_ids_map()
+                .account_id()
+                .try_insert_or_update(UserIdsMap::new(account_id, user.internal_id))?;
 
             return Ok(());
         }
