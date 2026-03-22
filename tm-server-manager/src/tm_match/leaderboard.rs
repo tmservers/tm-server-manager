@@ -159,7 +159,7 @@ pub fn match_leaderboard(
         ctx.db
             .tab_match_round_player()
             .match_round_range()
-            .filter((match_id, 1..round))
+            .filter((match_id, 1..=round))
             .collect()
     } else {
         ctx.db
@@ -176,7 +176,8 @@ pub fn match_leaderboard(
             .and_modify(|e| {
                 e.points += entry.points;
                 if entry.round > e.round {
-                    e.round = entry.round
+                    e.round = entry.round;
+                    e.id = entry.id;
                 }
             })
             .or_insert(entry);
