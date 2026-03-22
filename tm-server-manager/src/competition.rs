@@ -80,7 +80,7 @@ impl CompetitionV1 {
     }
 }
 
-#[derive(Debug, SpacetimeType, Clone, Copy)]
+#[derive(Debug, SpacetimeType, Clone, Copy, PartialEq, Eq)]
 pub enum CompetitionStatus {
     Configuring,
     Configured,
@@ -116,6 +116,52 @@ pub fn competition_create(
         let new_competition = unsafe { CompetitionV1::new(name, parent_id) };
         ctx.db.tab_competition().try_insert(new_competition)?;
     }
+
+    Ok(())
+}
+
+#[reducer]
+pub fn competition_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> {
+    let Some(mut competition) = ctx.db.tab_competition().id().find(id) else {
+        return Err("Competition was mot found!".into());
+    };
+
+    //TODO
+    ctx.auth_builder(competition.parent_id)
+        //.permission(CompetitionPermissionsV1::COMPETITION_)
+        .authorize()?;
+
+    if competition.status != CompetitionStatus::Configuring {
+        return Err("Competition is not in configuring state".into());
+    }
+    competition.status = CompetitionStatus::Configured;
+
+    ctx.db.tab_competition().id().update(competition);
+
+    Ok(())
+}
+
+#[reducer]
+fn competition_ongoing(ctx: &ReducerContext, id: u32) -> Result<(), String> {
+    //TODO
+    ctx.auth_builder(id)
+        //.permission(CompetitionPermissionsV1::COMPETITION_)
+        .authorize()?;
+
+    authorized_competition_ongoing(ctx, id)
+}
+
+pub(crate) fn authorized_competition_ongoing(ctx: &ReducerContext, id: u32) -> Result<(), String> {
+    let Some(mut competition) = ctx.db.tab_competition().id().find(id) else {
+        return Err("Competition was mot found!".into());
+    };
+
+    if competition.status != CompetitionStatus::Configured {
+        return Err("Competition is not in configured state".into());
+    }
+    competition.status = CompetitionStatus::Ongoing;
+
+    ctx.db.tab_competition().id().update(competition);
 
     Ok(())
 }

@@ -10,35 +10,35 @@ use crate::{
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub struct Player {
+    #[cfg_attr(feature = "serde", serde(rename = "bestracecheckpoints"))]
+    pub best_race_checkpoints: Vec<u32>,
+    #[cfg_attr(feature = "serde", serde(rename = "prevracecheckpoints"))]
+    pub previous_race_checkpoints: Vec<u32>,
+    #[cfg_attr(feature = "serde", serde(rename = "bestlapcheckpoints"))]
+    pub best_lap_checkpoints: Vec<u32>,
+
     #[cfg_attr(feature = "serde", serde(rename = "accountid"))]
-    account_id: String,
+    pub account_id: String,
+    pub name: String,
 
-    name: String,
+    pub team: i32,
 
-    team: i32,
-
-    rank: u32,
+    pub rank: u32,
 
     #[cfg_attr(feature = "serde", serde(rename = "roundpoints"))]
-    round_points: i32,
+    pub round_points: i32,
     #[cfg_attr(feature = "serde", serde(rename = "mappoints"))]
-    map_points: i32,
+    pub map_points: i32,
     #[cfg_attr(feature = "serde", serde(rename = "matchpoints"))]
-    match_points: i32,
+    pub match_points: i32,
 
     #[cfg_attr(feature = "serde", serde(rename = "bestracetime"))]
-    best_racetime: RoundTime,
+    pub best_racetime: RoundTime,
 
-    #[cfg_attr(feature = "serde", serde(rename = "bestracecheckpoints"))]
-    best_race_checkpoints: Vec<u32>,
     #[cfg_attr(feature = "serde", serde(rename = "bestlaptime"))]
-    best_laptime: RoundTime,
-    #[cfg_attr(feature = "serde", serde(rename = "bestlapcheckpoints"))]
-    best_lap_checkpoints: Vec<u32>,
+    pub best_laptime: RoundTime,
     #[cfg_attr(feature = "serde", serde(rename = "prevracetime"))]
-    previous_racetime: RoundTime,
-    #[cfg_attr(feature = "serde", serde(rename = "prevracecheckpoints"))]
-    previous_race_checkpoints: Vec<u32>,
+    pub previous_racetime: RoundTime,
 }
 
 #[derive(Debug, Clone)]

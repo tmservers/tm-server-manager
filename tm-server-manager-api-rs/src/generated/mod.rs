@@ -12,6 +12,7 @@ pub mod chat_send_to_user_args_type;
 pub mod comeptition_schedules_table;
 pub mod common_type;
 pub mod competition_available_server_pool_table;
+pub mod competition_configured_reducer;
 pub mod competition_connection_data_table;
 pub mod competition_connection_data_update_reducer;
 pub mod competition_connection_table;
@@ -23,6 +24,7 @@ pub mod competition_node_position_table;
 pub mod competition_node_position_type;
 pub mod competition_node_position_update_reducer;
 pub mod competition_node_positions_update_reducer;
+pub mod competition_ongoing_reducer;
 pub mod competition_record_table;
 pub mod competition_role_member_type;
 pub mod competition_role_type;
@@ -229,6 +231,7 @@ pub use chat_send_to_user_args_type::ChatSendToUserArgs;
 pub use comeptition_schedules_table::*;
 pub use common_type::Common;
 pub use competition_available_server_pool_table::*;
+pub use competition_configured_reducer::competition_configured;
 pub use competition_connection_data_table::*;
 pub use competition_connection_data_update_reducer::competition_connection_data_update;
 pub use competition_connection_table::*;
@@ -240,6 +243,7 @@ pub use competition_node_position_table::*;
 pub use competition_node_position_type::CompetitionNodePosition;
 pub use competition_node_position_update_reducer::competition_node_position_update;
 pub use competition_node_positions_update_reducer::competition_node_positions_update;
+pub use competition_ongoing_reducer::competition_ongoing;
 pub use competition_record_table::*;
 pub use competition_role_member_type::CompetitionRoleMember;
 pub use competition_role_type::CompetitionRole;
@@ -448,6 +452,9 @@ pub use way_point_type::WayPoint;
 /// to indicate which reducer caused the event.
 
 pub enum Reducer {
+    CompetitionConfigured {
+        id: u32,
+    },
     CompetitionConnectionDataUpdate {
         connection_id: u32,
         option: ConnectionDataOption,
@@ -467,6 +474,9 @@ pub enum Reducer {
     },
     CompetitionNodePositionsUpdate {
         positions: Vec<NodePositionUpdate>,
+    },
+    CompetitionOngoing {
+        id: u32,
     },
     CompetitionTemplateCreate {
         name: String,
@@ -651,11 +661,13 @@ impl __sdk::InModule for Reducer {
 impl __sdk::Reducer for Reducer {
     fn reducer_name(&self) -> &'static str {
         match self {
+            Reducer::CompetitionConfigured { .. } => "competition_configured",
             Reducer::CompetitionConnectionDataUpdate { .. } => "competition_connection_data_update",
             Reducer::CompetitionCreate { .. } => "competition_create",
             Reducer::CompetitionEditName { .. } => "competition_edit_name",
             Reducer::CompetitionNodePositionUpdate { .. } => "competition_node_position_update",
             Reducer::CompetitionNodePositionsUpdate { .. } => "competition_node_positions_update",
+            Reducer::CompetitionOngoing { .. } => "competition_ongoing",
             Reducer::CompetitionTemplateCreate { .. } => "competition_template_create",
             Reducer::ConnectionCreate { .. } => "connection_create",
             Reducer::CreateProject { .. } => "create_project",
@@ -707,6 +719,11 @@ impl __sdk::Reducer for Reducer {
     #[allow(clippy::clone_on_copy)]
     fn args_bsatn(&self) -> Result<Vec<u8>, __sats::bsatn::EncodeError> {
         match self {
+            Reducer::CompetitionConfigured { id } => {
+                __sats::bsatn::to_vec(&competition_configured_reducer::CompetitionConfiguredArgs {
+                    id: id.clone(),
+                })
+            }
             Reducer::CompetitionConnectionDataUpdate {
                 connection_id,
                 option,
@@ -743,6 +760,11 @@ impl __sdk::Reducer for Reducer {
                     positions: positions.clone(),
                 },
             ),
+            Reducer::CompetitionOngoing { id } => {
+                __sats::bsatn::to_vec(&competition_ongoing_reducer::CompetitionOngoingArgs {
+                    id: id.clone(),
+                })
+            }
             Reducer::CompetitionTemplateCreate {
                 name,
                 parent_id,

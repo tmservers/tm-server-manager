@@ -215,6 +215,8 @@ pub trait XmlRpcMethods {
     ) -> Result<bool, ClientError>;
 
     async fn set_mode_script_settings(&self, settings: ServerConfig) -> Result<bool, ClientError>;
+
+    async fn insert_map_list(&self, maps: Vec<String>) -> Result<i32, ClientError>;
 }
 
 impl XmlRpcMethods for TrackmaniaServer {
@@ -255,6 +257,10 @@ impl XmlRpcMethods for TrackmaniaServer {
 
     async fn chat_send_server_massage(&self, message: &str) -> Result<bool, ClientError> {
         self.call("ChatSendServerMessage", message).await
+    }
+
+    async fn insert_map_list(&self, maps: Vec<String>) -> Result<i32, ClientError> {
+        self.call("InsertMapList", maps).await
     }
 
     async fn restart_map(&self) -> Result<bool, ClientError> {

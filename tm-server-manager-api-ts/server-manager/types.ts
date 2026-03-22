@@ -115,10 +115,11 @@ export type CompetitionServer = __Infer<typeof CompetitionServer>;
 
 // The tagged union or sum type for the algebraic type `CompetitionStatus`.
 export const CompetitionStatus = __t.enum("CompetitionStatus", {
-  Planning: __t.unit(),
-  Registration: __t.unit(),
+  Configuring: __t.unit(),
+  Configured: __t.unit(),
   Ongoing: __t.unit(),
   Completed: __t.unit(),
+  Locked: __t.unit(),
 });
 export type CompetitionStatus = __Infer<typeof CompetitionStatus>;
 
@@ -683,6 +684,9 @@ export const PlayLoopStart = __t.object("PlayLoopStart", {
 export type PlayLoopStart = __Infer<typeof PlayLoopStart>;
 
 export const Player = __t.object("Player", {
+  bestRaceCheckpoints: __t.array(__t.u32()),
+  previousRaceCheckpoints: __t.array(__t.u32()),
+  bestLapCheckpoints: __t.array(__t.u32()),
   accountId: __t.string(),
   name: __t.string(),
   team: __t.i32(),
@@ -693,15 +697,12 @@ export const Player = __t.object("Player", {
   get bestRacetime() {
     return RoundTime;
   },
-  bestRaceCheckpoints: __t.array(__t.u32()),
   get bestLaptime() {
     return RoundTime;
   },
-  bestLapCheckpoints: __t.array(__t.u32()),
   get previousRacetime() {
     return RoundTime;
   },
-  previousRaceCheckpoints: __t.array(__t.u32()),
 });
 export type Player = __Infer<typeof Player>;
 

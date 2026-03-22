@@ -10,7 +10,7 @@ use tm_server_manager_api_rs::{
 };
 use tm_server_types::{
     base::account_id_to_login,
-    event::{EndRoundStart, PlayerConnect, StartMatch, StartServer},
+    event::{EndRoundStart, PlayerConnect, StartMap, StartMatch, StartServer},
 };
 
 use crate::{SERVER_METADATA, SPACETIME, TRACKMANIA, TRACKMANIA_FILES};
@@ -118,32 +118,33 @@ pub async fn setup_state_synchronization() {
     });
 
     server.on_start_server_start(async |event: &StartServer| {
+        let config = unsafe {
+            std::mem::transmute::<
+                tm_server_manager_api_rs::ServerConfig,
+                tm_server_controller::config::ServerConfig,
+            >(SERVER_METADATA.wait().lock().await.config.clone())
+        };
+
+        //We need to load the settings again because we changed the script.
+        if let Err(error) = TRACKMANIA.wait().set_mode_script_settings(config).await {
+            tracing::error!("{error}")
+        };
+
+        //TODO remove.
+        let _: Result<(), ClientError> = TRACKMANIA.wait().call("GetModeScriptSettings", ()).await;
         if event.mode.updated {
             tracing::error!("Mode Script was updated");
-
-            let config = unsafe {
-                std::mem::transmute::<
-                    tm_server_manager_api_rs::ServerConfig,
-                    tm_server_controller::config::ServerConfig,
-                >(SERVER_METADATA.wait().lock().await.config.clone())
-            };
-
-            //We need to load the settings again because we changed the script.
-            if let Err(error) = TRACKMANIA.wait().set_mode_script_settings(config).await {
-                tracing::error!("{error}")
-            };
-
-            //TODO remove.
-            let _: Result<(), ClientError> =
-                TRACKMANIA.wait().call("GetModeScriptSettings", ()).await;
         } else {
             //We should be fine because the settings already loaded correctly.
             tracing::error!("Mode Script stayed the same");
         }
     });
 
-    server.on_start_match_start(async |_: &StartMatch| {
+    server.on_start_map_end(async |map: &StartMap| {
         //We need to load the settings again because we changed the script.
+        if !map.restarted {
+            return;
+        }
 
         let config = unsafe {
             std::mem::transmute::<
@@ -156,7 +157,7 @@ pub async fn setup_state_synchronization() {
             tracing::error!("{error}")
         };
         //TODO remove.
-        //let _: Result<(), ClientError> = TRACKMANIA.wait().call("GetModeScriptSettings", ()).await;
+        let _: Result<(), ClientError> = TRACKMANIA.wait().call("GetModeScriptSettings", ()).await;
     });
 }
 

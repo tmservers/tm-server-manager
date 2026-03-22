@@ -1,11 +1,11 @@
 use spacetimedb::{ReducerContext, SpacetimeType};
 
 use crate::{
-    competition::tab_competition,
+    competition::{authorized_competition_ongoing, competition_ongoing, tab_competition},
     portal::tab_portal,
     registration::tab_registration,
     schedule::tab_schedule,
-    tm_match::{match_set_preparation, tab_match},
+    tm_match::{authorized_match_set_preparation, tab_match},
 };
 
 mod position;
@@ -184,8 +184,8 @@ pub trait NodeType {
 impl NodeType for NodeKindHandle {
     fn ready(&self, ctx: &ReducerContext) -> Result<(), String> {
         match self {
-            NodeKindHandle::MatchV1(match_id) => match_set_preparation(ctx, *match_id),
-            NodeKindHandle::CompetitionV1(c) => todo!(), //TODO we currently fail here.
+            NodeKindHandle::MatchV1(match_id) => authorized_match_set_preparation(ctx, *match_id),
+            NodeKindHandle::CompetitionV1(c) => authorized_competition_ongoing(ctx, *c),
             NodeKindHandle::MonitoringV1(_) => todo!(),
             NodeKindHandle::ServerV1(_) => todo!(),
             NodeKindHandle::ScheduleV1(_) => todo!(),

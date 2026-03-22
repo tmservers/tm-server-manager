@@ -339,7 +339,19 @@ pub fn match_update_config(
 /// If the match is fully configured and ready start.
 /// This can also serve as a manual override for scheduled matches.
 #[reducer]
-pub fn match_set_preparation(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
+fn match_set_preparation(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
+    let Some(tm_match) = ctx.db.tab_match().id().find(match_id) else {
+        return Err("Match not found!".into());
+    };
+
+    ctx.auth_builder(tm_match.parent_id)
+        .permission(CompetitionPermissionsV1::MATCH_CONFIGURE)
+        .authorize()?;
+
+    authorized_match_set_preparation(ctx, match_id)
+}
+
+pub fn authorized_match_set_preparation(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
     let Some(mut tm_match) = ctx.db.tab_match().id().find(match_id) else {
         return Err("Match not found!".into());
     };
@@ -356,10 +368,6 @@ pub fn match_set_preparation(ctx: &ReducerContext, match_id: u32) -> Result<(), 
             "Match needs a configuration in order to advance to the upcoming state.".into(),
         );
     }
-
-    ctx.auth_builder(tm_match.parent_id)
-        .permission(CompetitionPermissionsV1::MATCH_CONFIGURE)
-        .authorize()?;
 
     if ctx
         .db

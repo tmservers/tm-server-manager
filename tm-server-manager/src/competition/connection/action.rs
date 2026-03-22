@@ -2,7 +2,7 @@ use spacetimedb::{ReducerContext, SpacetimeType, table};
 
 use crate::{
     competition::node::NodeKindHandle,
-    tm_match::{match_set_preparation, match_try_start, tab_match},
+    tm_match::{match_try_start, tab_match},
 };
 
 #[table(accessor=tab_connection_action)]

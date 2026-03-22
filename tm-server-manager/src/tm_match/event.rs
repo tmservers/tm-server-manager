@@ -87,6 +87,13 @@ pub(crate) fn handle_match_event(
 
                 entry.add_checkpoint(way_point.speed, way_point.racetime);
 
+                if way_point.is_end_race {
+                    let mut round_player =
+                        ctx.db.tab_match_round_player().id().find(entry.id).unwrap();
+                    round_player.set_time(way_point.racetime as i32);
+                    ctx.db.tab_match_round_player().id().update(round_player);
+                }
+
                 ctx.db.tab_match_round_player_ext().id().update(entry);
             }
         }
@@ -244,6 +251,55 @@ pub(crate) fn handle_match_event(
             state.set_pause(pause.active);
 
             ctx.db.tab_match_state().match_id().update(state);
+        }
+        Event::Scores(scores) => {
+            let state = ctx.db.tab_match_state().match_id().find(match_id).unwrap();
+            if state.live_round() && scores.section == "PreEndRound" {
+                let player_rounds = ctx
+                    .db
+                    .tab_match_round_player()
+                    .match_round()
+                    .filter((match_id, state.get_round()));
+
+                #[derive(Debug)]
+                struct ScoresPlayer {
+                    user_id: u32,
+                    round_points: i32,
+                }
+
+                let scores = scores
+                    .players
+                    .iter()
+                    .map(|p| {
+                        let user = ctx
+                            .db
+                            .tab_user_ids_map()
+                            .account_id()
+                            .find(Uuid::parse_str(&p.account_id).unwrap())
+                            .unwrap();
+                        ScoresPlayer {
+                            user_id: user.user_id,
+                            round_points: p.round_points,
+                        }
+                    })
+                    .collect::<Vec<_>>();
+
+                log::error!("{:?}", scores);
+
+                for mut player_round in player_rounds {
+                    log::error!("{:?}", player_round);
+                    let found = scores.iter().find(|p| p.user_id == player_round.user_id);
+
+                    if let Some(found) = found {
+                        player_round.set_points(found.round_points);
+                        ctx.db.tab_match_round_player().id().update(player_round);
+                    } else {
+                        log::error!(
+                            "Player of a round could not be found in the scores even tho he was on the start line..?"
+                        )
+                    };
+                }
+            }
         }
         _ => (),
     }

@@ -28,12 +28,13 @@ pub(super) struct PlayerActionCheckpoint {
     index(accessor=match_round_range, btree(columns=[match_id,round])),
     index(accessor=match_round_player, hash(columns=[match_id,round,user_id]))
 )]
+#[derive(Debug)]
 pub struct TabMatchRoundPlayer {
     #[auto_inc]
     #[primary_key]
     pub id: u32,
 
-    user_id: u32,
+    pub user_id: u32,
 
     match_id: u32,
     time: i32,
@@ -53,6 +54,14 @@ impl TabMatchRoundPlayer {
             points: 0,
             id: 0,
         }
+    }
+
+    pub fn set_time(&mut self, points: i32) {
+        self.time = points;
+    }
+
+    pub fn set_points(&mut self, points: i32) {
+        self.points = points;
     }
 }
 
@@ -135,7 +144,7 @@ pub struct MatchRoundPlayerExt {
 pub fn match_leaderboard(
     ctx: &AnonymousViewContext, /*, match_id: u32, round: u16 */
 ) -> Vec<MatchRoundPlayer> {
-    let match_id = 1u32;
+    let match_id = 51u32;
     let mut round = 0u16;
     let entries: Vec<TabMatchRoundPlayer> = if round == 0 {
         let Some(state) = ctx.db.tab_match_state().match_id().find(match_id) else {
@@ -201,7 +210,7 @@ pub fn match_leaderboard(
 pub fn match_round(
     ctx: &AnonymousViewContext, /*, match_id: u32, round: u16 */
 ) -> Vec<MatchRoundPlayer> {
-    let match_id = 1u32;
+    let match_id = 51u32;
     let mut round = 0u16;
 
     if round == 0 {
@@ -244,7 +253,7 @@ pub fn match_round(
 pub fn match_round_ext(
     ctx: &AnonymousViewContext, /* match_id: u32, round: u16 */
 ) -> Vec<MatchRoundPlayerExt> {
-    let match_id = 1u32;
+    let match_id = 51u32;
     let mut round = 0u16;
 
     if round == 0 {

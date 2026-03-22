@@ -71,9 +71,9 @@ fn points_repartition_format(points: &Vec<u32>) -> String {
     let mut string = String::new();
     for point in points {
         string += &point.to_string();
-        string += ", "
+        string += ","
     }
-    string.trim_end_matches(", ").to_string()
+    string.trim_end_matches(",").to_string()
 }
 
 impl Default for Rounds {

@@ -34,11 +34,13 @@ import {
 } from "spacetimedb";
 
 // Import all reducer arg schemas
+import CompetitionConfiguredReducer from "./competition_configured_reducer";
 import CompetitionConnectionDataUpdateReducer from "./competition_connection_data_update_reducer";
 import CompetitionCreateReducer from "./competition_create_reducer";
 import CompetitionEditNameReducer from "./competition_edit_name_reducer";
 import CompetitionNodePositionUpdateReducer from "./competition_node_position_update_reducer";
 import CompetitionNodePositionsUpdateReducer from "./competition_node_positions_update_reducer";
+import CompetitionOngoingReducer from "./competition_ongoing_reducer";
 import CompetitionTemplateCreateReducer from "./competition_template_create_reducer";
 import ConnectionCreateReducer from "./connection_create_reducer";
 import CreateProjectReducer from "./create_project_reducer";
@@ -340,11 +342,13 @@ const tablesSchema = __schema({
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
+  __reducerSchema("competition_configured", CompetitionConfiguredReducer),
   __reducerSchema("competition_connection_data_update", CompetitionConnectionDataUpdateReducer),
   __reducerSchema("competition_create", CompetitionCreateReducer),
   __reducerSchema("competition_edit_name", CompetitionEditNameReducer),
   __reducerSchema("competition_node_position_update", CompetitionNodePositionUpdateReducer),
   __reducerSchema("competition_node_positions_update", CompetitionNodePositionsUpdateReducer),
+  __reducerSchema("competition_ongoing", CompetitionOngoingReducer),
   __reducerSchema("competition_template_create", CompetitionTemplateCreateReducer),
   __reducerSchema("connection_create", ConnectionCreateReducer),
   __reducerSchema("create_project", CreateProjectReducer),

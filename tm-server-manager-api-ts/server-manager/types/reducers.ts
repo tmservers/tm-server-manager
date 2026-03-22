@@ -6,11 +6,13 @@
 import { type Infer as __Infer } from "spacetimedb";
 
 // Import all reducer arg schemas
+import CompetitionConfiguredReducer from "../competition_configured_reducer";
 import CompetitionConnectionDataUpdateReducer from "../competition_connection_data_update_reducer";
 import CompetitionCreateReducer from "../competition_create_reducer";
 import CompetitionEditNameReducer from "../competition_edit_name_reducer";
 import CompetitionNodePositionUpdateReducer from "../competition_node_position_update_reducer";
 import CompetitionNodePositionsUpdateReducer from "../competition_node_positions_update_reducer";
+import CompetitionOngoingReducer from "../competition_ongoing_reducer";
 import CompetitionTemplateCreateReducer from "../competition_template_create_reducer";
 import ConnectionCreateReducer from "../connection_create_reducer";
 import CreateProjectReducer from "../create_project_reducer";
@@ -57,11 +59,13 @@ import ServerMethodResponseReducer from "../server_method_response_reducer";
 import SetEnvVarReducer from "../set_env_var_reducer";
 import UnregisterPlayerReducer from "../unregister_player_reducer";
 
+export type CompetitionConfiguredParams = __Infer<typeof CompetitionConfiguredReducer>;
 export type CompetitionConnectionDataUpdateParams = __Infer<typeof CompetitionConnectionDataUpdateReducer>;
 export type CompetitionCreateParams = __Infer<typeof CompetitionCreateReducer>;
 export type CompetitionEditNameParams = __Infer<typeof CompetitionEditNameReducer>;
 export type CompetitionNodePositionUpdateParams = __Infer<typeof CompetitionNodePositionUpdateReducer>;
 export type CompetitionNodePositionsUpdateParams = __Infer<typeof CompetitionNodePositionsUpdateReducer>;
+export type CompetitionOngoingParams = __Infer<typeof CompetitionOngoingReducer>;
 export type CompetitionTemplateCreateParams = __Infer<typeof CompetitionTemplateCreateReducer>;
 export type ConnectionCreateParams = __Infer<typeof ConnectionCreateReducer>;
 export type CreateProjectParams = __Infer<typeof CreateProjectReducer>;

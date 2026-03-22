@@ -9,6 +9,9 @@ use super::round_time_type::RoundTime;
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct Player {
+    pub best_race_checkpoints: Vec<u32>,
+    pub previous_race_checkpoints: Vec<u32>,
+    pub best_lap_checkpoints: Vec<u32>,
     pub account_id: String,
     pub name: String,
     pub team: i32,
@@ -17,11 +20,8 @@ pub struct Player {
     pub map_points: i32,
     pub match_points: i32,
     pub best_racetime: RoundTime,
-    pub best_race_checkpoints: Vec<u32>,
     pub best_laptime: RoundTime,
-    pub best_lap_checkpoints: Vec<u32>,
     pub previous_racetime: RoundTime,
-    pub previous_race_checkpoints: Vec<u32>,
 }
 
 impl __sdk::InModule for Player {

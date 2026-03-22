@@ -2,10 +2,7 @@ use spacetimedb::{Query, ReducerContext, SpacetimeType, ViewContext, reducer, ta
 
 use crate::{
     authorization::Authorization,
-    competition::{
-        CompetitionPermissionsV1,
-        connection::{CompetitionConnection, tab_connection},
-    },
+    competition::{CompetitionPermissionsV1, connection::tab_connection},
     raw_server::player::PermittedPlayer,
     registration::player::RegisterationPlayer,
     tm_match::leaderboard::MatchRoundPlayer,
