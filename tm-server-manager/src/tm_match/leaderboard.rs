@@ -6,15 +6,17 @@ use crate::{tm_match::state::tab_match_state__view, user::tab_user__view};
 
 #[derive(Debug, SpacetimeType, Clone, Copy)]
 pub(super) enum PlayerAction {
-    GiveUp,
-    Respawn(PlayerActionRespawn),
+    StartLine(u32),
     Checkpoint(PlayerActionCheckpoint),
+    Respawn(PlayerActionRespawn),
+    GiveUp(u32),
 }
 
 #[derive(Debug, SpacetimeType, Clone, Copy)]
 pub(super) struct PlayerActionRespawn {
+    time: u32,
     speed: f32,
-    standing: bool,
+    //standing: bool,
 }
 
 #[derive(Debug, SpacetimeType, Clone, Copy)]
@@ -99,20 +101,39 @@ impl TabMatchRoundPlayerExt {
             }));
     }
 
-    pub(crate) fn add_respawn(&mut self, speed: f32) {
-        //TODO consolidate respawn event into double respawn.
-        /* if let Some(last)=self.round_actions.last() {
-            last.is_respawn()
-        } */
-        self.round_actions
-            .push(PlayerAction::Respawn(PlayerActionRespawn {
-                speed,
-                standing: speed == 0.,
-            }));
+    pub(crate) fn add_respawn(&mut self, speed: f32, server_time: u32) {
+        let first = *self.round_actions.first().unwrap();
+
+        // Double respawn.
+        if speed == 0.
+            && let Some(last) = self.round_actions.last_mut()
+            && let PlayerAction::Respawn(respawn) = last
+        {
+            respawn.speed == speed;
+
+            return;
+        };
+
+        if let PlayerAction::StartLine(time) = first {
+            self.round_actions
+                .push(PlayerAction::Respawn(PlayerActionRespawn {
+                    speed,
+                    time: server_time - time,
+                }));
+        } else {
+            log::error!("First event in a RoundAction was something other than start line event.")
+        }
     }
 
-    pub(crate) fn give_up(&mut self) {
-        self.round_actions.push(PlayerAction::GiveUp);
+    pub(crate) fn give_up(&mut self, server_time: u32) {
+        let first = self.round_actions.first().unwrap();
+
+        if let PlayerAction::StartLine(time) = *first {
+            self.round_actions
+                .push(PlayerAction::GiveUp(server_time - time));
+        } else {
+            log::error!("First event in a RoundAction was something other than start line event.")
+        }
     }
 }
 

@@ -119,7 +119,7 @@ pub(crate) fn handle_match_event(
                     .next()
                     .unwrap();
 
-                entry.add_respawn(respawn.speed);
+                entry.add_respawn(respawn.speed, respawn.time);
 
                 ctx.db.tab_match_round_player_ext().id().update(entry);
             }
@@ -146,7 +146,7 @@ pub(crate) fn handle_match_event(
                     .next()
                     .unwrap();
 
-                entry.give_up();
+                entry.give_up(give_up.time);
 
                 ctx.db.tab_match_round_player_ext().id().update(entry);
             }
