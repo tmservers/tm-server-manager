@@ -12,7 +12,7 @@ use crate::{
             TabMatchRoundPlayer, TabMatchRoundPlayerExt, tab_match_round_player,
             tab_match_round_player_ext,
         },
-        state::{MatchState, tab_match_state, tab_match_state__view},
+        state::tab_match_state,
         tab_match,
     },
     user::{UserIdsMap, UserV1, tab_user, tab_user_ids_map},

@@ -57,11 +57,8 @@ impl MatchState {
 
 #[view(accessor=match_state,public)]
 pub fn match_state(ctx: &AnonymousViewContext /* match_id:u32 */) -> Option<MatchState> {
-    let match_id = 1u32;
+    let match_id = 51u32;
     //TODO map the internal map id to string.
-    ctx.db
-        .tab_match_state()
-        .match_id()
-        .find(match_id)
-        .map(|a| a)
+    ctx.db.tab_match_state().match_id().find(match_id)
+    //.map(|a| a)
 }

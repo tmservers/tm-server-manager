@@ -100,6 +100,10 @@ impl TabMatchRoundPlayerExt {
     }
 
     pub(crate) fn add_respawn(&mut self, speed: f32) {
+        //TODO consolidate respawn event into double respawn.
+        /* if let Some(last)=self.round_actions.last() {
+            last.is_respawn()
+        } */
         self.round_actions
             .push(PlayerAction::Respawn(PlayerActionRespawn {
                 speed,
@@ -147,6 +151,7 @@ pub fn match_leaderboard(
     let match_id = 51u32;
     let mut round = 0u16;
     let entries: Vec<TabMatchRoundPlayer> = if round == 0 {
+        //TODO if the match is finished then do inclusive range.
         let Some(state) = ctx.db.tab_match_state().match_id().find(match_id) else {
             return Vec::new();
         };
