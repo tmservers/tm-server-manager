@@ -75,9 +75,6 @@ pub async fn configure(server_metadata: ServerMetadata) -> bool {
             *locked = server_metadata;
         }
 
-        //TODO remove.
-        //let _: Result<(), ClientError> = local_server.call("GetModeScriptSettings", ()).await;
-
         tracing::info!("Loaded new configuration");
         true
     } else {

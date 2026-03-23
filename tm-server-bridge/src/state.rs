@@ -1,6 +1,5 @@
 use spacetimedb_sdk::{Table, Uuid};
 use tm_server_controller::{
-    ClientError,
     callbacks::TypedCallbacks,
     method::{ModeScriptMethodsXmlRpc, XmlRpcMethods},
 };
@@ -10,8 +9,9 @@ use tm_server_manager_api_rs::{
 };
 use tm_server_types::{
     base::account_id_to_login,
-    event::{EndRoundStart, PlayerConnect, StartMap, StartMatch, StartServer},
+    event::{EndRoundStart, PlayerConnect, StartMap, StartServer},
 };
+use tokio::task::spawn_blocking;
 
 use crate::{SERVER_METADATA, SPACETIME, TRACKMANIA, TRACKMANIA_FILES};
 
@@ -91,52 +91,55 @@ pub async fn setup_state_synchronization() {
         };
 
         // Server allowlist.
-        let Some(player) = SPACETIME
-            .wait()
-            .db
-            .raw_server_allowed_players()
-            .iter()
-            .find(|p| Uuid::parse_str(&event.account_id).unwrap() == p.account_id)
-        else {
-            tracing::warn!("Player tried to connect without the required permissions.");
-            if let Err(error) = TRACKMANIA
+        if !SERVER_METADATA.wait().lock().await.open {
+            let Some(player) = SPACETIME
                 .wait()
-                .kick(event.account_id.clone(), "Not allowed to join the server.")
-                .await
-            {
-                tracing::error!("Could not kick player: {error}")
-            };
+                .db
+                .raw_server_allowed_players()
+                .iter()
+                .find(|p| Uuid::parse_str(&event.account_id).unwrap() == p.account_id)
+            else {
+                tracing::warn!("Player tried to connect without the required permissions.");
+                if let Err(error) = TRACKMANIA
+                    .wait()
+                    .kick(event.account_id.clone(), "Not allowed to join the server.")
+                    .await
+                {
+                    tracing::error!("Could not kick player: {error}")
+                };
 
-            return;
-        };
-        if player.only_spectator {
-            tracing::warn!(
-                "Player tried to connect as a player but is only allowed as a spectator."
-            );
-            //TODO force to spectator.
+                return;
+            };
+            if player.only_spectator {
+                tracing::warn!(
+                    "Player tried to connect as a player but is only allowed as a spectator."
+                );
+                if let Err(err) = TRACKMANIA
+                    .wait()
+                    .force_spectator(player.account_id.to_string(), 1)
+                    .await
+                {
+                    tracing::error!("Could not force player to spectator. Error {err}");
+                }
+            }
         }
     });
 
     server.on_start_server_start(async |event: &StartServer| {
-        let config = unsafe {
-            std::mem::transmute::<
-                tm_server_manager_api_rs::ServerConfig,
-                tm_server_controller::config::ServerConfig,
-            >(SERVER_METADATA.wait().lock().await.config.clone())
-        };
-
-        //We need to load the settings again because we changed the script.
-        if let Err(error) = TRACKMANIA.wait().set_mode_script_settings(config).await {
-            tracing::error!("{error}")
-        };
-
-        //TODO remove.
-        let _: Result<(), ClientError> = TRACKMANIA.wait().call("GetModeScriptSettings", ()).await;
         if event.mode.updated {
-            tracing::error!("Mode Script was updated");
+            let config = unsafe {
+                std::mem::transmute::<
+                    tm_server_manager_api_rs::ServerConfig,
+                    tm_server_controller::config::ServerConfig,
+                >(SERVER_METADATA.wait().lock().await.config.clone())
+            };
+
+            //We need to load the settings again because we changed the script.
+            if let Err(error) = TRACKMANIA.wait().set_mode_script_settings(config).await {
+                tracing::error!("{error}")
+            };
         } else {
             //We should be fine because the settings already loaded correctly.
-            tracing::error!("Mode Script stayed the same");
         }
     });
 
@@ -156,8 +159,6 @@ pub async fn setup_state_synchronization() {
         if let Err(error) = TRACKMANIA.wait().set_mode_script_settings(config).await {
             tracing::error!("{error}")
         };
-        //TODO remove.
-        let _: Result<(), ClientError> = TRACKMANIA.wait().call("GetModeScriptSettings", ()).await;
     });
 }
 
@@ -192,9 +193,77 @@ pub(super) async fn sync_players() {
 }
 
 pub fn check_allowed_players() {
-    //TODO make the async context, get all players from the server. build a map with the allowed players and kick everybody thats not allowed anymore.
+    spawn_blocking(async move || {
+        if !SERVER_METADATA.wait().lock().await.open {
+            let server = TRACKMANIA.wait();
+            if let Ok(players) = server.get_player_list().await {
+                for server_player in players {
+                    let Some(player) = SPACETIME
+                        .wait()
+                        .db
+                        .raw_server_allowed_players()
+                        .iter()
+                        .find(|p| {
+                            Uuid::parse_str(&server_player.account_id).unwrap() == p.account_id
+                        })
+                    else {
+                        tracing::warn!("Player tried to connect without the required permissions.");
+                        if let Err(error) = TRACKMANIA
+                            .wait()
+                            .kick(
+                                server_player.account_id.clone(),
+                                "Not allowed to join the server.",
+                            )
+                            .await
+                        {
+                            tracing::error!("Could not kick player: {error}")
+                        };
+
+                        return;
+                    };
+                    if player.only_spectator {
+                        tracing::warn!(
+                            "Player tried to connect as a player but is only allowed as a spectator."
+                        );
+                        if let Err(err) = TRACKMANIA
+                            .wait()
+                            .force_spectator(player.account_id.to_string(), 1)
+                            .await
+                        {
+                            tracing::error!("Could not force player to spectator. Error {err}");
+                        }
+                    }
+                }
+            }
+        }
+    });
 }
 
 pub fn check_players_have_destination() {
-    //TODO make async context and move the player.
+    spawn_blocking(async move || {
+        let server = TRACKMANIA.wait();
+        if let Ok(players) = server.get_player_list().await {
+            for server_player in players {
+                if let Some(player) = SPACETIME
+                    .wait()
+                    .db
+                    .raw_server_player_destination()
+                    .iter()
+                    .find(|p| Uuid::parse_str(&server_player.account_id).unwrap() == p.account_id)
+                    && let Err(error) = server
+                        .send_open_link_to_account(
+                            server_player.account_id.to_string(),
+                            format!(
+                                "#qjoin={}@Trackmania",
+                                account_id_to_login(&player.server_account_id.to_string())
+                            ),
+                            1,
+                        )
+                        .await
+                {
+                    tracing::error!("Could not send link: {error}")
+                };
+            }
+        }
+    });
 }

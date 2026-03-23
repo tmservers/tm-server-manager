@@ -19,14 +19,17 @@ pub struct UserV1 {
 }
 
 impl UserV1 {
-    pub fn new(account_id: Uuid, name: String) -> Self {
+    pub fn new(account_id: Uuid) -> Self {
         UserV1 {
             internal_id: 0,
             account_id,
-            name,
-            club_tag: "".into(),
-            zone: "".into(),
+            name: String::new(),
+            club_tag: String::new(),
+            zone: String::new(),
         }
+    }
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
     }
 
     pub(crate) fn get_name(&self) -> &String {

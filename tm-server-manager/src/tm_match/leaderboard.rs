@@ -83,12 +83,12 @@ pub struct TabMatchRoundPlayerExt {
 }
 
 impl TabMatchRoundPlayerExt {
-    pub fn new(id: u32, match_id: u32, user_id: u32, round: u16) -> Self {
+    pub fn new(id: u32, match_id: u32, user_id: u32, round: u16, server_time: u32) -> Self {
         Self {
             user_id,
             match_id,
             round,
-            round_actions: Vec::new(),
+            round_actions: vec![PlayerAction::StartLine(server_time)],
             id,
         }
     }

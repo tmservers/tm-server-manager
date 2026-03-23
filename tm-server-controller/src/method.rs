@@ -1,6 +1,6 @@
 use tm_server_types::{
     base::{PlayerInfo, account_id_to_login},
-    config::{ModeSettings, ServerConfig},
+    config::ServerConfig,
     method::{MethodCall, MethodError, MethodResponse},
 };
 
@@ -10,9 +10,9 @@ use crate::{ClientError, TrackmaniaServer};
 pub trait ModeScriptMethodsXmlRpc {
     async fn enable_mode_script_callbacks(&self, enable: bool) -> Result<bool, ClientError>;
     async fn get_callbacks_list(&self) -> Result<bool, ClientError>;
-    async fn get_callbacks_list_enabled(&self) -> Result<bool, ClientError>;
+    // async fn get_callbacks_list_enabled(&self) -> Result<bool, ClientError>;
     async fn get_callbacks_list_disabled(&self) -> Result<bool, ClientError>;
-    async fn block_callbacks(&self, enable: bool) -> Result<bool, ClientError>;
+    /* async fn block_callbacks(&self, enable: bool) -> Result<bool, ClientError>;
     async fn unblock_callbacks(&self, enable: bool) -> Result<bool, ClientError>;
     async fn get_callback_help(&self, enable: bool) -> Result<bool, ClientError>;
     async fn get_methods_list(&self, enable: bool) -> Result<bool, ClientError>;
@@ -20,7 +20,7 @@ pub trait ModeScriptMethodsXmlRpc {
     async fn get_doscumentation(&self, enable: bool) -> Result<bool, ClientError>;
     async fn set_api_version(&self, enable: bool) -> Result<bool, ClientError>;
     async fn get_api_version(&self, enable: bool) -> Result<bool, ClientError>;
-    async fn get_all_api_versions(&self, enable: bool) -> Result<bool, ClientError>;
+    async fn get_all_api_versions(&self, enable: bool) -> Result<bool, ClientError>; */
     async fn get_player_list(&self) -> Result<Vec<PlayerInfo>, ClientError>;
     async fn ui_modules_get_properties(&self) -> Result<String, ClientError>;
     async fn set_player_points(
@@ -53,9 +53,9 @@ impl ModeScriptMethodsXmlRpc for TrackmaniaServer {
         .await
     }
 
-    async fn get_callbacks_list_enabled(&self) -> Result<bool, ClientError> {
+    /* async fn get_callbacks_list_enabled(&self) -> Result<bool, ClientError> {
         todo!()
-    }
+    } */
 
     async fn get_callbacks_list_disabled(&self) -> Result<bool, ClientError> {
         self.call(
@@ -65,7 +65,7 @@ impl ModeScriptMethodsXmlRpc for TrackmaniaServer {
         .await
     }
 
-    async fn block_callbacks(&self, enable: bool) -> Result<bool, ClientError> {
+    /* async fn block_callbacks(&self, enable: bool) -> Result<bool, ClientError> {
         todo!()
     }
 
@@ -103,7 +103,7 @@ impl ModeScriptMethodsXmlRpc for TrackmaniaServer {
             ("XmlRpc.GetAllApiVersions", [""]),
         ) */
         todo!()
-    }
+    } */
 
     async fn get_player_list(&self) -> Result<Vec<PlayerInfo>, ClientError> {
         self.call("GetPlayerList", (1000, 0)).await
@@ -217,6 +217,12 @@ pub trait XmlRpcMethods {
     async fn set_mode_script_settings(&self, settings: ServerConfig) -> Result<bool, ClientError>;
 
     async fn insert_map_list(&self, maps: Vec<String>) -> Result<i32, ClientError>;
+
+    async fn force_spectator(
+        &self,
+        account_id: impl Into<String>,
+        mode: u8,
+    ) -> Result<bool, ClientError>;
 }
 
 impl XmlRpcMethods for TrackmaniaServer {
@@ -228,6 +234,17 @@ impl XmlRpcMethods for TrackmaniaServer {
     ) -> Result<bool, ClientError> {
         let login = account_id_to_login(&account_id.into());
         self.call("Kick", (login, message.into())).await
+    }
+
+    /// Mode:
+    /// 0: User Selectable, 1: Spactator, 2: Player, 3: UserSelectable
+    async fn force_spectator(
+        &self,
+        account_id: impl Into<String>,
+        mode: u8,
+    ) -> Result<bool, ClientError> {
+        let login = account_id_to_login(&account_id.into());
+        self.call("ForceSpectator", (login, mode as i32)).await
     }
 
     async fn add_guest(&self, login: &str) -> Result<bool, ClientError> {

@@ -58,12 +58,9 @@ fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
             let account_id: Uuid = Uuid::parse_str("3467014a-c1cc-4aae-99fe-6beb5eca232a").unwrap();
 
             let preferred_username = String::from("Mr.Joermungandr");
-
-            let user = ctx
-                .db
-                .tab_user()
-                .account_id()
-                .try_insert_or_update(UserStruct::new(account_id, preferred_username))?;
+            let mut user = UserStruct::new(account_id);
+            user.set_name(preferred_username);
+            let user = ctx.db.tab_user().account_id().try_insert_or_update(user)?;
             ctx.db
                 .tab_user_identity()
                 .account_id()
@@ -91,11 +88,9 @@ fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
 
             let account_id = Uuid::parse_str(&claims.provider_id).map_err(|e| e.to_string())?;
 
-            let user = ctx
-                .db
-                .tab_user()
-                .account_id()
-                .try_insert_or_update(UserStruct::new(account_id, claims.preferred_username))?;
+            let mut user = UserStruct::new(account_id);
+            user.set_name(claims.preferred_username);
+            let user = ctx.db.tab_user().account_id().try_insert_or_update(user)?;
             ctx.db
                 .tab_user_identity()
                 .account_id()

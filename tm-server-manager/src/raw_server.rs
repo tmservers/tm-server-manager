@@ -4,7 +4,6 @@ use serde::Deserialize;
 use spacetimedb::http::Request;
 use spacetimedb::{Identity, Query, ReducerContext, Table, Uuid, ViewContext, reducer, table};
 use spacetimedb::{ProcedureContext, view};
-use tm_server_types::base::account_id_to_login;
 
 use crate::authorization::Authorization;
 

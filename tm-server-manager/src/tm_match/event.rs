@@ -59,7 +59,11 @@ pub(crate) fn handle_match_event(
                 ctx.db
                     .tab_match_round_player_ext()
                     .try_insert(TabMatchRoundPlayerExt::new(
-                        player.id, match_id, user_id, round,
+                        player.id,
+                        match_id,
+                        user_id,
+                        round,
+                        start_line.time,
                     ))?;
             }
         }
@@ -161,10 +165,10 @@ pub(crate) fn handle_match_event(
                 .account_id()
                 .find(account_id)
                 .unwrap_or_else(|| {
-                    let user = ctx.db.tab_user().account_id().insert_or_update(UserV1::new(
-                        account_id,
-                        start_map.map.author_nickname.clone(),
-                    ));
+                    let mut user = UserV1::new(account_id);
+                    user.set_name(start_map.map.author_nickname.clone());
+
+                    let user = ctx.db.tab_user().account_id().insert_or_update(user);
                     ctx.db
                         .tab_user_ids_map()
                         .account_id()
@@ -178,7 +182,7 @@ pub(crate) fn handle_match_event(
                 .uid()
                 .find(&start_map.map.uid)
                 .unwrap_or_else(|| {
-                    log::error!("Map uid could not be found for the StartMap callback. This should not be possible since matches have only known maps conifgured! Map: {}",start_map.map.uid);
+                    //log::error!("Map uid could not be found for the StartMap callback. This should not be possible since matches have only known maps conifgured! Map: {}",start_map.map.uid);
                     ctx.db.tab_tm_map().insert(TabTmMap::new(
                         start_map.map.name.clone(),
                         start_map.map.uid.clone(),

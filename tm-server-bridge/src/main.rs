@@ -52,8 +52,8 @@ static SERVER_METADATA: OnceLock<Mutex<ServerMetadata>> = OnceLock::new();
 #[instrument(level = "debug")]
 fn connect_to_db() -> DbConnection {
     DbConnection::builder()
-        .on_connect_error(on_connect_error)
-        .on_disconnect(on_disconnected)
+        .on_connect_error(on_stdb_connect_error)
+        .on_disconnect(on_stdb_disconnected)
         .with_database_name(std::env::var("SPACETIMEDB_MODULE").unwrap_or("tmservers".to_string()))
         .with_uri(
             std::env::var("SPACETIMEDB_URL").unwrap_or("wss://connect.tmservers.live".to_string()),
@@ -109,8 +109,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     //Connect to the Trackmania server
     {
-        let server = TrackmaniaServer::new(tm_server_url).await?;
-        _ = TRACKMANIA.set(server);
+        if let Ok(server) = TrackmaniaServer::new(tm_server_url.clone()).await {
+            _ = TRACKMANIA.set(server);
+        } else {
+            let server = TrackmaniaServer::new(tm_server_url).await?;
+            _ = TRACKMANIA.set(server);
+        }
     }
 
     // Connect to SpacetimeDB
@@ -157,10 +161,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         server.enable_mode_script_callbacks(true).await?;
 
         server.chat_manual_routing(true, false).await?;
-
-        //TODO remove
-        /*  _ = server.get_callbacks_list_disabled().await?;
-        _ = server.get_callbacks_list().await?; */
     }
 
     setup_state_synchronization().await;
@@ -209,19 +209,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     Ok(())
 }
 
-/// Our `on_connect_error` callback: print the error, then exit the process.
-fn on_connect_error(_ctx: &ErrorContext, err: Error) {
+fn on_stdb_connect_error(_ctx: &ErrorContext, err: Error) {
     tracing::error!("SpacetimeDB connection error: {:?}", err);
     std::process::exit(1);
 }
 
-/// Our `on_disconnect` callback: print a note, then exit the process.
-fn on_disconnected(_ctx: &ErrorContext, err: Option<Error>) {
+fn on_stdb_disconnected(_ctx: &ErrorContext, err: Option<Error>) {
     if let Some(err) = err {
-        tracing::error!("Disconnected from SpacetimeDB: {}", err);
-        std::process::exit(1);
+        tracing::error!(
+            "Forcefully disconnected from SpacetimeDB with Error: {}",
+            err
+        );
     } else {
-        tracing::error!("Disconnected.");
-        std::process::exit(0);
+        tracing::error!("Disconnected normally.");
     }
 }

@@ -72,7 +72,7 @@ pub enum Event {
     UnloadingMapStart(UnloadingMapStart),
     UnloadingMapEnd(UnloadingMapEnd),
 
-    PlayerConenct(PlayerConnect),
+    PlayerConnect(PlayerConnect),
     PlayerDisconnect(PlayerDisconnect),
     PlayerChat(PlayerChat),
     PlayerInfoChanged(PlayerInfo),
@@ -251,7 +251,7 @@ impl Event {
     pub fn from_legacy(name: &str, body: Vec<Value>) -> Result<Option<Self>, DxrError> {
         let event = match name {
             "ManiaPlanet.PlayerConnect" => {
-                Some(Event::PlayerConenct(PlayerConnect::try_from_params(&body)?))
+                Some(Event::PlayerConnect(PlayerConnect::try_from_params(&body)?))
             }
             "ManiaPlanet.PlayerDisconnect" => Some(Event::PlayerDisconnect(
                 PlayerDisconnect::try_from_params(&body)?,

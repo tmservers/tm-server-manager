@@ -62,7 +62,7 @@ impl<'a> From<&'a Event> for &'a PlayerConnect {
     #[inline]
     fn from(value: &'a Event) -> Self {
         match value {
-            Event::PlayerConenct(event) => event,
+            Event::PlayerConnect(event) => event,
             _ => unreachable!(),
         }
     }
