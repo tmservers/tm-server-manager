@@ -10,13 +10,14 @@ pub(super) enum PlayerAction {
     Checkpoint(PlayerActionCheckpoint),
     Respawn(PlayerActionRespawn),
     GiveUp(u32),
+    Lap(PlayerActionCheckpoint),
+    Finish(PlayerActionCheckpoint),
 }
 
 #[derive(Debug, SpacetimeType, Clone, Copy)]
 pub(super) struct PlayerActionRespawn {
     time: u32,
     speed: f32,
-    //standing: bool,
 }
 
 #[derive(Debug, SpacetimeType, Clone, Copy)]
@@ -99,6 +100,14 @@ impl TabMatchRoundPlayerExt {
                 speed,
                 time,
             }));
+    }
+    pub(crate) fn add_lap(&mut self, speed: f32, time: u32) {
+        self.round_actions
+            .push(PlayerAction::Lap(PlayerActionCheckpoint { speed, time }));
+    }
+    pub(crate) fn add_finish(&mut self, speed: f32, time: u32) {
+        self.round_actions
+            .push(PlayerAction::Finish(PlayerActionCheckpoint { speed, time }));
     }
 
     pub(crate) fn add_respawn(&mut self, speed: f32, server_time: u32) {

@@ -89,13 +89,17 @@ pub(crate) fn handle_match_event(
                     .next()
                     .unwrap();
 
-                entry.add_checkpoint(way_point.speed, way_point.racetime);
-
                 if way_point.is_end_race {
                     let mut round_player =
                         ctx.db.tab_match_round_player().id().find(entry.id).unwrap();
                     round_player.set_time(way_point.racetime as i32);
                     ctx.db.tab_match_round_player().id().update(round_player);
+
+                    entry.add_finish(way_point.speed, way_point.racetime);
+                } else if way_point.is_end_lap {
+                    entry.add_lap(way_point.speed, way_point.racetime);
+                } else {
+                    entry.add_checkpoint(way_point.speed, way_point.racetime);
                 }
 
                 ctx.db.tab_match_round_player_ext().id().update(entry);
