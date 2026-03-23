@@ -1,6 +1,4 @@
-use spacetimedb::{
-    Query, RawQuery, ReducerContext, SpacetimeType, Uuid, ViewContext, reducer, table, view,
-};
+use spacetimedb::{SpacetimeType, Uuid, ViewContext, table, view};
 
 use crate::{
     authorization::Authorization,
@@ -14,12 +12,12 @@ use crate::{
 )]
 pub struct TabPlayerDestination {
     #[index(hash)]
-    competition_id: u32,
+    pub competition_id: u32,
     // Destination for the player
     #[index(hash)]
-    destination_server_id: u32,
+    pub destination_server_id: u32,
     // So this would need to be 0 to move all players?
-    user_id: u32,
+    pub user_id: u32,
 }
 
 #[derive(Debug, SpacetimeType)]

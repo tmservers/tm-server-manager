@@ -1,4 +1,4 @@
-use spacetimedb::{CaseConversionPolicy, ReducerContext, Table, Uuid};
+use spacetimedb::{CaseConversionPolicy, ReducerContext, Uuid};
 
 use crate::{
     raw_server::tab_raw_server,

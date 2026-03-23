@@ -1,4 +1,4 @@
-use spacetimedb::{Query, ReducerContext, SpacetimeType, Table, ViewContext, reducer, table, view};
+use spacetimedb::{ReducerContext, SpacetimeType, Table, reducer, table};
 use tm_server_types::config::ServerConfig;
 
 use crate::{
@@ -13,12 +13,15 @@ use crate::{
     raw_server::{
         RawServerOccupation,
         config::{RawServerConfig, tab_raw_server_config},
+        destination::{TabPlayerDestination, tab_player_destination},
         tab_raw_server, tab_raw_server_occupation,
     },
     tm_match::{
+        players::match_permitted_players,
         state::{MatchState, tab_match_state},
         template::match_template_instantiate,
     },
+    user::tab_user_ids_map,
 };
 
 pub mod event;
@@ -369,13 +372,14 @@ pub fn authorized_match_set_preparation(ctx: &ReducerContext, match_id: u32) -> 
         );
     }
 
-    if ctx
+    let competition_id = tm_match.parent_id;
+
+    let occupation = if let Some(occupation) = ctx
         .db
         .tab_raw_server_occupation()
         .match_id()
         .filter(tm_match.id)
         .next()
-        .is_some()
     {
         tm_match.status = MatchStatus::Preparation;
         ctx.db.tab_match().id().update(tm_match);
@@ -383,17 +387,15 @@ pub fn authorized_match_set_preparation(ctx: &ReducerContext, match_id: u32) -> 
         ctx.db
             .tab_match_state()
             .try_insert(MatchState::new(match_id))?;
-
-        return Ok(());
-    }
-
-    if tm_match.auto_provision_server {
+        occupation
+    } else if tm_match.auto_provision_server {
         let available_servers = competition_available_server_pool(&ctx.as_read_only());
         if available_servers.is_empty() {
             return Err("No server is assigned to the match and there are no servers left to auto provision. Cannot start the match!".into());
         }
 
-        ctx.db
+        let occupation = ctx
+            .db
             .tab_raw_server_occupation()
             .try_insert(RawServerOccupation::new(match_id, available_servers[0].id))?;
 
@@ -403,11 +405,30 @@ pub fn authorized_match_set_preparation(ctx: &ReducerContext, match_id: u32) -> 
         ctx.db
             .tab_match_state()
             .try_insert(MatchState::new(match_id))?;
-
-        Ok(())
+        occupation
     } else {
-        Err("Match has auto provisioning turned off and no server assigned! Cannot start the match!".into())
+        return Err("Match has auto provisioning turned off and no server assigned! Cannot start the match!".into());
+    };
+
+    let players = match_permitted_players(&ctx.as_anonymous_read_only(), match_id);
+    for player in players {
+        ctx.db
+            .tab_player_destination()
+            .insert(TabPlayerDestination {
+                competition_id,
+                destination_server_id: occupation.server_id,
+                //PERF: This is a back and forth with other views i think and could be done cleaner.
+                //no time for now tho. This would require an overhaul in many places includinig leaderboards and stuff.
+                user_id: ctx
+                    .db
+                    .tab_user_ids_map()
+                    .account_id()
+                    .find(player.account_id)
+                    .unwrap()
+                    .user_id,
+            });
     }
+    Ok(())
 }
 
 /// If the match is fully configured and ready start.

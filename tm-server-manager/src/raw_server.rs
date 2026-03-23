@@ -1,8 +1,8 @@
 use base64::Engine;
-use base64::prelude::{BASE64_STANDARD, BASE64_URL_SAFE, BASE64_URL_SAFE_NO_PAD};
+use base64::prelude::{BASE64_STANDARD, BASE64_URL_SAFE_NO_PAD};
 use serde::Deserialize;
 use spacetimedb::http::Request;
-use spacetimedb::{Identity, Query, ReducerContext, Table, Uuid, ViewContext, reducer, table};
+use spacetimedb::{Identity, ReducerContext, Table, Uuid, ViewContext, reducer, table};
 use spacetimedb::{ProcedureContext, view};
 
 use crate::authorization::Authorization;
@@ -18,10 +18,10 @@ pub mod replay;
 pub struct RawServerV1 {
     #[unique]
     pub identity: Identity,
-    /// Trackmania server logins are unique.
     #[unique]
     pub server_login: String,
 
+    // Account id of the server from the trackmania web services.
     server_account_id: Uuid,
 
     /// Each server also has a ubisoft account associated with it.
@@ -45,14 +45,6 @@ pub struct RawServerV1 {
 }
 
 impl RawServerV1 {
-    /* pub fn set_config(&mut self, config: ServerConfig) {
-        self.config = config
-    } */
-
-    /* pub fn set_state(&mut self, state: ServerState) {
-        self.state = state
-    } */
-
     pub fn set_online(&mut self) {
         self.online = true;
     }
@@ -67,18 +59,6 @@ impl RawServerV1 {
     pub fn is_verified(&self) -> bool {
         self.verified
     }
-    /* pub(crate) fn add_server_event(&mut self, event: &Event) -> bool {
-        match event {
-            Event::PlayerConenct(player) => log::error!("Player connected: {}", player.account_id),
-            _ => return false,
-        }
-        log::warn!("{:#?}", self.state);
-        true
-    } */
-
-    /* pub fn set_command(&mut self, command: Method) {
-    self.server_method = command
-    } */
 }
 
 #[table(accessor=tab_raw_server_occupation)]
@@ -121,7 +101,6 @@ pub fn login_as_server(
         .header("Content-Type", "application/json")
         .header("User-Agent", "tm-server-manager | central")
         .body(r#"{ "audience": "NadeoServices" }"#)
-        //TODO see what would be a good error message
         .map_err(|e| e.to_string())?;
     let result = ctx
         .http
@@ -157,17 +136,17 @@ pub fn login_as_server(
     let server_account_id = Uuid::parse_str(&claims.sub).unwrap();
     let identity = ctx.sender();
 
-    //TODO this path is not finshed yet
     ctx.try_with_tx::<(), String>(|ctx| {
         if let Some(mut server) = ctx.db.tab_raw_server().server_login().find(&login) {
-            //TODO check if the associated user stayed the same.
-            // The new identity is assigned to the server.
-            server.set_identity(identity);
+            if server.server_account_id != user_account_id {
+                server.verified = false;
+            }
             server.set_online();
+            server.set_identity(identity);
             ctx.db.tab_raw_server().id().update(server);
         } else {
             // Server has never been seen before so create a new one.
-            let server = ctx.db.tab_raw_server().try_insert(RawServerV1 {
+            ctx.db.tab_raw_server().try_insert(RawServerV1 {
                 id: 0,
                 server_login: login.clone(),
                 server_account_id,
@@ -177,10 +156,6 @@ pub fn login_as_server(
                 verified: false,
                 online: true,
             })?;
-            //TODO which config should be active?
-            /* ctx.db
-            .tab_raw_server_config_active()
-            .try_insert(RawServerConfigActive::new(server.server_login))?; */
         }
         Ok(())
     })?;
@@ -219,7 +194,7 @@ pub(crate) fn user_available_server_pool(ctx: &ViewContext) -> Vec<RawServerV1> 
         .tab_raw_server()
         .user_account_id()
         .filter(user.account_id)
-        .filter(|s| s.verified)
+        .filter(|s| s.verified && s.capturable)
         .filter(|s| {
             ctx.db
                 .tab_raw_server_occupation()

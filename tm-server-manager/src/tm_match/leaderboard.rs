@@ -118,7 +118,7 @@ impl TabMatchRoundPlayerExt {
             && let Some(last) = self.round_actions.last_mut()
             && let PlayerAction::Respawn(respawn) = last
         {
-            respawn.speed == speed;
+            respawn.speed = speed;
 
             return;
         };
@@ -171,15 +171,22 @@ pub struct MatchRoundPlayerExt {
     round: u16,
 }
 
+#[view(accessor=temp_match_leaderboard,public)]
+fn temp_match_leaderboard(
+    ctx: &AnonymousViewContext, /*, match_id: u32, round: u16 */
+) -> Vec<MatchRoundPlayer> {
+    match_leaderboard(ctx, 51, 0)
+}
+
 /// Accumulates points of all previous rounds.
 /// Round 0 is giving you a live view.
 /// If you want points from individual rounds use the match_round view instead.
-#[view(accessor=match_leaderboard,public)]
+/// TODO make this function the view if view args are here.
 pub fn match_leaderboard(
-    ctx: &AnonymousViewContext, /*, match_id: u32, round: u16 */
+    ctx: &AnonymousViewContext,
+    match_id: u32,
+    mut round: u16,
 ) -> Vec<MatchRoundPlayer> {
-    let match_id = 51u32;
-    let mut round = 0u16;
     let entries: Vec<TabMatchRoundPlayer> = if round == 0 {
         //TODO if the match is finished then do inclusive range.
         let Some(state) = ctx.db.tab_match_state().match_id().find(match_id) else {

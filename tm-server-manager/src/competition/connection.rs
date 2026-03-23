@@ -1,7 +1,9 @@
 use std::collections::{HashMap, HashSet};
 
 use petgraph::acyclic::Acyclic;
-use spacetimedb::{ReducerContext, SpacetimeType, Table, ViewContext, reducer, view};
+use spacetimedb::{
+    AnonymousViewContext, ReducerContext, SpacetimeType, Table, ViewContext, reducer, view,
+};
 
 use crate::{
     authorization::Authorization,
@@ -74,7 +76,7 @@ impl TabConnection {
         self.status == ConnectionStatus::Resolved
     }
 
-    pub(crate) fn get_permitted_players(self, ctx: &ViewContext) -> Vec<PermittedPlayer> {
+    pub(crate) fn get_permitted_players(self, ctx: &AnonymousViewContext) -> Vec<PermittedPlayer> {
         if self.is_wait() {
             return Vec::new();
         }
@@ -82,7 +84,10 @@ impl TabConnection {
         self.get_permitted_players_filter(ctx)
     }
 
-    pub(crate) fn get_permitted_players_filter(&self, ctx: &ViewContext) -> Vec<PermittedPlayer> {
+    pub(crate) fn get_permitted_players_filter(
+        &self,
+        ctx: &AnonymousViewContext,
+    ) -> Vec<PermittedPlayer> {
         match self.connection_origin() {
             NodeKindHandle::MatchV1(m) => {
                 let rules = ctx
@@ -92,7 +97,7 @@ impl TabConnection {
                     .find(self.id)
                     .unwrap();
 
-                let leaderboard = match_leaderboard(&ctx.as_anonymous_read_only());
+                let leaderboard = match_leaderboard(ctx, m, 0);
 
                 //TODO maybe factor this out into a trait and impl it for the respective thing
                 // maybe we also need to split the data portion out into separate tables for each connection.
@@ -111,7 +116,7 @@ impl TabConnection {
                     .find(self.id)
                     .unwrap();
 
-                let leaderboard = registration_player(&ctx.as_anonymous_read_only());
+                let leaderboard = registration_player(ctx);
 
                 //TODO maybe factor this out into a trait and impl it for the respective thing
                 // maybe we also need to split the data portion out into separate tables for each connection.

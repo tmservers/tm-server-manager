@@ -1,15 +1,11 @@
-use std::collections::HashMap;
-
 use spacetimedb::{
     AnonymousViewContext, Query, ReducerContext, SpacetimeType, Table, Uuid, ViewContext, reducer,
     table, view,
 };
 
 use crate::{
-    authorization::Authorization,
-    competition::{connection::tab_connection__view, node::NodeKindHandle},
-    raw_server::{tab_raw_server__view, tab_raw_server_occupation__view},
-    tm_match::{leaderboard::match_leaderboard, tab_match__view},
+    authorization::Authorization, raw_server::tab_raw_server_occupation__view,
+    tm_match::players::match_permitted_players,
 };
 
 #[derive(Debug)]
@@ -110,9 +106,9 @@ fn raw_server_current_players(
 
 #[derive(Debug, SpacetimeType)]
 pub struct PermittedPlayer {
-    account_id: Uuid,
+    pub account_id: Uuid,
     mandatory: bool,
-    only_spectator: bool,
+    pub only_spectator: bool,
 }
 
 impl PermittedPlayer {
@@ -125,8 +121,8 @@ impl PermittedPlayer {
     }
 }
 
-#[view(accessor= raw_server_allowed_players, public)]
-fn raw_server_allowed_players(ctx: &ViewContext) -> Vec<PermittedPlayer> {
+#[view(accessor= raw_server_permitted_players, public)]
+fn raw_server_permitted_players(ctx: &ViewContext) -> Vec<PermittedPlayer> {
     let Ok(server) = ctx.get_server() else {
         return Vec::new();
     };
@@ -140,26 +136,9 @@ fn raw_server_allowed_players(ctx: &ViewContext) -> Vec<PermittedPlayer> {
         return Vec::new();
     };
 
-    let mut map: HashMap<Uuid, PermittedPlayer> = HashMap::new();
-    //TODO dont filter for match here.
-    let depending_nodes = ctx
-        .db
-        .tab_connection()
-        .origins_of()
-        .filter(NodeKindHandle::MatchV1(occupation.match_id).split())
-        .filter(|c| c.is_data());
+    let values = match_permitted_players(&ctx.as_anonymous_read_only(), occupation.match_id);
 
-    for node in depending_nodes {
-        let permitted_players = node
-            .get_permitted_players(ctx)
-            .into_iter()
-            .map(|p| (p.account_id, p));
-        map.extend(permitted_players);
-    }
-
-    let values = map.into_values().collect();
-
-    log::warn!("{:?}", values);
+    //TODO also do this for servers and not only match. e.g. a server can only permit registered players.
 
     values
 }

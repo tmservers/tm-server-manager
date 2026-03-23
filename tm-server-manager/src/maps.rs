@@ -1,4 +1,4 @@
-use spacetimedb::{Uuid, table};
+use spacetimedb::table;
 
 #[table(accessor=tab_tm_map)]
 pub struct TabTmMap {
