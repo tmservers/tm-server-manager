@@ -230,6 +230,12 @@ pub(crate) fn handle_match_event(
                 .tab_raw_server_occupation()
                 .match_id()
                 .delete(match_id);
+
+            ctx.db
+                .tab_raw_server_occupation()
+                .match_id()
+                .delete(match_id);
+
             log::info!("The match {match_id} has successfully ended!");
         }
         Event::WarmupStart => {

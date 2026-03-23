@@ -13,6 +13,10 @@ use crate::{
 pub struct TabPlayerDestination {
     #[index(hash)]
     pub competition_id: u32,
+
+    #[index(hash)]
+    pub match_id: u32,
+
     // Destination for the player
     #[index(hash)]
     pub destination_server_id: u32,

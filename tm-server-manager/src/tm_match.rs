@@ -415,6 +415,7 @@ pub fn authorized_match_set_preparation(ctx: &ReducerContext, match_id: u32) -> 
         ctx.db
             .tab_player_destination()
             .insert(TabPlayerDestination {
+                match_id,
                 competition_id,
                 destination_server_id: occupation.server_id,
                 //PERF: This is a back and forth with other views i think and could be done cleaner.
