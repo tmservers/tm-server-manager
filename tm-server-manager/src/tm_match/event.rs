@@ -1,15 +1,10 @@
-use spacetimedb::{
-    AnonymousViewContext, ReducerContext, SpacetimeType, Table, Uuid, rand::seq::index, table, view,
-};
+use spacetimedb::{ReducerContext, Table, Uuid, table};
 use tm_server_types::event::Event;
 
 use crate::{
     competition::{connection::internal_graph_resolution_node_finished, node::NodeHandle},
     maps::{TabTmMap, tab_tm_map},
-    raw_server::{
-        destination::tab_player_destination,
-        occupation::{TabRawServerOccupationRead, TabRawServerOccupationWrite},
-    },
+    raw_server::occupation::TabRawServerOccupationWrite,
     tm_match::{
         leaderboard::{
             TabMatchRoundPlayer, TabMatchRoundPlayerExt, tab_match_round_player,
@@ -227,9 +222,15 @@ pub(crate) fn handle_match_event(
             tm_match.end_match();
             let tm_match = ctx.db.tab_match().id().update(tm_match);
 
-            internal_graph_resolution_node_finished(ctx, NodeHandle::MatchV1(tm_match.id))?;
+            if let Err(error) =
+                internal_graph_resolution_node_finished(ctx, NodeHandle::MatchV1(tm_match.id))
+            {
+                log::error!("Occupation could not be removed. Error {error}")
+            };
 
-            ctx.raw_server_occupation_remove(NodeHandle::MatchV1(match_id));
+            if let Err(error) = ctx.raw_server_occupation_remove(NodeHandle::MatchV1(match_id)) {
+                log::error!("Occupation could not be removed. Error {error}")
+            };
 
             //ctx.db.tab_player_destination().node_id().delete(match_id);
 
