@@ -7,7 +7,7 @@ use crate::{
     competition::{
         CompetitionPermissionsV1, CompetitionV1,
         connection::{data::tab_connection_data, tab_connection},
-        node::NodeKindHandle,
+        node::NodeHandle,
         tab_competition,
     },
     registration::tab_registration,
@@ -155,24 +155,24 @@ pub(super) fn competition_template_instantiate(
     for old_connection in connections {
         let old_origin = old_connection.connection_origin();
         let new_origin = match old_origin {
-            NodeKindHandle::MatchV1(m) => match_map.get(&m).unwrap().id,
-            NodeKindHandle::CompetitionV1(i) => competition_map.get(&i).unwrap().id,
-            NodeKindHandle::MonitoringV1(_) => todo!(),
-            NodeKindHandle::ServerV1(_) => todo!(),
-            NodeKindHandle::ScheduleV1(i) => schedule_map.get(&i).unwrap().id,
-            NodeKindHandle::PortalV1(_) => todo!(),
-            NodeKindHandle::RegistrationV1(i) => registration_map.get(&i).unwrap().id,
+            NodeHandle::MatchV1(m) => match_map.get(&m).unwrap().id,
+            NodeHandle::CompetitionV1(i) => competition_map.get(&i).unwrap().id,
+            NodeHandle::MonitoringV1(_) => todo!(),
+            NodeHandle::ServerV1(_) => todo!(),
+            NodeHandle::ScheduleV1(i) => schedule_map.get(&i).unwrap().id,
+            NodeHandle::PortalV1(_) => todo!(),
+            NodeHandle::RegistrationV1(i) => registration_map.get(&i).unwrap().id,
         };
 
         let old_target = old_connection.connection_target();
         let new_target = match old_target {
-            NodeKindHandle::MatchV1(m) => match_map.get(&m).unwrap().id,
-            NodeKindHandle::CompetitionV1(i) => competition_map.get(&i).unwrap().id,
-            NodeKindHandle::MonitoringV1(_) => todo!(),
-            NodeKindHandle::ServerV1(_) => todo!(),
-            NodeKindHandle::ScheduleV1(i) => schedule_map.get(&i).unwrap().id,
-            NodeKindHandle::PortalV1(_) => todo!(),
-            NodeKindHandle::RegistrationV1(i) => registration_map.get(&i).unwrap().id,
+            NodeHandle::MatchV1(m) => match_map.get(&m).unwrap().id,
+            NodeHandle::CompetitionV1(i) => competition_map.get(&i).unwrap().id,
+            NodeHandle::MonitoringV1(_) => todo!(),
+            NodeHandle::ServerV1(_) => todo!(),
+            NodeHandle::ScheduleV1(i) => schedule_map.get(&i).unwrap().id,
+            NodeHandle::PortalV1(_) => todo!(),
+            NodeHandle::RegistrationV1(i) => registration_map.get(&i).unwrap().id,
         };
 
         let mut new_connection = old_connection.instantiate(new_comp.id);

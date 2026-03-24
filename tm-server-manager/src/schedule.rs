@@ -7,7 +7,7 @@ use crate::{
     authorization::Authorization,
     competition::{
         CompetitionPermissionsV1, connection::internal_graph_resolution_node_finished,
-        node::NodeKindHandle, tab_competition,
+        node::NodeHandle, tab_competition,
     },
 };
 
@@ -120,7 +120,7 @@ fn on_schedule_exec(ctx: &ReducerContext, arg: ScheduleExecV1) -> Result<(), Str
     internal_graph_resolution_node_finished(
         ctx,
         //arg.competition_id,
-        NodeKindHandle::ScheduleV1(arg.scheduled_id as u32),
+        NodeHandle::ScheduleV1(arg.scheduled_id as u32),
     )?;
 
     Ok(())

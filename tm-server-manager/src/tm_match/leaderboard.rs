@@ -175,75 +175,7 @@ pub struct MatchRoundPlayerExt {
 fn temp_match_leaderboard(
     ctx: &AnonymousViewContext, /*, match_id: u32, round: u16 */
 ) -> Vec<MatchRoundPlayer> {
-    match_leaderboard(ctx, 51, 0)
-}
-
-/// Accumulates points of all previous rounds.
-/// Round 0 is giving you a live view.
-/// If you want points from individual rounds use the match_round view instead.
-/// TODO make this function the view if view args are here.
-pub fn match_leaderboard(
-    ctx: &AnonymousViewContext,
-    match_id: u32,
-    mut round: u16,
-) -> Vec<MatchRoundPlayer> {
-    let entries: Vec<TabMatchRoundPlayer> = if round == 0 {
-        //TODO if the match is finished then do inclusive range.
-        let Some(state) = ctx.db.tab_match_state().match_id().find(match_id) else {
-            return Vec::new();
-        };
-        round = state.get_round();
-        ctx.db
-            .tab_match_round_player()
-            .match_round_range()
-            .filter((match_id, 1..=round))
-            .collect()
-    } else {
-        ctx.db
-            .tab_match_round_player()
-            .match_round_range()
-            .filter((match_id, 1..=round))
-            .collect()
-    };
-
-    let mut map = HashMap::<u32, TabMatchRoundPlayer>::new();
-
-    for entry in entries {
-        map.entry(entry.user_id)
-            .and_modify(|e| {
-                e.points += entry.points;
-                if entry.round > e.round {
-                    e.round = entry.round;
-                    e.id = entry.id;
-                }
-            })
-            .or_insert(entry);
-    }
-
-    let mut standings = map
-        .into_values()
-        .map(|p| MatchRoundPlayer {
-            account_id: ctx
-                .db
-                .tab_user()
-                .internal_id()
-                .find(p.user_id)
-                .unwrap()
-                .account_id,
-            id: p.id,
-            match_id,
-            time: p.time,
-            score: p.points,
-            round: p.round,
-            position: 0,
-        })
-        .collect::<Vec<_>>();
-
-    standings.sort_by_key(|v| v.score);
-    for (position, entry) in standings.iter_mut().enumerate() {
-        entry.position = (position + 1) as u16;
-    }
-    standings
+    ctx.match_leaderboard(51, 0)
 }
 
 /// Returns the specified round of the match.
@@ -317,4 +249,77 @@ pub fn match_round_ext(
             round,
         })
         .collect()
+}
+
+pub(crate) trait MatchLeadearboardRead {
+    fn match_leaderboard(&self, match_id: u32, round: u16) -> Vec<MatchRoundPlayer>;
+}
+impl<Db: spacetimedb::DbContext> MatchLeadearboardRead for Db {
+    /// Accumulates points of all previous rounds.
+    /// Round 0 is giving you a live view.
+    /// If you want points from individual rounds use the match_round view instead.
+    fn match_leaderboard(&self, match_id: u32, mut round: u16) -> Vec<MatchRoundPlayer> {
+        let entries: Vec<TabMatchRoundPlayer> = if round == 0 {
+            //TODO if the match is finished then do inclusive range.
+            let Some(state) = self
+                .db_read_only()
+                .tab_match_state()
+                .match_id()
+                .find(match_id)
+            else {
+                return Vec::new();
+            };
+            round = state.get_round();
+            self.db_read_only()
+                .tab_match_round_player()
+                .match_round_range()
+                .filter((match_id, 1..=round))
+                .collect()
+        } else {
+            self.db_read_only()
+                .tab_match_round_player()
+                .match_round_range()
+                .filter((match_id, 1..=round))
+                .collect()
+        };
+
+        let mut map = HashMap::<u32, TabMatchRoundPlayer>::new();
+
+        for entry in entries {
+            map.entry(entry.user_id)
+                .and_modify(|e| {
+                    e.points += entry.points;
+                    if entry.round > e.round {
+                        e.round = entry.round;
+                        e.id = entry.id;
+                    }
+                })
+                .or_insert(entry);
+        }
+
+        let mut standings = map
+            .into_values()
+            .map(|p| MatchRoundPlayer {
+                account_id: self
+                    .db_read_only()
+                    .tab_user()
+                    .internal_id()
+                    .find(p.user_id)
+                    .unwrap()
+                    .account_id,
+                id: p.id,
+                match_id,
+                time: p.time,
+                score: p.points,
+                round: p.round,
+                position: 0,
+            })
+            .collect::<Vec<_>>();
+
+        standings.sort_by_key(|v| v.score);
+        for (position, entry) in standings.iter_mut().enumerate() {
+            entry.position = (position + 1) as u16;
+        }
+        standings
+    }
 }

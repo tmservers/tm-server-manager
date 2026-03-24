@@ -1,23 +1,27 @@
-use spacetimedb::{ReducerContext, SpacetimeType, Table, reducer, table};
+use std::collections::HashMap;
+
+use spacetimedb::{ReducerContext, SpacetimeType, Table, Uuid, reducer, table};
 use tm_server_types::config::ServerConfig;
 
 use crate::{
     authorization::Authorization,
     competition::{
         CompetitionPermissionsV1,
-        connection::tab_connection,
-        node::{NodeKindHandle, TabCompetitionNodePosition, tab_competition_node_position},
-        server_pool::competition_available_server_pool,
+        connection::{tab_connection, tab_connection__view},
+        node::{NodeHandle, TabCompetitionNodePosition, tab_competition_node_position},
+        server_pool::TabCompetitionServerPoolRead,
         tab_competition,
     },
     raw_server::{
-        RawServerOccupation,
+        TabRawServerWrite,
         config::{RawServerConfig, tab_raw_server_config},
-        destination::{TabPlayerDestination, tab_player_destination},
-        tab_raw_server, tab_raw_server_occupation,
+        destination::{TabPlayerDestination, TabRawServerDestinationWrite, tab_player_destination},
+        occupation::{TabRawServerOccupationRead, TabRawServerOccupationWrite},
+        player::PermittedPlayer,
+        tab_raw_server,
     },
     tm_match::{
-        players::match_permitted_players,
+        leaderboard::MatchRoundPlayer,
         state::{MatchState, tab_match_state},
         template::match_template_instantiate,
     },
@@ -63,11 +67,10 @@ pub struct TmMatchV1 {
 
     /// The moment the server is captured by the match the pre_match_config gets loaded in.
     /// Only if it is defined. Useful for hiding project maps till the actual start.
-    pre_match_config: u32,
+    pre_config: u32,
     /// If the match is started this config gets loaded.
     /// Has to be specified before your able to advance into Upcoming.
-    match_config: u32,
-    post_match_config: u32,
+    config: u32,
 
     status: MatchStatus,
 
@@ -87,20 +90,14 @@ impl TmMatchV1 {
                 panic!("should not ask for a config if match is configured.")
             }
             MatchStatus::Preparation => {
-                if self.pre_match_config != 0 {
-                    self.pre_match_config
+                if self.pre_config != 0 {
+                    self.pre_config
                 } else {
-                    self.match_config
+                    self.config
                 }
             }
-            MatchStatus::Live => self.match_config,
-            MatchStatus::Ended => {
-                if self.post_match_config != 0 {
-                    self.post_match_config
-                } else {
-                    self.match_config
-                }
-            }
+            MatchStatus::Live => self.config,
+            MatchStatus::Ended => self.config,
             MatchStatus::Locked => {
                 panic!("should not ask for a config if match is locked.")
             }
@@ -199,9 +196,8 @@ pub fn match_create(
             parent_id,
             name,
             status: MatchStatus::Configuring,
-            pre_match_config: 0,
-            match_config: 0,
-            post_match_config: 0,
+            pre_config: 0,
+            config: 0,
             auto_provision_server: true,
             template: false,
             open: false,
@@ -212,7 +208,7 @@ pub fn match_create(
         ctx.db
             .tab_competition_node_position()
             .try_insert(TabCompetitionNodePosition::new(
-                NodeKindHandle::MatchV1(tm_match.id),
+                NodeHandle::MatchV1(tm_match.id),
                 tm_match.parent_id,
             ))?;
     }
@@ -242,13 +238,7 @@ pub fn match_assign_server(ctx: &ReducerContext, to: u32, server_id: u32) -> Res
         );
     }
 
-    if ctx
-        .db
-        .tab_raw_server_occupation()
-        .server_id()
-        .find(server_id)
-        .is_some()
-    {
+    if ctx.raw_server_is_occupied(server_id) {
         return Err("Server is already occupied! Cannot assign!".into());
     }
 
@@ -256,18 +246,15 @@ pub fn match_assign_server(ctx: &ReducerContext, to: u32, server_id: u32) -> Res
         return Err("Server with id was not found!".into());
     };
 
-    //TODO recurse upwards through the competition tree.
-    if competition_available_server_pool(&ctx.as_read_only())
+    if ctx
+        .server_pool_available(tm_match.parent_id)
         .into_iter()
         .any(|s| s.id == server_id)
     {
         return Err("Server is not lended to the project".into());
     }
 
-    ctx.db
-        .tab_raw_server_occupation()
-        .server_id()
-        .try_insert_or_update(RawServerOccupation::new(to, server_id))?;
+    ctx.raw_server_occupation_add(NodeHandle::MatchV1(to), server_id)?;
 
     Ok(())
 }
@@ -302,7 +289,7 @@ pub fn match_update_pre_config(
     if let Some(mut tm_match) = ctx.db.tab_match().id().find(id)
         && tm_match.status == MatchStatus::Configuring
     {
-        tm_match.pre_match_config = config_id;
+        tm_match.pre_config = config_id;
         ctx.db.tab_match().id().update(tm_match);
         Ok(())
     } else {
@@ -334,7 +321,7 @@ pub fn match_update_config(
         .db
         .tab_raw_server_config()
         .try_insert(RawServerConfig::new(config))?;
-    tm_match.match_config = cfg.id;
+    tm_match.config = cfg.id;
     ctx.db.tab_match().id().update(tm_match);
     Ok(())
 }
@@ -366,7 +353,7 @@ pub fn authorized_match_set_preparation(ctx: &ReducerContext, match_id: u32) -> 
     if tm_match.status == MatchStatus::Configuring {
         return Err("Match is still getting configured.".into());
     }
-    if tm_match.match_config == 0 {
+    if tm_match.config == 0 {
         return Err(
             "Match needs a configuration in order to advance to the upcoming state.".into(),
         );
@@ -374,12 +361,9 @@ pub fn authorized_match_set_preparation(ctx: &ReducerContext, match_id: u32) -> 
 
     let competition_id = tm_match.parent_id;
 
-    let occupation = if let Some(occupation) = ctx
-        .db
-        .tab_raw_server_occupation()
-        .match_id()
-        .filter(tm_match.id)
-        .next()
+    if ctx
+        .occupation_with_occupier(NodeHandle::MatchV1(match_id))
+        .is_some()
     {
         tm_match.status = MatchStatus::Preparation;
         ctx.db.tab_match().id().update(tm_match);
@@ -387,17 +371,8 @@ pub fn authorized_match_set_preparation(ctx: &ReducerContext, match_id: u32) -> 
         ctx.db
             .tab_match_state()
             .try_insert(MatchState::new(match_id))?;
-        occupation
     } else if tm_match.auto_provision_server {
-        let available_servers = competition_available_server_pool(&ctx.as_read_only());
-        if available_servers.is_empty() {
-            return Err("No server is assigned to the match and there are no servers left to auto provision. Cannot start the match!".into());
-        }
-
-        let occupation = ctx
-            .db
-            .tab_raw_server_occupation()
-            .try_insert(RawServerOccupation::new(match_id, available_servers[0].id))?;
+        ctx.raw_server_pool_assign(NodeHandle::MatchV1(match_id))?;
 
         tm_match.status = MatchStatus::Preparation;
         ctx.db.tab_match().id().update(tm_match);
@@ -405,30 +380,12 @@ pub fn authorized_match_set_preparation(ctx: &ReducerContext, match_id: u32) -> 
         ctx.db
             .tab_match_state()
             .try_insert(MatchState::new(match_id))?;
-        occupation
     } else {
         return Err("Match has auto provisioning turned off and no server assigned! Cannot start the match!".into());
     };
 
-    let players = match_permitted_players(&ctx.as_anonymous_read_only(), match_id);
-    for player in players {
-        ctx.db
-            .tab_player_destination()
-            .insert(TabPlayerDestination {
-                match_id,
-                competition_id,
-                destination_server_id: occupation.server_id,
-                //PERF: This is a back and forth with other views i think and could be done cleaner.
-                //no time for now tho. This would require an overhaul in many places includinig leaderboards and stuff.
-                user_id: ctx
-                    .db
-                    .tab_user_ids_map()
-                    .account_id()
-                    .find(player.account_id)
-                    .unwrap()
-                    .user_id,
-            });
-    }
+    ctx.destination_claim(NodeHandle::MatchV1(match_id))?;
+
     Ok(())
 }
 
@@ -453,11 +410,7 @@ pub fn match_try_start(ctx: &ReducerContext, match_id: u32) -> Result<(), String
         .authorize()?;
 
     if ctx
-        .db
-        .tab_raw_server_occupation()
-        .match_id()
-        .filter(tm_match.id)
-        .next()
+        .occupation_with_occupier(NodeHandle::MatchV1(match_id))
         .is_none()
     {
         return Err("No server is assigned to the match.".into());
@@ -488,7 +441,7 @@ pub fn match_delete(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
         return Err(format!("Match with id: {match_id} not found."));
     }
 
-    let node_ref = NodeKindHandle::MatchV1(match_id);
+    let node_ref = NodeHandle::MatchV1(match_id);
 
     // This should only ever delete one but we dont have muulti col unique index for now
     for node in ctx
@@ -518,3 +471,12 @@ pub fn match_delete(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
 fn tm_match(ctx: &ViewContext) -> impl Query<TmMatchV1> {
     ctx.from.tab_match()
 } */
+
+/* pub(crate) trait MatchRead {
+}
+impl<Db: spacetimedb::DbContext> MatchRead for Db {
+
+}
+
+pub(crate) trait MatchWrite: MatchRead {}
+impl<Db: spacetimedb::DbContext<DbView = spacetimedb::Local>> MatchWrite for Db {} */

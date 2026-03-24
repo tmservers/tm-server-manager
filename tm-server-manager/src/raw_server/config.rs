@@ -1,10 +1,14 @@
-use spacetimedb::{ReducerContext, SpacetimeType, Table, Uuid, ViewContext, reducer, table, view};
+use spacetimedb::{SpacetimeType, ViewContext, table, view};
 use tm_server_types::config::ServerConfig;
 
 use crate::{
-    authorization::Authorization,
-    raw_server::{tab_raw_server__view, tab_raw_server_occupation__view},
+    competition::node::NodeRead,
+    raw_server::{
+        method::TmServerMethodResponse, occupation::TabRawServerOccupationRead,
+        tab_raw_server__view,
+    },
     tm_match::{MatchStatus, tab_match__view},
+    tm_server::tab_server__view,
 };
 
 #[table(accessor=tab_raw_server_config)]
@@ -13,9 +17,6 @@ pub struct RawServerConfig {
     #[primary_key]
     pub id: u32,
 
-    /*   //TODO probably remove that and add it as a component table.
-    // Creator of the Config
-    account_id: Uuid, */
     config: ServerConfig,
 }
 
@@ -66,30 +67,43 @@ pub fn create_server_config(ctx: &ReducerContext, config: ServerConfig) -> Resul
 struct ServerMetadata {
     config: ServerConfig,
     open: bool,
-    status: MatchStatus,
+    //status: MatchStatus,
 }
 
 #[view(accessor=raw_server_config,public)]
 fn raw_server_config(ctx: &ViewContext) -> Option<ServerMetadata> {
     let server = ctx.db.tab_raw_server().identity().find(ctx.sender())?;
 
-    let server_occupation = ctx
-        .db
-        .tab_raw_server_occupation()
-        .server_id()
-        .find(server.id)?;
+    let node = ctx.raw_server_occupation(server.id)?;
 
-    let tm_match = ctx.db.tab_match().id().find(server_occupation.match_id)?;
-
-    let config = ctx
-        .db
-        .tab_raw_server_config()
-        .id()
-        .find(tm_match.get_config_id())?;
-
-    Some(ServerMetadata {
-        config: config.config,
-        open: tm_match.is_open(),
-        status: tm_match.status(),
-    })
+    match node {
+        crate::competition::node::NodeHandle::MatchV1(m) => {
+            let tm_match = ctx.db.tab_match().id().find(m).unwrap();
+            let config = ctx
+                .db
+                .tab_raw_server_config()
+                .id()
+                .find(tm_match.get_config_id())?;
+            Some(ServerMetadata {
+                config: config.config,
+                open: tm_match.is_open(),
+            })
+        }
+        crate::competition::node::NodeHandle::ServerV1(s) => {
+            let tm_server = ctx.db.tab_server().id().find(s).unwrap();
+            let config = ctx
+                .db
+                .tab_raw_server_config()
+                .id()
+                .find(tm_server.get_config_id())?;
+            Some(ServerMetadata {
+                config: config.config,
+                open: tm_server.is_open(),
+            })
+        }
+        _ => {
+            log::error!("Requested a configuration from a node type other than Match or Server?");
+            None
+        }
+    }
 }

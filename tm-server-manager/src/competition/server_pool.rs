@@ -1,14 +1,17 @@
-use spacetimedb::{ReducerContext, Table, ViewContext, reducer, table, view};
+use spacetimedb::{
+    AnonymousViewContext, DbContext, Local, ReducerContext, Table, ViewContext, reducer, table,
+    view,
+};
 
 use crate::{
     authorization::Authorization,
     competition::CompetitionPermissionsV1,
     raw_server::{
-        RawServerV1, tab_raw_server, tab_raw_server__view, tab_raw_server_occupation__view,
+        RawServerV1, occupation::TabRawServerOccupationRead, tab_raw_server, tab_raw_server__view,
     },
 };
 
-#[table(accessor=tab_competition_server)]
+#[table(accessor=tab_competition_raw_server)]
 pub struct CompetitionServer {
     #[index(hash)]
     pub competition_id: u32,
@@ -38,7 +41,7 @@ fn lend_raw_server(
 
     if ctx
         .db
-        .tab_competition_server()
+        .tab_competition_raw_server()
         .server_id()
         .filter(server_id)
         .any(|s| s.competition_id == competition_id)
@@ -47,7 +50,7 @@ fn lend_raw_server(
     }
 
     ctx.db
-        .tab_competition_server()
+        .tab_competition_raw_server()
         .try_insert(CompetitionServer {
             competition_id,
             server_id,
@@ -72,10 +75,12 @@ fn revoke_raw_server(
 
     // If the server owner requests a deletion it always passes.
     if server.user_account_id == user_account {
-        ctx.db.tab_competition_server().delete(CompetitionServer {
-            competition_id,
-            server_id,
-        });
+        ctx.db
+            .tab_competition_raw_server()
+            .delete(CompetitionServer {
+                competition_id,
+                server_id,
+            });
         return Ok(());
     }
 
@@ -83,48 +88,62 @@ fn revoke_raw_server(
         .permission(CompetitionPermissionsV1::RAW_SERVER_REVOKE)
         .authorize()?;
 
-    ctx.db.tab_competition_server().delete(CompetitionServer {
-        competition_id,
-        server_id,
-    });
+    ctx.db
+        .tab_competition_raw_server()
+        .delete(CompetitionServer {
+            competition_id,
+            server_id,
+        });
 
     Ok(())
 }
 
 /// The Raw server pool are all servers of an account which are verified.
 #[view(accessor= competition_available_server_pool, public)]
-pub(crate) fn competition_available_server_pool(
+fn competition_available_server_pool(
     ctx: &ViewContext, /* competition_id: u32 */
 ) -> Vec<RawServerV1> {
-    let comeptition_id = 1u32; //TODO replace with arg
+    let competition_id = 1u32; //TODO replace with arg
     let Ok(account_id) = ctx.get_user_account() else {
         return Vec::new();
     };
     //TODO which perissino should we use for this??
     //ctx.auth_builder(project_id, account_id)?.permission(ProjectPermissionsV1::SER)
 
-    //TODO recurse upwards to catch all inherited servers.
-
-    ctx.db
-        .tab_competition_server()
-        .competition_id()
-        .filter(comeptition_id)
-        .filter_map(|s| {
-            let server = ctx.db.tab_raw_server().id().find(s.server_id).unwrap();
-            if !server.is_verified() {
-                None
-            } else {
-                if ctx
-                    .db
-                    .tab_raw_server_occupation()
-                    .server_id()
-                    .find(server.id)
-                    .is_some()
-                {
-                    return None;
-                }
-                Some(server)
-            }
-        })
-        .collect()
+    ctx.server_pool_available(competition_id)
 }
+
+pub(crate) trait TabCompetitionServerPoolRead {
+    fn server_pool_available(&self, competition_id: u32) -> Vec<RawServerV1>;
+}
+pub(crate) trait TabCompetitionServerPoolWrite: TabCompetitionServerPoolRead {}
+
+impl<Db: DbContext> TabCompetitionServerPoolRead for Db {
+    fn server_pool_available(&self, competition_id: u32) -> Vec<RawServerV1> {
+        //TODO recurse upwards to catch all inherited servers.
+
+        self.db_read_only()
+            .tab_competition_raw_server()
+            .competition_id()
+            .filter(competition_id)
+            .filter_map(|s| {
+                let server = self
+                    .db_read_only()
+                    .tab_raw_server()
+                    .id()
+                    .find(s.server_id)
+                    .unwrap();
+                if !server.is_verified() {
+                    None
+                } else {
+                    if self.raw_server_is_occupied(server.id) {
+                        return None;
+                    }
+                    Some(server)
+                }
+            })
+            .collect()
+    }
+}
+
+impl<Db: DbContext<DbView = Local>> TabCompetitionServerPoolWrite for Db {}

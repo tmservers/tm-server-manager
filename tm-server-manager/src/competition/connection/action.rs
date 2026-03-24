@@ -1,7 +1,7 @@
 use spacetimedb::{ReducerContext, SpacetimeType, table};
 
 use crate::{
-    competition::node::NodeKindHandle,
+    competition::node::NodeHandle,
     tm_match::{match_try_start, tab_match},
 };
 
@@ -44,7 +44,7 @@ enum ConnectionActionRegistration {
     Close,
 }
 
-pub(super) fn try_exec_action(connection: u32, target: NodeKindHandle, ctx: &ReducerContext) {
+pub(super) fn try_exec_action(connection: u32, target: NodeHandle, ctx: &ReducerContext) {
     let action = ctx
         .db
         .tab_connection_action()
@@ -52,7 +52,7 @@ pub(super) fn try_exec_action(connection: u32, target: NodeKindHandle, ctx: &Red
         .find(connection)
         .unwrap();
     match target {
-        NodeKindHandle::MatchV1(m) => {
+        NodeHandle::MatchV1(m) => {
             let match_action = action.get_match();
             match match_action {
                 ConnectionActionMatch::TryStart => {
@@ -67,11 +67,11 @@ pub(super) fn try_exec_action(connection: u32, target: NodeKindHandle, ctx: &Red
                 ConnectionActionMatch::ForceStart => todo!(),
             }
         }
-        NodeKindHandle::CompetitionV1(_) => unreachable!(),
-        NodeKindHandle::MonitoringV1(_) => unreachable!(),
-        NodeKindHandle::ServerV1(_) => unreachable!(),
-        NodeKindHandle::ScheduleV1(_) => unreachable!(),
-        NodeKindHandle::PortalV1(_) => unreachable!(),
-        NodeKindHandle::RegistrationV1(r) => todo!(),
+        NodeHandle::CompetitionV1(_) => unreachable!(),
+        NodeHandle::MonitoringV1(_) => unreachable!(),
+        NodeHandle::ServerV1(_) => unreachable!(),
+        NodeHandle::ScheduleV1(_) => unreachable!(),
+        NodeHandle::PortalV1(_) => unreachable!(),
+        NodeHandle::RegistrationV1(r) => todo!(),
     }
 }

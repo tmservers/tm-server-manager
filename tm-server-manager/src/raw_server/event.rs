@@ -4,8 +4,9 @@ use tm_server_types::event::Event;
 use crate::{
     authorization::Authorization,
     raw_server::{
+        occupation::TabRawServerOccupationRead,
         player::{raw_server_player_add, raw_server_player_remove, tab_raw_server_player},
-        tab_raw_server, tab_raw_server_occupation,
+        tab_raw_server,
     },
     tm_match::{
         event::handle_match_event,
@@ -41,15 +42,17 @@ pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
         _ => (),
     }
 
-    if let Some(occupation) = ctx
-        .db
-        .tab_raw_server_occupation()
-        .server_id()
-        .find(server.id)
-        && let Some(tm_match) = ctx.db.tab_match().id().find(occupation.match_id)
-        && tm_match.is_live()
-    {
-        handle_match_event(ctx, tm_match.id, event)?
+    if let Some(node) = ctx.raw_server_occupation(server.id) {
+        if node.is_match()
+            && let Some(tm_match) = ctx.db.tab_match().id().find(node.split().1)
+            && tm_match.is_live()
+        {
+            handle_match_event(ctx, tm_match.id, event)?
+        }
+
+        if node.is_server() {
+            //TODO handle server events.
+        }
     }
     Ok(())
 }

@@ -2,7 +2,10 @@ use spacetimedb::{
     AnonymousViewContext, Query, ReducerContext, Table, Timestamp, Uuid, reducer, table, view,
 };
 
-use crate::{authorization::Authorization, registration::tab_registration};
+use crate::{
+    authorization::Authorization,
+    registration::{self, tab_registration},
+};
 
 #[table(accessor=tab_registeration_player)]
 #[derive(Debug, Clone, Copy)]
@@ -13,21 +16,12 @@ pub struct RegisterationPlayer {
     pub registration_id: u32,
 }
 
-#[view(accessor=registration_player,public)]
-pub fn registration_player(
+#[view(accessor=temp_registration_player,public)]
+pub fn temp_registration_player(
     ctx: &AnonymousViewContext, /* ,registration_id: u32 */
 ) -> Vec<RegisterationPlayer> {
     let registration_id = 2u32;
-    let mut registered = ctx
-        .db
-        .tab_registeration_player()
-        .registration_id()
-        .filter(registration_id)
-        .collect::<Vec<_>>();
-
-    registered.sort_by_key(|f| f.registered_at);
-
-    registered
+    ctx.registration_player(registration_id)
 }
 
 #[reducer]
@@ -89,4 +83,22 @@ pub fn unregister_player(ctx: &ReducerContext, registration_id: u32) -> Result<(
     };
 
     Ok(())
+}
+
+pub(crate) trait RegistrationRead {
+    fn registration_player(&self, registration_id: u32) -> Vec<RegisterationPlayer>;
+}
+impl<Db: spacetimedb::DbContext> RegistrationRead for Db {
+    fn registration_player(&self, registration_id: u32) -> Vec<RegisterationPlayer> {
+        let mut registered = self
+            .db_read_only()
+            .tab_registeration_player()
+            .registration_id()
+            .filter(registration_id)
+            .collect::<Vec<_>>();
+
+        registered.sort_by_key(|f| f.registered_at);
+
+        registered
+    }
 }

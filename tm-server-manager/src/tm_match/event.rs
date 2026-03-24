@@ -4,9 +4,12 @@ use spacetimedb::{
 use tm_server_types::event::Event;
 
 use crate::{
-    competition::{connection::internal_graph_resolution_node_finished, node::NodeKindHandle},
+    competition::{connection::internal_graph_resolution_node_finished, node::NodeHandle},
     maps::{TabTmMap, tab_tm_map},
-    raw_server::tab_raw_server_occupation,
+    raw_server::{
+        destination::tab_player_destination,
+        occupation::{TabRawServerOccupationRead, TabRawServerOccupationWrite},
+    },
     tm_match::{
         leaderboard::{
             TabMatchRoundPlayer, TabMatchRoundPlayerExt, tab_match_round_player,
@@ -224,17 +227,11 @@ pub(crate) fn handle_match_event(
             tm_match.end_match();
             let tm_match = ctx.db.tab_match().id().update(tm_match);
 
-            internal_graph_resolution_node_finished(ctx, NodeKindHandle::MatchV1(tm_match.id))?;
+            internal_graph_resolution_node_finished(ctx, NodeHandle::MatchV1(tm_match.id))?;
 
-            ctx.db
-                .tab_raw_server_occupation()
-                .match_id()
-                .delete(match_id);
+            ctx.raw_server_occupation_remove(NodeHandle::MatchV1(match_id));
 
-            ctx.db
-                .tab_raw_server_occupation()
-                .match_id()
-                .delete(match_id);
+            //ctx.db.tab_player_destination().node_id().delete(match_id);
 
             log::info!("The match {match_id} has successfully ended!");
         }

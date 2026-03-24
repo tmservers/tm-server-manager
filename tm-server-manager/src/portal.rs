@@ -2,7 +2,11 @@ use spacetimedb::{ReducerContext, Table, ViewContext, reducer, table, view};
 
 use crate::{
     authorization::Authorization,
-    competition::{CompetitionPermissionsV1, node::NodeKindHandle, tab_competition},
+    competition::{
+        CompetitionPermissionsV1,
+        node::{NodeHandle, NodeRead},
+        tab_competition,
+    },
 };
 
 /// A portal can only reach one level deeper?
@@ -41,7 +45,7 @@ fn portal_create(
     ctx: &ReducerContext,
     name: String,
     parent_id: u32,
-    target: NodeKindHandle,
+    target: NodeHandle,
 ) -> Result<(), String> {
     let Some(competition) = ctx.db.tab_competition().id().find(parent_id) else {
         return Err("Could not find supplied competition_id".into());
@@ -61,7 +65,7 @@ fn portal_create(
         return Err("Cannot add a normal node to a match".into());
     };
 
-    let target_competition_id = target.get_competition(ctx)?;
+    let target_competition_id = ctx.node_get_parent(target)?;
 
     // Portals are only allowed to see one level in.
     if competition.id != target_competition_id {

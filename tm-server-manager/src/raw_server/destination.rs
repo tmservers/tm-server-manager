@@ -1,8 +1,9 @@
-use spacetimedb::{SpacetimeType, Uuid, ViewContext, table, view};
+use spacetimedb::{DbContext, Local, SpacetimeType, Table, Uuid, ViewContext, table, view};
 
 use crate::{
     authorization::Authorization,
-    raw_server::{tab_raw_server__view, tab_raw_server_occupation__view},
+    competition::node::{NodeHandle, NodeRead},
+    raw_server::{occupation::TabRawServerOccupationRead, tab_raw_server__view},
     tm_match::tab_match__view,
     user::tab_user_ids_map__view,
 };
@@ -36,23 +37,18 @@ fn raw_server_player_destination(ctx: &ViewContext) -> Vec<PlayerDestination> {
         return Vec::new();
     };
 
-    let Some(occupation) = ctx
-        .db
-        .tab_raw_server_occupation()
-        .server_id()
-        .find(this_server.id)
-    else {
+    let Some(node) = ctx.raw_server_occupation(this_server.id) else {
         return Vec::new();
     };
 
-    let Some(tm_match) = ctx.db.tab_match().id().find(occupation.match_id) else {
+    let Ok(competition_id) = ctx.node_get_parent(node) else {
         return Vec::new();
     };
 
     ctx.db
         .tab_player_destination()
         .competition_id()
-        .filter(tm_match.get_comp_id())
+        .filter(competition_id)
         .filter(|p| p.destination_server_id != this_server.id)
         .map(|r| {
             if r.user_id == 0 {
@@ -88,10 +84,37 @@ fn raw_server_player_destination(ctx: &ViewContext) -> Vec<PlayerDestination> {
         .collect()
 }
 
-/* #[reducer]
-pub fn set_player_destination(ctx: &ReducerContext) -> Result<(), String> {
-    Ok(())
-} */
+pub(crate) trait TabRawServerDestinationRead {}
+impl<Db: DbContext> TabRawServerDestinationRead for Db {}
+
+pub(crate) trait TabRawServerDestinationWrite: TabRawServerDestinationRead {
+    fn destination_claim(&self, node: NodeHandle) -> Result<(), String>;
+}
+impl<Db: DbContext<DbView = Local>> TabRawServerDestinationWrite for Db {
+    fn destination_claim(&self, node: NodeHandle) -> Result<(), String> {
+        let players = self.node_permitted_players_input(node);
+        for player in players {
+            /* self.db()
+            .tab_player_destination()
+            .try_insert(TabPlayerDestination {
+                match_id,
+                competition_id,
+                destination_server_id: server_id,
+                //PERF: This is a back and forth with other views i think and could be done cleaner.
+                //no time for now tho. This would require an overhaul in many places includinig leaderboards and stuff.
+                user_id: self
+                    .db_read_only()
+                    .tab_user_ids_map()
+                    .account_id()
+                    .find(player.account_id)
+                    .unwrap()
+                    .user_id,
+            })?; */
+        }
+
+        Ok(())
+    }
+}
 
 // who can claim destination????
 // Manual or Automatic -> both cases

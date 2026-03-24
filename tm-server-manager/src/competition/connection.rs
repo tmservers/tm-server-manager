@@ -2,7 +2,8 @@ use std::collections::{HashMap, HashSet};
 
 use petgraph::acyclic::Acyclic;
 use spacetimedb::{
-    AnonymousViewContext, ReducerContext, SpacetimeType, Table, ViewContext, reducer, view,
+    AnonymousViewContext, DbContext, Local, ReducerContext, SpacetimeType, Table, ViewContext,
+    reducer, view,
 };
 
 use crate::{
@@ -13,11 +14,11 @@ use crate::{
             action::try_exec_action,
             data::{ConnectionData, tab_connection_data, tab_connection_data__view},
         },
-        node::{NodeKindHandle, NodeType},
+        node::{NodeHandle, NodeRead, NodeType},
     },
     raw_server::player::PermittedPlayer,
-    registration::player::registration_player,
-    tm_match::leaderboard::match_leaderboard,
+    registration::player::RegistrationRead,
+    tm_match::leaderboard::MatchLeadearboardRead,
 };
 
 pub(super) mod action;
@@ -48,12 +49,12 @@ pub struct TabConnection {
 }
 
 impl TabConnection {
-    pub(crate) fn connection_origin(&self) -> NodeKindHandle {
-        NodeKindHandle::combine(self.origin_variant, self.origin_id)
+    pub(crate) fn connection_origin(&self) -> NodeHandle {
+        NodeHandle::combine(self.origin_variant, self.origin_id)
     }
 
-    pub(crate) fn connection_target(&self) -> NodeKindHandle {
-        NodeKindHandle::combine(self.target_variant, self.target_id)
+    pub(crate) fn connection_target(&self) -> NodeHandle {
+        NodeHandle::combine(self.target_variant, self.target_id)
     }
 
     pub(crate) fn is_data(&self) -> bool {
@@ -76,20 +77,23 @@ impl TabConnection {
         self.status == ConnectionStatus::Resolved
     }
 
-    pub(crate) fn get_permitted_players(self, ctx: &AnonymousViewContext) -> Vec<PermittedPlayer> {
+    /* pub(crate) fn connection_filter_permitted_players(
+        self,
+        ctx: &AnonymousViewContext,
+    ) -> Vec<PermittedPlayer> {
         if self.is_wait() {
             return Vec::new();
         }
 
         self.get_permitted_players_filter(ctx)
-    }
+    } */
 
-    pub(crate) fn get_permitted_players_filter(
+    /* pub(crate) fn get_permitted_players_filter(
         &self,
         ctx: &AnonymousViewContext,
     ) -> Vec<PermittedPlayer> {
         match self.connection_origin() {
-            NodeKindHandle::MatchV1(m) => {
+            NodeHandle::MatchV1(m) => {
                 let rules = ctx
                     .db
                     .tab_connection_data()
@@ -103,12 +107,12 @@ impl TabConnection {
                 // maybe we also need to split the data portion out into separate tables for each connection.
                 rules.apply_match(leaderboard)
             }
-            NodeKindHandle::CompetitionV1(c) => todo!(),
-            NodeKindHandle::MonitoringV1(_) => todo!(),
-            NodeKindHandle::ServerV1(_) => todo!(),
-            NodeKindHandle::ScheduleV1(_) => todo!(),
-            NodeKindHandle::PortalV1(_) => todo!(),
-            NodeKindHandle::RegistrationV1(_) => {
+            NodeHandle::CompetitionV1(c) => todo!(),
+            NodeHandle::MonitoringV1(_) => todo!(),
+            NodeHandle::ServerV1(_) => todo!(),
+            NodeHandle::ScheduleV1(_) => todo!(),
+            NodeHandle::PortalV1(_) => todo!(),
+            NodeHandle::RegistrationV1(_) => {
                 let rules = ctx
                     .db
                     .tab_connection_data()
@@ -123,7 +127,7 @@ impl TabConnection {
                 rules.apply_registration(leaderboard)
             }
         }
-    }
+    } */
 
     pub(crate) fn instantiate(mut self, parent_id: u32) -> Self {
         self.parent_id = parent_id;
@@ -158,16 +162,16 @@ pub enum ConnectionType {
 #[reducer]
 pub fn connection_create(
     ctx: &ReducerContext,
-    origin: NodeKindHandle,
-    target: NodeKindHandle,
+    origin: NodeHandle,
+    target: NodeHandle,
     setting: ConnectionType,
 ) -> Result<(), String> {
     if origin == target {
         return Err("Cannot connect a Node to itself.".into());
     }
 
-    let from_comp = origin.get_competition(ctx)?;
-    let to_comp = target.get_competition(ctx)?;
+    let from_comp = ctx.node_get_parent(origin)?;
+    let to_comp = ctx.node_get_parent(target)?;
 
     if from_comp != to_comp {
         return Err(
@@ -215,11 +219,11 @@ pub fn connection_create(
         .collect::<Vec<_>>();
 
     for connection in &competition_connections {
-        set.insert(NodeKindHandle::combine(
+        set.insert(NodeHandle::combine(
             connection.origin_variant,
             connection.origin_id,
         ));
-        set.insert(NodeKindHandle::combine(
+        set.insert(NodeHandle::combine(
             connection.target_variant,
             connection.target_id,
         ));
@@ -293,8 +297,8 @@ pub struct CompetitionConnection {
     //competition_id: u32,
     id: u32,
 
-    origin: NodeKindHandle,
-    target: NodeKindHandle,
+    origin: NodeHandle,
+    target: NodeHandle,
 
     connection_type: ConnectionType,
     status: ConnectionStatus,
@@ -309,8 +313,8 @@ impl CompetitionConnection {
 impl From<TabConnection> for CompetitionConnection {
     fn from(v: TabConnection) -> Self {
         CompetitionConnection {
-            origin: NodeKindHandle::combine(v.origin_variant, v.origin_id),
-            target: NodeKindHandle::combine(v.target_variant, v.target_id),
+            origin: NodeHandle::combine(v.origin_variant, v.origin_id),
+            target: NodeHandle::combine(v.target_variant, v.target_id),
             connection_type: v.connection_type,
             id: v.id,
             status: v.status,
@@ -334,7 +338,7 @@ pub fn competition_connection(
 
 pub(crate) fn internal_graph_resolution_node_finished(
     ctx: &ReducerContext,
-    trigger: NodeKindHandle,
+    trigger: NodeHandle,
 ) -> Result<(), String> {
     let affected_connections = ctx
         .db
@@ -384,3 +388,54 @@ pub(crate) fn internal_graph_resolution_node_finished(
 
     Ok(())
 }
+
+pub(crate) trait ConnectionRead {
+    fn connection_filter_permitted_players(
+        &self,
+        connection: TabConnection,
+    ) -> Vec<PermittedPlayer>;
+}
+impl<Db: DbContext> ConnectionRead for Db {
+    fn connection_filter_permitted_players(
+        &self,
+        connection: TabConnection,
+    ) -> Vec<PermittedPlayer> {
+        match connection.connection_origin() {
+            NodeHandle::MatchV1(m) => {
+                let rules = self
+                    .db_read_only()
+                    .tab_connection_data()
+                    .connection_id()
+                    .find(connection.id)
+                    .unwrap();
+
+                let leaderboard = self.match_leaderboard(m, 0);
+
+                //TODO maybe factor this out into a trait and impl it for the respective thing
+                // maybe we also need to split the data portion out into separate tables for each connection.
+                rules.apply_match(leaderboard)
+            }
+            NodeHandle::CompetitionV1(c) => todo!(),
+            NodeHandle::MonitoringV1(_) => todo!(),
+            NodeHandle::ServerV1(_) => todo!(),
+            NodeHandle::ScheduleV1(_) => todo!(),
+            NodeHandle::PortalV1(_) => todo!(),
+            NodeHandle::RegistrationV1(r) => {
+                let rules = self
+                    .db_read_only()
+                    .tab_connection_data()
+                    .connection_id()
+                    .find(connection.id)
+                    .unwrap();
+
+                let leaderboard = self.registration_player(r);
+
+                //TODO maybe factor this out into a trait and impl it for the respective thing
+                // maybe we also need to split the data portion out into separate tables for each connection.
+                rules.apply_registration(leaderboard)
+            }
+        }
+    }
+}
+pub(crate) trait ConnectionWrite: ConnectionRead {}
+impl<Db: DbContext<DbView = Local>> ConnectionWrite for Db {}

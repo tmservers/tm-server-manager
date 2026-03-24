@@ -4,8 +4,9 @@ use spacetimedb::{
 };
 
 use crate::{
-    authorization::Authorization, raw_server::tab_raw_server_occupation__view,
-    tm_match::players::match_permitted_players,
+    authorization::Authorization,
+    competition::node::{NodeHandle, NodeRead},
+    raw_server::occupation::TabRawServerOccupationRead,
 };
 
 #[derive(Debug)]
@@ -127,18 +128,9 @@ fn raw_server_permitted_players(ctx: &ViewContext) -> Vec<PermittedPlayer> {
         return Vec::new();
     };
 
-    let Some(occupation) = ctx
-        .db
-        .tab_raw_server_occupation()
-        .server_id()
-        .find(server.id)
-    else {
+    let Some(node) = ctx.raw_server_occupation(server.id) else {
         return Vec::new();
     };
 
-    let values = match_permitted_players(&ctx.as_anonymous_read_only(), occupation.match_id);
-
-    //TODO also do this for servers and not only match. e.g. a server can only permit registered players.
-
-    values
+    ctx.node_permitted_players_input(node)
 }

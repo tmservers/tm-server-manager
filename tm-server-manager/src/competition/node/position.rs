@@ -2,7 +2,10 @@ use spacetimedb::{ReducerContext, SpacetimeType, ViewContext, reducer, view};
 
 use crate::{
     authorization::Authorization,
-    competition::{CompetitionPermissionsV1, node::NodeKindHandle},
+    competition::{
+        CompetitionPermissionsV1,
+        node::{NodeHandle, NodeRead},
+    },
 };
 
 #[spacetimedb::table(accessor= tab_competition_node_position,index(accessor=node_position,hash(columns=[node_variant,node_id])))]
@@ -23,7 +26,7 @@ pub struct TabCompetitionNodePosition {
 }
 
 impl TabCompetitionNodePosition {
-    pub(crate) fn new(node: NodeKindHandle, competition_id: u32) -> Self {
+    pub(crate) fn new(node: NodeHandle, competition_id: u32) -> Self {
         let (node_variant, node_id) = node.split();
         Self {
             id: 0,
@@ -44,14 +47,14 @@ pub struct Vec2 {
 #[derive(Debug, SpacetimeType)]
 pub struct CompetitionNodePosition {
     competition_id: u32,
-    node: NodeKindHandle,
+    node: NodeHandle,
 
     position: Vec2,
 }
 
 #[derive(Debug, SpacetimeType, Clone, Copy)]
 pub struct NodePositionUpdate {
-    node: NodeKindHandle,
+    node: NodeHandle,
     position: Vec2,
 }
 
@@ -64,7 +67,7 @@ pub fn competition_node_position(ctx: &ViewContext) -> Vec<CompetitionNodePositi
         .filter(1u32..u32::MAX)
         .map(|v| CompetitionNodePosition {
             competition_id: v.competition_id,
-            node: NodeKindHandle::combine(v.node_variant, v.node_id),
+            node: NodeHandle::combine(v.node_variant, v.node_id),
             position: v.position,
         })
         .collect()
@@ -73,10 +76,10 @@ pub fn competition_node_position(ctx: &ViewContext) -> Vec<CompetitionNodePositi
 #[reducer]
 fn competition_node_position_update(
     ctx: &ReducerContext,
-    node: NodeKindHandle,
+    node: NodeHandle,
     position: Vec2,
 ) -> Result<(), String> {
-    let competition_id = node.get_competition(ctx)?;
+    let competition_id = ctx.node_get_parent(node)?;
     ctx.auth_builder(competition_id)
         .permission(CompetitionPermissionsV1::COMPETITION_LAYOUT_EDIT)
         .authorize()?;
@@ -105,7 +108,7 @@ fn competition_node_positions_update(
     positions: Vec<NodePositionUpdate>,
 ) -> Result<(), String> {
     for item in &positions {
-        let competition_id = item.node.get_competition(ctx)?;
+        let competition_id = ctx.node_get_parent(item.node)?;
         ctx.auth_builder(competition_id)
             .permission(CompetitionPermissionsV1::COMPETITION_LAYOUT_EDIT)
             .authorize()?;

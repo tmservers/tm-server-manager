@@ -2,15 +2,21 @@ use base64::Engine;
 use base64::prelude::{BASE64_STANDARD, BASE64_URL_SAFE_NO_PAD};
 use serde::Deserialize;
 use spacetimedb::http::Request;
-use spacetimedb::{Identity, ReducerContext, Table, Uuid, ViewContext, reducer, table};
+use spacetimedb::{
+    DbContext, Identity, Local, ReducerContext, Table, Uuid, ViewContext, reducer, table,
+};
 use spacetimedb::{ProcedureContext, view};
 
 use crate::authorization::Authorization;
+use crate::competition::node::{NodeHandle, NodeRead};
+use crate::competition::server_pool::TabCompetitionServerPoolRead;
+use crate::raw_server::occupation::{TabRawServerOccupationRead, TabRawServerOccupationWrite};
 
 pub mod config;
 pub mod destination;
 pub mod event;
 pub mod method;
+pub mod occupation;
 pub mod player;
 pub mod replay;
 
@@ -58,24 +64,6 @@ impl RawServerV1 {
 
     pub fn is_verified(&self) -> bool {
         self.verified
-    }
-}
-
-#[table(accessor=tab_raw_server_occupation)]
-pub struct RawServerOccupation {
-    #[primary_key]
-    pub(crate) server_id: u32,
-
-    #[index(hash)]
-    match_id: u32,
-}
-
-impl RawServerOccupation {
-    pub(crate) fn new(match_id: u32, server_id: u32) -> Self {
-        Self {
-            server_id,
-            match_id,
-        }
     }
 }
 
@@ -195,13 +183,7 @@ pub(crate) fn user_available_server_pool(ctx: &ViewContext) -> Vec<RawServerV1> 
         .user_account_id()
         .filter(user.account_id)
         .filter(|s| s.verified && s.capturable)
-        .filter(|s| {
-            ctx.db
-                .tab_raw_server_occupation()
-                .server_id()
-                .find(s.id)
-                .is_none()
-        })
+        .filter(|s| !ctx.raw_server_is_occupied(s.id))
         .collect()
 }
 
@@ -243,3 +225,27 @@ fn raw_server_verify(ctx: &ReducerContext, server_id: u32) -> Result<(), String>
         Err("Not permitted to edit the server".into())
     }
 }
+
+pub(crate) trait TabRawServerRead {}
+pub(crate) trait TabRawServerWrite: TabRawServerRead {
+    fn raw_server_pool_assign(&self, node_handle: NodeHandle) -> Result<u32, String>;
+}
+
+impl<Db: DbContext> TabRawServerRead for Db {}
+
+impl<Db: DbContext<DbView = Local>> TabRawServerWrite for Db {
+    fn raw_server_pool_assign(&self, node_handle: NodeHandle) -> Result<u32, String> {
+        let available_servers = self.server_pool_available(self.node_get_parent(node_handle)?);
+        if available_servers.is_empty() {
+            return Err("No server is assigned to the match and there are no servers left to auto provision. Cannot start the match!".into());
+        }
+
+        let server_id = available_servers[0].id;
+
+        self.raw_server_occupation_add(node_handle, server_id)?;
+
+        Ok(server_id)
+    }
+}
+
+//mod huh;
