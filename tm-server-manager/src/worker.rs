@@ -1,4 +1,4 @@
-use spacetimedb::{Identity, ProcedureContext, Table};
+/* use spacetimedb::{Identity, ProcedureContext, Table};
 
 pub mod jobs;
 
@@ -90,3 +90,4 @@ pub fn login_as_worker(
         }
     });
 }
+ */

@@ -12,7 +12,6 @@ use crate::{
     },
     raw_server::{RawServerV1, tab_raw_server, tab_raw_server__view},
     user::{UserV1, tab_user, tab_user__view, tab_user_identity, tab_user_identity__view},
-    worker::{TmWorker, tm_worker, tm_worker__view},
 };
 
 pub(crate) trait Authorization {
@@ -20,7 +19,7 @@ pub(crate) trait Authorization {
     fn get_user(&self) -> Result<UserV1, String>;
     fn get_user_account(&self) -> Result<Uuid, String>;
     fn get_server(&self) -> Result<RawServerV1, String>;
-    fn get_worker(&self) -> Result<TmWorker, String>;
+    //fn get_worker(&self) -> Result<TmWorker, String>;
 
     fn auth_builder(
         &'_ self,
@@ -59,13 +58,13 @@ impl Authorization for ReducerContext {
         Err("Tried to use a reducer meant for Servers without the proper Authentication.".into())
     }
 
-    fn get_worker(&self) -> Result<TmWorker, String> {
+    /* fn get_worker(&self) -> Result<TmWorker, String> {
         if let Some(worker) = self.db.tm_worker().identity().find(self.sender()) {
             return Ok(worker);
         }
 
         Err("Tried to use a reducer meant for Workers without the proper Authentication.".into())
-    }
+    } */
 
     fn auth_builder(
         &'_ self,
@@ -106,13 +105,13 @@ impl Authorization for ViewContext {
         Err("Tried to use a reducer meant for Servers without the proper Authentication.".into())
     }
 
-    fn get_worker(&self) -> Result<TmWorker, String> {
+    /* fn get_worker(&self) -> Result<TmWorker, String> {
         if let Some(worker) = self.db.tm_worker().identity().find(self.sender()) {
             return Ok(worker);
         }
 
         Err("Tried to use a reducer meant for Workers without the proper Authentication.".into())
-    }
+    } */
 
     fn auth_builder(
         &'_ self,

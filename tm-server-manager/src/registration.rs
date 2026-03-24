@@ -42,7 +42,7 @@ pub struct Registration {
 
     settings: RegistrationSettings,
 
-    state: RegistrationState,
+    status: RegistrationStatus,
 
     template: bool,
 }
@@ -67,7 +67,7 @@ impl Registration {
         if self.template {
             return Err("Cannot register for a template.".into());
         }
-        if self.state != RegistrationState::Ongoing {
+        if self.status != RegistrationStatus::Ongoing {
             return Err("Registration is not ongoing.".into());
         }
         match &self.settings {
@@ -108,7 +108,7 @@ impl Registration {
     }
 
     pub(crate) fn can_change_settings(&self) -> Result<(), String> {
-        if !self.state.before_live() {
+        if !self.status.before_live() {
             return Err("Cannot change registration settings.".into());
         }
 
@@ -117,7 +117,7 @@ impl Registration {
 }
 
 #[derive(Debug, SpacetimeType, PartialEq, Eq)]
-enum RegistrationState {
+enum RegistrationStatus {
     Configuring,
     Upcoming,
     Ongoing,
@@ -125,14 +125,14 @@ enum RegistrationState {
     Locked,
 }
 
-impl RegistrationState {
+impl RegistrationStatus {
     fn before_live(&self) -> bool {
         match self {
-            RegistrationState::Configuring => true,
-            RegistrationState::Upcoming => true,
-            RegistrationState::Ongoing => false,
-            RegistrationState::Ended => false,
-            RegistrationState::Locked => false,
+            RegistrationStatus::Configuring => true,
+            RegistrationStatus::Upcoming => true,
+            RegistrationStatus::Ongoing => false,
+            RegistrationStatus::Ended => false,
+            RegistrationStatus::Locked => false,
         }
     }
 }
@@ -173,7 +173,7 @@ fn registration_create(
             settings: RegistrationSettings::Player(RegistrationSettingsPlayer {
                 player_limit: 100,
             }),
-            state: RegistrationState::Configuring,
+            status: RegistrationStatus::Configuring,
             template: false,
         })?;
     }
@@ -216,7 +216,7 @@ fn registration_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> 
         .permission(CompetitionPermissionsV1::REGISTRATION_CREATE)
         .authorize()?;
 
-    registration.state = RegistrationState::Upcoming;
+    registration.status = RegistrationStatus::Upcoming;
 
     ctx.db.tab_registration().id().update(registration);
 
@@ -233,7 +233,7 @@ fn registration_start(ctx: &ReducerContext, id: u32) -> Result<(), String> {
         .permission(CompetitionPermissionsV1::REGISTRATION_CREATE)
         .authorize()?;
 
-    registration.state = RegistrationState::Ongoing;
+    registration.status = RegistrationStatus::Ongoing;
 
     ctx.db.tab_registration().id().update(registration);
 
@@ -250,7 +250,7 @@ fn registration_end(ctx: &ReducerContext, id: u32) -> Result<(), String> {
         .permission(CompetitionPermissionsV1::REGISTRATION_CREATE)
         .authorize()?;
 
-    registration.state = RegistrationState::Ended;
+    registration.status = RegistrationStatus::Ended;
 
     ctx.db.tab_registration().id().update(registration);
 

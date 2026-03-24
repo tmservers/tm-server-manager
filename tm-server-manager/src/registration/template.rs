@@ -4,7 +4,7 @@ use crate::{
     authorization::Authorization,
     competition::CompetitionPermissionsV1,
     registration::{
-        Registration, RegistrationSettings, RegistrationSettingsPlayer, RegistrationState,
+        Registration, RegistrationSettings, RegistrationSettingsPlayer, RegistrationStatus,
         tab_registration,
     },
 };
@@ -24,7 +24,7 @@ fn registration_template_create(
         id: 0,
         parent_id,
         settings: RegistrationSettings::Player(RegistrationSettingsPlayer { player_limit: 100 }),
-        state: RegistrationState::Configuring,
+        status: RegistrationStatus::Configuring,
         template: true,
     })?;
 

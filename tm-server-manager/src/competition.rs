@@ -14,10 +14,8 @@ pub mod server_pool;
 mod template;
 pub(crate) use permissions::CompetitionPermissionsV1;
 
-/// Always
 #[derive(Debug, Clone)]
 #[table(accessor= tab_competition)]
-//#[table(accessor= tab_competition_template)]
 pub struct CompetitionV1 {
     name: String,
 

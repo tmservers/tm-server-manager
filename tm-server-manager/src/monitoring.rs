@@ -1,11 +1,11 @@
-use spacetimedb::{ReducerContext, SpacetimeType, Table, reducer};
+/* use spacetimedb::{ReducerContext, SpacetimeType, Table, reducer};
 
 use crate::{
     authorization::Authorization,
     worker::jobs::{TmWorkerJobs, tm_worker_jobs},
-};
+}; */
 
-#[ spacetimedb::table(accessor=tm_monitoring)]
+/* #[ spacetimedb::table(accessor=tm_monitoring)]
 pub struct TmMonitoring {
     #[auto_inc]
     #[primary_key]
@@ -37,7 +37,7 @@ pub struct MonitoringSettingsClub {
 pub struct MonitoringSettingsMap {
     map_uid: String,
     // filter:
-}
+} */
 
 /* #[reducer]
 pub fn create_monitor(

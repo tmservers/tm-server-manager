@@ -24,7 +24,7 @@ pub struct ScheduleV1 {
 
     settings: ScheduleSettings,
 
-    state: ScheduleState,
+    status: ScheduleStatus,
 
     template: bool,
 }
@@ -46,7 +46,7 @@ impl ScheduleV1 {
     }
 
     pub(crate) fn can_mutate_settings(&self) -> Result<(), String> {
-        if !self.state.before_live() {
+        if !self.status.before_live() {
             return Err("Schedule is not before live.".into());
         }
         //TODO maybe there are more states?
@@ -83,20 +83,20 @@ enum RoundedSettings {
 } */
 
 #[derive(Debug, SpacetimeType, PartialEq, Eq, Clone, Copy)]
-enum ScheduleState {
+enum ScheduleStatus {
     Configuring,
     Waiting,
     Finished,
     Locked,
 }
 
-impl ScheduleState {
+impl ScheduleStatus {
     fn before_live(&self) -> bool {
         match self {
-            ScheduleState::Configuring => true,
-            ScheduleState::Waiting => true,
-            ScheduleState::Finished => false,
-            ScheduleState::Locked => false,
+            ScheduleStatus::Configuring => true,
+            ScheduleStatus::Waiting => true,
+            ScheduleStatus::Finished => false,
+            ScheduleStatus::Locked => false,
         }
     }
 }
@@ -161,7 +161,7 @@ pub fn schedule_create(
             parent_id,
             template: false,
             settings: ScheduleSettings::Absolute(ctx.timestamp),
-            state: ScheduleState::Configuring,
+            status: ScheduleStatus::Configuring,
             name,
         };
 
@@ -180,11 +180,11 @@ pub fn schedule_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> 
         .permission(CompetitionPermissionsV1::SCHEDULE_CREATE)
         .authorize()?;
 
-    if schedule.state != ScheduleState::Configuring {
+    if schedule.status != ScheduleStatus::Configuring {
         return Err("Schedule is already configured".into());
     }
 
-    schedule.state = ScheduleState::Waiting;
+    schedule.status = ScheduleStatus::Waiting;
 
     Ok(())
 }
@@ -221,7 +221,7 @@ pub fn schedule_try_run(ctx: &ReducerContext, id: u32) -> Result<(), String> {
         .permission(CompetitionPermissionsV1::SCHEDULE_CREATE)
         .authorize()?;
 
-    if schedule.state != ScheduleState::Waiting {
+    if schedule.status != ScheduleStatus::Waiting {
         return Err("Schedule cannot be started".into());
     }
 
@@ -231,7 +231,7 @@ pub fn schedule_try_run(ctx: &ReducerContext, id: u32) -> Result<(), String> {
 
     //TODO manual schedule exec mode.
 
-    schedule.state = ScheduleState::Waiting;
+    schedule.status = ScheduleStatus::Waiting;
 
     ctx.db.tab_schedule().id().update(schedule);
 
