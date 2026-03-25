@@ -5,7 +5,7 @@ use crate::{
     competition::node::{NodeHandle, NodeRead},
     raw_server::{occupation::TabRawServerOccupationRead, tab_raw_server__view},
     tm_match::tab_match__view,
-    user::tab_user_ids_map__view,
+    user::UserRead,
 };
 
 #[table(accessor=tab_player_destination,
@@ -64,13 +64,7 @@ fn raw_server_player_destination(ctx: &ViewContext) -> Vec<PlayerDestination> {
                 }
             } else {
                 PlayerDestination {
-                    account_id: ctx
-                        .db
-                        .tab_user_ids_map()
-                        .user_id()
-                        .find(r.user_id)
-                        .unwrap()
-                        .account_id,
+                    account_id: ctx.user_account_from_id(r.user_id),
                     server_account_id: ctx
                         .db
                         .tab_raw_server()

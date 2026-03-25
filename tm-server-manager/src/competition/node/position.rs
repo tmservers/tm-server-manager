@@ -1,4 +1,6 @@
-use spacetimedb::{ReducerContext, SpacetimeType, ViewContext, reducer, view};
+use spacetimedb::{
+    DbContext, Local, ReducerContext, SpacetimeType, Table, ViewContext, reducer, view,
+};
 
 use crate::{
     authorization::Authorization,
@@ -8,17 +10,20 @@ use crate::{
     },
 };
 
-#[spacetimedb::table(accessor= tab_competition_node_position,index(accessor=node_position,hash(columns=[node_variant,node_id])))]
+#[spacetimedb::table(
+    accessor= tab_competition_node_position,
+    index(accessor=node_position,hash(columns=[node_variant,node_id]))
+)]
 #[derive(Debug, Clone, Copy)]
-pub struct TabCompetitionNodePosition {
+struct TabCompetitionNodePosition {
     position: Vec2,
     // This is just so that we can update it.
     // Rework if multi col unique indices are there.
     #[auto_inc]
     #[primary_key]
-    pub id: u32,
+    id: u32,
 
-    #[index(btree)]
+    #[index(hash)]
     competition_id: u32,
 
     node_id: u32,
@@ -59,12 +64,14 @@ pub struct NodePositionUpdate {
 }
 
 #[view(accessor=competition_node_position,public)]
-pub fn competition_node_position(ctx: &ViewContext) -> Vec<CompetitionNodePosition> {
+fn competition_node_position(
+    ctx: &ViewContext, /* competition_id: u32 */
+) -> Vec<CompetitionNodePosition> {
+    let competition_id = 1u32;
     ctx.db
         .tab_competition_node_position()
         .competition_id()
-        //TODO actually make a view arg to filter not return everything.
-        .filter(1u32..u32::MAX)
+        .filter(competition_id)
         .map(|v| CompetitionNodePosition {
             competition_id: v.competition_id,
             node: NodeHandle::combine(v.node_variant, v.node_id),
@@ -131,4 +138,32 @@ fn competition_node_positions_update(
     }
 
     Ok(())
+}
+
+pub(super) trait NodePositionRead {}
+
+pub(super) trait NodePositionWrite: NodePositionRead {
+    fn node_position_insert(&self, node: NodeHandle) -> Result<(), String>;
+    fn node_position_delete(&self, node: NodeHandle);
+}
+
+impl<Db: DbContext> NodePositionRead for Db {}
+
+impl<Db: DbContext<DbView = Local>> NodePositionWrite for Db {
+    fn node_position_insert(&self, node: NodeHandle) -> Result<(), String> {
+        self.db()
+            .tab_competition_node_position()
+            .try_insert(TabCompetitionNodePosition::new(
+                node,
+                self.node_get_parent(node)?,
+            ))?;
+        Ok(())
+    }
+
+    fn node_position_delete(&self, node: NodeHandle) {
+        self.db()
+            .tab_competition_node_position()
+            .node_position()
+            .delete(node.split());
+    }
 }

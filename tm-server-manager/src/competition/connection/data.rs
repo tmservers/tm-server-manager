@@ -60,7 +60,7 @@ impl ConnectionData {
     pub(super) fn apply_registration(
         &self,
         registration: Vec<RegisterationPlayer>,
-    ) -> Vec<PermittedPlayer> {
+    ) -> Vec<RegisterationPlayer> {
         let players = match &self.options {
             ConnectionDataOption::All => registration,
             ConnectionDataOption::FirstN(f) => registration.into_iter().take(*f as usize).collect(),
@@ -79,7 +79,7 @@ impl ConnectionData {
         };
         players
             .into_iter()
-            .map(|p| PermittedPlayer::new(p.account_id, false, false))
+            //.map(|p| PermittedPlayer::new(p.user_id, false, false))
             .collect()
     }
 }

@@ -1,6 +1,6 @@
 use spacetimedb::{ReducerContext, Table, Uuid, reducer, table};
 
-use crate::{authorization::Authorization, competition::CompetitionPermissionsV1, user::tab_user};
+use crate::{authorization::Authorization, competition::CompetitionPermissionsV1, user::UserRead};
 
 #[table(accessor= tab_competition_role)]
 pub struct CompetitionRole {
@@ -22,13 +22,13 @@ impl CompetitionRole {
     }
 }
 
-#[table(accessor= tab_competition_role_member,index(accessor= user_roles , hash(columns= [role_id,account_id])))]
+#[table(accessor= tab_competition_role_member,index(accessor= user_roles , hash(columns= [role_id,user_id])))]
 pub struct CompetitionRoleMember {
     #[index(hash)]
     role_id: u32,
 
     #[index(hash)]
-    account_id: u32,
+    user_id: u32,
 }
 
 impl CompetitionRoleMember {
@@ -37,7 +37,7 @@ impl CompetitionRoleMember {
     }
 }
 
-#[table(accessor= tab_competition_member,index(accessor= user_roles , hash(columns= [competition_id,account_id])))]
+#[table(accessor= tab_competition_member,index(accessor= user_roles , hash(columns= [competition_id,user_id])))]
 pub struct CompetitionMember {
     permissions: u64,
 
@@ -49,7 +49,7 @@ pub struct CompetitionMember {
     competition_id: u32,
 
     #[index(hash)]
-    account_id: u32,
+    user_id: u32,
 }
 
 #[reducer]
@@ -58,21 +58,18 @@ pub fn member_add(
     competition_id: u32,
     account_id: Uuid,
 ) -> Result<(), String> {
-    ctx.auth_builder(competition_id)
+    let user_id = ctx
+        .auth_builder(competition_id)
         //.permission(ProjectPermissionsV1::Pro)
         .authorize()?;
-
-    let Some(user) = ctx.db.tab_user().account_id().find(account_id) else {
-        return Err("Account not found. If this is unexpected make sure the player has logged into the network once.".into());
-    };
 
     ctx.db
         .tab_competition_member()
         .try_insert(CompetitionMember {
             competition_id,
-            account_id: user.internal_id,
             permissions: 0,
             id: 0,
+            user_id: ctx.user_id_from_account(account_id),
         })?;
 
     Ok(())
@@ -118,20 +115,17 @@ pub fn role_remove(ctx: &ReducerContext, role_id: u32) -> Result<(), String> {
         return Err("Could not find role with id".into());
     };
 
+    //TODO
     ctx.auth_builder(role.competition_id)
         //.permission(ProjectPermissionsV1::Pro)
         .authorize()?;
 
     ctx.db.tab_competition_role().id().delete(role_id);
 
-    for user in ctx
-        .db
+    ctx.db
         .tab_competition_role_member()
         .role_id()
-        .filter(role_id)
-    {
-        ctx.db.tab_competition_role_member().delete(user);
-    }
+        .delete(role_id);
 
     Ok(())
 }
@@ -146,19 +140,16 @@ pub fn role_member_assign(
         return Err("Could not find role with id".into());
     };
 
+    //TODO
     ctx.auth_builder(role.competition_id)
         //.permission(ProjectPermissionsV1::Pro)
         .authorize()?;
-
-    let Some(user) = ctx.db.tab_user().account_id().find(account_id) else {
-        return Err("Account id could not be found. If this is unexpected ensure the user has logged into the system once.".into());
-    };
 
     ctx.db
         .tab_competition_role_member()
         .try_insert(CompetitionRoleMember {
             role_id,
-            account_id: user.internal_id,
+            user_id: ctx.user_id_from_account(account_id),
         })?;
 
     Ok(())
@@ -178,17 +169,13 @@ pub fn role_member_remove(
         //.permission(ProjectPermissionsV1::Pro)
         .authorize()?;
 
-    let Some(user) = ctx.db.tab_user().account_id().find(account_id) else {
-        return Err("Account id could not be found. If this is unexpected ensure the user has logged into the system once.".into());
-    };
-
     for member in ctx
         .db
         .tab_competition_role_member()
         .role_id()
         .filter(role_id)
     {
-        if member.account_id == user.internal_id {
+        if member.user_id == ctx.user_id_from_account(account_id) {
             ctx.db.tab_competition_role_member().delete(member);
             break;
         }

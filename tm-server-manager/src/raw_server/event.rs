@@ -13,7 +13,7 @@ use crate::{
         state::{MatchState, tab_match_state},
         tab_match,
     },
-    user::{UserIdsMap, UserV1, tab_user, tab_user_ids_map},
+    user::{UserRead, UserV1, UserWrite},
 };
 
 /// Servers call this to post the event stream.
@@ -24,11 +24,9 @@ pub fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
     match &event {
         Event::PlayerConnect(player) => {
             let account_id = Uuid::parse_str(&player.account_id).unwrap();
-            if ctx.db.tab_user().account_id().find(account_id).is_none() {
-                let user = ctx.db.tab_user().try_insert(UserV1::new(account_id))?;
-                ctx.db
-                    .tab_user_ids_map()
-                    .try_insert(UserIdsMap::new(account_id, user.internal_id))?;
+            if !ctx.has_user(account_id) {
+                let user = UserV1::new(account_id);
+                _ = ctx.user_insert(user);
             }
             raw_server_player_add(ctx, account_id, player.is_spectator)?
         }

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use spacetimedb::{AnonymousViewContext, SpacetimeType, Uuid, table, view};
 
-use crate::{tm_match::state::tab_match_state__view, user::tab_user__view};
+use crate::{tm_match::state::tab_match_state__view, user::UserRead};
 
 #[derive(Debug, SpacetimeType, Clone, Copy)]
 pub(super) enum PlayerAction {
@@ -201,13 +201,7 @@ pub fn match_round(
         .match_round()
         .filter((match_id, round))
         .map(|p| MatchRoundPlayer {
-            account_id: ctx
-                .db
-                .tab_user()
-                .internal_id()
-                .find(p.user_id)
-                .unwrap()
-                .account_id,
+            account_id: ctx.user_account_from_id(p.user_id),
             match_id,
             id: p.id,
             time: p.time,
@@ -300,13 +294,7 @@ impl<Db: spacetimedb::DbContext> MatchLeadearboardRead for Db {
         let mut standings = map
             .into_values()
             .map(|p| MatchRoundPlayer {
-                account_id: self
-                    .db_read_only()
-                    .tab_user()
-                    .internal_id()
-                    .find(p.user_id)
-                    .unwrap()
-                    .account_id,
+                account_id: self.user_account_from_id(p.user_id),
                 id: p.id,
                 match_id,
                 time: p.time,

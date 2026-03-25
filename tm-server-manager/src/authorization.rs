@@ -11,13 +11,15 @@ use crate::{
         },
     },
     raw_server::{RawServerV1, tab_raw_server, tab_raw_server__view},
-    user::{UserV1, tab_user, tab_user__view, tab_user_identity, tab_user_identity__view},
+    user::{UserRead, UserV1},
 };
 
 pub(crate) trait Authorization {
     type Context: DbContext;
-    fn get_user(&self) -> Result<UserV1, String>;
-    fn get_user_account(&self) -> Result<Uuid, String>;
+    // fn get_user(&self) -> Result<UserV1, String>;
+    //fn user_account_id(&self) -> Result<Uuid, String>;
+    fn user_id(&self) -> Result<u32, String>;
+
     fn get_server(&self) -> Result<RawServerV1, String>;
     //fn get_worker(&self) -> Result<TmWorker, String>;
 
@@ -30,25 +32,13 @@ pub(crate) trait Authorization {
 impl Authorization for ReducerContext {
     type Context = ReducerContext;
 
-    fn get_user(&self) -> Result<UserV1, String> {
-        let Some(user) = self.db.tab_user_identity().identity().find(self.sender()) else {
-            return Err("Identity not associated with a user account.".into());
-        };
+    /* fn get_user(&self) -> Result<UserV1, String> {
+        self.user(self.sender())
+    } */
 
-        let Some(user) = self.db.tab_user().account_id().find(user.account_id) else {
-            return Err("AccountId not associated with a user account.".into());
-        };
-
-        Ok(user)
-    }
-
-    fn get_user_account(&self) -> Result<Uuid, String> {
-        let Some(user) = self.db.tab_user_identity().identity().find(self.sender()) else {
-            return Err("Identity not associated with a user account.".into());
-        };
-
-        Ok(user.account_id)
-    }
+    /*  fn user_account_id(&self) -> Result<u32, String> {
+        self.get_user_account_id(self.sender())
+    } */
 
     fn get_server(&self) -> Result<RawServerV1, String> {
         if let Some(server) = self.db.tab_raw_server().identity().find(self.sender()) {
@@ -72,29 +62,21 @@ impl Authorization for ReducerContext {
     ) -> AuthBuilder<'_, CompetitionPermissionsV1, ReducerContext> {
         AuthBuilder::<CompetitionPermissionsV1, ReducerContext>::new(competition_id, self)
     }
+
+    fn user_id(&self) -> Result<u32, String> {
+        self.get_user_id(self.sender())
+    }
 }
 
 impl Authorization for ViewContext {
     type Context = ViewContext;
 
-    fn get_user(&self) -> Result<UserV1, String> {
-        let Some(user) = self.db.tab_user_identity().identity().find(self.sender()) else {
-            return Err("Identity not associated with a user account.".into());
-        };
+    /* fn get_user(&self) -> Result<UserV1, String> {
+        self.user(self.sender())
+    } */
 
-        let Some(user) = self.db.tab_user().account_id().find(user.account_id) else {
-            return Err("AccountId not associated with a user account.".into());
-        };
-
-        Ok(user)
-    }
-
-    fn get_user_account(&self) -> Result<Uuid, String> {
-        let Some(user) = self.db.tab_user_identity().identity().find(self.sender()) else {
-            return Err("Identity not associated with a user account.".into());
-        };
-
-        Ok(user.account_id)
+    fn user_id(&self) -> Result<u32, String> {
+        self.get_user_id(self.sender())
     }
 
     fn get_server(&self) -> Result<RawServerV1, String> {
@@ -157,23 +139,15 @@ impl<'a> AuthBuilder<'a, CompetitionPermissionsV1, ReducerContext> {
         self
     }
 
-    pub(crate) fn authorize(self) -> Result<Uuid, String> {
-        let Some(user) = self
-            .ctx
-            .db()
-            .tab_user_identity()
-            .identity()
-            .find(self.ctx.sender())
-        else {
-            return Err("Identity not associated with a user account.".into());
-        };
+    pub(crate) fn authorize(self) -> Result<u32, String> {
+        let user_id = self.ctx.get_user_id(self.ctx.sender())?;
         //TODO inherit permissions from the whole competition tree. Also accumulate the user permissions on top of the role ones.
         let permissions = self
             .ctx
-            .db
+            .db()
             .tab_competition_role_member()
             .user_roles()
-            .filter((self.competition_id, user.account_id))
+            .filter((self.competition_id, user_id))
             .fold(CompetitionPermissionsV1::default(), |acc, member| {
                 if let Some(role) = self
                     .ctx
@@ -187,7 +161,7 @@ impl<'a> AuthBuilder<'a, CompetitionPermissionsV1, ReducerContext> {
                 acc
             });
         if (permissions & !self.expected).passed() {
-            Ok(user.account_id)
+            Ok(user_id)
         } else {
             Err("Not sufficient permissions to perform this action.".into())
         }
@@ -208,22 +182,14 @@ impl<'a> AuthBuilder<'a, CompetitionPermissionsV1, ViewContext> {
         self
     }
 
-    pub(crate) fn authorize(self) -> Result<Uuid, String> {
-        let Some(user) = self
-            .ctx
-            .db()
-            .tab_user_identity()
-            .identity()
-            .find(self.ctx.sender())
-        else {
-            return Err("Identity not associated with a user account.".into());
-        };
+    pub(crate) fn authorize(self) -> Result<u32, String> {
+        let user_id = self.ctx.get_user_id(self.ctx.sender())?;
         let permissions = self
             .ctx
             .db
             .tab_competition_role_member()
             .user_roles()
-            .filter((self.competition_id, user.account_id))
+            .filter((self.competition_id, user_id))
             .fold(CompetitionPermissionsV1::default(), |acc, member| {
                 if let Some(role) = self
                     .ctx
@@ -237,7 +203,7 @@ impl<'a> AuthBuilder<'a, CompetitionPermissionsV1, ViewContext> {
                 acc
             });
         if (permissions & !self.expected).passed() {
-            Ok(user.account_id)
+            Ok(user_id)
         } else {
             Err("Not sufficient permissions to perform this action.".into())
         }

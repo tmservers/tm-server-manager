@@ -1,10 +1,10 @@
-use spacetimedb::{ReducerContext, Table, Timestamp, Uuid, reducer, table};
+/* use spacetimedb::{ReducerContext, Table, Timestamp, Uuid, reducer, table};
 
 use crate::{
     authorization::Authorization, competition::tab_competition, registration::tab_registration,
 };
-
-#[table(accessor=tab_registered_team)]
+ */
+/* #[table(accessor=tab_registered_team)]
 pub struct RegisteredTeam {
     name: String,
     //account_id: Uuid,
@@ -51,4 +51,4 @@ pub fn create_team(ctx: &ReducerContext, registration_id: u32, name: String) -> 
     })?;
 
     Ok(())
-}
+} */

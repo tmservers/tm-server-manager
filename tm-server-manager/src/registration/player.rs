@@ -2,18 +2,18 @@ use spacetimedb::{
     AnonymousViewContext, Query, ReducerContext, Table, Timestamp, Uuid, reducer, table, view,
 };
 
-use crate::{
-    authorization::Authorization,
-    registration::{self, tab_registration},
-};
+use crate::{authorization::Authorization, registration::tab_registration};
 
-#[table(accessor=tab_registeration_player)]
+#[table(
+    accessor=tab_registeration_player,
+    index(accessor=user_registered, hash(columns=[user_id,registration_id]))
+)]
 #[derive(Debug, Clone, Copy)]
 pub struct RegisterationPlayer {
-    pub account_id: Uuid,
     pub registered_at: Timestamp,
     #[index(hash)]
     pub registration_id: u32,
+    pub user_id: u32,
 }
 
 #[view(accessor=temp_registration_player,public)]
@@ -26,7 +26,7 @@ pub fn temp_registration_player(
 
 #[reducer]
 pub fn register_player(ctx: &ReducerContext, registration_id: u32) -> Result<(), String> {
-    let user = ctx.get_user()?;
+    let user_id = ctx.user_id()?;
 
     let Some(registration) = ctx.db.tab_registration().id().find(registration_id) else {
         return Err("Tried to register but the registration id does not exist.".into());
@@ -37,9 +37,10 @@ pub fn register_player(ctx: &ReducerContext, registration_id: u32) -> Result<(),
     if ctx
         .db
         .tab_registeration_player()
-        .registration_id()
-        .filter(registration_id)
-        .any(|p| p.account_id == user.account_id)
+        .user_registered()
+        .filter((user_id, registration_id))
+        .count()
+        == 0
     {
         return Err("User is already registered for registration_id!".to_string());
     }
@@ -48,7 +49,7 @@ pub fn register_player(ctx: &ReducerContext, registration_id: u32) -> Result<(),
         .tab_registeration_player()
         .try_insert(RegisterationPlayer {
             registration_id,
-            account_id: user.account_id,
+            user_id,
             registered_at: ctx.timestamp,
         })?;
 
@@ -57,20 +58,20 @@ pub fn register_player(ctx: &ReducerContext, registration_id: u32) -> Result<(),
 
 #[reducer]
 pub fn unregister_player(ctx: &ReducerContext, registration_id: u32) -> Result<(), String> {
-    let account_id = ctx.get_user_account()?;
+    /*  let account_id = ctx.user_id()?;
 
     let Some(registration) = ctx.db.tab_registration().id().find(registration_id) else {
         return Err("Tried to register for a competition that doesnt exist.".into());
-    };
+    }; */
 
-    registration.player_registration_allowed(ctx)?;
+    //registration.player_registration_allowed(ctx)?;
 
-    let Some(registred_user) = ctx
+    /* let Some(registred_user) = ctx
         .db
         .tab_registeration_player()
         .registration_id()
         .filter(registration_id)
-        .find(|p| p.account_id == account_id)
+        .find(|p| p.user_id == account_id)
     else {
         return Err("User is already registered for competition!".to_string());
     };
@@ -80,9 +81,9 @@ pub fn unregister_player(ctx: &ReducerContext, registration_id: u32) -> Result<(
             "Unexpected error occured deleting the user {} from {}",
             account_id, registration_id
         ));
-    };
+    }; */
 
-    Ok(())
+    todo!()
 }
 
 pub(crate) trait RegistrationRead {

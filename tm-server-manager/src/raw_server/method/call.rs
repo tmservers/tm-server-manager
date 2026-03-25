@@ -16,7 +16,7 @@ pub struct RawServerMethodCall {
     #[index(hash)]
     server_id: u32,
 
-    account_id: Uuid,
+    user_id: u32,
 
     timestamp: Timestamp,
 
@@ -36,7 +36,7 @@ pub fn server_method_call(
     server_login: String,
     call: MethodCall,
 ) -> Result<(), String> {
-    let account_id = ctx.get_user_account()?;
+    let user_id = ctx.user_id()?;
 
     let Some(server) = ctx.db.tab_raw_server().server_login().find(&server_login) else {
         return Err(format!(
@@ -48,7 +48,7 @@ pub fn server_method_call(
         .tab_raw_server_method_call()
         .try_insert(RawServerMethodCall {
             id: 0,
-            account_id,
+            user_id,
             timestamp: ctx.timestamp,
             server_id: server.id,
             call,

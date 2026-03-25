@@ -6,7 +6,6 @@ use spacetimedb::{
 use crate::{
     authorization::Authorization,
     competition::{CompetitionV1, tab_competition},
-    user::{tab_user__view, tab_user_identity__view},
 };
 
 pub(crate) mod permissions;
@@ -22,11 +21,11 @@ pub struct ProjectV1 {
     name: String,
     description: String,
 
-    #[index(btree)]
-    creator_account_id: Uuid,
-
     starting_at: Timestamp,
     ending_at: Timestamp,
+
+    #[index(hash)]
+    user_id: u32,
 
     #[auto_inc]
     #[primary_key]
@@ -66,12 +65,12 @@ fn create_project(
     starting_at: Timestamp,
     ending_at: Timestamp,
 ) -> Result<(), String> {
-    let user = ctx.get_user()?;
+    let user_id = ctx.user_id()?;
 
     let project = ctx.db.tab_project().try_insert(ProjectV1 {
         id: 0,
         name: name.clone(),
-        creator_account_id: user.account_id,
+        user_id,
         status: ProjectStatus::Planning,
         description,
         starting_at,
@@ -87,10 +86,7 @@ fn create_project(
 
 #[spacetimedb::reducer]
 fn project_edit_name(ctx: &ReducerContext, project_id: u32, name: String) -> Result<(), String> {
-    let user = ctx.get_user()?;
-    /* ctx.auth_builder(project_id, user.account_id)?
-    .permission(CompetitionPermissionsV1::PROJECT_EDIT_NAME)
-    .authorize()?; */
+    //TODO auth
 
     let Some(mut project) = ctx.db.tab_project().id().find(project_id) else {
         return Err("Supplied project_id incorrect.".into());
@@ -109,7 +105,7 @@ fn project_edit_description(
     project_id: u32,
     description: String,
 ) -> Result<(), String> {
-    let user = ctx.get_user()?;
+    //TODO auth
     /* ctx.auth_builder(project_id, user.account_id)?
     .permission(CompetitionPermissionsV1::PROJECT_EDIT_DESCRIPTION)
     .authorize()?; */
@@ -132,7 +128,7 @@ fn project_edit_dates(
     starting_at: Timestamp,
     ending_at: Timestamp,
 ) -> Result<(), String> {
-    let user = ctx.get_user()?;
+    let user_id = ctx.user_id()?;
     /* ctx.auth_builder(project_id, user.account_id)?
     .permission(CompetitionPermissionsV1::PROJECT_EDIT_DATE)
     .authorize()?; */
@@ -187,7 +183,7 @@ fn project_edit_dates(
 
 #[spacetimedb::reducer]
 fn project_update_status(ctx: &ReducerContext, project_id: u32) -> Result<(), String> {
-    let user = ctx.get_user()?;
+    ctx.user_id()?;
 
     let Some(mut project) = ctx.db.tab_project().id().find(project_id) else {
         return Err("Supplied project_id incorrect.".into());
@@ -228,7 +224,7 @@ pub fn project(ctx: &AnonymousViewContext) -> impl Query<ProjectV1> {
 pub struct MyProjectV1 {
     id: u32,
 
-    creator_account_id: Uuid,
+    user_id: u32,
     creator_name: String,
 
     name: String,
@@ -243,24 +239,18 @@ pub struct MyProjectV1 {
 
 #[view(accessor=my_project,public)]
 pub fn my_project(ctx: &ViewContext) -> Vec<MyProjectV1> {
-    let id = if let Some(user) = ctx.db.tab_user_identity().identity().find(ctx.sender()) {
-        user.account_id
-    } else {
-        return Vec::new();
-    };
-
-    let Some(user) = ctx.db.tab_user().account_id().find(id) else {
+    let Ok(user_id) = ctx.user_id() else {
         return Vec::new();
     };
 
     ctx.db
         .tab_project()
-        .creator_account_id()
-        .filter(id)
+        .user_id()
+        .filter(user_id)
         .map(|t| MyProjectV1 {
             id: t.id,
-            creator_account_id: t.creator_account_id,
-            creator_name: user.get_name().to_string(),
+            user_id: t.user_id,
+            creator_name: String::new(),
             name: t.name,
             starting_at: t.starting_at,
             ending_at: t.ending_at,

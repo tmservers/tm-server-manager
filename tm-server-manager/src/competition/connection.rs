@@ -19,6 +19,7 @@ use crate::{
     raw_server::player::PermittedPlayer,
     registration::player::RegistrationRead,
     tm_match::leaderboard::MatchLeadearboardRead,
+    user::UserRead,
 };
 
 pub(super) mod action;
@@ -76,58 +77,6 @@ impl TabConnection {
     pub(crate) fn is_resolved(&self) -> bool {
         self.status == ConnectionStatus::Resolved
     }
-
-    /* pub(crate) fn connection_filter_permitted_players(
-        self,
-        ctx: &AnonymousViewContext,
-    ) -> Vec<PermittedPlayer> {
-        if self.is_wait() {
-            return Vec::new();
-        }
-
-        self.get_permitted_players_filter(ctx)
-    } */
-
-    /* pub(crate) fn get_permitted_players_filter(
-        &self,
-        ctx: &AnonymousViewContext,
-    ) -> Vec<PermittedPlayer> {
-        match self.connection_origin() {
-            NodeHandle::MatchV1(m) => {
-                let rules = ctx
-                    .db
-                    .tab_connection_data()
-                    .connection_id()
-                    .find(self.id)
-                    .unwrap();
-
-                let leaderboard = match_leaderboard(ctx, m, 0);
-
-                //TODO maybe factor this out into a trait and impl it for the respective thing
-                // maybe we also need to split the data portion out into separate tables for each connection.
-                rules.apply_match(leaderboard)
-            }
-            NodeHandle::CompetitionV1(c) => todo!(),
-            NodeHandle::MonitoringV1(_) => todo!(),
-            NodeHandle::ServerV1(_) => todo!(),
-            NodeHandle::ScheduleV1(_) => todo!(),
-            NodeHandle::PortalV1(_) => todo!(),
-            NodeHandle::RegistrationV1(_) => {
-                let rules = ctx
-                    .db
-                    .tab_connection_data()
-                    .connection_id()
-                    .find(self.id)
-                    .unwrap();
-
-                let leaderboard = registration_player(ctx);
-
-                //TODO maybe factor this out into a trait and impl it for the respective thing
-                // maybe we also need to split the data portion out into separate tables for each connection.
-                rules.apply_registration(leaderboard)
-            }
-        }
-    } */
 
     pub(crate) fn instantiate(mut self, parent_id: u32) -> Self {
         self.parent_id = parent_id;
@@ -293,8 +242,6 @@ pub fn connection_create(
 
 #[derive(Debug, SpacetimeType)]
 pub struct CompetitionConnection {
-    //TODO maybe omit this
-    //competition_id: u32,
     id: u32,
 
     origin: NodeHandle,
@@ -432,7 +379,13 @@ impl<Db: DbContext> ConnectionRead for Db {
 
                 //TODO maybe factor this out into a trait and impl it for the respective thing
                 // maybe we also need to split the data portion out into separate tables for each connection.
-                rules.apply_registration(leaderboard)
+                rules
+                    .apply_registration(leaderboard)
+                    .into_iter()
+                    .map(|p| {
+                        PermittedPlayer::new(self.user_account_from_id(p.user_id), false, false)
+                    })
+                    .collect()
             }
         }
     }

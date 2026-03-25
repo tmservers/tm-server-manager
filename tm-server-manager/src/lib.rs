@@ -2,10 +2,7 @@ use spacetimedb::{CaseConversionPolicy, ReducerContext, Uuid};
 
 use crate::{
     raw_server::tab_raw_server,
-    user::{
-        UserIdentity, UserIdsMap, UserV1 as UserStruct, tab_user as db_user, tab_user_identity,
-        tab_user_ids_map,
-    },
+    user::{UserV1 as UserStruct, UserWrite},
 };
 
 pub mod authorization;
@@ -54,21 +51,16 @@ fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
         // The production feature flag is enforced in CI.
         #[cfg(not(feature = "production"))]
         if jwt.issuer() == "https://auth.spacetimedb.com" {
+            use crate::user::UserWrite;
+
             log::warn!("Connected as test user Mr.Joermungandr in a development environment!");
             let account_id: Uuid = Uuid::parse_str("3467014a-c1cc-4aae-99fe-6beb5eca232a").unwrap();
 
             let preferred_username = String::from("Mr.Joermungandr");
             let mut user = UserStruct::new(account_id);
             user.set_name(preferred_username);
-            let user = ctx.db.tab_user().account_id().try_insert_or_update(user)?;
-            ctx.db
-                .tab_user_identity()
-                .account_id()
-                .try_insert_or_update(UserIdentity::new(account_id, ctx.sender()))?;
-            ctx.db
-                .tab_user_ids_map()
-                .account_id()
-                .try_insert_or_update(UserIdsMap::new(account_id, user.internal_id))?;
+            let user_id = ctx.user_insert(user)?;
+            ctx.user_login(user_id, ctx.sender())?;
 
             return Ok(());
         }
@@ -90,15 +82,8 @@ fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
 
             let mut user = UserStruct::new(account_id);
             user.set_name(claims.preferred_username);
-            let user = ctx.db.tab_user().account_id().try_insert_or_update(user)?;
-            ctx.db
-                .tab_user_identity()
-                .account_id()
-                .try_insert_or_update(UserIdentity::new(account_id, ctx.sender()))?;
-            ctx.db
-                .tab_user_ids_map()
-                .account_id()
-                .try_insert_or_update(UserIdsMap::new(account_id, user.internal_id))?;
+            let user_id = ctx.user_insert(user)?;
+            ctx.user_login(user_id, ctx.sender())?;
 
             return Ok(());
         }

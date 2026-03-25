@@ -42,7 +42,7 @@ pub(super) fn raw_server_player_add(
             log::error!(
                 "Server {} supposedly owned by {} attempted to modify a player which was on server {}. Sus",
                 server.server_login,
-                server.user_account_id,
+                server.user_id,
                 player.server_id
             );
 
@@ -81,7 +81,7 @@ pub(super) fn raw_server_player_remove(
             log::error!(
                 "Server {} supposedly owned by {} attempted to remove a player which was on server {}. Sus",
                 server.server_login,
-                server.user_account_id,
+                server.user_id,
                 player.server_id
             );
             return Err(

@@ -13,7 +13,7 @@ use crate::{
         state::tab_match_state,
         tab_match,
     },
-    user::{UserIdsMap, UserV1, tab_user, tab_user_ids_map},
+    user::{UserRead, UserV1, UserWrite},
 };
 
 #[derive(Debug)]
@@ -40,13 +40,7 @@ pub(crate) fn handle_match_event(
             let state = ctx.db.tab_match_state().match_id().find(match_id).unwrap();
             if state.live_round() {
                 let account_id = Uuid::parse_str(&start_line.account_id).unwrap();
-                let user_id = ctx
-                    .db
-                    .tab_user_ids_map()
-                    .account_id()
-                    .find(account_id)
-                    .unwrap()
-                    .user_id;
+                let user_id = ctx.user_id_from_account(account_id);
 
                 let round = state.get_round();
 
@@ -69,13 +63,7 @@ pub(crate) fn handle_match_event(
             let state = ctx.db.tab_match_state().match_id().find(match_id).unwrap();
             if state.live_round() {
                 let account_id = Uuid::parse_str(&way_point.account_id).unwrap();
-                let user_id = ctx
-                    .db
-                    .tab_user_ids_map()
-                    .account_id()
-                    .find(account_id)
-                    .unwrap()
-                    .user_id;
+                let user_id = ctx.user_id_from_account(account_id);
 
                 let round = state.get_round();
 
@@ -107,13 +95,7 @@ pub(crate) fn handle_match_event(
             let state = ctx.db.tab_match_state().match_id().find(match_id).unwrap();
             if state.live_round() {
                 let account_id = Uuid::parse_str(&respawn.account_id).unwrap();
-                let user_id = ctx
-                    .db
-                    .tab_user_ids_map()
-                    .account_id()
-                    .find(account_id)
-                    .unwrap()
-                    .user_id;
+                let user_id = ctx.user_id_from_account(account_id);
 
                 let round = state.get_round();
 
@@ -134,13 +116,7 @@ pub(crate) fn handle_match_event(
             let state = ctx.db.tab_match_state().match_id().find(match_id).unwrap();
             if state.live_round() {
                 let account_id = Uuid::parse_str(&give_up.account_id).unwrap();
-                let user_id = ctx
-                    .db
-                    .tab_user_ids_map()
-                    .account_id()
-                    .find(account_id)
-                    .unwrap()
-                    .user_id;
+                let user_id = ctx.user_id_from_account(account_id);
 
                 let round = state.get_round();
 
@@ -161,22 +137,14 @@ pub(crate) fn handle_match_event(
             let mut state = ctx.db.tab_match_state().match_id().find(match_id).unwrap();
 
             let account_id = Uuid::parse_str(&start_map.map.author_account_id).unwrap();
-            let account = ctx
-                .db
-                .tab_user_ids_map()
-                .account_id()
-                .find(account_id)
-                .unwrap_or_else(|| {
-                    let mut user = UserV1::new(account_id);
-                    user.set_name(start_map.map.author_nickname.clone());
+            let user_id = if !ctx.has_user(account_id) {
+                let mut user = UserV1::new(account_id);
+                user.set_name(start_map.map.author_nickname.clone());
 
-                    let user = ctx.db.tab_user().account_id().insert_or_update(user);
-                    ctx.db
-                        .tab_user_ids_map()
-                        .account_id()
-                        .insert_or_update(UserIdsMap::new(account_id, user.internal_id))
-                });
-            let user_id = account.user_id;
+                ctx.user_insert(user).unwrap()
+            } else {
+                ctx.user_id_from_account(account_id)
+            };
 
             let map = ctx
                 .db
@@ -283,14 +251,10 @@ pub(crate) fn handle_match_event(
                     .players
                     .iter()
                     .map(|p| {
-                        let user = ctx
-                            .db
-                            .tab_user_ids_map()
-                            .account_id()
-                            .find(Uuid::parse_str(&p.account_id).unwrap())
-                            .unwrap();
+                        let user_id =
+                            ctx.user_id_from_account(Uuid::parse_str(&p.account_id).unwrap());
                         ScoresPlayer {
-                            user_id: user.user_id,
+                            user_id,
                             round_points: p.round_points,
                         }
                     })

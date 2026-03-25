@@ -8,7 +8,7 @@ use crate::{
     competition::{
         CompetitionPermissionsV1,
         connection::{tab_connection, tab_connection__view},
-        node::{NodeHandle, TabCompetitionNodePosition, tab_competition_node_position},
+        node::{NodeHandle, NodeWrite},
         server_pool::TabCompetitionServerPoolRead,
         tab_competition,
     },
@@ -25,7 +25,6 @@ use crate::{
         state::{MatchState, tab_match_state},
         template::match_template_instantiate,
     },
-    user::tab_user_ids_map,
 };
 
 pub mod event;
@@ -204,13 +203,7 @@ pub fn match_create(
         };
 
         let tm_match = ctx.db.tab_match().try_insert(tm_match)?;
-
-        ctx.db
-            .tab_competition_node_position()
-            .try_insert(TabCompetitionNodePosition::new(
-                NodeHandle::MatchV1(tm_match.id),
-                tm_match.parent_id,
-            ))?;
+        ctx.node_create(NodeHandle::MatchV1(tm_match.id))?;
     }
 
     Ok(())
@@ -285,15 +278,17 @@ pub fn match_update_pre_config(
     id: u32,
     config_id: u32,
 ) -> Result<(), String> {
-    ctx.get_user()?;
     if let Some(mut tm_match) = ctx.db.tab_match().id().find(id)
         && tm_match.status == MatchStatus::Configuring
     {
+        ctx.auth_builder(tm_match.parent_id)
+            .permission(CompetitionPermissionsV1::MATCH_CONFIGURE)
+            .authorize()?;
         tm_match.pre_config = config_id;
         ctx.db.tab_match().id().update(tm_match);
         Ok(())
     } else {
-        Err(format!("Match with id: {id} not found."))
+        Err(format!("Match {id} not found or in wrong state."))
     }
 }
 
@@ -441,28 +436,9 @@ pub fn match_delete(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
         return Err(format!("Match with id: {match_id} not found."));
     }
 
-    let node_ref = NodeHandle::MatchV1(match_id);
+    let handle = NodeHandle::MatchV1(match_id);
 
-    // This should only ever delete one but we dont have muulti col unique index for now
-    for node in ctx
-        .db
-        .tab_competition_node_position()
-        .node_position()
-        .filter(node_ref.split())
-    {
-        ctx.db.tab_competition_node_position().id().delete(node.id);
-    }
-
-    for node in ctx
-        .db
-        .tab_connection()
-        .parent_id()
-        .filter(tm_match.parent_id)
-    {
-        if node.connection_origin() == node_ref || node.connection_target() == node_ref {
-            ctx.db.tab_connection().delete(node);
-        }
-    }
+    ctx.node_delete(handle)?;
 
     Ok(())
 }

@@ -1,12 +1,15 @@
 use std::collections::HashMap;
 
-use spacetimedb::{DbContext, Local, ReducerContext, SpacetimeType, Uuid};
+use spacetimedb::{DbContext, Local, ReducerContext, SpacetimeType, Table, Uuid};
 use tm_server_types::config::ServerConfig;
 
 use crate::{
     competition::{
         authorized_competition_ongoing, competition_ongoing,
-        connection::{ConnectionRead, tab_connection__view},
+        connection::{
+            ConnectionRead, action::tab_connection_action, data::tab_connection_data,
+            tab_connection, tab_connection__view,
+        },
         tab_competition, tab_competition__view,
     },
     portal::{tab_portal, tab_portal__view},
@@ -15,7 +18,6 @@ use crate::{
     schedule::{tab_schedule, tab_schedule__view},
     tm_match::{authorized_match_set_preparation, tab_match, tab_match__view},
 };
-
 mod position;
 
 pub use position::*;
@@ -203,5 +205,47 @@ impl<Db: DbContext> NodeRead for Db {
     }
 }
 
-pub(crate) trait NodeWrite: NodeRead {}
-impl<Db: DbContext<DbView = Local>> NodeWrite for Db {}
+pub(crate) trait NodeWrite: NodeRead {
+    fn node_create(&self, node: NodeHandle) -> Result<(), String>;
+    fn node_delete(&self, node: NodeHandle) -> Result<(), String>;
+}
+impl<Db: DbContext<DbView = Local>> NodeWrite for Db {
+    fn node_create(&self, node: NodeHandle) -> Result<(), String> {
+        self.node_position_insert(node)?;
+
+        Ok(())
+    }
+
+    fn node_delete(&self, node: NodeHandle) -> Result<(), String> {
+        // Delete postition table entry.
+        self.node_position_delete(node);
+
+        // Delete all associated connection tables involving the node.
+        let connections = self
+            .db()
+            .tab_connection()
+            .origins_of()
+            .filter(node.split())
+            .chain(self.db().tab_connection().targets_of().filter(node.split()));
+        for connection in connections {
+            if connection.is_action() {
+                self.db()
+                    .tab_connection_action()
+                    .connection_id()
+                    .delete(connection.id);
+                continue;
+            }
+            if connection.is_data() {
+                self.db()
+                    .tab_connection_data()
+                    .connection_id()
+                    .delete(connection.id);
+                continue;
+            }
+        }
+        self.db().tab_connection().origins_of().delete(node.split());
+        self.db().tab_connection().targets_of().delete(node.split());
+
+        Ok(())
+    }
+}

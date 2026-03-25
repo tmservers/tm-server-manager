@@ -9,6 +9,7 @@ use crate::{
     raw_server::{
         RawServerV1, occupation::TabRawServerOccupationRead, tab_raw_server, tab_raw_server__view,
     },
+    user::UserRead,
 };
 
 #[table(accessor=tab_competition_raw_server)]
@@ -26,7 +27,7 @@ fn lend_raw_server(
     server_id: u32,
     competition_id: u32,
 ) -> Result<(), String> {
-    let account_id = ctx
+    let user_id = ctx
         .auth_builder(competition_id)
         .permission(CompetitionPermissionsV1::RAW_SERVER_ADD)
         .authorize()?;
@@ -35,7 +36,7 @@ fn lend_raw_server(
         return Err("Server not found".into());
     };
 
-    if server.user_account_id != account_id {
+    if server.user_id != user_id {
         return Err("Not the owner of the server!".into());
     }
 
@@ -67,14 +68,14 @@ fn revoke_raw_server(
     server_id: u32,
     competition_id: u32,
 ) -> Result<(), String> {
-    let user_account = ctx.get_user_account()?;
+    let user_id = ctx.user_id()?;
 
     let Some(server) = ctx.db.tab_raw_server().id().find(competition_id) else {
         return Err("Server not found".into());
     };
 
     // If the server owner requests a deletion it always passes.
-    if server.user_account_id == user_account {
+    if server.user_id == user_id {
         ctx.db
             .tab_competition_raw_server()
             .delete(CompetitionServer {
@@ -104,11 +105,16 @@ fn competition_available_server_pool(
     ctx: &ViewContext, /* competition_id: u32 */
 ) -> Vec<RawServerV1> {
     let competition_id = 1u32; //TODO replace with arg
-    let Ok(account_id) = ctx.get_user_account() else {
+
+    //TODO which permission should we use for this??
+    if ctx
+        .auth_builder(competition_id)
+        .permission(CompetitionPermissionsV1::OWNER)
+        .authorize()
+        .is_err()
+    {
         return Vec::new();
     };
-    //TODO which perissino should we use for this??
-    //ctx.auth_builder(project_id, account_id)?.permission(ProjectPermissionsV1::SER)
 
     ctx.server_pool_available(competition_id)
 }

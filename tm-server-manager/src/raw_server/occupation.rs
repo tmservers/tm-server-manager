@@ -1,5 +1,4 @@
-use petgraph::graph::Node;
-use spacetimedb::{DbContext, Local, ReducerContext, table};
+use spacetimedb::{DbContext, Local, table};
 
 use crate::competition::node::NodeHandle;
 

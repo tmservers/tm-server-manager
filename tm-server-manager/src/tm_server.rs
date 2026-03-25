@@ -4,7 +4,7 @@ use crate::{
     authorization::Authorization,
     competition::{
         CompetitionPermissionsV1,
-        node::{NodeHandle, TabCompetitionNodePosition, tab_competition_node_position},
+        node::{NodeHandle, NodeWrite},
         tab_competition,
     },
     raw_server::{
@@ -86,14 +86,9 @@ pub fn server_create(
             open: true,
         };
 
-        let tm_match = ctx.db.tab_server().try_insert(tm_server)?;
+        let tm_server = ctx.db.tab_server().try_insert(tm_server)?;
 
-        ctx.db
-            .tab_competition_node_position()
-            .try_insert(TabCompetitionNodePosition::new(
-                NodeHandle::MatchV1(tm_match.id),
-                tm_match.parent_id,
-            ))?;
+        ctx.node_create(NodeHandle::ServerV1(tm_server.id))?;
     }
 
     Ok(())

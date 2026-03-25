@@ -45,8 +45,6 @@ pub(super) fn competition_template_instantiate(
     template_id: u32,
     name: String,
 ) -> Result<(), String> {
-    let account_id = ctx.get_user_account()?;
-
     // If parent is valid it is guaranteed that it has a valid project associated with it.
     let Some(competition_template) = ctx.db.tab_competition().id().find(template_id) else {
         return Err("Invalid parent_id".into());

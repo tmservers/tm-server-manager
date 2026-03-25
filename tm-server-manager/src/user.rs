@@ -2,24 +2,24 @@ use spacetimedb::{Identity, Uuid, ViewContext, table, view};
 
 use crate::authorization::Authorization;
 
-#[table(accessor= tab_user)]
+#[table(accessor= tab_user,vis_private)]
 pub struct UserV1 {
     name: String,
     club_tag: String,
     zone: String,
 
     #[unique]
-    pub account_id: Uuid,
+    account_id: Uuid,
 
     #[auto_inc]
     #[primary_key]
-    pub internal_id: u32,
+    id: u32,
 }
 
 impl UserV1 {
     pub fn new(account_id: Uuid) -> Self {
         UserV1 {
-            internal_id: 0,
+            id: 0,
             account_id,
             name: String::new(),
             club_tag: String::new(),
@@ -37,35 +37,32 @@ impl UserV1 {
 
 #[view(accessor=my_user,public)]
 pub fn my_user(ctx: &ViewContext) -> Option<UserV1> {
-    let Ok(user) = ctx.get_user_account() else {
+    let Ok(user) = ctx.user_id() else {
         return None;
     };
-    ctx.db.tab_user().account_id().find(user)
+    ctx.db.tab_user().id().find(user)
 }
 
 #[table(accessor= tab_user_identity)]
-pub struct UserIdentity {
+struct UserIdentity {
     #[unique]
-    pub identity: Identity,
+    identity: Identity,
     #[primary_key]
-    pub account_id: Uuid,
+    user_id: u32,
 }
 
 impl UserIdentity {
-    pub fn new(account_id: Uuid, identity: Identity) -> Self {
-        Self {
-            identity,
-            account_id,
-        }
+    pub fn new(user_id: u32, identity: Identity) -> Self {
+        Self { identity, user_id }
     }
 }
 
 #[table(accessor= tab_user_ids_map)]
-pub struct UserIdsMap {
+struct UserIdsMap {
     #[primary_key]
-    pub account_id: Uuid,
+    account_id: Uuid,
     #[unique]
-    pub user_id: u32,
+    user_id: u32,
 }
 
 impl UserIdsMap {
@@ -74,5 +71,93 @@ impl UserIdsMap {
             user_id: internal_id,
             account_id,
         }
+    }
+}
+
+pub(crate) trait UserRead {
+    fn has_user(&self, account_id: Uuid) -> bool;
+    fn get_user_id(&self, identity: Identity) -> Result<u32, String>;
+    //fn user(&self, identity: Identity) -> Result<UserV1, String>;
+    fn user_id_from_account(&self, account_id: Uuid) -> u32;
+    fn user_account_from_id(&self, user_id: u32) -> Uuid;
+}
+impl<Db: spacetimedb::DbContext> UserRead for Db {
+    fn get_user_id(&self, identity: Identity) -> Result<u32, String> {
+        let Some(user) = self
+            .db_read_only()
+            .tab_user_identity()
+            .identity()
+            .find(identity)
+        else {
+            return Err("Identity not associated with a user account.".into());
+        };
+
+        Ok(user.user_id)
+    }
+
+    /* fn user(&self, identity: Identity) -> Result<UserV1, String> {
+    let Some(user) = self
+        .db_read_only()
+        .tab_user_identity()
+        .identity()
+        .find(identity)
+    else {
+        return Err("Identity not associated with a user account.".into());
+    };
+
+    let Some(user) = self.db_read_only().tab_user().id().find(user.user_id) else {
+        return Err("AccountId not associated with a user account.".into());
+    };
+
+    Ok(user) */
+
+    fn user_id_from_account(&self, account_id: Uuid) -> u32 {
+        self.db_read_only()
+            .tab_user_ids_map()
+            .account_id()
+            .find(account_id)
+            .unwrap()
+            .user_id
+    }
+
+    fn has_user(&self, account_id: Uuid) -> bool {
+        self.db_read_only()
+            .tab_user_ids_map()
+            .account_id()
+            .find(account_id)
+            .is_some()
+    }
+
+    fn user_account_from_id(&self, user_id: u32) -> Uuid {
+        self.db_read_only()
+            .tab_user_ids_map()
+            .user_id()
+            .find(user_id)
+            .unwrap()
+            .account_id
+    }
+}
+
+pub(crate) trait UserWrite: UserRead {
+    fn user_insert(&self, user: UserV1) -> Result<u32, String>;
+    fn user_login(&self, user_id: u32, identity: Identity) -> Result<(), String>;
+}
+impl<Db: spacetimedb::DbContext<DbView = spacetimedb::Local>> UserWrite for Db {
+    fn user_insert(&self, user: UserV1) -> Result<u32, String> {
+        let user = self.db().tab_user().id().insert_or_update(user);
+        self.db()
+            .tab_user_ids_map()
+            .account_id()
+            .insert_or_update(UserIdsMap::new(user.account_id, user.id));
+        Ok(user.id)
+    }
+
+    fn user_login(&self, user_id: u32, identity: Identity) -> Result<(), String> {
+        self.db()
+            .tab_user_identity()
+            .user_id()
+            .try_insert_or_update(UserIdentity::new(user_id, identity))?;
+
+        Ok(())
     }
 }

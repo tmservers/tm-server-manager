@@ -11,6 +11,7 @@ use crate::authorization::Authorization;
 use crate::competition::node::{NodeHandle, NodeRead};
 use crate::competition::server_pool::TabCompetitionServerPoolRead;
 use crate::raw_server::occupation::{TabRawServerOccupationRead, TabRawServerOccupationWrite};
+use crate::user::UserRead;
 
 pub mod config;
 pub mod destination;
@@ -31,8 +32,9 @@ pub struct RawServerV1 {
     server_account_id: Uuid,
 
     /// Each server also has a ubisoft account associated with it.
+    /// This is a user_account_id because you could add a user which was not seen yet.
     #[index(hash)]
-    pub(crate) user_account_id: Uuid,
+    pub(crate) user_id: u32,
 
     #[auto_inc]
     #[primary_key]
@@ -138,7 +140,7 @@ pub fn login_as_server(
                 id: 0,
                 server_login: login.clone(),
                 server_account_id,
-                user_account_id,
+                user_id: ctx.user_id_from_account(user_account_id),
                 identity,
                 capturable: true,
                 verified: false,
@@ -159,14 +161,14 @@ fn this_raw_server(ctx: &ViewContext) -> Option<RawServerV1> {
 /// The Raw server pool are all servers of an account which are verified.
 #[view(accessor= user_raw_server_pool, public)]
 pub(crate) fn user_raw_server_pool(ctx: &ViewContext) -> Vec<RawServerV1> {
-    let Ok(user) = ctx.get_user() else {
+    let Ok(user_id) = ctx.user_id() else {
         return Vec::new();
     };
     //TODO maybe switch to query builder if possible
     ctx.db
         .tab_raw_server()
-        .user_account_id()
-        .filter(user.account_id)
+        .user_id()
+        .filter(user_id)
         .filter(|s| s.verified)
         .collect()
 }
@@ -174,14 +176,14 @@ pub(crate) fn user_raw_server_pool(ctx: &ViewContext) -> Vec<RawServerV1> {
 /// The Raw server pool are all servers of an account which are verified.
 #[view(accessor= user_available_server_pool, public)]
 pub(crate) fn user_available_server_pool(ctx: &ViewContext) -> Vec<RawServerV1> {
-    let Ok(user) = ctx.get_user() else {
+    let Ok(user_id) = ctx.user_id() else {
         return Vec::new();
     };
 
     ctx.db
         .tab_raw_server()
-        .user_account_id()
-        .filter(user.account_id)
+        .user_id()
+        .filter(user_id)
         .filter(|s| s.verified && s.capturable)
         .filter(|s| !ctx.raw_server_is_occupied(s.id))
         .collect()
@@ -190,21 +192,21 @@ pub(crate) fn user_available_server_pool(ctx: &ViewContext) -> Vec<RawServerV1> 
 /// The unverified version of a server pool includes all servers of an account which are not vet verified.
 #[view(accessor= user_raw_server_pool_unverified, public)]
 fn user_raw_server_pool_unverified(ctx: &ViewContext) -> Vec<RawServerV1> {
-    let Ok(user) = ctx.get_user() else {
+    let Ok(user_id) = ctx.user_id() else {
         return Vec::new();
     };
     //TODO maybe switch to query builder if possible
     ctx.db
         .tab_raw_server()
-        .user_account_id()
-        .filter(user.account_id)
+        .user_id()
+        .filter(user_id)
         .filter(|s| !s.verified)
         .collect()
 }
 
 #[reducer]
 fn raw_server_verify(ctx: &ReducerContext, server_id: u32) -> Result<(), String> {
-    let user = ctx.get_user()?;
+    let user_id = ctx.user_id()?;
 
     let mut server = ctx
         .db
@@ -213,7 +215,7 @@ fn raw_server_verify(ctx: &ReducerContext, server_id: u32) -> Result<(), String>
         .find(server_id)
         .ok_or("Couldnt find server with login")?;
 
-    if server.user_account_id == user.account_id {
+    if server.user_id == user_id {
         if server.verified {
             Err("Server was already verified.".into())
         } else {
