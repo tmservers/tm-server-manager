@@ -27,7 +27,7 @@ pub use position::*;
 pub enum NodeHandle {
     MatchV1(u32),
     CompetitionV1(u32),
-    MonitoringV1(u32),
+    //MonitoringV1(u32),
     ServerV1(u32),
     ScheduleV1(u32),
     PortalV1(u32),
@@ -51,7 +51,7 @@ impl NodeHandle {
             NodeHandle::MatchV1(m) => (1, m),
             NodeHandle::CompetitionV1(c) => (2, c),
             NodeHandle::ScheduleV1(s) => (3, s),
-            NodeHandle::MonitoringV1(_) => todo!(),
+            //NodeHandle::MonitoringV1(_) => todo!(),
             NodeHandle::ServerV1(_) => todo!(),
             NodeHandle::PortalV1(p) => (6, p),
             NodeHandle::RegistrationV1(r) => (7, r),
@@ -83,7 +83,7 @@ impl NodeHandle {
                 let node = ctx.db.tab_schedule().id().find(s).unwrap();
                 node.is_template()
             }
-            NodeHandle::MonitoringV1(_) => todo!(),
+            //NodeHandle::MonitoringV1(_) => todo!(),
             NodeHandle::ServerV1(_) => todo!(),
             NodeHandle::PortalV1(portal_id) => {
                 let node = ctx.db.tab_portal().id().find(portal_id).unwrap();
@@ -119,7 +119,7 @@ impl NodeType for NodeHandle {
         match self {
             NodeHandle::MatchV1(match_id) => authorized_match_set_preparation(ctx, *match_id),
             NodeHandle::CompetitionV1(c) => authorized_competition_ongoing(ctx, *c),
-            NodeHandle::MonitoringV1(_) => todo!(),
+            //NodeHandle::MonitoringV1(_) => todo!(),
             NodeHandle::ServerV1(_) => todo!(),
             NodeHandle::ScheduleV1(_) => todo!(),
             NodeHandle::PortalV1(_) => todo!(),
@@ -185,7 +185,7 @@ impl<Db: DbContext> NodeRead for Db {
                     Err("Schedule could not be found.".into())
                 }
             }
-            NodeHandle::MonitoringV1(_) => todo!(),
+            //NodeHandle::MonitoringV1(_) => todo!(),
             NodeHandle::ServerV1(_) => todo!(),
             NodeHandle::PortalV1(portal_id) => {
                 if let Some(portal) = self.db_read_only().tab_portal().id().find(portal_id) {

@@ -31,10 +31,21 @@ pub struct ProjectV1 {
     #[primary_key]
     pub id: u32,
 
+    //Verified by a instance admin and required to query it in the public api.
+    verified: bool,
+    kind: ProjectKind,
     status: ProjectStatus,
 }
 
 impl ProjectV1 {}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, SpacetimeType)]
+#[repr(u8)]
+pub enum ProjectKind {
+    Tournament,
+    TournamentTest,
+    GeneralProject,
+}
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, SpacetimeType)]
 pub enum ProjectStatus {
@@ -75,6 +86,8 @@ fn create_project(
         description,
         starting_at,
         ending_at,
+        verified: false,
+        kind: ProjectKind::GeneralProject,
     })?;
 
     //SAFETY: Comitted afterwards
@@ -211,14 +224,14 @@ fn project_update_status(ctx: &ReducerContext, project_id: u32) -> Result<(), St
     Ok(())
 }
 
-#[view(accessor=project,public)]
+/* #[view(accessor=project,public)]
 pub fn project(ctx: &AnonymousViewContext) -> impl Query<ProjectV1> {
     ctx.from
         .tab_project()
         //TODO this equality doesnt work atm because of enum
         //.r#where(|t| t.status.ne(ProjectStatus::Planning))
         .build()
-}
+} */
 
 #[derive(Debug, SpacetimeType)]
 pub struct MyProjectV1 {
@@ -235,6 +248,8 @@ pub struct MyProjectV1 {
     description: String,
 
     status: ProjectStatus,
+    kind: ProjectKind,
+    verified: bool,
 }
 
 #[view(accessor=my_project,public)]
@@ -256,6 +271,8 @@ pub fn my_project(ctx: &ViewContext) -> Vec<MyProjectV1> {
             ending_at: t.ending_at,
             description: t.description,
             status: t.status,
+            kind: t.kind,
+            verified: t.verified,
         })
         .collect()
 }

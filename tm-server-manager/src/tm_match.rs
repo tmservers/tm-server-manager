@@ -1,13 +1,10 @@
-use std::collections::HashMap;
-
-use spacetimedb::{ReducerContext, SpacetimeType, Table, Uuid, reducer, table};
+use spacetimedb::{ReducerContext, SpacetimeType, Table, reducer, table};
 use tm_server_types::config::ServerConfig;
 
 use crate::{
     authorization::Authorization,
     competition::{
         CompetitionPermissionsV1,
-        connection::{tab_connection, tab_connection__view},
         node::{NodeHandle, NodeWrite},
         server_pool::TabCompetitionServerPoolRead,
         tab_competition,
@@ -15,13 +12,11 @@ use crate::{
     raw_server::{
         TabRawServerWrite,
         config::{RawServerConfig, tab_raw_server_config},
-        destination::{TabPlayerDestination, TabRawServerDestinationWrite, tab_player_destination},
+        destination::TabRawServerDestinationWrite,
         occupation::{TabRawServerOccupationRead, TabRawServerOccupationWrite},
-        player::PermittedPlayer,
         tab_raw_server,
     },
     tm_match::{
-        leaderboard::MatchRoundPlayer,
         state::{MatchState, tab_match_state},
         template::match_template_instantiate,
     },
@@ -29,7 +24,6 @@ use crate::{
 
 pub mod event;
 pub mod leaderboard;
-pub mod players;
 pub mod replay;
 pub mod state;
 pub mod template;

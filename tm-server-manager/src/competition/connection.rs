@@ -2,8 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use petgraph::acyclic::Acyclic;
 use spacetimedb::{
-    AnonymousViewContext, DbContext, Local, ReducerContext, SpacetimeType, Table, ViewContext,
-    reducer, view,
+    AnonymousViewContext, DbContext, Local, ReducerContext, SpacetimeType, Table, reducer, view,
 };
 
 use crate::{
@@ -271,7 +270,7 @@ impl From<TabConnection> for CompetitionConnection {
 
 #[view(accessor=competition_connection,public)]
 pub fn competition_connection(
-    ctx: &ViewContext, /* competition_id: u32 */
+    ctx: &AnonymousViewContext, /* competition_id: u32 */
 ) -> Vec<CompetitionConnection> {
     let competition_id = 1u32;
 
@@ -287,6 +286,7 @@ pub(crate) fn internal_graph_resolution_node_finished(
     ctx: &ReducerContext,
     trigger: NodeHandle,
 ) -> Result<(), String> {
+    // Get the outgoing connections from the node that just finished (trigger).
     let affected_connections = ctx
         .db
         .tab_connection()
@@ -299,6 +299,8 @@ pub(crate) fn internal_graph_resolution_node_finished(
         });
 
     for affected_connection in affected_connections {
+        // If that connection is a action connection it cannot be the last missing connection
+        // because it is not counted in the first place so we can safely skip it.
         if affected_connection.is_action() {
             try_exec_action(affected_connection.id, affected_connection.target, ctx);
 
@@ -363,7 +365,7 @@ impl<Db: DbContext> ConnectionRead for Db {
                 rules.apply_match(leaderboard)
             }
             NodeHandle::CompetitionV1(c) => todo!(),
-            NodeHandle::MonitoringV1(_) => todo!(),
+            //NodeHandle::MonitoringV1(_) => todo!(),
             NodeHandle::ServerV1(_) => todo!(),
             NodeHandle::ScheduleV1(_) => todo!(),
             NodeHandle::PortalV1(_) => todo!(),
@@ -390,5 +392,5 @@ impl<Db: DbContext> ConnectionRead for Db {
         }
     }
 }
-pub(crate) trait ConnectionWrite: ConnectionRead {}
-impl<Db: DbContext<DbView = Local>> ConnectionWrite for Db {}
+/* pub(crate) trait ConnectionWrite: ConnectionRead {}
+impl<Db: DbContext<DbView = Local>> ConnectionWrite for Db {} */

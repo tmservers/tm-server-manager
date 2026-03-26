@@ -155,7 +155,7 @@ pub(super) fn competition_template_instantiate(
         let new_origin = match old_origin {
             NodeHandle::MatchV1(m) => match_map.get(&m).unwrap().id,
             NodeHandle::CompetitionV1(i) => competition_map.get(&i).unwrap().id,
-            NodeHandle::MonitoringV1(_) => todo!(),
+            //NodeHandle::MonitoringV1(_) => todo!(),
             NodeHandle::ServerV1(_) => todo!(),
             NodeHandle::ScheduleV1(i) => schedule_map.get(&i).unwrap().id,
             NodeHandle::PortalV1(_) => todo!(),
@@ -166,7 +166,7 @@ pub(super) fn competition_template_instantiate(
         let new_target = match old_target {
             NodeHandle::MatchV1(m) => match_map.get(&m).unwrap().id,
             NodeHandle::CompetitionV1(i) => competition_map.get(&i).unwrap().id,
-            NodeHandle::MonitoringV1(_) => todo!(),
+            //NodeHandle::MonitoringV1(_) => todo!(),
             NodeHandle::ServerV1(_) => todo!(),
             NodeHandle::ScheduleV1(i) => schedule_map.get(&i).unwrap().id,
             NodeHandle::PortalV1(_) => todo!(),

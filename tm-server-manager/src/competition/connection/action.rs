@@ -22,6 +22,13 @@ impl TabConnectionAction {
             _ => unreachable!(),
         }
     }
+
+    fn get_registration(&self) -> ConnectionActionRegistration {
+        match self.action {
+            ConnectionAction::RegistrationV1(action) => action,
+            _ => unreachable!(),
+        }
+    }
 }
 
 // Versioning works be e.g.:
@@ -38,7 +45,7 @@ enum ConnectionActionMatch {
     ForceStart,
 }
 
-#[derive(Debug, SpacetimeType)]
+#[derive(Debug, SpacetimeType, Clone, Copy)]
 enum ConnectionActionRegistration {
     Open,
     Close,
@@ -68,10 +75,16 @@ pub(super) fn try_exec_action(connection: u32, target: NodeHandle, ctx: &Reducer
             }
         }
         NodeHandle::CompetitionV1(_) => unreachable!(),
-        NodeHandle::MonitoringV1(_) => unreachable!(),
+        //NodeHandle::MonitoringV1(_) => unreachable!(),
         NodeHandle::ServerV1(_) => unreachable!(),
         NodeHandle::ScheduleV1(_) => unreachable!(),
         NodeHandle::PortalV1(_) => unreachable!(),
-        NodeHandle::RegistrationV1(r) => todo!(),
+        NodeHandle::RegistrationV1(r) => {
+            let registration_action = action.get_registration();
+            match registration_action {
+                ConnectionActionRegistration::Open => todo!(),
+                ConnectionActionRegistration::Close => todo!(),
+            }
+        }
     }
 }
