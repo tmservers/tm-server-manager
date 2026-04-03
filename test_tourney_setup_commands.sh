@@ -12,7 +12,7 @@ spacetime generate --yes --lang rust --out-dir tm-server-manager-api-rs/src/gene
 spacetime generate --yes --lang typescript --out-dir tm-server-manager-api-ts/server-manager --module-path tm-server-manager
 
 # Create project
-spacetime call tm-server-manager create_project "My project" "This is a beautiful project" '{"__timestamp_micros_since_unix_epoch__": 1777132984000000}' '{"__timestamp_micros_since_unix_epoch__": 1777233084000000}'
+spacetime call tm-server-manager create_project "My project" "This is a beautiful project" '{"Tournament": {}}' '{"__timestamp_micros_since_unix_epoch__": 1777132984000000}' '{"__timestamp_micros_since_unix_epoch__": 1777233084000000}'
 
 # Qualifier matches
 spacetime call tm-server-manager match_create "" 1 0

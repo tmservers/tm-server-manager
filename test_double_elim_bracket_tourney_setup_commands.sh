@@ -12,7 +12,7 @@ spacetime generate --yes --lang rust --out-dir tm-server-manager-api-rs/src/gene
 spacetime generate --yes --lang typescript --out-dir tm-server-manager-api-ts/server-manager --module-path tm-server-manager
 
 # Create project
-spacetime call tm-server-manager create_project "Double Elimination" "This is a beautiful project" '{"__timestamp_micros_since_unix_epoch__": 1777132984000000}' '{"__timestamp_micros_since_unix_epoch__": 1777233084000000}'
+spacetime call tm-server-manager create_project "Double Elimination" '{"Tournament": {}}' "This is a beautiful project" '{"__timestamp_micros_since_unix_epoch__": 1777132984000000}' '{"__timestamp_micros_since_unix_epoch__": 1777233084000000}'
 
 # Double elimination bracket
 spacetime call tm-server-manager competition_create "Double Elimination Bracket" 1 0
