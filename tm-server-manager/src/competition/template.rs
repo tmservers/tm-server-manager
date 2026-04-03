@@ -13,6 +13,7 @@ use crate::{
     registration::tab_registration,
     schedule::tab_schedule,
     tm_match::tab_match,
+    tm_server::tab_server,
 };
 
 #[reducer]
@@ -108,7 +109,11 @@ pub(super) fn competition_template_instantiate(
         .tab_schedule()
         .parent_id()
         .filter(competition_template.id);
-    //TODO rest of node types
+    let servers = ctx
+        .db
+        .tab_server()
+        .parent_id()
+        .filter(competition_template.id);
 
     // Instanatiate the top level node.
     let mut new_comp = competition_template.instantiate(target_id, stay_template);
@@ -143,7 +148,7 @@ pub(super) fn competition_template_instantiate(
 
     let mut schedule_map = HashMap::new();
     for old_schedule in schedules {
-        let old_id = old_schedule.id as u32;
+        let old_id = old_schedule.id;
         let new_schedule = old_schedule.instantiate(new_comp.id, stay_template);
         let new_schedule = ctx.db.tab_schedule().try_insert(new_schedule)?;
         schedule_map.insert(old_id, new_schedule);
@@ -154,7 +159,14 @@ pub(super) fn competition_template_instantiate(
         let old_origin = old_connection.connection_origin();
         let new_origin = match old_origin {
             NodeHandle::MatchV1(m) => match_map.get(&m).unwrap().id,
-            NodeHandle::CompetitionV1(i) => competition_map.get(&i).unwrap().id,
+            NodeHandle::CompetitionV1(i) => {
+                if let Some(comp) = competition_map.get(&i) {
+                    comp.id
+                } else {
+                    // The Connections origin is the currently new competition.
+                    new_comp.id
+                }
+            }
             //NodeHandle::MonitoringV1(_) => todo!(),
             NodeHandle::ServerV1(_) => todo!(),
             NodeHandle::ScheduleV1(i) => schedule_map.get(&i).unwrap().id,
