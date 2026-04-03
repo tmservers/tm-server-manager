@@ -32,7 +32,7 @@ fn lend_raw_server(
         .permission(CompetitionPermissionsV1::RAW_SERVER_ADD)
         .authorize()?;
 
-    let Some(server) = ctx.db.tab_raw_server().id().find(competition_id) else {
+    let Some(server) = ctx.db.tab_raw_server().id().find(server_id) else {
         return Err("Server not found".into());
     };
 

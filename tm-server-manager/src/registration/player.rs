@@ -40,7 +40,7 @@ pub fn register_player(ctx: &ReducerContext, registration_id: u32) -> Result<(),
         .user_registered()
         .filter((user_id, registration_id))
         .count()
-        == 0
+        != 0
     {
         return Err("User is already registered for registration_id!".to_string());
     }
