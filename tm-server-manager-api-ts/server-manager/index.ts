@@ -100,6 +100,7 @@ import CompetitionAvailableServerPoolRow from "./competition_available_server_po
 import CompetitionConnectionDataRow from "./competition_connection_data_table";
 import MatchRoundRow from "./match_round_table";
 import MatchRoundExtRow from "./match_round_ext_table";
+import MatchRoundUsersRow from "./match_round_users_table";
 import MatchStateRow from "./match_state_table";
 import MyConnectionsRow from "./my_connections_table";
 import MyMatchTemplateRow from "./my_match_template_table";
@@ -118,6 +119,7 @@ import ThisRawServerRow from "./this_raw_server_table";
 import UserAvailableServerPoolRow from "./user_available_server_pool_table";
 import UserRawServerPoolRow from "./user_raw_server_pool_table";
 import UserRawServerPoolUnverifiedRow from "./user_raw_server_pool_unverified_table";
+import UsersRow from "./users_table";
 
 /** Type-only namespace exports for generated type groups. */
 
@@ -165,6 +167,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, MatchRoundExtRow),
+  match_round_users: __table({
+    name: 'match_round_users',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MatchRoundUsersRow),
   match_state: __table({
     name: 'match_state',
     indexes: [
@@ -291,6 +300,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, UserRawServerPoolUnverifiedRow),
+  users: __table({
+    name: 'users',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, UsersRow),
 });
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */

@@ -488,27 +488,6 @@ export const MatchEvent = __t.object("MatchEvent", {
 });
 export type MatchEvent = __Infer<typeof MatchEvent>;
 
-export const MatchRoundPlayer = __t.object("MatchRoundPlayer", {
-  accountId: __t.uuid(),
-  id: __t.u32(),
-  matchId: __t.u32(),
-  time: __t.i32(),
-  score: __t.i32(),
-  round: __t.u16(),
-  position: __t.u16(),
-});
-export type MatchRoundPlayer = __Infer<typeof MatchRoundPlayer>;
-
-export const MatchRoundPlayerExt = __t.object("MatchRoundPlayerExt", {
-  get roundActions() {
-    return __t.array(PlayerAction);
-  },
-  id: __t.u32(),
-  matchId: __t.u32(),
-  round: __t.u16(),
-});
-export type MatchRoundPlayerExt = __Infer<typeof MatchRoundPlayerExt>;
-
 export const MatchRoundReplay = __t.object("MatchRoundReplay", {
   mapId: __t.u32(),
   matchId: __t.u32(),
@@ -1184,8 +1163,8 @@ export const TabMatchRoundPlayerExt = __t.object("TabMatchRoundPlayerExt", {
     return __t.array(PlayerAction);
   },
   userId: __t.u32(),
-  matchId: __t.u32(),
   id: __t.u32(),
+  matchId: __t.u32(),
   round: __t.u16(),
 });
 export type TabMatchRoundPlayerExt = __Infer<typeof TabMatchRoundPlayerExt>;

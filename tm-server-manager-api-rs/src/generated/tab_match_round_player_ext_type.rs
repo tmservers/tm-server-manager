@@ -11,8 +11,8 @@ use super::player_action_type::PlayerAction;
 pub struct TabMatchRoundPlayerExt {
     pub round_actions: Vec<PlayerAction>,
     pub user_id: u32,
-    pub match_id: u32,
     pub id: u32,
+    pub match_id: u32,
     pub round: u16,
 }
 
@@ -26,8 +26,8 @@ impl __sdk::InModule for TabMatchRoundPlayerExt {
 pub struct TabMatchRoundPlayerExtCols {
     pub round_actions: __sdk::__query_builder::Col<TabMatchRoundPlayerExt, Vec<PlayerAction>>,
     pub user_id: __sdk::__query_builder::Col<TabMatchRoundPlayerExt, u32>,
-    pub match_id: __sdk::__query_builder::Col<TabMatchRoundPlayerExt, u32>,
     pub id: __sdk::__query_builder::Col<TabMatchRoundPlayerExt, u32>,
+    pub match_id: __sdk::__query_builder::Col<TabMatchRoundPlayerExt, u32>,
     pub round: __sdk::__query_builder::Col<TabMatchRoundPlayerExt, u16>,
 }
 
@@ -37,8 +37,8 @@ impl __sdk::__query_builder::HasCols for TabMatchRoundPlayerExt {
         TabMatchRoundPlayerExtCols {
             round_actions: __sdk::__query_builder::Col::new(table_name, "round_actions"),
             user_id: __sdk::__query_builder::Col::new(table_name, "user_id"),
-            match_id: __sdk::__query_builder::Col::new(table_name, "match_id"),
             id: __sdk::__query_builder::Col::new(table_name, "id"),
+            match_id: __sdk::__query_builder::Col::new(table_name, "match_id"),
             round: __sdk::__query_builder::Col::new(table_name, "round"),
         }
     }

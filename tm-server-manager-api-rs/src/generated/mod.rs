@@ -68,10 +68,9 @@ pub mod match_create_reducer;
 pub mod match_delete_reducer;
 pub mod match_event_type;
 pub mod match_round_ext_table;
-pub mod match_round_player_ext_type;
-pub mod match_round_player_type;
 pub mod match_round_replay_type;
 pub mod match_round_table;
+pub mod match_round_users_table;
 pub mod match_set_preparation_reducer;
 pub mod match_state_table;
 pub mod match_state_type;
@@ -207,6 +206,7 @@ pub mod user_ids_map_type;
 pub mod user_raw_server_pool_table;
 pub mod user_raw_server_pool_unverified_table;
 pub mod user_v_1_type;
+pub mod users_table;
 pub mod vec_2_type;
 pub mod warmup_duration_type;
 pub mod warmup_round_type;
@@ -275,10 +275,9 @@ pub use match_create_reducer::match_create;
 pub use match_delete_reducer::match_delete;
 pub use match_event_type::MatchEvent;
 pub use match_round_ext_table::*;
-pub use match_round_player_ext_type::MatchRoundPlayerExt;
-pub use match_round_player_type::MatchRoundPlayer;
 pub use match_round_replay_type::MatchRoundReplay;
 pub use match_round_table::*;
+pub use match_round_users_table::*;
 pub use match_set_preparation_reducer::match_set_preparation;
 pub use match_state_table::*;
 pub use match_state_type::MatchState;
@@ -414,6 +413,7 @@ pub use user_ids_map_type::UserIdsMap;
 pub use user_raw_server_pool_table::*;
 pub use user_raw_server_pool_unverified_table::*;
 pub use user_v_1_type::UserV1;
+pub use users_table::*;
 pub use vec_2_type::Vec2;
 pub use warmup_duration_type::WarmupDuration;
 pub use warmup_round_type::WarmupRound;
@@ -1074,8 +1074,9 @@ pub struct DbUpdate {
     competition: __sdk::TableUpdate<CompetitionV1>,
     competition_available_server_pool: __sdk::TableUpdate<RawServerV1>,
     competition_connection_data: __sdk::TableUpdate<ConnectionData>,
-    match_round: __sdk::TableUpdate<MatchRoundPlayer>,
-    match_round_ext: __sdk::TableUpdate<MatchRoundPlayerExt>,
+    match_round: __sdk::TableUpdate<TabMatchRoundPlayer>,
+    match_round_ext: __sdk::TableUpdate<TabMatchRoundPlayerExt>,
+    match_round_users: __sdk::TableUpdate<UserV1>,
     match_state: __sdk::TableUpdate<MatchState>,
     my_connections: __sdk::TableUpdate<CompetitionConnection>,
     my_match_template: __sdk::TableUpdate<MatchV1>,
@@ -1088,12 +1089,13 @@ pub struct DbUpdate {
     raw_server_method_call: __sdk::TableUpdate<RawServerMethodCall>,
     raw_server_permitted_players: __sdk::TableUpdate<PermittedPlayer>,
     raw_server_player_destination: __sdk::TableUpdate<PlayerDestination>,
-    temp_match_leaderboard: __sdk::TableUpdate<MatchRoundPlayer>,
+    temp_match_leaderboard: __sdk::TableUpdate<TabMatchRoundPlayer>,
     temp_registration_player: __sdk::TableUpdate<RegisterationPlayer>,
     this_raw_server: __sdk::TableUpdate<RawServerV1>,
     user_available_server_pool: __sdk::TableUpdate<RawServerV1>,
     user_raw_server_pool: __sdk::TableUpdate<RawServerV1>,
     user_raw_server_pool_unverified: __sdk::TableUpdate<RawServerV1>,
+    users: __sdk::TableUpdate<UserV1>,
 }
 
 impl TryFrom<__ws::v2::TransactionUpdate> for DbUpdate {
@@ -1122,6 +1124,9 @@ impl TryFrom<__ws::v2::TransactionUpdate> for DbUpdate {
                 "match_round_ext" => db_update
                     .match_round_ext
                     .append(match_round_ext_table::parse_table_update(table_update)?),
+                "match_round_users" => db_update
+                    .match_round_users
+                    .append(match_round_users_table::parse_table_update(table_update)?),
                 "match_state" => db_update
                     .match_state
                     .append(match_state_table::parse_table_update(table_update)?),
@@ -1178,6 +1183,9 @@ impl TryFrom<__ws::v2::TransactionUpdate> for DbUpdate {
                         user_raw_server_pool_unverified_table::parse_table_update(table_update)?,
                     )
                 }
+                "users" => db_update
+                    .users
+                    .append(users_table::parse_table_update(table_update)?),
 
                 unknown => {
                     return Err(__sdk::InternalError::unknown_name(
@@ -1221,9 +1229,14 @@ impl __sdk::DbUpdate for DbUpdate {
             )
             .with_updates_by_pk(|row| &row.connection_id);
         diff.match_round =
-            cache.apply_diff_to_table::<MatchRoundPlayer>("match_round", &self.match_round);
-        diff.match_round_ext = cache
-            .apply_diff_to_table::<MatchRoundPlayerExt>("match_round_ext", &self.match_round_ext);
+            cache.apply_diff_to_table::<TabMatchRoundPlayer>("match_round", &self.match_round);
+        diff.match_round_ext = cache.apply_diff_to_table::<TabMatchRoundPlayerExt>(
+            "match_round_ext",
+            &self.match_round_ext,
+        );
+        diff.match_round_users = cache
+            .apply_diff_to_table::<UserV1>("match_round_users", &self.match_round_users)
+            .with_updates_by_pk(|row| &row.id);
         diff.match_state =
             cache.apply_diff_to_table::<MatchState>("match_state", &self.match_state);
         diff.my_connections = cache
@@ -1261,7 +1274,7 @@ impl __sdk::DbUpdate for DbUpdate {
             "raw_server_player_destination",
             &self.raw_server_player_destination,
         );
-        diff.temp_match_leaderboard = cache.apply_diff_to_table::<MatchRoundPlayer>(
+        diff.temp_match_leaderboard = cache.apply_diff_to_table::<TabMatchRoundPlayer>(
             "temp_match_leaderboard",
             &self.temp_match_leaderboard,
         );
@@ -1281,6 +1294,9 @@ impl __sdk::DbUpdate for DbUpdate {
             "user_raw_server_pool_unverified",
             &self.user_raw_server_pool_unverified,
         );
+        diff.users = cache
+            .apply_diff_to_table::<UserV1>("users", &self.users)
+            .with_updates_by_pk(|row| &row.id);
 
         diff
     }
@@ -1305,6 +1321,9 @@ impl __sdk::DbUpdate for DbUpdate {
                     .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
                 "match_round_ext" => db_update
                     .match_round_ext
+                    .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
+                "match_round_users" => db_update
+                    .match_round_users
                     .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
                 "match_state" => db_update
                     .match_state
@@ -1359,6 +1378,9 @@ impl __sdk::DbUpdate for DbUpdate {
                     .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
                 "user_raw_server_pool_unverified" => db_update
                     .user_raw_server_pool_unverified
+                    .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
+                "users" => db_update
+                    .users
                     .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
                 unknown => {
                     return Err(
@@ -1391,6 +1413,9 @@ impl __sdk::DbUpdate for DbUpdate {
                 "match_round_ext" => db_update
                     .match_round_ext
                     .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
+                "match_round_users" => db_update
+                    .match_round_users
+                    .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
                 "match_state" => db_update
                     .match_state
                     .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
@@ -1445,6 +1470,9 @@ impl __sdk::DbUpdate for DbUpdate {
                 "user_raw_server_pool_unverified" => db_update
                     .user_raw_server_pool_unverified
                     .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
+                "users" => db_update
+                    .users
+                    .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
                 unknown => {
                     return Err(
                         __sdk::InternalError::unknown_name("table", unknown, "QueryRows").into(),
@@ -1464,8 +1492,9 @@ pub struct AppliedDiff<'r> {
     competition: __sdk::TableAppliedDiff<'r, CompetitionV1>,
     competition_available_server_pool: __sdk::TableAppliedDiff<'r, RawServerV1>,
     competition_connection_data: __sdk::TableAppliedDiff<'r, ConnectionData>,
-    match_round: __sdk::TableAppliedDiff<'r, MatchRoundPlayer>,
-    match_round_ext: __sdk::TableAppliedDiff<'r, MatchRoundPlayerExt>,
+    match_round: __sdk::TableAppliedDiff<'r, TabMatchRoundPlayer>,
+    match_round_ext: __sdk::TableAppliedDiff<'r, TabMatchRoundPlayerExt>,
+    match_round_users: __sdk::TableAppliedDiff<'r, UserV1>,
     match_state: __sdk::TableAppliedDiff<'r, MatchState>,
     my_connections: __sdk::TableAppliedDiff<'r, CompetitionConnection>,
     my_match_template: __sdk::TableAppliedDiff<'r, MatchV1>,
@@ -1478,12 +1507,13 @@ pub struct AppliedDiff<'r> {
     raw_server_method_call: __sdk::TableAppliedDiff<'r, RawServerMethodCall>,
     raw_server_permitted_players: __sdk::TableAppliedDiff<'r, PermittedPlayer>,
     raw_server_player_destination: __sdk::TableAppliedDiff<'r, PlayerDestination>,
-    temp_match_leaderboard: __sdk::TableAppliedDiff<'r, MatchRoundPlayer>,
+    temp_match_leaderboard: __sdk::TableAppliedDiff<'r, TabMatchRoundPlayer>,
     temp_registration_player: __sdk::TableAppliedDiff<'r, RegisterationPlayer>,
     this_raw_server: __sdk::TableAppliedDiff<'r, RawServerV1>,
     user_available_server_pool: __sdk::TableAppliedDiff<'r, RawServerV1>,
     user_raw_server_pool: __sdk::TableAppliedDiff<'r, RawServerV1>,
     user_raw_server_pool_unverified: __sdk::TableAppliedDiff<'r, RawServerV1>,
+    users: __sdk::TableAppliedDiff<'r, UserV1>,
     __unused: std::marker::PhantomData<&'r ()>,
 }
 
@@ -1517,14 +1547,19 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             &self.competition_connection_data,
             event,
         );
-        callbacks.invoke_table_row_callbacks::<MatchRoundPlayer>(
+        callbacks.invoke_table_row_callbacks::<TabMatchRoundPlayer>(
             "match_round",
             &self.match_round,
             event,
         );
-        callbacks.invoke_table_row_callbacks::<MatchRoundPlayerExt>(
+        callbacks.invoke_table_row_callbacks::<TabMatchRoundPlayerExt>(
             "match_round_ext",
             &self.match_round_ext,
+            event,
+        );
+        callbacks.invoke_table_row_callbacks::<UserV1>(
+            "match_round_users",
+            &self.match_round_users,
             event,
         );
         callbacks.invoke_table_row_callbacks::<MatchState>("match_state", &self.match_state, event);
@@ -1575,7 +1610,7 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             &self.raw_server_player_destination,
             event,
         );
-        callbacks.invoke_table_row_callbacks::<MatchRoundPlayer>(
+        callbacks.invoke_table_row_callbacks::<TabMatchRoundPlayer>(
             "temp_match_leaderboard",
             &self.temp_match_leaderboard,
             event,
@@ -1605,6 +1640,7 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             &self.user_raw_server_pool_unverified,
             event,
         );
+        callbacks.invoke_table_row_callbacks::<UserV1>("users", &self.users, event);
     }
 }
 
@@ -2256,6 +2292,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
         competition_connection_data_table::register_table(client_cache);
         match_round_table::register_table(client_cache);
         match_round_ext_table::register_table(client_cache);
+        match_round_users_table::register_table(client_cache);
         match_state_table::register_table(client_cache);
         my_connections_table::register_table(client_cache);
         my_match_template_table::register_table(client_cache);
@@ -2274,6 +2311,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
         user_available_server_pool_table::register_table(client_cache);
         user_raw_server_pool_table::register_table(client_cache);
         user_raw_server_pool_unverified_table::register_table(client_cache);
+        users_table::register_table(client_cache);
     }
     const ALL_TABLE_NAMES: &'static [&'static str] = &[
         "comeptition_schedules",
@@ -2282,6 +2320,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
         "competition_connection_data",
         "match_round",
         "match_round_ext",
+        "match_round_users",
         "match_state",
         "my_connections",
         "my_match_template",
@@ -2300,5 +2339,6 @@ impl __sdk::SpacetimeModule for RemoteModule {
         "user_available_server_pool",
         "user_raw_server_pool",
         "user_raw_server_pool_unverified",
+        "users",
     ];
 }

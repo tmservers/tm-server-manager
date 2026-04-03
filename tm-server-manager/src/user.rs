@@ -1,6 +1,9 @@
 use spacetimedb::{AnonymousViewContext, Identity, Query, Table, Uuid, ViewContext, table, view};
 
-use crate::authorization::Authorization;
+use crate::{
+    authorization::Authorization,
+    tm_match::leaderboard::{TabMatchRoundPlayerIxCols, tab_match_round_player__query},
+};
 
 #[table(accessor= tab_user,vis_private)]
 pub struct UserV1 {
@@ -42,6 +45,19 @@ pub fn my_user(ctx: &ViewContext) -> Option<UserV1> {
 #[view(accessor=users,public)]
 pub fn users(ctx: &AnonymousViewContext) -> impl Query<UserV1> {
     ctx.from.tab_user()
+}
+
+//TODO this could be something with args where the users are resticted server side
+#[view(accessor=match_round_users,public)]
+pub fn match_round_users(ctx: &AnonymousViewContext) -> impl Query<UserV1> {
+    ctx.from
+        .tab_match_round_player()
+        .r#where(|m| m.match_id.eq(1))
+        .r#where(|m| m.round.eq(1))
+        .right_semijoin(
+            ctx.from.tab_user(),
+            |mr: &TabMatchRoundPlayerIxCols, u: &UserV1IxCols| mr.user_id.eq(u.id),
+        )
 }
 
 #[table(accessor= tab_user_identity)]

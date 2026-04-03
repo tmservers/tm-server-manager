@@ -37,6 +37,7 @@ pub struct TabMatchRoundPlayer {
     #[primary_key]
     pub id: u32,
 
+    #[index(hash)]
     pub user_id: u32,
 
     match_id: u32,
