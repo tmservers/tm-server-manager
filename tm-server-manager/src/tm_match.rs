@@ -1,4 +1,4 @@
-use spacetimedb::{ReducerContext, SpacetimeType, Table, reducer, table};
+use spacetimedb::{Query, ReducerContext, SpacetimeType, Table, ViewContext, reducer, table, view};
 use tm_server_types::config::ServerConfig;
 
 use crate::{
@@ -48,7 +48,7 @@ pub mod template;
 /// - *End.* The match has concluded. Loads the post_match_config if it is present. Releases
 /// the captured server. Advances to [MatchStatus::Ended].
 #[table(accessor= tab_match)]
-pub struct TmMatchV1 {
+pub struct MatchV1 {
     name: String,
 
     #[auto_inc]
@@ -73,7 +73,7 @@ pub struct TmMatchV1 {
     template: bool,
 }
 
-impl TmMatchV1 {
+impl MatchV1 {
     pub fn get_config_id(&self) -> u32 {
         match self.status {
             MatchStatus::Configuring => {
@@ -184,7 +184,7 @@ pub fn match_create(
         match_template_instantiate(ctx, with_template)?;
     } else {
         // Create an uncommitted match
-        let tm_match = TmMatchV1 {
+        let tm_match = MatchV1 {
             id: 0,
             parent_id,
             name,
@@ -437,10 +437,22 @@ pub fn match_delete(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
     Ok(())
 }
 
-/* #[view(accessor=tm_match,public)]
-fn tm_match(ctx: &ViewContext) -> impl Query<TmMatchV1> {
+#[view(accessor=my_matches,public)]
+fn my_matches(ctx: &ViewContext /* competition_id: u32 */) -> impl Query<MatchV1> {
+    /* let Ok(user) = ctx.user_id() else {
+        log::warn!(
+            "Non user account has tried to call protected view: {}",
+            ctx.sender()
+        );
+        return Vec::new();
+    }; */
+
+    let competition_id = 1u32;
+
+    //TODO access control for only permitted users. e.g. walk competition tree for permission.
+
     ctx.from.tab_match()
-} */
+}
 
 /* pub(crate) trait MatchRead {
 }

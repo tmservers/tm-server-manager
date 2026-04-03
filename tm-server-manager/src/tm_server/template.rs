@@ -3,7 +3,7 @@ use spacetimedb::{Query, ReducerContext, Table, ViewContext, reducer, view};
 use crate::{
     authorization::Authorization,
     competition::{CompetitionPermissionsV1, tab_competition},
-    tm_match::{MatchStatus, TmMatchV1, tab_match, tab_match__query},
+    tm_match::{MatchStatus, MatchV1, tab_match, tab_match__query},
     tm_server::{TmServerV1, tab_server},
 };
 

@@ -9,17 +9,21 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
-
 import {
-  ProjectKind,
+  MatchStatus,
 } from "./types";
 
-export default {
+
+export default __t.row({
   name: __t.string(),
-  description: __t.string(),
-  get kind() {
-    return ProjectKind;
+  id: __t.u32(),
+  parentId: __t.u32().name("parent_id"),
+  preConfig: __t.u32().name("pre_config"),
+  config: __t.u32(),
+  get status() {
+    return MatchStatus;
   },
-  startingAt: __t.timestamp(),
-  endingAt: __t.timestamp(),
-};
+  autoProvisionServer: __t.bool().name("auto_provision_server"),
+  open: __t.bool(),
+  template: __t.bool(),
+});

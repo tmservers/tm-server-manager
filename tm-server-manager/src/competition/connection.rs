@@ -2,7 +2,8 @@ use std::collections::{HashMap, HashSet};
 
 use petgraph::acyclic::Acyclic;
 use spacetimedb::{
-    AnonymousViewContext, DbContext, Local, ReducerContext, SpacetimeType, Table, reducer, view,
+    AnonymousViewContext, DbContext, Local, Query, ReducerContext, SpacetimeType, Table,
+    ViewContext, reducer, view,
 };
 
 use crate::{
@@ -268,7 +269,7 @@ impl From<TabConnection> for CompetitionConnection {
     }
 }
 
-#[view(accessor=competition_connection,public)]
+/* #[view(accessor=competition_connection,public)]
 pub fn competition_connection(
     ctx: &AnonymousViewContext, /* competition_id: u32 */
 ) -> Vec<CompetitionConnection> {
@@ -280,6 +281,25 @@ pub fn competition_connection(
         .filter(competition_id)
         .map(CompetitionConnection::from)
         .collect()
+} */
+
+#[view(accessor=my_connections,public)]
+fn my_connections(
+    ctx: &ViewContext, /* competition_id: u32 */
+) -> impl Query<CompetitionConnection> {
+    /* let Ok(user) = ctx.user_id() else {
+        log::warn!(
+            "Non user account has tried to call protected view: {}",
+            ctx.sender()
+        );
+        return Vec::new();
+    }; */
+
+    let competition_id = 1u32;
+
+    //TODO access control for only permitted users. e.g. walk competition tree for permission.
+
+    ctx.from.tab_connection()
 }
 
 pub(crate) fn internal_graph_resolution_node_finished(

@@ -7,42 +7,42 @@ use super::project_kind_type::ProjectKind;
 use super::project_status_type::ProjectStatus;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-/// Table handle for the table `my_project`.
+/// Table handle for the table `my_projects`.
 ///
-/// Obtain a handle from the [`MyProjectTableAccess::my_project`] method on [`super::RemoteTables`],
-/// like `ctx.db.my_project()`.
+/// Obtain a handle from the [`MyProjectsTableAccess::my_projects`] method on [`super::RemoteTables`],
+/// like `ctx.db.my_projects()`.
 ///
 /// Users are encouraged not to explicitly reference this type,
 /// but to directly chain method calls,
-/// like `ctx.db.my_project().on_insert(...)`.
-pub struct MyProjectTableHandle<'ctx> {
+/// like `ctx.db.my_projects().on_insert(...)`.
+pub struct MyProjectsTableHandle<'ctx> {
     imp: __sdk::TableHandle<MyProjectV1>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the table `my_project`.
+/// Extension trait for access to the table `my_projects`.
 ///
 /// Implemented for [`super::RemoteTables`].
-pub trait MyProjectTableAccess {
+pub trait MyProjectsTableAccess {
     #[allow(non_snake_case)]
-    /// Obtain a [`MyProjectTableHandle`], which mediates access to the table `my_project`.
-    fn my_project(&self) -> MyProjectTableHandle<'_>;
+    /// Obtain a [`MyProjectsTableHandle`], which mediates access to the table `my_projects`.
+    fn my_projects(&self) -> MyProjectsTableHandle<'_>;
 }
 
-impl MyProjectTableAccess for super::RemoteTables {
-    fn my_project(&self) -> MyProjectTableHandle<'_> {
-        MyProjectTableHandle {
-            imp: self.imp.get_table::<MyProjectV1>("my_project"),
+impl MyProjectsTableAccess for super::RemoteTables {
+    fn my_projects(&self) -> MyProjectsTableHandle<'_> {
+        MyProjectsTableHandle {
+            imp: self.imp.get_table::<MyProjectV1>("my_projects"),
             ctx: std::marker::PhantomData,
         }
     }
 }
 
-pub struct MyProjectInsertCallbackId(__sdk::CallbackId);
-pub struct MyProjectDeleteCallbackId(__sdk::CallbackId);
+pub struct MyProjectsInsertCallbackId(__sdk::CallbackId);
+pub struct MyProjectsDeleteCallbackId(__sdk::CallbackId);
 
-impl<'ctx> __sdk::Table for MyProjectTableHandle<'ctx> {
+impl<'ctx> __sdk::Table for MyProjectsTableHandle<'ctx> {
     type Row = MyProjectV1;
     type EventContext = super::EventContext;
 
@@ -53,36 +53,36 @@ impl<'ctx> __sdk::Table for MyProjectTableHandle<'ctx> {
         self.imp.iter()
     }
 
-    type InsertCallbackId = MyProjectInsertCallbackId;
+    type InsertCallbackId = MyProjectsInsertCallbackId;
 
     fn on_insert(
         &self,
         callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
-    ) -> MyProjectInsertCallbackId {
-        MyProjectInsertCallbackId(self.imp.on_insert(Box::new(callback)))
+    ) -> MyProjectsInsertCallbackId {
+        MyProjectsInsertCallbackId(self.imp.on_insert(Box::new(callback)))
     }
 
-    fn remove_on_insert(&self, callback: MyProjectInsertCallbackId) {
+    fn remove_on_insert(&self, callback: MyProjectsInsertCallbackId) {
         self.imp.remove_on_insert(callback.0)
     }
 
-    type DeleteCallbackId = MyProjectDeleteCallbackId;
+    type DeleteCallbackId = MyProjectsDeleteCallbackId;
 
     fn on_delete(
         &self,
         callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
-    ) -> MyProjectDeleteCallbackId {
-        MyProjectDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
+    ) -> MyProjectsDeleteCallbackId {
+        MyProjectsDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
     }
 
-    fn remove_on_delete(&self, callback: MyProjectDeleteCallbackId) {
+    fn remove_on_delete(&self, callback: MyProjectsDeleteCallbackId) {
         self.imp.remove_on_delete(callback.0)
     }
 }
 
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
-    let _table = client_cache.get_or_make_table::<MyProjectV1>("my_project");
+    let _table = client_cache.get_or_make_table::<MyProjectV1>("my_projects");
 }
 
 #[doc(hidden)]
@@ -100,14 +100,14 @@ pub(super) fn parse_table_update(
 /// Extension trait for query builder access to the table `MyProjectV1`.
 ///
 /// Implemented for [`__sdk::QueryTableAccessor`].
-pub trait my_projectQueryTableAccess {
+pub trait my_projectsQueryTableAccess {
     #[allow(non_snake_case)]
     /// Get a query builder for the table `MyProjectV1`.
-    fn my_project(&self) -> __sdk::__query_builder::Table<MyProjectV1>;
+    fn my_projects(&self) -> __sdk::__query_builder::Table<MyProjectV1>;
 }
 
-impl my_projectQueryTableAccess for __sdk::QueryTableAccessor {
-    fn my_project(&self) -> __sdk::__query_builder::Table<MyProjectV1> {
-        __sdk::__query_builder::Table::new("my_project")
+impl my_projectsQueryTableAccess for __sdk::QueryTableAccessor {
+    fn my_projects(&self) -> __sdk::__query_builder::Table<MyProjectV1> {
+        __sdk::__query_builder::Table::new("my_projects")
     }
 }

@@ -1204,13 +1204,6 @@ export const Team = __t.object("Team", {
 });
 export type Team = __Infer<typeof Team>;
 
-export const TestTournament = __t.object("TestTournament", {
-  name: __t.string(),
-  id: __t.u32(),
-  rootId: __t.u32(),
-});
-export type TestTournament = __Infer<typeof TestTournament>;
-
 export const TimeAttack = __t.object("TimeAttack", {
   timeLimit: __t.i32(),
 });

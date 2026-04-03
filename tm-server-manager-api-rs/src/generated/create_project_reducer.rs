@@ -4,11 +4,14 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
+use super::project_kind_type::ProjectKind;
+
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct CreateProjectArgs {
     pub name: String,
     pub description: String,
+    pub kind: ProjectKind,
     pub starting_at: __sdk::Timestamp,
     pub ending_at: __sdk::Timestamp,
 }
@@ -18,6 +21,7 @@ impl From<CreateProjectArgs> for super::Reducer {
         Self::CreateProject {
             name: args.name,
             description: args.description,
+            kind: args.kind,
             starting_at: args.starting_at,
             ending_at: args.ending_at,
         }
@@ -43,10 +47,11 @@ pub trait create_project {
         &self,
         name: String,
         description: String,
+        kind: ProjectKind,
         starting_at: __sdk::Timestamp,
         ending_at: __sdk::Timestamp,
     ) -> __sdk::Result<()> {
-        self.create_project_then(name, description, starting_at, ending_at, |_, _| {})
+        self.create_project_then(name, description, kind, starting_at, ending_at, |_, _| {})
     }
 
     /// Request that the remote module invoke the reducer `create_project` to run as soon as possible,
@@ -59,6 +64,7 @@ pub trait create_project {
         &self,
         name: String,
         description: String,
+        kind: ProjectKind,
         starting_at: __sdk::Timestamp,
         ending_at: __sdk::Timestamp,
 
@@ -73,6 +79,7 @@ impl create_project for super::RemoteReducers {
         &self,
         name: String,
         description: String,
+        kind: ProjectKind,
         starting_at: __sdk::Timestamp,
         ending_at: __sdk::Timestamp,
 
@@ -84,6 +91,7 @@ impl create_project for super::RemoteReducers {
             CreateProjectArgs {
                 name,
                 description,
+                kind,
                 starting_at,
                 ending_at,
             },

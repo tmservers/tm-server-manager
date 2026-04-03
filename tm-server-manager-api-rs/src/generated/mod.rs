@@ -89,9 +89,10 @@ pub mod method_call_type;
 pub mod method_error_type;
 pub mod method_response_type;
 pub mod mode_settings_type;
+pub mod my_competition_match_table;
 pub mod my_match_template_table;
-pub mod my_project_table;
 pub mod my_project_v_1_type;
+pub mod my_projects_table;
 pub mod my_user_table;
 pub mod node_handle_type;
 pub mod node_position_update_type;
@@ -192,7 +193,6 @@ pub mod tab_tm_map_type;
 pub mod team_type;
 pub mod temp_match_leaderboard_table;
 pub mod temp_registration_player_table;
-pub mod test_tournament_type;
 pub mod this_raw_server_table;
 pub mod time_attack_type;
 pub mod tm_match_v_1_type;
@@ -296,9 +296,10 @@ pub use method_call_type::MethodCall;
 pub use method_error_type::MethodError;
 pub use method_response_type::MethodResponse;
 pub use mode_settings_type::ModeSettings;
+pub use my_competition_match_table::*;
 pub use my_match_template_table::*;
-pub use my_project_table::*;
 pub use my_project_v_1_type::MyProjectV1;
+pub use my_projects_table::*;
 pub use my_user_table::*;
 pub use node_handle_type::NodeHandle;
 pub use node_position_update_type::NodePositionUpdate;
@@ -399,7 +400,6 @@ pub use tab_tm_map_type::TabTmMap;
 pub use team_type::Team;
 pub use temp_match_leaderboard_table::*;
 pub use temp_registration_player_table::*;
-pub use test_tournament_type::TestTournament;
 pub use this_raw_server_table::*;
 pub use time_attack_type::TimeAttack;
 pub use tm_match_v_1_type::TmMatchV1;
@@ -467,6 +467,7 @@ pub enum Reducer {
     CreateProject {
         name: String,
         description: String,
+        kind: ProjectKind,
         starting_at: __sdk::Timestamp,
         ending_at: __sdk::Timestamp,
     },
@@ -773,11 +774,13 @@ impl __sdk::Reducer for Reducer {
             Reducer::CreateProject {
                 name,
                 description,
+                kind,
                 starting_at,
                 ending_at,
             } => __sats::bsatn::to_vec(&create_project_reducer::CreateProjectArgs {
                 name: name.clone(),
                 description: description.clone(),
+                kind: kind.clone(),
                 starting_at: starting_at.clone(),
                 ending_at: ending_at.clone(),
             }),
@@ -1076,8 +1079,9 @@ pub struct DbUpdate {
     match_round: __sdk::TableUpdate<MatchRoundPlayer>,
     match_round_ext: __sdk::TableUpdate<MatchRoundPlayerExt>,
     match_state: __sdk::TableUpdate<MatchState>,
+    my_competition_match: __sdk::TableUpdate<TmMatchV1>,
     my_match_template: __sdk::TableUpdate<TmMatchV1>,
-    my_project: __sdk::TableUpdate<MyProjectV1>,
+    my_projects: __sdk::TableUpdate<MyProjectV1>,
     my_user: __sdk::TableUpdate<UserV1>,
     raw_server_config: __sdk::TableUpdate<ServerMetadata>,
     raw_server_current_players: __sdk::TableUpdate<RawServerPlayer>,
@@ -1127,12 +1131,15 @@ impl TryFrom<__ws::v2::TransactionUpdate> for DbUpdate {
                 "match_state" => db_update
                     .match_state
                     .append(match_state_table::parse_table_update(table_update)?),
+                "my_competition_match" => db_update.my_competition_match.append(
+                    my_competition_match_table::parse_table_update(table_update)?,
+                ),
                 "my_match_template" => db_update
                     .my_match_template
                     .append(my_match_template_table::parse_table_update(table_update)?),
-                "my_project" => db_update
-                    .my_project
-                    .append(my_project_table::parse_table_update(table_update)?),
+                "my_projects" => db_update
+                    .my_projects
+                    .append(my_projects_table::parse_table_update(table_update)?),
                 "my_user" => db_update
                     .my_user
                     .append(my_user_table::parse_table_update(table_update)?),
@@ -1227,10 +1234,13 @@ impl __sdk::DbUpdate for DbUpdate {
             .apply_diff_to_table::<MatchRoundPlayerExt>("match_round_ext", &self.match_round_ext);
         diff.match_state =
             cache.apply_diff_to_table::<MatchState>("match_state", &self.match_state);
+        diff.my_competition_match = cache
+            .apply_diff_to_table::<TmMatchV1>("my_competition_match", &self.my_competition_match);
         diff.my_match_template = cache
             .apply_diff_to_table::<TmMatchV1>("my_match_template", &self.my_match_template)
             .with_updates_by_pk(|row| &row.id);
-        diff.my_project = cache.apply_diff_to_table::<MyProjectV1>("my_project", &self.my_project);
+        diff.my_projects =
+            cache.apply_diff_to_table::<MyProjectV1>("my_projects", &self.my_projects);
         diff.my_user = cache.apply_diff_to_table::<UserV1>("my_user", &self.my_user);
         diff.raw_server_config = cache
             .apply_diff_to_table::<ServerMetadata>("raw_server_config", &self.raw_server_config);
@@ -1306,11 +1316,14 @@ impl __sdk::DbUpdate for DbUpdate {
                 "match_state" => db_update
                     .match_state
                     .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
+                "my_competition_match" => db_update
+                    .my_competition_match
+                    .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
                 "my_match_template" => db_update
                     .my_match_template
                     .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
-                "my_project" => db_update
-                    .my_project
+                "my_projects" => db_update
+                    .my_projects
                     .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
                 "my_user" => db_update
                     .my_user
@@ -1388,11 +1401,14 @@ impl __sdk::DbUpdate for DbUpdate {
                 "match_state" => db_update
                     .match_state
                     .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
+                "my_competition_match" => db_update
+                    .my_competition_match
+                    .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
                 "my_match_template" => db_update
                     .my_match_template
                     .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
-                "my_project" => db_update
-                    .my_project
+                "my_projects" => db_update
+                    .my_projects
                     .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
                 "my_user" => db_update
                     .my_user
@@ -1454,8 +1470,9 @@ pub struct AppliedDiff<'r> {
     match_round: __sdk::TableAppliedDiff<'r, MatchRoundPlayer>,
     match_round_ext: __sdk::TableAppliedDiff<'r, MatchRoundPlayerExt>,
     match_state: __sdk::TableAppliedDiff<'r, MatchState>,
+    my_competition_match: __sdk::TableAppliedDiff<'r, TmMatchV1>,
     my_match_template: __sdk::TableAppliedDiff<'r, TmMatchV1>,
-    my_project: __sdk::TableAppliedDiff<'r, MyProjectV1>,
+    my_projects: __sdk::TableAppliedDiff<'r, MyProjectV1>,
     my_user: __sdk::TableAppliedDiff<'r, UserV1>,
     raw_server_config: __sdk::TableAppliedDiff<'r, ServerMetadata>,
     raw_server_current_players: __sdk::TableAppliedDiff<'r, RawServerPlayer>,
@@ -1523,11 +1540,20 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
         );
         callbacks.invoke_table_row_callbacks::<MatchState>("match_state", &self.match_state, event);
         callbacks.invoke_table_row_callbacks::<TmMatchV1>(
+            "my_competition_match",
+            &self.my_competition_match,
+            event,
+        );
+        callbacks.invoke_table_row_callbacks::<TmMatchV1>(
             "my_match_template",
             &self.my_match_template,
             event,
         );
-        callbacks.invoke_table_row_callbacks::<MyProjectV1>("my_project", &self.my_project, event);
+        callbacks.invoke_table_row_callbacks::<MyProjectV1>(
+            "my_projects",
+            &self.my_projects,
+            event,
+        );
         callbacks.invoke_table_row_callbacks::<UserV1>("my_user", &self.my_user, event);
         callbacks.invoke_table_row_callbacks::<ServerMetadata>(
             "raw_server_config",
@@ -2238,8 +2264,9 @@ impl __sdk::SpacetimeModule for RemoteModule {
         match_round_table::register_table(client_cache);
         match_round_ext_table::register_table(client_cache);
         match_state_table::register_table(client_cache);
+        my_competition_match_table::register_table(client_cache);
         my_match_template_table::register_table(client_cache);
-        my_project_table::register_table(client_cache);
+        my_projects_table::register_table(client_cache);
         my_user_table::register_table(client_cache);
         raw_server_config_table::register_table(client_cache);
         raw_server_current_players_table::register_table(client_cache);
@@ -2263,8 +2290,9 @@ impl __sdk::SpacetimeModule for RemoteModule {
         "match_round",
         "match_round_ext",
         "match_state",
+        "my_competition_match",
         "my_match_template",
-        "my_project",
+        "my_projects",
         "my_user",
         "raw_server_config",
         "raw_server_current_players",

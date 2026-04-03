@@ -3,7 +3,7 @@ use spacetimedb::{Query, ReducerContext, Table, ViewContext, reducer, view};
 use crate::{
     authorization::Authorization,
     competition::{CompetitionPermissionsV1, tab_competition},
-    tm_match::{MatchStatus, TmMatchV1, tab_match, tab_match__query},
+    tm_match::{MatchStatus, MatchV1, tab_match, tab_match__query},
 };
 
 #[reducer]
@@ -12,7 +12,7 @@ fn match_template_create(ctx: &ReducerContext, name: String, parent_id: u32) -> 
         .permission(CompetitionPermissionsV1::MATCH_CREATE)
         .authorize()?;
 
-    ctx.db.tab_match().try_insert(TmMatchV1 {
+    ctx.db.tab_match().try_insert(MatchV1 {
         id: 0,
         parent_id,
         name,
@@ -35,7 +35,7 @@ pub(super) fn match_template_instantiate(
 }
 
 #[view(accessor=my_match_template,public)]
-fn my_match_template(ctx: &ViewContext /* , competition_id: u32 */) -> impl Query<TmMatchV1> {
+fn my_match_template(ctx: &ViewContext /* , competition_id: u32 */) -> impl Query<MatchV1> {
     let competition_id = 1u32;
     // TODO: return only users own templates
     ctx.from.tab_match().build()

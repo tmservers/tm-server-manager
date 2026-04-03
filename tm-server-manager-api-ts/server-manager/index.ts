@@ -103,8 +103,9 @@ import CompetitionNodePositionRow from "./competition_node_position_table";
 import MatchRoundRow from "./match_round_table";
 import MatchRoundExtRow from "./match_round_ext_table";
 import MatchStateRow from "./match_state_table";
+import MyCompetitionMatchRow from "./my_competition_match_table";
 import MyMatchTemplateRow from "./my_match_template_table";
-import MyProjectRow from "./my_project_table";
+import MyProjectsRow from "./my_projects_table";
 import MyUserRow from "./my_user_table";
 import RawServerConfigRow from "./raw_server_config_table";
 import RawServerCurrentPlayersRow from "./raw_server_current_players_table";
@@ -185,6 +186,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, MatchStateRow),
+  my_competition_match: __table({
+    name: 'my_competition_match',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyCompetitionMatchRow),
   my_match_template: __table({
     name: 'my_match_template',
     indexes: [
@@ -192,13 +200,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, MyMatchTemplateRow),
-  my_project: __table({
-    name: 'my_project',
+  my_projects: __table({
+    name: 'my_projects',
     indexes: [
     ],
     constraints: [
     ],
-  }, MyProjectRow),
+  }, MyProjectsRow),
   my_user: __table({
     name: 'my_user',
     indexes: [

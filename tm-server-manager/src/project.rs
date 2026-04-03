@@ -68,6 +68,7 @@ fn create_project(
     ctx: &ReducerContext,
     name: String,
     description: String,
+    kind: ProjectKind,
     starting_at: Timestamp,
     ending_at: Timestamp,
 ) -> Result<(), String> {
@@ -82,7 +83,7 @@ fn create_project(
         starting_at,
         ending_at,
         verified: false,
-        kind: ProjectKind::GeneralProject,
+        kind,
     })?;
 
     //SAFETY: Comitted afterwards
@@ -247,8 +248,8 @@ pub struct MyProjectV1 {
     verified: bool,
 }
 
-#[view(accessor=my_project,public)]
-pub fn my_project(ctx: &ViewContext) -> Vec<MyProjectV1> {
+#[view(accessor=my_projects,public)]
+pub fn my_projects(ctx: &ViewContext) -> Vec<MyProjectV1> {
     let Ok(user_id) = ctx.user_id() else {
         return Vec::new();
     };
@@ -270,15 +271,4 @@ pub fn my_project(ctx: &ViewContext) -> Vec<MyProjectV1> {
             verified: t.verified,
         })
         .collect()
-}
-
-#[table(accessor=tab_test_tournament)]
-struct TestTournament {
-    name: String,
-
-    #[auto_inc]
-    #[primary_key]
-    id: u32,
-
-    root_id: u32,
 }
