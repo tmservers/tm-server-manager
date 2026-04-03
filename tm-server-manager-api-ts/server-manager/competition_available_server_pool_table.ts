@@ -14,7 +14,7 @@ export default __t.row({
   identity: __t.identity(),
   serverLogin: __t.string().name("server_login"),
   serverAccountId: __t.uuid().name("server_account_id"),
-  userAccountId: __t.uuid().name("user_account_id"),
+  userId: __t.u32().name("user_id"),
   id: __t.u32(),
   online: __t.bool(),
   capturable: __t.bool(),

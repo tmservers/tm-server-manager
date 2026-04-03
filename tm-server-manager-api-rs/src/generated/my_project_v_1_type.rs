@@ -4,19 +4,22 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
+use super::project_kind_type::ProjectKind;
 use super::project_status_type::ProjectStatus;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct MyProjectV1 {
     pub id: u32,
-    pub creator_account_id: __sdk::Uuid,
+    pub user_id: u32,
     pub creator_name: String,
     pub name: String,
     pub starting_at: __sdk::Timestamp,
     pub ending_at: __sdk::Timestamp,
     pub description: String,
     pub status: ProjectStatus,
+    pub kind: ProjectKind,
+    pub verified: bool,
 }
 
 impl __sdk::InModule for MyProjectV1 {
@@ -28,13 +31,15 @@ impl __sdk::InModule for MyProjectV1 {
 /// Provides typed access to columns for query building.
 pub struct MyProjectV1Cols {
     pub id: __sdk::__query_builder::Col<MyProjectV1, u32>,
-    pub creator_account_id: __sdk::__query_builder::Col<MyProjectV1, __sdk::Uuid>,
+    pub user_id: __sdk::__query_builder::Col<MyProjectV1, u32>,
     pub creator_name: __sdk::__query_builder::Col<MyProjectV1, String>,
     pub name: __sdk::__query_builder::Col<MyProjectV1, String>,
     pub starting_at: __sdk::__query_builder::Col<MyProjectV1, __sdk::Timestamp>,
     pub ending_at: __sdk::__query_builder::Col<MyProjectV1, __sdk::Timestamp>,
     pub description: __sdk::__query_builder::Col<MyProjectV1, String>,
     pub status: __sdk::__query_builder::Col<MyProjectV1, ProjectStatus>,
+    pub kind: __sdk::__query_builder::Col<MyProjectV1, ProjectKind>,
+    pub verified: __sdk::__query_builder::Col<MyProjectV1, bool>,
 }
 
 impl __sdk::__query_builder::HasCols for MyProjectV1 {
@@ -42,13 +47,15 @@ impl __sdk::__query_builder::HasCols for MyProjectV1 {
     fn cols(table_name: &'static str) -> Self::Cols {
         MyProjectV1Cols {
             id: __sdk::__query_builder::Col::new(table_name, "id"),
-            creator_account_id: __sdk::__query_builder::Col::new(table_name, "creator_account_id"),
+            user_id: __sdk::__query_builder::Col::new(table_name, "user_id"),
             creator_name: __sdk::__query_builder::Col::new(table_name, "creator_name"),
             name: __sdk::__query_builder::Col::new(table_name, "name"),
             starting_at: __sdk::__query_builder::Col::new(table_name, "starting_at"),
             ending_at: __sdk::__query_builder::Col::new(table_name, "ending_at"),
             description: __sdk::__query_builder::Col::new(table_name, "description"),
             status: __sdk::__query_builder::Col::new(table_name, "status"),
+            kind: __sdk::__query_builder::Col::new(table_name, "kind"),
+            verified: __sdk::__query_builder::Col::new(table_name, "verified"),
         }
     }
 }

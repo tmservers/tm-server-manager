@@ -7,10 +7,10 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct MatchRoundReplay {
+    pub map_id: u32,
     pub match_id: u32,
     pub round: u8,
-    pub map_uid: __sdk::Uuid,
-    pub object_id: __sdk::Uuid,
+    pub replay: Vec<u8>,
 }
 
 impl __sdk::InModule for MatchRoundReplay {
@@ -21,20 +21,20 @@ impl __sdk::InModule for MatchRoundReplay {
 ///
 /// Provides typed access to columns for query building.
 pub struct MatchRoundReplayCols {
+    pub map_id: __sdk::__query_builder::Col<MatchRoundReplay, u32>,
     pub match_id: __sdk::__query_builder::Col<MatchRoundReplay, u32>,
     pub round: __sdk::__query_builder::Col<MatchRoundReplay, u8>,
-    pub map_uid: __sdk::__query_builder::Col<MatchRoundReplay, __sdk::Uuid>,
-    pub object_id: __sdk::__query_builder::Col<MatchRoundReplay, __sdk::Uuid>,
+    pub replay: __sdk::__query_builder::Col<MatchRoundReplay, Vec<u8>>,
 }
 
 impl __sdk::__query_builder::HasCols for MatchRoundReplay {
     type Cols = MatchRoundReplayCols;
     fn cols(table_name: &'static str) -> Self::Cols {
         MatchRoundReplayCols {
+            map_id: __sdk::__query_builder::Col::new(table_name, "map_id"),
             match_id: __sdk::__query_builder::Col::new(table_name, "match_id"),
             round: __sdk::__query_builder::Col::new(table_name, "round"),
-            map_uid: __sdk::__query_builder::Col::new(table_name, "map_uid"),
-            object_id: __sdk::__query_builder::Col::new(table_name, "object_id"),
+            replay: __sdk::__query_builder::Col::new(table_name, "replay"),
         }
     }
 }

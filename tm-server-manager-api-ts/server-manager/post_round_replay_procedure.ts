@@ -11,6 +11,7 @@ import {
 } from "spacetimedb";
 
 export const params = {
+  count: __t.u16(),
   replay: __t.byteArray(),
 };
 export const returnType = __t.result(__t.unit(), __t.string())

@@ -1,4 +1,4 @@
-use spacetimedb::{Identity, Uuid, ViewContext, table, view};
+use spacetimedb::{Identity, Table, Uuid, ViewContext, table, view};
 
 use crate::authorization::Authorization;
 
@@ -28,10 +28,6 @@ impl UserV1 {
     }
     pub fn set_name(&mut self, name: String) {
         self.name = name;
-    }
-
-    pub(crate) fn get_name(&self) -> &String {
-        &self.name
     }
 }
 
@@ -143,20 +139,38 @@ pub(crate) trait UserWrite: UserRead {
     fn user_login(&self, user_id: u32, identity: Identity) -> Result<(), String>;
 }
 impl<Db: spacetimedb::DbContext<DbView = spacetimedb::Local>> UserWrite for Db {
-    fn user_insert(&self, user: UserV1) -> Result<u32, String> {
-        let user = self.db().tab_user().id().insert_or_update(user);
-        self.db()
-            .tab_user_ids_map()
-            .account_id()
-            .insert_or_update(UserIdsMap::new(user.account_id, user.id));
-        Ok(user.id)
+    fn user_insert(&self, new_user: UserV1) -> Result<u32, String> {
+        let user = self.db().tab_user().account_id().find(new_user.account_id);
+        if let Some(mut user) = user {
+            if user.name != new_user.name {
+                user.name = new_user.name;
+                let user = self.db().tab_user().id().update(user);
+                return Ok(user.id);
+            }
+            Ok(user.id)
+        } else {
+            let user = self.db().tab_user().try_insert(new_user)?;
+            self.db()
+                .tab_user_ids_map()
+                .try_insert(UserIdsMap::new(user.account_id, user.id))?;
+            Ok(user.id)
+        }
     }
 
     fn user_login(&self, user_id: u32, identity: Identity) -> Result<(), String> {
-        self.db()
-            .tab_user_identity()
-            .user_id()
-            .try_insert_or_update(UserIdentity::new(user_id, identity))?;
+        if let Some(mut user_ident) = self.db().tab_user_identity().user_id().find(user_id) {
+            if user_ident.identity == identity {
+                return Ok(());
+            } else {
+                user_ident.identity = identity;
+
+                self.db().tab_user_identity().user_id().update(user_ident);
+            }
+        } else {
+            self.db()
+                .tab_user_identity()
+                .try_insert(UserIdentity::new(user_id, identity))?;
+        }
 
         Ok(())
     }

@@ -8,7 +8,8 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[sats(crate = __lib)]
 pub struct RawServerOccupation {
     pub server_id: u32,
-    pub match_id: u32,
+    pub node_id: u32,
+    pub node_variant: u8,
 }
 
 impl __sdk::InModule for RawServerOccupation {
@@ -20,7 +21,8 @@ impl __sdk::InModule for RawServerOccupation {
 /// Provides typed access to columns for query building.
 pub struct RawServerOccupationCols {
     pub server_id: __sdk::__query_builder::Col<RawServerOccupation, u32>,
-    pub match_id: __sdk::__query_builder::Col<RawServerOccupation, u32>,
+    pub node_id: __sdk::__query_builder::Col<RawServerOccupation, u32>,
+    pub node_variant: __sdk::__query_builder::Col<RawServerOccupation, u8>,
 }
 
 impl __sdk::__query_builder::HasCols for RawServerOccupation {
@@ -28,7 +30,8 @@ impl __sdk::__query_builder::HasCols for RawServerOccupation {
     fn cols(table_name: &'static str) -> Self::Cols {
         RawServerOccupationCols {
             server_id: __sdk::__query_builder::Col::new(table_name, "server_id"),
-            match_id: __sdk::__query_builder::Col::new(table_name, "match_id"),
+            node_id: __sdk::__query_builder::Col::new(table_name, "node_id"),
+            node_variant: __sdk::__query_builder::Col::new(table_name, "node_variant"),
         }
     }
 }
@@ -37,7 +40,6 @@ impl __sdk::__query_builder::HasCols for RawServerOccupation {
 ///
 /// Provides typed access to indexed columns for query building.
 pub struct RawServerOccupationIxCols {
-    pub match_id: __sdk::__query_builder::IxCol<RawServerOccupation, u32>,
     pub server_id: __sdk::__query_builder::IxCol<RawServerOccupation, u32>,
 }
 
@@ -45,7 +47,6 @@ impl __sdk::__query_builder::HasIxCols for RawServerOccupation {
     type IxCols = RawServerOccupationIxCols;
     fn ix_cols(table_name: &'static str) -> Self::IxCols {
         RawServerOccupationIxCols {
-            match_id: __sdk::__query_builder::IxCol::new(table_name, "match_id"),
             server_id: __sdk::__query_builder::IxCol::new(table_name, "server_id"),
         }
     }

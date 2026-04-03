@@ -5,7 +5,7 @@
 use super::competition_connection_type::CompetitionConnection;
 use super::connection_status_type::ConnectionStatus;
 use super::connection_type_type::ConnectionType;
-use super::node_kind_handle_type::NodeKindHandle;
+use super::node_handle_type::NodeHandle;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 /// Table handle for the table `competition_connection`.

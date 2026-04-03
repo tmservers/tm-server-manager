@@ -6,7 +6,7 @@ use nadeo_api_rs::{
 };
 use spacetimedb_sdk::db_context::DbContext;
 use spacetimedb_sdk::{Table, Uuid};
-use tm_server_manager_api_rs::{DbConnection, MyJobsTableAccess, login_as_worker, post_record};
+use tm_server_manager_api_rs::DbConnection;
 use tokio::{
     signal,
     sync::Mutex,
@@ -35,7 +35,7 @@ fn connect_to_db() -> DbConnection {
 
 #[tokio::main]
 async fn main() {
-    dotenvy::from_path(env!("CARGO_MANIFEST_DIR").to_string() + "/.env")
+    /* dotenvy::from_path(env!("CARGO_MANIFEST_DIR").to_string() + "/.env")
         .expect(".env file couldn't be found!");
 
     let tm_server_login = std::env::var("TM_MASTERSERVER_LOGIN")
@@ -147,5 +147,5 @@ async fn main() {
             eprintln!("Unable to listen for shutdown signal: {}", err);
             // we also shut down in case of error
         }
-    }
+    } */
 }

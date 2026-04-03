@@ -7,9 +7,9 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct RegisterationPlayer {
-    pub account_id: __sdk::Uuid,
     pub registered_at: __sdk::Timestamp,
     pub registration_id: u32,
+    pub user_id: u32,
 }
 
 impl __sdk::InModule for RegisterationPlayer {
@@ -20,18 +20,18 @@ impl __sdk::InModule for RegisterationPlayer {
 ///
 /// Provides typed access to columns for query building.
 pub struct RegisterationPlayerCols {
-    pub account_id: __sdk::__query_builder::Col<RegisterationPlayer, __sdk::Uuid>,
     pub registered_at: __sdk::__query_builder::Col<RegisterationPlayer, __sdk::Timestamp>,
     pub registration_id: __sdk::__query_builder::Col<RegisterationPlayer, u32>,
+    pub user_id: __sdk::__query_builder::Col<RegisterationPlayer, u32>,
 }
 
 impl __sdk::__query_builder::HasCols for RegisterationPlayer {
     type Cols = RegisterationPlayerCols;
     fn cols(table_name: &'static str) -> Self::Cols {
         RegisterationPlayerCols {
-            account_id: __sdk::__query_builder::Col::new(table_name, "account_id"),
             registered_at: __sdk::__query_builder::Col::new(table_name, "registered_at"),
             registration_id: __sdk::__query_builder::Col::new(table_name, "registration_id"),
+            user_id: __sdk::__query_builder::Col::new(table_name, "user_id"),
         }
     }
 }

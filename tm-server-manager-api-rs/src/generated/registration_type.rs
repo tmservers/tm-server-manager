@@ -5,7 +5,7 @@
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 use super::registration_settings_type::RegistrationSettings;
-use super::registration_state_type::RegistrationState;
+use super::registration_status_type::RegistrationStatus;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
@@ -14,7 +14,7 @@ pub struct Registration {
     pub id: u32,
     pub parent_id: u32,
     pub settings: RegistrationSettings,
-    pub state: RegistrationState,
+    pub status: RegistrationStatus,
     pub template: bool,
 }
 
@@ -30,7 +30,7 @@ pub struct RegistrationCols {
     pub id: __sdk::__query_builder::Col<Registration, u32>,
     pub parent_id: __sdk::__query_builder::Col<Registration, u32>,
     pub settings: __sdk::__query_builder::Col<Registration, RegistrationSettings>,
-    pub state: __sdk::__query_builder::Col<Registration, RegistrationState>,
+    pub status: __sdk::__query_builder::Col<Registration, RegistrationStatus>,
     pub template: __sdk::__query_builder::Col<Registration, bool>,
 }
 
@@ -42,7 +42,7 @@ impl __sdk::__query_builder::HasCols for Registration {
             id: __sdk::__query_builder::Col::new(table_name, "id"),
             parent_id: __sdk::__query_builder::Col::new(table_name, "parent_id"),
             settings: __sdk::__query_builder::Col::new(table_name, "settings"),
-            state: __sdk::__query_builder::Col::new(table_name, "state"),
+            status: __sdk::__query_builder::Col::new(table_name, "status"),
             template: __sdk::__query_builder::Col::new(table_name, "template"),
         }
     }

@@ -7,13 +7,10 @@ import { type Infer as __Infer } from "spacetimedb";
 
 // Import all procedure arg schemas
 import * as LoginAsServerProcedure from "../login_as_server_procedure";
-import * as LoginAsWorkerProcedure from "../login_as_worker_procedure";
 import * as PostRoundReplayProcedure from "../post_round_replay_procedure";
 
 export type LoginAsServerArgs = __Infer<typeof LoginAsServerProcedure.params>;
 export type LoginAsServerResult = __Infer<typeof LoginAsServerProcedure.returnType>;
-export type LoginAsWorkerArgs = __Infer<typeof LoginAsWorkerProcedure.params>;
-export type LoginAsWorkerResult = __Infer<typeof LoginAsWorkerProcedure.returnType>;
 export type PostRoundReplayArgs = __Infer<typeof PostRoundReplayProcedure.params>;
 export type PostRoundReplayResult = __Infer<typeof PostRoundReplayProcedure.returnType>;
 

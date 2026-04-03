@@ -11,7 +11,6 @@ import {
 } from "spacetimedb";
 
 export default {
-  mapUid: __t.string(),
-  accountId: __t.uuid(),
-  time: __t.u32(),
+  name: __t.string(),
+  parentId: __t.u32(),
 };

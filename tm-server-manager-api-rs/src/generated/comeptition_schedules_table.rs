@@ -3,7 +3,7 @@
 
 #![allow(unused, clippy::all)]
 use super::schedule_settings_type::ScheduleSettings;
-use super::schedule_state_type::ScheduleState;
+use super::schedule_status_type::ScheduleStatus;
 use super::schedule_v_1_type::ScheduleV1;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 

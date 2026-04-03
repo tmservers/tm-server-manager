@@ -10,7 +10,7 @@ pub struct RawServerV1 {
     pub identity: __sdk::Identity,
     pub server_login: String,
     pub server_account_id: __sdk::Uuid,
-    pub user_account_id: __sdk::Uuid,
+    pub user_id: u32,
     pub id: u32,
     pub online: bool,
     pub capturable: bool,
@@ -28,7 +28,7 @@ pub struct RawServerV1Cols {
     pub identity: __sdk::__query_builder::Col<RawServerV1, __sdk::Identity>,
     pub server_login: __sdk::__query_builder::Col<RawServerV1, String>,
     pub server_account_id: __sdk::__query_builder::Col<RawServerV1, __sdk::Uuid>,
-    pub user_account_id: __sdk::__query_builder::Col<RawServerV1, __sdk::Uuid>,
+    pub user_id: __sdk::__query_builder::Col<RawServerV1, u32>,
     pub id: __sdk::__query_builder::Col<RawServerV1, u32>,
     pub online: __sdk::__query_builder::Col<RawServerV1, bool>,
     pub capturable: __sdk::__query_builder::Col<RawServerV1, bool>,
@@ -42,7 +42,7 @@ impl __sdk::__query_builder::HasCols for RawServerV1 {
             identity: __sdk::__query_builder::Col::new(table_name, "identity"),
             server_login: __sdk::__query_builder::Col::new(table_name, "server_login"),
             server_account_id: __sdk::__query_builder::Col::new(table_name, "server_account_id"),
-            user_account_id: __sdk::__query_builder::Col::new(table_name, "user_account_id"),
+            user_id: __sdk::__query_builder::Col::new(table_name, "user_id"),
             id: __sdk::__query_builder::Col::new(table_name, "id"),
             online: __sdk::__query_builder::Col::new(table_name, "online"),
             capturable: __sdk::__query_builder::Col::new(table_name, "capturable"),
@@ -58,7 +58,7 @@ pub struct RawServerV1IxCols {
     pub id: __sdk::__query_builder::IxCol<RawServerV1, u32>,
     pub identity: __sdk::__query_builder::IxCol<RawServerV1, __sdk::Identity>,
     pub server_login: __sdk::__query_builder::IxCol<RawServerV1, String>,
-    pub user_account_id: __sdk::__query_builder::IxCol<RawServerV1, __sdk::Uuid>,
+    pub user_id: __sdk::__query_builder::IxCol<RawServerV1, u32>,
 }
 
 impl __sdk::__query_builder::HasIxCols for RawServerV1 {
@@ -68,7 +68,7 @@ impl __sdk::__query_builder::HasIxCols for RawServerV1 {
             id: __sdk::__query_builder::IxCol::new(table_name, "id"),
             identity: __sdk::__query_builder::IxCol::new(table_name, "identity"),
             server_login: __sdk::__query_builder::IxCol::new(table_name, "server_login"),
-            user_account_id: __sdk::__query_builder::IxCol::new(table_name, "user_account_id"),
+            user_id: __sdk::__query_builder::IxCol::new(table_name, "user_id"),
         }
     }
 }

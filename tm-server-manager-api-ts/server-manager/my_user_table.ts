@@ -15,5 +15,5 @@ export default __t.row({
   clubTag: __t.string().name("club_tag"),
   zone: __t.string(),
   accountId: __t.uuid().name("account_id"),
-  internalId: __t.u32().name("internal_id"),
+  id: __t.u32(),
 });

@@ -10,7 +10,7 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 import {
-  NodeKindHandle,
+  NodeHandle,
   Vec2,
 } from "./types";
 
@@ -18,7 +18,7 @@ import {
 export default __t.row({
   competitionId: __t.u32().name("competition_id"),
   get node() {
-    return NodeKindHandle;
+    return NodeHandle;
   },
   get position() {
     return Vec2;

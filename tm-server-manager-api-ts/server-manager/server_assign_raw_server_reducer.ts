@@ -11,6 +11,6 @@ import {
 } from "spacetimedb";
 
 export default {
-  registrationId: __t.u32(),
-  name: __t.string(),
+  to: __t.u32(),
+  serverId: __t.u32(),
 };

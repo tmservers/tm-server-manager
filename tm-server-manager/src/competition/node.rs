@@ -52,7 +52,7 @@ impl NodeHandle {
             NodeHandle::CompetitionV1(c) => (2, c),
             NodeHandle::ScheduleV1(s) => (3, s),
             //NodeHandle::MonitoringV1(_) => todo!(),
-            NodeHandle::ServerV1(_) => todo!(),
+            NodeHandle::ServerV1(m) => (4, m),
             NodeHandle::PortalV1(p) => (6, p),
             NodeHandle::RegistrationV1(r) => (7, r),
         }
@@ -63,6 +63,7 @@ impl NodeHandle {
             1 => Self::MatchV1(value),
             2 => Self::CompetitionV1(value),
             3 => Self::ScheduleV1(value),
+            4 => Self::ServerV1(value),
             6 => Self::PortalV1(value),
             7 => Self::RegistrationV1(value),
             _ => unreachable!(),
@@ -107,6 +108,10 @@ impl NodeHandle {
             NodeHandle::ServerV1(_) => true,
             _ => false,
         }
+    }
+
+    pub(crate) fn id(&self) -> u32 {
+        self.split().1
     }
 }
 

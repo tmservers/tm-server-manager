@@ -60,10 +60,10 @@ export type Common = __Infer<typeof Common>;
 export const CompetitionConnection = __t.object("CompetitionConnection", {
   id: __t.u32(),
   get origin() {
-    return NodeKindHandle;
+    return NodeHandle;
   },
   get target() {
-    return NodeKindHandle;
+    return NodeHandle;
   },
   get connectionType() {
     return ConnectionType;
@@ -78,14 +78,14 @@ export const CompetitionMember = __t.object("CompetitionMember", {
   permissions: __t.u64(),
   id: __t.u32(),
   competitionId: __t.u32(),
-  accountId: __t.u32(),
+  userId: __t.u32(),
 });
 export type CompetitionMember = __Infer<typeof CompetitionMember>;
 
 export const CompetitionNodePosition = __t.object("CompetitionNodePosition", {
   competitionId: __t.u32(),
   get node() {
-    return NodeKindHandle;
+    return NodeHandle;
   },
   get position() {
     return Vec2;
@@ -103,7 +103,7 @@ export type CompetitionRole = __Infer<typeof CompetitionRole>;
 
 export const CompetitionRoleMember = __t.object("CompetitionRoleMember", {
   roleId: __t.u32(),
-  accountId: __t.u32(),
+  userId: __t.u32(),
 });
 export type CompetitionRoleMember = __Infer<typeof CompetitionRoleMember>;
 
@@ -307,7 +307,7 @@ export const Event = __t.enum("Event", {
   get UnloadingMapEnd() {
     return UnloadingMapEnd;
   },
-  get PlayerConenct() {
+  get PlayerConnect() {
     return PlayerConnect;
   },
   get PlayerDisconnect() {
@@ -509,10 +509,10 @@ export const MatchRoundPlayerExt = __t.object("MatchRoundPlayerExt", {
 export type MatchRoundPlayerExt = __Infer<typeof MatchRoundPlayerExt>;
 
 export const MatchRoundReplay = __t.object("MatchRoundReplay", {
+  mapId: __t.u32(),
   matchId: __t.u32(),
   round: __t.u8(),
-  mapUid: __t.uuid(),
-  objectId: __t.uuid(),
+  replay: __t.byteArray(),
 });
 export type MatchRoundReplay = __Infer<typeof MatchRoundReplay>;
 
@@ -598,30 +598,9 @@ export const ModeSettings = __t.enum("ModeSettings", {
 });
 export type ModeSettings = __Infer<typeof ModeSettings>;
 
-// The tagged union or sum type for the algebraic type `MonitoringSettings`.
-export const MonitoringSettings = __t.enum("MonitoringSettings", {
-  get Club() {
-    return MonitoringSettingsClub;
-  },
-  get Map() {
-    return MonitoringSettingsMap;
-  },
-});
-export type MonitoringSettings = __Infer<typeof MonitoringSettings>;
-
-export const MonitoringSettingsClub = __t.object("MonitoringSettingsClub", {
-  clubId: __t.string(),
-});
-export type MonitoringSettingsClub = __Infer<typeof MonitoringSettingsClub>;
-
-export const MonitoringSettingsMap = __t.object("MonitoringSettingsMap", {
-  mapUid: __t.string(),
-});
-export type MonitoringSettingsMap = __Infer<typeof MonitoringSettingsMap>;
-
 export const MyProjectV1 = __t.object("MyProjectV1", {
   id: __t.u32(),
-  creatorAccountId: __t.uuid(),
+  userId: __t.u32(),
   creatorName: __t.string(),
   name: __t.string(),
   startingAt: __t.timestamp(),
@@ -630,24 +609,27 @@ export const MyProjectV1 = __t.object("MyProjectV1", {
   get status() {
     return ProjectStatus;
   },
+  get kind() {
+    return ProjectKind;
+  },
+  verified: __t.bool(),
 });
 export type MyProjectV1 = __Infer<typeof MyProjectV1>;
 
-// The tagged union or sum type for the algebraic type `NodeKindHandle`.
-export const NodeKindHandle = __t.enum("NodeKindHandle", {
+// The tagged union or sum type for the algebraic type `NodeHandle`.
+export const NodeHandle = __t.enum("NodeHandle", {
   MatchV1: __t.u32(),
   CompetitionV1: __t.u32(),
-  MonitoringV1: __t.u32(),
   ServerV1: __t.u32(),
   ScheduleV1: __t.u32(),
   PortalV1: __t.u32(),
   RegistrationV1: __t.u32(),
 });
-export type NodeKindHandle = __Infer<typeof NodeKindHandle>;
+export type NodeHandle = __Infer<typeof NodeHandle>;
 
 export const NodePositionUpdate = __t.object("NodePositionUpdate", {
   get node() {
-    return NodeKindHandle;
+    return NodeHandle;
   },
   get position() {
     return Vec2;
@@ -708,11 +690,18 @@ export type Player = __Infer<typeof Player>;
 
 // The tagged union or sum type for the algebraic type `PlayerAction`.
 export const PlayerAction = __t.enum("PlayerAction", {
-  GiveUp: __t.unit(),
+  StartLine: __t.u32(),
+  get Checkpoint() {
+    return PlayerActionCheckpoint;
+  },
   get Respawn() {
     return PlayerActionRespawn;
   },
-  get Checkpoint() {
+  GiveUp: __t.u32(),
+  get Lap() {
+    return PlayerActionCheckpoint;
+  },
+  get Finish() {
     return PlayerActionCheckpoint;
   },
 });
@@ -725,8 +714,8 @@ export const PlayerActionCheckpoint = __t.object("PlayerActionCheckpoint", {
 export type PlayerActionCheckpoint = __Infer<typeof PlayerActionCheckpoint>;
 
 export const PlayerActionRespawn = __t.object("PlayerActionRespawn", {
+  time: __t.u32(),
   speed: __t.f32(),
-  standing: __t.bool(),
 });
 export type PlayerActionRespawn = __Infer<typeof PlayerActionRespawn>;
 
@@ -789,6 +778,14 @@ export const Portal = __t.object("Portal", {
 });
 export type Portal = __Infer<typeof Portal>;
 
+// The tagged union or sum type for the algebraic type `ProjectKind`.
+export const ProjectKind = __t.enum("ProjectKind", {
+  Tournament: __t.unit(),
+  TournamentTest: __t.unit(),
+  GeneralProject: __t.unit(),
+});
+export type ProjectKind = __Infer<typeof ProjectKind>;
+
 // The tagged union or sum type for the algebraic type `ProjectStatus`.
 export const ProjectStatus = __t.enum("ProjectStatus", {
   Planning: __t.unit(),
@@ -801,10 +798,14 @@ export type ProjectStatus = __Infer<typeof ProjectStatus>;
 export const ProjectV1 = __t.object("ProjectV1", {
   name: __t.string(),
   description: __t.string(),
-  creatorAccountId: __t.uuid(),
   startingAt: __t.timestamp(),
   endingAt: __t.timestamp(),
+  userId: __t.u32(),
   id: __t.u32(),
+  verified: __t.bool(),
+  get kind() {
+    return ProjectKind;
+  },
   get status() {
     return ProjectStatus;
   },
@@ -822,7 +823,7 @@ export type RawServerConfig = __Infer<typeof RawServerConfig>;
 export const RawServerMethodCall = __t.object("RawServerMethodCall", {
   id: __t.u32(),
   serverId: __t.u32(),
-  accountId: __t.uuid(),
+  userId: __t.u32(),
   timestamp: __t.timestamp(),
   get call() {
     return MethodCall;
@@ -832,7 +833,8 @@ export type RawServerMethodCall = __Infer<typeof RawServerMethodCall>;
 
 export const RawServerOccupation = __t.object("RawServerOccupation", {
   serverId: __t.u32(),
-  matchId: __t.u32(),
+  nodeId: __t.u32(),
+  nodeVariant: __t.u8(),
 });
 export type RawServerOccupation = __Infer<typeof RawServerOccupation>;
 
@@ -847,7 +849,7 @@ export const RawServerV1 = __t.object("RawServerV1", {
   identity: __t.identity(),
   serverLogin: __t.string(),
   serverAccountId: __t.uuid(),
-  userAccountId: __t.uuid(),
+  userId: __t.u32(),
   id: __t.u32(),
   online: __t.bool(),
   capturable: __t.bool(),
@@ -856,19 +858,11 @@ export const RawServerV1 = __t.object("RawServerV1", {
 export type RawServerV1 = __Infer<typeof RawServerV1>;
 
 export const RegisterationPlayer = __t.object("RegisterationPlayer", {
-  accountId: __t.uuid(),
   registeredAt: __t.timestamp(),
   registrationId: __t.u32(),
+  userId: __t.u32(),
 });
 export type RegisterationPlayer = __Infer<typeof RegisterationPlayer>;
-
-export const RegisteredTeam = __t.object("RegisteredTeam", {
-  name: __t.string(),
-  registeredAt: __t.timestamp(),
-  registrationId: __t.u32(),
-  id: __t.u32(),
-});
-export type RegisteredTeam = __Infer<typeof RegisteredTeam>;
 
 export const Registration = __t.object("Registration", {
   name: __t.string(),
@@ -877,8 +871,8 @@ export const Registration = __t.object("Registration", {
   get settings() {
     return RegistrationSettings;
   },
-  get state() {
-    return RegistrationState;
+  get status() {
+    return RegistrationStatus;
   },
   template: __t.bool(),
 });
@@ -897,15 +891,15 @@ export const RegistrationSettingsPlayer = __t.object("RegistrationSettingsPlayer
 });
 export type RegistrationSettingsPlayer = __Infer<typeof RegistrationSettingsPlayer>;
 
-// The tagged union or sum type for the algebraic type `RegistrationState`.
-export const RegistrationState = __t.enum("RegistrationState", {
+// The tagged union or sum type for the algebraic type `RegistrationStatus`.
+export const RegistrationStatus = __t.enum("RegistrationStatus", {
   Configuring: __t.unit(),
   Upcoming: __t.unit(),
   Ongoing: __t.unit(),
   Ended: __t.unit(),
   Locked: __t.unit(),
 });
-export type RegistrationState = __Infer<typeof RegistrationState>;
+export type RegistrationStatus = __Infer<typeof RegistrationStatus>;
 
 export const Respawn = __t.object("Respawn", {
   accountId: __t.string(),
@@ -1000,14 +994,14 @@ export const ScheduleSettings = __t.enum("ScheduleSettings", {
 });
 export type ScheduleSettings = __Infer<typeof ScheduleSettings>;
 
-// The tagged union or sum type for the algebraic type `ScheduleState`.
-export const ScheduleState = __t.enum("ScheduleState", {
+// The tagged union or sum type for the algebraic type `ScheduleStatus`.
+export const ScheduleStatus = __t.enum("ScheduleStatus", {
   Configuring: __t.unit(),
   Waiting: __t.unit(),
   Finished: __t.unit(),
   Locked: __t.unit(),
 });
-export type ScheduleState = __Infer<typeof ScheduleState>;
+export type ScheduleStatus = __Infer<typeof ScheduleStatus>;
 
 export const ScheduleV1 = __t.object("ScheduleV1", {
   name: __t.string(),
@@ -1016,8 +1010,8 @@ export const ScheduleV1 = __t.object("ScheduleV1", {
   get settings() {
     return ScheduleSettings;
   },
-  get state() {
-    return ScheduleState;
+  get status() {
+    return ScheduleStatus;
   },
   template: __t.bool(),
 });
@@ -1059,9 +1053,6 @@ export const ServerMetadata = __t.object("ServerMetadata", {
     return ServerConfig;
   },
   open: __t.bool(),
-  get status() {
-    return MatchStatus;
-  },
 });
 export type ServerMetadata = __Infer<typeof ServerMetadata>;
 
@@ -1073,6 +1064,13 @@ export type ServerModeInfo = __Infer<typeof ServerModeInfo>;
 
 export const ServerOptions = __t.object("ServerOptions", {});
 export type ServerOptions = __Infer<typeof ServerOptions>;
+
+// The tagged union or sum type for the algebraic type `ServerStatus`.
+export const ServerStatus = __t.enum("ServerStatus", {
+  Configuring: __t.unit(),
+  Ongoing: __t.unit(),
+});
+export type ServerStatus = __Infer<typeof ServerStatus>;
 
 export const StartLine = __t.object("StartLine", {
   accountId: __t.string(),
@@ -1178,6 +1176,7 @@ export type TabMatchRoundPlayerExt = __Infer<typeof TabMatchRoundPlayerExt>;
 
 export const TabPlayerDestination = __t.object("TabPlayerDestination", {
   competitionId: __t.u32(),
+  matchId: __t.u32(),
   destinationServerId: __t.u32(),
   userId: __t.u32(),
 });
@@ -1217,31 +1216,12 @@ export const TimeAttack = __t.object("TimeAttack", {
 });
 export type TimeAttack = __Infer<typeof TimeAttack>;
 
-export const TmCompRecord = __t.object("TmCompRecord", {
-  matchId: __t.u32(),
-  mapUid: __t.string(),
-  accountId: __t.uuid(),
-  timestamp: __t.timestamp(),
-  time: __t.u32(),
-});
-export type TmCompRecord = __Infer<typeof TmCompRecord>;
-
-export const TmMapRecord = __t.object("TmMapRecord", {
-  id: __t.u32(),
-  mapUid: __t.string(),
-  accountId: __t.uuid(),
-  timestamp: __t.timestamp(),
-  time: __t.u32(),
-});
-export type TmMapRecord = __Infer<typeof TmMapRecord>;
-
 export const TmMatchV1 = __t.object("TmMatchV1", {
   name: __t.string(),
   id: __t.u32(),
   parentId: __t.u32(),
-  preMatchConfig: __t.u32(),
-  matchConfig: __t.u32(),
-  postMatchConfig: __t.u32(),
+  preConfig: __t.u32(),
+  config: __t.u32(),
   get status() {
     return MatchStatus;
   },
@@ -1251,29 +1231,6 @@ export const TmMatchV1 = __t.object("TmMatchV1", {
 });
 export type TmMatchV1 = __Infer<typeof TmMatchV1>;
 
-export const TmMonitoring = __t.object("TmMonitoring", {
-  id: __t.u32(),
-  project: __t.u32(),
-  competition: __t.u32(),
-  get settings() {
-    return MonitoringSettings;
-  },
-  name: __t.option(__t.string()),
-  active: __t.bool(),
-});
-export type TmMonitoring = __Infer<typeof TmMonitoring>;
-
-export const TmRecord = __t.object("TmRecord", {
-  mapUid: __t.string(),
-  zone: __t.string(),
-  playerName: __t.string(),
-  accountId: __t.uuid(),
-  ghost: __t.uuid(),
-  timestamp: __t.timestamp(),
-  time: __t.u32(),
-});
-export type TmRecord = __Infer<typeof TmRecord>;
-
 export const TmServerMethodResponse = __t.object("TmServerMethodResponse", {
   id: __t.u32(),
   get response() {
@@ -1282,19 +1239,17 @@ export const TmServerMethodResponse = __t.object("TmServerMethodResponse", {
 });
 export type TmServerMethodResponse = __Infer<typeof TmServerMethodResponse>;
 
-export const TmWorker = __t.object("TmWorker", {
-  tmLogin: __t.string(),
-  identity: __t.identity(),
-  ownerId: __t.string(),
-  online: __t.bool(),
+export const TmServerV1 = __t.object("TmServerV1", {
+  name: __t.string(),
+  id: __t.u32(),
+  parentId: __t.u32(),
+  config: __t.u32(),
+  get status() {
+    return ServerStatus;
+  },
+  open: __t.bool(),
 });
-export type TmWorker = __Infer<typeof TmWorker>;
-
-export const TmWorkerJobs = __t.object("TmWorkerJobs", {
-  tmLogin: __t.string(),
-  mapUid: __t.string(),
-});
-export type TmWorkerJobs = __Infer<typeof TmWorkerJobs>;
+export type TmServerV1 = __Infer<typeof TmServerV1>;
 
 export const UnloadingMapEnd = __t.object("UnloadingMapEnd", {
   time: __t.u32(),
@@ -1311,7 +1266,7 @@ export type UnloadingMapStart = __Infer<typeof UnloadingMapStart>;
 
 export const UserIdentity = __t.object("UserIdentity", {
   identity: __t.identity(),
-  accountId: __t.uuid(),
+  userId: __t.u32(),
 });
 export type UserIdentity = __Infer<typeof UserIdentity>;
 
@@ -1326,7 +1281,7 @@ export const UserV1 = __t.object("UserV1", {
   clubTag: __t.string(),
   zone: __t.string(),
   accountId: __t.uuid(),
-  internalId: __t.u32(),
+  id: __t.u32(),
 });
 export type UserV1 = __Infer<typeof UserV1>;
 

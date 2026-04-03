@@ -10,11 +10,17 @@ use super::player_action_respawn_type::PlayerActionRespawn;
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub enum PlayerAction {
-    GiveUp,
+    StartLine(u32),
+
+    Checkpoint(PlayerActionCheckpoint),
 
     Respawn(PlayerActionRespawn),
 
-    Checkpoint(PlayerActionCheckpoint),
+    GiveUp(u32),
+
+    Lap(PlayerActionCheckpoint),
+
+    Finish(PlayerActionCheckpoint),
 }
 
 impl __sdk::InModule for PlayerAction {

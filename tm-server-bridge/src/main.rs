@@ -9,10 +9,10 @@ use tm_server_controller::{
     method::{ModeScriptMethodsXmlRpc, XmlRpcMethods},
 };
 use tm_server_manager_api_rs::{
-    DbConnection, ErrorContext, RawServerAllowedPlayersTableAccess, RawServerConfigTableAccess,
-    RawServerMethodCallTableAccess, RawServerPlayerDestinationTableAccess, ServerMetadata,
-    login_as_server, raw_server_allowed_playersQueryTableAccess, raw_server_configQueryTableAccess,
-    raw_server_method_callQueryTableAccess, raw_server_player_destinationQueryTableAccess,
+    DbConnection, ErrorContext, RawServerConfigTableAccess, RawServerMethodCallTableAccess,
+    RawServerPermittedPlayersTableAccess, RawServerPlayerDestinationTableAccess, ServerMetadata,
+    login_as_server, raw_server_configQueryTableAccess, raw_server_method_callQueryTableAccess,
+    raw_server_permitted_playersQueryTableAccess, raw_server_player_destinationQueryTableAccess,
 };
 use tokio::{signal, sync::Mutex};
 use tracing::{instrument, warn};
@@ -175,7 +175,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             .on_error(|_, error| tracing::error!("Subscription failed: {error:?}"))
             .add_query(|ctx| ctx.from.raw_server_method_call())
             .add_query(|ctx| ctx.from.raw_server_config())
-            .add_query(|ctx| ctx.from.raw_server_allowed_players())
+            .add_query(|ctx| ctx.from.raw_server_permitted_players())
             .add_query(|ctx| ctx.from.raw_server_player_destination())
             .subscribe();
 
@@ -184,7 +184,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
         spacetime
             .db
-            .raw_server_allowed_players()
+            .raw_server_permitted_players()
             .on_delete(|_, _| check_allowed_players());
 
         spacetime

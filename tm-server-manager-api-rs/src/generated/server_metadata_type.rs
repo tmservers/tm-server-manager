@@ -4,7 +4,6 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::match_status_type::MatchStatus;
 use super::server_config_type::ServerConfig;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
@@ -12,7 +11,6 @@ use super::server_config_type::ServerConfig;
 pub struct ServerMetadata {
     pub config: ServerConfig,
     pub open: bool,
-    pub status: MatchStatus,
 }
 
 impl __sdk::InModule for ServerMetadata {
@@ -25,7 +23,6 @@ impl __sdk::InModule for ServerMetadata {
 pub struct ServerMetadataCols {
     pub config: __sdk::__query_builder::Col<ServerMetadata, ServerConfig>,
     pub open: __sdk::__query_builder::Col<ServerMetadata, bool>,
-    pub status: __sdk::__query_builder::Col<ServerMetadata, MatchStatus>,
 }
 
 impl __sdk::__query_builder::HasCols for ServerMetadata {
@@ -34,7 +31,6 @@ impl __sdk::__query_builder::HasCols for ServerMetadata {
         ServerMetadataCols {
             config: __sdk::__query_builder::Col::new(table_name, "config"),
             open: __sdk::__query_builder::Col::new(table_name, "open"),
-            status: __sdk::__query_builder::Col::new(table_name, "status"),
         }
     }
 }

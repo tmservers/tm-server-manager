@@ -66,7 +66,7 @@ pub enum Event {
 
     UnloadingMapEnd(UnloadingMapEnd),
 
-    PlayerConenct(PlayerConnect),
+    PlayerConnect(PlayerConnect),
 
     PlayerDisconnect(PlayerDisconnect),
 

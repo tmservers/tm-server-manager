@@ -11,13 +11,13 @@ import {
 } from "spacetimedb";
 
 import {
-  NodeKindHandle,
+  NodeHandle,
   Vec2,
 } from "./types";
 
 export default {
   get node() {
-    return NodeKindHandle;
+    return NodeHandle;
   },
   get position() {
     return Vec2;

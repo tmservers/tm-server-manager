@@ -3,6 +3,7 @@
 
 #![allow(unused, clippy::all)]
 use super::my_project_v_1_type::MyProjectV1;
+use super::project_kind_type::ProjectKind;
 use super::project_status_type::ProjectStatus;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 

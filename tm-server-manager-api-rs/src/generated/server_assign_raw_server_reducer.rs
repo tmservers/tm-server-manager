@@ -4,56 +4,51 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::node_handle_type::NodeHandle;
-
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub(super) struct PortalCreateArgs {
-    pub name: String,
-    pub parent_id: u32,
-    pub target: NodeHandle,
+pub(super) struct ServerAssignRawServerArgs {
+    pub to: u32,
+    pub server_id: u32,
 }
 
-impl From<PortalCreateArgs> for super::Reducer {
-    fn from(args: PortalCreateArgs) -> Self {
-        Self::PortalCreate {
-            name: args.name,
-            parent_id: args.parent_id,
-            target: args.target,
+impl From<ServerAssignRawServerArgs> for super::Reducer {
+    fn from(args: ServerAssignRawServerArgs) -> Self {
+        Self::ServerAssignRawServer {
+            to: args.to,
+            server_id: args.server_id,
         }
     }
 }
 
-impl __sdk::InModule for PortalCreateArgs {
+impl __sdk::InModule for ServerAssignRawServerArgs {
     type Module = super::RemoteModule;
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the reducer `portal_create`.
+/// Extension trait for access to the reducer `server_assign_raw_server`.
 ///
 /// Implemented for [`super::RemoteReducers`].
-pub trait portal_create {
-    /// Request that the remote module invoke the reducer `portal_create` to run as soon as possible.
+pub trait server_assign_raw_server {
+    /// Request that the remote module invoke the reducer `server_assign_raw_server` to run as soon as possible.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
-    /// /// Use [`portal_create:portal_create_then`] to run a callback after the reducer completes.
-    fn portal_create(&self, name: String, parent_id: u32, target: NodeHandle) -> __sdk::Result<()> {
-        self.portal_create_then(name, parent_id, target, |_, _| {})
+    /// /// Use [`server_assign_raw_server:server_assign_raw_server_then`] to run a callback after the reducer completes.
+    fn server_assign_raw_server(&self, to: u32, server_id: u32) -> __sdk::Result<()> {
+        self.server_assign_raw_server_then(to, server_id, |_, _| {})
     }
 
-    /// Request that the remote module invoke the reducer `portal_create` to run as soon as possible,
+    /// Request that the remote module invoke the reducer `server_assign_raw_server` to run as soon as possible,
     /// registering `callback` to run when we are notified that the reducer completed.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed with the `callback`.
-    fn portal_create_then(
+    fn server_assign_raw_server_then(
         &self,
-        name: String,
-        parent_id: u32,
-        target: NodeHandle,
+        to: u32,
+        server_id: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -61,24 +56,17 @@ pub trait portal_create {
     ) -> __sdk::Result<()>;
 }
 
-impl portal_create for super::RemoteReducers {
-    fn portal_create_then(
+impl server_assign_raw_server for super::RemoteReducers {
+    fn server_assign_raw_server_then(
         &self,
-        name: String,
-        parent_id: u32,
-        target: NodeHandle,
+        to: u32,
+        server_id: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     ) -> __sdk::Result<()> {
-        self.imp.invoke_reducer_with_callback(
-            PortalCreateArgs {
-                name,
-                parent_id,
-                target,
-            },
-            callback,
-        )
+        self.imp
+            .invoke_reducer_with_callback(ServerAssignRawServerArgs { to, server_id }, callback)
     }
 }

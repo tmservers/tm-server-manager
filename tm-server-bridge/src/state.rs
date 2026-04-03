@@ -4,8 +4,8 @@ use tm_server_controller::{
     method::{ModeScriptMethodsXmlRpc, XmlRpcMethods},
 };
 use tm_server_manager_api_rs::{
-    RawServerAllowedPlayersTableAccess, RawServerPlayerDestinationTableAccess, post_event,
-    raw_server_player_add,
+    RawServerPermittedPlayersTableAccess, RawServerPlayerDestinationTableAccess, post_event,
+    post_round_replay, raw_server_player_add,
 };
 use tm_server_types::{
     base::account_id_to_login,
@@ -55,9 +55,11 @@ pub async fn setup_state_synchronization() {
             + ".Replay.Gbx";
 
         match std::fs::read(&full_path) {
-            Ok(_file) => {
-                //TODO enable the posting again.
-                //SPACETIME.wait().procedures.post_round_replay(file);
+            Ok(file) => {
+                SPACETIME
+                    .wait()
+                    .procedures
+                    .post_round_replay(event.count as u16, file);
             }
             Err(error) => {
                 tracing::error!("Failed to read replay file. Reason: {error}")
@@ -95,7 +97,7 @@ pub async fn setup_state_synchronization() {
             let Some(player) = SPACETIME
                 .wait()
                 .db
-                .raw_server_allowed_players()
+                .raw_server_permitted_players()
                 .iter()
                 .find(|p| Uuid::parse_str(&event.account_id).unwrap() == p.account_id)
             else {
@@ -201,7 +203,7 @@ pub fn check_allowed_players() {
                     let Some(player) = SPACETIME
                         .wait()
                         .db
-                        .raw_server_allowed_players()
+                        .raw_server_permitted_players()
                         .iter()
                         .find(|p| {
                             Uuid::parse_str(&server_player.account_id).unwrap() == p.account_id

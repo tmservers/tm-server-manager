@@ -4,62 +4,54 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::connection_type_type::ConnectionType;
-use super::node_handle_type::NodeHandle;
-
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub(super) struct ConnectionCreateArgs {
-    pub origin: NodeHandle,
-    pub target: NodeHandle,
-    pub setting: ConnectionType,
+pub(super) struct ServerCreateArgs {
+    pub name: String,
+    pub parent_id: u32,
+    pub with_template: u32,
 }
 
-impl From<ConnectionCreateArgs> for super::Reducer {
-    fn from(args: ConnectionCreateArgs) -> Self {
-        Self::ConnectionCreate {
-            origin: args.origin,
-            target: args.target,
-            setting: args.setting,
+impl From<ServerCreateArgs> for super::Reducer {
+    fn from(args: ServerCreateArgs) -> Self {
+        Self::ServerCreate {
+            name: args.name,
+            parent_id: args.parent_id,
+            with_template: args.with_template,
         }
     }
 }
 
-impl __sdk::InModule for ConnectionCreateArgs {
+impl __sdk::InModule for ServerCreateArgs {
     type Module = super::RemoteModule;
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the reducer `connection_create`.
+/// Extension trait for access to the reducer `server_create`.
 ///
 /// Implemented for [`super::RemoteReducers`].
-pub trait connection_create {
-    /// Request that the remote module invoke the reducer `connection_create` to run as soon as possible.
+pub trait server_create {
+    /// Request that the remote module invoke the reducer `server_create` to run as soon as possible.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
-    /// /// Use [`connection_create:connection_create_then`] to run a callback after the reducer completes.
-    fn connection_create(
-        &self,
-        origin: NodeHandle,
-        target: NodeHandle,
-        setting: ConnectionType,
-    ) -> __sdk::Result<()> {
-        self.connection_create_then(origin, target, setting, |_, _| {})
+    /// /// Use [`server_create:server_create_then`] to run a callback after the reducer completes.
+    fn server_create(&self, name: String, parent_id: u32, with_template: u32) -> __sdk::Result<()> {
+        self.server_create_then(name, parent_id, with_template, |_, _| {})
     }
 
-    /// Request that the remote module invoke the reducer `connection_create` to run as soon as possible,
+    /// Request that the remote module invoke the reducer `server_create` to run as soon as possible,
     /// registering `callback` to run when we are notified that the reducer completed.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed with the `callback`.
-    fn connection_create_then(
+    fn server_create_then(
         &self,
-        origin: NodeHandle,
-        target: NodeHandle,
-        setting: ConnectionType,
+        name: String,
+        parent_id: u32,
+        with_template: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -67,22 +59,22 @@ pub trait connection_create {
     ) -> __sdk::Result<()>;
 }
 
-impl connection_create for super::RemoteReducers {
-    fn connection_create_then(
+impl server_create for super::RemoteReducers {
+    fn server_create_then(
         &self,
-        origin: NodeHandle,
-        target: NodeHandle,
-        setting: ConnectionType,
+        name: String,
+        parent_id: u32,
+        with_template: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     ) -> __sdk::Result<()> {
         self.imp.invoke_reducer_with_callback(
-            ConnectionCreateArgs {
-                origin,
-                target,
-                setting,
+            ServerCreateArgs {
+                name,
+                parent_id,
+                with_template,
             },
             callback,
         )

@@ -11,7 +11,7 @@ pub struct UserV1 {
     pub club_tag: String,
     pub zone: String,
     pub account_id: __sdk::Uuid,
-    pub internal_id: u32,
+    pub id: u32,
 }
 
 impl __sdk::InModule for UserV1 {
@@ -26,7 +26,7 @@ pub struct UserV1Cols {
     pub club_tag: __sdk::__query_builder::Col<UserV1, String>,
     pub zone: __sdk::__query_builder::Col<UserV1, String>,
     pub account_id: __sdk::__query_builder::Col<UserV1, __sdk::Uuid>,
-    pub internal_id: __sdk::__query_builder::Col<UserV1, u32>,
+    pub id: __sdk::__query_builder::Col<UserV1, u32>,
 }
 
 impl __sdk::__query_builder::HasCols for UserV1 {
@@ -37,7 +37,7 @@ impl __sdk::__query_builder::HasCols for UserV1 {
             club_tag: __sdk::__query_builder::Col::new(table_name, "club_tag"),
             zone: __sdk::__query_builder::Col::new(table_name, "zone"),
             account_id: __sdk::__query_builder::Col::new(table_name, "account_id"),
-            internal_id: __sdk::__query_builder::Col::new(table_name, "internal_id"),
+            id: __sdk::__query_builder::Col::new(table_name, "id"),
         }
     }
 }
@@ -47,7 +47,7 @@ impl __sdk::__query_builder::HasCols for UserV1 {
 /// Provides typed access to indexed columns for query building.
 pub struct UserV1IxCols {
     pub account_id: __sdk::__query_builder::IxCol<UserV1, __sdk::Uuid>,
-    pub internal_id: __sdk::__query_builder::IxCol<UserV1, u32>,
+    pub id: __sdk::__query_builder::IxCol<UserV1, u32>,
 }
 
 impl __sdk::__query_builder::HasIxCols for UserV1 {
@@ -55,7 +55,7 @@ impl __sdk::__query_builder::HasIxCols for UserV1 {
     fn ix_cols(table_name: &'static str) -> Self::IxCols {
         UserV1IxCols {
             account_id: __sdk::__query_builder::IxCol::new(table_name, "account_id"),
-            internal_id: __sdk::__query_builder::IxCol::new(table_name, "internal_id"),
+            id: __sdk::__query_builder::IxCol::new(table_name, "id"),
         }
     }
 }

@@ -7,7 +7,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 #[derive(Copy, Eq, Hash)]
-pub enum ScheduleState {
+pub enum ScheduleStatus {
     Configuring,
 
     Waiting,
@@ -17,6 +17,6 @@ pub enum ScheduleState {
     Locked,
 }
 
-impl __sdk::InModule for ScheduleState {
+impl __sdk::InModule for ScheduleStatus {
     type Module = super::RemoteModule;
 }

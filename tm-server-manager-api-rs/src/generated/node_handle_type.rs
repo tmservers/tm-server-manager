@@ -4,17 +4,22 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::monitoring_settings_club_type::MonitoringSettingsClub;
-use super::monitoring_settings_map_type::MonitoringSettingsMap;
-
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub enum MonitoringSettings {
-    Club(MonitoringSettingsClub),
+pub enum NodeHandle {
+    MatchV1(u32),
 
-    Map(MonitoringSettingsMap),
+    CompetitionV1(u32),
+
+    ServerV1(u32),
+
+    ScheduleV1(u32),
+
+    PortalV1(u32),
+
+    RegistrationV1(u32),
 }
 
-impl __sdk::InModule for MonitoringSettings {
+impl __sdk::InModule for NodeHandle {
     type Module = super::RemoteModule;
 }

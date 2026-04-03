@@ -5,7 +5,7 @@
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 use super::schedule_settings_type::ScheduleSettings;
-use super::schedule_state_type::ScheduleState;
+use super::schedule_status_type::ScheduleStatus;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
@@ -14,7 +14,7 @@ pub struct ScheduleV1 {
     pub id: u32,
     pub parent_id: u32,
     pub settings: ScheduleSettings,
-    pub state: ScheduleState,
+    pub status: ScheduleStatus,
     pub template: bool,
 }
 
@@ -30,7 +30,7 @@ pub struct ScheduleV1Cols {
     pub id: __sdk::__query_builder::Col<ScheduleV1, u32>,
     pub parent_id: __sdk::__query_builder::Col<ScheduleV1, u32>,
     pub settings: __sdk::__query_builder::Col<ScheduleV1, ScheduleSettings>,
-    pub state: __sdk::__query_builder::Col<ScheduleV1, ScheduleState>,
+    pub status: __sdk::__query_builder::Col<ScheduleV1, ScheduleStatus>,
     pub template: __sdk::__query_builder::Col<ScheduleV1, bool>,
 }
 
@@ -42,7 +42,7 @@ impl __sdk::__query_builder::HasCols for ScheduleV1 {
             id: __sdk::__query_builder::Col::new(table_name, "id"),
             parent_id: __sdk::__query_builder::Col::new(table_name, "parent_id"),
             settings: __sdk::__query_builder::Col::new(table_name, "settings"),
-            state: __sdk::__query_builder::Col::new(table_name, "state"),
+            status: __sdk::__query_builder::Col::new(table_name, "status"),
             template: __sdk::__query_builder::Col::new(table_name, "template"),
         }
     }

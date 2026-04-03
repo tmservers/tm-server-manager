@@ -11,13 +11,13 @@ import {
 } from "spacetimedb";
 
 import {
-  NodeKindHandle,
+  NodeHandle,
 } from "./types";
 
 export default {
   name: __t.string(),
   parentId: __t.u32(),
   get target() {
-    return NodeKindHandle;
+    return NodeHandle;
   },
 };

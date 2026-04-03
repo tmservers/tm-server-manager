@@ -6,57 +6,49 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub(super) struct PostRecordArgs {
-    pub map_uid: String,
-    pub account_id: __sdk::Uuid,
-    pub time: u32,
+pub(super) struct ServerTemplateCreateArgs {
+    pub name: String,
+    pub parent_id: u32,
 }
 
-impl From<PostRecordArgs> for super::Reducer {
-    fn from(args: PostRecordArgs) -> Self {
-        Self::PostRecord {
-            map_uid: args.map_uid,
-            account_id: args.account_id,
-            time: args.time,
+impl From<ServerTemplateCreateArgs> for super::Reducer {
+    fn from(args: ServerTemplateCreateArgs) -> Self {
+        Self::ServerTemplateCreate {
+            name: args.name,
+            parent_id: args.parent_id,
         }
     }
 }
 
-impl __sdk::InModule for PostRecordArgs {
+impl __sdk::InModule for ServerTemplateCreateArgs {
     type Module = super::RemoteModule;
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the reducer `post_record`.
+/// Extension trait for access to the reducer `server_template_create`.
 ///
 /// Implemented for [`super::RemoteReducers`].
-pub trait post_record {
-    /// Request that the remote module invoke the reducer `post_record` to run as soon as possible.
+pub trait server_template_create {
+    /// Request that the remote module invoke the reducer `server_template_create` to run as soon as possible.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
-    /// /// Use [`post_record:post_record_then`] to run a callback after the reducer completes.
-    fn post_record(
-        &self,
-        map_uid: String,
-        account_id: __sdk::Uuid,
-        time: u32,
-    ) -> __sdk::Result<()> {
-        self.post_record_then(map_uid, account_id, time, |_, _| {})
+    /// /// Use [`server_template_create:server_template_create_then`] to run a callback after the reducer completes.
+    fn server_template_create(&self, name: String, parent_id: u32) -> __sdk::Result<()> {
+        self.server_template_create_then(name, parent_id, |_, _| {})
     }
 
-    /// Request that the remote module invoke the reducer `post_record` to run as soon as possible,
+    /// Request that the remote module invoke the reducer `server_template_create` to run as soon as possible,
     /// registering `callback` to run when we are notified that the reducer completed.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed with the `callback`.
-    fn post_record_then(
+    fn server_template_create_then(
         &self,
-        map_uid: String,
-        account_id: __sdk::Uuid,
-        time: u32,
+        name: String,
+        parent_id: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -64,24 +56,17 @@ pub trait post_record {
     ) -> __sdk::Result<()>;
 }
 
-impl post_record for super::RemoteReducers {
-    fn post_record_then(
+impl server_template_create for super::RemoteReducers {
+    fn server_template_create_then(
         &self,
-        map_uid: String,
-        account_id: __sdk::Uuid,
-        time: u32,
+        name: String,
+        parent_id: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     ) -> __sdk::Result<()> {
-        self.imp.invoke_reducer_with_callback(
-            PostRecordArgs {
-                map_uid,
-                account_id,
-                time,
-            },
-            callback,
-        )
+        self.imp
+            .invoke_reducer_with_callback(ServerTemplateCreateArgs { name, parent_id }, callback)
     }
 }

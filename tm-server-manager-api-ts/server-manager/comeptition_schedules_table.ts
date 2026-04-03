@@ -11,7 +11,7 @@ import {
 } from "spacetimedb";
 import {
   ScheduleSettings,
-  ScheduleState,
+  ScheduleStatus,
 } from "./types";
 
 
@@ -22,8 +22,8 @@ export default __t.row({
   get settings() {
     return ScheduleSettings;
   },
-  get state() {
-    return ScheduleState;
+  get status() {
+    return ScheduleStatus;
   },
   template: __t.bool(),
 });

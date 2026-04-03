@@ -11,7 +11,7 @@ use super::method_call_type::MethodCall;
 pub struct RawServerMethodCall {
     pub id: u32,
     pub server_id: u32,
-    pub account_id: __sdk::Uuid,
+    pub user_id: u32,
     pub timestamp: __sdk::Timestamp,
     pub call: MethodCall,
 }
@@ -26,7 +26,7 @@ impl __sdk::InModule for RawServerMethodCall {
 pub struct RawServerMethodCallCols {
     pub id: __sdk::__query_builder::Col<RawServerMethodCall, u32>,
     pub server_id: __sdk::__query_builder::Col<RawServerMethodCall, u32>,
-    pub account_id: __sdk::__query_builder::Col<RawServerMethodCall, __sdk::Uuid>,
+    pub user_id: __sdk::__query_builder::Col<RawServerMethodCall, u32>,
     pub timestamp: __sdk::__query_builder::Col<RawServerMethodCall, __sdk::Timestamp>,
     pub call: __sdk::__query_builder::Col<RawServerMethodCall, MethodCall>,
 }
@@ -37,7 +37,7 @@ impl __sdk::__query_builder::HasCols for RawServerMethodCall {
         RawServerMethodCallCols {
             id: __sdk::__query_builder::Col::new(table_name, "id"),
             server_id: __sdk::__query_builder::Col::new(table_name, "server_id"),
-            account_id: __sdk::__query_builder::Col::new(table_name, "account_id"),
+            user_id: __sdk::__query_builder::Col::new(table_name, "user_id"),
             timestamp: __sdk::__query_builder::Col::new(table_name, "timestamp"),
             call: __sdk::__query_builder::Col::new(table_name, "call"),
         }

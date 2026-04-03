@@ -4,13 +4,13 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::node_kind_handle_type::NodeKindHandle;
+use super::node_handle_type::NodeHandle;
 use super::vec_2_type::Vec2;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct CompetitionNodePositionUpdateArgs {
-    pub node: NodeKindHandle,
+    pub node: NodeHandle,
     pub position: Vec2,
 }
 
@@ -40,7 +40,7 @@ pub trait competition_node_position_update {
     /// /// Use [`competition_node_position_update:competition_node_position_update_then`] to run a callback after the reducer completes.
     fn competition_node_position_update(
         &self,
-        node: NodeKindHandle,
+        node: NodeHandle,
         position: Vec2,
     ) -> __sdk::Result<()> {
         self.competition_node_position_update_then(node, position, |_, _| {})
@@ -54,7 +54,7 @@ pub trait competition_node_position_update {
     ///  and its status can be observed with the `callback`.
     fn competition_node_position_update_then(
         &self,
-        node: NodeKindHandle,
+        node: NodeHandle,
         position: Vec2,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
@@ -66,7 +66,7 @@ pub trait competition_node_position_update {
 impl competition_node_position_update for super::RemoteReducers {
     fn competition_node_position_update_then(
         &self,
-        node: NodeKindHandle,
+        node: NodeHandle,
         position: Vec2,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)

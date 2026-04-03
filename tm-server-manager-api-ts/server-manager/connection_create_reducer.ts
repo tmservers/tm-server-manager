@@ -11,16 +11,16 @@ import {
 } from "spacetimedb";
 
 import {
-  NodeKindHandle,
+  NodeHandle,
   ConnectionType,
 } from "./types";
 
 export default {
   get origin() {
-    return NodeKindHandle;
+    return NodeHandle;
   },
   get target() {
-    return NodeKindHandle;
+    return NodeHandle;
   },
   get setting() {
     return ConnectionType;

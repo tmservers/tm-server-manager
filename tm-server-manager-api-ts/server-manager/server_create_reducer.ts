@@ -10,9 +10,8 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-export const params = {
-  login: __t.string(),
-  password: __t.string(),
-  accountId: __t.string(),
+export default {
+  name: __t.string(),
+  parentId: __t.u32(),
+  withTemplate: __t.u32(),
 };
-export const returnType = __t.unit()

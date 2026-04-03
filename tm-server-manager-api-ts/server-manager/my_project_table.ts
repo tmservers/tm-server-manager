@@ -11,12 +11,13 @@ import {
 } from "spacetimedb";
 import {
   ProjectStatus,
+  ProjectKind,
 } from "./types";
 
 
 export default __t.row({
   id: __t.u32(),
-  creatorAccountId: __t.uuid().name("creator_account_id"),
+  userId: __t.u32().name("user_id"),
   creatorName: __t.string().name("creator_name"),
   name: __t.string(),
   startingAt: __t.timestamp().name("starting_at"),
@@ -25,4 +26,8 @@ export default __t.row({
   get status() {
     return ProjectStatus;
   },
+  get kind() {
+    return ProjectKind;
+  },
+  verified: __t.bool(),
 });

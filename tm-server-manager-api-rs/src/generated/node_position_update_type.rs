@@ -4,13 +4,13 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::node_kind_handle_type::NodeKindHandle;
+use super::node_handle_type::NodeHandle;
 use super::vec_2_type::Vec2;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct NodePositionUpdate {
-    pub node: NodeKindHandle,
+    pub node: NodeHandle,
     pub position: Vec2,
 }
 

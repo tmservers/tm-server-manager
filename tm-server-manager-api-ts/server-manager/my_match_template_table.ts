@@ -18,9 +18,8 @@ export default __t.row({
   name: __t.string(),
   id: __t.u32().primaryKey(),
   parentId: __t.u32().name("parent_id"),
-  preMatchConfig: __t.u32().name("pre_match_config"),
-  matchConfig: __t.u32().name("match_config"),
-  postMatchConfig: __t.u32().name("post_match_config"),
+  preConfig: __t.u32().name("pre_config"),
+  config: __t.u32(),
   get status() {
     return MatchStatus;
   },

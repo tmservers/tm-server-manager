@@ -6,10 +6,13 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct MonitoringSettingsMap {
-    pub map_uid: String,
+#[derive(Copy, Eq, Hash)]
+pub enum ServerStatus {
+    Configuring,
+
+    Ongoing,
 }
 
-impl __sdk::InModule for MonitoringSettingsMap {
+impl __sdk::InModule for ServerStatus {
     type Module = super::RemoteModule;
 }

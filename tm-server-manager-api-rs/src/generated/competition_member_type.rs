@@ -10,7 +10,7 @@ pub struct CompetitionMember {
     pub permissions: u64,
     pub id: u32,
     pub competition_id: u32,
-    pub account_id: u32,
+    pub user_id: u32,
 }
 
 impl __sdk::InModule for CompetitionMember {
@@ -24,7 +24,7 @@ pub struct CompetitionMemberCols {
     pub permissions: __sdk::__query_builder::Col<CompetitionMember, u64>,
     pub id: __sdk::__query_builder::Col<CompetitionMember, u32>,
     pub competition_id: __sdk::__query_builder::Col<CompetitionMember, u32>,
-    pub account_id: __sdk::__query_builder::Col<CompetitionMember, u32>,
+    pub user_id: __sdk::__query_builder::Col<CompetitionMember, u32>,
 }
 
 impl __sdk::__query_builder::HasCols for CompetitionMember {
@@ -34,7 +34,7 @@ impl __sdk::__query_builder::HasCols for CompetitionMember {
             permissions: __sdk::__query_builder::Col::new(table_name, "permissions"),
             id: __sdk::__query_builder::Col::new(table_name, "id"),
             competition_id: __sdk::__query_builder::Col::new(table_name, "competition_id"),
-            account_id: __sdk::__query_builder::Col::new(table_name, "account_id"),
+            user_id: __sdk::__query_builder::Col::new(table_name, "user_id"),
         }
     }
 }
@@ -43,18 +43,18 @@ impl __sdk::__query_builder::HasCols for CompetitionMember {
 ///
 /// Provides typed access to indexed columns for query building.
 pub struct CompetitionMemberIxCols {
-    pub account_id: __sdk::__query_builder::IxCol<CompetitionMember, u32>,
     pub competition_id: __sdk::__query_builder::IxCol<CompetitionMember, u32>,
     pub id: __sdk::__query_builder::IxCol<CompetitionMember, u32>,
+    pub user_id: __sdk::__query_builder::IxCol<CompetitionMember, u32>,
 }
 
 impl __sdk::__query_builder::HasIxCols for CompetitionMember {
     type IxCols = CompetitionMemberIxCols;
     fn ix_cols(table_name: &'static str) -> Self::IxCols {
         CompetitionMemberIxCols {
-            account_id: __sdk::__query_builder::IxCol::new(table_name, "account_id"),
             competition_id: __sdk::__query_builder::IxCol::new(table_name, "competition_id"),
             id: __sdk::__query_builder::IxCol::new(table_name, "id"),
+            user_id: __sdk::__query_builder::IxCol::new(table_name, "user_id"),
         }
     }
 }

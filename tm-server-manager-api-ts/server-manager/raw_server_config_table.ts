@@ -11,7 +11,6 @@ import {
 } from "spacetimedb";
 import {
   ServerConfig,
-  MatchStatus,
 } from "./types";
 
 
@@ -20,7 +19,4 @@ export default __t.row({
     return ServerConfig;
   },
   open: __t.bool(),
-  get status() {
-    return MatchStatus;
-  },
 });

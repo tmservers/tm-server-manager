@@ -8,7 +8,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[sats(crate = __lib)]
 pub struct CompetitionRoleMember {
     pub role_id: u32,
-    pub account_id: u32,
+    pub user_id: u32,
 }
 
 impl __sdk::InModule for CompetitionRoleMember {
@@ -20,7 +20,7 @@ impl __sdk::InModule for CompetitionRoleMember {
 /// Provides typed access to columns for query building.
 pub struct CompetitionRoleMemberCols {
     pub role_id: __sdk::__query_builder::Col<CompetitionRoleMember, u32>,
-    pub account_id: __sdk::__query_builder::Col<CompetitionRoleMember, u32>,
+    pub user_id: __sdk::__query_builder::Col<CompetitionRoleMember, u32>,
 }
 
 impl __sdk::__query_builder::HasCols for CompetitionRoleMember {
@@ -28,7 +28,7 @@ impl __sdk::__query_builder::HasCols for CompetitionRoleMember {
     fn cols(table_name: &'static str) -> Self::Cols {
         CompetitionRoleMemberCols {
             role_id: __sdk::__query_builder::Col::new(table_name, "role_id"),
-            account_id: __sdk::__query_builder::Col::new(table_name, "account_id"),
+            user_id: __sdk::__query_builder::Col::new(table_name, "user_id"),
         }
     }
 }
@@ -37,16 +37,16 @@ impl __sdk::__query_builder::HasCols for CompetitionRoleMember {
 ///
 /// Provides typed access to indexed columns for query building.
 pub struct CompetitionRoleMemberIxCols {
-    pub account_id: __sdk::__query_builder::IxCol<CompetitionRoleMember, u32>,
     pub role_id: __sdk::__query_builder::IxCol<CompetitionRoleMember, u32>,
+    pub user_id: __sdk::__query_builder::IxCol<CompetitionRoleMember, u32>,
 }
 
 impl __sdk::__query_builder::HasIxCols for CompetitionRoleMember {
     type IxCols = CompetitionRoleMemberIxCols;
     fn ix_cols(table_name: &'static str) -> Self::IxCols {
         CompetitionRoleMemberIxCols {
-            account_id: __sdk::__query_builder::IxCol::new(table_name, "account_id"),
             role_id: __sdk::__query_builder::IxCol::new(table_name, "role_id"),
+            user_id: __sdk::__query_builder::IxCol::new(table_name, "user_id"),
         }
     }
 }

@@ -4,14 +4,14 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::node_kind_handle_type::NodeKindHandle;
+use super::node_handle_type::NodeHandle;
 use super::vec_2_type::Vec2;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct CompetitionNodePosition {
     pub competition_id: u32,
-    pub node: NodeKindHandle,
+    pub node: NodeHandle,
     pub position: Vec2,
 }
 
@@ -24,7 +24,7 @@ impl __sdk::InModule for CompetitionNodePosition {
 /// Provides typed access to columns for query building.
 pub struct CompetitionNodePositionCols {
     pub competition_id: __sdk::__query_builder::Col<CompetitionNodePosition, u32>,
-    pub node: __sdk::__query_builder::Col<CompetitionNodePosition, NodeKindHandle>,
+    pub node: __sdk::__query_builder::Col<CompetitionNodePosition, NodeHandle>,
     pub position: __sdk::__query_builder::Col<CompetitionNodePosition, Vec2>,
 }
 

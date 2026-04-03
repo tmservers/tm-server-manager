@@ -7,6 +7,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 struct PostRoundReplayArgs {
+    pub count: u16,
     pub replay: Vec<u8>,
 }
 
@@ -19,12 +20,13 @@ impl __sdk::InModule for PostRoundReplayArgs {
 ///
 /// Implemented for [`super::RemoteProcedures`].
 pub trait post_round_replay {
-    fn post_round_replay(&self, replay: Vec<u8>) {
-        self.post_round_replay_then(replay, |_, _| {});
+    fn post_round_replay(&self, count: u16, replay: Vec<u8>) {
+        self.post_round_replay_then(count, replay, |_, _| {});
     }
 
     fn post_round_replay_then(
         &self,
+        count: u16,
         replay: Vec<u8>,
 
         __callback: impl FnOnce(&super::ProcedureEventContext, Result<Result<(), String>, __sdk::InternalError>)
@@ -35,6 +37,7 @@ pub trait post_round_replay {
     #[allow(async_fn_in_trait)]
     async fn post_round_replay_async(
         &self,
+        count: u16,
         replay: Vec<u8>,
     ) -> Result<Result<(), String>, __sdk::InternalError>;
 }
@@ -42,6 +45,7 @@ pub trait post_round_replay {
 impl post_round_replay for super::RemoteProcedures {
     fn post_round_replay_then(
         &self,
+        count: u16,
         replay: Vec<u8>,
 
         __callback: impl FnOnce(&super::ProcedureEventContext, Result<Result<(), String>, __sdk::InternalError>)
@@ -51,19 +55,20 @@ impl post_round_replay for super::RemoteProcedures {
         self.imp
             .invoke_procedure_with_callback::<_, Result<(), String>>(
                 "post_round_replay",
-                PostRoundReplayArgs { replay },
+                PostRoundReplayArgs { count, replay },
                 __callback,
             );
     }
 
     async fn post_round_replay_async(
         &self,
+        count: u16,
         replay: Vec<u8>,
     ) -> Result<Result<(), String>, __sdk::InternalError> {
         self.imp
             .invoke_procedure_async::<_, Result<(), String>>(
                 "post_round_replay",
-                PostRoundReplayArgs { replay },
+                PostRoundReplayArgs { count, replay },
             )
             .await
     }

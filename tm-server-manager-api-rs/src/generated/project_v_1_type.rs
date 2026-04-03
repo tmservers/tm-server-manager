@@ -4,6 +4,7 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
+use super::project_kind_type::ProjectKind;
 use super::project_status_type::ProjectStatus;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
@@ -11,10 +12,12 @@ use super::project_status_type::ProjectStatus;
 pub struct ProjectV1 {
     pub name: String,
     pub description: String,
-    pub creator_account_id: __sdk::Uuid,
     pub starting_at: __sdk::Timestamp,
     pub ending_at: __sdk::Timestamp,
+    pub user_id: u32,
     pub id: u32,
+    pub verified: bool,
+    pub kind: ProjectKind,
     pub status: ProjectStatus,
 }
 
@@ -28,10 +31,12 @@ impl __sdk::InModule for ProjectV1 {
 pub struct ProjectV1Cols {
     pub name: __sdk::__query_builder::Col<ProjectV1, String>,
     pub description: __sdk::__query_builder::Col<ProjectV1, String>,
-    pub creator_account_id: __sdk::__query_builder::Col<ProjectV1, __sdk::Uuid>,
     pub starting_at: __sdk::__query_builder::Col<ProjectV1, __sdk::Timestamp>,
     pub ending_at: __sdk::__query_builder::Col<ProjectV1, __sdk::Timestamp>,
+    pub user_id: __sdk::__query_builder::Col<ProjectV1, u32>,
     pub id: __sdk::__query_builder::Col<ProjectV1, u32>,
+    pub verified: __sdk::__query_builder::Col<ProjectV1, bool>,
+    pub kind: __sdk::__query_builder::Col<ProjectV1, ProjectKind>,
     pub status: __sdk::__query_builder::Col<ProjectV1, ProjectStatus>,
 }
 
@@ -41,10 +46,12 @@ impl __sdk::__query_builder::HasCols for ProjectV1 {
         ProjectV1Cols {
             name: __sdk::__query_builder::Col::new(table_name, "name"),
             description: __sdk::__query_builder::Col::new(table_name, "description"),
-            creator_account_id: __sdk::__query_builder::Col::new(table_name, "creator_account_id"),
             starting_at: __sdk::__query_builder::Col::new(table_name, "starting_at"),
             ending_at: __sdk::__query_builder::Col::new(table_name, "ending_at"),
+            user_id: __sdk::__query_builder::Col::new(table_name, "user_id"),
             id: __sdk::__query_builder::Col::new(table_name, "id"),
+            verified: __sdk::__query_builder::Col::new(table_name, "verified"),
+            kind: __sdk::__query_builder::Col::new(table_name, "kind"),
             status: __sdk::__query_builder::Col::new(table_name, "status"),
         }
     }
@@ -54,21 +61,18 @@ impl __sdk::__query_builder::HasCols for ProjectV1 {
 ///
 /// Provides typed access to indexed columns for query building.
 pub struct ProjectV1IxCols {
-    pub creator_account_id: __sdk::__query_builder::IxCol<ProjectV1, __sdk::Uuid>,
     pub id: __sdk::__query_builder::IxCol<ProjectV1, u32>,
     pub name: __sdk::__query_builder::IxCol<ProjectV1, String>,
+    pub user_id: __sdk::__query_builder::IxCol<ProjectV1, u32>,
 }
 
 impl __sdk::__query_builder::HasIxCols for ProjectV1 {
     type IxCols = ProjectV1IxCols;
     fn ix_cols(table_name: &'static str) -> Self::IxCols {
         ProjectV1IxCols {
-            creator_account_id: __sdk::__query_builder::IxCol::new(
-                table_name,
-                "creator_account_id",
-            ),
             id: __sdk::__query_builder::IxCol::new(table_name, "id"),
             name: __sdk::__query_builder::IxCol::new(table_name, "name"),
+            user_id: __sdk::__query_builder::IxCol::new(table_name, "user_id"),
         }
     }
 }

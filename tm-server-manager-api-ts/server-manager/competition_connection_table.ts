@@ -10,7 +10,7 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 import {
-  NodeKindHandle,
+  NodeHandle,
   ConnectionType,
   ConnectionStatus,
 } from "./types";
@@ -19,10 +19,10 @@ import {
 export default __t.row({
   id: __t.u32(),
   get origin() {
-    return NodeKindHandle;
+    return NodeHandle;
   },
   get target() {
-    return NodeKindHandle;
+    return NodeHandle;
   },
   get connectionType() {
     return ConnectionType.name("connection_type");
