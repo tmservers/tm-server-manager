@@ -10,24 +10,20 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 import {
-  NodeHandle,
-  ConnectionType,
-  ConnectionStatus,
+  MatchStatus,
 } from "./types";
 
 
 export default __t.row({
-  id: __t.u32(),
-  get origin() {
-    return NodeHandle;
-  },
-  get target() {
-    return NodeHandle;
-  },
-  get connectionType() {
-    return ConnectionType.name("connection_type");
-  },
+  name: __t.string(),
+  id: __t.u32().primaryKey(),
+  parentId: __t.u32().name("parent_id"),
+  preConfig: __t.u32().name("pre_config"),
+  config: __t.u32(),
   get status() {
-    return ConnectionStatus;
+    return MatchStatus;
   },
+  autoProvisionServer: __t.bool().name("auto_provision_server"),
+  open: __t.bool(),
+  template: __t.bool(),
 });

@@ -4,8 +4,8 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
+use super::connection_kind_type::ConnectionKind;
 use super::connection_status_type::ConnectionStatus;
-use super::connection_type_type::ConnectionType;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
@@ -16,7 +16,7 @@ pub struct TabConnection {
     pub target_id: u32,
     pub origin_variant: u8,
     pub target_variant: u8,
-    pub connection_type: ConnectionType,
+    pub kind: ConnectionKind,
     pub status: ConnectionStatus,
 }
 
@@ -34,7 +34,7 @@ pub struct TabConnectionCols {
     pub target_id: __sdk::__query_builder::Col<TabConnection, u32>,
     pub origin_variant: __sdk::__query_builder::Col<TabConnection, u8>,
     pub target_variant: __sdk::__query_builder::Col<TabConnection, u8>,
-    pub connection_type: __sdk::__query_builder::Col<TabConnection, ConnectionType>,
+    pub kind: __sdk::__query_builder::Col<TabConnection, ConnectionKind>,
     pub status: __sdk::__query_builder::Col<TabConnection, ConnectionStatus>,
 }
 
@@ -48,7 +48,7 @@ impl __sdk::__query_builder::HasCols for TabConnection {
             target_id: __sdk::__query_builder::Col::new(table_name, "target_id"),
             origin_variant: __sdk::__query_builder::Col::new(table_name, "origin_variant"),
             target_variant: __sdk::__query_builder::Col::new(table_name, "target_variant"),
-            connection_type: __sdk::__query_builder::Col::new(table_name, "connection_type"),
+            kind: __sdk::__query_builder::Col::new(table_name, "kind"),
             status: __sdk::__query_builder::Col::new(table_name, "status"),
         }
     }

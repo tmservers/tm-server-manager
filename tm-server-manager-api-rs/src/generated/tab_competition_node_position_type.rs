@@ -49,6 +49,7 @@ impl __sdk::__query_builder::HasCols for TabCompetitionNodePosition {
 /// Provides typed access to indexed columns for query building.
 pub struct TabCompetitionNodePositionIxCols {
     pub competition_id: __sdk::__query_builder::IxCol<TabCompetitionNodePosition, u32>,
+    pub competition_id: __sdk::__query_builder::IxCol<TabCompetitionNodePosition, u32>,
     pub id: __sdk::__query_builder::IxCol<TabCompetitionNodePosition, u32>,
 }
 
@@ -56,6 +57,7 @@ impl __sdk::__query_builder::HasIxCols for TabCompetitionNodePosition {
     type IxCols = TabCompetitionNodePositionIxCols;
     fn ix_cols(table_name: &'static str) -> Self::IxCols {
         TabCompetitionNodePositionIxCols {
+            competition_id: __sdk::__query_builder::IxCol::new(table_name, "competition_id"),
             competition_id: __sdk::__query_builder::IxCol::new(table_name, "competition_id"),
             id: __sdk::__query_builder::IxCol::new(table_name, "id"),
         }

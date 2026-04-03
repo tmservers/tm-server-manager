@@ -7,7 +7,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 #[derive(Copy, Eq, Hash)]
-pub enum ConnectionType {
+pub enum ConnectionKind {
     Wait,
 
     Data,
@@ -15,6 +15,6 @@ pub enum ConnectionType {
     Action,
 }
 
-impl __sdk::InModule for ConnectionType {
+impl __sdk::InModule for ConnectionKind {
     type Module = super::RemoteModule;
 }

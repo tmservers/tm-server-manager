@@ -4,17 +4,18 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
+use super::connection_kind_type::ConnectionKind;
 use super::connection_status_type::ConnectionStatus;
-use super::connection_type_type::ConnectionType;
 use super::node_handle_type::NodeHandle;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct CompetitionConnection {
     pub id: u32,
+    pub competition_id: u32,
     pub origin: NodeHandle,
     pub target: NodeHandle,
-    pub connection_type: ConnectionType,
+    pub kind: ConnectionKind,
     pub status: ConnectionStatus,
 }
 
@@ -27,9 +28,10 @@ impl __sdk::InModule for CompetitionConnection {
 /// Provides typed access to columns for query building.
 pub struct CompetitionConnectionCols {
     pub id: __sdk::__query_builder::Col<CompetitionConnection, u32>,
+    pub competition_id: __sdk::__query_builder::Col<CompetitionConnection, u32>,
     pub origin: __sdk::__query_builder::Col<CompetitionConnection, NodeHandle>,
     pub target: __sdk::__query_builder::Col<CompetitionConnection, NodeHandle>,
-    pub connection_type: __sdk::__query_builder::Col<CompetitionConnection, ConnectionType>,
+    pub kind: __sdk::__query_builder::Col<CompetitionConnection, ConnectionKind>,
     pub status: __sdk::__query_builder::Col<CompetitionConnection, ConnectionStatus>,
 }
 
@@ -38,9 +40,10 @@ impl __sdk::__query_builder::HasCols for CompetitionConnection {
     fn cols(table_name: &'static str) -> Self::Cols {
         CompetitionConnectionCols {
             id: __sdk::__query_builder::Col::new(table_name, "id"),
+            competition_id: __sdk::__query_builder::Col::new(table_name, "competition_id"),
             origin: __sdk::__query_builder::Col::new(table_name, "origin"),
             target: __sdk::__query_builder::Col::new(table_name, "target"),
-            connection_type: __sdk::__query_builder::Col::new(table_name, "connection_type"),
+            kind: __sdk::__query_builder::Col::new(table_name, "kind"),
             status: __sdk::__query_builder::Col::new(table_name, "status"),
         }
     }

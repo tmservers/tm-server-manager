@@ -8,7 +8,7 @@ use super::match_status_type::MatchStatus;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct TmMatchV1 {
+pub struct MatchV1 {
     pub name: String,
     pub id: u32,
     pub parent_id: u32,
@@ -20,29 +20,29 @@ pub struct TmMatchV1 {
     pub template: bool,
 }
 
-impl __sdk::InModule for TmMatchV1 {
+impl __sdk::InModule for MatchV1 {
     type Module = super::RemoteModule;
 }
 
-/// Column accessor struct for the table `TmMatchV1`.
+/// Column accessor struct for the table `MatchV1`.
 ///
 /// Provides typed access to columns for query building.
-pub struct TmMatchV1Cols {
-    pub name: __sdk::__query_builder::Col<TmMatchV1, String>,
-    pub id: __sdk::__query_builder::Col<TmMatchV1, u32>,
-    pub parent_id: __sdk::__query_builder::Col<TmMatchV1, u32>,
-    pub pre_config: __sdk::__query_builder::Col<TmMatchV1, u32>,
-    pub config: __sdk::__query_builder::Col<TmMatchV1, u32>,
-    pub status: __sdk::__query_builder::Col<TmMatchV1, MatchStatus>,
-    pub auto_provision_server: __sdk::__query_builder::Col<TmMatchV1, bool>,
-    pub open: __sdk::__query_builder::Col<TmMatchV1, bool>,
-    pub template: __sdk::__query_builder::Col<TmMatchV1, bool>,
+pub struct MatchV1Cols {
+    pub name: __sdk::__query_builder::Col<MatchV1, String>,
+    pub id: __sdk::__query_builder::Col<MatchV1, u32>,
+    pub parent_id: __sdk::__query_builder::Col<MatchV1, u32>,
+    pub pre_config: __sdk::__query_builder::Col<MatchV1, u32>,
+    pub config: __sdk::__query_builder::Col<MatchV1, u32>,
+    pub status: __sdk::__query_builder::Col<MatchV1, MatchStatus>,
+    pub auto_provision_server: __sdk::__query_builder::Col<MatchV1, bool>,
+    pub open: __sdk::__query_builder::Col<MatchV1, bool>,
+    pub template: __sdk::__query_builder::Col<MatchV1, bool>,
 }
 
-impl __sdk::__query_builder::HasCols for TmMatchV1 {
-    type Cols = TmMatchV1Cols;
+impl __sdk::__query_builder::HasCols for MatchV1 {
+    type Cols = MatchV1Cols;
     fn cols(table_name: &'static str) -> Self::Cols {
-        TmMatchV1Cols {
+        MatchV1Cols {
             name: __sdk::__query_builder::Col::new(table_name, "name"),
             id: __sdk::__query_builder::Col::new(table_name, "id"),
             parent_id: __sdk::__query_builder::Col::new(table_name, "parent_id"),
@@ -59,22 +59,22 @@ impl __sdk::__query_builder::HasCols for TmMatchV1 {
     }
 }
 
-/// Indexed column accessor struct for the table `TmMatchV1`.
+/// Indexed column accessor struct for the table `MatchV1`.
 ///
 /// Provides typed access to indexed columns for query building.
-pub struct TmMatchV1IxCols {
-    pub id: __sdk::__query_builder::IxCol<TmMatchV1, u32>,
-    pub parent_id: __sdk::__query_builder::IxCol<TmMatchV1, u32>,
+pub struct MatchV1IxCols {
+    pub id: __sdk::__query_builder::IxCol<MatchV1, u32>,
+    pub parent_id: __sdk::__query_builder::IxCol<MatchV1, u32>,
 }
 
-impl __sdk::__query_builder::HasIxCols for TmMatchV1 {
-    type IxCols = TmMatchV1IxCols;
+impl __sdk::__query_builder::HasIxCols for MatchV1 {
+    type IxCols = MatchV1IxCols;
     fn ix_cols(table_name: &'static str) -> Self::IxCols {
-        TmMatchV1IxCols {
+        MatchV1IxCols {
             id: __sdk::__query_builder::IxCol::new(table_name, "id"),
             parent_id: __sdk::__query_builder::IxCol::new(table_name, "parent_id"),
         }
     }
 }
 
-impl __sdk::__query_builder::CanBeLookupTable for TmMatchV1 {}
+impl __sdk::__query_builder::CanBeLookupTable for MatchV1 {}

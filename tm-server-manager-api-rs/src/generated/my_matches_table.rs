@@ -6,42 +6,42 @@ use super::match_status_type::MatchStatus;
 use super::match_v_1_type::MatchV1;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-/// Table handle for the table `my_match_template`.
+/// Table handle for the table `my_matches`.
 ///
-/// Obtain a handle from the [`MyMatchTemplateTableAccess::my_match_template`] method on [`super::RemoteTables`],
-/// like `ctx.db.my_match_template()`.
+/// Obtain a handle from the [`MyMatchesTableAccess::my_matches`] method on [`super::RemoteTables`],
+/// like `ctx.db.my_matches()`.
 ///
 /// Users are encouraged not to explicitly reference this type,
 /// but to directly chain method calls,
-/// like `ctx.db.my_match_template().on_insert(...)`.
-pub struct MyMatchTemplateTableHandle<'ctx> {
+/// like `ctx.db.my_matches().on_insert(...)`.
+pub struct MyMatchesTableHandle<'ctx> {
     imp: __sdk::TableHandle<MatchV1>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the table `my_match_template`.
+/// Extension trait for access to the table `my_matches`.
 ///
 /// Implemented for [`super::RemoteTables`].
-pub trait MyMatchTemplateTableAccess {
+pub trait MyMatchesTableAccess {
     #[allow(non_snake_case)]
-    /// Obtain a [`MyMatchTemplateTableHandle`], which mediates access to the table `my_match_template`.
-    fn my_match_template(&self) -> MyMatchTemplateTableHandle<'_>;
+    /// Obtain a [`MyMatchesTableHandle`], which mediates access to the table `my_matches`.
+    fn my_matches(&self) -> MyMatchesTableHandle<'_>;
 }
 
-impl MyMatchTemplateTableAccess for super::RemoteTables {
-    fn my_match_template(&self) -> MyMatchTemplateTableHandle<'_> {
-        MyMatchTemplateTableHandle {
-            imp: self.imp.get_table::<MatchV1>("my_match_template"),
+impl MyMatchesTableAccess for super::RemoteTables {
+    fn my_matches(&self) -> MyMatchesTableHandle<'_> {
+        MyMatchesTableHandle {
+            imp: self.imp.get_table::<MatchV1>("my_matches"),
             ctx: std::marker::PhantomData,
         }
     }
 }
 
-pub struct MyMatchTemplateInsertCallbackId(__sdk::CallbackId);
-pub struct MyMatchTemplateDeleteCallbackId(__sdk::CallbackId);
+pub struct MyMatchesInsertCallbackId(__sdk::CallbackId);
+pub struct MyMatchesDeleteCallbackId(__sdk::CallbackId);
 
-impl<'ctx> __sdk::Table for MyMatchTemplateTableHandle<'ctx> {
+impl<'ctx> __sdk::Table for MyMatchesTableHandle<'ctx> {
     type Row = MatchV1;
     type EventContext = super::EventContext;
 
@@ -52,73 +52,73 @@ impl<'ctx> __sdk::Table for MyMatchTemplateTableHandle<'ctx> {
         self.imp.iter()
     }
 
-    type InsertCallbackId = MyMatchTemplateInsertCallbackId;
+    type InsertCallbackId = MyMatchesInsertCallbackId;
 
     fn on_insert(
         &self,
         callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
-    ) -> MyMatchTemplateInsertCallbackId {
-        MyMatchTemplateInsertCallbackId(self.imp.on_insert(Box::new(callback)))
+    ) -> MyMatchesInsertCallbackId {
+        MyMatchesInsertCallbackId(self.imp.on_insert(Box::new(callback)))
     }
 
-    fn remove_on_insert(&self, callback: MyMatchTemplateInsertCallbackId) {
+    fn remove_on_insert(&self, callback: MyMatchesInsertCallbackId) {
         self.imp.remove_on_insert(callback.0)
     }
 
-    type DeleteCallbackId = MyMatchTemplateDeleteCallbackId;
+    type DeleteCallbackId = MyMatchesDeleteCallbackId;
 
     fn on_delete(
         &self,
         callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
-    ) -> MyMatchTemplateDeleteCallbackId {
-        MyMatchTemplateDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
+    ) -> MyMatchesDeleteCallbackId {
+        MyMatchesDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
     }
 
-    fn remove_on_delete(&self, callback: MyMatchTemplateDeleteCallbackId) {
+    fn remove_on_delete(&self, callback: MyMatchesDeleteCallbackId) {
         self.imp.remove_on_delete(callback.0)
     }
 }
 
-pub struct MyMatchTemplateUpdateCallbackId(__sdk::CallbackId);
+pub struct MyMatchesUpdateCallbackId(__sdk::CallbackId);
 
-impl<'ctx> __sdk::TableWithPrimaryKey for MyMatchTemplateTableHandle<'ctx> {
-    type UpdateCallbackId = MyMatchTemplateUpdateCallbackId;
+impl<'ctx> __sdk::TableWithPrimaryKey for MyMatchesTableHandle<'ctx> {
+    type UpdateCallbackId = MyMatchesUpdateCallbackId;
 
     fn on_update(
         &self,
         callback: impl FnMut(&Self::EventContext, &Self::Row, &Self::Row) + Send + 'static,
-    ) -> MyMatchTemplateUpdateCallbackId {
-        MyMatchTemplateUpdateCallbackId(self.imp.on_update(Box::new(callback)))
+    ) -> MyMatchesUpdateCallbackId {
+        MyMatchesUpdateCallbackId(self.imp.on_update(Box::new(callback)))
     }
 
-    fn remove_on_update(&self, callback: MyMatchTemplateUpdateCallbackId) {
+    fn remove_on_update(&self, callback: MyMatchesUpdateCallbackId) {
         self.imp.remove_on_update(callback.0)
     }
 }
 
-/// Access to the `id` unique index on the table `my_match_template`,
+/// Access to the `id` unique index on the table `my_matches`,
 /// which allows point queries on the field of the same name
-/// via the [`MyMatchTemplateIdUnique::find`] method.
+/// via the [`MyMatchesIdUnique::find`] method.
 ///
 /// Users are encouraged not to explicitly reference this type,
 /// but to directly chain method calls,
-/// like `ctx.db.my_match_template().id().find(...)`.
-pub struct MyMatchTemplateIdUnique<'ctx> {
+/// like `ctx.db.my_matches().id().find(...)`.
+pub struct MyMatchesIdUnique<'ctx> {
     imp: __sdk::UniqueConstraintHandle<MatchV1, u32>,
     phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
-impl<'ctx> MyMatchTemplateTableHandle<'ctx> {
-    /// Get a handle on the `id` unique index on the table `my_match_template`.
-    pub fn id(&self) -> MyMatchTemplateIdUnique<'ctx> {
-        MyMatchTemplateIdUnique {
+impl<'ctx> MyMatchesTableHandle<'ctx> {
+    /// Get a handle on the `id` unique index on the table `my_matches`.
+    pub fn id(&self) -> MyMatchesIdUnique<'ctx> {
+        MyMatchesIdUnique {
             imp: self.imp.get_unique_constraint::<u32>("id"),
             phantom: std::marker::PhantomData,
         }
     }
 }
 
-impl<'ctx> MyMatchTemplateIdUnique<'ctx> {
+impl<'ctx> MyMatchesIdUnique<'ctx> {
     /// Find the subscribed row whose `id` column value is equal to `col_val`,
     /// if such a row is present in the client cache.
     pub fn find(&self, col_val: &u32) -> Option<MatchV1> {
@@ -128,7 +128,7 @@ impl<'ctx> MyMatchTemplateIdUnique<'ctx> {
 
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
-    let _table = client_cache.get_or_make_table::<MatchV1>("my_match_template");
+    let _table = client_cache.get_or_make_table::<MatchV1>("my_matches");
     _table.add_unique_constraint::<u32>("id", |row| &row.id);
 }
 
@@ -147,14 +147,14 @@ pub(super) fn parse_table_update(
 /// Extension trait for query builder access to the table `MatchV1`.
 ///
 /// Implemented for [`__sdk::QueryTableAccessor`].
-pub trait my_match_templateQueryTableAccess {
+pub trait my_matchesQueryTableAccess {
     #[allow(non_snake_case)]
     /// Get a query builder for the table `MatchV1`.
-    fn my_match_template(&self) -> __sdk::__query_builder::Table<MatchV1>;
+    fn my_matches(&self) -> __sdk::__query_builder::Table<MatchV1>;
 }
 
-impl my_match_templateQueryTableAccess for __sdk::QueryTableAccessor {
-    fn my_match_template(&self) -> __sdk::__query_builder::Table<MatchV1> {
-        __sdk::__query_builder::Table::new("my_match_template")
+impl my_matchesQueryTableAccess for __sdk::QueryTableAccessor {
+    fn my_matches(&self) -> __sdk::__query_builder::Table<MatchV1> {
+        __sdk::__query_builder::Table::new("my_matches")
     }
 }

@@ -45,7 +45,7 @@ pub struct TabConnection {
     origin_variant: u8,
     target_variant: u8,
 
-    connection_type: ConnectionType,
+    kind: ConnectionKind,
     status: ConnectionStatus,
 }
 
@@ -59,15 +59,15 @@ impl TabConnection {
     }
 
     pub(crate) fn is_data(&self) -> bool {
-        self.connection_type == ConnectionType::Data
+        self.kind == ConnectionKind::Data
     }
 
     pub(crate) fn is_wait(&self) -> bool {
-        self.connection_type == ConnectionType::Wait
+        self.kind == ConnectionKind::Wait
     }
 
     pub(crate) fn is_action(&self) -> bool {
-        self.connection_type == ConnectionType::Action
+        self.kind == ConnectionKind::Action
     }
 
     pub(crate) fn resolve(&mut self) {
@@ -101,7 +101,7 @@ pub enum ConnectionStatus {
 }
 
 #[derive(Debug, SpacetimeType, Clone, Copy, PartialEq, Eq)]
-pub enum ConnectionType {
+pub enum ConnectionKind {
     Wait,
     Data,
     Action,
@@ -113,7 +113,7 @@ pub fn connection_create(
     ctx: &ReducerContext,
     origin: NodeHandle,
     target: NodeHandle,
-    setting: ConnectionType,
+    kind: ConnectionKind,
 ) -> Result<(), String> {
     if origin == target {
         return Err("Cannot connect a Node to itself.".into());
@@ -194,7 +194,7 @@ pub fn connection_create(
             (
                 *map.get(&c.connection_origin()).unwrap(),
                 *map.get(&c.connection_target()).unwrap(),
-                c.connection_type,
+                c.kind,
             )
         })
         .collect::<Vec<_>>();
@@ -204,11 +204,7 @@ pub fn connection_create(
     log::error!("{graph:?}");
     let mut graph = Acyclic::try_from_graph(graph).map_err(|e| format!("{e:?}"))?;
     graph
-        .try_add_edge(
-            *map.get(&origin).unwrap(),
-            *map.get(&target).unwrap(),
-            setting,
-        )
+        .try_add_edge(*map.get(&origin).unwrap(), *map.get(&target).unwrap(), kind)
         .map_err(|e| format!("{e:?}"))?;
 
     let (origin_variant, origin_id) = origin.split();
@@ -220,19 +216,19 @@ pub fn connection_create(
         target_id,
         origin_variant,
         target_variant,
-        connection_type: setting,
+        kind,
         status: ConnectionStatus::Configuring,
     })?;
 
     //If we insert Data Settings we also need to add a row in the data table.
-    match connection.connection_type {
-        ConnectionType::Wait => (),
-        ConnectionType::Data => {
+    match connection.kind {
+        ConnectionKind::Wait => (),
+        ConnectionKind::Data => {
             ctx.db
                 .tab_connection_data()
                 .try_insert(ConnectionData::new(connection.id, connection.parent_id))?;
         }
-        ConnectionType::Action => {
+        ConnectionKind::Action => {
             todo!()
         }
     }
@@ -243,17 +239,18 @@ pub fn connection_create(
 #[derive(Debug, SpacetimeType)]
 pub struct CompetitionConnection {
     id: u32,
+    competition_id: u32,
 
     origin: NodeHandle,
     target: NodeHandle,
 
-    connection_type: ConnectionType,
+    kind: ConnectionKind,
     status: ConnectionStatus,
 }
 
 impl CompetitionConnection {
     pub(crate) fn is_action(&self) -> bool {
-        self.connection_type == ConnectionType::Action
+        self.kind == ConnectionKind::Action
     }
 }
 
@@ -262,9 +259,10 @@ impl From<TabConnection> for CompetitionConnection {
         CompetitionConnection {
             origin: NodeHandle::combine(v.origin_variant, v.origin_id),
             target: NodeHandle::combine(v.target_variant, v.target_id),
-            connection_type: v.connection_type,
+            kind: v.kind,
             id: v.id,
             status: v.status,
+            competition_id: v.parent_id,
         }
     }
 }

@@ -15,12 +15,10 @@ pub mod competition_available_server_pool_table;
 pub mod competition_configured_reducer;
 pub mod competition_connection_data_table;
 pub mod competition_connection_data_update_reducer;
-pub mod competition_connection_table;
 pub mod competition_connection_type;
 pub mod competition_create_reducer;
 pub mod competition_edit_name_reducer;
 pub mod competition_member_type;
-pub mod competition_node_position_table;
 pub mod competition_node_position_type;
 pub mod competition_node_position_update_reducer;
 pub mod competition_node_positions_update_reducer;
@@ -38,8 +36,8 @@ pub mod connection_action_type;
 pub mod connection_create_reducer;
 pub mod connection_data_option_type;
 pub mod connection_data_type;
+pub mod connection_kind_type;
 pub mod connection_status_type;
-pub mod connection_type_type;
 pub mod create_project_reducer;
 pub mod custom_type;
 pub mod end_map_end_type;
@@ -82,6 +80,7 @@ pub mod match_template_create_reducer;
 pub mod match_try_start_reducer;
 pub mod match_update_config_reducer;
 pub mod match_update_pre_config_reducer;
+pub mod match_v_1_type;
 pub mod member_add_reducer;
 pub mod member_assign_permission_reducer;
 pub mod member_remove_reducer;
@@ -89,8 +88,10 @@ pub mod method_call_type;
 pub mod method_error_type;
 pub mod method_response_type;
 pub mod mode_settings_type;
-pub mod my_competition_match_table;
+pub mod my_connections_table;
 pub mod my_match_template_table;
+pub mod my_matches_table;
+pub mod my_node_positions_table;
 pub mod my_project_v_1_type;
 pub mod my_projects_table;
 pub mod my_user_table;
@@ -195,7 +196,6 @@ pub mod temp_match_leaderboard_table;
 pub mod temp_registration_player_table;
 pub mod this_raw_server_table;
 pub mod time_attack_type;
-pub mod tm_match_v_1_type;
 pub mod tm_server_method_response_type;
 pub mod tm_server_v_1_type;
 pub mod unloading_map_end_type;
@@ -222,12 +222,10 @@ pub use competition_available_server_pool_table::*;
 pub use competition_configured_reducer::competition_configured;
 pub use competition_connection_data_table::*;
 pub use competition_connection_data_update_reducer::competition_connection_data_update;
-pub use competition_connection_table::*;
 pub use competition_connection_type::CompetitionConnection;
 pub use competition_create_reducer::competition_create;
 pub use competition_edit_name_reducer::competition_edit_name;
 pub use competition_member_type::CompetitionMember;
-pub use competition_node_position_table::*;
 pub use competition_node_position_type::CompetitionNodePosition;
 pub use competition_node_position_update_reducer::competition_node_position_update;
 pub use competition_node_positions_update_reducer::competition_node_positions_update;
@@ -245,8 +243,8 @@ pub use connection_action_type::ConnectionAction;
 pub use connection_create_reducer::connection_create;
 pub use connection_data_option_type::ConnectionDataOption;
 pub use connection_data_type::ConnectionData;
+pub use connection_kind_type::ConnectionKind;
 pub use connection_status_type::ConnectionStatus;
-pub use connection_type_type::ConnectionType;
 pub use create_project_reducer::create_project;
 pub use custom_type::Custom;
 pub use end_map_end_type::EndMapEnd;
@@ -289,6 +287,7 @@ pub use match_template_create_reducer::match_template_create;
 pub use match_try_start_reducer::match_try_start;
 pub use match_update_config_reducer::match_update_config;
 pub use match_update_pre_config_reducer::match_update_pre_config;
+pub use match_v_1_type::MatchV1;
 pub use member_add_reducer::member_add;
 pub use member_assign_permission_reducer::member_assign_permission;
 pub use member_remove_reducer::member_remove;
@@ -296,8 +295,10 @@ pub use method_call_type::MethodCall;
 pub use method_error_type::MethodError;
 pub use method_response_type::MethodResponse;
 pub use mode_settings_type::ModeSettings;
-pub use my_competition_match_table::*;
+pub use my_connections_table::*;
 pub use my_match_template_table::*;
+pub use my_matches_table::*;
+pub use my_node_positions_table::*;
 pub use my_project_v_1_type::MyProjectV1;
 pub use my_projects_table::*;
 pub use my_user_table::*;
@@ -402,7 +403,6 @@ pub use temp_match_leaderboard_table::*;
 pub use temp_registration_player_table::*;
 pub use this_raw_server_table::*;
 pub use time_attack_type::TimeAttack;
-pub use tm_match_v_1_type::TmMatchV1;
 pub use tm_server_method_response_type::TmServerMethodResponse;
 pub use tm_server_v_1_type::TmServerV1;
 pub use unloading_map_end_type::UnloadingMapEnd;
@@ -462,7 +462,7 @@ pub enum Reducer {
     ConnectionCreate {
         origin: NodeHandle,
         target: NodeHandle,
-        setting: ConnectionType,
+        kind: ConnectionKind,
     },
     CreateProject {
         name: String,
@@ -765,11 +765,11 @@ impl __sdk::Reducer for Reducer {
             Reducer::ConnectionCreate {
                 origin,
                 target,
-                setting,
+                kind,
             } => __sats::bsatn::to_vec(&connection_create_reducer::ConnectionCreateArgs {
                 origin: origin.clone(),
                 target: target.clone(),
-                setting: setting.clone(),
+                kind: kind.clone(),
             }),
             Reducer::CreateProject {
                 name,
@@ -1073,14 +1073,14 @@ pub struct DbUpdate {
     comeptition_schedules: __sdk::TableUpdate<ScheduleV1>,
     competition: __sdk::TableUpdate<CompetitionV1>,
     competition_available_server_pool: __sdk::TableUpdate<RawServerV1>,
-    competition_connection: __sdk::TableUpdate<CompetitionConnection>,
     competition_connection_data: __sdk::TableUpdate<ConnectionData>,
-    competition_node_position: __sdk::TableUpdate<CompetitionNodePosition>,
     match_round: __sdk::TableUpdate<MatchRoundPlayer>,
     match_round_ext: __sdk::TableUpdate<MatchRoundPlayerExt>,
     match_state: __sdk::TableUpdate<MatchState>,
-    my_competition_match: __sdk::TableUpdate<TmMatchV1>,
-    my_match_template: __sdk::TableUpdate<TmMatchV1>,
+    my_connections: __sdk::TableUpdate<CompetitionConnection>,
+    my_match_template: __sdk::TableUpdate<MatchV1>,
+    my_matches: __sdk::TableUpdate<MatchV1>,
+    my_node_positions: __sdk::TableUpdate<CompetitionNodePosition>,
     my_projects: __sdk::TableUpdate<MyProjectV1>,
     my_user: __sdk::TableUpdate<UserV1>,
     raw_server_config: __sdk::TableUpdate<ServerMetadata>,
@@ -1113,14 +1113,8 @@ impl TryFrom<__ws::v2::TransactionUpdate> for DbUpdate {
                         competition_available_server_pool_table::parse_table_update(table_update)?,
                     )
                 }
-                "competition_connection" => db_update.competition_connection.append(
-                    competition_connection_table::parse_table_update(table_update)?,
-                ),
                 "competition_connection_data" => db_update.competition_connection_data.append(
                     competition_connection_data_table::parse_table_update(table_update)?,
-                ),
-                "competition_node_position" => db_update.competition_node_position.append(
-                    competition_node_position_table::parse_table_update(table_update)?,
                 ),
                 "match_round" => db_update
                     .match_round
@@ -1131,12 +1125,18 @@ impl TryFrom<__ws::v2::TransactionUpdate> for DbUpdate {
                 "match_state" => db_update
                     .match_state
                     .append(match_state_table::parse_table_update(table_update)?),
-                "my_competition_match" => db_update.my_competition_match.append(
-                    my_competition_match_table::parse_table_update(table_update)?,
-                ),
+                "my_connections" => db_update
+                    .my_connections
+                    .append(my_connections_table::parse_table_update(table_update)?),
                 "my_match_template" => db_update
                     .my_match_template
                     .append(my_match_template_table::parse_table_update(table_update)?),
+                "my_matches" => db_update
+                    .my_matches
+                    .append(my_matches_table::parse_table_update(table_update)?),
+                "my_node_positions" => db_update
+                    .my_node_positions
+                    .append(my_node_positions_table::parse_table_update(table_update)?),
                 "my_projects" => db_update
                     .my_projects
                     .append(my_projects_table::parse_table_update(table_update)?),
@@ -1214,31 +1214,30 @@ impl __sdk::DbUpdate for DbUpdate {
             "competition_available_server_pool",
             &self.competition_available_server_pool,
         );
-        diff.competition_connection = cache.apply_diff_to_table::<CompetitionConnection>(
-            "competition_connection",
-            &self.competition_connection,
-        );
         diff.competition_connection_data = cache
             .apply_diff_to_table::<ConnectionData>(
                 "competition_connection_data",
                 &self.competition_connection_data,
             )
             .with_updates_by_pk(|row| &row.connection_id);
-        diff.competition_node_position = cache.apply_diff_to_table::<CompetitionNodePosition>(
-            "competition_node_position",
-            &self.competition_node_position,
-        );
         diff.match_round =
             cache.apply_diff_to_table::<MatchRoundPlayer>("match_round", &self.match_round);
         diff.match_round_ext = cache
             .apply_diff_to_table::<MatchRoundPlayerExt>("match_round_ext", &self.match_round_ext);
         diff.match_state =
             cache.apply_diff_to_table::<MatchState>("match_state", &self.match_state);
-        diff.my_competition_match = cache
-            .apply_diff_to_table::<TmMatchV1>("my_competition_match", &self.my_competition_match);
+        diff.my_connections = cache
+            .apply_diff_to_table::<CompetitionConnection>("my_connections", &self.my_connections);
         diff.my_match_template = cache
-            .apply_diff_to_table::<TmMatchV1>("my_match_template", &self.my_match_template)
+            .apply_diff_to_table::<MatchV1>("my_match_template", &self.my_match_template)
             .with_updates_by_pk(|row| &row.id);
+        diff.my_matches = cache
+            .apply_diff_to_table::<MatchV1>("my_matches", &self.my_matches)
+            .with_updates_by_pk(|row| &row.id);
+        diff.my_node_positions = cache.apply_diff_to_table::<CompetitionNodePosition>(
+            "my_node_positions",
+            &self.my_node_positions,
+        );
         diff.my_projects =
             cache.apply_diff_to_table::<MyProjectV1>("my_projects", &self.my_projects);
         diff.my_user = cache.apply_diff_to_table::<UserV1>("my_user", &self.my_user);
@@ -1298,14 +1297,8 @@ impl __sdk::DbUpdate for DbUpdate {
                 "competition_available_server_pool" => db_update
                     .competition_available_server_pool
                     .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
-                "competition_connection" => db_update
-                    .competition_connection
-                    .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
                 "competition_connection_data" => db_update
                     .competition_connection_data
-                    .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
-                "competition_node_position" => db_update
-                    .competition_node_position
                     .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
                 "match_round" => db_update
                     .match_round
@@ -1316,11 +1309,17 @@ impl __sdk::DbUpdate for DbUpdate {
                 "match_state" => db_update
                     .match_state
                     .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
-                "my_competition_match" => db_update
-                    .my_competition_match
+                "my_connections" => db_update
+                    .my_connections
                     .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
                 "my_match_template" => db_update
                     .my_match_template
+                    .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
+                "my_matches" => db_update
+                    .my_matches
+                    .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
+                "my_node_positions" => db_update
+                    .my_node_positions
                     .append(__sdk::parse_row_list_as_inserts(table_rows.rows)?),
                 "my_projects" => db_update
                     .my_projects
@@ -1383,14 +1382,8 @@ impl __sdk::DbUpdate for DbUpdate {
                 "competition_available_server_pool" => db_update
                     .competition_available_server_pool
                     .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
-                "competition_connection" => db_update
-                    .competition_connection
-                    .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
                 "competition_connection_data" => db_update
                     .competition_connection_data
-                    .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
-                "competition_node_position" => db_update
-                    .competition_node_position
                     .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
                 "match_round" => db_update
                     .match_round
@@ -1401,11 +1394,17 @@ impl __sdk::DbUpdate for DbUpdate {
                 "match_state" => db_update
                     .match_state
                     .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
-                "my_competition_match" => db_update
-                    .my_competition_match
+                "my_connections" => db_update
+                    .my_connections
                     .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
                 "my_match_template" => db_update
                     .my_match_template
+                    .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
+                "my_matches" => db_update
+                    .my_matches
+                    .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
+                "my_node_positions" => db_update
+                    .my_node_positions
                     .append(__sdk::parse_row_list_as_deletes(table_rows.rows)?),
                 "my_projects" => db_update
                     .my_projects
@@ -1464,14 +1463,14 @@ pub struct AppliedDiff<'r> {
     comeptition_schedules: __sdk::TableAppliedDiff<'r, ScheduleV1>,
     competition: __sdk::TableAppliedDiff<'r, CompetitionV1>,
     competition_available_server_pool: __sdk::TableAppliedDiff<'r, RawServerV1>,
-    competition_connection: __sdk::TableAppliedDiff<'r, CompetitionConnection>,
     competition_connection_data: __sdk::TableAppliedDiff<'r, ConnectionData>,
-    competition_node_position: __sdk::TableAppliedDiff<'r, CompetitionNodePosition>,
     match_round: __sdk::TableAppliedDiff<'r, MatchRoundPlayer>,
     match_round_ext: __sdk::TableAppliedDiff<'r, MatchRoundPlayerExt>,
     match_state: __sdk::TableAppliedDiff<'r, MatchState>,
-    my_competition_match: __sdk::TableAppliedDiff<'r, TmMatchV1>,
-    my_match_template: __sdk::TableAppliedDiff<'r, TmMatchV1>,
+    my_connections: __sdk::TableAppliedDiff<'r, CompetitionConnection>,
+    my_match_template: __sdk::TableAppliedDiff<'r, MatchV1>,
+    my_matches: __sdk::TableAppliedDiff<'r, MatchV1>,
+    my_node_positions: __sdk::TableAppliedDiff<'r, CompetitionNodePosition>,
     my_projects: __sdk::TableAppliedDiff<'r, MyProjectV1>,
     my_user: __sdk::TableAppliedDiff<'r, UserV1>,
     raw_server_config: __sdk::TableAppliedDiff<'r, ServerMetadata>,
@@ -1513,19 +1512,9 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             &self.competition_available_server_pool,
             event,
         );
-        callbacks.invoke_table_row_callbacks::<CompetitionConnection>(
-            "competition_connection",
-            &self.competition_connection,
-            event,
-        );
         callbacks.invoke_table_row_callbacks::<ConnectionData>(
             "competition_connection_data",
             &self.competition_connection_data,
-            event,
-        );
-        callbacks.invoke_table_row_callbacks::<CompetitionNodePosition>(
-            "competition_node_position",
-            &self.competition_node_position,
             event,
         );
         callbacks.invoke_table_row_callbacks::<MatchRoundPlayer>(
@@ -1539,14 +1528,20 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             event,
         );
         callbacks.invoke_table_row_callbacks::<MatchState>("match_state", &self.match_state, event);
-        callbacks.invoke_table_row_callbacks::<TmMatchV1>(
-            "my_competition_match",
-            &self.my_competition_match,
+        callbacks.invoke_table_row_callbacks::<CompetitionConnection>(
+            "my_connections",
+            &self.my_connections,
             event,
         );
-        callbacks.invoke_table_row_callbacks::<TmMatchV1>(
+        callbacks.invoke_table_row_callbacks::<MatchV1>(
             "my_match_template",
             &self.my_match_template,
+            event,
+        );
+        callbacks.invoke_table_row_callbacks::<MatchV1>("my_matches", &self.my_matches, event);
+        callbacks.invoke_table_row_callbacks::<CompetitionNodePosition>(
+            "my_node_positions",
+            &self.my_node_positions,
             event,
         );
         callbacks.invoke_table_row_callbacks::<MyProjectV1>(
@@ -2258,14 +2253,14 @@ impl __sdk::SpacetimeModule for RemoteModule {
         comeptition_schedules_table::register_table(client_cache);
         competition_table::register_table(client_cache);
         competition_available_server_pool_table::register_table(client_cache);
-        competition_connection_table::register_table(client_cache);
         competition_connection_data_table::register_table(client_cache);
-        competition_node_position_table::register_table(client_cache);
         match_round_table::register_table(client_cache);
         match_round_ext_table::register_table(client_cache);
         match_state_table::register_table(client_cache);
-        my_competition_match_table::register_table(client_cache);
+        my_connections_table::register_table(client_cache);
         my_match_template_table::register_table(client_cache);
+        my_matches_table::register_table(client_cache);
+        my_node_positions_table::register_table(client_cache);
         my_projects_table::register_table(client_cache);
         my_user_table::register_table(client_cache);
         raw_server_config_table::register_table(client_cache);
@@ -2284,14 +2279,14 @@ impl __sdk::SpacetimeModule for RemoteModule {
         "comeptition_schedules",
         "competition",
         "competition_available_server_pool",
-        "competition_connection",
         "competition_connection_data",
-        "competition_node_position",
         "match_round",
         "match_round_ext",
         "match_state",
-        "my_competition_match",
+        "my_connections",
         "my_match_template",
+        "my_matches",
+        "my_node_positions",
         "my_projects",
         "my_user",
         "raw_server_config",

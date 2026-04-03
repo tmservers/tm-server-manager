@@ -4,7 +4,7 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::connection_type_type::ConnectionType;
+use super::connection_kind_type::ConnectionKind;
 use super::node_handle_type::NodeHandle;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
@@ -12,7 +12,7 @@ use super::node_handle_type::NodeHandle;
 pub(super) struct ConnectionCreateArgs {
     pub origin: NodeHandle,
     pub target: NodeHandle,
-    pub setting: ConnectionType,
+    pub kind: ConnectionKind,
 }
 
 impl From<ConnectionCreateArgs> for super::Reducer {
@@ -20,7 +20,7 @@ impl From<ConnectionCreateArgs> for super::Reducer {
         Self::ConnectionCreate {
             origin: args.origin,
             target: args.target,
-            setting: args.setting,
+            kind: args.kind,
         }
     }
 }
@@ -44,9 +44,9 @@ pub trait connection_create {
         &self,
         origin: NodeHandle,
         target: NodeHandle,
-        setting: ConnectionType,
+        kind: ConnectionKind,
     ) -> __sdk::Result<()> {
-        self.connection_create_then(origin, target, setting, |_, _| {})
+        self.connection_create_then(origin, target, kind, |_, _| {})
     }
 
     /// Request that the remote module invoke the reducer `connection_create` to run as soon as possible,
@@ -59,7 +59,7 @@ pub trait connection_create {
         &self,
         origin: NodeHandle,
         target: NodeHandle,
-        setting: ConnectionType,
+        kind: ConnectionKind,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -72,7 +72,7 @@ impl connection_create for super::RemoteReducers {
         &self,
         origin: NodeHandle,
         target: NodeHandle,
-        setting: ConnectionType,
+        kind: ConnectionKind,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -82,7 +82,7 @@ impl connection_create for super::RemoteReducers {
             ConnectionCreateArgs {
                 origin,
                 target,
-                setting,
+                kind,
             },
             callback,
         )
