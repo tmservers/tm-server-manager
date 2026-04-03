@@ -1,4 +1,4 @@
-use spacetimedb::{Identity, Table, Uuid, ViewContext, table, view};
+use spacetimedb::{AnonymousViewContext, Identity, Query, Table, Uuid, ViewContext, table, view};
 
 use crate::authorization::Authorization;
 
@@ -37,6 +37,11 @@ pub fn my_user(ctx: &ViewContext) -> Option<UserV1> {
         return None;
     };
     ctx.db.tab_user().id().find(user)
+}
+
+#[view(accessor=users,public)]
+pub fn users(ctx: &AnonymousViewContext) -> impl Query<UserV1> {
+    ctx.from.tab_user()
 }
 
 #[table(accessor= tab_user_identity)]

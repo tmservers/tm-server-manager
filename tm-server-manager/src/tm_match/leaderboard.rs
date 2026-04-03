@@ -31,7 +31,7 @@ pub(super) struct PlayerActionCheckpoint {
     index(accessor=match_round_range, btree(columns=[match_id,round])),
     index(accessor=match_round_player, hash(columns=[match_id,round,user_id]))
 )]
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct TabMatchRoundPlayer {
     #[auto_inc]
     #[primary_key]
@@ -77,9 +77,9 @@ pub struct TabMatchRoundPlayerExt {
     round_actions: Vec<PlayerAction>,
 
     user_id: u32,
-    match_id: u32,
     #[primary_key]
     pub id: u32,
+    match_id: u32,
     round: u16,
 }
 
@@ -146,7 +146,7 @@ impl TabMatchRoundPlayerExt {
     }
 }
 
-#[derive(Debug, SpacetimeType, Clone, Copy)]
+/* #[derive(Debug, SpacetimeType, Clone, Copy)]
 pub struct MatchRoundPlayer {
     pub account_id: Uuid,
 
@@ -161,20 +161,20 @@ pub struct MatchRoundPlayer {
 
     round: u16,
     position: u16,
-}
+} */
 
-#[derive(Debug, SpacetimeType, Clone)]
+/* #[derive(Debug, SpacetimeType, Clone)]
 pub struct MatchRoundPlayerExt {
     round_actions: Vec<PlayerAction>,
     id: u32,
     match_id: u32,
     round: u16,
-}
+} */
 
 #[view(accessor=temp_match_leaderboard,public)]
 fn temp_match_leaderboard(
     ctx: &AnonymousViewContext, /*, match_id: u32, round: u16 */
-) -> Vec<MatchRoundPlayer> {
+) -> Vec<TabMatchRoundPlayer> {
     ctx.match_leaderboard(51, 0)
 }
 
@@ -184,7 +184,7 @@ fn temp_match_leaderboard(
 #[view(accessor=match_round,public)]
 pub fn match_round(
     ctx: &AnonymousViewContext, /*, match_id: u32, round: u16 */
-) -> Vec<MatchRoundPlayer> {
+) -> Vec<TabMatchRoundPlayer> {
     let match_id = 51u32;
     let mut round = 0u16;
 
@@ -200,7 +200,7 @@ pub fn match_round(
         .tab_match_round_player()
         .match_round()
         .filter((match_id, round))
-        .map(|p| MatchRoundPlayer {
+        /* .map(|p| TabMatchRoundPlayer {
             account_id: ctx.user_account_from_id(p.user_id),
             match_id,
             id: p.id,
@@ -208,12 +208,12 @@ pub fn match_round(
             score: p.points,
             round: p.round,
             position: 0,
-        })
+        }) */
         .collect::<Vec<_>>();
-    standings.sort_by_key(|v| v.score);
-    for (position, entry) in standings.iter_mut().enumerate() {
+    standings.sort_by_key(|v| v.points);
+    /* for (position, entry) in standings.iter_mut().enumerate() {
         entry.position = (position + 1) as u16;
-    }
+    } */
     standings
 }
 
@@ -221,7 +221,7 @@ pub fn match_round(
 #[view(accessor=match_round_ext,public)]
 pub fn match_round_ext(
     ctx: &AnonymousViewContext, /* match_id: u32, round: u16 */
-) -> Vec<MatchRoundPlayerExt> {
+) -> Vec<TabMatchRoundPlayerExt> {
     let match_id = 51u32;
     let mut round = 0u16;
 
@@ -236,23 +236,23 @@ pub fn match_round_ext(
         .tab_match_round_player_ext()
         .match_round()
         .filter((match_id, round))
-        .map(|p| MatchRoundPlayerExt {
+        /* .map(|p| TabMatchRoundPlayerExt {
             round_actions: p.round_actions,
             id: p.id,
             match_id,
             round,
-        })
+        }) */
         .collect()
 }
 
 pub(crate) trait MatchLeadearboardRead {
-    fn match_leaderboard(&self, match_id: u32, round: u16) -> Vec<MatchRoundPlayer>;
+    fn match_leaderboard(&self, match_id: u32, round: u16) -> Vec<TabMatchRoundPlayer>;
 }
 impl<Db: spacetimedb::DbContext> MatchLeadearboardRead for Db {
     /// Accumulates points of all previous rounds.
     /// Round 0 is giving you a live view.
     /// If you want points from individual rounds use the match_round view instead.
-    fn match_leaderboard(&self, match_id: u32, mut round: u16) -> Vec<MatchRoundPlayer> {
+    fn match_leaderboard(&self, match_id: u32, mut round: u16) -> Vec<TabMatchRoundPlayer> {
         let entries: Vec<TabMatchRoundPlayer> = if round == 0 {
             //TODO if the match is finished then do inclusive range.
             let Some(state) = self
@@ -293,7 +293,7 @@ impl<Db: spacetimedb::DbContext> MatchLeadearboardRead for Db {
 
         let mut standings = map
             .into_values()
-            .map(|p| MatchRoundPlayer {
+            /* .map(|p| MatchRoundPlayer {
                 account_id: self.user_account_from_id(p.user_id),
                 id: p.id,
                 match_id,
@@ -301,13 +301,13 @@ impl<Db: spacetimedb::DbContext> MatchLeadearboardRead for Db {
                 score: p.points,
                 round: p.round,
                 position: 0,
-            })
+            }) */
             .collect::<Vec<_>>();
 
-        standings.sort_by_key(|v| v.score);
-        for (position, entry) in standings.iter_mut().enumerate() {
+        standings.sort_by_key(|v| v.points);
+        /* for (position, entry) in standings.iter_mut().enumerate() {
             entry.position = (position + 1) as u16;
-        }
+        } */
         standings
     }
 }

@@ -24,7 +24,7 @@ struct TabCompetitionNodePosition {
     #[primary_key]
     id: u32,
 
-    #[index(hash)]
+    // TODO add back and remove btree#[index(hash)]
     competition_id: u32,
 
     node_id: u32,

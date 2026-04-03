@@ -380,7 +380,13 @@ impl<Db: DbContext> ConnectionRead for Db {
 
                 //TODO maybe factor this out into a trait and impl it for the respective thing
                 // maybe we also need to split the data portion out into separate tables for each connection.
-                rules.apply_match(leaderboard)
+                rules
+                    .apply_match(leaderboard)
+                    .into_iter()
+                    .map(|p| {
+                        PermittedPlayer::new(self.user_account_from_id(p.user_id), false, false)
+                    })
+                    .collect()
             }
             NodeHandle::CompetitionV1(c) => todo!(),
             //NodeHandle::MonitoringV1(_) => todo!(),
