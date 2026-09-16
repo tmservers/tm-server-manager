@@ -1,5 +1,6 @@
 use spacetimedb::{
-    AnonymousViewContext, Local, Query, ReducerContext, SpacetimeType, Table, reducer, table, view,
+    AnonymousViewContext, Local, ProcedureContext, Query, ReducerContext, SpacetimeType, Table,
+    procedure, reducer, table, view,
 };
 
 use crate::{
@@ -286,4 +287,9 @@ impl<Db: spacetimedb::CtxDbWrite> CompetitionWrite for Db {
 
         Ok(())
     }
+}
+
+#[procedure(name = "unstable_competition")]
+fn unstable_competition(ctx: &mut ProcedureContext, competition_id: u32) -> Option<CompetitionV1> {
+    ctx.with_tx(|ctx| ctx.db.tab_competition().id().find(competition_id))
 }
