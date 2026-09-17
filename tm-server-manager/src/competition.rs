@@ -293,3 +293,12 @@ impl<Db: spacetimedb::CtxDbWrite> CompetitionWrite for Db {
 fn unstable_competition(ctx: &mut ProcedureContext, competition_id: u32) -> Option<CompetitionV1> {
     ctx.with_tx(|ctx| ctx.db.tab_competition().id().find(competition_id))
 }
+
+#[procedure(name = "unstable_competition_competitions")]
+fn unstable_competition_competitions(
+    ctx: &mut ProcedureContext,
+    competition_id: u32,
+) -> Vec<CompetitionV1> {
+    ctx.with_tx(|ctx| ctx.db.tab_competition().parent_id().filter(competition_id))
+        .collect()
+}
