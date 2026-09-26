@@ -232,7 +232,7 @@ pub fn project(ctx: &AnonymousViewContext) -> impl Query<ProjectV1> {
         .build()
 } */
 
-#[derive(Debug, SpacetimeType)]
+/* #[derive(Debug, SpacetimeType)]
 pub struct MyProjectV1 {
     id: u32,
 
@@ -249,31 +249,16 @@ pub struct MyProjectV1 {
     status: ProjectStatus,
     kind: ProjectKind,
     verified: bool,
-}
+} */
 
+//TODO: walk the competition tree and check for permissions.
 #[view(accessor=my_projects,public)]
-pub fn my_projects(ctx: &ViewContext) -> Vec<MyProjectV1> {
+pub fn my_projects(ctx: &ViewContext) -> Vec<ProjectV1> {
     let Ok(user_id) = ctx.user_id() else {
         return Vec::new();
     };
 
-    ctx.db
-        .tab_project()
-        .user_id()
-        .filter(user_id)
-        .map(|t| MyProjectV1 {
-            id: t.id,
-            user_id: t.user_id,
-            creator_name: String::new(),
-            name: t.name,
-            starting_at: t.starting_at,
-            ending_at: t.ending_at,
-            description: t.description,
-            status: t.status,
-            kind: t.kind,
-            verified: t.verified,
-        })
-        .collect()
+    ctx.db.tab_project().user_id().filter(user_id).collect()
 }
 
 #[view(accessor=project_competition_descendants,public)]

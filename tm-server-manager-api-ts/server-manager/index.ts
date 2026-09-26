@@ -127,6 +127,7 @@ import * as NodeLeaderboardOutputRawProcedure from "./node_leaderboard_output_ra
 import * as PostRoundReplayProcedure from "./post_round_replay_procedure";
 import * as TestNodePermittedPlayersInputProcedure from "./test_node_permitted_players_input_procedure";
 import * as UnstableCompetitionProcedure from "./unstable_competition_procedure";
+import * as UnstableCompetitionCompetitionsProcedure from "./unstable_competition_competitions_procedure";
 
 // Import all table schema definitions
 import CompetitionAvailableServerPoolRow from "./competition_available_server_pool_table";
@@ -528,6 +529,7 @@ const proceduresSchema = __procedures(
   __procedureSchema("post_round_replay", PostRoundReplayProcedure.params, PostRoundReplayProcedure.returnType),
   __procedureSchema("test_node_permitted_players_input", TestNodePermittedPlayersInputProcedure.params, TestNodePermittedPlayersInputProcedure.returnType),
   __procedureSchema("unstable_competition", UnstableCompetitionProcedure.params, UnstableCompetitionProcedure.returnType),
+  __procedureSchema("unstable_competition_competitions", UnstableCompetitionCompetitionsProcedure.params, UnstableCompetitionCompetitionsProcedure.returnType),
 );
 
 type __SchemaWithTableAccessorAliases = Omit<typeof tablesSchema.schemaType, "tables"> & {
