@@ -1,4 +1,4 @@
-use spacetimedb::{Local, ReducerContext, Table, reducer, table};
+use spacetimedb::{Local, ProcedureContext, ReducerContext, Table, procedure, reducer, table};
 
 use crate::{
     authorization::Authorization,
@@ -136,4 +136,10 @@ impl<Db: spacetimedb::CtxDbWrite> InputWrite for Db {
 
         Ok(())
     }
+}
+
+#[procedure(name = "unstable_competition_inputs")]
+fn unstable_competition_inputs(ctx: &mut ProcedureContext, competition_id: u32) -> Vec<InputV1> {
+    ctx.with_tx(|ctx| ctx.db.tab_input().parent_id().filter(competition_id))
+        .collect()
 }

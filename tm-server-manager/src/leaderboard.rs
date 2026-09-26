@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
-use spacetimedb::{Local, ReducerContext, SpacetimeType, Table, reducer, table};
+use spacetimedb::{
+    Local, ProcedureContext, ReducerContext, SpacetimeType, Table, procedure, reducer, table,
+};
 use tm_server_types::config::TmMode;
 
 use crate::{
@@ -369,6 +371,20 @@ impl<Db: spacetimedb::CtxDbWrite> LeaderboardWrite for Db {
 
         Ok(())
     }
+}
+
+#[procedure(name = "unstable_competition_leaderboards")]
+fn unstable_competition_leaderboards(
+    ctx: &mut ProcedureContext,
+    competition_id: u32,
+) -> Vec<LeaderboardV2> {
+    ctx.with_tx(|ctx| {
+        ctx.db
+            .tab_leaderboard_v2()
+            .parent_id()
+            .filter(competition_id)
+    })
+    .collect()
 }
 
 // We should be able to iterate over every input and accumulate score or position.

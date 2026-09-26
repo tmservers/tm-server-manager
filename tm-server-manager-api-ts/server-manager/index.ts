@@ -128,6 +128,9 @@ import * as PostRoundReplayProcedure from "./post_round_replay_procedure";
 import * as TestNodePermittedPlayersInputProcedure from "./test_node_permitted_players_input_procedure";
 import * as UnstableCompetitionProcedure from "./unstable_competition_procedure";
 import * as UnstableCompetitionCompetitionsProcedure from "./unstable_competition_competitions_procedure";
+import * as UnstableCompetitionInputsProcedure from "./unstable_competition_inputs_procedure";
+import * as UnstableCompetitionLeaderboardsProcedure from "./unstable_competition_leaderboards_procedure";
+import * as UnstableCompetitionOutputProcedure from "./unstable_competition_output_procedure";
 
 // Import all table schema definitions
 import CompetitionAvailableServerPoolRow from "./competition_available_server_pool_table";
@@ -530,6 +533,9 @@ const proceduresSchema = __procedures(
   __procedureSchema("test_node_permitted_players_input", TestNodePermittedPlayersInputProcedure.params, TestNodePermittedPlayersInputProcedure.returnType),
   __procedureSchema("unstable_competition", UnstableCompetitionProcedure.params, UnstableCompetitionProcedure.returnType),
   __procedureSchema("unstable_competition_competitions", UnstableCompetitionCompetitionsProcedure.params, UnstableCompetitionCompetitionsProcedure.returnType),
+  __procedureSchema("unstable_competition_inputs", UnstableCompetitionInputsProcedure.params, UnstableCompetitionInputsProcedure.returnType),
+  __procedureSchema("unstable_competition_leaderboards", UnstableCompetitionLeaderboardsProcedure.params, UnstableCompetitionLeaderboardsProcedure.returnType),
+  __procedureSchema("unstable_competition_output", UnstableCompetitionOutputProcedure.params, UnstableCompetitionOutputProcedure.returnType),
 );
 
 type __SchemaWithTableAccessorAliases = Omit<typeof tablesSchema.schemaType, "tables"> & {
