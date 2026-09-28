@@ -16,9 +16,11 @@ import * as PostRoundReplayProcedure from "../post_round_replay_procedure";
 import * as TestNodePermittedPlayersInputProcedure from "../test_node_permitted_players_input_procedure";
 import * as UnstableCompetitionProcedure from "../unstable_competition_procedure";
 import * as UnstableCompetitionCompetitionsProcedure from "../unstable_competition_competitions_procedure";
+import * as UnstableCompetitionConnectionDataProcedure from "../unstable_competition_connection_data_procedure";
 import * as UnstableCompetitionInputsProcedure from "../unstable_competition_inputs_procedure";
 import * as UnstableCompetitionLeaderboardsProcedure from "../unstable_competition_leaderboards_procedure";
 import * as UnstableCompetitionOutputProcedure from "../unstable_competition_output_procedure";
+import * as UnstableCompetitionRawServerConfigV2Procedure from "../unstable_competition_raw_server_config_v_2_procedure";
 
 export type LoginAsServerArgs = __Infer<typeof LoginAsServerProcedure.params>;
 export type LoginAsServerResult = __Infer<typeof LoginAsServerProcedure.returnType>;
@@ -40,10 +42,14 @@ export type UnstableCompetitionArgs = __Infer<typeof UnstableCompetitionProcedur
 export type UnstableCompetitionResult = __Infer<typeof UnstableCompetitionProcedure.returnType>;
 export type UnstableCompetitionCompetitionsArgs = __Infer<typeof UnstableCompetitionCompetitionsProcedure.params>;
 export type UnstableCompetitionCompetitionsResult = __Infer<typeof UnstableCompetitionCompetitionsProcedure.returnType>;
+export type UnstableCompetitionConnectionDataArgs = __Infer<typeof UnstableCompetitionConnectionDataProcedure.params>;
+export type UnstableCompetitionConnectionDataResult = __Infer<typeof UnstableCompetitionConnectionDataProcedure.returnType>;
 export type UnstableCompetitionInputsArgs = __Infer<typeof UnstableCompetitionInputsProcedure.params>;
 export type UnstableCompetitionInputsResult = __Infer<typeof UnstableCompetitionInputsProcedure.returnType>;
 export type UnstableCompetitionLeaderboardsArgs = __Infer<typeof UnstableCompetitionLeaderboardsProcedure.params>;
 export type UnstableCompetitionLeaderboardsResult = __Infer<typeof UnstableCompetitionLeaderboardsProcedure.returnType>;
 export type UnstableCompetitionOutputArgs = __Infer<typeof UnstableCompetitionOutputProcedure.params>;
 export type UnstableCompetitionOutputResult = __Infer<typeof UnstableCompetitionOutputProcedure.returnType>;
+export type UnstableCompetitionRawServerConfigV2Args = __Infer<typeof UnstableCompetitionRawServerConfigV2Procedure.params>;
+export type UnstableCompetitionRawServerConfigV2Result = __Infer<typeof UnstableCompetitionRawServerConfigV2Procedure.returnType>;
 

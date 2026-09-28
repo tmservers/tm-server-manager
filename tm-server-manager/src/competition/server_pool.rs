@@ -8,7 +8,8 @@ use crate::{
     },
 };
 
-#[table(accessor=tab_competition_raw_server)]
+//TODO make private again
+#[table(accessor=tab_competition_raw_server,public)]
 pub struct CompetitionServer {
     #[index(hash)]
     pub competition_id: u32,

@@ -1,4 +1,4 @@
-use spacetimedb::{CtxDbRead, ReducerContext, Table, reducer, table};
+use spacetimedb::{CtxDbRead, ProcedureContext, ReducerContext, Table, procedure, reducer, table};
 use tm_server_types::config::{ServerConfig, ServerConfigV2};
 
 use crate::{
@@ -320,6 +320,20 @@ fn unstable_raw_server_config_update_maps(
     ctx.db.tab_raw_server_config_v2().id().update(raw_config);
 
     Ok(())
+}
+
+#[procedure(name = "unstable_competition_raw_server_config_v2")]
+fn unstable_competition_raw_server_config_v2(
+    ctx: &mut ProcedureContext,
+    competition_id: u32,
+) -> Vec<RawServerConfigV2> {
+    ctx.with_tx(|ctx| {
+        ctx.db
+            .tab_raw_server_config_v2()
+            .competition_id()
+            .filter(competition_id)
+    })
+    .collect()
 }
 
 mod migrate {

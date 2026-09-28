@@ -128,9 +128,11 @@ import * as PostRoundReplayProcedure from "./post_round_replay_procedure";
 import * as TestNodePermittedPlayersInputProcedure from "./test_node_permitted_players_input_procedure";
 import * as UnstableCompetitionProcedure from "./unstable_competition_procedure";
 import * as UnstableCompetitionCompetitionsProcedure from "./unstable_competition_competitions_procedure";
+import * as UnstableCompetitionConnectionDataProcedure from "./unstable_competition_connection_data_procedure";
 import * as UnstableCompetitionInputsProcedure from "./unstable_competition_inputs_procedure";
 import * as UnstableCompetitionLeaderboardsProcedure from "./unstable_competition_leaderboards_procedure";
 import * as UnstableCompetitionOutputProcedure from "./unstable_competition_output_procedure";
+import * as UnstableCompetitionRawServerConfigV2Procedure from "./unstable_competition_raw_server_config_v_2_procedure";
 
 // Import all table schema definitions
 import CompetitionAvailableServerPoolRow from "./competition_available_server_pool_table";
@@ -143,6 +145,10 @@ import MyUserRow from "./my_user_table";
 import ProjectCompetitionDescendantsRow from "./project_competition_descendants_table";
 import RawServerPermittedPlayersRow from "./raw_server_permitted_players_table";
 import RawServerPlayerDestinationRow from "./raw_server_player_destination_table";
+import TabCompetitionMemberRow from "./tab_competition_member_table";
+import TabCompetitionRawServerRow from "./tab_competition_raw_server_table";
+import TabCompetitionRoleRow from "./tab_competition_role_table";
+import TabCompetitionRoleMemberRow from "./tab_competition_role_member_table";
 import TabMatchRow from "./tab_match_table";
 import TabMatchChatRow from "./tab_match_chat_table";
 import TabMatchRoundPlayerRow from "./tab_match_round_player_table";
@@ -186,6 +192,71 @@ const tablesSchema = __schema({
     ],
     event: true,
   }, EventRawServerStateRow),
+  tabCompetitionMember: __table({
+    name: 'tab_competition_member',
+    indexes: [
+      { accessor: 'competition_id', name: 'tab_competition_member_competition_id_idx_hash', algorithm: 'btree', columns: [
+        'competitionId',
+      ] },
+      { accessor: 'user_member', name: 'tab_competition_member_competition_id_user_id_idx_hash', algorithm: 'btree', columns: [
+        'competitionId',
+        'userId',
+      ] },
+      { accessor: 'id', name: 'tab_competition_member_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+      { accessor: 'user_id', name: 'tab_competition_member_user_id_idx_hash', algorithm: 'btree', columns: [
+        'userId',
+      ] },
+    ],
+    constraints: [
+      { name: 'tab_competition_member_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, TabCompetitionMemberRow),
+  tabCompetitionRawServer: __table({
+    name: 'tab_competition_raw_server',
+    indexes: [
+      { accessor: 'competition_id', name: 'tab_competition_raw_server_competition_id_idx_hash', algorithm: 'btree', columns: [
+        'competitionId',
+      ] },
+      { accessor: 'server_id', name: 'tab_competition_raw_server_server_id_idx_hash', algorithm: 'btree', columns: [
+        'serverId',
+      ] },
+    ],
+    constraints: [
+    ],
+  }, TabCompetitionRawServerRow),
+  tabCompetitionRole: __table({
+    name: 'tab_competition_role',
+    indexes: [
+      { accessor: 'competition_id', name: 'tab_competition_role_competition_id_idx_hash', algorithm: 'btree', columns: [
+        'competitionId',
+      ] },
+      { accessor: 'id', name: 'tab_competition_role_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+    ],
+    constraints: [
+      { name: 'tab_competition_role_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, TabCompetitionRoleRow),
+  tabCompetitionRoleMember: __table({
+    name: 'tab_competition_role_member',
+    indexes: [
+      { accessor: 'role_id', name: 'tab_competition_role_member_role_id_idx_hash', algorithm: 'btree', columns: [
+        'roleId',
+      ] },
+      { accessor: 'user_roles', name: 'tab_competition_role_member_role_id_user_id_idx_hash', algorithm: 'btree', columns: [
+        'roleId',
+        'userId',
+      ] },
+      { accessor: 'user_id', name: 'tab_competition_role_member_user_id_idx_hash', algorithm: 'btree', columns: [
+        'userId',
+      ] },
+    ],
+    constraints: [
+    ],
+  }, TabCompetitionRoleMemberRow),
   tabMatch: __table({
     name: 'tab_match',
     indexes: [
@@ -533,9 +604,11 @@ const proceduresSchema = __procedures(
   __procedureSchema("test_node_permitted_players_input", TestNodePermittedPlayersInputProcedure.params, TestNodePermittedPlayersInputProcedure.returnType),
   __procedureSchema("unstable_competition", UnstableCompetitionProcedure.params, UnstableCompetitionProcedure.returnType),
   __procedureSchema("unstable_competition_competitions", UnstableCompetitionCompetitionsProcedure.params, UnstableCompetitionCompetitionsProcedure.returnType),
+  __procedureSchema("unstable_competition_connection_data", UnstableCompetitionConnectionDataProcedure.params, UnstableCompetitionConnectionDataProcedure.returnType),
   __procedureSchema("unstable_competition_inputs", UnstableCompetitionInputsProcedure.params, UnstableCompetitionInputsProcedure.returnType),
   __procedureSchema("unstable_competition_leaderboards", UnstableCompetitionLeaderboardsProcedure.params, UnstableCompetitionLeaderboardsProcedure.returnType),
   __procedureSchema("unstable_competition_output", UnstableCompetitionOutputProcedure.params, UnstableCompetitionOutputProcedure.returnType),
+  __procedureSchema("unstable_competition_raw_server_config_v2", UnstableCompetitionRawServerConfigV2Procedure.params, UnstableCompetitionRawServerConfigV2Procedure.returnType),
 );
 
 type __SchemaWithTableAccessorAliases = Omit<typeof tablesSchema.schemaType, "tables"> & {
@@ -544,6 +617,14 @@ type __SchemaWithTableAccessorAliases = Omit<typeof tablesSchema.schemaType, "ta
     readonly "event_raw_server_method": Omit<typeof tablesSchema.schemaType.tables["eventRawServerMethod"], "accessorName"> & { readonly accessorName: "event_raw_server_method" };
     /** @deprecated Use `eventRawServerState` instead. This alias will be removed in the next major version. */
     readonly "event_raw_server_state": Omit<typeof tablesSchema.schemaType.tables["eventRawServerState"], "accessorName"> & { readonly accessorName: "event_raw_server_state" };
+    /** @deprecated Use `tabCompetitionMember` instead. This alias will be removed in the next major version. */
+    readonly "tab_competition_member": Omit<typeof tablesSchema.schemaType.tables["tabCompetitionMember"], "accessorName"> & { readonly accessorName: "tab_competition_member" };
+    /** @deprecated Use `tabCompetitionRawServer` instead. This alias will be removed in the next major version. */
+    readonly "tab_competition_raw_server": Omit<typeof tablesSchema.schemaType.tables["tabCompetitionRawServer"], "accessorName"> & { readonly accessorName: "tab_competition_raw_server" };
+    /** @deprecated Use `tabCompetitionRole` instead. This alias will be removed in the next major version. */
+    readonly "tab_competition_role": Omit<typeof tablesSchema.schemaType.tables["tabCompetitionRole"], "accessorName"> & { readonly accessorName: "tab_competition_role" };
+    /** @deprecated Use `tabCompetitionRoleMember` instead. This alias will be removed in the next major version. */
+    readonly "tab_competition_role_member": Omit<typeof tablesSchema.schemaType.tables["tabCompetitionRoleMember"], "accessorName"> & { readonly accessorName: "tab_competition_role_member" };
     /** @deprecated Use `tabMatch` instead. This alias will be removed in the next major version. */
     readonly "tab_match": Omit<typeof tablesSchema.schemaType.tables["tabMatch"], "accessorName"> & { readonly accessorName: "tab_match" };
     /** @deprecated Use `tabMatchChat` instead. This alias will be removed in the next major version. */
@@ -602,6 +683,10 @@ const REMOTE_MODULE = {
 const tableAccessorAliases = {
   "event_raw_server_method": "eventRawServerMethod",
   "event_raw_server_state": "eventRawServerState",
+  "tab_competition_member": "tabCompetitionMember",
+  "tab_competition_raw_server": "tabCompetitionRawServer",
+  "tab_competition_role": "tabCompetitionRole",
+  "tab_competition_role_member": "tabCompetitionRoleMember",
   "tab_match": "tabMatch",
   "tab_match_chat": "tabMatchChat",
   "tab_match_round_player": "tabMatchRoundPlayer",
@@ -645,6 +730,14 @@ export type DbView = __DbViewBase & {
   readonly "event_raw_server_method": __DbViewBase["eventRawServerMethod"];
   /** @deprecated Use `eventRawServerState` instead. This alias will be removed in the next major version. */
   readonly "event_raw_server_state": __DbViewBase["eventRawServerState"];
+  /** @deprecated Use `tabCompetitionMember` instead. This alias will be removed in the next major version. */
+  readonly "tab_competition_member": __DbViewBase["tabCompetitionMember"];
+  /** @deprecated Use `tabCompetitionRawServer` instead. This alias will be removed in the next major version. */
+  readonly "tab_competition_raw_server": __DbViewBase["tabCompetitionRawServer"];
+  /** @deprecated Use `tabCompetitionRole` instead. This alias will be removed in the next major version. */
+  readonly "tab_competition_role": __DbViewBase["tabCompetitionRole"];
+  /** @deprecated Use `tabCompetitionRoleMember` instead. This alias will be removed in the next major version. */
+  readonly "tab_competition_role_member": __DbViewBase["tabCompetitionRoleMember"];
   /** @deprecated Use `tabMatch` instead. This alias will be removed in the next major version. */
   readonly "tab_match": __DbViewBase["tabMatch"];
   /** @deprecated Use `tabMatchChat` instead. This alias will be removed in the next major version. */
@@ -691,6 +784,14 @@ export type Tables = __TablesBase & {
   readonly "event_raw_server_method": __TablesBase["eventRawServerMethod"];
   /** @deprecated Use `eventRawServerState` instead. This alias will be removed in the next major version. */
   readonly "event_raw_server_state": __TablesBase["eventRawServerState"];
+  /** @deprecated Use `tabCompetitionMember` instead. This alias will be removed in the next major version. */
+  readonly "tab_competition_member": __TablesBase["tabCompetitionMember"];
+  /** @deprecated Use `tabCompetitionRawServer` instead. This alias will be removed in the next major version. */
+  readonly "tab_competition_raw_server": __TablesBase["tabCompetitionRawServer"];
+  /** @deprecated Use `tabCompetitionRole` instead. This alias will be removed in the next major version. */
+  readonly "tab_competition_role": __TablesBase["tabCompetitionRole"];
+  /** @deprecated Use `tabCompetitionRoleMember` instead. This alias will be removed in the next major version. */
+  readonly "tab_competition_role_member": __TablesBase["tabCompetitionRoleMember"];
   /** @deprecated Use `tabMatch` instead. This alias will be removed in the next major version. */
   readonly "tab_match": __TablesBase["tabMatch"];
   /** @deprecated Use `tabMatchChat` instead. This alias will be removed in the next major version. */

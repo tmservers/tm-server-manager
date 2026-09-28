@@ -1,4 +1,7 @@
-use spacetimedb::{Query, ReducerContext, SpacetimeType, ViewContext, reducer, table, view};
+use spacetimedb::{
+    ProcedureContext, Query, ReducerContext, SpacetimeType, ViewContext, procedure, reducer, table,
+    view,
+};
 
 use crate::{
     authorization::Authorization,
@@ -193,4 +196,18 @@ fn competition_connection_data_update(
 struct ConnectionDataOptionFirstOffsetN {
     offset: u8,
     take: u8,
+}
+
+#[procedure(name = "unstable_competition_connection_data")]
+fn unstable_competition_connection_data(
+    ctx: &mut ProcedureContext,
+    competition_id: u32,
+) -> Vec<ConnectionData> {
+    ctx.with_tx(|ctx| {
+        ctx.db
+            .tab_connection_data()
+            .competition_id()
+            .filter(competition_id)
+    })
+    .collect()
 }

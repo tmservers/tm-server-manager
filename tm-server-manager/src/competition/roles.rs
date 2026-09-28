@@ -2,7 +2,8 @@ use spacetimedb::{AnonymousViewContext, Query, ReducerContext, Table, Uuid, redu
 
 use crate::{authorization::Authorization, competition::CompetitionPermissionsV1, user::UserRead};
 
-#[table(accessor= tab_competition_role)]
+//TODO make private again
+#[table(accessor= tab_competition_role,public)]
 pub struct CompetitionRole {
     name: String,
 
@@ -22,7 +23,8 @@ impl CompetitionRole {
     }
 }
 
-#[table(accessor= tab_competition_role_member,index(accessor= user_roles , hash(columns= [role_id,user_id])))]
+//TODO make private again
+#[table(accessor= tab_competition_role_member,index(accessor= user_roles , hash(columns= [role_id,user_id])),public)]
 pub struct CompetitionRoleMember {
     #[index(hash)]
     role_id: u32,
@@ -37,7 +39,8 @@ impl CompetitionRoleMember {
     }
 }
 
-#[table(accessor= tab_competition_member,index(accessor= user_member , hash(columns= [competition_id,user_id])))]
+//TODO make private again
+#[table(accessor= tab_competition_member,index(accessor= user_member , hash(columns= [competition_id,user_id])),public)]
 pub struct CompetitionMember {
     permissions: u64,
 
