@@ -322,6 +322,7 @@ fn unstable_raw_server_config_update_maps(
     Ok(())
 }
 
+//TODO also handle upwards nesting because shared configs should be inherited.
 #[procedure(name = "unstable_competition_raw_server_config_v2")]
 fn unstable_competition_raw_server_config_v2(
     ctx: &mut ProcedureContext,
