@@ -386,14 +386,14 @@ fn node_resolve_input_data_inner(
 }
 
 pub(crate) trait NodeWrite: NodeRead {
-    fn node_create(&self, node: NodeHandle) -> Result<(), String>;
+    fn node_create(&self, node: NodeHandle, position: Vec2) -> Result<(), String>;
     fn node_delete(&self, node: NodeHandle) -> Result<(), String>;
     fn connection_delete(&self, connection_id: u32) -> Result<(), String>;
     fn node_name_edit(&self, node: NodeHandle, name: String) -> Result<(), String>;
 }
 impl<Db: spacetimedb::CtxDbWrite> NodeWrite for Db {
-    fn node_create(&self, node: NodeHandle) -> Result<(), String> {
-        self.node_position_insert(node)?;
+    fn node_create(&self, node: NodeHandle, position: Vec2) -> Result<(), String> {
+        self.node_position_insert(node,position)?;
 
         Ok(())
     }

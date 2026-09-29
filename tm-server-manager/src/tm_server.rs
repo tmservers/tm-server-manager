@@ -5,7 +5,7 @@ use crate::{
     authorization::Authorization,
     competition::{
         CompetitionPermissionsV1,
-        node::{NodeHandle, NodeWrite},
+        node::{NodeHandle, NodeWrite, Vec2},
         server_pool::TabCompetitionServerPoolRead,
         tab_competition,
     },
@@ -77,6 +77,7 @@ fn server_create(
     ctx: &ReducerContext,
     name: String,
     parent_id: u32,
+    position: Vec2,
     with_template: u32,
 ) -> Result<(), String> {
     let Some(parent_competition) = ctx.db.tab_competition().id().find(parent_id) else {
@@ -111,7 +112,7 @@ fn server_create(
 
         let tm_server = ctx.db.tab_server().try_insert(tm_server)?;
 
-        ctx.node_create(NodeHandle::ServerV1(tm_server.id))?;
+        ctx.node_create(NodeHandle::ServerV1(tm_server.id), position)?;
     }
 
     Ok(())

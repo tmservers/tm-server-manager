@@ -7,6 +7,7 @@ use crate::{
     authorization::Authorization,
     competition::{
         connection::internal_graph_resolution_node_finished,
+        node::{NodeHandle, NodeWrite, Vec2},
         roles::{CompetitionMember, tab_competition_member},
         template::competition_template_instantiate,
     },
@@ -103,6 +104,7 @@ fn competition_create(
     ctx: &ReducerContext,
     name: String,
     parent_id: u32,
+    position: Vec2,
     with_template: u32,
 ) -> Result<(), String> {
     // If parent is valid it is guaranteed that it has a valid project associated with it.
@@ -119,7 +121,8 @@ fn competition_create(
     } else {
         //SAFETY: The competition gets commnited afterwards.
         let new_competition = CompetitionV1::new(name, parent_id);
-        ctx.db.tab_competition().try_insert(new_competition)?;
+        let comp = ctx.db.tab_competition().try_insert(new_competition)?;
+        ctx.node_create(NodeHandle::CompetitionV1(comp.id), position)?;
     }
 
     Ok(())

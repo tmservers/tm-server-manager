@@ -6,8 +6,10 @@ use spacetimedb::{
 use crate::{
     authorization::Authorization,
     competition::{
-        CompetitionPermissionsV1, connection::internal_graph_resolution_node_finished,
-        node::NodeHandle, tab_competition,
+        CompetitionPermissionsV1,
+        connection::internal_graph_resolution_node_finished,
+        node::{NodeHandle, NodeWrite, Vec2},
+        tab_competition,
     },
 };
 
@@ -115,6 +117,7 @@ fn schedule_create(
     ctx: &ReducerContext,
     name: String,
     parent_id: u32,
+    position: Vec2,
     with_template: u32,
 ) -> Result<(), String> {
     ctx.auth_builder(parent_id)
@@ -149,7 +152,8 @@ fn schedule_create(
             name,
         };
 
-        ctx.db.tab_schedule().try_insert(schedule)?;
+        let schedule = ctx.db.tab_schedule().try_insert(schedule)?;
+        ctx.node_create(NodeHandle::ScheduleV1(schedule.id), position)?;
     }
     Ok(())
 }

@@ -7,7 +7,7 @@ use crate::{
     competition::{
         CompetitionPermissionsV1, CompetitionV1,
         connection::{data::tab_connection_data, tab_connection},
-        node::{NodeHandle, NodeWrite},
+        node::{CompetitionNodePosition, NodeHandle, NodePositionRead, NodeWrite, Vec2},
         tab_competition,
     },
     input::{InputRead, InputWrite},
@@ -129,6 +129,9 @@ pub(super) fn competition_template_instantiate(
     // This is always maximnum 1 but keeping the pattern consistent
     let outputs = ctx.outputs_in_parent(competition_template.id);
 
+    let positions: Vec<CompetitionNodePosition> =
+        ctx.node_positions(competition_template.id).collect();
+
     // Instanatiate the top level node.
     let mut new_comp = competition_template.instantiate(target_id, stay_template);
     new_comp.name = name;
@@ -152,7 +155,17 @@ pub(super) fn competition_template_instantiate(
         new_match.update_shared_configs(&config_map);
 
         let new_match = ctx.db.tab_match().try_insert(new_match)?;
-        ctx.node_create(NodeHandle::MatchV1(new_match.id))?;
+        ctx.node_create(
+            NodeHandle::MatchV1(new_match.id),
+            if let Some(val) = positions
+                .iter()
+                .find(|n| n.node == NodeHandle::MatchV1(old_id))
+            {
+                val.position
+            } else {
+                Vec2::ZERO
+            },
+        )?;
         match_map.insert(old_id, new_match);
     }
 
@@ -163,7 +176,17 @@ pub(super) fn competition_template_instantiate(
         let new_competition = old_competition.instantiate(new_comp.id, stay_template);
         let new_competition = ctx.db.tab_competition().try_insert(new_competition)?;
         competition_template_instantiate(ctx, new_competition.id, old_id, old_name)?;
-        ctx.node_create(NodeHandle::CompetitionV1(new_competition.id))?;
+        ctx.node_create(
+            NodeHandle::CompetitionV1(new_competition.id),
+            if let Some(val) = positions
+                .iter()
+                .find(|n| n.node == NodeHandle::CompetitionV1(old_id))
+            {
+                val.position
+            } else {
+                Vec2::ZERO
+            },
+        )?;
         competition_map.insert(old_id, new_competition);
     }
 
@@ -172,7 +195,17 @@ pub(super) fn competition_template_instantiate(
         let old_id = old_registration.id;
         let new_registration = old_registration.instantiate(new_comp.id, stay_template);
         let new_registration = ctx.db.tab_registration().try_insert(new_registration)?;
-        ctx.node_create(NodeHandle::RegistrationV1(new_registration.id))?;
+        ctx.node_create(
+            NodeHandle::RegistrationV1(new_registration.id),
+            if let Some(val) = positions
+                .iter()
+                .find(|n| n.node == NodeHandle::RegistrationV1(old_id))
+            {
+                val.position
+            } else {
+                Vec2::ZERO
+            },
+        )?;
         registration_map.insert(old_id, new_registration);
     }
 
@@ -181,7 +214,17 @@ pub(super) fn competition_template_instantiate(
         let old_id = old_schedule.id;
         let new_schedule = old_schedule.instantiate(new_comp.id, stay_template);
         let new_schedule = ctx.db.tab_schedule().try_insert(new_schedule)?;
-        ctx.node_create(NodeHandle::ScheduleV1(new_schedule.id))?;
+        ctx.node_create(
+            NodeHandle::ScheduleV1(new_schedule.id),
+            if let Some(val) = positions
+                .iter()
+                .find(|n| n.node == NodeHandle::ScheduleV1(old_id))
+            {
+                val.position
+            } else {
+                Vec2::ZERO
+            },
+        )?;
         schedule_map.insert(old_id, new_schedule);
     }
 
@@ -190,7 +233,17 @@ pub(super) fn competition_template_instantiate(
         let old_id = old_server.id;
         let new_server = old_server.instantiate(new_comp.id, stay_template);
         let new_server = ctx.db.tab_server().try_insert(new_server)?;
-        ctx.node_create(NodeHandle::ServerV1(new_server.id))?;
+        ctx.node_create(
+            NodeHandle::ServerV1(new_server.id),
+            if let Some(val) = positions
+                .iter()
+                .find(|n| n.node == NodeHandle::ServerV1(old_id))
+            {
+                val.position
+            } else {
+                Vec2::ZERO
+            },
+        )?;
         server_map.insert(old_id, new_server);
     }
 
@@ -199,7 +252,17 @@ pub(super) fn competition_template_instantiate(
         let old_id = old_leaderboard.id;
         let new_leadearboard = old_leaderboard.instantiate(new_comp.id, stay_template, ctx);
         let new_leaderboard = ctx.db.tab_leaderboard_v2().try_insert(new_leadearboard)?;
-        ctx.node_create(NodeHandle::LeaderboardV1(new_leaderboard.id))?;
+        ctx.node_create(
+            NodeHandle::LeaderboardV1(new_leaderboard.id),
+            if let Some(val) = positions
+                .iter()
+                .find(|n| n.node == NodeHandle::LeaderboardV1(old_id))
+            {
+                val.position
+            } else {
+                Vec2::ZERO
+            },
+        )?;
         leadearboard_map.insert(old_id, new_leaderboard);
     }
 
@@ -208,7 +271,17 @@ pub(super) fn competition_template_instantiate(
         let old_id = old_input.id;
         let new_input = old_input.instantiate(new_comp.id, stay_template);
         let new_input = ctx.input_insert(new_input)?;
-        ctx.node_create(NodeHandle::InputV1(new_input.id))?;
+        ctx.node_create(
+            NodeHandle::InputV1(new_input.id),
+            if let Some(val) = positions
+                .iter()
+                .find(|n| n.node == NodeHandle::InputV1(old_id))
+            {
+                val.position
+            } else {
+                Vec2::ZERO
+            },
+        )?;
         input_map.insert(old_id, new_input);
     }
 
@@ -216,7 +289,17 @@ pub(super) fn competition_template_instantiate(
     for old_output in outputs {
         let old_id = old_output.id;
         let new_output = old_output.instantiate(new_comp.id, stay_template);
-        ctx.node_create(NodeHandle::OutputV1(new_output.id))?;
+        ctx.node_create(
+            NodeHandle::OutputV1(new_output.id),
+            if let Some(val) = positions
+                .iter()
+                .find(|n| n.node == NodeHandle::OutputV1(old_id))
+            {
+                val.position
+            } else {
+                Vec2::ZERO
+            },
+        )?;
         let new_output = ctx.output_insert(new_output)?;
         output_map.insert(old_id, new_output);
     }

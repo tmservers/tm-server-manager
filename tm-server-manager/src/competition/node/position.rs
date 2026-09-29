@@ -11,6 +11,7 @@ use crate::{
 #[spacetimedb::table(
     accessor= tab_competition_node_position,
     index(accessor=node_position,hash(columns=[node_variant,node_id])),
+    // TODO drop this index.
     index(accessor=temp_competition_id,btree(columns=[competition_id]))
 )]
 #[derive(Debug, Clone, Copy)]
@@ -22,7 +23,7 @@ struct TabCompetitionNodePosition {
     #[primary_key]
     id: u32,
 
-    // TODO add back and remove btree#[index(hash)]
+    #[index(hash)]
     competition_id: u32,
 
     node_id: u32,
@@ -30,14 +31,14 @@ struct TabCompetitionNodePosition {
 }
 
 impl TabCompetitionNodePosition {
-    pub(crate) fn new(node: NodeHandle, competition_id: u32) -> Self {
+    pub(crate) fn new(node: NodeHandle, competition_id: u32, position: Vec2) -> Self {
         let (node_variant, node_id) = node.split();
         Self {
             id: 0,
             competition_id,
             node_id,
             node_variant,
-            position: Vec2 { x: 0., y: 0. },
+            position,
         }
     }
 }
@@ -47,13 +48,16 @@ pub struct Vec2 {
     x: f32,
     y: f32,
 }
+impl Vec2 {
+    pub const ZERO: Self = Vec2 { x: 0., y: 0. };
+}
 
 #[derive(Debug, SpacetimeType)]
 pub struct CompetitionNodePosition {
     competition_id: u32,
-    node: NodeHandle,
+    pub node: NodeHandle,
 
-    position: Vec2,
+    pub position: Vec2,
 }
 
 #[derive(Debug, SpacetimeType, Clone, Copy)]
@@ -166,22 +170,37 @@ fn competition_node_positions_update(
     Ok(())
 }
 
-pub(super) trait NodePositionRead {}
+pub(crate) trait NodePositionRead {
+    fn node_positions(&self, competition_id: u32) -> impl Iterator<Item = CompetitionNodePosition>;
+}
 
 pub(super) trait NodePositionWrite: NodePositionRead {
-    fn node_position_insert(&self, node: NodeHandle) -> Result<(), String>;
+    fn node_position_insert(&self, node: NodeHandle, position: Vec2) -> Result<(), String>;
     fn node_position_delete(&self, node: NodeHandle);
 }
 
-impl<Db: spacetimedb::CtxDbRead> NodePositionRead for Db {}
+impl<Db: spacetimedb::CtxDbRead> NodePositionRead for Db {
+    fn node_positions(&self, competition_id: u32) -> impl Iterator<Item = CompetitionNodePosition> {
+        self.db_read_only()
+            .tab_competition_node_position()
+            .competition_id()
+            .filter(competition_id)
+            .map(|r| CompetitionNodePosition {
+                competition_id: r.competition_id,
+                node: NodeHandle::combine(r.node_variant, r.node_id),
+                position: r.position,
+            })
+    }
+}
 
 impl<Db: spacetimedb::CtxDbWrite> NodePositionWrite for Db {
-    fn node_position_insert(&self, node: NodeHandle) -> Result<(), String> {
+    fn node_position_insert(&self, node: NodeHandle, position: Vec2) -> Result<(), String> {
         self.db()
             .tab_competition_node_position()
             .try_insert(TabCompetitionNodePosition::new(
                 node,
                 self.node_get_parent(node)?,
+                position,
             ))?;
         Ok(())
     }

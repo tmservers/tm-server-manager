@@ -4,7 +4,11 @@ use spacetimedb::{
 
 use crate::{
     authorization::Authorization,
-    competition::{CompetitionPermissionsV1, tab_competition},
+    competition::{
+        CompetitionPermissionsV1,
+        node::{NodeHandle, NodeWrite, Vec2},
+        tab_competition,
+    },
     registration::player::tab_registeration_player,
 };
 
@@ -144,6 +148,7 @@ fn registration_create(
     ctx: &ReducerContext,
     name: String,
     parent_id: u32,
+    position: Vec2,
     with_template: u32,
 ) -> Result<(), String> {
     ctx.auth_builder(parent_id)
@@ -168,7 +173,7 @@ fn registration_create(
         let new_registration = template.instantiate(parent_id, false);
         ctx.db.tab_registration().try_insert(new_registration)?;
     } else {
-        ctx.db.tab_registration().try_insert(Registration {
+        let registration = ctx.db.tab_registration().try_insert(Registration {
             name,
             id: 0,
             parent_id,
@@ -178,6 +183,7 @@ fn registration_create(
             status: RegistrationStatus::Configuring,
             template: false,
         })?;
+        ctx.node_create(NodeHandle::RegistrationV1(registration.id), position)?;
     }
 
     Ok(())

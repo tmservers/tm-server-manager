@@ -11,7 +11,7 @@ use crate::{
     competition::{
         CompetitionPermissionsV1,
         connection::internal_graph_resolution_node_finished,
-        node::{NodeHandle, NodeWrite},
+        node::{NodeHandle, NodeWrite, Vec2},
         server_pool::TabCompetitionServerPoolRead,
         tab_competition,
     },
@@ -235,6 +235,7 @@ fn match_create(
     ctx: &ReducerContext,
     name: String,
     parent_id: u32,
+    position: Vec2,
     with_template: u32,
 ) -> Result<(), String> {
     let Some(parent_competition) = ctx.db.tab_competition().id().find(parent_id) else {
@@ -269,7 +270,7 @@ fn match_create(
         };
 
         let tm_match = ctx.db.tab_match().try_insert(tm_match)?;
-        ctx.node_create(NodeHandle::MatchV1(tm_match.id))?;
+        ctx.node_create(NodeHandle::MatchV1(tm_match.id),position)?;
     }
 
     Ok(())

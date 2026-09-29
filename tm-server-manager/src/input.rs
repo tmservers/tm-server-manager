@@ -1,11 +1,8 @@
 use spacetimedb::{Local, ProcedureContext, ReducerContext, Table, procedure, reducer, table};
 
 use crate::{
-    authorization::Authorization,
-    competition::{
-        CompetitionPermissionsV1,
-        node::{NodeHandle, NodeWrite},
-        tab_competition,
+    authorization::Authorization, competition::{
+        CompetitionPermissionsV1, node::{NodeHandle, NodeWrite, Vec2}, tab_competition,
     },
 };
 
@@ -45,6 +42,7 @@ fn input_create(
     ctx: &ReducerContext,
     name: String,
     parent_id: u32,
+    position: Vec2,
     with_template: u32,
 ) -> Result<(), String> {
     let Some(parent_competition) = ctx.db.tab_competition().id().find(parent_id) else {
@@ -77,7 +75,7 @@ fn input_create(
 
         let input = ctx.db.tab_input().try_insert(input)?;
 
-        ctx.node_create(NodeHandle::InputV1(input.id))?;
+        ctx.node_create(NodeHandle::InputV1(input.id), position)?;
     }
 
     Ok(())

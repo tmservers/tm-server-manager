@@ -6,16 +6,9 @@ use spacetimedb::{
 use tm_server_types::config::TmMode;
 
 use crate::{
-    authorization::Authorization,
-    auto_inc_manual::AutoIncWrite,
-    competition::{
-        CompetitionPermissionsV1,
-        connection::tab_connection__view,
-        node::{NodeHandle, NodeLeaderboard, NodeRead, NodeWrite},
-        tab_competition,
-    },
-    leaderboard::{filter::LbFilterSettings, merge::LbMergeSettings, remap::LbRemapSettings},
-    tm_match::leaderboard::{MatchLeadearboardRead, MatchRoundPlayer},
+    authorization::Authorization, auto_inc_manual::AutoIncWrite, competition::{
+        CompetitionPermissionsV1, connection::tab_connection__view, node::{NodeHandle, NodeLeaderboard, NodeRead, NodeWrite, Vec2}, tab_competition,
+    }, leaderboard::{filter::LbFilterSettings, merge::LbMergeSettings, remap::LbRemapSettings}, tm_match::leaderboard::{MatchLeadearboardRead, MatchRoundPlayer},
 };
 
 mod filter;
@@ -199,6 +192,7 @@ fn leaderboard_create(
     ctx: &ReducerContext,
     name: String,
     parent_id: u32,
+    position: Vec2,
     with_template: u32,
 ) -> Result<(), String> {
     let Some(parent_competition) = ctx.db.tab_competition().id().find(parent_id) else {
@@ -232,7 +226,7 @@ fn leaderboard_create(
 
         let output = ctx.db.tab_leaderboard_v2().try_insert(output)?;
 
-        ctx.node_create(NodeHandle::LeaderboardV1(output.id))?;
+        ctx.node_create(NodeHandle::LeaderboardV1(output.id), position)?;
     }
 
     Ok(())
