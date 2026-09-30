@@ -22,6 +22,10 @@ pub mod server_pool;
 mod template;
 pub(crate) use permissions::CompetitionPermissionsV1;
 
+/// Acts as the container for a node graph.
+/// Can also be declared as a template.
+/// Templates can also be public.
+/// On instantiation all non-template nodes are instantiated.
 #[derive(Debug, Clone)]
 #[table(accessor= tab_competition)]
 pub struct CompetitionV1 {
@@ -34,9 +38,9 @@ pub struct CompetitionV1 {
     #[index(hash)]
     parent_id: u32,
 
-    // Necessary to hide and mark as immutable
-    //status: CompetitionStatus,
     template: bool,
+    #[default(false)]
+    template_public: bool,
 }
 
 impl CompetitionV1 {
@@ -69,6 +73,7 @@ impl CompetitionV1 {
             name,
             //status: CompetitionStatus::Configuring,
             template: false,
+            template_public: false,
         }
     }
 
@@ -82,6 +87,7 @@ impl CompetitionV1 {
             name,
             //status: CompetitionStatus::Configuring,
             template: true,
+            template_public: false,
         }
     }
 }

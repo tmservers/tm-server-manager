@@ -41,7 +41,8 @@ uuid = { version = "1.12", features = ["serde"] }
 async_fn_traits = "*"
 petgraph = { version = "0.8.3", features = ['all'] }
 
-chumsky = { version = "1.0.0-alpha.8" }
+mlua = { version = "0.12", features = ["luau"] }
+#chumsky = { version = "1.0.0-alpha.8" }
 
 #============
 # SpacetimeDB
