@@ -15,10 +15,7 @@ use crate::{
         occupation::{TabRawServerOccupationRead, TabRawServerOccupationWrite},
         tab_raw_server,
     },
-    tm_server::template::server_template_instantiate,
 };
-
-pub mod template;
 
 #[table(accessor= tab_server)]
 pub struct ServerV1 {
@@ -96,7 +93,7 @@ fn server_create(
 
     // Try to load template if provided
     if with_template != 0 {
-        server_template_instantiate(ctx, with_template)?;
+        todo!()
     } else {
         // Create an uncommitted server
         let tm_server = ServerV1 {

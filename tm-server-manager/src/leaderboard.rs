@@ -6,9 +6,16 @@ use spacetimedb::{
 use tm_server_types::config::TmMode;
 
 use crate::{
-    authorization::Authorization, auto_inc_manual::AutoIncWrite, competition::{
-        CompetitionPermissionsV1, connection::tab_connection__view, node::{NodeHandle, NodeLeaderboard, NodeRead, NodeWrite, Vec2}, tab_competition,
-    }, leaderboard::{filter::LbFilterSettings, merge::LbMergeSettings, remap::LbRemapSettings}, tm_match::leaderboard::{MatchLeadearboardRead, MatchRoundPlayer},
+    authorization::Authorization,
+    auto_inc_manual::AutoIncWrite,
+    competition::{
+        CompetitionPermissionsV1,
+        connection::tab_connection__view,
+        node::{NodeHandle, NodeLeaderboard, NodeRead, NodeWrite, Vec2},
+        tab_competition,
+    },
+    leaderboard::{filter::LbFilterSettings, merge::LbMergeSettings, remap::LbRemapSettings},
+    tm_match::leaderboard::{MatchLeadearboardRead, MatchRoundPlayer},
 };
 
 mod filter;
@@ -228,28 +235,6 @@ fn leaderboard_create(
 
         ctx.node_create(NodeHandle::LeaderboardV1(output.id), position)?;
     }
-
-    Ok(())
-}
-
-#[reducer]
-fn leaderboard_template_create(
-    ctx: &ReducerContext,
-    name: String,
-    parent_id: u32,
-) -> Result<(), String> {
-    ctx.auth_builder(parent_id)
-        //.permission(CompetitionPermissionsV1::MATCH_CREATE)
-        .authorize()?;
-
-    ctx.db.tab_leaderboard_v2().try_insert(LeaderboardV2 {
-        name,
-        settings: Vec::new(),
-        id: ctx.auto_inc::<tab_leaderboard_v2__TableHandle>(),
-        parent_id,
-        template: true,
-        status: LeaderboardStatus::Configuring,
-    })?;
 
     Ok(())
 }

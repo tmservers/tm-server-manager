@@ -1,8 +1,11 @@
 use spacetimedb::{Local, ProcedureContext, ReducerContext, Table, procedure, reducer, table};
 
 use crate::{
-    authorization::Authorization, competition::{
-        CompetitionPermissionsV1, node::{NodeHandle, NodeWrite, Vec2}, tab_competition,
+    authorization::Authorization,
+    competition::{
+        CompetitionPermissionsV1,
+        node::{NodeHandle, NodeWrite, Vec2},
+        tab_competition,
     },
 };
 
@@ -77,22 +80,6 @@ fn input_create(
 
         ctx.node_create(NodeHandle::InputV1(input.id), position)?;
     }
-
-    Ok(())
-}
-
-#[reducer]
-fn input_template_create(ctx: &ReducerContext, name: String, parent_id: u32) -> Result<(), String> {
-    ctx.auth_builder(parent_id)
-        //.permission(CompetitionPermissionsV1::MATCH_CREATE)
-        .authorize()?;
-
-    ctx.db.tab_input().try_insert(InputV1 {
-        name,
-        id: 0,
-        parent_id,
-        template: true,
-    })?;
 
     Ok(())
 }
