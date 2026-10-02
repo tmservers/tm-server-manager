@@ -20,30 +20,6 @@ use crate::{
     tm_server::tab_server,
 };
 
-#[reducer]
-pub fn competition_template_create(
-    ctx: &ReducerContext,
-    name: String,
-    parent_id: u32,
-    with_template: u32,
-) -> Result<(), String> {
-    //TODO make separate permission?
-    ctx.auth_builder(parent_id)
-        .permission(CompetitionPermissionsV1::COMPETITION_CREATE)
-        .authorize()?;
-
-    if with_template != 0 {
-        competition_template_instantiate(ctx, parent_id, with_template, name)?;
-    } else {
-        //SAFETY: The competition gets commnited afterwards.
-        let new_competition = unsafe { CompetitionV1::new_template(name, parent_id) };
-
-        ctx.db.tab_competition().try_insert(new_competition)?;
-    }
-
-    Ok(())
-}
-
 pub(super) fn competition_template_instantiate(
     ctx: &ReducerContext,
     target_id: u32,

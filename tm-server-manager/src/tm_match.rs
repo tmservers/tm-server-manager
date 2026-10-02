@@ -28,7 +28,6 @@ use crate::{
         leaderboard::{MatchLeadearboardRead, tab_match_round_player, tab_match_round_player_ext},
         replay::tab_match_round_replay,
         state::{MatchState, tab_match_state},
-        template::match_template_instantiate,
     },
 };
 
@@ -39,7 +38,6 @@ pub mod event;
 pub mod leaderboard;
 pub mod replay;
 pub mod state;
-pub mod template;
 
 /// # Match
 /// Fullfills the role of providing configuration to the associated server and
@@ -254,7 +252,7 @@ fn match_create(
 
     // Try to load template if provided
     if with_template != 0 {
-        match_template_instantiate(ctx, with_template)?;
+        todo!()
     } else {
         // Create an uncommitted match
         let tm_match = MatchV1 {
@@ -270,7 +268,7 @@ fn match_create(
         };
 
         let tm_match = ctx.db.tab_match().try_insert(tm_match)?;
-        ctx.node_create(NodeHandle::MatchV1(tm_match.id),position)?;
+        ctx.node_create(NodeHandle::MatchV1(tm_match.id), position)?;
     }
 
     Ok(())
