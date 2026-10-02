@@ -16,7 +16,7 @@ use crate::{
     raw_server::config::{RawServerContigRead, tab_raw_server_config_v2},
     registration::tab_registration,
     schedule::tab_schedule,
-    tm_match::tab_match,
+    tm_match::{MatchWrite, tab_match},
     tm_server::tab_server,
 };
 
@@ -124,15 +124,20 @@ pub(super) fn competition_template_instantiate(
     }
 
     let mut match_map = HashMap::new();
-    for old_match in matches {
+    for mut old_match in matches {
         let old_id = old_match.id;
-        let mut new_match = old_match.instantiate(new_comp.id, stay_template);
 
-        new_match.update_shared_configs(&config_map);
+        //TODO: AUdit the config rewriting for edge cases
+        if let Some(new_config) = config_map.get(&old_match.config()) {
+            old_match.set_config(new_config.id);
+        }
+        if let Some(new_pre_config) = config_map.get(&old_match.pre_config()) {
+            old_match.set_pre_config(new_pre_config.id);
+        }
 
-        let new_match = ctx.db.tab_match().try_insert(new_match)?;
-        ctx.node_create(
-            NodeHandle::MatchV1(new_match.id),
+        let new_match = ctx.match_create(
+            old_match.get_name().to_string(),
+            new_comp.id,
             if let Some(val) = positions
                 .iter()
                 .find(|n| n.node == NodeHandle::MatchV1(old_id))
@@ -141,7 +146,10 @@ pub(super) fn competition_template_instantiate(
             } else {
                 Vec2::ZERO
             },
+            Some(old_match),
+            false,
         )?;
+
         match_map.insert(old_id, new_match);
     }
 

@@ -393,7 +393,7 @@ pub(crate) trait NodeWrite: NodeRead {
 }
 impl<Db: spacetimedb::CtxDbWrite> NodeWrite for Db {
     fn node_create(&self, node: NodeHandle, position: Vec2) -> Result<(), String> {
-        self.node_position_insert(node,position)?;
+        self.node_position_insert(node, position)?;
 
         Ok(())
     }
@@ -623,7 +623,9 @@ impl NodeLeaderboard for Vec<LbEntry> {
                     .id()
                     .find(entry.get_node().id())
                     .unwrap();
-                let cfg = ctx.raw_server_config(tm_match.get_config_id()).unwrap();
+                let cfg = ctx
+                    .raw_server_config(tm_match.get_active_config_id())
+                    .unwrap();
                 let starting_points = match cfg.get_mode() {
                     ModeSettingsV2::ReverseCup(reverse_cup) => reverse_cup.starting_points,
                     _ => unreachable!(),

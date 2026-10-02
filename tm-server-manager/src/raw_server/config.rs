@@ -204,7 +204,7 @@ impl<Db: spacetimedb::CtxDbWrite> RawServerContigWrite for Db {
                     .db_read_only()
                     .tab_raw_server_config_v2()
                     .id()
-                    .find(tm_match.get_config_id())
+                    .find(tm_match.get_active_config_id())
                 else {
                     return Err("Cannot find config.".into());
                 };

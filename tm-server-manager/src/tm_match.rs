@@ -89,7 +89,11 @@ pub struct MatchV1 {
 }
 
 impl MatchV1 {
-    pub fn get_config_id(&self) -> u32 {
+    pub fn get_name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn get_active_config_id(&self) -> u32 {
         match self.status {
             MatchStatus::Configuring => {
                 panic!("should not ask for a config if match is configuring.")
@@ -123,6 +127,22 @@ impl MatchV1 {
         }
     }
 
+    pub(crate) fn config(&self) -> u32 {
+        self.config
+    }
+
+    pub(crate) fn pre_config(&self) -> u32 {
+        self.pre_config
+    }
+
+    pub(crate) fn set_config(&mut self, new_config: u32) {
+        self.config = new_config
+    }
+
+    pub(crate) fn set_pre_config(&mut self, new_pre_config: u32) {
+        self.pre_config = new_pre_config
+    }
+
     /// Evaluates is the Match is in the "Match" state of its lifecycle.
     pub fn is_live(&self) -> bool {
         self.status == MatchStatus::Live || self.status == MatchStatus::LiveComitted
@@ -148,14 +168,7 @@ impl MatchV1 {
         self.template
     }
 
-    pub(crate) fn instantiate(mut self, parent_id: u32, stay_template: bool) -> Self {
-        self.template = stay_template;
-        self.parent_id = parent_id;
-        self.id = 0;
-        self
-    }
-
-    pub(crate) fn update_shared_configs(
+    /* fn update_shared_configs(
         &mut self,
         new: &HashMap<u32, crate::raw_server::config::RawServerConfigV2>,
     ) {
@@ -165,13 +178,13 @@ impl MatchV1 {
         if let Some(config) = new.get(&self.pre_config) {
             self.pre_config = config.id
         }
-    }
+    } */
 
-    pub(crate) fn end_match(&mut self) {
+    fn end_match(&mut self) {
         self.status = MatchStatus::Ended;
     }
 
-    pub(crate) fn enter_recovery(&mut self) {
+    fn enter_recovery(&mut self) {
         self.status = MatchStatus::Recovery;
     }
 
@@ -235,6 +248,7 @@ fn match_create(
     parent_id: u32,
     position: Vec2,
     with_template: u32,
+    as_template: bool,
 ) -> Result<(), String> {
     let Some(parent_competition) = ctx.db.tab_competition().id().find(parent_id) else {
         return Err("Invalid competition".into());
@@ -250,25 +264,10 @@ fn match_create(
         );
     }
 
-    // Try to load template if provided
     if with_template != 0 {
         todo!()
     } else {
-        // Create an uncommitted match
-        let tm_match = MatchV1 {
-            id: 0,
-            parent_id,
-            name,
-            status: MatchStatus::Configuring,
-            pre_config: 0,
-            config: 0,
-            auto_provision_server: true,
-            template: false,
-            open: false,
-        };
-
-        let tm_match = ctx.db.tab_match().try_insert(tm_match)?;
-        ctx.node_create(NodeHandle::MatchV1(tm_match.id), position)?;
+        MatchWrite::match_create(ctx, name, parent_id, position, None, as_template)?;
     }
 
     Ok(())
@@ -602,6 +601,14 @@ pub(crate) trait MatchRead {}
 impl<Db: spacetimedb::CtxDbRead> MatchRead for Db {}
 
 pub(crate) trait MatchWrite: MatchRead {
+    fn match_create(
+        &self,
+        name: String,
+        parent_id: u32,
+        position: Vec2,
+        template: Option<MatchV1>,
+        as_template: bool,
+    ) -> Result<MatchV1, String>;
     fn match_recovery_enter(&self, match_id: u32, manual: bool) -> Result<(), String>;
     fn match_recovery_exit_seamless(&self, match_id: u32);
     fn match_recovery_exit_forced(&self, match_id: u32);
@@ -886,6 +893,40 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
         ); */
 
         Ok(())
+    }
+
+    fn match_create(
+        &self,
+        name: String,
+        parent_id: u32,
+        position: Vec2,
+        template: Option<MatchV1>,
+        as_template: bool,
+    ) -> Result<MatchV1, String> {
+        let tm_match = if let Some(mut template) = template {
+            template.template = as_template; //TODO: Audit codepath for legal again.
+            template.parent_id = parent_id;
+            template.id = 0;
+            template
+        } else {
+            // Create an uncommitted match
+            MatchV1 {
+                id: 0,
+                parent_id,
+                name,
+                status: MatchStatus::Configuring,
+                pre_config: 0,
+                config: 0,
+                auto_provision_server: true,
+                template: false,
+                open: false,
+            }
+        };
+
+        let tm_match = self.db().tab_match().try_insert(tm_match)?;
+        self.node_create(NodeHandle::MatchV1(tm_match.id), position)?;
+
+        Ok(tm_match)
     }
 }
 

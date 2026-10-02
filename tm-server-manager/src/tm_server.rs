@@ -76,6 +76,7 @@ fn server_create(
     parent_id: u32,
     position: Vec2,
     with_template: u32,
+    as_template: bool,
 ) -> Result<(), String> {
     let Some(parent_competition) = ctx.db.tab_competition().id().find(parent_id) else {
         return Err("Invalid competition".into());
