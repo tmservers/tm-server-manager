@@ -10,7 +10,6 @@ use crate::{
     authorization::Authorization,
     competition::{
         CompetitionPermissionsV1,
-        connection::internal_graph_resolution_node_finished,
         node::{NodeHandle, NodeWrite, Vec2},
         server_pool::TabCompetitionServerPoolRead,
         tab_competition,
@@ -60,7 +59,7 @@ pub mod state;
 /// the captured server. Advances to [MatchStatus::Ended].
 ///
 /// TODO make private again
-#[table(accessor= tab_match,public)]
+#[table(accessor= tab_match,public,vis_private)]
 pub struct MatchV1 {
     name: String,
 
@@ -167,18 +166,6 @@ impl MatchV1 {
     pub fn is_template(&self) -> bool {
         self.template
     }
-
-    /* fn update_shared_configs(
-        &mut self,
-        new: &HashMap<u32, crate::raw_server::config::RawServerConfigV2>,
-    ) {
-        if let Some(config) = new.get(&self.config) {
-            self.config = config.id
-        }
-        if let Some(config) = new.get(&self.pre_config) {
-            self.pre_config = config.id
-        }
-    } */
 
     fn end_match(&mut self) {
         self.status = MatchStatus::Ended;
@@ -597,8 +584,35 @@ fn my_matches(ctx: &ViewContext /* competition_id: u32 */) -> impl Query<MatchV1
     ctx.from.tab_match()
 } */
 
-pub(crate) trait MatchRead {}
-impl<Db: spacetimedb::CtxDbRead> MatchRead for Db {}
+pub(crate) trait MatchRead {
+    fn match_find(&self, match_id: u32) -> Option<MatchV1>;
+    fn matches_in_competition(&self, competition_id: u32) -> impl Iterator<Item = MatchV1>;
+    fn matches_with_config(&self, config_id: u32) -> impl Iterator<Item = MatchV1>;
+    fn matches_with_pre_config(&self, pre_config_id: u32) -> impl Iterator<Item = MatchV1>;
+}
+impl<Db: spacetimedb::CtxDbRead> MatchRead for Db {
+    fn match_find(&self, match_id: u32) -> Option<MatchV1> {
+        self.db_read_only().tab_match().id().find(match_id)
+    }
+
+    fn matches_with_config(&self, config_id: u32) -> impl Iterator<Item = MatchV1> {
+        self.db_read_only().tab_match().config().filter(config_id)
+    }
+
+    fn matches_with_pre_config(&self, pre_config_id: u32) -> impl Iterator<Item = MatchV1> {
+        self.db_read_only()
+            .tab_match()
+            .pre_config()
+            .filter(pre_config_id)
+    }
+
+    fn matches_in_competition(&self, competition_id: u32) -> impl Iterator<Item = MatchV1> {
+        self.db_read_only()
+            .tab_match()
+            .parent_id()
+            .filter(competition_id)
+    }
+}
 
 pub(crate) trait MatchWrite: MatchRead {
     fn match_create(
