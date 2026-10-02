@@ -14,7 +14,6 @@ use crate::{
 
 pub mod player;
 //mod team;
-mod template;
 
 #[derive(Debug, SpacetimeType)]
 pub enum RegistrationSettings {
@@ -150,6 +149,7 @@ fn registration_create(
     parent_id: u32,
     position: Vec2,
     with_template: u32,
+    as_template: bool,
 ) -> Result<(), String> {
     ctx.auth_builder(parent_id)
         .permission(CompetitionPermissionsV1::REGISTRATION_CREATE)

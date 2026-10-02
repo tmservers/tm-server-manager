@@ -30,7 +30,7 @@ use crate::{
         RegistrationWrite, player::RegistrationRead, tab_registration, tab_registration__view,
     },
     schedule::{ScheduleWrite, tab_schedule, tab_schedule__view},
-    tm_match::{MatchWrite, leaderboard::MatchLeadearboardRead, tab_match, tab_match__view},
+    tm_match::{MatchRead, MatchWrite, leaderboard::MatchLeadearboardRead},
     tm_server::{ServerWrite, tab_server, tab_server__view},
     user::UserRead,
 };
@@ -93,7 +93,7 @@ impl NodeHandle {
     pub(crate) fn is_template(&self, ctx: &ReducerContext) -> bool {
         match self {
             NodeHandle::MatchV1(m) => {
-                let node = ctx.db.tab_match().id().find(m).unwrap();
+                let node = ctx.match_find(*m).unwrap();
                 node.is_template()
             }
             NodeHandle::CompetitionV1(c) => {
@@ -248,7 +248,7 @@ impl<Db: spacetimedb::CtxDbRead> NodeRead for Db {
     fn node_get_parent(&self, node: NodeHandle) -> Result<u32, String> {
         match node {
             NodeHandle::MatchV1(m) => {
-                if let Some(ma) = self.db_read_only().tab_match().id().find(m) {
+                if let Some(ma) = self.match_find(m) {
                     Ok(ma.get_comp_id())
                 } else {
                     Err("Match couldnt be found.".into())
@@ -393,7 +393,7 @@ pub(crate) trait NodeWrite: NodeRead {
 }
 impl<Db: spacetimedb::CtxDbWrite> NodeWrite for Db {
     fn node_create(&self, node: NodeHandle, position: Vec2) -> Result<(), String> {
-        self.node_position_insert(node,position)?;
+        self.node_position_insert(node, position)?;
 
         Ok(())
     }
@@ -617,13 +617,10 @@ impl NodeLeaderboard for Vec<LbEntry> {
 
                 let mut standings = map.into_values().collect::<Vec<_>>();
 
-                let tm_match = ctx
-                    .db_read_only()
-                    .tab_match()
-                    .id()
-                    .find(entry.get_node().id())
+                let tm_match = ctx.match_find(entry.get_node().id()).unwrap();
+                let cfg = ctx
+                    .raw_server_config(tm_match.get_active_config_id())
                     .unwrap();
-                let cfg = ctx.raw_server_config(tm_match.get_config_id()).unwrap();
                 let starting_points = match cfg.get_mode() {
                     ModeSettingsV2::ReverseCup(reverse_cup) => reverse_cup.starting_points,
                     _ => unreachable!(),

@@ -3,7 +3,7 @@ use tm_server_types::config::{ServerConfig, ServerConfigV2};
 
 use crate::{
     authorization::Authorization, auto_inc_manual::AutoIncWrite, competition::node::NodeHandle,
-    raw_server::occupation::TabRawServerOccupationRead, tm_match::tab_match__view,
+    raw_server::occupation::TabRawServerOccupationRead, tm_match::MatchRead,
     tm_server::tab_server__view,
 };
 
@@ -85,17 +85,11 @@ impl<Db: spacetimedb::CtxDbRead> RawServerContigRead for Db {
     fn raw_server_config_references(&self, config_id: u32) -> Vec<NodeHandle> {
         let mut config_references = Vec::new();
         config_references.extend(
-            self.db_read_only()
-                .tab_match()
-                .config()
-                .filter(config_id)
+            self.matches_with_config(config_id)
                 .map(|m| NodeHandle::MatchV1(m.id)),
         );
         config_references.extend(
-            self.db_read_only()
-                .tab_match()
-                .pre_config()
-                .filter(config_id)
+            self.matches_with_pre_config(config_id)
                 .map(|m| NodeHandle::MatchV1(m.id)),
         );
         config_references.extend(
@@ -199,12 +193,12 @@ impl<Db: spacetimedb::CtxDbWrite> RawServerContigWrite for Db {
 
         match node {
             crate::competition::node::NodeHandle::MatchV1(m) => {
-                let tm_match = self.db_read_only().tab_match().id().find(m).unwrap();
+                let tm_match = self.match_find(m).unwrap();
                 let Some(config) = self
                     .db_read_only()
                     .tab_raw_server_config_v2()
                     .id()
-                    .find(tm_match.get_config_id())
+                    .find(tm_match.get_active_config_id())
                 else {
                     return Err("Cannot find config.".into());
                 };

@@ -3169,7 +3169,6 @@ dependencies = [
 [[package]]
 name = "spacetimedb"
 version = "2.11.0"
-source = "git+https://github.com/kistz/SpacetimeDB.git?branch=fork-changes#6a456564bcd15b3ff5e91c007ca44ea21febefbf"
 dependencies = [
  "anyhow",
  "bytemuck",
@@ -3189,7 +3188,6 @@ dependencies = [
 [[package]]
 name = "spacetimedb-bindings-macro"
 version = "2.11.0"
-source = "git+https://github.com/kistz/SpacetimeDB.git?branch=fork-changes#6a456564bcd15b3ff5e91c007ca44ea21febefbf"
 dependencies = [
  "heck 0.4.1",
  "humantime",
@@ -3201,7 +3199,6 @@ dependencies = [
 [[package]]
 name = "spacetimedb-bindings-sys"
 version = "2.11.0"
-source = "git+https://github.com/kistz/SpacetimeDB.git?branch=fork-changes#6a456564bcd15b3ff5e91c007ca44ea21febefbf"
 dependencies = [
  "spacetimedb-primitives",
 ]
@@ -3209,7 +3206,6 @@ dependencies = [
 [[package]]
 name = "spacetimedb-client-api-messages"
 version = "2.11.0"
-source = "git+https://github.com/kistz/SpacetimeDB.git?branch=fork-changes#6a456564bcd15b3ff5e91c007ca44ea21febefbf"
 dependencies = [
  "bytes",
  "bytestring",
@@ -3230,7 +3226,6 @@ dependencies = [
 [[package]]
 name = "spacetimedb-data-structures"
 version = "2.11.0"
-source = "git+https://github.com/kistz/SpacetimeDB.git?branch=fork-changes#6a456564bcd15b3ff5e91c007ca44ea21febefbf"
 dependencies = [
  "ahash",
  "crossbeam-queue",
@@ -3244,7 +3239,6 @@ dependencies = [
 [[package]]
 name = "spacetimedb-lib"
 version = "2.11.0"
-source = "git+https://github.com/kistz/SpacetimeDB.git?branch=fork-changes#6a456564bcd15b3ff5e91c007ca44ea21febefbf"
 dependencies = [
  "anyhow",
  "blake3",
@@ -3260,7 +3254,6 @@ dependencies = [
 [[package]]
 name = "spacetimedb-metrics"
 version = "2.11.0"
-source = "git+https://github.com/kistz/SpacetimeDB.git?branch=fork-changes#6a456564bcd15b3ff5e91c007ca44ea21febefbf"
 dependencies = [
  "arrayvec",
  "itertools 0.12.1",
@@ -3271,7 +3264,6 @@ dependencies = [
 [[package]]
 name = "spacetimedb-primitives"
 version = "2.11.0"
-source = "git+https://github.com/kistz/SpacetimeDB.git?branch=fork-changes#6a456564bcd15b3ff5e91c007ca44ea21febefbf"
 dependencies = [
  "bitflags 2.13.0",
  "either",
@@ -3283,7 +3275,6 @@ dependencies = [
 [[package]]
 name = "spacetimedb-query-builder"
 version = "2.11.0"
-source = "git+https://github.com/kistz/SpacetimeDB.git?branch=fork-changes#6a456564bcd15b3ff5e91c007ca44ea21febefbf"
 dependencies = [
  "spacetimedb-lib",
 ]
@@ -3291,7 +3282,6 @@ dependencies = [
 [[package]]
 name = "spacetimedb-sats"
 version = "2.11.0"
-source = "git+https://github.com/kistz/SpacetimeDB.git?branch=fork-changes#6a456564bcd15b3ff5e91c007ca44ea21febefbf"
 dependencies = [
  "anyhow",
  "arrayvec",
@@ -3321,7 +3311,6 @@ dependencies = [
 [[package]]
 name = "spacetimedb-sdk"
 version = "2.11.0"
-source = "git+https://github.com/kistz/SpacetimeDB.git?branch=fork-changes#6a456564bcd15b3ff5e91c007ca44ea21febefbf"
 dependencies = [
  "anymap3",
  "brotli",
