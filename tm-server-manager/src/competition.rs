@@ -39,6 +39,7 @@ pub struct CompetitionV1 {
     parent_id: u32,
 
     template: bool,
+
     #[default(false)]
     template_public: bool,
 }
