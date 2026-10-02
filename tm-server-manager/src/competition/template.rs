@@ -16,7 +16,7 @@ use crate::{
     raw_server::config::{RawServerContigRead, tab_raw_server_config_v2},
     registration::tab_registration,
     schedule::tab_schedule,
-    tm_match::{MatchWrite, tab_match},
+    tm_match::{MatchRead, MatchWrite},
     tm_server::tab_server,
 };
 
@@ -70,35 +70,38 @@ pub(super) fn competition_template_instantiate(
         .filter(competition_template.id);
 
     let matches = ctx
-        .db
-        .tab_match()
-        .parent_id()
-        .filter(competition_template.id);
+        .matches_in_competition(competition_template.id)
+        .filter(|row| !row.is_template());
     let competitions = ctx
         .db
         .tab_competition()
         .parent_id()
-        .filter(competition_template.id);
+        .filter(competition_template.id)
+        .filter(|row| !row.is_template());
     let registrations = ctx
         .db
         .tab_registration()
         .parent_id()
-        .filter(competition_template.id);
+        .filter(competition_template.id)
+        .filter(|row| !row.is_template());
     let schedules = ctx
         .db
         .tab_schedule()
         .parent_id()
-        .filter(competition_template.id);
+        .filter(competition_template.id)
+        .filter(|row| !row.is_template());
     let servers = ctx
         .db
         .tab_server()
         .parent_id()
-        .filter(competition_template.id);
+        .filter(competition_template.id)
+        .filter(|row| !row.is_template());
     let leaderboards = ctx
         .db
         .tab_leaderboard_v2()
         .parent_id()
-        .filter(competition_template.id);
+        .filter(competition_template.id)
+        .filter(|row| !row.is_template());
 
     let inputs = ctx.inputs_in_parent(competition_template.id);
 
