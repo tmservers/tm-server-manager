@@ -12,7 +12,8 @@ use crate::{
 
 #[table(accessor=tab_player_destination,
     index(accessor=competition_player, hash(columns=[competition_id,user_id])),
-    index(accessor=claiming_node, hash(columns=[node_variant,node_id]))
+    index(accessor=claiming_node, hash(columns=[node_variant,node_id])),
+    vis_private
 )]
 struct TabPlayerDestination {
     #[index(hash)]

@@ -1,12 +1,14 @@
 use spacetimedb::{Local, ProcedureContext, ReducerContext, Table, procedure, reducer, table};
 
 use crate::{
-    authorization::Authorization, competition::{
-        CompetitionPermissionsV1, node::{NodeHandle, NodeWrite, Vec2}, tab_competition,
+    authorization::Authorization,
+    competition::{
+        CompetitionPermissionsV1, CompetitionRead,
+        node::{NodeHandle, NodeWrite, Vec2},
     },
 };
 
-#[table(accessor= tab_output)]
+#[table(accessor= tab_output,vis_private)]
 pub struct OutputV1 {
     name: String,
 
@@ -46,9 +48,7 @@ fn output_create(
     with_template: u32,
     as_template: bool,
 ) -> Result<(), String> {
-    let Some(parent_competition) = ctx.db.tab_competition().id().find(parent_id) else {
-        return Err("Invalid competition".into());
-    };
+    let parent_competition = ctx.competition_find(parent_id)?;
 
     ctx.auth_builder(parent_id)
         .permission(CompetitionPermissionsV1::OUTPUT_CREATE)
@@ -84,6 +84,7 @@ fn output_create(
 }
 
 pub(crate) trait OutputRead {
+    fn output_find(&self, id: u32) -> Result<OutputV1, String>;
     fn outputs_in_parent(&self, parent_id: u32) -> impl Iterator<Item = OutputV1>;
 }
 impl<Db: spacetimedb::CtxDbRead> OutputRead for Db {
@@ -92,6 +93,14 @@ impl<Db: spacetimedb::CtxDbRead> OutputRead for Db {
             .tab_output()
             .parent_id()
             .filter(parent_id)
+    }
+
+    fn output_find(&self, id: u32) -> Result<OutputV1, String> {
+        let Some(output) = self.db_read_only().tab_output().id().find(id) else {
+            return Err("Output not found!".into());
+        };
+
+        Ok(output)
     }
 }
 pub(crate) trait OutputWrite: OutputRead {

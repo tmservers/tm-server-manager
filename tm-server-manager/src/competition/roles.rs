@@ -1,4 +1,4 @@
-use spacetimedb::{AnonymousViewContext, Query, ReducerContext, Table, Uuid, reducer, table, view};
+use spacetimedb::{ReducerContext, Table, Uuid, reducer, table};
 
 use crate::{authorization::Authorization, competition::CompetitionPermissionsV1, user::UserRead};
 

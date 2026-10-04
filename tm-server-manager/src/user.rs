@@ -1,9 +1,6 @@
-use spacetimedb::{AnonymousViewContext, Identity, Query, Table, Uuid, ViewContext, table, view};
+use spacetimedb::{Identity, Table, Uuid, ViewContext, table, view};
 
-use crate::{
-    authorization::Authorization,
-    tm_match::leaderboard::{MatchRoundPlayerIxCols, tab_match_round_player__query},
-};
+use crate::authorization::Authorization;
 
 //TODO make private again? -> need good way to query for all possibilities.
 #[table(
@@ -65,7 +62,7 @@ pub fn match_round_users(ctx: &AnonymousViewContext) -> impl Query<UserV1> {
         )
 } */
 
-#[table(accessor= tab_user_identity)]
+#[table(accessor= tab_user_identity,vis_private)]
 struct UserIdentity {
     #[unique]
     identity: Identity,
@@ -79,7 +76,7 @@ impl UserIdentity {
     }
 }
 
-#[table(accessor= tab_user_ids_map)]
+#[table(accessor= tab_user_ids_map,vis_private)]
 struct UserIdsMap {
     #[primary_key]
     account_id: Uuid,

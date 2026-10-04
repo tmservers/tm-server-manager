@@ -1,16 +1,10 @@
-use std::collections::HashMap;
-
-use spacetimedb::{
-    AnonymousViewContext, Query, ReducerContext, SpacetimeType, reducer, table, view,
-};
-use tm_server_types::config::{ModeSettings, TmMode};
+use spacetimedb::{ReducerContext, SpacetimeType, reducer, table};
 
 use crate::{
     authorization::Authorization,
     competition::{CompetitionPermissionsV1, node::NodeHandle},
     leaderboard::LbEntry,
-    raw_server::{config::RawServerContigRead, occupation::TabRawServerOccupationRead},
-    tm_match::{state::tab_match_state__view, tab_match, tab_match__view},
+    tm_match::{state::tab_match_state__view, tab_match},
 };
 
 #[derive(Debug, SpacetimeType, Clone, Copy)]
@@ -189,209 +183,12 @@ impl MatchRoundPlayerExt {
     }
 }
 
-/* #[view(accessor=temp_match_leaderboard,public)]
-fn temp_match_leaderboard(
-    ctx: &AnonymousViewContext, /*, match_id: u32, round: u16 */
-) -> Vec<MatchRoundPlayer> {
-    ctx.match_leaderboard(51, 0)
-} */
-
-/// Returns the specified round of the match.
-/// Round 0 is giving you a live view.
-/// If you want a accumulated view please you the match_leaderboard view instead.
-/* #[view(accessor=match_round,public)]
-fn match_round(
-    ctx: &AnonymousViewContext, /*, match_id: u32, round: u16 */
-) -> Vec<MatchRoundPlayer> {
-    let match_id = 51u32;
-    let mut round = 0u16;
-
-    if round == 0 {
-        let Some(state) = ctx.db.tab_match_state().match_id().find(match_id) else {
-            return Vec::new();
-        };
-        round = state.get_round();
-    }
-
-    let mut standings = ctx
-        .db
-        .tab_match_round_player()
-        .match_round()
-        .filter((match_id, round))
-        .collect::<Vec<_>>();
-    // This is part of the contracft of the function!!!
-    // For calls in the module e.g. depending nodes requesting results. it needs to be sorted correctly.
-    standings.sort_by_key(|v| v.points);
-    standings
-} */
-
-/* #[view(accessor=unstable_match_round,public)]
-fn unstable_match_round(
-    ctx: &AnonymousViewContext, /*, match_id: u32, round: u16 */
-) -> impl Query<MatchRoundPlayer> {
-    ctx.from.tab_match_round_player()
-}
-
-#[view(accessor=unstable_match_round_ext,public)]
-fn unstable_match_round_ext(
-    ctx: &AnonymousViewContext, /*, match_id: u32, round: u16 */
-) -> impl Query<MatchRoundPlayerExt> {
-    ctx.from.tab_match_round_player_ext()
-} */
-
-/// If round 0 is supplied we take the current round.
-/* #[view(accessor=match_round_ext,public)]
-fn match_round_ext(
-    ctx: &AnonymousViewContext, /* match_id: u32, round: u16 */
-) -> Vec<MatchRoundPlayerExt> {
-    let match_id = 51u32;
-    let mut round = 0u16;
-
-    if round == 0 {
-        let Some(state) = ctx.db.tab_match_state().match_id().find(match_id) else {
-            return Vec::new();
-        };
-        round = state.get_round();
-    }
-
-    ctx.db
-        .tab_match_round_player_ext()
-        .match_round()
-        .filter((match_id, round))
-        .collect()
-}
- */
 pub(crate) trait MatchLeadearboardRead {
     //fn match_leaderboard(&self, match_id: u32, round: u16) -> Vec<MatchRoundPlayer>;
     fn match_rounds(&self, match_id: u32) -> Vec<LbEntry>;
     //fn match_leaderboard(&self, match_id: u32) -> Vec<LbEntry>;
 }
 impl<Db: spacetimedb::CtxDbRead> MatchLeadearboardRead for Db {
-    /// Accumulates points of all previous rounds.
-    /// Round 0 is giving you a live view.
-    /// If you want points from individual rounds use the match_round view instead.
-    /// # Important.
-    /// Returns a SORTED VECTOR of the standings of the mode.
-    /// This is part of the contract and MUST not be changed.
-    /* fn match_leaderboard(&self, match_id: u32, mut round: u16) -> Vec<MatchRoundPlayer> {
-        let Some(state) = self
-            .db_read_only()
-            .tab_match_state()
-            .match_id()
-            .find(match_id)
-        else {
-            return Vec::new();
-        };
-        if round == 0 {
-            round = state.get_round();
-        };
-        let mut entries: Vec<MatchRoundPlayer> = self
-            .db_read_only()
-            .tab_match_round_player()
-            .match_round_range()
-            .filter((match_id, 1..=round))
-            .collect();
-
-        let mut map = HashMap::<u32, MatchRoundPlayer>::new();
-
-        let returned = match state.get_mode() {
-            TmMode::Rounds => {
-                for entry in entries {
-                    map.entry(entry.user_id)
-                        .and_modify(|e| {
-                            e.points += entry.points;
-                            if entry.round > e.round {
-                                e.round = entry.round;
-                                e.id = entry.id;
-                            }
-                        })
-                        .or_insert(entry);
-                }
-
-                let mut standings = map.into_values().collect::<Vec<_>>();
-
-                standings.sort_by_key(|v| -v.points);
-
-                for (index, stand) in standings.iter_mut().enumerate() {
-                    standings.position = (index + 1) as u16;
-                }
-
-                standings
-            }
-            TmMode::ReverseCup => {
-                for entry in entries {
-                    map.entry(entry.user_id)
-                        .and_modify(|e| {
-                            if entry.points <= -1000 {
-                                e.round = entry.round;
-                            }
-                            e.points += entry.points;
-
-                            if entry.round > e.round {
-                                e.round = entry.round;
-                            }
-                        })
-                        .or_insert(entry);
-                }
-
-                let mut standings = map.into_values().collect::<Vec<_>>();
-
-                let tm_match = self.db_read_only().tab_match().id().find(match_id).unwrap();
-                let cfg = self.raw_server_config(tm_match.config).unwrap();
-                let starting_points = match cfg.get_mode() {
-                    ModeSettings::ReverseCup(reverse_cup) => reverse_cup.starting_points,
-                    _ => unreachable!(),
-                };
-
-                for player in &mut standings {
-                    player.points += starting_points;
-
-                    if player.points <= -1000 {
-                        player.position = 1;
-                    } else {
-                        player.round += 1;
-                        player.position = 0;
-                    }
-                }
-
-                standings.sort_by_key(|v| -(v.round as i32));
-
-                for (index, stand) in standings.iter_mut().enumerate() {
-                    stand.position = (index + 1) as u16;
-                }
-
-                standings
-            }
-            TmMode::Knockout => {
-                for entry in entries {
-                    map.entry(entry.user_id)
-                        .and_modify(|e| {
-                            if entry.points == -1 {
-                                *e = entry;
-                            }
-                        })
-                        .or_insert(entry);
-                }
-                let mut standings = map.into_values().collect::<Vec<_>>();
-
-                standings.sort_by_key(|v| v.round);
-                standings
-            }
-            TmMode::TimeAttack => {
-                entries.sort_by_key(|v| if v.time <= 0 { i32::MAX } else { v.time });
-
-                entries
-            }
-            TmMode::Unknown => {
-                unreachable!()
-            }
-        };
-
-        log::info!("{returned:?}");
-
-        returned
-    } */
-
     fn match_rounds(&self, match_id: u32) -> Vec<LbEntry> {
         let Some(state) = self
             .db_read_only()

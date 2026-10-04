@@ -1,37 +1,27 @@
 use std::collections::{HashMap, HashSet};
 
-use spacetimedb::{
-    AnonymousViewContext, Local, LocalReadOnly, ProcedureContext, ReducerContext, SpacetimeType,
-    Uuid, procedure, reducer, sys::raw::volatile_nonatomic_schedule_immediate, view,
-    volatile_nonatomic_schedule_immediate,
-};
-use tm_server_types::config::{ModeSettings, ModeSettingsV2, TmMode};
+use spacetimedb::{ProcedureContext, ReducerContext, SpacetimeType, Uuid, procedure, reducer};
+use tm_server_types::config::{ModeSettingsV2, TmMode};
 
 use crate::{
     authorization::Authorization,
     competition::{
         CompetitionPermissionsV1, CompetitionRead, CompetitionWrite,
         connection::{
-            ConnectionRead,
-            action::tab_connection_action,
-            data::{tab_connection_data, tab_connection_data__view},
+            ConnectionRead, action::tab_connection_action, data::tab_connection_data,
             tab_connection, tab_connection__view,
         },
         roles::tab_competition_member__view,
-        tab_competition, tab_competition__view,
+        tab_competition__view,
     },
-    input::{InputWrite, tab_input, tab_input__view},
-    leaderboard::{
-        LbEntry, LeadearboardRead, LeaderboardWrite, tab_leaderboard_v2, tab_leaderboard_v2__view,
-    },
-    output::{OutputWrite, tab_output, tab_output__view},
+    input::{InputRead, InputWrite},
+    leaderboard::{LbEntry, LeadearboardRead, LeaderboardWrite},
+    output::{OutputRead, OutputWrite},
     raw_server::{config::RawServerContigRead, player::PermittedPlayer},
-    registration::{
-        RegistrationWrite, player::RegistrationRead, tab_registration, tab_registration__view,
-    },
-    schedule::{ScheduleWrite, tab_schedule, tab_schedule__view},
+    registration::{RegistrationRead, RegistrationWrite, player::RegistrationPlayerRead},
+    schedule::{ScheduleRead, ScheduleWrite},
     tm_match::{MatchRead, MatchWrite, leaderboard::MatchLeadearboardRead},
-    tm_server::{ServerWrite, tab_server, tab_server__view},
+    tm_server::{ServerRead, ServerWrite},
     user::UserRead,
 };
 mod position;
@@ -90,7 +80,7 @@ impl NodeHandle {
         }
     }
 
-    pub(crate) fn is_template(&self, ctx: &ReducerContext) -> bool {
+    /* pub(crate) fn is_template(&self, ctx: &ReducerContext) -> bool {
         match self {
             NodeHandle::MatchV1(m) => {
                 let node = ctx.match_find(*m).unwrap();
@@ -105,7 +95,7 @@ impl NodeHandle {
                 node.is_template()
             }
             NodeHandle::ServerV1(n) => {
-                let node = ctx.db.tab_server().id().find(n).unwrap();
+                let node = ctx.server_find(*n).unwrap();
                 node.is_template()
             }
             NodeHandle::RegistrationV1(reg) => {
@@ -125,7 +115,7 @@ impl NodeHandle {
                 node.is_template()
             }
         }
-    }
+    } */
 
     pub(crate) fn is_match(&self) -> bool {
         matches!(self, NodeHandle::MatchV1(_))
@@ -192,6 +182,7 @@ pub(crate) trait NodeRead {
     fn node_get_parent(&self, node: NodeHandle) -> Result<u32, String>;
     fn node_resolve_input_data(&self, node: NodeHandle) -> Vec<LbEntry>;
     fn node_resolve_output_data(&self, node: NodeHandle) -> Vec<LbEntry>;
+    fn node_is_template(&self, node: NodeHandle) -> bool;
 }
 impl<Db: spacetimedb::CtxDbRead> NodeRead for Db {
     fn node_permitted_players_input(&self, node: NodeHandle) -> Vec<PermittedPlayer> {
@@ -266,48 +257,12 @@ impl<Db: spacetimedb::CtxDbRead> NodeRead for Db {
                     Err("Competition could not be found".into())
                 }
             }
-            NodeHandle::ScheduleV1(s) => {
-                if let Some(ma) = self.db_read_only().tab_schedule().id().find(s) {
-                    Ok(ma.parent_id())
-                } else {
-                    Err("Schedule could not be found.".into())
-                }
-            }
-            NodeHandle::ServerV1(s) => {
-                if let Some(ma) = self.db_read_only().tab_server().id().find(s) {
-                    Ok(ma.parent_id())
-                } else {
-                    Err("Server could not be found.".into())
-                }
-            }
-            NodeHandle::RegistrationV1(reg) => {
-                if let Some(reg) = self.db_read_only().tab_registration().id().find(reg) {
-                    Ok(reg.get_comp_id())
-                } else {
-                    Err("Registration could not be found.".into())
-                }
-            }
-            NodeHandle::InputV1(node) => {
-                if let Some(node) = self.db_read_only().tab_input().id().find(node) {
-                    Ok(node.get_comp_id())
-                } else {
-                    Err("Registration could not be found.".into())
-                }
-            }
-            NodeHandle::OutputV1(node) => {
-                if let Some(node) = self.db_read_only().tab_output().id().find(node) {
-                    Ok(node.get_comp_id())
-                } else {
-                    Err("Registration could not be found.".into())
-                }
-            }
-            NodeHandle::LeaderboardV1(node) => {
-                if let Some(node) = self.db_read_only().tab_leaderboard_v2().id().find(node) {
-                    Ok(node.get_comp_id())
-                } else {
-                    Err("Registration could not be found.".into())
-                }
-            }
+            NodeHandle::ScheduleV1(s) => Ok(self.schedule_find(s)?.parent_id()),
+            NodeHandle::ServerV1(s) => Ok(self.server_find(s)?.parent_id()),
+            NodeHandle::RegistrationV1(reg) => Ok(self.registration_find(reg)?.get_comp_id()),
+            NodeHandle::InputV1(node) => Ok(self.input_find(node)?.get_comp_id()),
+            NodeHandle::OutputV1(node) => Ok(self.output_find(node)?.get_comp_id()),
+            NodeHandle::LeaderboardV1(node) => Ok(self.leaderboard_find(node)?.get_comp_id()),
         }
     }
 
@@ -317,6 +272,43 @@ impl<Db: spacetimedb::CtxDbRead> NodeRead for Db {
 
     fn node_resolve_output_data(&self, node: NodeHandle) -> Vec<LbEntry> {
         node_resolve_output_data_inner(self, node, &mut 1)
+    }
+
+    fn node_is_template(&self, node: NodeHandle) -> bool {
+        match node {
+            NodeHandle::MatchV1(m) => {
+                let node = self.match_find(m).unwrap();
+                node.is_template()
+            }
+            NodeHandle::CompetitionV1(c) => {
+                let node = self.competition_find(c).unwrap();
+                node.is_template()
+            }
+            NodeHandle::ScheduleV1(s) => {
+                let node = self.schedule_find(s).unwrap();
+                node.is_template()
+            }
+            NodeHandle::ServerV1(n) => {
+                let node = self.server_find(n).unwrap();
+                node.is_template()
+            }
+            NodeHandle::RegistrationV1(reg) => {
+                let node = self.registration_find(reg).unwrap();
+                node.is_template()
+            }
+            NodeHandle::InputV1(n) => {
+                let node = self.input_find(n).unwrap();
+                node.is_template()
+            }
+            NodeHandle::OutputV1(n) => {
+                let node = self.output_find(n).unwrap();
+                node.is_template()
+            }
+            NodeHandle::LeaderboardV1(n) => {
+                let node = self.leaderboard_find(n).unwrap();
+                node.is_template()
+            }
+        }
     }
 }
 
@@ -336,7 +328,7 @@ fn node_resolve_output_data_inner(
         }
         NodeHandle::MatchV1(n) => ctx.match_rounds(n),
         NodeHandle::CompetitionV1(n) => {
-            let Some(output) = ctx.db_read_only().tab_output().parent_id().filter(n).next() else {
+            let Some(output) = ctx.outputs_in_parent(n).next() else {
                 log::warn!("Requested lb for competition {n} but it has no output node!");
                 return Vec::new();
             };
@@ -347,7 +339,7 @@ fn node_resolve_output_data_inner(
             node_resolve_input_data_inner(ctx, NodeHandle::OutputV1(n), origin_offset)
         }
         NodeHandle::InputV1(n) => {
-            let Some(input) = ctx.db_read_only().tab_input().id().find(n) else {
+            let Ok(input) = ctx.input_find(n) else {
                 return Vec::new();
             };
             let comp = input.get_comp_id();

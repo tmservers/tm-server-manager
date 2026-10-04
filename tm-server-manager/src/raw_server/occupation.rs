@@ -6,7 +6,8 @@ use crate::competition::node::NodeHandle;
 #[table(
     accessor=tab_raw_server_occupation,
     index(accessor=node_handle, hash(columns=[node_variant,node_id])),
-    public
+    public,
+    vis_private
 )]
 struct RawServerOccupation {
     #[primary_key]

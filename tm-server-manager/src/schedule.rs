@@ -1,19 +1,18 @@
 use spacetimedb::{
-    Local, Query, ReducerContext, ScheduleAt, SpacetimeType, Table, TimeDuration, Timestamp,
-    ViewContext, reducer, table, view,
+    CtxDbRead, ReducerContext, ScheduleAt, SpacetimeType, Table, TimeDuration, Timestamp, reducer,
+    table,
 };
 
 use crate::{
     authorization::Authorization,
     competition::{
-        CompetitionPermissionsV1,
+        CompetitionPermissionsV1, CompetitionRead,
         connection::internal_graph_resolution_node_finished,
         node::{NodeHandle, NodeWrite, Vec2},
-        tab_competition,
     },
 };
 
-#[table(accessor= tab_schedule)]
+#[table(accessor= tab_schedule,vis_private)]
 pub struct ScheduleV1 {
     name: String,
 
@@ -125,14 +124,7 @@ fn schedule_create(
         .permission(CompetitionPermissionsV1::SCHEDULE_CREATE)
         .authorize()?;
 
-    if ctx
-        .db
-        .tab_competition()
-        .id()
-        .find(parent_id)
-        .unwrap()
-        .is_template()
-    {
+    if ctx.competition_find(parent_id)?.is_template() {
         return Err("Cannot add a normal node to a match".into());
     };
 
@@ -262,6 +254,19 @@ pub fn my_comeptition_schedules(
         .tab_schedule()
         .r#where(|f| f.parent_id.eq(competition_id))
 } */
+
+pub(crate) trait ScheduleRead {
+    fn schedule_find(&self, id: u32) -> Result<ScheduleV1, String>;
+}
+
+impl<Db: CtxDbRead> ScheduleRead for Db {
+    fn schedule_find(&self, id: u32) -> Result<ScheduleV1, String> {
+        let Some(schedule) = self.db_read_only().tab_schedule().id().find(id) else {
+            return Err("Leaderboard not found!".into());
+        };
+        Ok(schedule)
+    }
+}
 
 pub(crate) trait ScheduleWrite {
     fn schedule_start_relative(&self, schedule_id: u32, now: Timestamp) -> Result<(), String>;

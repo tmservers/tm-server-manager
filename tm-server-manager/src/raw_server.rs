@@ -11,7 +11,7 @@ use crate::authorization::Authorization;
 use crate::competition::node::{NodeHandle, NodeRead};
 use crate::competition::server_pool::TabCompetitionServerPoolRead;
 use crate::raw_server::occupation::{TabRawServerOccupationRead, TabRawServerOccupationWrite};
-use crate::raw_server::player::tab_raw_server_player;
+use crate::raw_server::player::RawServerPlayerWrite;
 use crate::tm_match::MatchWrite;
 use crate::user::UserRead;
 
@@ -25,7 +25,7 @@ pub mod replay;
 
 //TODO make private again
 #[derive(Debug)]
-#[spacetimedb::table(accessor=tab_raw_server,public)]
+#[spacetimedb::table(accessor=tab_raw_server,public,vis_private)]
 pub struct RawServerV1 {
     #[unique]
     server_login: String,
@@ -249,6 +249,8 @@ pub(crate) trait TabRawServerRead {
     fn raw_server_last_connection(&self, server_id: u32) -> Timestamp;
 
     fn get_raw_server_id(&self, identity: Identity) -> Result<u32, String>;
+
+    fn raw_server_find(&self, server_id: u32) -> Result<RawServerV1, String>;
 }
 pub(crate) trait TabRawServerWrite: TabRawServerRead {
     fn raw_server_pool_assign(&self, node_handle: NodeHandle) -> Result<u32, String>;
@@ -276,6 +278,13 @@ impl<Db: CtxDbRead> TabRawServerRead for Db {
         };
         Ok(id.server_id)
     }
+
+    fn raw_server_find(&self, server_id: u32) -> Result<RawServerV1, String> {
+        let Some(server) = self.db_read_only().tab_raw_server().id().find(server_id) else {
+            return Err("Could not find server corresponding to that id".into());
+        };
+        Ok(server)
+    }
 }
 
 impl<Db: CtxDbWrite> TabRawServerWrite for Db {
@@ -300,10 +309,7 @@ impl<Db: CtxDbWrite> TabRawServerWrite for Db {
         log::info!("Server {} went offline", server.server_login);
         self.db().tab_raw_server().id().update(server);
 
-        self.db()
-            .tab_raw_server_player()
-            .server_id()
-            .delete(server_id);
+        self.raw_server_player_server_remove(server_id);
 
         if let Some(occupation) = self.raw_server_occupation(server_id)
             && occupation.is_match()

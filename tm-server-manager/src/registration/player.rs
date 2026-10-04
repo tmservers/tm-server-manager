@@ -104,11 +104,11 @@ fn unregister_player(ctx: &ReducerContext, registration_id: u32) -> Result<(), S
     Ok(())
 }
 
-pub(crate) trait RegistrationRead {
+pub(crate) trait RegistrationPlayerRead {
     //fn registration_player(&self, registration_id: u32) -> Vec<RegisterationPlayer>;
     fn registration_lb(&self, registration_id: u32) -> Vec<LbEntry>;
 }
-impl<Db: spacetimedb::CtxDbRead> RegistrationRead for Db {
+impl<Db: spacetimedb::CtxDbRead> RegistrationPlayerRead for Db {
     /* fn registration_player(&self, registration_id: u32) -> Vec<RegisterationPlayer> {
         let mut registered = self
             .db_read_only()

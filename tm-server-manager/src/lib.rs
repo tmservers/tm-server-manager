@@ -23,7 +23,6 @@ pub mod schedule;
 pub mod tm_match;
 pub mod tm_server;
 pub mod user;
-pub mod worker;
 
 // This is to avoid the enum variants to become camelCase
 #[spacetimedb::settings]
