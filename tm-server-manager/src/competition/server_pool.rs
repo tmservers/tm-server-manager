@@ -3,9 +3,7 @@ use spacetimedb::{ReducerContext, Table, ViewContext, reducer, table, view};
 use crate::{
     authorization::Authorization,
     competition::{CompetitionPermissionsV1, CompetitionRead},
-    raw_server::{
-        RawServerV1, occupation::TabRawServerOccupationRead, tab_raw_server, tab_raw_server__view,
-    },
+    raw_server::{RawServerV1, TabRawServerRead, occupation::TabRawServerOccupationRead},
 };
 
 //TODO make private again
@@ -29,9 +27,7 @@ fn lend_raw_server(
         .permission(CompetitionPermissionsV1::RAW_SERVER_ADD)
         .authorize()?;
 
-    let Some(server) = ctx.db.tab_raw_server().id().find(server_id) else {
-        return Err("Server not found".into());
-    };
+    let server = ctx.raw_server_find(server_id)?;
 
     if server.user_id != user_id {
         return Err("Not the owner of the server!".into());
@@ -67,9 +63,7 @@ fn revoke_raw_server(
 ) -> Result<(), String> {
     let user_id = ctx.user_id()?;
 
-    let Some(server) = ctx.db.tab_raw_server().id().find(competition_id) else {
-        return Err("Server not found".into());
-    };
+    let server = ctx.raw_server_find(server_id)?;
 
     // If the server owner requests a deletion it always passes.
     if server.user_id == user_id {
@@ -143,12 +137,7 @@ impl<Db: spacetimedb::CtxDbRead> TabCompetitionServerPoolRead for Db {
                     .competition_id()
                     .filter(competition)
                     .filter_map(|s| {
-                        let server = self
-                            .db_read_only()
-                            .tab_raw_server()
-                            .id()
-                            .find(s.server_id)
-                            .unwrap();
+                        let server = self.raw_server_find(s.server_id).unwrap();
                         if !server.is_verified() || !server.is_online() {
                             None
                         } else {

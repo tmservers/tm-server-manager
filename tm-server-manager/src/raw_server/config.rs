@@ -3,8 +3,7 @@ use tm_server_types::config::{ServerConfig, ServerConfigV2};
 
 use crate::{
     authorization::Authorization, auto_inc_manual::AutoIncWrite, competition::node::NodeHandle,
-    raw_server::occupation::TabRawServerOccupationRead, tm_match::MatchRead,
-    tm_server::tab_server__view,
+    raw_server::occupation::TabRawServerOccupationRead, tm_match::MatchRead, tm_server::ServerRead,
 };
 
 #[table(accessor=tab_raw_server_config)]
@@ -21,7 +20,7 @@ struct RawServerConfig {
     competition_id: u32,
 }
 
-#[table(accessor=tab_raw_server_config_v2)]
+#[table(accessor=tab_raw_server_config_v2,vis_private)]
 pub struct RawServerConfigV2 {
     #[primary_key]
     pub id: u32,
@@ -93,10 +92,7 @@ impl<Db: spacetimedb::CtxDbRead> RawServerContigRead for Db {
                 .map(|m| NodeHandle::MatchV1(m.id)),
         );
         config_references.extend(
-            self.db_read_only()
-                .tab_server()
-                .config()
-                .filter(config_id)
+            self.servers_with_config(config_id)
                 .map(|m| NodeHandle::ServerV1(m.id)),
         );
 
@@ -215,7 +211,7 @@ impl<Db: spacetimedb::CtxDbWrite> RawServerContigWrite for Db {
                 Ok(())
             }
             crate::competition::node::NodeHandle::ServerV1(s) => {
-                let tm_server = self.db_read_only().tab_server().id().find(s).unwrap();
+                let tm_server = self.server_find(s)?;
                 let config = self
                     .db_read_only()
                     .tab_raw_server_config_v2()

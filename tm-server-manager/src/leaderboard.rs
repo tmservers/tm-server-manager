@@ -1,7 +1,5 @@
-use std::collections::HashMap;
-
 use spacetimedb::{
-    Local, ProcedureContext, ReducerContext, SpacetimeType, Table, procedure, reducer, table,
+    ProcedureContext, ReducerContext, SpacetimeType, Table, procedure, reducer, table,
 };
 use tm_server_types::config::TmMode;
 
@@ -9,13 +7,10 @@ use crate::{
     authorization::Authorization,
     auto_inc_manual::AutoIncWrite,
     competition::{
-        CompetitionPermissionsV1,
-        connection::tab_connection__view,
+        CompetitionPermissionsV1, CompetitionRead,
         node::{NodeHandle, NodeLeaderboard, NodeRead, NodeWrite, Vec2},
-        tab_competition,
     },
     leaderboard::{filter::LbFilterSettings, merge::LbMergeSettings, remap::LbRemapSettings},
-    tm_match::leaderboard::{MatchLeadearboardRead, MatchRoundPlayer},
 };
 
 mod filter;
@@ -39,7 +34,7 @@ struct LeaderboardV1 {
     status: LeaderboardStatus,
 }
 
-#[table(accessor= tab_leaderboard_v2)]
+#[table(accessor= tab_leaderboard_v2,vis_private)]
 pub struct LeaderboardV2 {
     name: String,
     settings: Vec<LbSettingsV2>,
@@ -203,10 +198,7 @@ fn leaderboard_create(
     with_template: u32,
     as_template: bool,
 ) -> Result<(), String> {
-    let Some(parent_competition) = ctx.db.tab_competition().id().find(parent_id) else {
-        return Err("Invalid competition".into());
-    };
-
+    let parent_competition = ctx.competition_find(parent_id)?;
     ctx.auth_builder(parent_id)
         //.permission(CompetitionPermissionsV1::LEADERB)
         .authorize()?;
@@ -285,6 +277,7 @@ fn leaderboard_settings_update(
 }
 
 pub(crate) trait LeadearboardRead {
+    fn leaderboard_find(&self, id: u32) -> Result<LeaderboardV2, String>;
     fn leaderboard_evaluation(&self, leaderboard_id: u32) -> Vec<LbEntry>;
     //fn leaderboard_finalize(&self, lb: Vec<LbEntry>) -> Vec<LbEntry>;
 }
@@ -326,6 +319,13 @@ impl<Db: spacetimedb::CtxDbRead> LeadearboardRead for Db {
         }
 
         leaderboards
+    }
+
+    fn leaderboard_find(&self, id: u32) -> Result<LeaderboardV2, String> {
+        let Some(leaderboard) = self.db_read_only().tab_leaderboard_v2().id().find(id) else {
+            return Err("Leaderboard not found!".into());
+        };
+        Ok(leaderboard)
     }
 }
 pub(crate) trait LeaderboardWrite: LeadearboardRead {

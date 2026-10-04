@@ -3,13 +3,12 @@ use spacetimedb::{Local, ProcedureContext, ReducerContext, Table, procedure, red
 use crate::{
     authorization::Authorization,
     competition::{
-        CompetitionPermissionsV1,
+        CompetitionPermissionsV1, CompetitionRead,
         node::{NodeHandle, NodeWrite, Vec2},
-        tab_competition,
     },
 };
 
-#[table(accessor= tab_input)]
+#[table(accessor= tab_input,vis_private)]
 pub struct InputV1 {
     name: String,
 
@@ -49,9 +48,7 @@ fn input_create(
     with_template: u32,
     as_template: bool,
 ) -> Result<(), String> {
-    let Some(parent_competition) = ctx.db.tab_competition().id().find(parent_id) else {
-        return Err("Invalid competition".into());
-    };
+    let parent_competition = ctx.competition_find(parent_id)?;
 
     ctx.auth_builder(parent_id)
         .permission(CompetitionPermissionsV1::INPUT_CREATE)
@@ -87,6 +84,7 @@ fn input_create(
 
 pub(crate) trait InputRead {
     fn inputs_in_parent(&self, parent_id: u32) -> impl Iterator<Item = InputV1>;
+    fn input_find(&self, id: u32) -> Result<InputV1, String>;
 }
 impl<Db: spacetimedb::CtxDbRead> InputRead for Db {
     fn inputs_in_parent(&self, parent_id: u32) -> impl Iterator<Item = InputV1> {
@@ -94,6 +92,14 @@ impl<Db: spacetimedb::CtxDbRead> InputRead for Db {
             .tab_input()
             .parent_id()
             .filter(parent_id)
+    }
+
+    fn input_find(&self, id: u32) -> Result<InputV1, String> {
+        let Some(input) = self.db_read_only().tab_input().id().find(id) else {
+            return Err("Output not found!".into());
+        };
+
+        Ok(input)
     }
 }
 pub(crate) trait InputWrite: InputRead {

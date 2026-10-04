@@ -1,6 +1,6 @@
-use spacetimedb::{Local, Table, table, table::TableInternal};
+use spacetimedb::{Table, table, table::TableInternal};
 
-#[table(accessor=auto_inc)]
+#[table(accessor=auto_inc,vis_private)]
 struct AutoInc {
     #[primary_key]
     table_id: u32,

@@ -11,13 +11,9 @@ use crate::{
         tab_competition,
     },
     input::{InputRead, InputWrite},
-    leaderboard::tab_leaderboard_v2,
     output::{OutputRead, OutputWrite},
-    raw_server::config::{RawServerContigRead, tab_raw_server_config_v2},
-    registration::tab_registration,
-    schedule::tab_schedule,
+    raw_server::config::RawServerContigRead,
     tm_match::{MatchRead, MatchWrite},
-    tm_server::tab_server,
 };
 
 pub(super) fn competition_template_instantiate(

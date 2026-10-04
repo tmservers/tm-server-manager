@@ -1,4 +1,4 @@
-use spacetimedb::{CtxDbRead, ProcedureContext, Table, Uuid, procedure, table};
+use spacetimedb::{CtxDbRead, ProcedureContext, Table, procedure, table};
 
 #[table(accessor= tab_match_round_replay,index(accessor=match_round,hash(columns=[match_id,round])))]
 pub struct MatchRoundReplay {

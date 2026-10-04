@@ -1,19 +1,16 @@
 use std::ops::{Add, BitAnd, BitOr, Not};
 
-use spacetimedb::{
-    CtxDbRead, CtxDbWrite, CtxWithSender, Identity, LocalReadOnly, ReducerContext, ViewContext,
-};
+use spacetimedb::{CtxDbRead, CtxWithSender, Identity};
 
 use crate::{
     competition::{
         CompetitionPermissionsV1, CompetitionRead,
         roles::{
-            tab_competition_member, tab_competition_member__view, tab_competition_role,
-            tab_competition_role__view, tab_competition_role_member,
+            tab_competition_member__view, tab_competition_role__view,
             tab_competition_role_member__view,
         },
     },
-    raw_server::{RawServerV1, TabRawServerRead, tab_raw_server, tab_raw_server__view},
+    raw_server::TabRawServerRead,
     user::UserRead,
 };
 

@@ -1,17 +1,12 @@
-use spacetimedb::{
-    AnonymousViewContext, Local, ProcedureContext, Query, ReducerContext, SpacetimeType, Table,
-    procedure, reducer, table, view,
-};
+use spacetimedb::{ProcedureContext, ReducerContext, Table, procedure, reducer, table};
 
 use crate::{
     authorization::Authorization,
     competition::{
-        connection::internal_graph_resolution_node_finished,
         node::{NodeHandle, NodeWrite, Vec2},
         roles::{CompetitionMember, tab_competition_member},
         template::competition_template_instantiate,
     },
-    input::tab_input__view,
 };
 
 pub(super) mod connection;
@@ -27,7 +22,7 @@ pub(crate) use permissions::CompetitionPermissionsV1;
 /// Templates can also be public.
 /// On instantiation all non-template nodes are instantiated.
 #[derive(Debug, Clone)]
-#[table(accessor= tab_competition)]
+#[table(accessor= tab_competition,vis_private)]
 pub struct CompetitionV1 {
     name: String,
 
@@ -212,6 +207,7 @@ fn competition(ctx: &AnonymousViewContext) -> impl Query<CompetitionV1> {
 } */
 
 pub(crate) trait CompetitionRead {
+    fn competition_find(&self, competition_id: u32) -> Result<CompetitionV1, String>;
     fn competition_ancestors(&self, competition_id: u32) -> Vec<u32>;
     fn competition_descendants(&self, competition_id: u32) -> Vec<CompetitionV1>;
     fn competition_tree_complete(&self, competition_id: u32) -> Vec<u32>;
@@ -269,6 +265,18 @@ impl<Db: spacetimedb::CtxDbRead> CompetitionRead for Db {
             .into_iter()
             .map(|comp| comp.id)
             .collect()
+    }
+
+    fn competition_find(&self, competition_id: u32) -> Result<CompetitionV1, String> {
+        let Some(comp) = self
+            .db_read_only()
+            .tab_competition()
+            .id()
+            .find(competition_id)
+        else {
+            return Err("Invalid Competition.".into());
+        };
+        Ok(comp)
     }
 }
 

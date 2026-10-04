@@ -1,23 +1,21 @@
-use spacetimedb::{Local, ReducerContext, SpacetimeType, Table, reducer, table};
-use tm_server_types::config::{ServerConfig, ServerConfigV2};
+use spacetimedb::{ReducerContext, SpacetimeType, Table, reducer, table};
+use tm_server_types::config::ServerConfigV2;
 
 use crate::{
     authorization::Authorization,
     competition::{
-        CompetitionPermissionsV1,
+        CompetitionPermissionsV1, CompetitionRead,
         node::{NodeHandle, NodeWrite, Vec2},
         server_pool::TabCompetitionServerPoolRead,
-        tab_competition,
     },
     raw_server::{
-        TabRawServerWrite,
+        TabRawServerRead,
         config::{RawServerContigRead, RawServerContigWrite},
         occupation::{TabRawServerOccupationRead, TabRawServerOccupationWrite},
-        tab_raw_server,
     },
 };
 
-#[table(accessor= tab_server)]
+#[table(accessor= tab_server,vis_private)]
 pub struct ServerV1 {
     name: String,
 
@@ -78,9 +76,7 @@ fn server_create(
     with_template: u32,
     as_template: bool,
 ) -> Result<(), String> {
-    let Some(parent_competition) = ctx.db.tab_competition().id().find(parent_id) else {
-        return Err("Invalid competition".into());
-    };
+    let parent_competition = ctx.competition_find(parent_id)?;
 
     ctx.auth_builder(parent_id)
         .permission(CompetitionPermissionsV1::SERVER_CREATE)
@@ -136,10 +132,6 @@ fn server_remove_raw_server(ctx: &ReducerContext, server_id: u32) -> Result<(), 
         return Err("Server was not occupied!".into());
     }
 
-    if ctx.db.tab_raw_server().id().find(server_id).is_none() {
-        return Err("Server with id was not found!".into());
-    };
-
     tm_server.status = ServerStatus::Configuring;
 
     ctx.db.tab_server().id().update(tm_server);
@@ -169,9 +161,8 @@ fn server_assign_raw_server(
         return Err("Server is already occupied! Cannot assign!".into());
     }
 
-    if ctx.db.tab_raw_server().id().find(raw_server_id).is_none() {
-        return Err("Server with id was not found!".into());
-    };
+    // Check if server actually exists.
+    ctx.raw_server_find(raw_server_id)?;
 
     if ctx
         .occupation_with_occupier(NodeHandle::ServerV1(server_id))
@@ -286,6 +277,24 @@ fn server_config_override(
     }
 
     Ok(())
+}
+
+pub(crate) trait ServerRead {
+    fn servers_with_config(&self, config_id: u32) -> impl Iterator<Item = ServerV1>;
+    fn server_find(&self, server_id: u32) -> Result<ServerV1, String>;
+}
+
+impl<Db: spacetimedb::CtxDbRead> ServerRead for Db {
+    fn servers_with_config(&self, config_id: u32) -> impl Iterator<Item = ServerV1> {
+        self.db_read_only().tab_server().config().filter(config_id)
+    }
+
+    fn server_find(&self, server_id: u32) -> Result<ServerV1, String> {
+        let Some(server) = self.db_read_only().tab_server().id().find(server_id) else {
+            return Err("Server not found".into());
+        };
+        Ok(server)
+    }
 }
 
 pub(crate) trait ServerWrite {

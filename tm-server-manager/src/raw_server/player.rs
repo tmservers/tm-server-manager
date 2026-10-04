@@ -1,17 +1,15 @@
 use spacetimedb::{
-    AnonymousViewContext, Query, ReducerContext, SpacetimeType, Table, Uuid, ViewContext, reducer,
-    table, view,
+    CtxDbWrite, ReducerContext, SpacetimeType, Table, Uuid, ViewContext, reducer, table, view,
 };
 
 use crate::{
-    authorization::Authorization,
-    competition::node::{NodeHandle, NodeRead},
+    authorization::Authorization, competition::node::NodeRead,
     raw_server::occupation::TabRawServerOccupationRead,
 };
 
 //TODO make private again.
 #[derive(Debug)]
-#[table(accessor= tab_raw_server_player,public)]
+#[table(accessor= tab_raw_server_player,public,vis_private)]
 pub struct RawServerPlayer {
     #[primary_key]
     pub(crate) account_id: Uuid,
@@ -86,6 +84,19 @@ pub(super) fn raw_server_player_remove(
     }
 
     Ok(())
+}
+
+pub(super) trait RawServerPlayerWrite {
+    fn raw_server_player_server_remove(&self, server_id: u32) -> u64;
+}
+
+impl<Db: CtxDbWrite> RawServerPlayerWrite for Db {
+    fn raw_server_player_server_remove(&self, server_id: u32) -> u64 {
+        self.db()
+            .tab_raw_server_player()
+            .server_id()
+            .delete(server_id)
+    }
 }
 
 /* #[view(accessor= raw_server_current_players, public)]

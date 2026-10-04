@@ -1,18 +1,14 @@
-use std::{collections::HashMap, time::Duration};
+use std::time::Duration;
 
-use spacetimedb::{
-    Query, ReducerContext, SpacetimeType, Table, TimeDuration, Timestamp, ViewContext, reducer,
-    table, view,
-};
-use tm_server_types::config::{ServerConfig, ServerConfigV2};
+use spacetimedb::{ReducerContext, SpacetimeType, Table, TimeDuration, Timestamp, reducer, table};
+use tm_server_types::config::ServerConfigV2;
 
 use crate::{
     authorization::Authorization,
     competition::{
-        CompetitionPermissionsV1,
+        CompetitionPermissionsV1, CompetitionRead,
         node::{NodeHandle, NodeWrite, Vec2},
         server_pool::TabCompetitionServerPoolRead,
-        tab_competition,
     },
     raw_server::{
         TabRawServerRead, TabRawServerWrite,
@@ -20,11 +16,10 @@ use crate::{
         destination::TabRawServerDestinationWrite,
         method::RawServerMethodWrite,
         occupation::{TabRawServerOccupationRead, TabRawServerOccupationWrite},
-        tab_raw_server,
     },
     tm_match::{
         auto_recovery::RecoveryWrite,
-        leaderboard::{MatchLeadearboardRead, tab_match_round_player, tab_match_round_player_ext},
+        leaderboard::{tab_match_round_player, tab_match_round_player_ext},
         replay::tab_match_round_replay,
         state::{MatchState, tab_match_state},
     },
@@ -237,9 +232,7 @@ fn match_create(
     with_template: u32,
     as_template: bool,
 ) -> Result<(), String> {
-    let Some(parent_competition) = ctx.db.tab_competition().id().find(parent_id) else {
-        return Err("Invalid competition".into());
-    };
+    let parent_competition = ctx.competition_find(parent_id)?;
 
     ctx.auth_builder(parent_id)
         .permission(CompetitionPermissionsV1::MATCH_CREATE)
@@ -289,9 +282,8 @@ fn match_assign_server(ctx: &ReducerContext, to: u32, server_id: u32) -> Result<
         return Err("Server is already occupied! Cannot assign!".into());
     }
 
-    if ctx.db.tab_raw_server().id().find(server_id).is_none() {
-        return Err("Server with id was not found!".into());
-    };
+    // Check if server exists. TODO check if necessary.
+    ctx.raw_server_find(server_id)?;
 
     if !ctx
         .server_pool_available(tm_match.parent_id)

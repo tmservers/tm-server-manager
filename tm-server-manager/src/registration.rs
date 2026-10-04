@@ -1,13 +1,10 @@
-use spacetimedb::{
-    AnonymousViewContext, Local, Query, ReducerContext, SpacetimeType, Table, reducer, table, view,
-};
+use spacetimedb::{CtxDbRead, ReducerContext, SpacetimeType, Table, reducer, table};
 
 use crate::{
     authorization::Authorization,
     competition::{
-        CompetitionPermissionsV1,
+        CompetitionPermissionsV1, CompetitionRead,
         node::{NodeHandle, NodeWrite, Vec2},
-        tab_competition,
     },
     registration::player::tab_registeration_player,
 };
@@ -35,7 +32,7 @@ pub struct RegistrationSettingsTeam {
 } */
 
 //TODO make private again
-#[table(accessor=tab_registration,public)]
+#[table(accessor=tab_registration,public,vis_private)]
 pub struct Registration {
     name: String,
 
@@ -155,14 +152,7 @@ fn registration_create(
         .permission(CompetitionPermissionsV1::REGISTRATION_CREATE)
         .authorize()?;
 
-    if ctx
-        .db
-        .tab_competition()
-        .id()
-        .find(parent_id)
-        .unwrap()
-        .is_template()
-    {
+    if ctx.competition_find(parent_id)?.is_template() {
         return Err("Cannot add a normal node to a template".into());
     };
     if with_template != 0 {
@@ -259,7 +249,21 @@ fn registration_end(ctx: &ReducerContext, id: u32) -> Result<(), String> {
     ctx.registration_close(id)
 }
 
-pub(crate) trait RegistrationWrite {
+pub(crate) trait RegistrationRead {
+    fn registration_find(&self, id: u32) -> Result<Registration, String>;
+}
+
+impl<Db: CtxDbRead> RegistrationRead for Db {
+    fn registration_find(&self, id: u32) -> Result<Registration, String> {
+        let Some(registration) = self.db_read_only().tab_registration().id().find(id) else {
+            return Err("Registration not found!".into());
+        };
+
+        Ok(registration)
+    }
+}
+
+pub(crate) trait RegistrationWrite: RegistrationRead {
     fn registration_name_edit(&self, registration_id: u32, name: String) -> Result<(), String>;
     fn registration_open(&self, registration_id: u32) -> Result<(), String>;
     fn registration_close(&self, registration_id: u32) -> Result<(), String>;

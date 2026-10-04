@@ -5,9 +5,7 @@ use spacetimedb::{
 
 use crate::{
     authorization::Authorization,
-    competition::{
-        CompetitionRead, CompetitionV1, CompetitionWrite, tab_competition, tab_competition__view,
-    },
+    competition::{CompetitionRead, CompetitionV1, CompetitionWrite},
 };
 
 /// A project is a logical grouping of competitions and also the only way to obtain a competition in the first place.
