@@ -49,9 +49,9 @@ mlua = { version = "0.12", features = ["luau"] }
 #============
 spacetimedb = { version = "2.11.0", features = [
     "unstable",
-], path = "../SpacetimeDB/crates/bindings" } #git = "https://github.com/kistz/SpacetimeDB.git", branch = "fork-changes" }
-spacetimedb-lib = { version = "2.11.0", path = "../SpacetimeDB/crates/lib" } #git = "https://github.com/kistz/SpacetimeDB.git", branch = "fork-changes" }
-spacetimedb-sdk = { version = "2.11.0", path = "../SpacetimeDB/sdks/rust" } #git = "https://github.com/kistz/SpacetimeDB.git", branch = "fork-changes" }
+], git = "https://github.com/kistz/SpacetimeDB.git", branch = "fork-changes" }
+spacetimedb-lib = { version = "2.11.0", git = "https://github.com/kistz/SpacetimeDB.git", branch = "fork-changes" }
+spacetimedb-sdk = { version = "2.11.0", git = "https://github.com/kistz/SpacetimeDB.git", branch = "fork-changes" }
 
 
 #==============
