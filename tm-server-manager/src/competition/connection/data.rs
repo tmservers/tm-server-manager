@@ -1,7 +1,4 @@
-use spacetimedb::{
-    ProcedureContext, Query, ReducerContext, SpacetimeType, ViewContext, procedure, reducer, table,
-    view,
-};
+use spacetimedb::{ProcedureContext, ReducerContext, SpacetimeType, procedure, reducer, table};
 
 use crate::{
     authorization::Authorization,
@@ -11,8 +8,6 @@ use crate::{
         node::NodeLeaderboard,
     },
     leaderboard::LbEntry,
-    registration::player::RegisterationPlayer,
-    tm_match::leaderboard::MatchRoundPlayer,
 };
 
 #[derive(Debug)]
