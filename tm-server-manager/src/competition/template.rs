@@ -1,19 +1,23 @@
 use std::collections::HashMap;
 
-use spacetimedb::{ReducerContext, Table, reducer};
+use spacetimedb::{ReducerContext, Table};
 
 use crate::{
     authorization::Authorization,
     competition::{
-        CompetitionPermissionsV1, CompetitionV1,
+        CompetitionPermissionsV1,
         connection::{data::tab_connection_data, tab_connection},
         node::{CompetitionNodePosition, NodeHandle, NodePositionRead, NodeWrite, Vec2},
         tab_competition,
     },
     input::{InputRead, InputWrite},
+    leaderboard::{LeadearboardRead, LeaderboardWrite},
     output::{OutputRead, OutputWrite},
-    raw_server::config::RawServerContigRead,
+    raw_server::config::{RawServerContigRead, RawServerContigWrite},
+    registration::{RegistrationRead, RegistrationWrite},
+    schedule::{ScheduleRead, ScheduleWrite},
     tm_match::{MatchRead, MatchWrite},
+    tm_server::{ServerRead, ServerWrite},
 };
 
 pub(super) fn competition_template_instantiate(
@@ -75,28 +79,16 @@ pub(super) fn competition_template_instantiate(
         .filter(competition_template.id)
         .filter(|row| !row.is_template());
     let registrations = ctx
-        .db
-        .tab_registration()
-        .parent_id()
-        .filter(competition_template.id)
+        .registrations_with_competition(competition_template.id)
         .filter(|row| !row.is_template());
     let schedules = ctx
-        .db
-        .tab_schedule()
-        .parent_id()
-        .filter(competition_template.id)
+        .schedules_with_competition(competition_template.id)
         .filter(|row| !row.is_template());
     let servers = ctx
-        .db
-        .tab_server()
-        .parent_id()
-        .filter(competition_template.id)
+        .servers_with_competition(competition_template.id)
         .filter(|row| !row.is_template());
     let leaderboards = ctx
-        .db
-        .tab_leaderboard_v2()
-        .parent_id()
-        .filter(competition_template.id)
+        .leaderboards_with_competition(competition_template.id)
         .filter(|row| !row.is_template());
 
     let inputs = ctx.inputs_in_parent(competition_template.id);
@@ -117,8 +109,7 @@ pub(super) fn competition_template_instantiate(
     let mut config_map = HashMap::new();
     for old_config in configs {
         let old_id = old_config.id;
-        let new_config = old_config.instantiate(new_comp.id, ctx);
-        let new_config = ctx.db.tab_raw_server_config_v2().try_insert(new_config)?;
+        let new_config = ctx.raw_server_config_create(old_config.config(), new_comp.id)?;
         config_map.insert(old_id, new_config);
     }
 
@@ -176,10 +167,9 @@ pub(super) fn competition_template_instantiate(
     let mut registration_map = HashMap::new();
     for old_registration in registrations {
         let old_id = old_registration.id;
-        let new_registration = old_registration.instantiate(new_comp.id, stay_template);
-        let new_registration = ctx.db.tab_registration().try_insert(new_registration)?;
-        ctx.node_create(
-            NodeHandle::RegistrationV1(new_registration.id),
+        let new_registration = ctx.registration_create(
+            old_registration.name().to_string(),
+            new_comp.id,
             if let Some(val) = positions
                 .iter()
                 .find(|n| n.node == NodeHandle::RegistrationV1(old_id))
@@ -188,17 +178,19 @@ pub(super) fn competition_template_instantiate(
             } else {
                 Vec2::ZERO
             },
+            Some(old_registration),
+            false,
         )?;
+
         registration_map.insert(old_id, new_registration);
     }
 
     let mut schedule_map = HashMap::new();
     for old_schedule in schedules {
         let old_id = old_schedule.id;
-        let new_schedule = old_schedule.instantiate(new_comp.id, stay_template);
-        let new_schedule = ctx.db.tab_schedule().try_insert(new_schedule)?;
-        ctx.node_create(
-            NodeHandle::ScheduleV1(new_schedule.id),
+        let new_schedule = ctx.schedule_create(
+            old_schedule.name().to_string(),
+            new_comp.id,
             if let Some(val) = positions
                 .iter()
                 .find(|n| n.node == NodeHandle::ScheduleV1(old_id))
@@ -207,17 +199,19 @@ pub(super) fn competition_template_instantiate(
             } else {
                 Vec2::ZERO
             },
+            Some(old_schedule),
+            false,
         )?;
+
         schedule_map.insert(old_id, new_schedule);
     }
 
     let mut server_map = HashMap::new();
     for old_server in servers {
         let old_id = old_server.id;
-        let new_server = old_server.instantiate(new_comp.id, stay_template);
-        let new_server = ctx.db.tab_server().try_insert(new_server)?;
-        ctx.node_create(
-            NodeHandle::ServerV1(new_server.id),
+        let new_server = ctx.server_create(
+            old_server.name().to_string(),
+            new_comp.id,
             if let Some(val) = positions
                 .iter()
                 .find(|n| n.node == NodeHandle::ServerV1(old_id))
@@ -226,6 +220,8 @@ pub(super) fn competition_template_instantiate(
             } else {
                 Vec2::ZERO
             },
+            Some(old_server),
+            false,
         )?;
         server_map.insert(old_id, new_server);
     }
@@ -233,10 +229,9 @@ pub(super) fn competition_template_instantiate(
     let mut leadearboard_map = HashMap::new();
     for old_leaderboard in leaderboards {
         let old_id = old_leaderboard.id;
-        let new_leadearboard = old_leaderboard.instantiate(new_comp.id, stay_template, ctx);
-        let new_leaderboard = ctx.db.tab_leaderboard_v2().try_insert(new_leadearboard)?;
-        ctx.node_create(
-            NodeHandle::LeaderboardV1(new_leaderboard.id),
+        let new_leaderboard = ctx.leaderboard_create(
+            old_leaderboard.name().to_string(),
+            new_comp.id,
             if let Some(val) = positions
                 .iter()
                 .find(|n| n.node == NodeHandle::LeaderboardV1(old_id))
@@ -245,6 +240,8 @@ pub(super) fn competition_template_instantiate(
             } else {
                 Vec2::ZERO
             },
+            Some(old_leaderboard),
+            false,
         )?;
         leadearboard_map.insert(old_id, new_leaderboard);
     }

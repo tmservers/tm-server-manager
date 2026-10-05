@@ -6,7 +6,7 @@ use crate::{
     raw_server::occupation::TabRawServerOccupationRead, tm_match::MatchRead, tm_server::ServerRead,
 };
 
-#[table(accessor=tab_raw_server_config)]
+#[table(accessor=tab_raw_server_config,vis_private)]
 struct RawServerConfig {
     #[auto_inc]
     #[primary_key]
@@ -42,10 +42,8 @@ impl RawServerConfigV2 {
         }
     }
 
-    pub(crate) fn instantiate(mut self, parent_id: u32, ctx: &ReducerContext) -> Self {
-        self.competition_id = parent_id;
-        self.id = ctx.auto_inc::<tab_raw_server_config_v2__TableHandle>();
-        self
+    pub(crate) fn config(&self) -> ServerConfigV2 {
+        self.config.clone()
     }
 }
 
@@ -138,11 +136,11 @@ pub(crate) trait RawServerContigWrite {
         new_config: ServerConfigV2,
     ) -> Result<(), String>;
 
-    fn raw_server_config_new(
+    fn raw_server_config_create(
         &self,
         new_config: ServerConfigV2,
         competition_id: u32,
-    ) -> Result<u32, String>;
+    ) -> Result<RawServerConfigV2, String>;
 
     fn emit_raw_server_config(&self, server_id: u32, seamless: bool) -> Result<(), String>;
 }
@@ -165,11 +163,11 @@ impl<Db: spacetimedb::CtxDbWrite> RawServerContigWrite for Db {
 
     /// The compeition_id determines if it is a shared config.
     /// If it is null it is a solo config if not then its associated with the compeition.
-    fn raw_server_config_new(
+    fn raw_server_config_create(
         &self,
         new_config: ServerConfigV2,
         competition_id: u32,
-    ) -> Result<u32, String> {
+    ) -> Result<RawServerConfigV2, String> {
         let id = self
             .db()
             .tab_raw_server_config_v2()
@@ -179,7 +177,7 @@ impl<Db: spacetimedb::CtxDbWrite> RawServerContigWrite for Db {
                 config: new_config,
             })?;
 
-        Ok(id.id)
+        Ok(id)
     }
 
     fn emit_raw_server_config(&self, server_id: u32, seamless: bool) -> Result<(), String> {
@@ -256,7 +254,7 @@ fn raw_server_config_shared_new(
         //.permission(CompetitionPermissionsV1::TODO)
         .authorize()?;
 
-    ctx.raw_server_config_new(config, competition_id)?;
+    ctx.raw_server_config_create(config, competition_id)?;
 
     Ok(())
 }

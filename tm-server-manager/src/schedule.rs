@@ -35,15 +35,12 @@ impl ScheduleV1 {
         self.parent_id
     }
 
-    pub(crate) fn is_template(&self) -> bool {
-        self.template
+    pub(crate) fn name(&self) -> &str {
+        &self.name
     }
 
-    pub(crate) fn instantiate(mut self, parent_id: u32, stay_template: bool) -> Self {
-        self.template = stay_template;
-        self.parent_id = parent_id;
-        self.id = 0;
-        self
+    pub(crate) fn is_template(&self) -> bool {
+        self.template
     }
 
     pub(crate) fn can_mutate_settings(&self) -> Result<(), String> {
@@ -129,25 +126,11 @@ fn schedule_create(
     };
 
     if with_template != 0 {
-        let Some(schedule) = ctx.db.tab_schedule().id().find(with_template) else {
-            return Err("Template not found!".into());
-        };
-        //TODO do we have access to this template?
-        let new_registration = schedule.instantiate(parent_id, false);
-        ctx.db.tab_schedule().try_insert(new_registration)?;
+        todo!()
     } else {
-        let schedule = ScheduleV1 {
-            id: 0,
-            parent_id,
-            template: false,
-            settings: ScheduleSettings::Manual,
-            status: ScheduleStatus::Configuring,
-            name,
-        };
-
-        let schedule = ctx.db.tab_schedule().try_insert(schedule)?;
-        ctx.node_create(NodeHandle::ScheduleV1(schedule.id), position)?;
+        ScheduleWrite::schedule_create(ctx, name, parent_id, position, None, as_template)?;
     }
+
     Ok(())
 }
 
@@ -257,6 +240,7 @@ pub fn my_comeptition_schedules(
 
 pub(crate) trait ScheduleRead {
     fn schedule_find(&self, id: u32) -> Result<ScheduleV1, String>;
+    fn schedules_with_competition(&self, competition_id: u32) -> impl Iterator<Item = ScheduleV1>;
 }
 
 impl<Db: CtxDbRead> ScheduleRead for Db {
@@ -266,9 +250,24 @@ impl<Db: CtxDbRead> ScheduleRead for Db {
         };
         Ok(schedule)
     }
+
+    fn schedules_with_competition(&self, competition_id: u32) -> impl Iterator<Item = ScheduleV1> {
+        self.db_read_only()
+            .tab_schedule()
+            .parent_id()
+            .filter(competition_id)
+    }
 }
 
 pub(crate) trait ScheduleWrite {
+    fn schedule_create(
+        &self,
+        name: String,
+        parent_id: u32,
+        position: Vec2,
+        template: Option<ScheduleV1>,
+        as_template: bool,
+    ) -> Result<ScheduleV1, String>;
     fn schedule_start_relative(&self, schedule_id: u32, now: Timestamp) -> Result<(), String>;
     fn schedule_name_edit(&self, match_id: u32, name: String) -> Result<(), String>;
 }
@@ -299,5 +298,35 @@ impl<Db: spacetimedb::CtxDbWrite> ScheduleWrite for Db {
         self.db().tab_schedule().id().update(tm_match);
 
         Ok(())
+    }
+
+    fn schedule_create(
+        &self,
+        name: String,
+        parent_id: u32,
+        position: Vec2,
+        template: Option<ScheduleV1>,
+        as_template: bool,
+    ) -> Result<ScheduleV1, String> {
+        let schedule = if let Some(mut template) = template {
+            template.template = as_template; //TODO: Audit codepath for legal again.
+            template.parent_id = parent_id;
+            template.id = 0;
+            template
+        } else {
+            ScheduleV1 {
+                id: 0,
+                parent_id,
+                template: false,
+                settings: ScheduleSettings::Manual,
+                status: ScheduleStatus::Configuring,
+                name,
+            }
+        };
+
+        let tm_match = self.db().tab_schedule().try_insert(schedule)?;
+        self.node_create(NodeHandle::ScheduleV1(tm_match.id), position)?;
+
+        Ok(tm_match)
     }
 }

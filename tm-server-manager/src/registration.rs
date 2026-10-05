@@ -59,11 +59,8 @@ impl Registration {
         self.template
     }
 
-    pub(crate) fn instantiate(mut self, parent_id: u32, stay_template: bool) -> Self {
-        self.parent_id = parent_id;
-        self.id = 0;
-        self.template = stay_template;
-        self
+    pub(crate) fn name(&self) -> &str {
+        &self.name
     }
 
     pub(crate) fn player_registration_allowed(&self, ctx: &ReducerContext) -> Result<(), String> {
@@ -155,25 +152,11 @@ fn registration_create(
     if ctx.competition_find(parent_id)?.is_template() {
         return Err("Cannot add a normal node to a template".into());
     };
+
     if with_template != 0 {
-        let Some(template) = ctx.db.tab_registration().id().find(with_template) else {
-            return Err("Template not found!".into());
-        };
-        //TODO do we have access to this template?
-        let new_registration = template.instantiate(parent_id, false);
-        ctx.db.tab_registration().try_insert(new_registration)?;
+        todo!()
     } else {
-        let registration = ctx.db.tab_registration().try_insert(Registration {
-            name,
-            id: 0,
-            parent_id,
-            settings: RegistrationSettings::Player(RegistrationSettingsPlayer {
-                player_limit: 100,
-            }),
-            status: RegistrationStatus::Configuring,
-            template: false,
-        })?;
-        ctx.node_create(NodeHandle::RegistrationV1(registration.id), position)?;
+        RegistrationWrite::registration_create(ctx, name, parent_id, position, None, as_template)?;
     }
 
     Ok(())
@@ -250,6 +233,10 @@ fn registration_end(ctx: &ReducerContext, id: u32) -> Result<(), String> {
 }
 
 pub(crate) trait RegistrationRead {
+    fn registrations_with_competition(
+        &self,
+        competition_id: u32,
+    ) -> impl Iterator<Item = Registration>;
     fn registration_find(&self, id: u32) -> Result<Registration, String>;
 }
 
@@ -261,12 +248,30 @@ impl<Db: CtxDbRead> RegistrationRead for Db {
 
         Ok(registration)
     }
+
+    fn registrations_with_competition(
+        &self,
+        competition_id: u32,
+    ) -> impl Iterator<Item = Registration> {
+        self.db_read_only()
+            .tab_registration()
+            .parent_id()
+            .filter(competition_id)
+    }
 }
 
 pub(crate) trait RegistrationWrite: RegistrationRead {
     fn registration_name_edit(&self, registration_id: u32, name: String) -> Result<(), String>;
     fn registration_open(&self, registration_id: u32) -> Result<(), String>;
     fn registration_close(&self, registration_id: u32) -> Result<(), String>;
+    fn registration_create(
+        &self,
+        name: String,
+        parent_id: u32,
+        position: Vec2,
+        template: Option<Registration>,
+        as_template: bool,
+    ) -> Result<Registration, String>;
 }
 
 impl<Db: spacetimedb::CtxDbWrite> RegistrationWrite for Db {
@@ -318,6 +323,38 @@ impl<Db: spacetimedb::CtxDbWrite> RegistrationWrite for Db {
         self.db().tab_registration().id().update(registration);
 
         Ok(())
+    }
+
+    fn registration_create(
+        &self,
+        name: String,
+        parent_id: u32,
+        position: Vec2,
+        template: Option<Registration>,
+        as_template: bool,
+    ) -> Result<Registration, String> {
+        let registration = if let Some(mut template) = template {
+            template.template = as_template; //TODO: Audit codepath for legal again.
+            template.parent_id = parent_id;
+            template.id = 0;
+            template
+        } else {
+            Registration {
+                name,
+                id: 0,
+                parent_id,
+                settings: RegistrationSettings::Player(RegistrationSettingsPlayer {
+                    player_limit: 100,
+                }),
+                status: RegistrationStatus::Configuring,
+                template: false,
+            }
+        };
+
+        let registration = self.db().tab_registration().try_insert(registration)?;
+        self.node_create(NodeHandle::RegistrationV1(registration.id), position)?;
+
+        Ok(registration)
     }
 }
 
