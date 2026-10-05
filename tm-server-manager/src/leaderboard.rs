@@ -51,24 +51,16 @@ pub struct LeaderboardV2 {
 }
 
 impl LeaderboardV2 {
-    pub(crate) fn instantiate(
-        mut self,
-        parent_id: u32,
-        stay_template: bool,
-        ctx: &ReducerContext,
-    ) -> Self {
-        self.template = stay_template;
-        self.parent_id = parent_id;
-        self.id = ctx.auto_inc::<tab_leaderboard_v2__TableHandle>();
-        self
-    }
-
     pub(crate) fn is_template(&self) -> bool {
         self.template
     }
 
     pub(crate) fn get_comp_id(&self) -> u32 {
         self.parent_id
+    }
+
+    pub(crate) fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -211,22 +203,10 @@ fn leaderboard_create(
 
     //TODO validation.
 
-    // Try to load template if provided
     if with_template != 0 {
-        ctx.leaderboard_template_instantiate(with_template)?;
+        todo!()
     } else {
-        let output = LeaderboardV2 {
-            name,
-            id: ctx.auto_inc::<tab_leaderboard_v2__TableHandle>(),
-            parent_id,
-            template: false,
-            status: LeaderboardStatus::Configuring,
-            settings: Vec::new(),
-        };
-
-        let output = ctx.db.tab_leaderboard_v2().try_insert(output)?;
-
-        ctx.node_create(NodeHandle::LeaderboardV1(output.id), position)?;
+        LeaderboardWrite::leaderboard_create(ctx, name, parent_id, position, None, as_template)?;
     }
 
     Ok(())
@@ -279,6 +259,10 @@ fn leaderboard_settings_update(
 pub(crate) trait LeadearboardRead {
     fn leaderboard_find(&self, id: u32) -> Result<LeaderboardV2, String>;
     fn leaderboard_evaluation(&self, leaderboard_id: u32) -> Vec<LbEntry>;
+    fn leaderboards_with_competition(
+        &self,
+        competition_id: u32,
+    ) -> impl Iterator<Item = LeaderboardV2>;
     //fn leaderboard_finalize(&self, lb: Vec<LbEntry>) -> Vec<LbEntry>;
 }
 impl<Db: spacetimedb::CtxDbRead> LeadearboardRead for Db {
@@ -327,21 +311,29 @@ impl<Db: spacetimedb::CtxDbRead> LeadearboardRead for Db {
         };
         Ok(leaderboard)
     }
+
+    fn leaderboards_with_competition(
+        &self,
+        competition_id: u32,
+    ) -> impl Iterator<Item = LeaderboardV2> {
+        self.db_read_only()
+            .tab_leaderboard_v2()
+            .parent_id()
+            .filter(competition_id)
+    }
 }
 pub(crate) trait LeaderboardWrite: LeadearboardRead {
-    fn leaderboard_template_instantiate(&self, with_template: u32) -> Result<(), String>;
-    fn leaderboard_insert(&self, output: LeaderboardV2) -> Result<LeaderboardV2, String>;
+    fn leaderboard_create(
+        &self,
+        name: String,
+        parent_id: u32,
+        position: Vec2,
+        template: Option<LeaderboardV2>,
+        as_template: bool,
+    ) -> Result<LeaderboardV2, String>;
     fn leaderboard_name_edit(&self, leaderboard_i32: u32, name: String) -> Result<(), String>;
 }
 impl<Db: spacetimedb::CtxDbWrite> LeaderboardWrite for Db {
-    fn leaderboard_template_instantiate(&self, with_template: u32) -> Result<(), String> {
-        todo!()
-    }
-
-    fn leaderboard_insert(&self, output: LeaderboardV2) -> Result<LeaderboardV2, String> {
-        todo!()
-    }
-
     fn leaderboard_name_edit(&self, leaderboard_id: u32, name: String) -> Result<(), String> {
         let Some(mut tm_match) = self.db().tab_leaderboard_v2().id().find(leaderboard_id) else {
             return Err("Match not found.".into());
@@ -350,6 +342,36 @@ impl<Db: spacetimedb::CtxDbWrite> LeaderboardWrite for Db {
         self.db().tab_leaderboard_v2().id().update(tm_match);
 
         Ok(())
+    }
+
+    fn leaderboard_create(
+        &self,
+        name: String,
+        parent_id: u32,
+        position: Vec2,
+        template: Option<LeaderboardV2>,
+        as_template: bool,
+    ) -> Result<LeaderboardV2, String> {
+        let leaderboard = if let Some(mut template) = template {
+            template.template = as_template; //TODO: Audit codepath for legal again.
+            template.parent_id = parent_id;
+            template.id = self.auto_inc::<tab_leaderboard_v2__TableHandle>();
+            template
+        } else {
+            LeaderboardV2 {
+                name,
+                id: self.auto_inc::<tab_leaderboard_v2__TableHandle>(),
+                parent_id,
+                template: false,
+                status: LeaderboardStatus::Configuring,
+                settings: Vec::new(),
+            }
+        };
+
+        let leaderboard = self.db().tab_leaderboard_v2().try_insert(leaderboard)?;
+        self.node_create(NodeHandle::LeaderboardV1(leaderboard.id), position)?;
+
+        Ok(leaderboard)
     }
 }
 

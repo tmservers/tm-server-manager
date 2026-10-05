@@ -49,15 +49,12 @@ impl ServerV1 {
         self.open
     }
 
-    pub(crate) fn instantiate(mut self, parent_id: u32, stay_template: bool) -> Self {
-        self.template = stay_template;
-        self.parent_id = parent_id;
-        self.id = 0;
-        self
-    }
-
     pub(crate) fn is_template(&self) -> bool {
         self.template
+    }
+
+     pub(crate) fn name(&self) -> &str {
+        &self.name
     }
 }
 
@@ -88,25 +85,10 @@ fn server_create(
         );
     }
 
-    // Try to load template if provided
     if with_template != 0 {
         todo!()
     } else {
-        // Create an uncommitted server
-        let tm_server = ServerV1 {
-            name,
-            id: 0,
-            parent_id,
-            config: 0,
-            status: ServerStatus::Configuring,
-            open: true,
-            template: false,
-            auto_provision: true,
-        };
-
-        let tm_server = ctx.db.tab_server().try_insert(tm_server)?;
-
-        ctx.node_create(NodeHandle::ServerV1(tm_server.id), position)?;
+        ServerWrite::server_create(ctx, name, parent_id, position, None, as_template)?;
     }
 
     Ok(())
@@ -263,8 +245,8 @@ fn server_config_override(
     if configs.len() == 1 {
         ctx.raw_server_config_update(tm_server.config, config)?;
     } else {
-        let config = ctx.raw_server_config_new(config, 0)?;
-        tm_server.config = config;
+        let config = ctx.raw_server_config_create(config, 0)?;
+        tm_server.config = config.id;
 
         tm_server = ctx.db.tab_server().id().update(tm_server);
     }
@@ -282,6 +264,7 @@ fn server_config_override(
 pub(crate) trait ServerRead {
     fn servers_with_config(&self, config_id: u32) -> impl Iterator<Item = ServerV1>;
     fn server_find(&self, server_id: u32) -> Result<ServerV1, String>;
+    fn servers_with_competition(&self, competition_id: u32) -> impl Iterator<Item = ServerV1>;
 }
 
 impl<Db: spacetimedb::CtxDbRead> ServerRead for Db {
@@ -295,9 +278,24 @@ impl<Db: spacetimedb::CtxDbRead> ServerRead for Db {
         };
         Ok(server)
     }
+
+    fn servers_with_competition(&self, competition_id: u32) -> impl Iterator<Item = ServerV1> {
+        self.db_read_only()
+            .tab_server()
+            .parent_id()
+            .filter(competition_id)
+    }
 }
 
 pub(crate) trait ServerWrite {
+    fn server_create(
+        &self,
+        name: String,
+        parent_id: u32,
+        position: Vec2,
+        template: Option<ServerV1>,
+        as_template: bool,
+    ) -> Result<ServerV1, String>;
     fn server_name_edit(&self, match_id: u32, name: String) -> Result<(), String>;
 }
 
@@ -310,6 +308,38 @@ impl<Db: spacetimedb::CtxDbWrite> ServerWrite for Db {
         self.db().tab_server().id().update(tm_match);
 
         Ok(())
+    }
+
+    fn server_create(
+        &self,
+        name: String,
+        parent_id: u32,
+        position: Vec2,
+        template: Option<ServerV1>,
+        as_template: bool,
+    ) -> Result<ServerV1, String> {
+        let server = if let Some(mut template) = template {
+            template.template = as_template; //TODO: Audit codepath for legal again.
+            template.parent_id = parent_id;
+            template.id = 0;
+            template
+        } else {
+            ServerV1 {
+                name,
+                id: 0,
+                parent_id,
+                config: 0,
+                status: ServerStatus::Configuring,
+                open: true,
+                template: false,
+                auto_provision: true,
+            }
+        };
+
+        let tm_match = self.db().tab_server().try_insert(server)?;
+        self.node_create(NodeHandle::ServerV1(tm_match.id), position)?;
+
+        Ok(tm_match)
     }
 }
 
