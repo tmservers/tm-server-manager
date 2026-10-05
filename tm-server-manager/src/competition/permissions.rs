@@ -8,6 +8,7 @@ pub(crate) struct CompetitionPermissionsV1(pub(super) u64);
 impl CompetitionPermissionsV1 {
     pub const NONE: CompetitionPermissionsV1 = CompetitionPermissionsV1(0);
 
+    /// This is a special Permission which implicitly acts as a "Role".
     pub const OWNER: CompetitionPermissionsV1 = CompetitionPermissionsV1(1);
 
     pub const COMPETITION_CREATE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 4);
