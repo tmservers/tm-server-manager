@@ -118,7 +118,7 @@ fn competition_node_position_update(
 ) -> Result<(), String> {
     let competition_id = ctx.node_get_parent(node)?;
     ctx.auth_builder(competition_id)
-        .permission(CompetitionPermissionsV1::COMPETITION_LAYOUT_EDIT)
+        .permission(CompetitionPermissionsV1::NODE_MOVE)
         .authorize()?;
 
     let Some(mut node) = ctx
@@ -147,7 +147,7 @@ fn competition_node_positions_update(
     for item in &positions {
         let competition_id = ctx.node_get_parent(item.node)?;
         ctx.auth_builder(competition_id)
-            .permission(CompetitionPermissionsV1::COMPETITION_LAYOUT_EDIT)
+            .permission(CompetitionPermissionsV1::NODE_MOVE)
             .authorize()?;
     }
 

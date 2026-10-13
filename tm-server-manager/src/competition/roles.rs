@@ -78,7 +78,7 @@ impl CompetitionMember {
 fn member_add(ctx: &ReducerContext, competition_id: u32, account_id: Uuid) -> Result<(), String> {
     let user_id = ctx
         .auth_builder(competition_id)
-        //.permission(ProjectPermissionsV1::Pro)
+        .permission(CompetitionPermissionsV1::PERMISSION_MEMBER_ADD)
         .authorize()?;
 
     ctx.db
@@ -100,7 +100,7 @@ fn member_remove(ctx: &ReducerContext, member_id: u32) -> Result<(), String> {
     };
 
     ctx.auth_builder(project_member.competition_id)
-        //.permission(ProjectPermissionsV1::Pro)
+        .permission(CompetitionPermissionsV1::PERMISSION_MEMBER_REMOVE)
         .authorize()?;
 
     ctx.db
@@ -117,7 +117,7 @@ fn member_remove(ctx: &ReducerContext, member_id: u32) -> Result<(), String> {
 #[reducer]
 fn role_create(ctx: &ReducerContext, competition_id: u32, name: String) -> Result<(), String> {
     ctx.auth_builder(competition_id)
-        //.permission(ProjectPermissionsV1::Pro)
+        .permission(CompetitionPermissionsV1::PERMISSION_ROLE_CREATE)
         .authorize()?;
 
     ctx.db.tab_competition_role().try_insert(CompetitionRole {
@@ -136,9 +136,8 @@ fn role_remove(ctx: &ReducerContext, role_id: u32) -> Result<(), String> {
         return Err("Could not find role with id".into());
     };
 
-    //TODO
     ctx.auth_builder(role.competition_id)
-        //.permission(ProjectPermissionsV1::Pro)
+        .permission(CompetitionPermissionsV1::PERMISSION_ROLE_REMOVE)
         .authorize()?;
 
     ctx.db.tab_competition_role().id().delete(role_id);
@@ -157,9 +156,8 @@ fn role_member_assign(ctx: &ReducerContext, role_id: u32, account_id: Uuid) -> R
         return Err("Could not find role with id".into());
     };
 
-    //TODO
     ctx.auth_builder(role.competition_id)
-        //.permission(ProjectPermissionsV1::Pro)
+        .permission(CompetitionPermissionsV1::PERMISSION_ROLE_MEMBER_ASSIGN)
         .authorize()?;
 
     ctx.db
@@ -179,7 +177,7 @@ fn role_member_remove(ctx: &ReducerContext, role_id: u32, account_id: Uuid) -> R
     };
 
     ctx.auth_builder(role.competition_id)
-        //.permission(ProjectPermissionsV1::Pro)
+        .permission(CompetitionPermissionsV1::PERMISSION_ROLE_MEMBER_REMOVE)
         .authorize()?;
 
     for member in ctx
@@ -208,7 +206,7 @@ fn role_assign_permission(
     };
 
     ctx.auth_builder(role.competition_id)
-        //.permission
+        .permission(CompetitionPermissionsV1::PERMISSION_ROLE_EDIT_PERMISSION)
         .authorize()?;
 
     role.permissions = new_permissions;
@@ -229,7 +227,7 @@ fn member_assign_permission(
     };
 
     ctx.auth_builder(member.competition_id)
-        //.permission
+        .permission(CompetitionPermissionsV1::PERMISSION_MEMBER_EDIT_PERMISSION)
         .authorize()?;
 
     member.permissions = new_permissions;

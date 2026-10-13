@@ -171,7 +171,7 @@ impl NodeType for NodeHandle {
 fn node_delete(ctx: &ReducerContext, node: NodeHandle) -> Result<(), String> {
     let parent = ctx.node_get_parent(node)?;
     ctx.auth_builder(parent)
-        .permission(CompetitionPermissionsV1::OWNER)
+        .permission(CompetitionPermissionsV1::NODE_DELETE)
         .authorize()?;
 
     ctx.node_delete(node)
@@ -476,7 +476,10 @@ impl<Db: spacetimedb::CtxDbWrite> NodeWrite for Db {
 
 #[reducer]
 fn node_name_edit(ctx: &ReducerContext, node: NodeHandle, name: String) -> Result<(), String> {
-    //TODO access control
+    let parent = ctx.node_get_parent(node)?;
+    ctx.auth_builder(parent)
+        .permission(CompetitionPermissionsV1::NODE_NAME_EDIT)
+        .authorize()?;
 
     ctx.node_name_edit(node, name)
 }

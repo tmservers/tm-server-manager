@@ -17,11 +17,7 @@ pub struct CompetitionServer {
 
 /// Allows a user to lend a server he owns to a project.
 #[reducer]
-fn lend_raw_server(
-    ctx: &ReducerContext,
-    server_id: u32,
-    competition_id: u32,
-) -> Result<(), String> {
+fn raw_server_add(ctx: &ReducerContext, server_id: u32, competition_id: u32) -> Result<(), String> {
     let user_id = ctx
         .auth_builder(competition_id)
         .permission(CompetitionPermissionsV1::RAW_SERVER_ADD)
@@ -56,7 +52,7 @@ fn lend_raw_server(
 /// Allows a user to delete a server.
 /// This can be either the owner of the server or an authorized project member
 #[reducer]
-fn revoke_raw_server(
+fn raw_server_remove(
     ctx: &ReducerContext,
     server_id: u32,
     competition_id: u32,
@@ -77,7 +73,7 @@ fn revoke_raw_server(
     }
 
     ctx.auth_builder(competition_id)
-        .permission(CompetitionPermissionsV1::RAW_SERVER_REVOKE)
+        .permission(CompetitionPermissionsV1::RAW_SERVER_REMOVE)
         .authorize()?;
 
     ctx.db

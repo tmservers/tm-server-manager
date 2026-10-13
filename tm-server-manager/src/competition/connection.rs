@@ -158,7 +158,7 @@ fn connection_create(
     }
 
     ctx.auth_builder(origin_parent)
-        .permission(CompetitionPermissionsV1::COMPETITION_CONNECTION_EDIT)
+        .permission(CompetitionPermissionsV1::CONNECTION_CONNECT)
         .authorize()?;
 
     let mut set = HashSet::new();
@@ -264,7 +264,7 @@ fn connection_configured(ctx: &ReducerContext, connection_id: u32) -> Result<(),
     };
 
     ctx.auth_builder(connection.parent_id)
-        .permission(CompetitionPermissionsV1::COMPETITION_CONNECTION_EDIT)
+        .permission(CompetitionPermissionsV1::CONNECTION_CONFIGURED)
         .authorize()?;
 
     if connection.status != ConnectionStatus::Configuring {
@@ -569,8 +569,11 @@ fn connection_delete(ctx: &ReducerContext, id: u32) -> Result<(), String> {
         return Err(String::new());
     };
     ctx.auth_builder(connection.parent_id)
-        .permission(CompetitionPermissionsV1::COMPETITION_CONNECTION_EDIT)
+        .permission(CompetitionPermissionsV1::CONNECTION_DELETE)
         .authorize()?;
 
+    if connection.status == ConnectionStatus::Resolved {
+        return Err(String::new());
+    }
     ctx.connection_delete(id)
 }
