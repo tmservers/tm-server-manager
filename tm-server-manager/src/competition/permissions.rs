@@ -14,16 +14,36 @@ impl CompetitionPermissionsV1 {
     pub const COMPETITION_CREATE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 4);
     pub const COMPETITION_EDIT_NAME: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 5);
     pub const COMPETITION_DELETE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 6);
-    pub const COMPETITION_CONNECTION_EDIT: CompetitionPermissionsV1 =
-        CompetitionPermissionsV1(1 << 7);
-    pub const COMPETITION_LAYOUT_EDIT: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 18);
+
+    pub const CONNECTION_CONNECT: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 7);
+    pub const CONNECTION_CONFIGURE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 8);
+    pub const CONNECTION_CONFIGURED: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 9);
+    pub const CONNECTION_DELETE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 10);
+
+    pub const NODE_MOVE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 11);
+    pub const NODE_DELETE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 12);
+    pub const NODE_NAME_EDIT: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 13);
+
+    pub const PERMISSION_MEMBER_ADD: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 14);
+    pub const PERMISSION_MEMBER_EDIT_PERMISSION: CompetitionPermissionsV1 =
+        CompetitionPermissionsV1(1 << 15);
+    pub const PERMISSION_MEMBER_REMOVE: CompetitionPermissionsV1 =
+        CompetitionPermissionsV1(1 << 16);
+    pub const PERMISSION_ROLE_CREATE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 17);
+    pub const PERMISSION_ROLE_EDIT_PERMISSION: CompetitionPermissionsV1 =
+        CompetitionPermissionsV1(1 << 18);
+    pub const PERMISSION_ROLE_MEMBER_ASSIGN: CompetitionPermissionsV1 =
+        CompetitionPermissionsV1(1 << 19);
+    pub const PERMISSION_ROLE_MEMBER_REMOVE: CompetitionPermissionsV1 =
+        CompetitionPermissionsV1(1 << 20);
+    pub const PERMISSION_ROLE_REMOVE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 21);
 
     pub const MATCH_CREATE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 10);
     pub const MATCH_DELETE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 11);
     pub const MATCH_CONFIGURE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 12);
 
     pub const RAW_SERVER_ADD: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 13);
-    pub const RAW_SERVER_REVOKE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 14);
+    pub const RAW_SERVER_REMOVE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 14);
 
     pub const MATCH_ASSIGN_SERVER: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 15);
 

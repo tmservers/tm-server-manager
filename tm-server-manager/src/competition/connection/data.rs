@@ -168,7 +168,7 @@ fn competition_connection_data_update(
     }
 
     ctx.auth_builder(connection.parent_id)
-        .permission(CompetitionPermissionsV1::COMPETITION_CONNECTION_EDIT)
+        .permission(CompetitionPermissionsV1::CONNECTION_CONFIGURE)
         .authorize()?;
 
     let Some(mut data) = ctx
