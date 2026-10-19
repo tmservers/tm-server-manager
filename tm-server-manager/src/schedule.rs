@@ -117,6 +117,8 @@ fn schedule_create(
     with_template: u32,
     as_template: bool,
 ) -> Result<(), String> {
+    todo!();
+
     ctx.auth_builder(parent_id)
         .permission(CompetitionPermissionsV1::SCHEDULE_CREATE)
         .authorize()?;
