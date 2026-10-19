@@ -173,7 +173,7 @@ fn registration_settings_update(
     };
 
     ctx.auth_builder(registration.parent_id)
-        .permission(CompetitionPermissionsV1::REGISTRATION_CREATE)
+        .permission(CompetitionPermissionsV1::REGISTRATION_CONFIGURE)
         .authorize()?;
 
     registration.can_change_settings()?;
@@ -192,7 +192,7 @@ fn registration_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> 
     };
 
     ctx.auth_builder(registration.parent_id)
-        .permission(CompetitionPermissionsV1::REGISTRATION_CREATE)
+        .permission(CompetitionPermissionsV1::REGISTRATION_CONFIGURED)
         .authorize()?;
 
     if registration.status != RegistrationStatus::Configuring {
@@ -213,7 +213,7 @@ fn registration_start(ctx: &ReducerContext, id: u32) -> Result<(), String> {
     };
 
     ctx.auth_builder(registration.parent_id)
-        .permission(CompetitionPermissionsV1::REGISTRATION_CREATE)
+        .permission(CompetitionPermissionsV1::REGISTRATION_OPEN)
         .authorize()?;
 
     ctx.registration_open(id)
@@ -226,7 +226,7 @@ fn registration_end(ctx: &ReducerContext, id: u32) -> Result<(), String> {
     };
 
     ctx.auth_builder(registration.parent_id)
-        .permission(CompetitionPermissionsV1::REGISTRATION_CREATE)
+        .permission(CompetitionPermissionsV1::REGISTRATION_CLOSE)
         .authorize()?;
 
     ctx.registration_close(id)
