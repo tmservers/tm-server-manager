@@ -46,13 +46,19 @@ impl CompetitionPermissionsV1 {
     pub const LEADERBOARD_CONFIGURE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 26);
     pub const LEADERBOARD_CONFIGURED: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 27);
 
-    pub const MATCH_CREATE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 10);
-    pub const MATCH_DELETE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 11);
-    pub const MATCH_CONFIGURE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 12);
+    pub const REGISTRATION_CREATE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 28);
+    pub const REGISTRATION_CONFIGURE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 29);
+    pub const REGISTRATION_CONFIGURED: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 30);
+    pub const REGISTRATION_OPEN: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 31);
+    pub const REGISTRATION_CLOSE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 32);
 
-    pub const MATCH_ASSIGN_SERVER: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 15);
-
-    pub const REGISTRATION_CREATE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 16);
+    pub const MATCH_CREATE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 33);
+    pub const MATCH_DELETE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 34);
+    pub const MATCH_CONFIGURE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 35);
+    pub const MATCH_CONFIGURED: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 36);
+    pub const MATCH_START: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 37);
+    pub const MATCH_SEND_CHAT: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 38);
+    pub const MATCH_ASSIGN_SERVER: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 39);
 
     pub const SCHEDULE_CREATE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 17);
 
