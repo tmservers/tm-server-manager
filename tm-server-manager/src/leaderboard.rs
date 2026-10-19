@@ -116,9 +116,7 @@ pub struct LbEntry {
 
     //TODO maybe
     // mode_fallback: enum {ScoreAsc,ScoreDsc,TimeAsc,...}
-
-    // TODO could be used for fallback
-    step_idx: u8,
+    pub team_id: u32,
 }
 
 impl LbEntry {
@@ -139,7 +137,7 @@ impl LbEntry {
             time: i32::MIN,
             node_id,
             node_variant,
-            step_idx: 0, //TODO
+            team_id: 0, //TODO
         }
     }
 
@@ -192,7 +190,7 @@ fn leaderboard_create(
 ) -> Result<(), String> {
     let parent_competition = ctx.competition_find(parent_id)?;
     ctx.auth_builder(parent_id)
-        //.permission(CompetitionPermissionsV1::LEADERB)
+        .permission(CompetitionPermissionsV1::LEADERBOARD_CREATE)
         .authorize()?;
 
     if parent_competition.is_template() {
@@ -219,7 +217,7 @@ fn leaderboard_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> {
     };
 
     ctx.auth_builder(leaderboard.parent_id)
-        .permission(CompetitionPermissionsV1::MATCH_CONFIGURE)
+        .permission(CompetitionPermissionsV1::LEADERBOARD_CONFIGURED)
         .authorize()?;
 
     if leaderboard.status != LeaderboardStatus::Configuring {
@@ -243,7 +241,7 @@ fn leaderboard_settings_update(
     };
 
     ctx.auth_builder(leaderboard.parent_id)
-        //.permission(CompetitionPermissionsV1::REGISTRATION_CREATE)
+        .permission(CompetitionPermissionsV1::LEADERBOARD_CONFIGURE)
         .authorize()?;
 
     //TODO maybe add state to reevaluation.

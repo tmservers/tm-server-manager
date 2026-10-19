@@ -38,12 +38,17 @@ impl CompetitionPermissionsV1 {
         CompetitionPermissionsV1(1 << 20);
     pub const PERMISSION_ROLE_REMOVE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 21);
 
+    pub const RAW_SERVER_ADD: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 22);
+    pub const RAW_SERVER_REMOVE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 23);
+
+    pub const LEADERBOARD_CREATE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 24);
+    pub const LEADERBOARD_DELETE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 25);
+    pub const LEADERBOARD_CONFIGURE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 26);
+    pub const LEADERBOARD_CONFIGURED: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 27);
+
     pub const MATCH_CREATE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 10);
     pub const MATCH_DELETE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 11);
     pub const MATCH_CONFIGURE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 12);
-
-    pub const RAW_SERVER_ADD: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 13);
-    pub const RAW_SERVER_REMOVE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 14);
 
     pub const MATCH_ASSIGN_SERVER: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 15);
 
