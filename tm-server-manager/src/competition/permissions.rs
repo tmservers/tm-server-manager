@@ -60,15 +60,15 @@ impl CompetitionPermissionsV1 {
     pub const MATCH_SEND_CHAT: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 38);
     pub const MATCH_ASSIGN_SERVER: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 39);
 
-    pub const SCHEDULE_CREATE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 17);
+    pub const SCHEDULE_CREATE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 40);
 
-    pub const INPUT_CREATE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 21);
+    pub const INPUT_CREATE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 41);
+    pub const OUTPUT_CREATE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 42);
 
-    pub const SERVER_CREATE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 19);
-    pub const OUTPUT_CREATE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 20);
+    pub const SERVER_CREATE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 43);
 
     pub const TRACKMANIA_SPECTATE_MATCHES: CompetitionPermissionsV1 =
-        CompetitionPermissionsV1(1 << 21);
+        CompetitionPermissionsV1(1 << 44);
 
     pub(crate) fn has(self, perm: Self) -> bool {
         self.bypass() || (perm & !self) == CompetitionPermissionsV1::NONE
