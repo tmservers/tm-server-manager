@@ -8,6 +8,7 @@ use crate::{
     user::UserRead,
 };
 
+//TODO make private again
 #[table(
     accessor= tab_match_chat,
     public
@@ -50,8 +51,7 @@ fn unstable_match_chat_message(
 
     let user_id = ctx
         .auth_builder(tm_match.parent_id)
-        //TODO
-        .permission(CompetitionPermissionsV1::OWNER)
+        .permission(CompetitionPermissionsV1::MATCH_SEND_CHAT)
         .authorize()?;
 
     let server_id = ctx

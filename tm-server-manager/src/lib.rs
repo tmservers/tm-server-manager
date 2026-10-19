@@ -13,7 +13,6 @@ pub mod env;
 pub mod input;
 pub mod leaderboard;
 pub mod maps;
-pub mod monitoring;
 pub mod output;
 pub mod project;
 pub mod raw_server;

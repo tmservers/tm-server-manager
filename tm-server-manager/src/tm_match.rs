@@ -337,7 +337,7 @@ fn match_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> {
     };
 
     ctx.auth_builder(tm_match.parent_id)
-        .permission(CompetitionPermissionsV1::MATCH_CONFIGURE)
+        .permission(CompetitionPermissionsV1::MATCH_CONFIGURED)
         .authorize()?;
 
     if tm_match.status != MatchStatus::Configuring {
@@ -496,7 +496,7 @@ fn match_try_start(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
     };
 
     ctx.auth_builder(tm_match.parent_id)
-        .permission(CompetitionPermissionsV1::MATCH_CONFIGURE)
+        .permission(CompetitionPermissionsV1::MATCH_START)
         .authorize()?;
 
     ctx.match_try_start(match_id, ctx.timestamp)
@@ -548,10 +548,10 @@ fn match_open(ctx: &ReducerContext, match_id: u32, open: bool) -> Result<(), Str
 
     tm_match.open = open;
 
-    if tm_match.status == MatchStatus::Preparation {
-        if let Some(server_id) = ctx.occupation_with_occupier(NodeHandle::MatchV1(match_id)) {
-            ctx.emit_raw_server_config(server_id, false)?;
-        }
+    if tm_match.status == MatchStatus::Preparation
+        && let Some(server_id) = ctx.occupation_with_occupier(NodeHandle::MatchV1(match_id))
+    {
+        ctx.emit_raw_server_config(server_id, false)?;
     }
 
     ctx.db.tab_match().id().update(tm_match);
