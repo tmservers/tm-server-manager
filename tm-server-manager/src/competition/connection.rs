@@ -280,7 +280,7 @@ fn connection_create(
                 ctx.db
                     .tab_connection_data()
                     .try_insert(ConnectionData::new(connection.id, connection.parent_id))
-                    .map_err(|e| ConnectionError::InternalError(e.to_string()));
+                    .map_err(|e| ConnectionError::InternalError(e.to_string()))?;
             }
             ConnectionKind::Action => {
                 todo!()

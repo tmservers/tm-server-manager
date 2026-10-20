@@ -1120,6 +1120,7 @@ export const RawServerConfigV2 = __t.object("RawServerConfigV2", {
   get config() {
     return ServerConfigV2;
   },
+  name: __t.string(),
 });
 export type RawServerConfigV2 = __Infer<typeof RawServerConfigV2>;
 

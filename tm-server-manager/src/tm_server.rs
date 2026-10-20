@@ -53,7 +53,7 @@ impl ServerV1 {
         self.template
     }
 
-     pub(crate) fn name(&self) -> &str {
+    pub(crate) fn name(&self) -> &str {
         &self.name
     }
 }
@@ -245,7 +245,7 @@ fn server_config_override(
     if configs.len() == 1 {
         ctx.raw_server_config_update(tm_server.config, config)?;
     } else {
-        let config = ctx.raw_server_config_create(config, 0)?;
+        let config = ctx.raw_server_config_create(config, 0, String::new())?;
         tm_server.config = config.id;
 
         tm_server = ctx.db.tab_server().id().update(tm_server);

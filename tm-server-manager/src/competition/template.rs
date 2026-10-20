@@ -109,7 +109,8 @@ pub(super) fn competition_template_instantiate(
     let mut config_map = HashMap::new();
     for old_config in configs {
         let old_id = old_config.id;
-        let new_config = ctx.raw_server_config_create(old_config.config(), new_comp.id)?;
+        let new_config =
+            ctx.raw_server_config_create(old_config.config(), new_comp.id, old_config.name())?;
         config_map.insert(old_id, new_config);
     }
 

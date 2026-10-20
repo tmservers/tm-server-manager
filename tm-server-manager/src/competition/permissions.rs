@@ -70,6 +70,8 @@ impl CompetitionPermissionsV1 {
     pub const TRACKMANIA_SPECTATE_MATCHES: CompetitionPermissionsV1 =
         CompetitionPermissionsV1(1 << 44);
 
+    pub const SHARED_CONFIG: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 45);
+
     pub(crate) fn has(self, perm: Self) -> bool {
         self.bypass() || (perm & !self) == CompetitionPermissionsV1::NONE
     }

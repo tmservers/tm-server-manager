@@ -66,7 +66,6 @@ import MemberAddReducer from "./member_add_reducer";
 import MemberAssignPermissionReducer from "./member_assign_permission_reducer";
 import MemberRemoveReducer from "./member_remove_reducer";
 import MigrationLeaderboardToV2Reducer from "./migration_leaderboard_to_v_2_reducer";
-import MigrationRawServerConfigToV2Reducer from "./migration_raw_server_config_to_v_2_reducer";
 import NodeDeleteReducer from "./node_delete_reducer";
 import NodeNameEditReducer from "./node_name_edit_reducer";
 import OutputCreateReducer from "./output_create_reducer";
@@ -534,7 +533,6 @@ const reducersSchema = __reducers(
   __reducerSchema("member_assign_permission", MemberAssignPermissionReducer),
   __reducerSchema("member_remove", MemberRemoveReducer),
   __reducerSchema("migration_leaderboard_to_v2", MigrationLeaderboardToV2Reducer),
-  __reducerSchema("migration_raw_server_config_to_v2", MigrationRawServerConfigToV2Reducer),
   __reducerSchema("node_delete", NodeDeleteReducer),
   __reducerSchema("node_name_edit", NodeNameEditReducer),
   __reducerSchema("output_create", OutputCreateReducer),

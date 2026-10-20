@@ -2,8 +2,12 @@ use spacetimedb::{CtxDbRead, ProcedureContext, ReducerContext, Table, procedure,
 use tm_server_types::config::{ServerConfig, ServerConfigV2};
 
 use crate::{
-    authorization::Authorization, auto_inc_manual::AutoIncWrite, competition::node::NodeHandle,
-    raw_server::occupation::TabRawServerOccupationRead, tm_match::MatchRead, tm_server::ServerRead,
+    authorization::Authorization,
+    auto_inc_manual::AutoIncWrite,
+    competition::{CompetitionPermissionsV1, node::NodeHandle},
+    raw_server::occupation::TabRawServerOccupationRead,
+    tm_match::MatchRead,
+    tm_server::ServerRead,
 };
 
 #[table(accessor=tab_raw_server_config,vis_private)]
@@ -31,19 +35,27 @@ pub struct RawServerConfigV2 {
     competition_id: u32,
 
     config: ServerConfigV2,
+
+    #[default("")]
+    name: String,
 }
 
 impl RawServerConfigV2 {
-    pub fn new(config: ServerConfigV2, competition_id: u32) -> Self {
+    pub fn new(config: ServerConfigV2, competition_id: u32, name: String) -> Self {
         Self {
             id: 0,
             config,
             competition_id,
+            name,
         }
     }
 
     pub(crate) fn config(&self) -> ServerConfigV2 {
         self.config.clone()
+    }
+
+    pub(crate) fn name(&self) -> String {
+        self.name.clone()
     }
 }
 
@@ -140,6 +152,7 @@ pub(crate) trait RawServerContigWrite {
         &self,
         new_config: ServerConfigV2,
         competition_id: u32,
+        name: String,
     ) -> Result<RawServerConfigV2, String>;
 
     fn emit_raw_server_config(&self, server_id: u32, seamless: bool) -> Result<(), String>;
@@ -167,6 +180,7 @@ impl<Db: spacetimedb::CtxDbWrite> RawServerContigWrite for Db {
         &self,
         new_config: ServerConfigV2,
         competition_id: u32,
+        name: String,
     ) -> Result<RawServerConfigV2, String> {
         let id = self
             .db()
@@ -175,6 +189,7 @@ impl<Db: spacetimedb::CtxDbWrite> RawServerContigWrite for Db {
                 id: self.auto_inc::<tab_raw_server_config_v2__TableHandle>(),
                 competition_id,
                 config: new_config,
+                name,
             })?;
 
         Ok(id)
@@ -247,14 +262,15 @@ impl<Db: spacetimedb::CtxDbWrite> RawServerContigWrite for Db {
 #[reducer]
 fn raw_server_config_shared_new(
     ctx: &ReducerContext,
+    name: String,
     competition_id: u32,
     config: ServerConfigV2,
 ) -> Result<(), String> {
     ctx.auth_builder(competition_id)
-        //.permission(CompetitionPermissionsV1::TODO)
+        .permission(CompetitionPermissionsV1::SHARED_CONFIG)
         .authorize()?;
 
-    ctx.raw_server_config_create(config, competition_id)?;
+    ctx.raw_server_config_create(config, competition_id, name)?;
 
     Ok(())
 }
@@ -275,7 +291,7 @@ fn raw_server_config_shared_update(
     };
 
     ctx.auth_builder(raw_config.competition_id)
-        //.permission(CompetitionPermissionsV1::TODO)
+        .permission(CompetitionPermissionsV1::SHARED_CONFIG)
         .authorize()?;
 
     ctx.raw_server_config_update(config_id, config)?;
@@ -298,10 +314,9 @@ fn unstable_raw_server_config_update_maps(
         return Err("Config not found.".into());
     };
 
-    //TODO
-    /* ctx.auth_builder(raw_config.competition_id)
-    //.permission(CompetitionPermissionsV1::TODO)
-    .authorize()?; */
+    ctx.auth_builder(raw_config.competition_id)
+        .permission(CompetitionPermissionsV1::SHARED_CONFIG)
+        .authorize()?;
 
     raw_config.config.set_maps(maps);
 
@@ -323,41 +338,4 @@ fn unstable_competition_raw_server_config_v2(
             .filter(competition_id)
     })
     .collect()
-}
-
-mod migrate {
-    use spacetimedb::{ReducerContext, Table, reducer};
-
-    use crate::{
-        auto_inc_manual::AutoIncWrite,
-        raw_server::config::{
-            RawServerConfigV2, tab_raw_server_config, tab_raw_server_config_v2,
-            tab_raw_server_config_v2__TableHandle,
-        },
-    };
-
-    #[reducer]
-    fn migration_raw_server_config_to_v2(ctx: &ReducerContext) -> Result<(), String> {
-        if ctx.db.tab_raw_server_config_v2().count() != 0 {
-            return Err("The table is not empty anymore.".into());
-        }
-        let rows = ctx.db.tab_raw_server_config().iter();
-        let mut max_id = 0;
-        for row in rows {
-            if row.id > max_id {
-                max_id = row.id
-            }
-            ctx.db
-                .tab_raw_server_config_v2()
-                .try_insert(RawServerConfigV2 {
-                    id: row.id,
-                    competition_id: row.competition_id,
-                    config: row.config.into(),
-                })?;
-        }
-
-        ctx.auto_inc_migration::<tab_raw_server_config_v2__TableHandle>(max_id);
-
-        Ok(())
-    }
 }
