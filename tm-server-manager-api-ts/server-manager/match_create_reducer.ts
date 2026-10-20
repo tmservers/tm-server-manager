@@ -21,4 +21,5 @@ export default {
     return Vec2;
   },
   withTemplate: __t.u32(),
+  asTemplate: __t.bool(),
 };

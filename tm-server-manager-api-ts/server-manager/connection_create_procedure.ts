@@ -10,8 +10,21 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-export default {
-  name: __t.string(),
-  parentId: __t.u32(),
-  withTemplate: __t.u32(),
+import {
+  NodeHandle,
+  ConnectionKind,
+  ConnectionError,
+} from "./types";
+
+export const params = {
+  get origin() {
+    return NodeHandle;
+  },
+  get target() {
+    return NodeHandle;
+  },
+  get kind() {
+    return ConnectionKind;
+  },
 };
+export const returnType = __t.result(__t.unit(), ConnectionError)
