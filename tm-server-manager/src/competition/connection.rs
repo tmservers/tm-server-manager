@@ -123,6 +123,23 @@ impl ConnectionKind {
     }
 }
 
+#[derive(Debug, SpacetimeType)]
+enum ConnectionError {
+    NoParallel,
+    SelfCycle,
+    Cycle(NodeHandle),
+    NoOtherCompetition,
+    NoTemplateMix,
+    InvalidNodes,
+    Unauthorized,
+    InternalError(String),
+
+    InvalidTargetNode,
+    InvalidOriginNode,
+
+    InvalidKind,
+}
+
 /// Since we need to check either way if the two thing have the same parent we can omit specifing the competition manually.
 #[procedure]
 fn connection_create(
@@ -130,19 +147,21 @@ fn connection_create(
     origin: NodeHandle,
     target: NodeHandle,
     kind: ConnectionKind,
-) -> Result<(), String> {
+) -> Result<(), ConnectionError> {
     if origin == target {
-        return Err("Cannot connect a Node to itself.".into());
+        return Err(ConnectionError::SelfCycle);
     }
 
     ctx.try_with_tx(|ctx| {
-        let origin_parent = ctx.node_get_parent(origin)?;
-        let target_parent = ctx.node_get_parent(target)?;
+        let origin_parent = ctx
+            .node_get_parent(origin)
+            .map_err(|e| ConnectionError::InternalError(e.to_string()))?;
+        let target_parent = ctx
+            .node_get_parent(target)
+            .map_err(|e| ConnectionError::InternalError(e.to_string()))?;
 
         if origin_parent != target_parent {
-            return Err(
-                "Cannot add a connection where nodes are part of different competitions!".into(),
-            );
+            return Err(ConnectionError::NoOtherCompetition);
         }
 
         let parent = origin_parent;
@@ -155,14 +174,13 @@ fn connection_create(
         .validate()?;
 
         if ctx.node_is_template(origin) != ctx.node_is_template(target) {
-            return Err(
-                "Not allowed to form a connection between template and non template nodes.".into(),
-            );
+            return Err(ConnectionError::NoTemplateMix);
         }
 
         ctx.auth_builder(origin_parent)
             .permission(CompetitionPermissionsV1::CONNECTION_CONNECT)
-            .authorize()?;
+            .authorize()
+            .map_err(|e| ConnectionError::Unauthorized)?;
 
         let mut set = HashSet::new();
         set.insert(origin);
@@ -183,7 +201,7 @@ fn connection_create(
             .next()
             .is_some()
         {
-            return Err("Parallel edges not allowed.".into());
+            return Err(ConnectionError::NoParallel);
         };
 
         let competition_connections = ctx
@@ -224,23 +242,36 @@ fn connection_create(
 
         graph.extend_with_edges(edge_extension);
 
-        let mut graph = Acyclic::try_from_graph(graph).map_err(|e| format!("{e:?}"))?;
+        let error_context_graph = graph.clone();
+
+        let mut graph = Acyclic::try_from_graph(graph)
+            .map_err(|e| ConnectionError::Cycle(error_context_graph[e.node_id()]))?;
         graph
             .try_add_edge(*map.get(&origin).unwrap(), *map.get(&target).unwrap(), kind)
-            .map_err(|e| format!("{e:?}"))?;
+            .map_err(|e| match e {
+                petgraph::acyclic::AcyclicEdgeError::Cycle(cycle) => {
+                    ConnectionError::Cycle(graph[cycle.node_id()])
+                }
+                petgraph::acyclic::AcyclicEdgeError::SelfLoop => ConnectionError::SelfCycle,
+                petgraph::acyclic::AcyclicEdgeError::InvalidEdge => ConnectionError::InvalidNodes,
+            })?;
 
         let (origin_variant, origin_id) = origin.split();
         let (target_variant, target_id) = target.split();
-        let connection = ctx.db.tab_connection().try_insert(TabConnection {
-            id: 0,
-            parent_id: origin_parent,
-            origin_id,
-            target_id,
-            origin_variant,
-            target_variant,
-            kind,
-            status: ConnectionStatus::Configuring,
-        })?;
+        let connection = ctx
+            .db
+            .tab_connection()
+            .try_insert(TabConnection {
+                id: 0,
+                parent_id: origin_parent,
+                origin_id,
+                target_id,
+                origin_variant,
+                target_variant,
+                kind,
+                status: ConnectionStatus::Configuring,
+            })
+            .map_err(|e| ConnectionError::InternalError(e.to_string()))?;
 
         //If we insert Data Settings we also need to add a row in the data table.
         match connection.kind {
@@ -248,12 +279,11 @@ fn connection_create(
             ConnectionKind::Data => {
                 ctx.db
                     .tab_connection_data()
-                    .try_insert(ConnectionData::new(connection.id, connection.parent_id))?;
+                    .try_insert(ConnectionData::new(connection.id, connection.parent_id))
+                    .map_err(|e| ConnectionError::InternalError(e.to_string()));
             }
             ConnectionKind::Action => {
-                ctx.db
-                    .tab_connection_action()
-                    .try_insert(TabConnectionAction::new(target, parent, connection.id)?)?;
+                todo!()
             }
         }
 
@@ -523,39 +553,35 @@ struct ConnectionCombination {
 }
 
 impl ConnectionCombination {
-    fn validate(self) -> Result<(), String> {
+    fn validate(self) -> Result<(), ConnectionError> {
         let origin = self.origin;
         let target = self.target;
         let kind = self.kind;
 
         if target.is_input() {
-            return Err("Input cannot be target.".into());
+            return Err(ConnectionError::InvalidTargetNode);
         }
         if origin.is_output() {
-            return Err("Output cannot be origin.".into());
+            return Err(ConnectionError::InvalidOriginNode);
         }
-        if origin.is_server() || target.is_server() {
+        /* if origin.is_server() || target.is_server() {
             return Err("Server cannot be involved in connection.".into());
         }
         if origin.is_schedule() && kind.is_data() {
             return Err("Cannot have a schedule with data connection".into());
-        }
+        } */
 
         if kind.is_action() {
-            if target.is_match() || target.is_registration() {
-                return Ok(());
-            }
-
-            return Err("Cannot put a action connection here.".into());
+            return Err(ConnectionError::InvalidKind);
         }
 
         if origin.is_match() || target.is_match() {
             return Ok(());
         }
 
-        if origin.is_schedule() && target.is_match() {
+        /* if origin.is_schedule() && target.is_match() {
             return Ok(());
-        }
+        } */
 
         //TODO cover all cases and make it reject by default.
         return Ok(());
