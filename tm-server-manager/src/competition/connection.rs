@@ -1,7 +1,9 @@
 use std::collections::{HashMap, HashSet};
 
 use petgraph::acyclic::Acyclic;
-use spacetimedb::{ReducerContext, SpacetimeType, Table, ViewContext, reducer, view};
+use spacetimedb::{
+    ProcedureContext, ReducerContext, SpacetimeType, Table, ViewContext, procedure, reducer, view,
+};
 
 use crate::{
     authorization::Authorization,
@@ -122,9 +124,9 @@ impl ConnectionKind {
 }
 
 /// Since we need to check either way if the two thing have the same parent we can omit specifing the competition manually.
-#[reducer]
+#[procedure]
 fn connection_create(
-    ctx: &ReducerContext,
+    ctx: &mut ProcedureContext,
     origin: NodeHandle,
     target: NodeHandle,
     kind: ConnectionKind,
@@ -133,128 +135,130 @@ fn connection_create(
         return Err("Cannot connect a Node to itself.".into());
     }
 
-    let origin_parent = ctx.node_get_parent(origin)?;
-    let target_parent = ctx.node_get_parent(target)?;
+    ctx.try_with_tx(|ctx| {
+        let origin_parent = ctx.node_get_parent(origin)?;
+        let target_parent = ctx.node_get_parent(target)?;
 
-    if origin_parent != target_parent {
-        return Err(
-            "Cannot add a connection where nodes are part of different competitions!".into(),
-        );
-    }
-
-    let parent = origin_parent;
-
-    ConnectionCombination {
-        origin,
-        target,
-        kind,
-    }
-    .validate()?;
-
-    if ctx.node_is_template(origin) != ctx.node_is_template(target) {
-        return Err(
-            "Not allowed to form a connection between template and non template nodes.".into(),
-        );
-    }
-
-    ctx.auth_builder(origin_parent)
-        .permission(CompetitionPermissionsV1::CONNECTION_CONNECT)
-        .authorize()?;
-
-    let mut set = HashSet::new();
-    set.insert(origin);
-    set.insert(target);
-
-    let (split_connection_from_variant, split_connection_from) = origin.split();
-    let (split_connection_to_variant, split_connection_to) = target.split();
-    if ctx
-        .db
-        .tab_connection()
-        .connection_exists()
-        .filter((
-            split_connection_from_variant,
-            split_connection_to_variant,
-            split_connection_from,
-            split_connection_to,
-        ))
-        .next()
-        .is_some()
-    {
-        return Err("Parallel edges not allowed.".into());
-    };
-
-    let competition_connections = ctx
-        .db
-        .tab_connection()
-        .parent_id()
-        .filter(origin_parent)
-        .collect::<Vec<_>>();
-
-    for connection in &competition_connections {
-        set.insert(NodeHandle::combine(
-            connection.origin_variant,
-            connection.origin_id,
-        ));
-        set.insert(NodeHandle::combine(
-            connection.target_variant,
-            connection.target_id,
-        ));
-    }
-
-    let mut map = HashMap::with_capacity(set.len());
-    let mut graph = petgraph::graph::Graph::new();
-    for set_entry in set.into_iter() {
-        let index = graph.add_node(set_entry);
-        map.insert(set_entry, index);
-    }
-
-    let edge_extension = competition_connections
-        .into_iter()
-        .map(|c| {
-            (
-                *map.get(&c.origin()).unwrap(),
-                *map.get(&c.target()).unwrap(),
-                c.kind,
-            )
-        })
-        .collect::<Vec<_>>();
-
-    graph.extend_with_edges(edge_extension);
-
-    let mut graph = Acyclic::try_from_graph(graph).map_err(|e| format!("{e:?}"))?;
-    graph
-        .try_add_edge(*map.get(&origin).unwrap(), *map.get(&target).unwrap(), kind)
-        .map_err(|e| format!("{e:?}"))?;
-
-    let (origin_variant, origin_id) = origin.split();
-    let (target_variant, target_id) = target.split();
-    let connection = ctx.db.tab_connection().try_insert(TabConnection {
-        id: 0,
-        parent_id: origin_parent,
-        origin_id,
-        target_id,
-        origin_variant,
-        target_variant,
-        kind,
-        status: ConnectionStatus::Configuring,
-    })?;
-
-    //If we insert Data Settings we also need to add a row in the data table.
-    match connection.kind {
-        ConnectionKind::Wait => (),
-        ConnectionKind::Data => {
-            ctx.db
-                .tab_connection_data()
-                .try_insert(ConnectionData::new(connection.id, connection.parent_id))?;
+        if origin_parent != target_parent {
+            return Err(
+                "Cannot add a connection where nodes are part of different competitions!".into(),
+            );
         }
-        ConnectionKind::Action => {
-            ctx.db
-                .tab_connection_action()
-                .try_insert(TabConnectionAction::new(target, parent, connection.id)?)?;
-        }
-    }
 
-    Ok(())
+        let parent = origin_parent;
+
+        ConnectionCombination {
+            origin,
+            target,
+            kind,
+        }
+        .validate()?;
+
+        if ctx.node_is_template(origin) != ctx.node_is_template(target) {
+            return Err(
+                "Not allowed to form a connection between template and non template nodes.".into(),
+            );
+        }
+
+        ctx.auth_builder(origin_parent)
+            .permission(CompetitionPermissionsV1::CONNECTION_CONNECT)
+            .authorize()?;
+
+        let mut set = HashSet::new();
+        set.insert(origin);
+        set.insert(target);
+
+        let (split_connection_from_variant, split_connection_from) = origin.split();
+        let (split_connection_to_variant, split_connection_to) = target.split();
+        if ctx
+            .db
+            .tab_connection()
+            .connection_exists()
+            .filter((
+                split_connection_from_variant,
+                split_connection_to_variant,
+                split_connection_from,
+                split_connection_to,
+            ))
+            .next()
+            .is_some()
+        {
+            return Err("Parallel edges not allowed.".into());
+        };
+
+        let competition_connections = ctx
+            .db
+            .tab_connection()
+            .parent_id()
+            .filter(origin_parent)
+            .collect::<Vec<_>>();
+
+        for connection in &competition_connections {
+            set.insert(NodeHandle::combine(
+                connection.origin_variant,
+                connection.origin_id,
+            ));
+            set.insert(NodeHandle::combine(
+                connection.target_variant,
+                connection.target_id,
+            ));
+        }
+
+        let mut map = HashMap::with_capacity(set.len());
+        let mut graph = petgraph::graph::Graph::new();
+        for set_entry in set.into_iter() {
+            let index = graph.add_node(set_entry);
+            map.insert(set_entry, index);
+        }
+
+        let edge_extension = competition_connections
+            .into_iter()
+            .map(|c| {
+                (
+                    *map.get(&c.origin()).unwrap(),
+                    *map.get(&c.target()).unwrap(),
+                    c.kind,
+                )
+            })
+            .collect::<Vec<_>>();
+
+        graph.extend_with_edges(edge_extension);
+
+        let mut graph = Acyclic::try_from_graph(graph).map_err(|e| format!("{e:?}"))?;
+        graph
+            .try_add_edge(*map.get(&origin).unwrap(), *map.get(&target).unwrap(), kind)
+            .map_err(|e| format!("{e:?}"))?;
+
+        let (origin_variant, origin_id) = origin.split();
+        let (target_variant, target_id) = target.split();
+        let connection = ctx.db.tab_connection().try_insert(TabConnection {
+            id: 0,
+            parent_id: origin_parent,
+            origin_id,
+            target_id,
+            origin_variant,
+            target_variant,
+            kind,
+            status: ConnectionStatus::Configuring,
+        })?;
+
+        //If we insert Data Settings we also need to add a row in the data table.
+        match connection.kind {
+            ConnectionKind::Wait => (),
+            ConnectionKind::Data => {
+                ctx.db
+                    .tab_connection_data()
+                    .try_insert(ConnectionData::new(connection.id, connection.parent_id))?;
+            }
+            ConnectionKind::Action => {
+                ctx.db
+                    .tab_connection_action()
+                    .try_insert(TabConnectionAction::new(target, parent, connection.id)?)?;
+            }
+        }
+
+        Ok(())
+    })
 }
 
 #[reducer]
