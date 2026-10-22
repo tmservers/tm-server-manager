@@ -35,6 +35,12 @@ pub trait unstable_competition_raw_server_config_v_2 {
             ) + Send
             + 'static,
     );
+
+    #[allow(async_fn_in_trait)]
+    async fn unstable_competition_raw_server_config_v_2_async(
+        &self,
+        competition_id: u32,
+    ) -> Result<Vec<RawServerConfigV2>, __sdk::InternalError>;
 }
 
 impl unstable_competition_raw_server_config_v_2 for super::RemoteProcedures {
@@ -54,5 +60,17 @@ impl unstable_competition_raw_server_config_v_2 for super::RemoteProcedures {
                 UnstableCompetitionRawServerConfigV2Args { competition_id },
                 __callback,
             );
+    }
+
+    async fn unstable_competition_raw_server_config_v_2_async(
+        &self,
+        competition_id: u32,
+    ) -> Result<Vec<RawServerConfigV2>, __sdk::InternalError> {
+        self.imp
+            .invoke_procedure_async::<_, Vec<RawServerConfigV2>>(
+                "unstable_competition_raw_server_config_v2",
+                UnstableCompetitionRawServerConfigV2Args { competition_id },
+            )
+            .await
     }
 }

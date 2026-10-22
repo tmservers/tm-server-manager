@@ -36,6 +36,12 @@ pub trait node_leaderboard_output_raw {
             ) + Send
             + 'static,
     );
+
+    #[allow(async_fn_in_trait)]
+    async fn node_leaderboard_output_raw_async(
+        &self,
+        node: NodeHandle,
+    ) -> Result<Result<Vec<LbEntry>, String>, __sdk::InternalError>;
 }
 
 impl node_leaderboard_output_raw for super::RemoteProcedures {
@@ -55,5 +61,17 @@ impl node_leaderboard_output_raw for super::RemoteProcedures {
                 NodeLeaderboardOutputRawArgs { node },
                 __callback,
             );
+    }
+
+    async fn node_leaderboard_output_raw_async(
+        &self,
+        node: NodeHandle,
+    ) -> Result<Result<Vec<LbEntry>, String>, __sdk::InternalError> {
+        self.imp
+            .invoke_procedure_async::<_, Result<Vec<LbEntry>, String>>(
+                "node_leaderboard_output_raw",
+                NodeLeaderboardOutputRawArgs { node },
+            )
+            .await
     }
 }

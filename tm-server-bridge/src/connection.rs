@@ -1,7 +1,7 @@
 use std::sync::OnceLock;
 use std::time::Duration;
 
-use spacetimedb_sdk::spacetimedb::CtxDbWrite;
+use spacetimedb_sdk::DbContext;
 use spacetimedb_sdk::EventTable;
 use spacetimedb_sdk::Table;
 use spacetimedb_sdk::Uuid;
@@ -89,7 +89,7 @@ impl MyDbConnection {
         let spacetime = self.read();
 
         let Ok(server_id) = spacetime
-            .procedures()
+            .procedures
             .login_as_server_async(tm_server_login, tm_server_password, tm_account_id, seamless)
             .await
             .unwrap()
