@@ -10,20 +10,20 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 import {
-  MatchStatus,
+  RegistrationSettings,
+  RegistrationStatus,
 } from "./types";
 
 
 export default __t.row({
   name: __t.string(),
-  id: __t.u32().primaryKey(),
+  id: __t.u32(),
   parentId: __t.u32().name("parent_id"),
-  preConfig: __t.u32().name("pre_config"),
-  config: __t.u32(),
-  get status() {
-    return MatchStatus;
+  get settings() {
+    return RegistrationSettings;
   },
-  autoProvisionServer: __t.bool().name("auto_provision_server"),
-  open: __t.bool(),
+  get status() {
+    return RegistrationStatus;
+  },
   template: __t.bool(),
 });

@@ -1,4 +1,7 @@
-use spacetimedb::{CtxDbRead, ReducerContext, SpacetimeType, Table, reducer, table};
+use spacetimedb::{
+    AnonymousViewContext, CtxDbRead, Query, ReducerContext, SpacetimeType, Table, reducer, table,
+    view,
+};
 
 use crate::{
     authorization::Authorization,
@@ -31,8 +34,7 @@ pub struct RegistrationSettingsTeam {
     team_size_max: u8,
 } */
 
-//TODO make private again
-#[table(accessor=tab_registration,public,vis_private)]
+#[table(accessor=tab_registration,vis_private)]
 pub struct Registration {
     name: String,
 
@@ -356,4 +358,14 @@ impl<Db: spacetimedb::CtxDbWrite> RegistrationWrite for Db {
 
         Ok(registration)
     }
+}
+
+#[view(accessor = competition_registrations,public)]
+fn competition_registrations(
+    ctx: &AnonymousViewContext,
+    competition_id: u32,
+) -> impl Query<Registration> {
+    ctx.from
+        .tab_registration()
+        .filter(|r| r.parent_id.eq(competition_id))
 }

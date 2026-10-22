@@ -1,6 +1,9 @@
 use std::time::Duration;
 
-use spacetimedb::{ReducerContext, SpacetimeType, Table, TimeDuration, Timestamp, reducer, table};
+use spacetimedb::{
+    AnonymousViewContext, Query, ReducerContext, SpacetimeType, Table, TimeDuration, Timestamp,
+    reducer, table, view,
+};
 use tm_server_types::config::ServerConfigV2;
 
 use crate::{
@@ -53,8 +56,7 @@ pub mod state;
 /// - *End.* The match has concluded. Loads the post_match_config if it is present. Releases
 /// the captured server. Advances to [MatchStatus::Ended].
 ///
-/// TODO make private again
-#[table(accessor= tab_match,public,vis_private)]
+#[table(accessor= tab_match,vis_private)]
 pub struct MatchV1 {
     name: String,
 
@@ -989,3 +991,10 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
 // -> need to restore the map progress e.g. 2 out of 4 map rounds left.
 // -> need to restore the points.
 // -> start. (start command would need to happen sooner i guess but idk where exactly yet.)
+
+#[view(accessor = competition_matches,public)]
+fn competition_matches(ctx: &AnonymousViewContext, competition_id: u32) -> impl Query<MatchV1> {
+    ctx.from
+        .tab_match()
+        .filter(|r| r.parent_id.eq(competition_id))
+}
