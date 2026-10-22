@@ -19,6 +19,18 @@ pub struct TabMatchTableHandle<'ctx> {
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
+/// Lifetime-aware accessor marker for the table `tab_match`.
+pub struct TabMatchTableAccessor;
+
+impl __sdk::TableAccessor<super::RemoteTables> for TabMatchTableAccessor {
+    type Row = MatchV1;
+    type Handle<'db> = TabMatchTableHandle<'db>;
+
+    fn get<'db>(db: &'db super::RemoteTables) -> Self::Handle<'db> {
+        db.tab_match()
+    }
+}
+
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the table `tab_match`.
 ///
@@ -40,6 +52,18 @@ impl TabMatchTableAccess for super::RemoteTables {
 
 pub struct TabMatchInsertCallbackId(__sdk::CallbackId);
 pub struct TabMatchDeleteCallbackId(__sdk::CallbackId);
+
+impl<'ctx> __sdk::TableLike for TabMatchTableHandle<'ctx> {
+    type Row = MatchV1;
+    type EventContext = super::EventContext;
+
+    fn count(&self) -> u64 {
+        self.imp.count()
+    }
+    fn iter(&self) -> impl Iterator<Item = MatchV1> + '_ {
+        self.imp.iter()
+    }
+}
 
 impl<'ctx> __sdk::Table for TabMatchTableHandle<'ctx> {
     type Row = MatchV1;
@@ -79,9 +103,54 @@ impl<'ctx> __sdk::Table for TabMatchTableHandle<'ctx> {
     }
 }
 
+impl<'ctx> __sdk::WithInsert for TabMatchTableHandle<'ctx> {
+    type InsertCallbackId = TabMatchInsertCallbackId;
+
+    fn on_insert(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
+    ) -> TabMatchInsertCallbackId {
+        TabMatchInsertCallbackId(self.imp.on_insert(Box::new(callback)))
+    }
+
+    fn remove_on_insert(&self, callback: TabMatchInsertCallbackId) {
+        self.imp.remove_on_insert(callback.0)
+    }
+}
+
+impl<'ctx> __sdk::WithDelete for TabMatchTableHandle<'ctx> {
+    type DeleteCallbackId = TabMatchDeleteCallbackId;
+
+    fn on_delete(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
+    ) -> TabMatchDeleteCallbackId {
+        TabMatchDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
+    }
+
+    fn remove_on_delete(&self, callback: TabMatchDeleteCallbackId) {
+        self.imp.remove_on_delete(callback.0)
+    }
+}
+
 pub struct TabMatchUpdateCallbackId(__sdk::CallbackId);
 
 impl<'ctx> __sdk::TableWithPrimaryKey for TabMatchTableHandle<'ctx> {
+    type UpdateCallbackId = TabMatchUpdateCallbackId;
+
+    fn on_update(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row, &Self::Row) + Send + 'static,
+    ) -> TabMatchUpdateCallbackId {
+        TabMatchUpdateCallbackId(self.imp.on_update(Box::new(callback)))
+    }
+
+    fn remove_on_update(&self, callback: TabMatchUpdateCallbackId) {
+        self.imp.remove_on_update(callback.0)
+    }
+}
+
+impl<'ctx> __sdk::WithUpdate for TabMatchTableHandle<'ctx> {
     type UpdateCallbackId = TabMatchUpdateCallbackId;
 
     fn on_update(

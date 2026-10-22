@@ -6,49 +6,44 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub(super) struct ServerTemplateCreateArgs {
-    pub name: String,
-    pub parent_id: u32,
+pub(super) struct ConnectionDeleteArgs {
+    pub id: u32,
 }
 
-impl From<ServerTemplateCreateArgs> for super::Reducer {
-    fn from(args: ServerTemplateCreateArgs) -> Self {
-        Self::ServerTemplateCreate {
-            name: args.name,
-            parent_id: args.parent_id,
-        }
+impl From<ConnectionDeleteArgs> for super::Reducer {
+    fn from(args: ConnectionDeleteArgs) -> Self {
+        Self::ConnectionDelete { id: args.id }
     }
 }
 
-impl __sdk::InModule for ServerTemplateCreateArgs {
+impl __sdk::InModule for ConnectionDeleteArgs {
     type Module = super::RemoteModule;
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the reducer `server_template_create`.
+/// Extension trait for access to the reducer `connection_delete`.
 ///
 /// Implemented for [`super::RemoteReducers`].
-pub trait server_template_create {
-    /// Request that the remote module invoke the reducer `server_template_create` to run as soon as possible.
+pub trait connection_delete {
+    /// Request that the remote module invoke the reducer `connection_delete` to run as soon as possible.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
-    /// /// Use [`server_template_create:server_template_create_then`] to run a callback after the reducer completes.
-    fn server_template_create(&self, name: String, parent_id: u32) -> __sdk::Result<()> {
-        self.server_template_create_then(name, parent_id, |_, _| {})
+    /// /// Use [`connection_delete:connection_delete_then`] to run a callback after the reducer completes.
+    fn connection_delete(&self, id: u32) -> __sdk::Result<()> {
+        self.connection_delete_then(id, |_, _| {})
     }
 
-    /// Request that the remote module invoke the reducer `server_template_create` to run as soon as possible,
+    /// Request that the remote module invoke the reducer `connection_delete` to run as soon as possible,
     /// registering `callback` to run when we are notified that the reducer completed.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed with the `callback`.
-    fn server_template_create_then(
+    fn connection_delete_then(
         &self,
-        name: String,
-        parent_id: u32,
+        id: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -56,17 +51,16 @@ pub trait server_template_create {
     ) -> __sdk::Result<()>;
 }
 
-impl server_template_create for super::RemoteReducers {
-    fn server_template_create_then(
+impl connection_delete for super::RemoteReducers {
+    fn connection_delete_then(
         &self,
-        name: String,
-        parent_id: u32,
+        id: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     ) -> __sdk::Result<()> {
         self.imp
-            .invoke_reducer_with_callback(ServerTemplateCreateArgs { name, parent_id }, callback)
+            .invoke_reducer_with_callback(ConnectionDeleteArgs { id }, callback)
     }
 }

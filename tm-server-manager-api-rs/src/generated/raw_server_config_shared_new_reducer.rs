@@ -9,6 +9,7 @@ use super::server_config_v_2_type::ServerConfigV2;
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct RawServerConfigSharedNewArgs {
+    pub name: String,
     pub competition_id: u32,
     pub config: ServerConfigV2,
 }
@@ -16,6 +17,7 @@ pub(super) struct RawServerConfigSharedNewArgs {
 impl From<RawServerConfigSharedNewArgs> for super::Reducer {
     fn from(args: RawServerConfigSharedNewArgs) -> Self {
         Self::RawServerConfigSharedNew {
+            name: args.name,
             competition_id: args.competition_id,
             config: args.config,
         }
@@ -39,10 +41,11 @@ pub trait raw_server_config_shared_new {
     /// /// Use [`raw_server_config_shared_new:raw_server_config_shared_new_then`] to run a callback after the reducer completes.
     fn raw_server_config_shared_new(
         &self,
+        name: String,
         competition_id: u32,
         config: ServerConfigV2,
     ) -> __sdk::Result<()> {
-        self.raw_server_config_shared_new_then(competition_id, config, |_, _| {})
+        self.raw_server_config_shared_new_then(name, competition_id, config, |_, _| {})
     }
 
     /// Request that the remote module invoke the reducer `raw_server_config_shared_new` to run as soon as possible,
@@ -53,6 +56,7 @@ pub trait raw_server_config_shared_new {
     ///  and its status can be observed with the `callback`.
     fn raw_server_config_shared_new_then(
         &self,
+        name: String,
         competition_id: u32,
         config: ServerConfigV2,
 
@@ -65,6 +69,7 @@ pub trait raw_server_config_shared_new {
 impl raw_server_config_shared_new for super::RemoteReducers {
     fn raw_server_config_shared_new_then(
         &self,
+        name: String,
         competition_id: u32,
         config: ServerConfigV2,
 
@@ -74,6 +79,7 @@ impl raw_server_config_shared_new for super::RemoteReducers {
     ) -> __sdk::Result<()> {
         self.imp.invoke_reducer_with_callback(
             RawServerConfigSharedNewArgs {
+                name,
                 competition_id,
                 config,
             },

@@ -10,8 +10,8 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 import {
-  Vec2,
   NodeHandle,
+  Vec2,
 } from "./types";
 
 

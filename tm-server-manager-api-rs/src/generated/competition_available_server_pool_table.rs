@@ -18,6 +18,18 @@ pub struct CompetitionAvailableServerPoolTableHandle<'ctx> {
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
+/// Lifetime-aware accessor marker for the table `competition_available_server_pool`.
+pub struct CompetitionAvailableServerPoolTableAccessor;
+
+impl __sdk::TableAccessor<super::RemoteTables> for CompetitionAvailableServerPoolTableAccessor {
+    type Row = RawServerV1;
+    type Handle<'db> = CompetitionAvailableServerPoolTableHandle<'db>;
+
+    fn get<'db>(db: &'db super::RemoteTables) -> Self::Handle<'db> {
+        db.competition_available_server_pool()
+    }
+}
+
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the table `competition_available_server_pool`.
 ///
@@ -41,6 +53,18 @@ impl CompetitionAvailableServerPoolTableAccess for super::RemoteTables {
 
 pub struct CompetitionAvailableServerPoolInsertCallbackId(__sdk::CallbackId);
 pub struct CompetitionAvailableServerPoolDeleteCallbackId(__sdk::CallbackId);
+
+impl<'ctx> __sdk::TableLike for CompetitionAvailableServerPoolTableHandle<'ctx> {
+    type Row = RawServerV1;
+    type EventContext = super::EventContext;
+
+    fn count(&self) -> u64 {
+        self.imp.count()
+    }
+    fn iter(&self) -> impl Iterator<Item = RawServerV1> + '_ {
+        self.imp.iter()
+    }
+}
 
 impl<'ctx> __sdk::Table for CompetitionAvailableServerPoolTableHandle<'ctx> {
     type Row = RawServerV1;
@@ -66,6 +90,36 @@ impl<'ctx> __sdk::Table for CompetitionAvailableServerPoolTableHandle<'ctx> {
         self.imp.remove_on_insert(callback.0)
     }
 
+    type DeleteCallbackId = CompetitionAvailableServerPoolDeleteCallbackId;
+
+    fn on_delete(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
+    ) -> CompetitionAvailableServerPoolDeleteCallbackId {
+        CompetitionAvailableServerPoolDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
+    }
+
+    fn remove_on_delete(&self, callback: CompetitionAvailableServerPoolDeleteCallbackId) {
+        self.imp.remove_on_delete(callback.0)
+    }
+}
+
+impl<'ctx> __sdk::WithInsert for CompetitionAvailableServerPoolTableHandle<'ctx> {
+    type InsertCallbackId = CompetitionAvailableServerPoolInsertCallbackId;
+
+    fn on_insert(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
+    ) -> CompetitionAvailableServerPoolInsertCallbackId {
+        CompetitionAvailableServerPoolInsertCallbackId(self.imp.on_insert(Box::new(callback)))
+    }
+
+    fn remove_on_insert(&self, callback: CompetitionAvailableServerPoolInsertCallbackId) {
+        self.imp.remove_on_insert(callback.0)
+    }
+}
+
+impl<'ctx> __sdk::WithDelete for CompetitionAvailableServerPoolTableHandle<'ctx> {
     type DeleteCallbackId = CompetitionAvailableServerPoolDeleteCallbackId;
 
     fn on_delete(

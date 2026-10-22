@@ -18,6 +18,18 @@ pub struct TabRegisterationPlayerTableHandle<'ctx> {
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
+/// Lifetime-aware accessor marker for the table `tab_registeration_player`.
+pub struct TabRegisterationPlayerTableAccessor;
+
+impl __sdk::TableAccessor<super::RemoteTables> for TabRegisterationPlayerTableAccessor {
+    type Row = RegisterationPlayer;
+    type Handle<'db> = TabRegisterationPlayerTableHandle<'db>;
+
+    fn get<'db>(db: &'db super::RemoteTables) -> Self::Handle<'db> {
+        db.tab_registeration_player()
+    }
+}
+
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the table `tab_registeration_player`.
 ///
@@ -41,6 +53,18 @@ impl TabRegisterationPlayerTableAccess for super::RemoteTables {
 
 pub struct TabRegisterationPlayerInsertCallbackId(__sdk::CallbackId);
 pub struct TabRegisterationPlayerDeleteCallbackId(__sdk::CallbackId);
+
+impl<'ctx> __sdk::TableLike for TabRegisterationPlayerTableHandle<'ctx> {
+    type Row = RegisterationPlayer;
+    type EventContext = super::EventContext;
+
+    fn count(&self) -> u64 {
+        self.imp.count()
+    }
+    fn iter(&self) -> impl Iterator<Item = RegisterationPlayer> + '_ {
+        self.imp.iter()
+    }
+}
 
 impl<'ctx> __sdk::Table for TabRegisterationPlayerTableHandle<'ctx> {
     type Row = RegisterationPlayer;
@@ -66,6 +90,36 @@ impl<'ctx> __sdk::Table for TabRegisterationPlayerTableHandle<'ctx> {
         self.imp.remove_on_insert(callback.0)
     }
 
+    type DeleteCallbackId = TabRegisterationPlayerDeleteCallbackId;
+
+    fn on_delete(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
+    ) -> TabRegisterationPlayerDeleteCallbackId {
+        TabRegisterationPlayerDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
+    }
+
+    fn remove_on_delete(&self, callback: TabRegisterationPlayerDeleteCallbackId) {
+        self.imp.remove_on_delete(callback.0)
+    }
+}
+
+impl<'ctx> __sdk::WithInsert for TabRegisterationPlayerTableHandle<'ctx> {
+    type InsertCallbackId = TabRegisterationPlayerInsertCallbackId;
+
+    fn on_insert(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
+    ) -> TabRegisterationPlayerInsertCallbackId {
+        TabRegisterationPlayerInsertCallbackId(self.imp.on_insert(Box::new(callback)))
+    }
+
+    fn remove_on_insert(&self, callback: TabRegisterationPlayerInsertCallbackId) {
+        self.imp.remove_on_insert(callback.0)
+    }
+}
+
+impl<'ctx> __sdk::WithDelete for TabRegisterationPlayerTableHandle<'ctx> {
     type DeleteCallbackId = TabRegisterationPlayerDeleteCallbackId;
 
     fn on_delete(

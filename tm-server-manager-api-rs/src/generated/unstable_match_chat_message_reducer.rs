@@ -6,41 +6,49 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub(super) struct MigrationRawServerConfigToV2Args {}
+pub(super) struct UnstableMatchChatMessageArgs {
+    pub match_id: u32,
+    pub message: String,
+}
 
-impl From<MigrationRawServerConfigToV2Args> for super::Reducer {
-    fn from(args: MigrationRawServerConfigToV2Args) -> Self {
-        Self::MigrationRawServerConfigToV2
+impl From<UnstableMatchChatMessageArgs> for super::Reducer {
+    fn from(args: UnstableMatchChatMessageArgs) -> Self {
+        Self::UnstableMatchChatMessage {
+            match_id: args.match_id,
+            message: args.message,
+        }
     }
 }
 
-impl __sdk::InModule for MigrationRawServerConfigToV2Args {
+impl __sdk::InModule for UnstableMatchChatMessageArgs {
     type Module = super::RemoteModule;
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the reducer `migration_raw_server_config_to_v2`.
+/// Extension trait for access to the reducer `unstable_match_chat_message`.
 ///
 /// Implemented for [`super::RemoteReducers`].
-pub trait migration_raw_server_config_to_v_2 {
-    /// Request that the remote module invoke the reducer `migration_raw_server_config_to_v2` to run as soon as possible.
+pub trait unstable_match_chat_message {
+    /// Request that the remote module invoke the reducer `unstable_match_chat_message` to run as soon as possible.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
-    /// /// Use [`migration_raw_server_config_to_v_2:migration_raw_server_config_to_v_2_then`] to run a callback after the reducer completes.
-    fn migration_raw_server_config_to_v_2(&self) -> __sdk::Result<()> {
-        self.migration_raw_server_config_to_v_2_then(|_, _| {})
+    /// /// Use [`unstable_match_chat_message:unstable_match_chat_message_then`] to run a callback after the reducer completes.
+    fn unstable_match_chat_message(&self, match_id: u32, message: String) -> __sdk::Result<()> {
+        self.unstable_match_chat_message_then(match_id, message, |_, _| {})
     }
 
-    /// Request that the remote module invoke the reducer `migration_raw_server_config_to_v2` to run as soon as possible,
+    /// Request that the remote module invoke the reducer `unstable_match_chat_message` to run as soon as possible,
     /// registering `callback` to run when we are notified that the reducer completed.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed with the `callback`.
-    fn migration_raw_server_config_to_v_2_then(
+    fn unstable_match_chat_message_then(
         &self,
+        match_id: u32,
+        message: String,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -48,15 +56,19 @@ pub trait migration_raw_server_config_to_v_2 {
     ) -> __sdk::Result<()>;
 }
 
-impl migration_raw_server_config_to_v_2 for super::RemoteReducers {
-    fn migration_raw_server_config_to_v_2_then(
+impl unstable_match_chat_message for super::RemoteReducers {
+    fn unstable_match_chat_message_then(
         &self,
+        match_id: u32,
+        message: String,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     ) -> __sdk::Result<()> {
-        self.imp
-            .invoke_reducer_with_callback(MigrationRawServerConfigToV2Args {}, callback)
+        self.imp.invoke_reducer_with_callback(
+            UnstableMatchChatMessageArgs { match_id, message },
+            callback,
+        )
     }
 }

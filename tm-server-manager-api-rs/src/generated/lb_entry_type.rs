@@ -18,7 +18,7 @@ pub struct LbEntry {
     pub node_id: u32,
     pub node_variant: u8,
     pub mode: TmMode,
-    pub step_idx: u8,
+    pub team_id: u32,
 }
 
 impl __sdk::InModule for LbEntry {

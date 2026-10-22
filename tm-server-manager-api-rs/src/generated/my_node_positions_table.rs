@@ -20,6 +20,18 @@ pub struct MyNodePositionsTableHandle<'ctx> {
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
+/// Lifetime-aware accessor marker for the table `my_node_positions`.
+pub struct MyNodePositionsTableAccessor;
+
+impl __sdk::TableAccessor<super::RemoteTables> for MyNodePositionsTableAccessor {
+    type Row = CompetitionNodePosition;
+    type Handle<'db> = MyNodePositionsTableHandle<'db>;
+
+    fn get<'db>(db: &'db super::RemoteTables) -> Self::Handle<'db> {
+        db.my_node_positions()
+    }
+}
+
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the table `my_node_positions`.
 ///
@@ -43,6 +55,18 @@ impl MyNodePositionsTableAccess for super::RemoteTables {
 
 pub struct MyNodePositionsInsertCallbackId(__sdk::CallbackId);
 pub struct MyNodePositionsDeleteCallbackId(__sdk::CallbackId);
+
+impl<'ctx> __sdk::TableLike for MyNodePositionsTableHandle<'ctx> {
+    type Row = CompetitionNodePosition;
+    type EventContext = super::EventContext;
+
+    fn count(&self) -> u64 {
+        self.imp.count()
+    }
+    fn iter(&self) -> impl Iterator<Item = CompetitionNodePosition> + '_ {
+        self.imp.iter()
+    }
+}
 
 impl<'ctx> __sdk::Table for MyNodePositionsTableHandle<'ctx> {
     type Row = CompetitionNodePosition;
@@ -68,6 +92,36 @@ impl<'ctx> __sdk::Table for MyNodePositionsTableHandle<'ctx> {
         self.imp.remove_on_insert(callback.0)
     }
 
+    type DeleteCallbackId = MyNodePositionsDeleteCallbackId;
+
+    fn on_delete(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
+    ) -> MyNodePositionsDeleteCallbackId {
+        MyNodePositionsDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
+    }
+
+    fn remove_on_delete(&self, callback: MyNodePositionsDeleteCallbackId) {
+        self.imp.remove_on_delete(callback.0)
+    }
+}
+
+impl<'ctx> __sdk::WithInsert for MyNodePositionsTableHandle<'ctx> {
+    type InsertCallbackId = MyNodePositionsInsertCallbackId;
+
+    fn on_insert(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
+    ) -> MyNodePositionsInsertCallbackId {
+        MyNodePositionsInsertCallbackId(self.imp.on_insert(Box::new(callback)))
+    }
+
+    fn remove_on_insert(&self, callback: MyNodePositionsInsertCallbackId) {
+        self.imp.remove_on_insert(callback.0)
+    }
+}
+
+impl<'ctx> __sdk::WithDelete for MyNodePositionsTableHandle<'ctx> {
     type DeleteCallbackId = MyNodePositionsDeleteCallbackId;
 
     fn on_delete(

@@ -18,6 +18,18 @@ pub struct TabRawServerPlayerTableHandle<'ctx> {
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
+/// Lifetime-aware accessor marker for the table `tab_raw_server_player`.
+pub struct TabRawServerPlayerTableAccessor;
+
+impl __sdk::TableAccessor<super::RemoteTables> for TabRawServerPlayerTableAccessor {
+    type Row = RawServerPlayer;
+    type Handle<'db> = TabRawServerPlayerTableHandle<'db>;
+
+    fn get<'db>(db: &'db super::RemoteTables) -> Self::Handle<'db> {
+        db.tab_raw_server_player()
+    }
+}
+
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the table `tab_raw_server_player`.
 ///
@@ -41,6 +53,18 @@ impl TabRawServerPlayerTableAccess for super::RemoteTables {
 
 pub struct TabRawServerPlayerInsertCallbackId(__sdk::CallbackId);
 pub struct TabRawServerPlayerDeleteCallbackId(__sdk::CallbackId);
+
+impl<'ctx> __sdk::TableLike for TabRawServerPlayerTableHandle<'ctx> {
+    type Row = RawServerPlayer;
+    type EventContext = super::EventContext;
+
+    fn count(&self) -> u64 {
+        self.imp.count()
+    }
+    fn iter(&self) -> impl Iterator<Item = RawServerPlayer> + '_ {
+        self.imp.iter()
+    }
+}
 
 impl<'ctx> __sdk::Table for TabRawServerPlayerTableHandle<'ctx> {
     type Row = RawServerPlayer;
@@ -80,9 +104,54 @@ impl<'ctx> __sdk::Table for TabRawServerPlayerTableHandle<'ctx> {
     }
 }
 
+impl<'ctx> __sdk::WithInsert for TabRawServerPlayerTableHandle<'ctx> {
+    type InsertCallbackId = TabRawServerPlayerInsertCallbackId;
+
+    fn on_insert(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
+    ) -> TabRawServerPlayerInsertCallbackId {
+        TabRawServerPlayerInsertCallbackId(self.imp.on_insert(Box::new(callback)))
+    }
+
+    fn remove_on_insert(&self, callback: TabRawServerPlayerInsertCallbackId) {
+        self.imp.remove_on_insert(callback.0)
+    }
+}
+
+impl<'ctx> __sdk::WithDelete for TabRawServerPlayerTableHandle<'ctx> {
+    type DeleteCallbackId = TabRawServerPlayerDeleteCallbackId;
+
+    fn on_delete(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
+    ) -> TabRawServerPlayerDeleteCallbackId {
+        TabRawServerPlayerDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
+    }
+
+    fn remove_on_delete(&self, callback: TabRawServerPlayerDeleteCallbackId) {
+        self.imp.remove_on_delete(callback.0)
+    }
+}
+
 pub struct TabRawServerPlayerUpdateCallbackId(__sdk::CallbackId);
 
 impl<'ctx> __sdk::TableWithPrimaryKey for TabRawServerPlayerTableHandle<'ctx> {
+    type UpdateCallbackId = TabRawServerPlayerUpdateCallbackId;
+
+    fn on_update(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row, &Self::Row) + Send + 'static,
+    ) -> TabRawServerPlayerUpdateCallbackId {
+        TabRawServerPlayerUpdateCallbackId(self.imp.on_update(Box::new(callback)))
+    }
+
+    fn remove_on_update(&self, callback: TabRawServerPlayerUpdateCallbackId) {
+        self.imp.remove_on_update(callback.0)
+    }
+}
+
+impl<'ctx> __sdk::WithUpdate for TabRawServerPlayerTableHandle<'ctx> {
     type UpdateCallbackId = TabRawServerPlayerUpdateCallbackId;
 
     fn on_update(

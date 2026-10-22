@@ -18,6 +18,18 @@ pub struct ProjectCompetitionDescendantsTableHandle<'ctx> {
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
+/// Lifetime-aware accessor marker for the table `project_competition_descendants`.
+pub struct ProjectCompetitionDescendantsTableAccessor;
+
+impl __sdk::TableAccessor<super::RemoteTables> for ProjectCompetitionDescendantsTableAccessor {
+    type Row = CompetitionV1;
+    type Handle<'db> = ProjectCompetitionDescendantsTableHandle<'db>;
+
+    fn get<'db>(db: &'db super::RemoteTables) -> Self::Handle<'db> {
+        db.project_competition_descendants()
+    }
+}
+
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the table `project_competition_descendants`.
 ///
@@ -41,6 +53,18 @@ impl ProjectCompetitionDescendantsTableAccess for super::RemoteTables {
 
 pub struct ProjectCompetitionDescendantsInsertCallbackId(__sdk::CallbackId);
 pub struct ProjectCompetitionDescendantsDeleteCallbackId(__sdk::CallbackId);
+
+impl<'ctx> __sdk::TableLike for ProjectCompetitionDescendantsTableHandle<'ctx> {
+    type Row = CompetitionV1;
+    type EventContext = super::EventContext;
+
+    fn count(&self) -> u64 {
+        self.imp.count()
+    }
+    fn iter(&self) -> impl Iterator<Item = CompetitionV1> + '_ {
+        self.imp.iter()
+    }
+}
 
 impl<'ctx> __sdk::Table for ProjectCompetitionDescendantsTableHandle<'ctx> {
     type Row = CompetitionV1;
@@ -66,6 +90,36 @@ impl<'ctx> __sdk::Table for ProjectCompetitionDescendantsTableHandle<'ctx> {
         self.imp.remove_on_insert(callback.0)
     }
 
+    type DeleteCallbackId = ProjectCompetitionDescendantsDeleteCallbackId;
+
+    fn on_delete(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
+    ) -> ProjectCompetitionDescendantsDeleteCallbackId {
+        ProjectCompetitionDescendantsDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
+    }
+
+    fn remove_on_delete(&self, callback: ProjectCompetitionDescendantsDeleteCallbackId) {
+        self.imp.remove_on_delete(callback.0)
+    }
+}
+
+impl<'ctx> __sdk::WithInsert for ProjectCompetitionDescendantsTableHandle<'ctx> {
+    type InsertCallbackId = ProjectCompetitionDescendantsInsertCallbackId;
+
+    fn on_insert(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
+    ) -> ProjectCompetitionDescendantsInsertCallbackId {
+        ProjectCompetitionDescendantsInsertCallbackId(self.imp.on_insert(Box::new(callback)))
+    }
+
+    fn remove_on_insert(&self, callback: ProjectCompetitionDescendantsInsertCallbackId) {
+        self.imp.remove_on_insert(callback.0)
+    }
+}
+
+impl<'ctx> __sdk::WithDelete for ProjectCompetitionDescendantsTableHandle<'ctx> {
     type DeleteCallbackId = ProjectCompetitionDescendantsDeleteCallbackId;
 
     fn on_delete(

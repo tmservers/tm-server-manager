@@ -19,6 +19,18 @@ pub struct EventRawServerStateTableHandle<'ctx> {
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
+/// Lifetime-aware accessor marker for the table `event_raw_server_state`.
+pub struct EventRawServerStateTableAccessor;
+
+impl __sdk::TableAccessor<super::RemoteTables> for EventRawServerStateTableAccessor {
+    type Row = EventRawServerState;
+    type Handle<'db> = EventRawServerStateTableHandle<'db>;
+
+    fn get<'db>(db: &'db super::RemoteTables) -> Self::Handle<'db> {
+        db.event_raw_server_state()
+    }
+}
+
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the table `event_raw_server_state`.
 ///
@@ -42,6 +54,18 @@ impl EventRawServerStateTableAccess for super::RemoteTables {
 
 pub struct EventRawServerStateInsertCallbackId(__sdk::CallbackId);
 
+impl<'ctx> __sdk::TableLike for EventRawServerStateTableHandle<'ctx> {
+    type Row = EventRawServerState;
+    type EventContext = super::EventContext;
+
+    fn count(&self) -> u64 {
+        self.imp.count()
+    }
+    fn iter(&self) -> impl Iterator<Item = EventRawServerState> + '_ {
+        self.imp.iter()
+    }
+}
+
 impl<'ctx> __sdk::EventTable for EventRawServerStateTableHandle<'ctx> {
     type Row = EventRawServerState;
     type EventContext = super::EventContext;
@@ -53,6 +77,21 @@ impl<'ctx> __sdk::EventTable for EventRawServerStateTableHandle<'ctx> {
         self.imp.iter()
     }
 
+    type InsertCallbackId = EventRawServerStateInsertCallbackId;
+
+    fn on_insert(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
+    ) -> EventRawServerStateInsertCallbackId {
+        EventRawServerStateInsertCallbackId(self.imp.on_insert(Box::new(callback)))
+    }
+
+    fn remove_on_insert(&self, callback: EventRawServerStateInsertCallbackId) {
+        self.imp.remove_on_insert(callback.0)
+    }
+}
+
+impl<'ctx> __sdk::WithInsert for EventRawServerStateTableHandle<'ctx> {
     type InsertCallbackId = EventRawServerStateInsertCallbackId;
 
     fn on_insert(

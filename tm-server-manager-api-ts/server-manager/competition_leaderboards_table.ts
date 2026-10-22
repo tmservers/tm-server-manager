@@ -9,12 +9,21 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
-
 import {
-  CompetitionV1,
+  LbSettingsV2,
+  LeaderboardStatus,
 } from "./types";
 
-export const params = {
-  competitionId: __t.u32(),
-};
-export const returnType = __t.option(CompetitionV1)
+
+export default __t.row({
+  name: __t.string(),
+  get settings() {
+    return __t.array(LbSettingsV2);
+  },
+  id: __t.u32(),
+  parentId: __t.u32().name("parent_id"),
+  template: __t.bool(),
+  get status() {
+    return LeaderboardStatus;
+  },
+});

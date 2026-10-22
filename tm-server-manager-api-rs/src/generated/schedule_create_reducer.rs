@@ -4,12 +4,16 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
+use super::vec_2_type::Vec2;
+
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct ScheduleCreateArgs {
     pub name: String,
     pub parent_id: u32,
+    pub position: Vec2,
     pub with_template: u32,
+    pub as_template: bool,
 }
 
 impl From<ScheduleCreateArgs> for super::Reducer {
@@ -17,7 +21,9 @@ impl From<ScheduleCreateArgs> for super::Reducer {
         Self::ScheduleCreate {
             name: args.name,
             parent_id: args.parent_id,
+            position: args.position,
             with_template: args.with_template,
+            as_template: args.as_template,
         }
     }
 }
@@ -41,9 +47,18 @@ pub trait schedule_create {
         &self,
         name: String,
         parent_id: u32,
+        position: Vec2,
         with_template: u32,
+        as_template: bool,
     ) -> __sdk::Result<()> {
-        self.schedule_create_then(name, parent_id, with_template, |_, _| {})
+        self.schedule_create_then(
+            name,
+            parent_id,
+            position,
+            with_template,
+            as_template,
+            |_, _| {},
+        )
     }
 
     /// Request that the remote module invoke the reducer `schedule_create` to run as soon as possible,
@@ -56,7 +71,9 @@ pub trait schedule_create {
         &self,
         name: String,
         parent_id: u32,
+        position: Vec2,
         with_template: u32,
+        as_template: bool,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -69,7 +86,9 @@ impl schedule_create for super::RemoteReducers {
         &self,
         name: String,
         parent_id: u32,
+        position: Vec2,
         with_template: u32,
+        as_template: bool,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -79,7 +98,9 @@ impl schedule_create for super::RemoteReducers {
             ScheduleCreateArgs {
                 name,
                 parent_id,
+                position,
                 with_template,
+                as_template,
             },
             callback,
         )

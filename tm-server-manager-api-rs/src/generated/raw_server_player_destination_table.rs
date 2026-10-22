@@ -18,6 +18,18 @@ pub struct RawServerPlayerDestinationTableHandle<'ctx> {
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
+/// Lifetime-aware accessor marker for the table `raw_server_player_destination`.
+pub struct RawServerPlayerDestinationTableAccessor;
+
+impl __sdk::TableAccessor<super::RemoteTables> for RawServerPlayerDestinationTableAccessor {
+    type Row = PlayerDestination;
+    type Handle<'db> = RawServerPlayerDestinationTableHandle<'db>;
+
+    fn get<'db>(db: &'db super::RemoteTables) -> Self::Handle<'db> {
+        db.raw_server_player_destination()
+    }
+}
+
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the table `raw_server_player_destination`.
 ///
@@ -41,6 +53,18 @@ impl RawServerPlayerDestinationTableAccess for super::RemoteTables {
 
 pub struct RawServerPlayerDestinationInsertCallbackId(__sdk::CallbackId);
 pub struct RawServerPlayerDestinationDeleteCallbackId(__sdk::CallbackId);
+
+impl<'ctx> __sdk::TableLike for RawServerPlayerDestinationTableHandle<'ctx> {
+    type Row = PlayerDestination;
+    type EventContext = super::EventContext;
+
+    fn count(&self) -> u64 {
+        self.imp.count()
+    }
+    fn iter(&self) -> impl Iterator<Item = PlayerDestination> + '_ {
+        self.imp.iter()
+    }
+}
 
 impl<'ctx> __sdk::Table for RawServerPlayerDestinationTableHandle<'ctx> {
     type Row = PlayerDestination;
@@ -66,6 +90,36 @@ impl<'ctx> __sdk::Table for RawServerPlayerDestinationTableHandle<'ctx> {
         self.imp.remove_on_insert(callback.0)
     }
 
+    type DeleteCallbackId = RawServerPlayerDestinationDeleteCallbackId;
+
+    fn on_delete(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
+    ) -> RawServerPlayerDestinationDeleteCallbackId {
+        RawServerPlayerDestinationDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
+    }
+
+    fn remove_on_delete(&self, callback: RawServerPlayerDestinationDeleteCallbackId) {
+        self.imp.remove_on_delete(callback.0)
+    }
+}
+
+impl<'ctx> __sdk::WithInsert for RawServerPlayerDestinationTableHandle<'ctx> {
+    type InsertCallbackId = RawServerPlayerDestinationInsertCallbackId;
+
+    fn on_insert(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
+    ) -> RawServerPlayerDestinationInsertCallbackId {
+        RawServerPlayerDestinationInsertCallbackId(self.imp.on_insert(Box::new(callback)))
+    }
+
+    fn remove_on_insert(&self, callback: RawServerPlayerDestinationInsertCallbackId) {
+        self.imp.remove_on_insert(callback.0)
+    }
+}
+
+impl<'ctx> __sdk::WithDelete for RawServerPlayerDestinationTableHandle<'ctx> {
     type DeleteCallbackId = RawServerPlayerDestinationDeleteCallbackId;
 
     fn on_delete(

@@ -1,4 +1,7 @@
-use spacetimedb::{ProcedureContext, ReducerContext, SpacetimeType, procedure, reducer, table};
+use spacetimedb::{
+    AnonymousViewContext, ProcedureContext, Query, ReducerContext, SpacetimeType, procedure,
+    reducer, table, view,
+};
 
 use crate::{
     authorization::Authorization,
@@ -193,16 +196,12 @@ struct ConnectionDataOptionFirstOffsetN {
     take: u8,
 }
 
-#[procedure(name = "unstable_competition_connection_data")]
-fn unstable_competition_connection_data(
-    ctx: &mut ProcedureContext,
+#[view(accessor = competition_connections_data,public)]
+fn competition_connections_data(
+    ctx: &AnonymousViewContext,
     competition_id: u32,
-) -> Vec<ConnectionData> {
-    ctx.with_tx(|ctx| {
-        ctx.db
-            .tab_connection_data()
-            .competition_id()
-            .filter(competition_id)
-    })
-    .collect()
+) -> impl Query<ConnectionData> {
+    ctx.from
+        .tab_connection_data()
+        .filter(|r| r.competition_id.eq(competition_id))
 }
