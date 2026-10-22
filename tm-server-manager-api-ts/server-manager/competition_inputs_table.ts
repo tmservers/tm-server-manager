@@ -10,11 +10,9 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-import {
-  CompetitionV1,
-} from "./types";
-
-export const params = {
-  competitionId: __t.u32(),
-};
-export const returnType = __t.array(CompetitionV1)
+export default __t.row({
+  name: __t.string(),
+  id: __t.u32(),
+  parentId: __t.u32().name("parent_id"),
+  template: __t.bool(),
+});

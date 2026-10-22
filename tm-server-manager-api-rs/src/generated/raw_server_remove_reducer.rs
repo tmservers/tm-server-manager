@@ -6,46 +6,46 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub(super) struct LendRawServerArgs {
+pub(super) struct RawServerRemoveArgs {
     pub server_id: u32,
     pub competition_id: u32,
 }
 
-impl From<LendRawServerArgs> for super::Reducer {
-    fn from(args: LendRawServerArgs) -> Self {
-        Self::LendRawServer {
+impl From<RawServerRemoveArgs> for super::Reducer {
+    fn from(args: RawServerRemoveArgs) -> Self {
+        Self::RawServerRemove {
             server_id: args.server_id,
             competition_id: args.competition_id,
         }
     }
 }
 
-impl __sdk::InModule for LendRawServerArgs {
+impl __sdk::InModule for RawServerRemoveArgs {
     type Module = super::RemoteModule;
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the reducer `lend_raw_server`.
+/// Extension trait for access to the reducer `raw_server_remove`.
 ///
 /// Implemented for [`super::RemoteReducers`].
-pub trait lend_raw_server {
-    /// Request that the remote module invoke the reducer `lend_raw_server` to run as soon as possible.
+pub trait raw_server_remove {
+    /// Request that the remote module invoke the reducer `raw_server_remove` to run as soon as possible.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
-    /// /// Use [`lend_raw_server:lend_raw_server_then`] to run a callback after the reducer completes.
-    fn lend_raw_server(&self, server_id: u32, competition_id: u32) -> __sdk::Result<()> {
-        self.lend_raw_server_then(server_id, competition_id, |_, _| {})
+    /// /// Use [`raw_server_remove:raw_server_remove_then`] to run a callback after the reducer completes.
+    fn raw_server_remove(&self, server_id: u32, competition_id: u32) -> __sdk::Result<()> {
+        self.raw_server_remove_then(server_id, competition_id, |_, _| {})
     }
 
-    /// Request that the remote module invoke the reducer `lend_raw_server` to run as soon as possible,
+    /// Request that the remote module invoke the reducer `raw_server_remove` to run as soon as possible,
     /// registering `callback` to run when we are notified that the reducer completed.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed with the `callback`.
-    fn lend_raw_server_then(
+    fn raw_server_remove_then(
         &self,
         server_id: u32,
         competition_id: u32,
@@ -56,8 +56,8 @@ pub trait lend_raw_server {
     ) -> __sdk::Result<()>;
 }
 
-impl lend_raw_server for super::RemoteReducers {
-    fn lend_raw_server_then(
+impl raw_server_remove for super::RemoteReducers {
+    fn raw_server_remove_then(
         &self,
         server_id: u32,
         competition_id: u32,
@@ -67,7 +67,7 @@ impl lend_raw_server for super::RemoteReducers {
             + 'static,
     ) -> __sdk::Result<()> {
         self.imp.invoke_reducer_with_callback(
-            LendRawServerArgs {
+            RawServerRemoveArgs {
                 server_id,
                 competition_id,
             },

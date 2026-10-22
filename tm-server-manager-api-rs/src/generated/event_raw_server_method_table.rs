@@ -19,6 +19,18 @@ pub struct EventRawServerMethodTableHandle<'ctx> {
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
+/// Lifetime-aware accessor marker for the table `event_raw_server_method`.
+pub struct EventRawServerMethodTableAccessor;
+
+impl __sdk::TableAccessor<super::RemoteTables> for EventRawServerMethodTableAccessor {
+    type Row = EventRawServerMethod;
+    type Handle<'db> = EventRawServerMethodTableHandle<'db>;
+
+    fn get<'db>(db: &'db super::RemoteTables) -> Self::Handle<'db> {
+        db.event_raw_server_method()
+    }
+}
+
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the table `event_raw_server_method`.
 ///
@@ -42,6 +54,18 @@ impl EventRawServerMethodTableAccess for super::RemoteTables {
 
 pub struct EventRawServerMethodInsertCallbackId(__sdk::CallbackId);
 
+impl<'ctx> __sdk::TableLike for EventRawServerMethodTableHandle<'ctx> {
+    type Row = EventRawServerMethod;
+    type EventContext = super::EventContext;
+
+    fn count(&self) -> u64 {
+        self.imp.count()
+    }
+    fn iter(&self) -> impl Iterator<Item = EventRawServerMethod> + '_ {
+        self.imp.iter()
+    }
+}
+
 impl<'ctx> __sdk::EventTable for EventRawServerMethodTableHandle<'ctx> {
     type Row = EventRawServerMethod;
     type EventContext = super::EventContext;
@@ -53,6 +77,21 @@ impl<'ctx> __sdk::EventTable for EventRawServerMethodTableHandle<'ctx> {
         self.imp.iter()
     }
 
+    type InsertCallbackId = EventRawServerMethodInsertCallbackId;
+
+    fn on_insert(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
+    ) -> EventRawServerMethodInsertCallbackId {
+        EventRawServerMethodInsertCallbackId(self.imp.on_insert(Box::new(callback)))
+    }
+
+    fn remove_on_insert(&self, callback: EventRawServerMethodInsertCallbackId) {
+        self.imp.remove_on_insert(callback.0)
+    }
+}
+
+impl<'ctx> __sdk::WithInsert for EventRawServerMethodTableHandle<'ctx> {
     type InsertCallbackId = EventRawServerMethodInsertCallbackId;
 
     fn on_insert(

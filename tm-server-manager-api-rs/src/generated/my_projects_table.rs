@@ -2,9 +2,9 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN YOUR MODULE SOURCE CODE INSTEAD.
 
 #![allow(unused, clippy::all)]
-use super::my_project_v_1_type::MyProjectV1;
 use super::project_kind_type::ProjectKind;
 use super::project_status_type::ProjectStatus;
+use super::project_v_1_type::ProjectV1;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 /// Table handle for the table `my_projects`.
@@ -16,8 +16,20 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 /// but to directly chain method calls,
 /// like `ctx.db.my_projects().on_insert(...)`.
 pub struct MyProjectsTableHandle<'ctx> {
-    imp: __sdk::TableHandle<MyProjectV1>,
+    imp: __sdk::TableHandle<ProjectV1>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
+}
+
+/// Lifetime-aware accessor marker for the table `my_projects`.
+pub struct MyProjectsTableAccessor;
+
+impl __sdk::TableAccessor<super::RemoteTables> for MyProjectsTableAccessor {
+    type Row = ProjectV1;
+    type Handle<'db> = MyProjectsTableHandle<'db>;
+
+    fn get<'db>(db: &'db super::RemoteTables) -> Self::Handle<'db> {
+        db.my_projects()
+    }
 }
 
 #[allow(non_camel_case_types)]
@@ -33,7 +45,7 @@ pub trait MyProjectsTableAccess {
 impl MyProjectsTableAccess for super::RemoteTables {
     fn my_projects(&self) -> MyProjectsTableHandle<'_> {
         MyProjectsTableHandle {
-            imp: self.imp.get_table::<MyProjectV1>("my_projects"),
+            imp: self.imp.get_table::<ProjectV1>("my_projects"),
             ctx: std::marker::PhantomData,
         }
     }
@@ -42,14 +54,26 @@ impl MyProjectsTableAccess for super::RemoteTables {
 pub struct MyProjectsInsertCallbackId(__sdk::CallbackId);
 pub struct MyProjectsDeleteCallbackId(__sdk::CallbackId);
 
-impl<'ctx> __sdk::Table for MyProjectsTableHandle<'ctx> {
-    type Row = MyProjectV1;
+impl<'ctx> __sdk::TableLike for MyProjectsTableHandle<'ctx> {
+    type Row = ProjectV1;
     type EventContext = super::EventContext;
 
     fn count(&self) -> u64 {
         self.imp.count()
     }
-    fn iter(&self) -> impl Iterator<Item = MyProjectV1> + '_ {
+    fn iter(&self) -> impl Iterator<Item = ProjectV1> + '_ {
+        self.imp.iter()
+    }
+}
+
+impl<'ctx> __sdk::Table for MyProjectsTableHandle<'ctx> {
+    type Row = ProjectV1;
+    type EventContext = super::EventContext;
+
+    fn count(&self) -> u64 {
+        self.imp.count()
+    }
+    fn iter(&self) -> impl Iterator<Item = ProjectV1> + '_ {
         self.imp.iter()
     }
 
@@ -80,34 +104,64 @@ impl<'ctx> __sdk::Table for MyProjectsTableHandle<'ctx> {
     }
 }
 
+impl<'ctx> __sdk::WithInsert for MyProjectsTableHandle<'ctx> {
+    type InsertCallbackId = MyProjectsInsertCallbackId;
+
+    fn on_insert(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
+    ) -> MyProjectsInsertCallbackId {
+        MyProjectsInsertCallbackId(self.imp.on_insert(Box::new(callback)))
+    }
+
+    fn remove_on_insert(&self, callback: MyProjectsInsertCallbackId) {
+        self.imp.remove_on_insert(callback.0)
+    }
+}
+
+impl<'ctx> __sdk::WithDelete for MyProjectsTableHandle<'ctx> {
+    type DeleteCallbackId = MyProjectsDeleteCallbackId;
+
+    fn on_delete(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
+    ) -> MyProjectsDeleteCallbackId {
+        MyProjectsDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
+    }
+
+    fn remove_on_delete(&self, callback: MyProjectsDeleteCallbackId) {
+        self.imp.remove_on_delete(callback.0)
+    }
+}
+
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
-    let _table = client_cache.get_or_make_table::<MyProjectV1>("my_projects");
+    let _table = client_cache.get_or_make_table::<ProjectV1>("my_projects");
 }
 
 #[doc(hidden)]
 pub(super) fn parse_table_update(
     raw_updates: __ws::v2::TableUpdate,
-) -> __sdk::Result<__sdk::TableUpdate<MyProjectV1>> {
+) -> __sdk::Result<__sdk::TableUpdate<ProjectV1>> {
     __sdk::TableUpdate::parse_table_update(raw_updates).map_err(|e| {
-        __sdk::InternalError::failed_parse("TableUpdate<MyProjectV1>", "TableUpdate")
+        __sdk::InternalError::failed_parse("TableUpdate<ProjectV1>", "TableUpdate")
             .with_cause(e)
             .into()
     })
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for query builder access to the table `MyProjectV1`.
+/// Extension trait for query builder access to the table `ProjectV1`.
 ///
 /// Implemented for [`__sdk::QueryTableAccessor`].
 pub trait my_projectsQueryTableAccess {
     #[allow(non_snake_case)]
-    /// Get a query builder for the table `MyProjectV1`.
-    fn my_projects(&self) -> __sdk::__query_builder::Table<MyProjectV1>;
+    /// Get a query builder for the table `ProjectV1`.
+    fn my_projects(&self) -> __sdk::__query_builder::Table<ProjectV1>;
 }
 
 impl my_projectsQueryTableAccess for __sdk::QueryTableAccessor {
-    fn my_projects(&self) -> __sdk::__query_builder::Table<MyProjectV1> {
+    fn my_projects(&self) -> __sdk::__query_builder::Table<ProjectV1> {
         __sdk::__query_builder::Table::new("my_projects")
     }
 }

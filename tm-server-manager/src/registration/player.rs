@@ -26,20 +26,6 @@ pub struct RegisterationPlayer {
     pub user_id: u32,
 }
 
-/* #[view(accessor=temp_registration_player,public)]
-fn temp_registration_player(
-    ctx: &AnonymousViewContext, /* ,registration_id: u32 */
-) -> Vec<RegisterationPlayer> {
-    let registration_id = 2u32;
-    ctx.registration_player(registration_id)
-} */
-
-/* #[view(accessor=unstable_registration_player,public)]
-fn unstable_registration_player(ctx: &AnonymousViewContext) -> impl Query<RegisterationPlayer> {
-    //ctx.from.tab_registeration_player()
-    RawQuery::<RegisterationPlayer>::new(String::new())
-} */
-
 #[reducer]
 fn register_player(ctx: &ReducerContext, registration_id: u32) -> Result<(), String> {
     let user_id = ctx.user_id()?;

@@ -3,6 +3,7 @@
 
 #![allow(unused, clippy::all)]
 use super::match_chat_type::MatchChat;
+use super::match_status_type::MatchStatus;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 /// Table handle for the table `tab_match_chat`.
@@ -16,6 +17,18 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 pub struct TabMatchChatTableHandle<'ctx> {
     imp: __sdk::TableHandle<MatchChat>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
+}
+
+/// Lifetime-aware accessor marker for the table `tab_match_chat`.
+pub struct TabMatchChatTableAccessor;
+
+impl __sdk::TableAccessor<super::RemoteTables> for TabMatchChatTableAccessor {
+    type Row = MatchChat;
+    type Handle<'db> = TabMatchChatTableHandle<'db>;
+
+    fn get<'db>(db: &'db super::RemoteTables) -> Self::Handle<'db> {
+        db.tab_match_chat()
+    }
 }
 
 #[allow(non_camel_case_types)]
@@ -39,6 +52,18 @@ impl TabMatchChatTableAccess for super::RemoteTables {
 
 pub struct TabMatchChatInsertCallbackId(__sdk::CallbackId);
 pub struct TabMatchChatDeleteCallbackId(__sdk::CallbackId);
+
+impl<'ctx> __sdk::TableLike for TabMatchChatTableHandle<'ctx> {
+    type Row = MatchChat;
+    type EventContext = super::EventContext;
+
+    fn count(&self) -> u64 {
+        self.imp.count()
+    }
+    fn iter(&self) -> impl Iterator<Item = MatchChat> + '_ {
+        self.imp.iter()
+    }
+}
 
 impl<'ctx> __sdk::Table for TabMatchChatTableHandle<'ctx> {
     type Row = MatchChat;
@@ -78,9 +103,54 @@ impl<'ctx> __sdk::Table for TabMatchChatTableHandle<'ctx> {
     }
 }
 
+impl<'ctx> __sdk::WithInsert for TabMatchChatTableHandle<'ctx> {
+    type InsertCallbackId = TabMatchChatInsertCallbackId;
+
+    fn on_insert(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
+    ) -> TabMatchChatInsertCallbackId {
+        TabMatchChatInsertCallbackId(self.imp.on_insert(Box::new(callback)))
+    }
+
+    fn remove_on_insert(&self, callback: TabMatchChatInsertCallbackId) {
+        self.imp.remove_on_insert(callback.0)
+    }
+}
+
+impl<'ctx> __sdk::WithDelete for TabMatchChatTableHandle<'ctx> {
+    type DeleteCallbackId = TabMatchChatDeleteCallbackId;
+
+    fn on_delete(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
+    ) -> TabMatchChatDeleteCallbackId {
+        TabMatchChatDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
+    }
+
+    fn remove_on_delete(&self, callback: TabMatchChatDeleteCallbackId) {
+        self.imp.remove_on_delete(callback.0)
+    }
+}
+
 pub struct TabMatchChatUpdateCallbackId(__sdk::CallbackId);
 
 impl<'ctx> __sdk::TableWithPrimaryKey for TabMatchChatTableHandle<'ctx> {
+    type UpdateCallbackId = TabMatchChatUpdateCallbackId;
+
+    fn on_update(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row, &Self::Row) + Send + 'static,
+    ) -> TabMatchChatUpdateCallbackId {
+        TabMatchChatUpdateCallbackId(self.imp.on_update(Box::new(callback)))
+    }
+
+    fn remove_on_update(&self, callback: TabMatchChatUpdateCallbackId) {
+        self.imp.remove_on_update(callback.0)
+    }
+}
+
+impl<'ctx> __sdk::WithUpdate for TabMatchChatTableHandle<'ctx> {
     type UpdateCallbackId = TabMatchChatUpdateCallbackId;
 
     fn on_update(

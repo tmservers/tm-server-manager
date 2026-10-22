@@ -1,4 +1,7 @@
-use spacetimedb::{ProcedureContext, ReducerContext, Table, procedure, reducer, table};
+use spacetimedb::{
+    AnonymousViewContext, ProcedureContext, Query, ReducerContext, Table, procedure, reducer,
+    table, view,
+};
 
 use crate::{
     authorization::Authorization,
@@ -307,16 +310,17 @@ impl<Db: spacetimedb::CtxDbWrite> CompetitionWrite for Db {
     }
 }
 
-#[procedure(name = "unstable_competition")]
-fn unstable_competition(ctx: &mut ProcedureContext, competition_id: u32) -> Option<CompetitionV1> {
-    ctx.with_tx(|ctx| ctx.db.tab_competition().id().find(competition_id))
+#[view(accessor = competition, public)]
+fn competition(ctx: &AnonymousViewContext, competition_id: u32) -> Option<CompetitionV1> {
+    ctx.db.tab_competition().id().find(competition_id)
 }
 
-#[procedure(name = "unstable_competition_competitions")]
-fn unstable_competition_competitions(
-    ctx: &mut ProcedureContext,
+#[view(accessor = competition_competitions, public)]
+fn competition_competitions(
+    ctx: &AnonymousViewContext,
     competition_id: u32,
-) -> Vec<CompetitionV1> {
-    ctx.with_tx(|ctx| ctx.db.tab_competition().parent_id().filter(competition_id))
-        .collect()
+) -> impl Query<CompetitionV1> {
+    ctx.from
+        .tab_competition()
+        .r#where(|r| r.parent_id.eq(competition_id))
 }

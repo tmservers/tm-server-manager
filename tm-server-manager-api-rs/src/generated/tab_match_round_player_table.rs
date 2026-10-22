@@ -18,6 +18,18 @@ pub struct TabMatchRoundPlayerTableHandle<'ctx> {
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
+/// Lifetime-aware accessor marker for the table `tab_match_round_player`.
+pub struct TabMatchRoundPlayerTableAccessor;
+
+impl __sdk::TableAccessor<super::RemoteTables> for TabMatchRoundPlayerTableAccessor {
+    type Row = MatchRoundPlayer;
+    type Handle<'db> = TabMatchRoundPlayerTableHandle<'db>;
+
+    fn get<'db>(db: &'db super::RemoteTables) -> Self::Handle<'db> {
+        db.tab_match_round_player()
+    }
+}
+
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the table `tab_match_round_player`.
 ///
@@ -41,6 +53,18 @@ impl TabMatchRoundPlayerTableAccess for super::RemoteTables {
 
 pub struct TabMatchRoundPlayerInsertCallbackId(__sdk::CallbackId);
 pub struct TabMatchRoundPlayerDeleteCallbackId(__sdk::CallbackId);
+
+impl<'ctx> __sdk::TableLike for TabMatchRoundPlayerTableHandle<'ctx> {
+    type Row = MatchRoundPlayer;
+    type EventContext = super::EventContext;
+
+    fn count(&self) -> u64 {
+        self.imp.count()
+    }
+    fn iter(&self) -> impl Iterator<Item = MatchRoundPlayer> + '_ {
+        self.imp.iter()
+    }
+}
 
 impl<'ctx> __sdk::Table for TabMatchRoundPlayerTableHandle<'ctx> {
     type Row = MatchRoundPlayer;
@@ -80,9 +104,54 @@ impl<'ctx> __sdk::Table for TabMatchRoundPlayerTableHandle<'ctx> {
     }
 }
 
+impl<'ctx> __sdk::WithInsert for TabMatchRoundPlayerTableHandle<'ctx> {
+    type InsertCallbackId = TabMatchRoundPlayerInsertCallbackId;
+
+    fn on_insert(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
+    ) -> TabMatchRoundPlayerInsertCallbackId {
+        TabMatchRoundPlayerInsertCallbackId(self.imp.on_insert(Box::new(callback)))
+    }
+
+    fn remove_on_insert(&self, callback: TabMatchRoundPlayerInsertCallbackId) {
+        self.imp.remove_on_insert(callback.0)
+    }
+}
+
+impl<'ctx> __sdk::WithDelete for TabMatchRoundPlayerTableHandle<'ctx> {
+    type DeleteCallbackId = TabMatchRoundPlayerDeleteCallbackId;
+
+    fn on_delete(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
+    ) -> TabMatchRoundPlayerDeleteCallbackId {
+        TabMatchRoundPlayerDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
+    }
+
+    fn remove_on_delete(&self, callback: TabMatchRoundPlayerDeleteCallbackId) {
+        self.imp.remove_on_delete(callback.0)
+    }
+}
+
 pub struct TabMatchRoundPlayerUpdateCallbackId(__sdk::CallbackId);
 
 impl<'ctx> __sdk::TableWithPrimaryKey for TabMatchRoundPlayerTableHandle<'ctx> {
+    type UpdateCallbackId = TabMatchRoundPlayerUpdateCallbackId;
+
+    fn on_update(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row, &Self::Row) + Send + 'static,
+    ) -> TabMatchRoundPlayerUpdateCallbackId {
+        TabMatchRoundPlayerUpdateCallbackId(self.imp.on_update(Box::new(callback)))
+    }
+
+    fn remove_on_update(&self, callback: TabMatchRoundPlayerUpdateCallbackId) {
+        self.imp.remove_on_update(callback.0)
+    }
+}
+
+impl<'ctx> __sdk::WithUpdate for TabMatchRoundPlayerTableHandle<'ctx> {
     type UpdateCallbackId = TabMatchRoundPlayerUpdateCallbackId;
 
     fn on_update(

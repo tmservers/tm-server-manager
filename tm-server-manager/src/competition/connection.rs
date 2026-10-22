@@ -343,16 +343,15 @@ impl From<TabConnection> for CompetitionConnection {
     }
 }
 
-#[view(accessor=unstable_competition_connection,public)]
-pub fn unstable_competition_connection(
-    ctx: &ViewContext, /* competition_id: u32 */
+#[view(accessor=competition_connections,public)]
+pub fn competition_connections(
+    ctx: &ViewContext,
+    competition_id: u32,
 ) -> Vec<CompetitionConnection> {
-    let competition_id = 1u32;
-
     ctx.db
         .tab_connection()
         .parent_id()
-        .filter(0..u32::MAX)
+        .filter(competition_id)
         .map(CompetitionConnection::from)
         .collect()
 }

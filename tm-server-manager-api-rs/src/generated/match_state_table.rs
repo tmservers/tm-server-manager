@@ -20,6 +20,18 @@ pub struct MatchStateTableHandle<'ctx> {
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
+/// Lifetime-aware accessor marker for the table `match_state`.
+pub struct MatchStateTableAccessor;
+
+impl __sdk::TableAccessor<super::RemoteTables> for MatchStateTableAccessor {
+    type Row = MatchState;
+    type Handle<'db> = MatchStateTableHandle<'db>;
+
+    fn get<'db>(db: &'db super::RemoteTables) -> Self::Handle<'db> {
+        db.match_state()
+    }
+}
+
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the table `match_state`.
 ///
@@ -41,6 +53,18 @@ impl MatchStateTableAccess for super::RemoteTables {
 
 pub struct MatchStateInsertCallbackId(__sdk::CallbackId);
 pub struct MatchStateDeleteCallbackId(__sdk::CallbackId);
+
+impl<'ctx> __sdk::TableLike for MatchStateTableHandle<'ctx> {
+    type Row = MatchState;
+    type EventContext = super::EventContext;
+
+    fn count(&self) -> u64 {
+        self.imp.count()
+    }
+    fn iter(&self) -> impl Iterator<Item = MatchState> + '_ {
+        self.imp.iter()
+    }
+}
 
 impl<'ctx> __sdk::Table for MatchStateTableHandle<'ctx> {
     type Row = MatchState;
@@ -66,6 +90,36 @@ impl<'ctx> __sdk::Table for MatchStateTableHandle<'ctx> {
         self.imp.remove_on_insert(callback.0)
     }
 
+    type DeleteCallbackId = MatchStateDeleteCallbackId;
+
+    fn on_delete(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
+    ) -> MatchStateDeleteCallbackId {
+        MatchStateDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
+    }
+
+    fn remove_on_delete(&self, callback: MatchStateDeleteCallbackId) {
+        self.imp.remove_on_delete(callback.0)
+    }
+}
+
+impl<'ctx> __sdk::WithInsert for MatchStateTableHandle<'ctx> {
+    type InsertCallbackId = MatchStateInsertCallbackId;
+
+    fn on_insert(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
+    ) -> MatchStateInsertCallbackId {
+        MatchStateInsertCallbackId(self.imp.on_insert(Box::new(callback)))
+    }
+
+    fn remove_on_insert(&self, callback: MatchStateInsertCallbackId) {
+        self.imp.remove_on_insert(callback.0)
+    }
+}
+
+impl<'ctx> __sdk::WithDelete for MatchStateTableHandle<'ctx> {
     type DeleteCallbackId = MatchStateDeleteCallbackId;
 
     fn on_delete(

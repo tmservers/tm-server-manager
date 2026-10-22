@@ -1,4 +1,7 @@
-use spacetimedb::{Local, ProcedureContext, ReducerContext, Table, procedure, reducer, table};
+use spacetimedb::{
+    AnonymousViewContext, Local, ProcedureContext, Query, ReducerContext, Table, procedure,
+    reducer, table, view,
+};
 
 use crate::{
     authorization::Authorization,
@@ -131,8 +134,9 @@ impl<Db: spacetimedb::CtxDbWrite> OutputWrite for Db {
     }
 }
 
-#[procedure(name = "unstable_competition_output")]
-fn unstable_competition_output(ctx: &mut ProcedureContext, competition_id: u32) -> Vec<OutputV1> {
-    ctx.with_tx(|ctx| ctx.db.tab_output().parent_id().filter(competition_id))
-        .collect()
+#[view(accessor = competition_output,public)]
+fn competition_output(ctx: &AnonymousViewContext, competition_id: u32) -> impl Query<OutputV1> {
+    ctx.from
+        .tab_output()
+        .filter(|r| r.parent_id.eq(competition_id))
 }

@@ -4,6 +4,8 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
+use super::match_status_type::MatchStatus;
+
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct MatchChat {
@@ -11,6 +13,7 @@ pub struct MatchChat {
     pub user_id: u32,
     pub match_id: u32,
     pub id: u32,
+    pub status: MatchStatus,
 }
 
 impl __sdk::InModule for MatchChat {
@@ -25,6 +28,7 @@ pub struct MatchChatCols {
     pub user_id: __sdk::__query_builder::Col<MatchChat, u32>,
     pub match_id: __sdk::__query_builder::Col<MatchChat, u32>,
     pub id: __sdk::__query_builder::Col<MatchChat, u32>,
+    pub status: __sdk::__query_builder::Col<MatchChat, MatchStatus>,
 }
 
 impl __sdk::__query_builder::HasCols for MatchChat {
@@ -35,6 +39,7 @@ impl __sdk::__query_builder::HasCols for MatchChat {
             user_id: __sdk::__query_builder::Col::new(table_name, "user_id"),
             match_id: __sdk::__query_builder::Col::new(table_name, "match_id"),
             id: __sdk::__query_builder::Col::new(table_name, "id"),
+            status: __sdk::__query_builder::Col::new(table_name, "status"),
         }
     }
 }

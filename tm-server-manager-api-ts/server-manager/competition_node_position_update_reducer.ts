@@ -11,8 +11,8 @@ import {
 } from "spacetimedb";
 
 import {
-  Vec2,
   NodeHandle,
+  Vec2,
 } from "./types";
 
 export default {

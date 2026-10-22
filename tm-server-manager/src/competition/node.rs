@@ -484,16 +484,6 @@ fn node_name_edit(ctx: &ReducerContext, node: NodeHandle, name: String) -> Resul
     ctx.node_name_edit(node, name)
 }
 
-/* #[view(accessor=unstable_dw_test_permit_players,public)]
-fn unstable_dw_test_permit_players(ctx: &AnonymousViewContext) -> Vec<PermittedPlayer> {
-    ctx.node_permitted_players_input(NodeHandle::MatchV1(12293))
-}
-
-#[view(accessor=unstable_dw_test_permit_players_2,public)]
-fn unstable_dw_test_permit_players_2(ctx: &AnonymousViewContext) -> Vec<PermittedPlayer> {
-    ctx.node_permitted_players_input(NodeHandle::MatchV1(12294))
-} */
-
 #[procedure]
 fn node_leaderboard_output(
     ctx: &mut ProcedureContext,

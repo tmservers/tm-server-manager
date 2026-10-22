@@ -12,6 +12,7 @@ pub struct RawServerConfigV2 {
     pub id: u32,
     pub competition_id: u32,
     pub config: ServerConfigV2,
+    pub name: String,
 }
 
 impl __sdk::InModule for RawServerConfigV2 {
@@ -25,6 +26,7 @@ pub struct RawServerConfigV2Cols {
     pub id: __sdk::__query_builder::Col<RawServerConfigV2, u32>,
     pub competition_id: __sdk::__query_builder::Col<RawServerConfigV2, u32>,
     pub config: __sdk::__query_builder::Col<RawServerConfigV2, ServerConfigV2>,
+    pub name: __sdk::__query_builder::Col<RawServerConfigV2, String>,
 }
 
 impl __sdk::__query_builder::HasCols for RawServerConfigV2 {
@@ -34,6 +36,7 @@ impl __sdk::__query_builder::HasCols for RawServerConfigV2 {
             id: __sdk::__query_builder::Col::new(table_name, "id"),
             competition_id: __sdk::__query_builder::Col::new(table_name, "competition_id"),
             config: __sdk::__query_builder::Col::new(table_name, "config"),
+            name: __sdk::__query_builder::Col::new(table_name, "name"),
         }
     }
 }

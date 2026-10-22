@@ -1,5 +1,6 @@
 use spacetimedb::{
-    ProcedureContext, ReducerContext, SpacetimeType, Table, procedure, reducer, table,
+    AnonymousViewContext, ProcedureContext, Query, ReducerContext, SpacetimeType, Table, procedure,
+    reducer, table, view,
 };
 use tm_server_types::config::TmMode;
 
@@ -373,18 +374,14 @@ impl<Db: spacetimedb::CtxDbWrite> LeaderboardWrite for Db {
     }
 }
 
-#[procedure(name = "unstable_competition_leaderboards")]
-fn unstable_competition_leaderboards(
-    ctx: &mut ProcedureContext,
+#[view(accessor = competition_leaderboards,public)]
+fn competition_leaderboards(
+    ctx: &AnonymousViewContext,
     competition_id: u32,
-) -> Vec<LeaderboardV2> {
-    ctx.with_tx(|ctx| {
-        ctx.db
-            .tab_leaderboard_v2()
-            .parent_id()
-            .filter(competition_id)
-    })
-    .collect()
+) -> impl Query<LeaderboardV2> {
+    ctx.from
+        .tab_leaderboard_v2()
+        .filter(|r| r.parent_id.eq(competition_id))
 }
 
 // We should be able to iterate over every input and accumulate score or position.
@@ -446,7 +443,7 @@ impl LeadearboardOperations for Vec<LbEntry> {
 // -> then at the end we could somehow downcast it?
 // -> maybe thats also trash idk.
 
-mod migrate {
+/* mod migrate {
     use spacetimedb::{ReducerContext, Table, reducer};
 
     use crate::{
@@ -497,4 +494,4 @@ mod migrate {
             }
         }
     }
-}
+} */

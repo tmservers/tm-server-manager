@@ -11,6 +11,7 @@ pub struct CompetitionV1 {
     pub id: u32,
     pub parent_id: u32,
     pub template: bool,
+    pub template_public: bool,
 }
 
 impl __sdk::InModule for CompetitionV1 {
@@ -25,6 +26,7 @@ pub struct CompetitionV1Cols {
     pub id: __sdk::__query_builder::Col<CompetitionV1, u32>,
     pub parent_id: __sdk::__query_builder::Col<CompetitionV1, u32>,
     pub template: __sdk::__query_builder::Col<CompetitionV1, bool>,
+    pub template_public: __sdk::__query_builder::Col<CompetitionV1, bool>,
 }
 
 impl __sdk::__query_builder::HasCols for CompetitionV1 {
@@ -35,6 +37,7 @@ impl __sdk::__query_builder::HasCols for CompetitionV1 {
             id: __sdk::__query_builder::Col::new(table_name, "id"),
             parent_id: __sdk::__query_builder::Col::new(table_name, "parent_id"),
             template: __sdk::__query_builder::Col::new(table_name, "template"),
+            template_public: __sdk::__query_builder::Col::new(table_name, "template_public"),
         }
     }
 }

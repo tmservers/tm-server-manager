@@ -357,8 +357,3 @@ impl<Db: spacetimedb::CtxDbWrite> RegistrationWrite for Db {
         Ok(registration)
     }
 }
-
-/* #[view(accessor=unstable_registration,public)]
-fn unstable_registration(ctx: &AnonymousViewContext) -> impl Query<Registration> {
-    ctx.from.tab_registration()
-} */

@@ -4,62 +4,55 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::connection_kind_type::ConnectionKind;
-use super::node_handle_type::NodeHandle;
-
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub(super) struct ConnectionCreateArgs {
-    pub origin: NodeHandle,
-    pub target: NodeHandle,
-    pub kind: ConnectionKind,
+pub(super) struct UnstableRawServerConfigUpdateMapsArgs {
+    pub config_id: u32,
+    pub maps: Vec<String>,
 }
 
-impl From<ConnectionCreateArgs> for super::Reducer {
-    fn from(args: ConnectionCreateArgs) -> Self {
-        Self::ConnectionCreate {
-            origin: args.origin,
-            target: args.target,
-            kind: args.kind,
+impl From<UnstableRawServerConfigUpdateMapsArgs> for super::Reducer {
+    fn from(args: UnstableRawServerConfigUpdateMapsArgs) -> Self {
+        Self::UnstableRawServerConfigUpdateMaps {
+            config_id: args.config_id,
+            maps: args.maps,
         }
     }
 }
 
-impl __sdk::InModule for ConnectionCreateArgs {
+impl __sdk::InModule for UnstableRawServerConfigUpdateMapsArgs {
     type Module = super::RemoteModule;
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the reducer `connection_create`.
+/// Extension trait for access to the reducer `unstable_raw_server_config_update_maps`.
 ///
 /// Implemented for [`super::RemoteReducers`].
-pub trait connection_create {
-    /// Request that the remote module invoke the reducer `connection_create` to run as soon as possible.
+pub trait unstable_raw_server_config_update_maps {
+    /// Request that the remote module invoke the reducer `unstable_raw_server_config_update_maps` to run as soon as possible.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
-    /// /// Use [`connection_create:connection_create_then`] to run a callback after the reducer completes.
-    fn connection_create(
+    /// /// Use [`unstable_raw_server_config_update_maps:unstable_raw_server_config_update_maps_then`] to run a callback after the reducer completes.
+    fn unstable_raw_server_config_update_maps(
         &self,
-        origin: NodeHandle,
-        target: NodeHandle,
-        kind: ConnectionKind,
+        config_id: u32,
+        maps: Vec<String>,
     ) -> __sdk::Result<()> {
-        self.connection_create_then(origin, target, kind, |_, _| {})
+        self.unstable_raw_server_config_update_maps_then(config_id, maps, |_, _| {})
     }
 
-    /// Request that the remote module invoke the reducer `connection_create` to run as soon as possible,
+    /// Request that the remote module invoke the reducer `unstable_raw_server_config_update_maps` to run as soon as possible,
     /// registering `callback` to run when we are notified that the reducer completed.
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed with the `callback`.
-    fn connection_create_then(
+    fn unstable_raw_server_config_update_maps_then(
         &self,
-        origin: NodeHandle,
-        target: NodeHandle,
-        kind: ConnectionKind,
+        config_id: u32,
+        maps: Vec<String>,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
@@ -67,23 +60,18 @@ pub trait connection_create {
     ) -> __sdk::Result<()>;
 }
 
-impl connection_create for super::RemoteReducers {
-    fn connection_create_then(
+impl unstable_raw_server_config_update_maps for super::RemoteReducers {
+    fn unstable_raw_server_config_update_maps_then(
         &self,
-        origin: NodeHandle,
-        target: NodeHandle,
-        kind: ConnectionKind,
+        config_id: u32,
+        maps: Vec<String>,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
             + Send
             + 'static,
     ) -> __sdk::Result<()> {
         self.imp.invoke_reducer_with_callback(
-            ConnectionCreateArgs {
-                origin,
-                target,
-                kind,
-            },
+            UnstableRawServerConfigUpdateMapsArgs { config_id, maps },
             callback,
         )
     }

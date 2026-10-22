@@ -4,11 +4,14 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
+use super::vec_2_type::Vec2;
+
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct CompetitionCreateArgs {
     pub name: String,
     pub parent_id: u32,
+    pub position: Vec2,
     pub with_template: u32,
 }
 
@@ -17,6 +20,7 @@ impl From<CompetitionCreateArgs> for super::Reducer {
         Self::CompetitionCreate {
             name: args.name,
             parent_id: args.parent_id,
+            position: args.position,
             with_template: args.with_template,
         }
     }
@@ -41,9 +45,10 @@ pub trait competition_create {
         &self,
         name: String,
         parent_id: u32,
+        position: Vec2,
         with_template: u32,
     ) -> __sdk::Result<()> {
-        self.competition_create_then(name, parent_id, with_template, |_, _| {})
+        self.competition_create_then(name, parent_id, position, with_template, |_, _| {})
     }
 
     /// Request that the remote module invoke the reducer `competition_create` to run as soon as possible,
@@ -56,6 +61,7 @@ pub trait competition_create {
         &self,
         name: String,
         parent_id: u32,
+        position: Vec2,
         with_template: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
@@ -69,6 +75,7 @@ impl competition_create for super::RemoteReducers {
         &self,
         name: String,
         parent_id: u32,
+        position: Vec2,
         with_template: u32,
 
         callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
@@ -79,6 +86,7 @@ impl competition_create for super::RemoteReducers {
             CompetitionCreateArgs {
                 name,
                 parent_id,
+                position,
                 with_template,
             },
             callback,

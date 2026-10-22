@@ -16,6 +16,8 @@ pub enum LbSettingsV2 {
     Filter(LbFilterSettings),
 
     Remap(LbRemapSettings),
+
+    Finalize,
 }
 
 impl __sdk::InModule for LbSettingsV2 {
