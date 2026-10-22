@@ -11,8 +11,6 @@ use crate::{
 #[spacetimedb::table(
     accessor= tab_competition_node_position,
     index(accessor=node_position,hash(columns=[node_variant,node_id])),
-    // TODO drop this index.
-    index(accessor=temp_competition_id,btree(columns=[competition_id]))
 )]
 #[derive(Debug, Clone, Copy)]
 struct TabCompetitionNodePosition {
@@ -83,8 +81,11 @@ fn competition_node_position(
         .collect()
 } */
 
-#[view(accessor=my_node_positions,public)]
-fn my_node_positions(ctx: &ViewContext, /* competition_id: u32 */) -> Vec<CompetitionNodePosition> {
+#[view(accessor=competition_node_positions,public)]
+fn competition_node_positions(
+    ctx: &ViewContext,
+    competition_id: u32,
+) -> Vec<CompetitionNodePosition> {
     /* let Ok(user) = ctx.user_id() else {
         log::warn!(
             "Non user account has tried to call protected view: {}",
@@ -93,15 +94,13 @@ fn my_node_positions(ctx: &ViewContext, /* competition_id: u32 */) -> Vec<Compet
         return Vec::new();
     }; */
 
-    let competition_id = 1u32;
-
     //TODO access control for only permitted users. e.g. walk competition tree for permission.
 
     //TODO switch to the arg and a hash index
     ctx.db
         .tab_competition_node_position()
-        .temp_competition_id()
-        .filter(competition_id..u32::MAX)
+        .competition_id()
+        .filter(competition_id)
         .map(|v| CompetitionNodePosition {
             competition_id: v.competition_id,
             node: NodeHandle::combine(v.node_variant, v.node_id),

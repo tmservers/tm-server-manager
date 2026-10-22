@@ -41,14 +41,6 @@ pub trait connection_create {
             ) + Send
             + 'static,
     );
-
-    #[allow(async_fn_in_trait)]
-    async fn connection_create_async(
-        &self,
-        origin: NodeHandle,
-        target: NodeHandle,
-        kind: ConnectionKind,
-    ) -> Result<Result<(), ConnectionError>, __sdk::InternalError>;
 }
 
 impl connection_create for super::RemoteProcedures {
@@ -74,23 +66,5 @@ impl connection_create for super::RemoteProcedures {
                 },
                 __callback,
             );
-    }
-
-    async fn connection_create_async(
-        &self,
-        origin: NodeHandle,
-        target: NodeHandle,
-        kind: ConnectionKind,
-    ) -> Result<Result<(), ConnectionError>, __sdk::InternalError> {
-        self.imp
-            .invoke_procedure_async::<_, Result<(), ConnectionError>>(
-                "connection_create",
-                ConnectionCreateArgs {
-                    origin,
-                    target,
-                    kind,
-                },
-            )
-            .await
     }
 }

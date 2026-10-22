@@ -36,12 +36,6 @@ pub trait test_node_permitted_players_input {
             ) + Send
             + 'static,
     );
-
-    #[allow(async_fn_in_trait)]
-    async fn test_node_permitted_players_input_async(
-        &self,
-        node: NodeHandle,
-    ) -> Result<Result<Vec<PermittedPlayer>, String>, __sdk::InternalError>;
 }
 
 impl test_node_permitted_players_input for super::RemoteProcedures {
@@ -61,17 +55,5 @@ impl test_node_permitted_players_input for super::RemoteProcedures {
                 TestNodePermittedPlayersInputArgs { node },
                 __callback,
             );
-    }
-
-    async fn test_node_permitted_players_input_async(
-        &self,
-        node: NodeHandle,
-    ) -> Result<Result<Vec<PermittedPlayer>, String>, __sdk::InternalError> {
-        self.imp
-            .invoke_procedure_async::<_, Result<Vec<PermittedPlayer>, String>>(
-                "test_node_permitted_players_input",
-                TestNodePermittedPlayersInputArgs { node },
-            )
-            .await
     }
 }

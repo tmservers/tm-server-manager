@@ -35,13 +35,6 @@ pub trait match_round_replay {
             ) + Send
             + 'static,
     );
-
-    #[allow(async_fn_in_trait)]
-    async fn match_round_replay_async(
-        &self,
-        match_id: u32,
-        round: u16,
-    ) -> Result<Result<Vec<u8>, String>, __sdk::InternalError>;
 }
 
 impl match_round_replay for super::RemoteProcedures {
@@ -62,18 +55,5 @@ impl match_round_replay for super::RemoteProcedures {
                 MatchRoundReplayArgs { match_id, round },
                 __callback,
             );
-    }
-
-    async fn match_round_replay_async(
-        &self,
-        match_id: u32,
-        round: u16,
-    ) -> Result<Result<Vec<u8>, String>, __sdk::InternalError> {
-        self.imp
-            .invoke_procedure_async::<_, Result<Vec<u8>, String>>(
-                "match_round_replay",
-                MatchRoundReplayArgs { match_id, round },
-            )
-            .await
     }
 }
