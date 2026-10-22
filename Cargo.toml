@@ -1,7 +1,6 @@
 [workspace]
 members = [
     "gbx-rs",
-    "tm-leaderboard-worker",
     "tm-server-bridge",
     "tm-server-controller",
     "tm-server-types",
