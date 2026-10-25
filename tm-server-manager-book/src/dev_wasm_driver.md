@@ -1,6 +1,8 @@
 # WASM Mode Driver
 
-Status: in progress. Phases 0–2 below are being implemented on the `wasm-driver/*` branches.
+Status: phases 0–3 are implemented on the `wasm-driver/*` branches. Everything except the
+modescript is covered by tests, but nothing has run against a real server yet.
+See [Next steps](#next-steps).
 
 ## Idea
 
@@ -158,21 +160,63 @@ manager the match is points based (driver decided points, summed like Rounds).
 For now the bridge loads blobs from `TM_DRIVER_MODES_DIR` (default `./modes`) as `<mode>.wasm`.
 A blob registry in the manager (pinned by hash per match) replaces this later.
 
+```sh
+cargo build -p tm-driver-mode-rounds --target wasm32-unknown-unknown --release
+cp target/wasm32-unknown-unknown/release/tm_driver_mode_rounds.wasm $TM_DRIVER_MODES_DIR/rounds.wasm
+```
+
+Example settings for the rounds mode (every field is optional):
+
+```json
+{
+  "points_repartition": [10, 6, 4, 3, 2, 1],
+  "rounds_per_map": 5,
+  "maps_per_match": 1,
+  "points_limit": 0,
+  "use_tie_break": true,
+  "finish_timeout": "automatic"
+}
+```
+
+`finish_timeout` is `"automatic"`, `"disabled"` or `{ "milliseconds": 5000 }`.
+
 ## Phases
 
-0. Typed boundary in `tm-server-types` and the controller.
-1. Generic modescript.
-2. `tm-wasm-driver` host, SDK and the Rounds mode with replay tests.
-3. Bridge integration behind `ModeSettingsV2::Driver`.
+0. ✅ Typed boundary in `tm-server-types` and the controller.
+1. ✅ Generic modescript (not run on a server yet).
+2. ✅ `tm-wasm-driver` host, SDK and the Rounds mode with tests running the real wasm.
+3. ✅ Bridge integration behind `ModeSettingsV2::Driver`.
 4. Manager: snapshot table and resume, explicit driver results (`finalize` without per-mode
    branches), team commands.
 5. Port Cup, ReverseCup, Knockout and TimeAttack; check parity with recorded matches.
 6. UI library on top of `Net_Driver_State`; remove the legacy script swapping; user uploads.
+
+## Next steps
+
+1. **Regenerate the client bindings** with the fork CLI that produced the committed ones. The
+   generated `Event`, `ModeSettingsV2` and `TmMode` don't know the new variants yet. Until then:
+   - Driver configs can't reach the bridge. The stale bindings can't decode
+     `ModeSettingsV2::Driver`.
+   - The bridge doesn't forward `Event::Driver` to the manager, because transmuting it into the
+     stale type would be undefined behaviour. Remove that filter in
+     `tm-server-bridge/src/state.rs` after regenerating.
+
+   The stock 2.13.0 CLI (commit `08e1aba`) doesn't generate the `*_async` procedure methods
+   the bridge uses, so it can't be used for this.
+2. **Run the modescript on a real server.** Check:
+   - The script compiles. These APIs are not used by any script we checked:
+     `ServerShutdownRequested`, `Scores::SetPlayerMapPoints` and the raw
+     `UIManager.UILayerCreate` API.
+   - Decision callbacks block and unblock as expected, and a missing driver shows the
+     waiting message.
+   - RoundsBase awards no points of its own.
+   - The manager records the points from the `PreEndRound` scores callback.
+3. **Phase 4**: snapshots in SpacetimeDB and resuming after a bridge restart.
 
 ## Risks
 
 - `TrackmaniaRoundsBase` ships in the game's title pack and can change with game updates. Keep the
   script small and log the base and script versions in `Driver.Hello`.
 - Large JSON in netvars costs bandwidth. Prefer per-player netvars and serial counters.
-- The script has not been run against a real server yet. Validate the decision wait loop and
-  confirm that RoundsBase awards no points of its own.
+- The epoch deadline (wall clock limit per call) is configured but not covered by a test,
+  because none of the test modes runs long enough to hit it.
