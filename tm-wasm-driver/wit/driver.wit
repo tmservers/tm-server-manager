@@ -1,0 +1,158 @@
+package tmservers:driver@0.1.0;
+
+/// Types exchanged between the driver host and a mode.
+///
+/// They mirror `DriverEvent` and `DriverCommand` of tm-server-types without the
+/// transport details (session, seq and acknowledgements) which the host handles.
+interface types {
+    /// A player as seen by the driver modescript.
+    record player {
+        account-id: string,
+        name: string,
+        /// 0 is blue, 1 is red and -1 means no team.
+        team: s32,
+        spectator: bool,
+    }
+
+    record match-start {
+        /// Server time in milliseconds.
+        time: s32,
+        players: list<player>,
+    }
+
+    record map-start {
+        time: s32,
+        map-uid: string,
+        map-name: string,
+        players: list<player>,
+    }
+
+    record round-start {
+        time: s32,
+        /// Starts at 1 on every map and counts every started round.
+        round: u32,
+        players: list<player>,
+    }
+
+    record race-result {
+        account-id: string,
+        /// Race time in milliseconds. None if the player did not finish.
+        time: option<u32>,
+        /// Checkpoint times in milliseconds since the start of the race.
+        checkpoints: list<u32>,
+    }
+
+    record round-end {
+        time: s32,
+        round: u32,
+        /// The round was forced to end or skipped (e.g. after a pause) and should not count.
+        forced: bool,
+        /// Finishers ordered by time first, then everyone else who took part.
+        results: list<race-result>,
+    }
+
+    record player-join {
+        time: s32,
+        player: player,
+    }
+
+    record player-leave {
+        time: s32,
+        account-id: string,
+    }
+
+    /// Everything a mode gets told about.
+    ///
+    /// The server waits for the commands of every event except player-join and
+    /// player-leave before it continues.
+    variant event {
+        match-start(match-start),
+        map-start(map-start),
+        round-start(round-start),
+        round-end(round-end),
+        /// Carries the server time in milliseconds.
+        map-end(s32),
+        /// Carries the server time in milliseconds.
+        match-end(s32),
+        player-join(player-join),
+        player-leave(player-leave),
+    }
+
+    /// Points shown in the scores table. None keeps the current value.
+    record player-points {
+        account-id: string,
+        round-points: option<s32>,
+        map-points: option<s32>,
+        match-points: option<s32>,
+    }
+
+    record can-spawn {
+        account-id: string,
+        can-spawn: bool,
+    }
+
+    /// How long the remaining players have to finish once the first player finished.
+    variant finish-timeout {
+        /// 5 seconds plus a sixth of the author time.
+        automatic,
+        /// The round only ends once every player finished or gave up.
+        disabled,
+        milliseconds(u32),
+    }
+
+    record layer {
+        name: string,
+        manialink: string,
+    }
+
+    variant command {
+        set-player-points(player-points),
+        /// Players that cannot spawn are out of the race (e.g. eliminated).
+        set-can-spawn(can-spawn),
+        set-finish-timeout(finish-timeout),
+        force-end-round,
+        /// Ends the map once the current event is handled.
+        end-map,
+        /// Ends the match once the current event is handled.
+        end-match,
+        /// Big message for everyone. An empty text hides it.
+        set-message(string),
+        /// Creates or replaces a manialink layer.
+        set-layer(layer),
+        remove-layer(string),
+        /// Readable by manialinks through `netread Text Net_Driver_State for Teams[0]`.
+        set-net-state(string),
+    }
+}
+
+/// Functions the host provides to modes.
+interface host {
+    enum log-level {
+        trace,
+        debug,
+        info,
+        warn,
+        error,
+    }
+
+    log: func(level: log-level, message: string);
+}
+
+/// A game mode controlling the driver modescript.
+///
+/// Modes run without WASI. Everything they know comes from events, which keeps
+/// them deterministic so a recorded match replays exactly the same.
+world mode {
+    use types.{event, command};
+
+    import host;
+
+    /// Called once with the json settings of the match.
+    export init: func(settings: string) -> result<_, string>;
+    /// Called for every event. The returned commands are applied in order.
+    export step: func(event: event) -> list<command>;
+    /// Serializes the whole state of the mode including its settings.
+    export snapshot: func() -> list<u8>;
+    /// Restores a snapshot instead of calling init.
+    export restore: func(snapshot: list<u8>) -> result<_, string>;
+}

@@ -6,6 +6,7 @@ members = [
     "tm-server-types",
     "tm-server-manager",
     "tm-server-manager-api-rs",
+    "tm-wasm-driver",
 ]
 resolver = "3"
 

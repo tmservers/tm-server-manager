@@ -1,0 +1,21 @@
+[package]
+name = "tm-wasm-driver"
+description = "Runs wasm modes that drive the generic driver modescript of a Trackmania server."
+publish = false
+
+version.workspace = true
+authors.workspace = true
+keywords.workspace = true
+categories.workspace = true
+license.workspace = true
+edition.workspace = true
+repository.workspace = true
+
+[dependencies]
+tm-server-types.workspace = true
+serde = { workspace = true, features = ["derive"] }
+wasmtime = { version = "50.0.0", default-features = false, features = ["runtime", "cranelift", "component-model", "std"] }
+wit-component = "0.262.0"
+thiserror = "2.0.21"
+tracing = "0.1.44"
+
