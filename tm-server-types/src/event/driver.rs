@@ -46,8 +46,8 @@ pub enum DriverSection {
 
 /// Points and positions the driver decided for the current round.
 ///
-/// This is no callback of the server. The bridge posts it into the event stream
-/// of the match so the manager records the decision of the driver.
+/// This is no callback of the server. Recording it in the manager comes with its
+/// database integration, until then the bridge only logs it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]

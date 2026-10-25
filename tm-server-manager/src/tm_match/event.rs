@@ -312,8 +312,7 @@ pub(crate) fn handle_match_event(
             state.set_pause(pause.active);
             ctx.db.tab_match_state().match_id().update(state);
         }
-        // Driver matches get their points from the driver. Their scores carry none.
-        Event::Scores(scores) if state.live_round() && state.get_mode() != TmMode::Driver => {
+        Event::Scores(scores) if state.live_round() => {
             if scores.section == "PreEndRound" {
                 // Because we delete after a pause this is empty and hence does not modify anything.
                 let player_rounds = ctx
@@ -367,8 +366,7 @@ pub(crate) fn handle_match_event(
                     TmMode::TimeAttack => {
                         scores.sort_by_key(|k| if k.time <= 0 { i32::MAX } else { k.time })
                     }
-                    // Since this a match we always have a mode available and driver matches are skipped above.
-                    TmMode::Unknown | TmMode::Driver => unreachable!(),
+                    TmMode::Unknown => unreachable!(), // Since this a match we always have a mode available.
                 }
 
                 for (index, stand) in scores.iter_mut().enumerate() {
@@ -453,42 +451,6 @@ pub(crate) fn handle_match_event(
                         )
                     };
                 }
-            }
-        }
-        Event::DriverRoundResult(round_result) if state.live_round() => {
-            for result in &round_result.results {
-                let Ok(account_id) = Uuid::parse_str(&result.account_id) else {
-                    log::error!(
-                        "Driver result for an invalid account: {}",
-                        result.account_id
-                    );
-                    continue;
-                };
-                if !ctx.has_user(account_id) {
-                    log::error!("Driver result for an unknown account: {account_id}");
-                    continue;
-                }
-                let user_id = ctx.user_id_from_account(account_id);
-
-                let Some(mut player_round) = ctx
-                    .db
-                    .tab_match_round_player()
-                    .match_round_player()
-                    .filter((state.match_id, state.get_round(), user_id))
-                    .next()
-                else {
-                    log::error!(
-                        "Driver result for a player who did not start the round. Match: {}, Round: {}, Player: {}",
-                        state.match_id,
-                        state.get_round(),
-                        user_id
-                    );
-                    continue;
-                };
-
-                player_round.set_points(result.points);
-                player_round.set_position(result.position.try_into().unwrap_or(u16::MAX));
-                ctx.db.tab_match_round_player().id().update(player_round);
             }
         }
         _ => (),

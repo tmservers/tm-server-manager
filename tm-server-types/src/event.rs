@@ -126,7 +126,8 @@ pub enum Event {
 
     /// The driver modescript waits for the driver.
     DriverHold(DriverHold),
-    /// Results decided by the driver. Posted by the bridge, never sent by the server.
+    /// Results decided by the driver. Never sent by the server. Posting them from the
+    /// bridge comes with the database integration of the manager.
     DriverRoundResult(DriverRoundResult),
 }
 
