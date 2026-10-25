@@ -11,7 +11,8 @@ use std::collections::BTreeMap;
 
 use serde::Deserialize;
 use tm_driver_sdk::{
-    Command, Event, FinishTimeout, Mode, PlayerResult, RaceResult, RoundEnd, RoundFormat,
+    Command, Event, Mode, PlayerResult, RaceResult, RoundEnd, RoundFormat,
+    settings::FinishTimeoutSetting,
     standings::{Standing, Standings},
 };
 
@@ -42,24 +43,6 @@ impl Default for Settings {
             points_limit: 0,
             use_tie_break: true,
             finish_timeout: FinishTimeoutSetting::Automatic,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum FinishTimeoutSetting {
-    Automatic,
-    Disabled,
-    Milliseconds(u32),
-}
-
-impl From<FinishTimeoutSetting> for FinishTimeout {
-    fn from(value: FinishTimeoutSetting) -> Self {
-        match value {
-            FinishTimeoutSetting::Automatic => FinishTimeout::Automatic,
-            FinishTimeoutSetting::Disabled => FinishTimeout::Disabled,
-            FinishTimeoutSetting::Milliseconds(ms) => FinishTimeout::Milliseconds(ms),
         }
     }
 }
@@ -256,6 +239,8 @@ impl Rounds {
 
 #[cfg(test)]
 mod tests {
+    use tm_driver_sdk::FinishTimeout;
+
     use super::*;
 
     fn finish(account_id: &str, time: u32) -> RaceResult {

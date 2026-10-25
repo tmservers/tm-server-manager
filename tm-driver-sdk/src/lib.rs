@@ -29,6 +29,7 @@ pub mod bindings {
     });
 }
 
+pub mod settings;
 pub mod standings;
 
 pub use bindings::tmservers::driver::host::LogLevel;
