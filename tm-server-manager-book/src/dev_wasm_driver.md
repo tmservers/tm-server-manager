@@ -1,8 +1,8 @@
 # WASM Mode Driver
 
-Status: phases 0–3 are implemented on the `wasm-driver/*` branches. Everything except the
-modescript is covered by tests, but nothing has run against a real server yet.
-See [Next steps](#next-steps).
+Status: phases 0–3 and the TimeAttack mode are implemented on the `wasm-driver/*` branches.
+Everything except the modescript is covered by tests, but nothing has run against a real server
+yet. See [Next steps](#next-steps).
 
 ## Idea
 
@@ -66,7 +66,7 @@ Every callback carries:
 | `Driver.MatchStart` | yes | `players` |
 | `Driver.MapStart` | yes | `map_uid`, `map_name`, `players` |
 | `Driver.RoundStart` | yes | `round`, `players` |
-| `Driver.RoundEnd` | yes | `round`, `forced`, `results` (time or DNF, checkpoint times) |
+| `Driver.RoundEnd` | yes | `round`, `forced`, `results` (best time of the round or DNF, checkpoints of that race) |
 | `Driver.MapEnd` | yes | – |
 | `Driver.MatchEnd` | yes | – |
 | `Driver.PlayerJoin` | no | `player` |
@@ -100,11 +100,17 @@ that encodes them.
 | `Driver.SetLayer` | `name`, manialink |
 | `Driver.RemoveLayer` | `name` |
 | `Driver.SetNetState` | JSON text |
+| `Driver.SetRoundFormat` | `single_attempt`, or `time_attack` and the time limit in milliseconds |
 
 `EndMap`/`EndMatch` only set flags. The script acts on them at the right moment in its flow,
 after the current decision was acked.
 
-Planned later: `SetTeamPoints`, `SetPlayerTeam` (team modes), `SetTimeLimit` (TimeAttack).
+The round format, finish timeout and spawn permissions reset to their defaults when a match
+starts. A config change does **not** start a new match: NextMap only ends the map, so the
+modescript keeps its match and its state. Modes therefore send their round rules on `MapStart`
+as well, not only on `MatchStart`.
+
+Planned later: `SetTeamPoints`, `SetPlayerTeam` (team modes).
 
 ## Generic modescript
 
@@ -118,8 +124,31 @@ Planned later: `SetTeamPoints`, `SetPlayerTeam` (team modes), `SetTimeLimit` (Ti
 - UI: `Driver.SetNetState` writes `netwrite Text Net_Driver_State for Teams[0]` and bumps
   `Net_Driver_StateSerial`. Manialinks pushed with `Driver.SetLayer` read it with `netread`.
   Nadeo's scoreboard keeps working because points live in the normal `Scores` lib.
-- TimeAttack can run on RoundsBase as a single long round (see `TM_RoundsThenTimeattack` from the
-  community modes), so one base covers every mode we use.
+- TimeAttack runs on RoundsBase as a time attack round (see below), so one base covers every
+  mode we use.
+
+## TimeAttack
+
+There is no separate TimeAttack script. TimeAttack is a round format of the generic modescript,
+the same trick `TM_RoundsThenTimeattack` from the community modes uses:
+
+1. The mode replies to `MatchStart` and `MapStart` with
+   `SetRoundFormat(TimeAttack(time_limit_ms))`.
+2. When the next round starts, the script sets `EndTime = StartTime + time_limit` and shows
+   the time limit and best times in the scores table.
+3. During the round, players who finished or gave up are started again with `Race::Start`, so
+   everyone races as often as they like. The round does not end when everyone finished, only
+   when the time limit runs out (or an admin forces it).
+4. The script tracks the best race of every player. `RoundEnd` reports that best time and its
+   checkpoints, finishers sorted by time first. The script is the source of truth for times, so
+   no per-finish callbacks are needed and a bridge restart during the round loses nothing.
+5. The time attack mode turns the ranking into points and replies with `EndMap`. On `MapEnd` it
+   ends the match after `maps_per_match` maps.
+
+Points exist only because `TmMode::Driver` ranks by summed round points (phase 4 replaces this
+with explicit driver results). By default the best of N players gets N points, so the points
+keep the order of the times. The manager still records each player's best time from the
+standard waypoint callbacks.
 
 ## WIT interface and host
 
@@ -148,6 +177,8 @@ import host;  // log
   Mode logic compiles natively too, so it can be unit tested without wasm.
 - `tm-driver-modes/rounds`: first-party Rounds mode (points repartition, rounds per map, maps per
   match, points limit, finish timeout).
+- `tm-driver-modes/time-attack`: first-party TimeAttack mode (time limit, maps per match, points
+  by rank).
 
 Build a mode: `cargo build -p tm-driver-mode-rounds --target wasm32-unknown-unknown --release`.
 
@@ -180,6 +211,18 @@ Example settings for the rounds mode (every field is optional):
 
 `finish_timeout` is `"automatic"`, `"disabled"` or `{ "milliseconds": 5000 }`.
 
+Example settings for the time attack mode (every field is optional):
+
+```json
+{
+  "time_limit_ms": 300000,
+  "maps_per_match": 1,
+  "points_repartition": []
+}
+```
+
+An empty `points_repartition` gives the best of N players N points, the second N - 1 and so on.
+
 ## Phases
 
 0. ✅ Typed boundary in `tm-server-types` and the controller.
@@ -188,7 +231,8 @@ Example settings for the rounds mode (every field is optional):
 3. ✅ Bridge integration behind `ModeSettingsV2::Driver`.
 4. Manager: snapshot table and resume, explicit driver results (`finalize` without per-mode
    branches), team commands.
-5. Port Cup, ReverseCup, Knockout and TimeAttack; check parity with recorded matches.
+5. Port the remaining modes: ✅ TimeAttack (`wasm-driver/6-time-attack`), Cup, ReverseCup,
+   Knockout. Check parity with recorded matches.
 6. UI library on top of `Net_Driver_State`; remove the legacy script swapping; user uploads.
 
 ## Next steps
@@ -211,6 +255,9 @@ Example settings for the rounds mode (every field is optional):
      waiting message.
    - RoundsBase awards no points of its own.
    - The manager records the points from the `PreEndRound` scores callback.
+   - Time attack rounds start players again after a finish or give up, ignore the "everyone
+     finished" end and stop at the time limit.
+   - A config change between driver modes applies the new round format on the next map.
 3. **Phase 4**: snapshots in SpacetimeDB and resuming after a bridge restart.
 
 ## Risks
