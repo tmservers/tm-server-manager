@@ -15,6 +15,9 @@ pub use time_attack::TimeAttack;
 mod knockout;
 pub use knockout::Knockout;
 
+mod driver;
+pub use driver::Driver;
+
 mod rounds_bot_online;
 pub use rounds_bot_online::RoundsBotOnline;
 
@@ -276,6 +279,8 @@ pub enum ModeSettingsV2 {
     ReverseCup(ReverseCupV2),
     TimeAttack(TimeAttack),
     Knockout(Knockout),
+    /// Generic modescript controlled by a wasm driver in the bridge.
+    Driver(Driver),
 }
 
 impl ModeSettingsV2 {
@@ -285,6 +290,7 @@ impl ModeSettingsV2 {
             ModeSettingsV2::ReverseCup(reverse_cup) => reverse_cup.into_xml(),
             ModeSettingsV2::TimeAttack(time_attack) => time_attack.into_xml(),
             ModeSettingsV2::Knockout(knockout) => knockout.into_xml(),
+            ModeSettingsV2::Driver(driver) => driver.into_xml(),
         }
     }
 
@@ -294,6 +300,7 @@ impl ModeSettingsV2 {
             ModeSettingsV2::ReverseCup(reverse_cup) => reverse_cup.get_xml_map(),
             ModeSettingsV2::TimeAttack(time_attack) => time_attack.get_xml_map(),
             ModeSettingsV2::Knockout(knockout) => knockout.get_xml_map(),
+            ModeSettingsV2::Driver(driver) => driver.get_xml_map(),
         }
     }
 
@@ -311,6 +318,9 @@ impl ModeSettingsV2 {
             ModeSettingsV2::Knockout(_) => {
                 "<script_name>Trackmania/TM_Knockout_Online</script_name>".into()
             }
+            ModeSettingsV2::Driver(_) => {
+                format!("<script_name>{}</script_name>", Driver::SCRIPT_NAME)
+            }
         }
     }
 
@@ -320,6 +330,7 @@ impl ModeSettingsV2 {
             Self::ReverseCup(_) => "Modes/Trackmania/ReverseCup",
             Self::TimeAttack(_) => "Trackmania/TM_TimeAttack_Online",
             Self::Knockout(_) => "Trackmania/TM_Kockout_Online",
+            Self::Driver(_) => Driver::SCRIPT_NAME,
         }
     }
 
@@ -329,6 +340,7 @@ impl ModeSettingsV2 {
             Self::ReverseCup(_) => TmMode::ReverseCup,
             Self::TimeAttack(_) => TmMode::TimeAttack,
             Self::Knockout(_) => TmMode::Knockout,
+            Self::Driver(_) => TmMode::Driver,
             //ModeSettings::ReverseCupV2(_) => TmMode::ReverseCup,
         }
     }
@@ -340,6 +352,7 @@ impl ModeSettingsV2 {
             Self::ReverseCup(_) => Some(include_str!("../external_modes/ReverseCup.Script.txt")),
             Self::TimeAttack(_) => None,
             Self::Knockout(_) => None,
+            Self::Driver(_) => Some(Driver::SCRIPT),
         }
     }
 }
@@ -394,6 +407,8 @@ pub enum TmMode {
     TimeAttack,
     // This is used upstream in the server-manager module so its not super clean separation of types.
     Unknown,
+    /// Points are decided by a wasm driver. Standings sum the round points like Rounds.
+    Driver,
 }
 
 fn tm_bool(value: bool) -> &'static str {

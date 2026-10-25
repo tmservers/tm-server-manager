@@ -560,7 +560,8 @@ impl NodeLeaderboard for Vec<LbEntry> {
         let entry = *entry;
 
         let returned = match entry.get_mode() {
-            TmMode::Rounds => {
+            // Driver modes decide the round points themselves.
+            TmMode::Rounds | TmMode::Driver => {
                 for entry in entries {
                     map.entry(entry.user_id)
                         .and_modify(|e| {

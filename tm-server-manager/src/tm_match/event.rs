@@ -358,7 +358,7 @@ pub(crate) fn handle_match_event(
 
                 // Reconstruct the position because the mode does not give it back.
                 match state.get_mode() {
-                    TmMode::Rounds => scores.sort_by_key(|k| -k.round_points),
+                    TmMode::Rounds | TmMode::Driver => scores.sort_by_key(|k| -k.round_points),
                     TmMode::ReverseCup => scores.sort_by_key(|k| -k.round_points),
                     TmMode::Knockout => {
                         scores.sort_by_key(|k| if k.time <= 0 { i32::MAX } else { k.time })
