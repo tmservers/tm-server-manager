@@ -31,7 +31,7 @@ pub mod bindings {
 pub use bindings::tmservers::driver::host::LogLevel;
 pub use bindings::tmservers::driver::types::{
     CanSpawn, Command, Event, FinishTimeout, Layer, MapStart, MatchStart, Player, PlayerJoin,
-    PlayerLeave, PlayerPoints, RaceResult, RoundEnd, RoundStart,
+    PlayerLeave, PlayerPoints, RaceResult, RoundEnd, RoundFormat, RoundStart,
 };
 
 /// A game mode. One instance lives for the whole match.

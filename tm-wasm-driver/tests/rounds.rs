@@ -7,7 +7,7 @@ use tm_server_types::{
         DriverEvent, DriverHello, DriverMapEnd, DriverMapStart, DriverMatchStart, DriverPlayer,
         DriverPlayerJoin, DriverRaceResult, DriverRoundEnd, DriverRoundStart,
     },
-    method::{DriverCommand, DriverFinishTimeout, DriverPlayerPoints},
+    method::{DriverCommand, DriverFinishTimeout, DriverPlayerPoints, DriverRoundFormat},
 };
 use tm_wasm_driver::{Driver, DriverEngine, DriverError, DriverLimits};
 
@@ -118,6 +118,7 @@ fn plays_a_match() {
     assert_eq!(
         driver.handle(&match_start(2)).unwrap(),
         [
+            DriverCommand::SetRoundFormat(DriverRoundFormat::SingleAttempt),
             DriverCommand::SetFinishTimeout(DriverFinishTimeout::Automatic),
             DriverCommand::Ack(2)
         ]
@@ -125,6 +126,7 @@ fn plays_a_match() {
     assert_eq!(
         driver.handle(&map_start(3)).unwrap(),
         [
+            DriverCommand::SetRoundFormat(DriverRoundFormat::SingleAttempt),
             DriverCommand::SetFinishTimeout(DriverFinishTimeout::Automatic),
             DriverCommand::Ack(3)
         ]
@@ -217,6 +219,7 @@ fn new_session_starts_over() {
     assert_eq!(
         driver.handle(&restarted).unwrap(),
         [
+            DriverCommand::SetRoundFormat(DriverRoundFormat::SingleAttempt),
             DriverCommand::SetFinishTimeout(DriverFinishTimeout::Automatic),
             DriverCommand::Ack(1)
         ]

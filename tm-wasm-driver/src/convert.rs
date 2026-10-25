@@ -5,12 +5,15 @@
 
 use tm_server_types::{
     event::{DriverEvent, DriverPlayer, DriverRaceResult},
-    method::{DriverCanSpawn, DriverCommand, DriverFinishTimeout, DriverLayer, DriverPlayerPoints},
+    method::{
+        DriverCanSpawn, DriverCommand, DriverFinishTimeout, DriverLayer, DriverPlayerPoints,
+        DriverRoundFormat,
+    },
 };
 
 use crate::tmservers::driver::types::{
     CanSpawn, Command, Event, FinishTimeout, Layer, MapStart, MatchStart, Player, PlayerJoin,
-    PlayerLeave, PlayerPoints, RaceResult, RoundEnd, RoundStart,
+    PlayerLeave, PlayerPoints, RaceResult, RoundEnd, RoundFormat, RoundStart,
 };
 
 /// Returns `None` for callbacks the host handles itself.
@@ -109,6 +112,10 @@ impl From<Command> for DriverCommand {
             }
             Command::RemoveLayer(name) => DriverCommand::RemoveLayer(name),
             Command::SetNetState(state) => DriverCommand::SetNetState(state),
+            Command::SetRoundFormat(format) => DriverCommand::SetRoundFormat(match format {
+                RoundFormat::SingleAttempt => DriverRoundFormat::SingleAttempt,
+                RoundFormat::TimeAttack(time_limit) => DriverRoundFormat::TimeAttack(time_limit),
+            }),
         }
     }
 }

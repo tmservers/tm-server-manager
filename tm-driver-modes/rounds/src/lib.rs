@@ -7,7 +7,9 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
-use tm_driver_sdk::{Command, Event, FinishTimeout, Mode, PlayerPoints, RaceResult, RoundEnd};
+use tm_driver_sdk::{
+    Command, Event, FinishTimeout, Mode, PlayerPoints, RaceResult, RoundEnd, RoundFormat,
+};
 
 tm_driver_sdk::export_mode!(Rounds);
 
@@ -103,9 +105,7 @@ impl Mode for Rounds {
                 self.round_points_shown.clear();
                 self.valid_rounds_on_map = 0;
                 self.maps_played = 0;
-                vec![Command::SetFinishTimeout(
-                    self.settings.finish_timeout.into(),
-                )]
+                self.round_rules().to_vec()
             }
             Event::MapStart(_) => {
                 self.valid_rounds_on_map = 0;
@@ -113,9 +113,9 @@ impl Mode for Rounds {
                     .into_keys()
                     .map(|account_id| points(account_id, None, Some(0), None))
                     .collect();
-                commands.push(Command::SetFinishTimeout(
-                    self.settings.finish_timeout.into(),
-                ));
+                // A config change keeps the match of the modescript going, so the rules
+                // of the previous mode might still be active.
+                commands.extend(self.round_rules());
                 commands
             }
             Event::RoundStart(_) => std::mem::take(&mut self.round_points_shown)
@@ -163,6 +163,13 @@ impl Mode for Rounds {
 }
 
 impl Rounds {
+    fn round_rules(&self) -> [Command; 2] {
+        [
+            Command::SetRoundFormat(RoundFormat::SingleAttempt),
+            Command::SetFinishTimeout(self.settings.finish_timeout.into()),
+        ]
+    }
+
     fn round_end(&mut self, round_end: RoundEnd) -> Vec<Command> {
         // Points of forced rounds do not count. The round points were already reset on round start.
         if round_end.forced {

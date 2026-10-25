@@ -36,9 +36,10 @@ interface types {
 
     record race-result {
         account-id: string,
-        /// Race time in milliseconds. None if the player did not finish.
+        /// Best race time of the round in milliseconds. None if the player did not finish.
+        /// Single attempt rounds only have one race per player.
         time: option<u32>,
-        /// Checkpoint times in milliseconds since the start of the race.
+        /// Checkpoint times of the best race in milliseconds since its start.
         checkpoints: list<u32>,
     }
 
@@ -92,6 +93,7 @@ interface types {
     }
 
     /// How long the remaining players have to finish once the first player finished.
+    /// Only used by single attempt rounds.
     variant finish-timeout {
         /// 5 seconds plus a sixth of the author time.
         automatic,
@@ -103,6 +105,16 @@ interface types {
     record layer {
         name: string,
         manialink: string,
+    }
+
+    /// How rounds are played.
+    variant round-format {
+        /// One attempt per player. The round ends once nobody is racing anymore or the
+        /// finish timeout ran out. This is the default when a match starts.
+        single-attempt,
+        /// Players restart as often as they like and their best time counts.
+        /// The round ends after this many milliseconds. 0 behaves like single-attempt.
+        time-attack(u32),
     }
 
     variant command {
@@ -122,6 +134,9 @@ interface types {
         remove-layer(string),
         /// Readable by manialinks through `netread Text Net_Driver_State for Teams[0]`.
         set-net-state(string),
+        /// Applies to the next round that starts, which includes the round of a
+        /// round-start event when sent in reply to it.
+        set-round-format(round-format),
     }
 }
 
