@@ -1,7 +1,7 @@
 use tm_server_types::{
     base::{MapInfo, PlayerInfo, account_id_to_login},
     config::ServerConfigV2,
-    method::{MethodCall, MethodError, MethodResponse},
+    method::{DriverCommand, MethodCall, MethodError, MethodResponse},
 };
 
 use crate::{ClientError, TrackmaniaServer};
@@ -30,6 +30,11 @@ pub trait ModeScriptMethodsXmlRpc {
     ) -> Result<bool, ClientError>;
 
     async fn pause_set_active(&self, active: bool) -> Result<bool, ClientError>;
+
+    /// Sends commands to the generic driver modescript in order.
+    /// Stops at the first command that fails so later commands (like the `Ack`)
+    /// are never applied without the ones before them.
+    async fn driver_commands(&self, commands: &[DriverCommand]) -> Result<(), ClientError>;
 }
 
 impl ModeScriptMethodsXmlRpc for TrackmaniaServer {
@@ -146,6 +151,18 @@ impl ModeScriptMethodsXmlRpc for TrackmaniaServer {
             ),
         )
         .await
+    }
+
+    async fn driver_commands(&self, commands: &[DriverCommand]) -> Result<(), ClientError> {
+        for command in commands {
+            let _: bool = self
+                .call(
+                    "TriggerModeScriptEventArray",
+                    (command.method_name(), command.params()),
+                )
+                .await?;
+        }
+        Ok(())
     }
 }
 
