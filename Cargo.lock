@@ -4060,6 +4060,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "tm-driver-mode-time-attack"
+version = "0.1.0-dev"
+dependencies = [
+ "serde",
+ "serde_json",
+ "tm-driver-sdk",
+]
+
+[[package]]
 name = "tm-driver-sdk"
 version = "0.1.0-dev"
 dependencies = [

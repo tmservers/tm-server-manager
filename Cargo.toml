@@ -9,6 +9,7 @@ members = [
     "tm-wasm-driver",
     "tm-driver-sdk",
     "tm-driver-modes/rounds",
+    "tm-driver-modes/time-attack",
 ]
 resolver = "3"
 

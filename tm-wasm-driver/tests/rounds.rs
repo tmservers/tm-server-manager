@@ -1,6 +1,8 @@
 //! Runs the first-party rounds mode through the host as a real wasm module.
 
-use std::{path::PathBuf, process::Command, sync::OnceLock};
+mod common;
+
+use std::sync::OnceLock;
 
 use tm_server_types::{
     event::{
@@ -16,28 +18,7 @@ const SESSION: i32 = 7;
 /// Builds the rounds mode once per test binary.
 fn rounds_wasm() -> &'static [u8] {
     static WASM: OnceLock<Vec<u8>> = OnceLock::new();
-    WASM.get_or_init(|| {
-        let workspace = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..");
-        let target_dir = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("modes");
-        let status = Command::new(std::env::var("CARGO").unwrap_or_else(|_| "cargo".into()))
-            .current_dir(&workspace)
-            .args([
-                "build",
-                "-p",
-                "tm-driver-mode-rounds",
-                "--target",
-                "wasm32-unknown-unknown",
-                "--release",
-                "--target-dir",
-            ])
-            .arg(&target_dir)
-            .status()
-            .expect("cargo could not be started");
-        assert!(status.success(), "Building the rounds mode failed");
-
-        std::fs::read(target_dir.join("wasm32-unknown-unknown/release/tm_driver_mode_rounds.wasm"))
-            .expect("The rounds mode was not built")
-    })
+    WASM.get_or_init(|| common::build_mode("tm-driver-mode-rounds"))
 }
 
 fn rounds(settings: &str) -> Driver {
