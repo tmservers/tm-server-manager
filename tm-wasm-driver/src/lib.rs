@@ -13,6 +13,7 @@
 //! resumes from the event stream and nothing else has to be persisted.
 
 use std::{
+    collections::BTreeMap,
     sync::{
         Arc,
         atomic::{AtomicBool, Ordering},
@@ -219,6 +220,7 @@ impl DriverEngine {
             epoch_deadline: self.epoch_deadline(),
             session: None,
             last_hold: None,
+            round_progress: BTreeMap::new(),
             round_results: None,
             poisoned: false,
         })
@@ -250,6 +252,9 @@ pub struct Driver {
     session: Option<i32>,
     /// Commands for the last hold in case the modescript asks again.
     last_hold: Option<(u32, Vec<DriverCommand>)>,
+    /// Players who started a race in the current round and how many checkpoints
+    /// they passed in their last race.
+    round_progress: BTreeMap<String, u32>,
     /// Race times of the scores sent right before the round end hold.
     round_results: Option<Vec<wit::RaceResult>>,
     poisoned: bool,
@@ -271,6 +276,8 @@ impl Driver {
             event,
             Event::StartMatchStart(_)
                 | Event::StartRoundStart(_)
+                | Event::StartLine(_)
+                | Event::WayPoint(_)
                 | Event::Scores(_)
                 | Event::EndMatchStart(_)
                 | Event::DriverHold(_)
@@ -288,10 +295,25 @@ impl Driver {
 
         match event {
             Event::StartMatchStart(_) => self.step(wit::Event::MatchStart),
-            Event::StartRoundStart(_) => self.step(wit::Event::RoundStart),
+            Event::StartRoundStart(_) => {
+                self.round_progress.clear();
+                self.step(wit::Event::RoundStart)
+            }
+            Event::StartLine(start_line) => {
+                self.round_progress.insert(start_line.account_id.clone(), 0);
+                Ok(DriverReply::default())
+            }
+            Event::WayPoint(way_point) => {
+                // Counts from 0 for the first checkpoint.
+                self.round_progress.insert(
+                    way_point.account_id.clone(),
+                    way_point.checkpoint_in_race + 1,
+                );
+                Ok(DriverReply::default())
+            }
             Event::EndMatchStart(_) => self.step(wit::Event::MatchEnd),
             Event::Scores(scores) if scores.section == "PreEndRound" => {
-                self.round_results = Some(convert::race_results(scores));
+                self.round_results = Some(convert::race_results(scores, &self.round_progress));
                 Ok(DriverReply::default())
             }
             Event::DriverHold(hold) => self.hold(hold),

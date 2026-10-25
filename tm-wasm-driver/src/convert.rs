@@ -3,6 +3,8 @@
 //! The commands of a mode are matched exhaustively without a catch-all arm.
 //! Adding a command on either side fails to compile until it is mapped here.
 
+use std::collections::BTreeMap;
+
 use tm_server_types::{
     base::{Player, RoundTime},
     event::{DriverPlayerResult, DriverRoundResult, Scores},
@@ -16,15 +18,45 @@ use crate::{
     },
 };
 
-/// Race times of every player of a scores callback.
-pub(crate) fn race_results(scores: &Scores) -> Vec<RaceResult> {
-    scores.players.iter().map(race_result).collect()
+/// Race times of every player of a scores callback together with the progress
+/// of the players who started in the round.
+pub(crate) fn race_results(
+    scores: &Scores,
+    round_progress: &BTreeMap<String, u32>,
+) -> Vec<RaceResult> {
+    let mut results: Vec<RaceResult> = scores
+        .players
+        .iter()
+        .map(|player| race_result(player, round_progress.get(&player.account_id).copied()))
+        .collect();
+
+    // A player who left before the scores were sent still took part in the round.
+    for (account_id, &progress) in round_progress {
+        if !results
+            .iter()
+            .any(|result| &result.account_id == account_id)
+        {
+            results.push(RaceResult {
+                account_id: account_id.clone(),
+                name: String::new(),
+                started: true,
+                progress,
+                previous_time: None,
+                previous_checkpoints: Vec::new(),
+                best_time: None,
+                best_checkpoints: Vec::new(),
+            });
+        }
+    }
+    results
 }
 
-fn race_result(player: &Player) -> RaceResult {
+fn race_result(player: &Player, progress: Option<u32>) -> RaceResult {
     RaceResult {
         account_id: player.account_id.clone(),
         name: player.name.clone(),
+        started: progress.is_some(),
+        progress: progress.unwrap_or(0),
         previous_time: race_time(&player.previous_racetime),
         previous_checkpoints: player.previous_race_checkpoints.clone(),
         best_time: race_time(&player.best_racetime),

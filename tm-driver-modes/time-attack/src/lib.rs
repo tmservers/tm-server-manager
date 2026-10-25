@@ -192,6 +192,8 @@ mod tests {
         RaceResult {
             account_id: account_id.into(),
             name: account_id.into(),
+            started: true,
+            progress: 1,
             previous_time: Some(best_time + 1_000),
             previous_checkpoints: vec![],
             best_time: Some(best_time),
@@ -203,6 +205,8 @@ mod tests {
         RaceResult {
             account_id: account_id.into(),
             name: account_id.into(),
+            started: true,
+            progress: 1,
             previous_time: None,
             previous_checkpoints: vec![],
             best_time: None,

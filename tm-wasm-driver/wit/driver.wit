@@ -10,6 +10,11 @@ interface types {
     record race-result {
         account-id: string,
         name: string,
+        /// The player started a race in this round. False for spectators and players
+        /// that could not spawn.
+        started: bool,
+        /// Checkpoints the player passed in the last race of the round, the finish included.
+        progress: u32,
         /// Time of the last race in milliseconds. None if the player did not finish it.
         /// In single attempt rounds this is the race of the round.
         previous-time: option<u32>,
@@ -23,7 +28,7 @@ interface types {
     record round-end {
         /// The round was forced to end or skipped (e.g. after a pause) and should not count.
         forced: bool,
-        /// Every player of the scores, including players without a time.
+        /// Every player of the scores and everyone else who started in the round.
         results: list<race-result>,
     }
 
