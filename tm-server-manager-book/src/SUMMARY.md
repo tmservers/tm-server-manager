@@ -25,3 +25,4 @@
 
 # Developer Guide
 - [Getting Started]()
+- [WASM Mode Driver](./dev_wasm_driver.md)

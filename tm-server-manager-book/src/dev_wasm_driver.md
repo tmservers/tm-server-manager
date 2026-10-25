@@ -1,0 +1,178 @@
+# WASM Mode Driver
+
+Status: in progress. Phases 0–2 below are being implemented on the `wasm-driver/*` branches.
+
+## Idea
+
+Trackmania servers are driven by modescripts. Today we load a different premade script per mode
+(Rounds, Cup, ReverseCup, TimeAttack, ...). The bridge swaps scripts on every config change, which is
+convoluted and can crash when swapping between incompatible modes.
+
+Instead, one **generic driver modescript** stays loaded on every server. It keeps no mode state
+(no points, no elimination rules, no end conditions). At a few key moments it emits typed `Driver.*`
+callbacks and waits for decisions. Those decisions come from a **WASM blob** executed by
+`tm-wasm-driver` inside the bridge, which sends typed commands back into the script.
+
+## Decisions
+
+| Topic | Decision |
+|---|---|
+| Where the logic runs | `wasmtime` inside the bridge (`tm-wasm-driver`). Decisions are local and fast. |
+| Durability | The driver is a deterministic state machine with `snapshot`/`restore`. Snapshots are stored in SpacetimeDB at round boundaries so a crashed bridge can resume. |
+| Who writes blobs | First-party modes first (in-repo Rust crates). The host is sandboxed from day one (fuel, epoch deadline, memory cap, no WASI) so user uploads can be added later. |
+| ABI | WIT component model (`tm-wasm-driver/wit/driver.wit`). |
+| Scoring source of truth | The driver. It decides points; the script only displays them. |
+| Boundary typing | No `Event::Custom` and no hand-built JSON. Every callback and command is a Rust type in `tm-server-types`. |
+
+## Architecture
+
+```text
+TM server ── TM_Driver.Script.txt (#Extends TrackmaniaRoundsBase, loaded once)
+   │ Driver.* callbacks                        ▲ Driver.* TriggerModeScriptEventArray
+   ▼                                           │
+tm-server-controller   Event::Driver(DriverEvent)  /  driver_commands(&[DriverCommand])
+   ▼                                           │
+tm-wasm-driver         one wasm instance per match, seq dedup, auto-ack, snapshots
+   ▼                                           ▲
+tm-server-bridge ── post_event / snapshots ──▶ tm-server-manager
+```
+
+## Typed boundary
+
+### Script → controller: `Event::Driver(DriverEvent)`
+
+All driver callbacks are one nested variant of `tm_server_types::event::Event`:
+
+```rust
+Event::Driver(DriverEvent::RoundEnd(DriverRoundEnd { .. }))
+```
+
+Nesting instead of flat `Event::DriverX` variants means `DriverEvent` can be converted to the WIT
+event type with an exhaustive `match` (no `_ =>` arm). Adding a callback on one side fails to
+compile until the other side handles it.
+
+Every callback carries:
+
+- `session`: random number chosen when the script starts. A new session resets the host's
+  sequence tracking (server or script restart).
+- `seq`: increases by one per callback within a session.
+- `time`: server time (`Now`) in milliseconds.
+
+| Callback | Decision | Payload |
+|---|---|---|
+| `Driver.Hello` | no | `script_version` |
+| `Driver.MatchStart` | yes | `players` |
+| `Driver.MapStart` | yes | `map_uid`, `map_name`, `players` |
+| `Driver.RoundStart` | yes | `round`, `players` |
+| `Driver.RoundEnd` | yes | `round`, `forced`, `results` (time or DNF, checkpoint times) |
+| `Driver.MapEnd` | yes | – |
+| `Driver.MatchEnd` | yes | – |
+| `Driver.PlayerJoin` | no | `player` |
+| `Driver.PlayerLeave` | no | `account_id` |
+
+**Decision callbacks block the script** until `Driver.Ack` with the same `seq` arrives. While
+waiting, the script keeps yielding (`MB_Yield`) so commands can be applied. If no ack arrives
+within `S_DriverDecisionTimeout`, the script shows a waiting message and re-sends the callback
+periodically. It never guesses. The host answers a re-sent callback with the cached reply
+instead of stepping the mode twice, so points are never applied twice.
+
+There is no separate `Decide` callback: the lifecycle callbacks themselves are the decision points.
+
+### Controller → script: `DriverCommand`
+
+`tm_server_types::method::DriverCommand` is sent with one `TriggerModeScriptEventArray` per command.
+It uses `Text[]` params like Nadeo's own `Trackmania.*` methods, so the script never has to parse
+JSON for commands. `DriverCommand::method_name()` and `DriverCommand::params()` are the only place
+that encodes them.
+
+| Command | Params |
+|---|---|
+| `Driver.Ack` | `seq` (host only, never produced by a mode) |
+| `Driver.SetPlayerPoints` | `account_id`, `round`, `map`, `match` (empty string = keep) |
+| `Driver.SetCanSpawn` | `account_id`, `1`/`0` |
+| `Driver.SetFinishTimeout` | `auto`, `off` or milliseconds |
+| `Driver.ForceEndRound` | – |
+| `Driver.EndMap` | – |
+| `Driver.EndMatch` | – |
+| `Driver.SetMessage` | text (empty clears) |
+| `Driver.SetLayer` | `name`, manialink |
+| `Driver.RemoveLayer` | `name` |
+| `Driver.SetNetState` | JSON text |
+
+`EndMap`/`EndMatch` only set flags. The script acts on them at the right moment in its flow,
+after the current decision was acked.
+
+Planned later: `SetTeamPoints`, `SetPlayerTeam` (team modes), `SetTimeLimit` (TimeAttack).
+
+## Generic modescript
+
+`tm-server-types/external_modes/TM_Driver.Script.txt`, installed as `Modes/Trackmania/TM_Driver`.
+
+- Extends `TrackmaniaRoundsBase`, so Nadeo still handles spawning, checkpoints, finishes, replays,
+  records, warmup and the standard `Trackmania.Event.*` callbacks.
+- Points are only ever set by `Driver.SetPlayerPoints`. After the `RoundEnd` decision is applied the
+  script sends the standard `Trackmania.Scores` (`PreEndRound`) callback, so the manager keeps
+  recording round points through its existing path.
+- UI: `Driver.SetNetState` writes `netwrite Text Net_Driver_State for Teams[0]` and bumps
+  `Net_Driver_StateSerial`. Manialinks pushed with `Driver.SetLayer` read it with `netread`.
+  Nadeo's scoreboard keeps working because points live in the normal `Scores` lib.
+- TimeAttack can run on RoundsBase as a single long round (see `TM_RoundsThenTimeattack` from the
+  community modes), so one base covers every mode we use.
+
+## WIT interface and host
+
+`tm-wasm-driver/wit/driver.wit` defines world `mode`:
+
+```wit
+export init: func(settings: string) -> result<_, string>;
+export step: func(event: event) -> list<command>;
+export snapshot: func() -> list<u8>;
+export restore: func(snapshot: list<u8>) -> result<_, string>;
+import host;  // log
+```
+
+- The guest-facing `event`/`command` types mirror `DriverEvent`/`DriverCommand` without the
+  transport fields (`session`, `seq`, `Ack`). The host converts with exhaustive `From` impls.
+- The host accepts a component or a core module built for `wasm32-unknown-unknown` with the SDK
+  (core modules are wrapped with `wit-component` on load).
+- Sandbox: no WASI imports, fuel per call, epoch deadline per call, memory limit. Time only comes
+  from event timestamps, so a mode replays identically from a recorded event log.
+- `Driver::handle(&DriverEvent)` returns the commands to send. For decision callbacks it appends
+  `Ack(seq)` and caches the reply for re-sends.
+
+## Guest SDK and modes
+
+- `tm-driver-sdk`: wit-bindgen bindings plus a `Mode` trait and `export_mode!` macro.
+  Mode logic compiles natively too, so it can be unit tested without wasm.
+- `tm-driver-modes/rounds`: first-party Rounds mode (points repartition, rounds per map, maps per
+  match, points limit, finish timeout).
+
+Build a mode: `cargo build -p tm-driver-mode-rounds --target wasm32-unknown-unknown --release`.
+
+## Configuration
+
+`ModeSettingsV2::Driver(Driver { mode, settings, decision_timeout })` selects the driver script.
+`mode` names the blob and `settings` is the JSON passed to `init`. `TmMode::Driver` tells the
+manager the match is points based (driver decided points, summed like Rounds).
+
+For now the bridge loads blobs from `TM_DRIVER_MODES_DIR` (default `./modes`) as `<mode>.wasm`.
+A blob registry in the manager (pinned by hash per match) replaces this later.
+
+## Phases
+
+0. Typed boundary in `tm-server-types` and the controller.
+1. Generic modescript.
+2. `tm-wasm-driver` host, SDK and the Rounds mode with replay tests.
+3. Bridge integration behind `ModeSettingsV2::Driver`.
+4. Manager: snapshot table and resume, explicit driver results (`finalize` without per-mode
+   branches), team commands.
+5. Port Cup, ReverseCup, Knockout and TimeAttack; check parity with recorded matches.
+6. UI library on top of `Net_Driver_State`; remove the legacy script swapping; user uploads.
+
+## Risks
+
+- `TrackmaniaRoundsBase` ships in the game's title pack and can change with game updates. Keep the
+  script small and log the base and script versions in `Driver.Hello`.
+- Large JSON in netvars costs bandwidth. Prefer per-player netvars and serial counters.
+- The script has not been run against a real server yet. Validate the decision wait loop and
+  confirm that RoundsBase awards no points of its own.
