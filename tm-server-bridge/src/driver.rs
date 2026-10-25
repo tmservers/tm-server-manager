@@ -6,6 +6,7 @@ use tm_server_controller::{
     callbacks::TypedCallbacks,
     method::{ModeScriptMethodsXmlRpc, XmlRpcMethods},
 };
+use tm_server_manager_api_rs::post_event;
 use tm_server_types::{
     config::Driver as DriverConfig,
     event::{DriverRoundResult, Event, StartServer},
@@ -14,7 +15,7 @@ use tm_server_types::{
 use tm_wasm_driver::{Driver, DriverEngine, DriverLimits};
 use tokio::sync::mpsc;
 
-use crate::TRACKMANIA;
+use crate::{SPACETIME, TRACKMANIA};
 
 /// Compiling and instantiating modes is cheap compared to creating the engine.
 static ENGINE: OnceLock<DriverEngine> = OnceLock::new();
@@ -93,9 +94,24 @@ async fn send(commands: Vec<DriverCommand>) {
 
 /// Hands the points of a round to the manager.
 fn report_round_result(round_result: DriverRoundResult) {
-    // TODO: Post it as Event::DriverRoundResult once the client bindings are regenerated.
-    // Transmuting it into the stale generated event would be undefined behaviour.
-    tracing::info!("Round result of the driver: {round_result:?}");
+    // Built instead of transmuted so a change of the generated types fails to compile.
+    let event = tm_server_manager_api_rs::Event::DriverRoundResult(
+        tm_server_manager_api_rs::DriverRoundResult {
+            results: round_result
+                .results
+                .into_iter()
+                .map(|result| tm_server_manager_api_rs::DriverPlayerResult {
+                    account_id: result.account_id,
+                    points: result.points,
+                    position: result.position,
+                })
+                .collect(),
+        },
+    );
+
+    if SPACETIME.read().reducers.post_event(event).is_err() {
+        tracing::error!("Could not post the round result of the driver.");
+    }
 }
 
 /// Loads the mode of a driver configuration and shows its manialinks.

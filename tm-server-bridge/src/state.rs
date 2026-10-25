@@ -22,8 +22,8 @@ pub async fn setup_state_synchronization() {
 
     // Sync all events to spacetimedb.
     server.on_event(|event| {
-        // Holds only concern the driver. The generated bindings do not know them
-        // either, so transmuting them would be undefined behaviour.
+        // Holds are only the handshake between the modescript and the driver.
+        // They are sent again while the script waits, which would only flood the match events.
         if matches!(event, tm_server_controller::event::Event::DriverHold(_)) {
             return;
         }

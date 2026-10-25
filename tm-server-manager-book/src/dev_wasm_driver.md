@@ -214,25 +214,14 @@ Settings of the time attack mode (every field is optional):
 1. ✅ Generic modescript (not run on a server yet).
 2. ✅ `tm-wasm-driver` host, SDK and the Rounds mode with tests running the real wasm.
 3. ✅ Bridge integration behind `ModeSettingsV2::Driver`.
-4. Manager: snapshot table and resume. ✅ Round results of the driver (posting them waits for
-   the bindings), team commands.
+4. Manager: ✅ round results of the driver, snapshot table and resume, team commands.
 5. Port the remaining modes: ✅ TimeAttack, Cup, ReverseCup, Knockout. Check parity with recorded
    matches.
 6. More manialinks on top of `Net_Driver_State`; remove the legacy script swapping; user uploads.
 
 ## Next steps
 
-1. **Regenerate the client bindings** with the fork CLI that produced the committed ones. The
-   generated `Event`, `ModeSettingsV2` and `TmMode` don't know the new variants yet. Until then:
-   - Driver configs can't reach the bridge. The stale bindings can't decode
-     `ModeSettingsV2::Driver`.
-   - The bridge only logs round results. Post them as `Event::DriverRoundResult` in
-     `report_round_result` (`tm-server-bridge/src/driver.rs`) after regenerating. Transmuting
-     them into the stale type would be undefined behaviour.
-
-   The stock 2.13.0 CLI (commit `08e1aba`) doesn't generate the `*_async` procedure methods
-   the bridge uses, so it can't be used for this.
-2. **Run the modescript and the manialink on a real server.** Check:
+1. **Run the modescript and the manialink on a real server.** Check:
    - The script compiles. `ServerShutdownRequested` and the raw `UIManager.UILayerCreate` API
      are not used by any script we checked.
    - Holds block and continue as expected, and a missing driver shows the waiting message.
@@ -242,7 +231,8 @@ Settings of the time attack mode (every field is optional):
    - Time attack rounds start players again after a finish or give up and stop at the time limit.
    - The standings manialink parses the JSON with `fromjson` and renders its rows.
    - A config change between driver modes applies the new round format on the next map.
-3. **Phase 4**: snapshots in SpacetimeDB and resuming after a bridge restart.
+   - The manager records the round results of the driver as points and positions of the round.
+2. **Phase 4**: snapshots in SpacetimeDB and resuming after a bridge restart.
 
 ## Risks
 
