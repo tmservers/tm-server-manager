@@ -8,6 +8,7 @@ members = [
     "tm-server-manager-api-rs",
     "tm-wasm-driver",
     "tm-driver-sdk",
+    "tm-driver-modes/rounds",
 ]
 resolver = "3"
 
