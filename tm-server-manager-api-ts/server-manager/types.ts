@@ -221,6 +221,46 @@ export const Custom = __t.object("Custom", {
 });
 export type Custom = __Infer<typeof Custom>;
 
+export const Driver = __t.object("Driver", {
+  mode: __t.string(),
+  settings: __t.string(),
+  decisionTimeout: __t.u32(),
+  manialinks: __t.array(__t.string()),
+});
+export type Driver = __Infer<typeof Driver>;
+
+export const DriverHold = __t.object("DriverHold", {
+  session: __t.i32(),
+  seq: __t.u32(),
+  get section() {
+    return DriverSection;
+  },
+  forced: __t.bool(),
+});
+export type DriverHold = __Infer<typeof DriverHold>;
+
+export const DriverPlayerResult = __t.object("DriverPlayerResult", {
+  accountId: __t.string(),
+  points: __t.i32(),
+  position: __t.u32(),
+});
+export type DriverPlayerResult = __Infer<typeof DriverPlayerResult>;
+
+export const DriverRoundResult = __t.object("DriverRoundResult", {
+  get results() {
+    return __t.array(DriverPlayerResult);
+  },
+});
+export type DriverRoundResult = __Infer<typeof DriverRoundResult>;
+
+// The tagged union or sum type for the algebraic type `DriverSection`.
+export const DriverSection = __t.enum("DriverSection", {
+  MapStart: __t.unit(),
+  RoundEnd: __t.unit(),
+  MapEnd: __t.unit(),
+});
+export type DriverSection = __Infer<typeof DriverSection>;
+
 export const EndMapEnd = __t.object("EndMapEnd", {
   count: __t.u32(),
   valid: __t.u32(),
@@ -420,6 +460,12 @@ export const Event = __t.enum("Event", {
   },
   get SkipOutro() {
     return SkipOutro;
+  },
+  get DriverHold() {
+    return DriverHold;
+  },
+  get DriverRoundResult() {
+    return DriverRoundResult;
   },
 });
 export type Event = __Infer<typeof Event>;
@@ -904,6 +950,9 @@ export const ModeSettingsV2 = __t.enum("ModeSettingsV2", {
   },
   get Knockout() {
     return Knockout;
+  },
+  get Driver() {
+    return Driver;
   },
 });
 export type ModeSettingsV2 = __Infer<typeof ModeSettingsV2>;
@@ -1570,6 +1619,7 @@ export const TmMode = __t.enum("TmMode", {
   Knockout: __t.unit(),
   TimeAttack: __t.unit(),
   Unknown: __t.unit(),
+  Driver: __t.unit(),
 });
 export type TmMode = __Infer<typeof TmMode>;
 

@@ -4,6 +4,7 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
+use super::driver_type::Driver;
 use super::knockout_type::Knockout;
 use super::reverse_cup_v_2_type::ReverseCupV2;
 use super::rounds_type::Rounds;
@@ -19,6 +20,8 @@ pub enum ModeSettingsV2 {
     TimeAttack(TimeAttack),
 
     Knockout(Knockout),
+
+    Driver(Driver),
 }
 
 impl __sdk::InModule for ModeSettingsV2 {
