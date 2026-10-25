@@ -8,7 +8,7 @@
 
 use std::collections::BTreeMap;
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use tm_driver_sdk::{
     Command, Event, Mode, PlayerResult, RaceResult, RoundEnd, RoundFormat,
     standings::{Standing, Standings},
@@ -16,7 +16,7 @@ use tm_driver_sdk::{
 
 tm_driver_sdk::export_mode!(TimeAttack);
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Settings {
     /// How long every map is played in milliseconds.
@@ -38,7 +38,7 @@ impl Default for Settings {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct TimeAttack {
     settings: Settings,
     match_points: BTreeMap<String, i32>,
@@ -100,14 +100,6 @@ impl Mode for TimeAttack {
             }
             Event::MatchEnd => Vec::new(),
         }
-    }
-
-    fn snapshot(&self) -> Vec<u8> {
-        serde_json::to_vec(self).unwrap_or_default()
-    }
-
-    fn restore(snapshot: &[u8]) -> Result<Self, String> {
-        serde_json::from_slice(snapshot).map_err(|e| format!("Invalid snapshot: {e}"))
     }
 }
 
@@ -330,17 +322,6 @@ mod tests {
         assert_eq!(mode.match_points["a"], 3);
         assert_eq!(mode.match_points["b"], 3);
         assert_eq!(mode.step(Event::MapEnd), [Command::EndMatch]);
-    }
-
-    #[test]
-    fn snapshot_round_trip() {
-        let mut mode = started(r#"{"maps_per_match": 2}"#);
-        mode.step(round_end(vec![finish("a", 40_000)]));
-
-        let mut restored = TimeAttack::restore(&mode.snapshot()).unwrap();
-        assert_eq!(restored.settings, mode.settings);
-        restored.step(Event::MapEnd);
-        assert_eq!(restored.step(Event::MapEnd), [Command::EndMatch]);
     }
 
     #[test]

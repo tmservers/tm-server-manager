@@ -9,7 +9,7 @@
 
 use std::collections::BTreeMap;
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use tm_driver_sdk::{
     Command, Event, FinishTimeout, Mode, PlayerResult, RaceResult, RoundEnd, RoundFormat,
     standings::{Standing, Standings},
@@ -17,7 +17,7 @@ use tm_driver_sdk::{
 
 tm_driver_sdk::export_mode!(Rounds);
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Settings {
     /// Points by finish position. Finishers beyond the list get the last value.
@@ -46,7 +46,7 @@ impl Default for Settings {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum FinishTimeoutSetting {
     Automatic,
@@ -64,7 +64,7 @@ impl From<FinishTimeoutSetting> for FinishTimeout {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct Rounds {
     settings: Settings,
     match_points: BTreeMap<String, i32>,
@@ -137,14 +137,6 @@ impl Mode for Rounds {
             }
             Event::MatchEnd => Vec::new(),
         }
-    }
-
-    fn snapshot(&self) -> Vec<u8> {
-        serde_json::to_vec(self).unwrap_or_default()
-    }
-
-    fn restore(snapshot: &[u8]) -> Result<Self, String> {
-        serde_json::from_slice(snapshot).map_err(|e| format!("Invalid snapshot: {e}"))
     }
 }
 
@@ -418,17 +410,6 @@ mod tests {
 
         let commands = mode.step(round_end(vec![finish("a", 1)]));
         assert!(commands.contains(&Command::EndMatch));
-    }
-
-    #[test]
-    fn snapshot_round_trip() {
-        let mut mode = started(r#"{"rounds_per_map": 3}"#);
-        mode.step(round_end(vec![finish("a", 1), finish("b", 2)]));
-
-        let mut restored = Rounds::restore(&mode.snapshot()).unwrap();
-        assert_eq!(restored.settings, mode.settings);
-        restored.step(round_end(vec![finish("b", 1)]));
-        assert_eq!(restored.match_points["b"], 16);
     }
 
     #[test]

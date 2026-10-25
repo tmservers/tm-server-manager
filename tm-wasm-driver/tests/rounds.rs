@@ -26,6 +26,9 @@ fn rounds(settings: &str) -> Driver {
     engine.instantiate(&module, settings).unwrap()
 }
 
+/// The settings of a match that ends once a player has more than 25 points.
+const POINTS_LIMIT: &str = r#"{"rounds_per_map": 0, "points_limit": 25, "use_tie_break": false}"#;
+
 fn result(account_id: &str, points: i32, position: u32) -> DriverPlayerResult {
     DriverPlayerResult {
         account_id: account_id.into(),
@@ -97,7 +100,7 @@ fn plays_a_match() {
 #[test]
 fn repeated_holds_are_decided_once() {
     // The match ends once a player has more than 25 points.
-    let mut driver = rounds(r#"{"rounds_per_map": 0, "points_limit": 25, "use_tie_break": false}"#);
+    let mut driver = rounds(POINTS_LIMIT);
     driver.handle(&hold(1, DriverSection::MapStart)).unwrap();
 
     driver.handle(&scores(&[("a", 30_000, 30_000)])).unwrap();
@@ -159,30 +162,35 @@ fn new_session_starts_over() {
 }
 
 #[test]
-fn resumes_from_a_snapshot() {
+fn resumes_by_replaying_the_events() {
     let engine = DriverEngine::new(DriverLimits::default()).unwrap();
     let module = engine.compile(rounds_wasm()).unwrap();
-    let mut driver = engine
-        .instantiate(
-            &module,
-            r#"{"rounds_per_map": 0, "points_limit": 25, "use_tie_break": false}"#,
-        )
-        .unwrap();
-    driver.handle(&hold(1, DriverSection::MapStart)).unwrap();
-    driver.handle(&scores(&[("a", 30_000, 30_000)])).unwrap();
-    let decided = driver.handle(&hold(2, DriverSection::RoundEnd)).unwrap();
+    let mut driver = engine.instantiate(&module, POINTS_LIMIT).unwrap();
 
-    // Snapshots survive a serialization round trip like they would in a database.
-    let snapshot = serde_json::to_vec(&driver.snapshot().unwrap()).unwrap();
+    // Everything the driver handled so far, like the event stream of the match.
+    let events = vec![
+        match_start(),
+        hold(1, DriverSection::MapStart),
+        round_start(1),
+        scores(&[("a", 30_000, 30_000)]),
+        hold(2, DriverSection::RoundEnd),
+    ];
+    let mut decided = DriverReply::default();
+    for event in &events {
+        decided = driver.handle(event).unwrap();
+    }
+
+    // The bridge went away before the server got the reply to the last hold.
     drop(driver);
-    let mut resumed = engine
-        .restore(&module, serde_json::from_slice(&snapshot).unwrap())
-        .unwrap();
+    let mut resumed = engine.replay(&module, POINTS_LIMIT, &events).unwrap();
 
-    // The modescript asks again because the bridge went away before it answered.
-    driver_scores_and_hold(&mut resumed, 2, &decided.commands);
+    // The modescript asks again and gets the same commands without deciding twice.
+    resumed.handle(&scores(&[("a", 30_000, 30_000)])).unwrap();
+    let repeated = resumed.handle(&hold(2, DriverSection::RoundEnd)).unwrap();
+    assert_eq!(repeated.commands, decided.commands);
+    assert_eq!(repeated.round_result, None);
 
-    // The points of the first round survived: 10 + 10 + 10 reaches the limit in the third round.
+    // The points of the first round are back: 10 + 10 + 10 reaches the limit in the third round.
     resumed.handle(&scores(&[("a", 30_000, 30_000)])).unwrap();
     resumed.handle(&hold(3, DriverSection::RoundEnd)).unwrap();
     resumed.handle(&scores(&[("a", 30_000, 30_000)])).unwrap();
@@ -197,15 +205,32 @@ fn resumes_from_a_snapshot() {
     );
 }
 
-fn driver_scores_and_hold(driver: &mut Driver, seq: u32, expected: &[DriverCommand]) {
-    driver.handle(&scores(&[("a", 30_000, 30_000)])).unwrap();
-    assert_eq!(
-        driver
-            .handle(&hold(seq, DriverSection::RoundEnd))
-            .unwrap()
-            .commands,
-        expected
-    );
+#[test]
+fn replays_are_deterministic() {
+    let engine = DriverEngine::new(DriverLimits::default()).unwrap();
+    let module = engine.compile(rounds_wasm()).unwrap();
+    let events = [
+        match_start(),
+        hold(1, DriverSection::MapStart),
+        scores(&[("a", 30_000, 30_000), ("b", 29_000, 29_000), ("c", -1, -1)]),
+        hold(2, DriverSection::RoundEnd),
+        scores(&[
+            ("a", 28_000, 28_000),
+            ("b", -1, 29_000),
+            ("c", 31_000, 31_000),
+        ]),
+        hold(3, DriverSection::RoundEnd),
+        hold(4, DriverSection::MapEnd),
+    ];
+
+    let replies = |events: &[Event]| {
+        let mut driver = engine.instantiate(&module, POINTS_LIMIT).unwrap();
+        events
+            .iter()
+            .map(|event| driver.handle(event).unwrap())
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(replies(&events), replies(&events));
 }
 
 #[test]

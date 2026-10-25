@@ -4,8 +4,9 @@
 //! `cdylib` for `wasm32-unknown-unknown`. The driver host turns the resulting
 //! core module into a component when it loads it.
 //!
-//! Modes run without WASI. Everything they know comes from [`Event`]s, so a
-//! mode must not depend on wall clock time or randomness to stay replayable.
+//! Modes run without WASI. Everything they know comes from their settings and
+//! [`Event`]s, so replaying the events of a match rebuilds the same mode. A mode
+//! must not depend on wall clock time or randomness to stay replayable.
 
 // Lets the generated bindings and the export macro use the same paths inside
 // this crate and inside the mode crates.
@@ -41,10 +42,6 @@ pub trait Mode: Sized + 'static {
     fn init(settings: &str) -> Result<Self, String>;
     /// Handles an event and returns the commands for the server in order.
     fn step(&mut self, event: Event) -> Vec<Command>;
-    /// Serializes the whole state including the settings.
-    fn snapshot(&self) -> Vec<u8>;
-    /// Recreates the mode from [`Mode::snapshot`].
-    fn restore(snapshot: &[u8]) -> Result<Self, String>;
 }
 
 /// Logs through the driver host. Prints to stderr when running natively (e.g. in tests).
@@ -89,23 +86,6 @@ macro_rules! export_mode {
                             ::std::vec::Vec::new()
                         }
                     })
-                }
-
-                fn snapshot() -> ::std::vec::Vec<u8> {
-                    MODE.with(|m| {
-                        m.borrow()
-                            .as_ref()
-                            .map(<$mode as $crate::Mode>::snapshot)
-                            .unwrap_or_default()
-                    })
-                }
-
-                fn restore(
-                    snapshot: ::std::vec::Vec<u8>,
-                ) -> ::core::result::Result<(), ::std::string::String> {
-                    let mode = <$mode as $crate::Mode>::restore(&snapshot)?;
-                    MODE.with(|m| *m.borrow_mut() = ::core::option::Option::Some(mode));
-                    ::core::result::Result::Ok(())
                 }
             }
 

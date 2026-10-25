@@ -113,8 +113,9 @@ interface host {
 
 /// A game mode controlling the driver modescript.
 ///
-/// Modes run without WASI. Everything they know comes from events, which keeps
-/// them deterministic so a recorded match replays exactly the same.
+/// Modes run without WASI. Everything they know comes from their settings and
+/// events, so replaying the events of a match rebuilds exactly the same state.
+/// That is how a mode resumes, there are no snapshots.
 world mode {
     use types.{event, command};
 
@@ -124,8 +125,4 @@ world mode {
     export init: func(settings: string) -> result<_, string>;
     /// Called for every event. The returned commands are applied in order.
     export step: func(event: event) -> list<command>;
-    /// Serializes the whole state of the mode including its settings.
-    export snapshot: func() -> list<u8>;
-    /// Restores a snapshot instead of calling init.
-    export restore: func(snapshot: list<u8>) -> result<_, string>;
 }

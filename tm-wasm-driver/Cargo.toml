@@ -13,11 +13,7 @@ repository.workspace = true
 
 [dependencies]
 tm-server-types.workspace = true
-serde = { workspace = true, features = ["derive"] }
 wasmtime = { version = "50.0.0", default-features = false, features = ["runtime", "cranelift", "component-model", "std"] }
 wit-component = "0.262.0"
 thiserror = "2.0.21"
 tracing = "0.1.44"
-
-[dev-dependencies]
-serde_json = "1.0.154"

@@ -102,7 +102,7 @@ mod tests {
     }
 
     #[test]
-    fn round_results_go_to_the_manager() {
+    fn round_results_stay_out_of_the_commands() {
         let reply = reply(vec![
             Command::RoundResult(vec![PlayerResult {
                 account_id: "a".into(),

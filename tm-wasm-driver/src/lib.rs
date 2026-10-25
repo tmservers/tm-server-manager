@@ -7,6 +7,10 @@
 //! Modes are fed from the standard callbacks of the server. On top of that the
 //! host handles the [`DriverHold`]s of the modescript: it steps the mode, lets
 //! the hold continue and answers repeated holds without stepping the mode twice.
+//!
+//! Modes and the host are deterministic. Replaying the events of a match with
+//! [`DriverEngine::replay`] rebuilds exactly the same driver, so a crashed bridge
+//! resumes from the event stream and nothing else has to be persisted.
 
 use std::{
     sync::{
@@ -17,7 +21,6 @@ use std::{
     time::Duration,
 };
 
-use serde::{Deserialize, Serialize};
 use tm_server_types::{
     event::{DriverHold, DriverRoundResult, DriverSection, Event},
     method::DriverCommand,
@@ -79,7 +82,7 @@ pub enum DriverError {
     InvalidModule(String),
     #[error("The mode could not be instantiated: {0:#}")]
     Instantiate(wasmtime::Error),
-    #[error("The mode rejected its settings or snapshot: {0}")]
+    #[error("The mode rejected its settings: {0}")]
     Rejected(String),
     #[error("The mode trapped: {0:#}")]
     Trap(wasmtime::Error),
@@ -100,6 +103,9 @@ impl DriverEngine {
         let mut config = Config::new();
         config.consume_fuel(true);
         config.epoch_interruption(true);
+        // Replays must produce the same results on every host.
+        config.cranelift_nan_canonicalization(true);
+        config.relaxed_simd_deterministic(true);
         let engine = Engine::new(&config).map_err(DriverError::Instantiate)?;
 
         let mut linker = Linker::new(&engine);
@@ -169,21 +175,19 @@ impl DriverEngine {
         Ok(driver)
     }
 
-    /// Continues a mode from a snapshot taken with [`Driver::snapshot`].
-    pub fn restore(
+    /// Rebuilds a driver by feeding it the events it handled before, e.g. after the
+    /// bridge restarted. The replies are dropped because the server already got them.
+    /// A hold the modescript repeats afterwards gets the reply it got the first time.
+    pub fn replay<'a>(
         &self,
         module: &DriverModule,
-        snapshot: DriverSnapshot,
+        settings: &str,
+        events: impl IntoIterator<Item = &'a Event>,
     ) -> Result<Driver, DriverError> {
-        let mut driver = self.instantiate_raw(module)?;
-        driver.prepare_call();
-        driver
-            .bindings
-            .call_restore(&mut driver.store, &snapshot.state)
-            .map_err(DriverError::Trap)?
-            .map_err(DriverError::Rejected)?;
-        driver.session = snapshot.session;
-        driver.last_hold = snapshot.last_hold;
+        let mut driver = self.instantiate(module, settings)?;
+        for event in events {
+            driver.handle(event)?;
+        }
         Ok(driver)
     }
 
@@ -345,42 +349,12 @@ impl Driver {
         }
     }
 
-    /// Captures everything needed to continue the mode with [`DriverEngine::restore`].
-    pub fn snapshot(&mut self) -> Result<DriverSnapshot, DriverError> {
-        if self.poisoned {
-            return Err(DriverError::Poisoned);
-        }
-        self.prepare_call();
-        let state = self
-            .bindings
-            .call_snapshot(&mut self.store)
-            .map_err(|error| {
-                self.poisoned = true;
-                DriverError::Trap(error)
-            })?;
-
-        Ok(DriverSnapshot {
-            session: self.session,
-            last_hold: self.last_hold.clone(),
-            state,
-        })
-    }
-
     fn prepare_call(&mut self) {
         // Setting fuel only fails if fuel is not enabled, which the engine always does.
         _ = self.store.set_fuel(self.fuel_per_call);
         self.store.set_epoch_deadline(self.epoch_deadline);
         self.store.data_mut().log_budget = LOG_BUDGET;
     }
-}
-
-/// State of a running mode which can be persisted.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DriverSnapshot {
-    pub session: Option<i32>,
-    pub last_hold: Option<(u32, Vec<DriverCommand>)>,
-    /// Opaque state returned by the mode.
-    pub state: Vec<u8>,
 }
 
 struct HostState {
