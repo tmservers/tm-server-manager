@@ -83,6 +83,7 @@ mod tests {
             DriverCommand::SET_LAYER,
             DriverCommand::REMOVE_LAYER,
             DriverCommand::SET_NET_STATE,
+            DriverCommand::SET_ROUND_FORMAT,
         ];
         for name in names {
             assert!(

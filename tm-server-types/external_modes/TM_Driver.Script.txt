@@ -76,6 +76,7 @@
 #Const C_Method_SetLayer "Driver.SetLayer"
 #Const C_Method_RemoveLayer "Driver.RemoveLayer"
 #Const C_Method_SetNetState "Driver.SetNetState"
+#Const C_Method_SetRoundFormat "Driver.SetRoundFormat"
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
 // Callback payloads
@@ -164,10 +165,16 @@ declare Integer G_Driver_Seq;
 declare Integer G_Driver_PendingSeq;
 declare Integer G_Driver_MapRound;
 declare Boolean[Text] G_Driver_RoundParticipants;
+/// Best race of every player in the current round.
+declare Integer[Text] G_Driver_RoundBestTimes;
+declare Integer[][Text] G_Driver_RoundBestCheckpoints;
+declare Boolean G_Driver_RoundIsTimeAttack;
 
 // State set by driver commands.
 declare Boolean[Text] G_Driver_CanSpawn;
 declare Text G_Driver_FinishTimeout;
+/// Time limit of time attack rounds in milliseconds. 0 plays single attempt rounds.
+declare Integer G_Driver_TimeAttackLimit;
 declare Boolean G_Driver_ForceEndRound;
 declare Boolean G_Driver_EndMap;
 declare Boolean G_Driver_EndMatch;
@@ -195,7 +202,7 @@ foreach (Callback in [C_Callback_Hello, C_Callback_MatchStart, C_Callback_MapSta
 * Description: Callback of the driver mode. See tm_server_types::event::DriverEvent for the payload.
 """);
 }
-foreach (Method in [C_Method_Ack, C_Method_SetPlayerPoints, C_Method_SetCanSpawn, C_Method_SetFinishTimeout, C_Method_ForceEndRound, C_Method_EndMap, C_Method_EndMatch, C_Method_SetMessage, C_Method_SetLayer, C_Method_RemoveLayer, C_Method_SetNetState]) {
+foreach (Method in [C_Method_Ack, C_Method_SetPlayerPoints, C_Method_SetCanSpawn, C_Method_SetFinishTimeout, C_Method_ForceEndRound, C_Method_EndMap, C_Method_EndMatch, C_Method_SetMessage, C_Method_SetLayer, C_Method_RemoveLayer, C_Method_SetNetState, C_Method_SetRoundFormat]) {
 	XmlRpc::RegisterMethod(Method, """
 * Name: {{{Method}}}
 * Type: TriggerModeScriptEventArray
@@ -211,7 +218,7 @@ StateMgr::Unload();
 foreach (Callback in [C_Callback_Hello, C_Callback_MatchStart, C_Callback_MapStart, C_Callback_RoundStart, C_Callback_RoundEnd, C_Callback_MapEnd, C_Callback_MatchEnd, C_Callback_PlayerJoin, C_Callback_PlayerLeave]) {
 	XmlRpc::UnregisterCallback(Callback);
 }
-foreach (Method in [C_Method_Ack, C_Method_SetPlayerPoints, C_Method_SetCanSpawn, C_Method_SetFinishTimeout, C_Method_ForceEndRound, C_Method_EndMap, C_Method_EndMatch, C_Method_SetMessage, C_Method_SetLayer, C_Method_RemoveLayer, C_Method_SetNetState]) {
+foreach (Method in [C_Method_Ack, C_Method_SetPlayerPoints, C_Method_SetCanSpawn, C_Method_SetFinishTimeout, C_Method_ForceEndRound, C_Method_EndMap, C_Method_EndMatch, C_Method_SetMessage, C_Method_SetLayer, C_Method_RemoveLayer, C_Method_SetNetState, C_Method_SetRoundFormat]) {
 	XmlRpc::UnregisterMethod(Method);
 }
 ***
@@ -323,8 +330,11 @@ XmlRpc::SendCallback(C_Callback_Hello, [Hello.tojson()]);
 
 ***Match_StartMatch***
 ***
+// Every match starts with the defaults. The driver sets what it needs in reply to MatchStart.
 G_Driver_EndMatch = False;
 G_Driver_CanSpawn.clear();
+G_Driver_FinishTimeout = "auto";
+G_Driver_TimeAttackLimit = 0;
 Scores::Clear();
 
 declare K_Driver_MatchStart MatchStart = K_Driver_MatchStart {
@@ -364,8 +374,7 @@ MB_WarmUp(S_WarmUpNb, S_WarmUpDuration * 1000, S_WarmUpTimeout * 1000);
 
 ***Rounds_CheckCanSpawn***
 ***
-if (_Player.User == Null) return False;
-if (G_Driver_CanSpawn.existskey(_Player.User.WebServicesUserId) && !G_Driver_CanSpawn[_Player.User.WebServicesUserId]) return False;
+if (!Driver_CanSpawn(_Player)) return False;
 ***
 
 ***Match_InitRound***
@@ -387,6 +396,20 @@ Driver_Decide(C_Callback_RoundStart, RoundStart.seq, RoundStart.tojson());
 ***Match_StartRound***
 ***
 StateMgr::ForcePlayersStates([StateMgr::C_State_Playing]);
+
+G_Driver_RoundBestTimes.clear();
+G_Driver_RoundBestCheckpoints.clear();
+G_Driver_RoundIsTimeAttack = G_Driver_TimeAttackLimit > 0;
+if (G_Driver_RoundIsTimeAttack) {
+	StartTime = Now + Race::C_SpawnDuration;
+	EndTime = StartTime + G_Driver_TimeAttackLimit;
+	UIModules_ScoresTable::SetScoreMode(UIModules_ScoresTable::C_Mode_BestTime);
+	UIModules_ScoresTable::SetFooterInfo(TL::Compose("%1 "^TL::TimeToText(G_Driver_TimeAttackLimit), _("Time Limit")));
+} else {
+	UIModules_ScoresTable::SetScoreMode(UIModules_ScoresTable::C_Mode_Points);
+	UIModules_ScoresTable::SetFooterInfo("");
+}
+Driver_SortScores();
 ***
 
 ***Rounds_PlayerSpawned***
@@ -407,9 +430,22 @@ foreach (Event in Race::GetPendingEvents()) {
 				Scores::UpdatePlayerBestRaceIfBetter(Event.Player);
 				Scores::UpdatePlayerBestLapIfBetter(Event.Player);
 				Scores::UpdatePlayerPrevRace(Event.Player);
-				Race::SortScores(Race::C_Sort_TotalPoints);
+				Driver_SortScores();
 
-				// Start the countdown if it's the first player to finish
+				if (Event.Player.User != Null) {
+					declare Text AccountId = Event.Player.User.WebServicesUserId;
+					if (!G_Driver_RoundBestTimes.existskey(AccountId) || Event.RaceTime < G_Driver_RoundBestTimes[AccountId]) {
+						declare Integer[] Checkpoints;
+						foreach (WaypointTime in Event.Player.RaceWaypointTimes) {
+							Checkpoints.add(WaypointTime);
+						}
+						G_Driver_RoundBestTimes[AccountId] = Event.RaceTime;
+						G_Driver_RoundBestCheckpoints[AccountId] = Checkpoints;
+					}
+				}
+
+				// Start the countdown if it's the first player to finish.
+				// Time attack rounds already end with their time limit.
 				if (EndTime <= 0) {
 					EndTime = Driver_FinishTimeout();
 				}
@@ -418,6 +454,15 @@ foreach (Event in Race::GetPendingEvents()) {
 				Scores::UpdatePlayerBestLapIfBetter(Event.Player);
 			}
 		}
+	}
+}
+
+// Time attack rounds start players again once they finished or gave up.
+if (G_Driver_RoundIsTimeAttack && PlayersNbDead > 0) {
+	foreach (Player in Players) {
+		if (Player.SpawnStatus != CSmPlayer::ESpawnStatus::NotSpawned) continue;
+		if (!Driver_CanSpawn(Player) || !Race::IsReadyToStart(Player)) continue;
+		Race::Start(Player);
 	}
 }
 
@@ -438,8 +483,8 @@ foreach (Event in PendingEvents) {
 
 ***Rounds_CheckStopRound***
 ***
-// All players finished or gave up
-if (Players.count > 0 && PlayersNbAlive <= 0) {
+// All players finished or gave up. Time attack rounds only end with their time limit.
+if (!G_Driver_RoundIsTimeAttack && Players.count > 0 && PlayersNbAlive <= 0) {
 	MB_StopRound();
 	Round_Skipped = False;
 }
@@ -477,23 +522,21 @@ declare K_Driver_RoundEnd RoundEnd = K_Driver_RoundEnd {
 	round = G_Driver_MapRound,
 	forced = Forced
 };
-// Finishers first, sorted by their time.
-Race::SortScores(Race::C_Sort_PrevRaceTime);
-foreach (Score in Scores) {
-	if (Score.User == Null) continue;
-	declare Integer RaceTime = Scores::GetPlayerPrevRaceTime(Score);
-	if (RaceTime <= 0 && !G_Driver_RoundParticipants.existskey(Score.User.WebServicesUserId)) continue;
-
-	declare K_Driver_RaceResult Result = K_Driver_RaceResult {
-		account_id = Score.User.WebServicesUserId,
-		time = RaceTime
-	};
-	if (RaceTime > 0) {
-		foreach (CheckpointTime in Score.PrevRaceTimes) {
-			Result.checkpoints.add(CheckpointTime);
-		}
-	}
-	RoundEnd.results.add(Result);
+// Finishers first sorted by their best time, then everyone else who took part.
+declare Integer[Text] BestTimes = G_Driver_RoundBestTimes.sort();
+foreach (AccountId => BestTime in BestTimes) {
+	RoundEnd.results.add(K_Driver_RaceResult {
+		account_id = AccountId,
+		time = BestTime,
+		checkpoints = G_Driver_RoundBestCheckpoints[AccountId]
+	});
+}
+foreach (AccountId => Participated in G_Driver_RoundParticipants) {
+	if (BestTimes.existskey(AccountId)) continue;
+	RoundEnd.results.add(K_Driver_RaceResult {
+		account_id = AccountId,
+		time = -1
+	});
 }
 Driver_Decide(C_Callback_RoundEnd, RoundEnd.seq, RoundEnd.tojson());
 
@@ -504,7 +547,7 @@ if (Forced) {
 	}
 	MB_SetValidRound(False);
 } else {
-	Race::SortScores(Race::C_Sort_TotalPoints);
+	Driver_SortScores();
 	UIManager.UIAll.ScoreTableVisibility = CUIConfig::EVisibility::ForcedVisible;
 	UIManager.UIAll.UISequence = CUIConfig::EUISequence::EndRound;
 	MB_Sleep(3000);
@@ -578,6 +621,21 @@ K_Driver_Player[] Driver_Players() {
 		DriverPlayers.add(Driver_Player(Player));
 	}
 	return DriverPlayers;
+}
+
+Boolean Driver_CanSpawn(CSmPlayer _Player) {
+	if (_Player.User == Null) return False;
+	declare Text AccountId = _Player.User.WebServicesUserId;
+	return !G_Driver_CanSpawn.existskey(AccountId) || G_Driver_CanSpawn[AccountId];
+}
+
+/// Time attack rounds rank by the best time, everything else by points.
+Void Driver_SortScores() {
+	if (G_Driver_RoundIsTimeAttack) {
+		Race::SortScores(Race::C_Sort_BestRaceTime);
+	} else {
+		Race::SortScores(Race::C_Sort_TotalPoints);
+	}
 }
 
 CSmScore Driver_FindScore(Text _AccountId) {
@@ -697,5 +755,12 @@ Void Driver_ApplyCommand(Text _Method, Text[] _Params) {
 		declare netwrite Integer Net_Driver_StateSerial for Teams[0] = 0;
 		Net_Driver_State = _Params[0];
 		Net_Driver_StateSerial += 1;
+	} else if (_Method == C_Method_SetRoundFormat) {
+		if (_Params.count < 1) return;
+		if (_Params[0] == "time_attack" && _Params.count >= 2) {
+			G_Driver_TimeAttackLimit = TL::ToInteger(_Params[1]);
+		} else {
+			G_Driver_TimeAttackLimit = 0;
+		}
 	}
 }

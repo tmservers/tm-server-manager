@@ -164,9 +164,10 @@ pub struct DriverRoundStart {
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub struct DriverRaceResult {
     pub account_id: String,
-    /// Race time in milliseconds. Zero or negative if the player did not finish.
+    /// Best race time of the round in milliseconds. Zero or negative if the player did not finish.
+    /// Single attempt rounds only have one race per player.
     pub time: i32,
-    /// Checkpoint times in milliseconds since the start of the race.
+    /// Checkpoint times of the best race in milliseconds since its start.
     pub checkpoints: Vec<u32>,
 }
 
