@@ -2,7 +2,8 @@
 
 Status: phases 0–3 and the TimeAttack mode are implemented on the `wasm-driver/*` branches.
 Everything except the modescript and the manialink is covered by tests, but nothing has run
-against a real server yet. See [Next steps](#next-steps).
+against a real server yet. The manager (and its database) stays untouched until the feature is
+fleshed out. See [Next steps](#next-steps).
 
 ## Idea
 
@@ -20,7 +21,8 @@ The mode decides what happens and sends commands back.
 | Topic | Decision |
 |---|---|
 | Where the logic runs | `wasmtime` inside the bridge (`tm-wasm-driver`). Decisions are local and fast. |
-| Durability | The mode is a deterministic state machine with `snapshot`/`restore`. Snapshots are stored in SpacetimeDB at round boundaries so a crashed bridge can resume. |
+| Durability | No snapshots. Modes only act on their settings and the event stream, so replaying the events of a match rebuilds the same driver (see [Resuming](#resuming)). |
+| Database | Untouched until the feature is fleshed out. The manager integration comes last. |
 | Who writes modes | First-party modes first (in-repo Rust crates). The host is sandboxed from day one (fuel, epoch deadline, memory cap, no WASI) so user uploads can be added later. |
 | ABI | WIT component model (`tm-wasm-driver/wit/driver.wit`). |
 | Scoring source of truth | The mode. Points never exist in the modescript. |
@@ -36,9 +38,9 @@ TM server ── TM_Driver.Script.txt (#Extends TrackmaniaRoundsBase, loaded onc
    ▼                                         │
 tm-server-controller   Event                 /  driver_commands(&[DriverCommand])
    ▼                                         │
-tm-wasm-driver         one wasm instance per match, hold dedup, Continue, snapshots
+tm-wasm-driver         one wasm instance per match, hold dedup, Continue, replay
    ▼                                         ▲
-tm-server-bridge ── post_event / DriverRoundResult / snapshots ──▶ tm-server-manager
+tm-server-bridge ── post_event (standard callbacks, as before) ──▶ tm-server-manager
 ```
 
 ## What a mode gets told
@@ -108,9 +110,25 @@ The modescript never sees points. A mode keeps them and publishes them in two pl
   `tm-driver-modes/manialinks/standings.xml` renders it. Manialinks are selected next to the mode in
   the config (`Driver.manialinks`). The bridge installs them as layers when the config loads and
   whenever the modescript (re)starts. Nadeo's scores table shows race times only.
-- **Manager:** `round-result` from the mode becomes `Event::DriverRoundResult`, which sets points
-  and positions of the round players. For driver matches the manager ignores the points of
-  `Trackmania.Scores`.
+- **Manager:** comes with the database integration. Until then the bridge only logs the
+  `round-result` of a mode, and the manager records driver matches like Rounds: positions follow
+  the scores, points stay at zero. `Event::DriverRoundResult` already exists for the integration.
+
+## Resuming
+
+There are no snapshots. The host and the modes are deterministic: modes run without WASI,
+NaNs are canonicalized and relaxed SIMD uses its deterministic lowering. Replaying the events a
+driver handled therefore rebuilds exactly the same driver, including the reply to the last hold.
+`DriverEngine::replay(module, settings, events)` does that.
+
+A replay needs:
+
+- The same mode module and settings. Matches will pin the module by hash once the manager
+  stores modes.
+- Every event the driver handled (`Driver::handles`): `StartMatch_Start`, `StartRound_Start`,
+  `Trackmania.Scores`, `EndMatch_Start` and the holds. The manager already stores the standard
+  callbacks. The bridge does not forward holds yet because the script repeats them while it
+  waits. Storing each hold once is part of the database integration.
 
 ## Generic modescript
 
@@ -145,14 +163,13 @@ finishers gets N points, so the points keep the order of the times.
 ```wit
 export init: func(settings: string) -> result<_, string>;
 export step: func(event: event) -> list<command>;
-export snapshot: func() -> list<u8>;
-export restore: func(snapshot: list<u8>) -> result<_, string>;
 import host;  // log
 ```
 
 - `Driver::handles(&Event)` tells the bridge which callbacks matter. `Driver::handle(&Event)`
   returns a `DriverReply` with the commands for the server and an optional round result for the
   manager. Replies to holds end with `Continue(seq)`.
+- `DriverEngine::replay` rebuilds a driver from the events it handled before.
 - Commands of a mode are converted with exhaustive matches, so both sides have to stay in sync.
 - The host accepts a component or a core module built for `wasm32-unknown-unknown` with the SDK
   (core modules are wrapped with `wit-component` on load).
@@ -214,7 +231,8 @@ Settings of the time attack mode (every field is optional):
 1. ✅ Generic modescript (not run on a server yet).
 2. ✅ `tm-wasm-driver` host, SDK and the Rounds mode with tests running the real wasm.
 3. ✅ Bridge integration behind `ModeSettingsV2::Driver`.
-4. Manager: ✅ round results of the driver, snapshot table and resume, team commands.
+4. Database integration: store the events the driver handles (holds once per seq) and resume by
+   replay, record round results, a `TmMode` for driver matches, pin modes by hash, team commands.
 5. Port the remaining modes: ✅ TimeAttack, Cup, ReverseCup, Knockout. Check parity with recorded
    matches.
 6. More manialinks on top of `Net_Driver_State`; remove the legacy script swapping; user uploads.
@@ -231,8 +249,7 @@ Settings of the time attack mode (every field is optional):
    - Time attack rounds start players again after a finish or give up and stop at the time limit.
    - The standings manialink parses the JSON with `fromjson` and renders its rows.
    - A config change between driver modes applies the new round format on the next map.
-   - The manager records the round results of the driver as points and positions of the round.
-2. **Phase 4**: snapshots in SpacetimeDB and resuming after a bridge restart.
+2. **Database integration (phase 4)** once the feature is fleshed out.
 
 ## Risks
 
