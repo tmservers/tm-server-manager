@@ -22,6 +22,12 @@ pub async fn setup_state_synchronization() {
 
     // Sync all events to spacetimedb.
     server.on_event(|event| {
+        // The generated bindings do not know the driver callbacks yet so transmuting
+        // them would be undefined behaviour. Forward them once the bindings are regenerated.
+        if matches!(event, tm_server_controller::event::Event::Driver(_)) {
+            return;
+        }
+
         let spacetime = SPACETIME.read();
         if spacetime
             .reducers

@@ -63,6 +63,7 @@ gbx-rs = { path = "./gbx-rs" }
 tm-server-manager-api-rs = { path = "./tm-server-manager-api-rs", version = "0.1.0-dev" }
 tm-server-types = { path = "./tm-server-types", version = "0.1.0-dev" }
 tm-server-controller = { path = "./tm-server-controller", version = "0.1.0-dev" }
+tm-wasm-driver = { path = "./tm-wasm-driver" }
 
 
 #=======
