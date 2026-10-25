@@ -4,13 +4,15 @@
 //! position, the map ends after a number of rounds and the match ends after a
 //! number of maps or once a player reached the points limit.
 //!
-//! The points only live in this mode. They reach the manager as round results.
+//! The points only live in this mode. They reach the manager as round results
+//! and the players through the standings manialink.
 
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 use tm_driver_sdk::{
     Command, Event, FinishTimeout, Mode, PlayerResult, RaceResult, RoundEnd, RoundFormat,
+    standings::{Standing, Standings},
 };
 
 tm_driver_sdk::export_mode!(Rounds);
@@ -67,6 +69,9 @@ pub struct Rounds {
     settings: Settings,
     match_points: BTreeMap<String, i32>,
     map_points: BTreeMap<String, i32>,
+    /// Points of the last valid round.
+    round_points: BTreeMap<String, i32>,
+    names: BTreeMap<String, String>,
     valid_rounds_on_map: u32,
     maps_played: u32,
 }
@@ -91,6 +96,8 @@ impl Mode for Rounds {
             settings,
             match_points: BTreeMap::new(),
             map_points: BTreeMap::new(),
+            round_points: BTreeMap::new(),
+            names: BTreeMap::new(),
             valid_rounds_on_map: 0,
             maps_played: 0,
         })
@@ -100,18 +107,23 @@ impl Mode for Rounds {
         match event {
             Event::MatchStart => {
                 self.match_points.clear();
+                self.round_points.clear();
                 self.maps_played = 0;
-                Vec::new()
+                vec![self.standings()]
             }
             // The script waits here, so this is where the rules for the map are set.
             // A config change keeps the match of the modescript going, so the rules
             // of the previous mode might still be active.
             Event::MapStart => {
                 self.map_points.clear();
+                self.round_points.clear();
                 self.valid_rounds_on_map = 0;
-                vec![Command::SetRoundFormat(RoundFormat::SingleAttempt(
-                    self.settings.finish_timeout.into(),
-                ))]
+                vec![
+                    Command::SetRoundFormat(RoundFormat::SingleAttempt(
+                        self.settings.finish_timeout.into(),
+                    )),
+                    self.standings(),
+                ]
             }
             Event::RoundStart => Vec::new(),
             Event::RoundEnd(round_end) => self.round_end(round_end),
@@ -151,9 +163,14 @@ impl Rounds {
         // Stable so equal times keep the order of the scores.
         finishers.sort_by_key(|r| r.previous_time);
 
+        self.round_points.clear();
         let mut results = Vec::with_capacity(finishers.len());
         for (rank, finisher) in finishers.into_iter().enumerate() {
             let points = self.points_for(rank);
+            self.names
+                .insert(finisher.account_id.clone(), finisher.name.clone());
+            self.round_points
+                .insert(finisher.account_id.clone(), points);
             *self
                 .map_points
                 .entry(finisher.account_id.clone())
@@ -171,7 +188,7 @@ impl Rounds {
 
         self.valid_rounds_on_map += 1;
 
-        let mut commands = vec![Command::RoundResult(results)];
+        let mut commands = vec![Command::RoundResult(results), self.standings()];
         if self.points_limit() == PointsLimit::Reached {
             commands.push(Command::EndMatch);
         } else if self.settings.rounds_per_map > 0
@@ -180,6 +197,31 @@ impl Rounds {
             commands.push(Command::EndMap);
         }
         commands
+    }
+
+    fn standings(&self) -> Command {
+        let mut players: Vec<Standing> = self
+            .match_points
+            .iter()
+            .map(|(account_id, &points)| Standing {
+                account_id: account_id.clone(),
+                name: self.names.get(account_id).cloned().unwrap_or_default(),
+                points,
+                round_points: self.round_points.get(account_id).copied().unwrap_or(0),
+            })
+            .collect();
+        // Stable so equal points keep a fixed order.
+        players.sort_by_key(|p| std::cmp::Reverse(p.points));
+
+        Standings {
+            title: "Rounds".into(),
+            info: match self.settings.rounds_per_map {
+                0 => format!("{} rounds", self.valid_rounds_on_map),
+                limit => format!("{} / {limit} rounds", self.valid_rounds_on_map),
+            },
+            players,
+        }
+        .command()
     }
 
     fn points_for(&self, rank: usize) -> i32 {
@@ -274,14 +316,43 @@ mod tests {
             .expect("Every valid round has a result")
     }
 
+    fn standings(commands: &[Command]) -> serde_json::Value {
+        commands
+            .iter()
+            .find_map(|c| match c {
+                Command::SetNetState(state) => Some(serde_json::from_str(state).unwrap()),
+                _ => None,
+            })
+            .expect("The standings are published")
+    }
+
     #[test]
     fn sets_the_round_format_on_map_start() {
         let mut mode = Rounds::init(r#"{"finish_timeout": {"milliseconds": 7000}}"#).unwrap();
         assert_eq!(
-            mode.step(Event::MapStart),
-            [Command::SetRoundFormat(RoundFormat::SingleAttempt(
-                FinishTimeout::Milliseconds(7000)
-            ))]
+            mode.step(Event::MapStart)[0],
+            Command::SetRoundFormat(RoundFormat::SingleAttempt(FinishTimeout::Milliseconds(
+                7000
+            )))
+        );
+    }
+
+    #[test]
+    fn publishes_standings() {
+        let mut mode = started(r#"{"points_repartition": [10, 6], "rounds_per_map": 5}"#);
+        mode.step(round_end(vec![finish("a", 30_000), finish("b", 31_000)]));
+        let commands = mode.step(round_end(vec![finish("b", 30_000), dnf("a")]));
+
+        assert_eq!(
+            standings(&commands),
+            serde_json::json!({
+                "title": "Rounds",
+                "info": "2 / 5 rounds",
+                "players": [
+                    {"account_id": "b", "name": "b", "points": 16, "round_points": 10},
+                    {"account_id": "a", "name": "a", "points": 10, "round_points": 0},
+                ]
+            })
         );
     }
 

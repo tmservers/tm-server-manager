@@ -4,7 +4,7 @@ mod common;
 
 use std::sync::OnceLock;
 
-use common::{hold, match_start, scores};
+use common::{hold, match_start, publishes_standings, scores, without_standings};
 use tm_server_types::{
     event::{DriverPlayerResult, DriverRoundResult, DriverSection},
     method::{DriverCommand, DriverRoundFormat},
@@ -29,10 +29,12 @@ fn plays_a_match() {
 
     driver.handle(&match_start()).unwrap();
     assert_eq!(
-        driver
-            .handle(&hold(1, DriverSection::MapStart))
-            .unwrap()
-            .commands,
+        without_standings(
+            &driver
+                .handle(&hold(1, DriverSection::MapStart))
+                .unwrap()
+                .commands
+        ),
         [
             DriverCommand::SetRoundFormat(DriverRoundFormat::TimeAttack(60_000)),
             DriverCommand::Continue(1)
@@ -48,8 +50,9 @@ fn plays_a_match() {
         ]))
         .unwrap();
     let reply = driver.handle(&hold(2, DriverSection::RoundEnd)).unwrap();
+    assert!(publishes_standings(&reply.commands));
     assert_eq!(
-        reply.commands,
+        without_standings(&reply.commands),
         [DriverCommand::EndMap, DriverCommand::Continue(2)]
     );
     assert_eq!(
@@ -71,10 +74,12 @@ fn plays_a_match() {
     );
 
     assert_eq!(
-        driver
-            .handle(&hold(3, DriverSection::MapEnd))
-            .unwrap()
-            .commands,
+        without_standings(
+            &driver
+                .handle(&hold(3, DriverSection::MapEnd))
+                .unwrap()
+                .commands
+        ),
         [DriverCommand::EndMatch, DriverCommand::Continue(3)]
     );
 }

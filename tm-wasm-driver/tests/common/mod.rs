@@ -6,6 +6,7 @@ use std::{path::PathBuf, process::Command};
 use tm_server_types::{
     base::{Player, RoundTime},
     event::{DriverHold, DriverSection, Event, Scores, StartMatch, StartRound},
+    method::DriverCommand,
 };
 
 pub const SESSION: i32 = 7;
@@ -106,4 +107,19 @@ fn race_time(time: i32) -> RoundTime {
 
 fn checkpoints(time: i32) -> Vec<u32> {
     if time < 0 { vec![] } else { vec![time as u32] }
+}
+
+/// The commands of a reply without the standings, the modes test those themselves.
+pub fn without_standings(commands: &[DriverCommand]) -> Vec<DriverCommand> {
+    commands
+        .iter()
+        .filter(|c| !matches!(c, DriverCommand::SetNetState(_)))
+        .cloned()
+        .collect()
+}
+
+pub fn publishes_standings(commands: &[DriverCommand]) -> bool {
+    commands
+        .iter()
+        .any(|c| matches!(c, DriverCommand::SetNetState(_)))
 }

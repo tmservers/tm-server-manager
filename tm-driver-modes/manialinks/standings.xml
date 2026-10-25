@@ -1,0 +1,101 @@
+<manialink name="Driver_Standings" version="3">
+<framemodel id="Model_Row">
+	<quad size="52 4.5" bgcolor="000000" opacity="0.5"/>
+	<label id="Label_Rank" pos="3 -2.25" size="5 4" halign="center" valign="center2" textsize="1.5" textfont="GameFontSemiBold" textcolor="ffffff"/>
+	<label id="Label_Name" pos="7 -2.25" size="28 4" valign="center2" textsize="1.5" textcolor="ffffff"/>
+	<label id="Label_RoundPoints" pos="42 -2.25" size="8 4" halign="right" valign="center2" textsize="1" textcolor="66ff99"/>
+	<label id="Label_Points" pos="50.5 -2.25" size="8 4" halign="right" valign="center2" textsize="1.5" textfont="GameFontSemiBold" textcolor="ffffff"/>
+</framemodel>
+
+<frame id="Frame_Standings" pos="-158 62" hidden="1">
+	<quad size="52 6" bgcolor="000000" opacity="0.8"/>
+	<label id="Label_Title" pos="2 -3" size="30 5" valign="center2" textsize="2" textfont="GameFontSemiBold" textcolor="ffffff"/>
+	<label id="Label_Info" pos="50.5 -3" size="20 5" halign="right" valign="center2" textsize="1" textcolor="ffffffaa"/>
+	<frameinstance modelid="Model_Row" id="Row_0" pos="0 -6.5"/>
+	<frameinstance modelid="Model_Row" id="Row_1" pos="0 -11.5"/>
+	<frameinstance modelid="Model_Row" id="Row_2" pos="0 -16.5"/>
+	<frameinstance modelid="Model_Row" id="Row_3" pos="0 -21.5"/>
+	<frameinstance modelid="Model_Row" id="Row_4" pos="0 -26.5"/>
+	<frameinstance modelid="Model_Row" id="Row_5" pos="0 -31.5"/>
+	<frameinstance modelid="Model_Row" id="Row_6" pos="0 -36.5"/>
+	<frameinstance modelid="Model_Row" id="Row_7" pos="0 -41.5"/>
+	<frameinstance modelid="Model_Row" id="Row_8" pos="0 -46.5"/>
+	<frameinstance modelid="Model_Row" id="Row_9" pos="0 -51.5"/>
+</frame>
+
+<script><!--
+/**
+ *	Shows the standings a driver mode publishes through Net_Driver_State.
+ *	The json is written by tm_driver_sdk::standings::Standings.
+ */
+#Include "TextLib" as TL
+
+#Const C_MaxRows 10
+
+#Struct K_Standing {
+	Text account_id;
+	Text name;
+	Integer points;
+	Integer round_points;
+}
+
+#Struct K_Standings {
+	Text title;
+	Text info;
+	K_Standing[] players;
+}
+
+Void SetText(CMlFrame _Frame, Text _ControlId, Text _Value) {
+	declare CMlLabel Label <=> (_Frame.GetFirstChild(_ControlId) as CMlLabel);
+	if (Label != Null) Label.Value = _Value;
+}
+
+Void Update(Text _State) {
+	declare CMlFrame Frame_Standings <=> (Page.GetFirstChild("Frame_Standings") as CMlFrame);
+	declare K_Standings Standings;
+	if (_State == "" || !Standings.fromjson(_State)) {
+		Frame_Standings.Visible = False;
+		return;
+	}
+
+	Frame_Standings.Visible = True;
+	SetText(Frame_Standings, "Label_Title", Standings.title);
+	SetText(Frame_Standings, "Label_Info", Standings.info);
+
+	for (Index, 0, C_MaxRows - 1) {
+		declare CMlFrame Row <=> (Page.GetFirstChild("Row_"^Index) as CMlFrame);
+		if (Row == Null) continue;
+		if (!Standings.players.existskey(Index)) {
+			Row.Visible = False;
+			continue;
+		}
+
+		declare K_Standing Standing = Standings.players[Index];
+		Row.Visible = True;
+		SetText(Row, "Label_Rank", TL::ToText(Index + 1));
+		SetText(Row, "Label_Name", Standing.name);
+		SetText(Row, "Label_Points", TL::ToText(Standing.points));
+		if (Standing.round_points > 0) {
+			SetText(Row, "Label_RoundPoints", "+"^TL::ToText(Standing.round_points));
+		} else if (Standing.round_points < 0) {
+			SetText(Row, "Label_RoundPoints", TL::ToText(Standing.round_points));
+		} else {
+			SetText(Row, "Label_RoundPoints", "");
+		}
+	}
+}
+
+main() {
+	declare netread Text Net_Driver_State for Teams[0];
+	declare netread Integer Net_Driver_StateSerial for Teams[0];
+	declare Integer LastSerial = -1;
+
+	while (True) {
+		yield;
+		if (LastSerial == Net_Driver_StateSerial) continue;
+		LastSerial = Net_Driver_StateSerial;
+		Update(Net_Driver_State);
+	}
+}
+--></script>
+</manialink>

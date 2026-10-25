@@ -13,6 +13,9 @@ pub struct Driver {
     /// Milliseconds the modescript waits for a decision before showing a waiting
     /// message and asking again.
     pub decision_timeout: u32,
+    /// Manialinks shown next to the mode, e.g. `standings`. The modescript keeps
+    /// no points, so these show what the mode publishes through `Net_Driver_State`.
+    pub manialinks: Vec<String>,
 }
 
 impl Driver {
@@ -50,6 +53,7 @@ impl Default for Driver {
             mode: "rounds".into(),
             settings: "{}".into(),
             decision_timeout: 10_000,
+            manialinks: vec!["standings".into()],
         }
     }
 }

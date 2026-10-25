@@ -9,7 +9,10 @@
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
-use tm_driver_sdk::{Command, Event, Mode, PlayerResult, RaceResult, RoundEnd, RoundFormat};
+use tm_driver_sdk::{
+    Command, Event, Mode, PlayerResult, RaceResult, RoundEnd, RoundFormat,
+    standings::{Standing, Standings},
+};
 
 tm_driver_sdk::export_mode!(TimeAttack);
 
@@ -39,6 +42,9 @@ impl Default for Settings {
 pub struct TimeAttack {
     settings: Settings,
     match_points: BTreeMap<String, i32>,
+    /// Points of the last map.
+    map_points: BTreeMap<String, i32>,
+    names: BTreeMap<String, String>,
     maps_played: u32,
 }
 
@@ -56,6 +62,8 @@ impl Mode for TimeAttack {
         Ok(Self {
             settings,
             match_points: BTreeMap::new(),
+            map_points: BTreeMap::new(),
+            names: BTreeMap::new(),
             maps_played: 0,
         })
     }
@@ -64,15 +72,20 @@ impl Mode for TimeAttack {
         match event {
             Event::MatchStart => {
                 self.match_points.clear();
+                self.map_points.clear();
                 self.maps_played = 0;
-                Vec::new()
+                vec![self.standings()]
             }
             // The script waits here, so this is where the rules for the map are set.
             // A config change keeps the match of the modescript going, so the rules
             // of the previous mode might still be active.
-            Event::MapStart => vec![Command::SetRoundFormat(RoundFormat::TimeAttack(
-                self.settings.time_limit_ms,
-            ))],
+            Event::MapStart => {
+                self.map_points.clear();
+                vec![
+                    Command::SetRoundFormat(RoundFormat::TimeAttack(self.settings.time_limit_ms)),
+                    self.standings(),
+                ]
+            }
             Event::RoundStart => Vec::new(),
             Event::RoundEnd(round_end) => self.round_end(round_end),
             Event::MapEnd => {
@@ -114,9 +127,13 @@ impl TimeAttack {
         finishers.sort_by_key(|r| r.best_time);
 
         let finisher_count = finishers.len();
+        self.map_points.clear();
         let mut results = Vec::with_capacity(finisher_count);
         for (rank, finisher) in finishers.into_iter().enumerate() {
             let points = self.points_for(rank, finisher_count);
+            self.names
+                .insert(finisher.account_id.clone(), finisher.name.clone());
+            self.map_points.insert(finisher.account_id.clone(), points);
             *self
                 .match_points
                 .entry(finisher.account_id.clone())
@@ -129,7 +146,36 @@ impl TimeAttack {
         }
 
         // Every map is a single time attack round.
-        vec![Command::RoundResult(results), Command::EndMap]
+        vec![
+            Command::RoundResult(results),
+            self.standings(),
+            Command::EndMap,
+        ]
+    }
+
+    fn standings(&self) -> Command {
+        let mut players: Vec<Standing> = self
+            .match_points
+            .iter()
+            .map(|(account_id, &points)| Standing {
+                account_id: account_id.clone(),
+                name: self.names.get(account_id).cloned().unwrap_or_default(),
+                points,
+                round_points: self.map_points.get(account_id).copied().unwrap_or(0),
+            })
+            .collect();
+        // Stable so equal points keep a fixed order.
+        players.sort_by_key(|p| std::cmp::Reverse(p.points));
+
+        Standings {
+            title: "Time Attack".into(),
+            info: match self.settings.maps_per_match {
+                0 => format!("{} maps", self.maps_played),
+                limit => format!("{} / {limit} maps", self.maps_played),
+            },
+            players,
+        }
+        .command()
     }
 
     fn points_for(&self, rank: usize, finishers: usize) -> i32 {
@@ -205,8 +251,31 @@ mod tests {
     fn sets_the_round_format_on_map_start() {
         let mut mode = TimeAttack::init(r#"{"time_limit_ms": 60000}"#).unwrap();
         assert_eq!(
-            mode.step(Event::MapStart),
-            [Command::SetRoundFormat(RoundFormat::TimeAttack(60_000))]
+            mode.step(Event::MapStart)[0],
+            Command::SetRoundFormat(RoundFormat::TimeAttack(60_000))
+        );
+    }
+
+    #[test]
+    fn publishes_standings() {
+        let mut mode = started("");
+        let commands = mode.step(round_end(vec![finish("b", 41_000), finish("a", 40_000)]));
+        let Some(Command::SetNetState(state)) = commands
+            .iter()
+            .find(|c| matches!(c, Command::SetNetState(_)))
+        else {
+            panic!("The standings are published");
+        };
+        assert_eq!(
+            serde_json::from_str::<serde_json::Value>(state).unwrap(),
+            serde_json::json!({
+                "title": "Time Attack",
+                "info": "0 / 1 maps",
+                "players": [
+                    {"account_id": "a", "name": "a", "points": 2, "round_points": 2},
+                    {"account_id": "b", "name": "b", "points": 1, "round_points": 1},
+                ]
+            })
         );
     }
 

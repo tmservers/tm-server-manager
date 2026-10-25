@@ -4,7 +4,10 @@ mod common;
 
 use std::sync::OnceLock;
 
-use common::{SESSION, forced_round_end, hold, match_start, round_start, scores};
+use common::{
+    SESSION, forced_round_end, hold, match_start, publishes_standings, round_start, scores,
+    without_standings,
+};
 use tm_server_types::{
     event::{DriverHold, DriverPlayerResult, DriverRoundResult, DriverSection, Event},
     method::{DriverCommand, DriverFinishTimeout, DriverRoundFormat},
@@ -35,16 +38,18 @@ fn result(account_id: &str, points: i32, position: u32) -> DriverPlayerResult {
 fn plays_a_match() {
     let mut driver = rounds(r#"{"points_repartition": [10, 6], "rounds_per_map": 1}"#);
 
-    // Informative callbacks need no reply.
+    // A new match starts with empty standings.
+    let reply = driver.handle(&match_start()).unwrap();
+    assert!(publishes_standings(&reply.commands));
+    assert!(without_standings(&reply.commands).is_empty());
+
     assert_eq!(
-        driver.handle(&match_start()).unwrap(),
-        DriverReply::default()
-    );
-    assert_eq!(
-        driver
-            .handle(&hold(1, DriverSection::MapStart))
-            .unwrap()
-            .commands,
+        without_standings(
+            &driver
+                .handle(&hold(1, DriverSection::MapStart))
+                .unwrap()
+                .commands
+        ),
         [
             DriverCommand::SetRoundFormat(DriverRoundFormat::SingleAttempt(
                 DriverFinishTimeout::Automatic
@@ -66,8 +71,9 @@ fn plays_a_match() {
         ]))
         .unwrap();
     let reply = driver.handle(&hold(2, DriverSection::RoundEnd)).unwrap();
+    assert!(publishes_standings(&reply.commands));
     assert_eq!(
-        reply.commands,
+        without_standings(&reply.commands),
         [DriverCommand::EndMap, DriverCommand::Continue(2)]
     );
     assert_eq!(
@@ -78,10 +84,12 @@ fn plays_a_match() {
     );
 
     assert_eq!(
-        driver
-            .handle(&hold(3, DriverSection::MapEnd))
-            .unwrap()
-            .commands,
+        without_standings(
+            &driver
+                .handle(&hold(3, DriverSection::MapEnd))
+                .unwrap()
+                .commands
+        ),
         [DriverCommand::EndMatch, DriverCommand::Continue(3)]
     );
 }
@@ -104,10 +112,12 @@ fn repeated_holds_are_decided_once() {
     // a has 20 points now. With the repeated hold counted it would be 30.
     driver.handle(&scores(&[("a", 30_000, 30_000)])).unwrap();
     assert_eq!(
-        driver
-            .handle(&hold(3, DriverSection::RoundEnd))
-            .unwrap()
-            .commands,
+        without_standings(
+            &driver
+                .handle(&hold(3, DriverSection::RoundEnd))
+                .unwrap()
+                .commands
+        ),
         [DriverCommand::Continue(3)]
     );
 
@@ -177,10 +187,12 @@ fn resumes_from_a_snapshot() {
     resumed.handle(&hold(3, DriverSection::RoundEnd)).unwrap();
     resumed.handle(&scores(&[("a", 30_000, 30_000)])).unwrap();
     assert_eq!(
-        resumed
-            .handle(&hold(4, DriverSection::RoundEnd))
-            .unwrap()
-            .commands,
+        without_standings(
+            &resumed
+                .handle(&hold(4, DriverSection::RoundEnd))
+                .unwrap()
+                .commands
+        ),
         [DriverCommand::EndMatch, DriverCommand::Continue(4)]
     );
 }

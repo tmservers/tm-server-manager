@@ -28,10 +28,11 @@ pub mod bindings {
     });
 }
 
+pub mod standings;
+
 pub use bindings::tmservers::driver::host::LogLevel;
 pub use bindings::tmservers::driver::types::{
-    CanSpawn, Command, Event, FinishTimeout, Layer, PlayerResult, RaceResult, RoundEnd,
-    RoundFormat,
+    CanSpawn, Command, Event, FinishTimeout, Layer, PlayerResult, RaceResult, RoundEnd, RoundFormat,
 };
 
 /// A game mode. One instance lives for the whole match.

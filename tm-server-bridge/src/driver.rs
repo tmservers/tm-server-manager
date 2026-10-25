@@ -2,10 +2,14 @@
 
 use std::sync::{Mutex, OnceLock};
 
-use tm_server_controller::method::{ModeScriptMethodsXmlRpc, XmlRpcMethods};
+use tm_server_controller::{
+    callbacks::TypedCallbacks,
+    method::{ModeScriptMethodsXmlRpc, XmlRpcMethods},
+};
 use tm_server_types::{
     config::Driver as DriverConfig,
-    event::{DriverRoundResult, Event},
+    event::{DriverRoundResult, Event, StartServer},
+    method::{DriverCommand, DriverLayer},
 };
 use tm_wasm_driver::{Driver, DriverEngine, DriverLimits};
 use tokio::sync::mpsc;
@@ -21,16 +25,30 @@ static ACTIVE: Mutex<Option<ActiveDriver>> = Mutex::new(None);
 struct ActiveDriver {
     mode: String,
     driver: Driver,
+    /// The manialinks selected next to the mode.
+    layers: Vec<DriverLayer>,
 }
 
 /// Feeds the callbacks of the server into the active mode and sends its commands back.
 pub fn setup_driver() {
     let (sender, mut receiver) = mpsc::unbounded_channel::<Event>();
+    let server = TRACKMANIA.wait();
 
-    TRACKMANIA.wait().on_event(move |event| {
+    server.on_event(move |event| {
         if Driver::handles(event) {
             _ = sender.send(event.clone());
         }
+    });
+
+    // A (re)started modescript lost the layers of the manialinks.
+    server.on_start_server_end(async |_: &StartServer| {
+        let layers = ACTIVE
+            .lock()
+            .unwrap()
+            .as_ref()
+            .map(|active| active.layers.clone())
+            .unwrap_or_default();
+        send(layers.into_iter().map(DriverCommand::SetLayer).collect()).await;
     });
 
     // A single task so the commands of every callback are sent in order.
@@ -58,15 +76,19 @@ pub fn setup_driver() {
             if let Some(round_result) = reply.round_result {
                 report_round_result(round_result);
             }
-            if reply.commands.is_empty() {
-                continue;
-            }
-            if let Err(error) = TRACKMANIA.wait().driver_commands(&reply.commands).await {
-                // Without the continue the modescript asks again and gets the same reply.
-                tracing::error!("Could not send the driver commands: {error}");
-            }
+            // Without the continue the modescript asks again and gets the same reply.
+            send(reply.commands).await;
         }
     });
+}
+
+async fn send(commands: Vec<DriverCommand>) {
+    if commands.is_empty() {
+        return;
+    }
+    if let Err(error) = TRACKMANIA.wait().driver_commands(&commands).await {
+        tracing::error!("Could not send the driver commands: {error}");
+    }
 }
 
 /// Hands the points of a round to the manager.
@@ -76,16 +98,34 @@ fn report_round_result(round_result: DriverRoundResult) {
     tracing::info!("Round result of the driver: {round_result:?}");
 }
 
-/// Loads the mode of a driver configuration.
+/// Loads the mode of a driver configuration and shows its manialinks.
 /// Has to happen before the driver modescript gets loaded so no callback is missed.
 pub async fn load(config: &DriverConfig) {
     match instantiate(config) {
         Ok(driver) => {
             tracing::info!("Loaded driver mode {}.", config.mode);
+            let layers = load_layers(&config.manialinks);
+
+            // A running modescript keeps the layers of the previous driver mode.
+            let mut commands: Vec<DriverCommand> = ACTIVE
+                .lock()
+                .unwrap()
+                .take()
+                .map(|previous| previous.layers)
+                .unwrap_or_default()
+                .into_iter()
+                .filter(|previous| !layers.iter().any(|layer| layer.name == previous.name))
+                .map(|previous| DriverCommand::RemoveLayer(previous.name))
+                .collect();
+            commands.extend(layers.iter().cloned().map(DriverCommand::SetLayer));
+
             *ACTIVE.lock().unwrap() = Some(ActiveDriver {
                 mode: config.mode.clone(),
                 driver,
+                layers,
             });
+            // Ignored by other modescripts. The driver modescript gets them once it started.
+            send(commands).await;
         }
         Err(error) => {
             tracing::error!("Could not load driver mode {}: {error}", config.mode);
@@ -112,14 +152,16 @@ pub fn unload() {
     }
 }
 
-fn instantiate(config: &DriverConfig) -> Result<Driver, String> {
-    // The name ends up in a file path.
-    if config.mode.is_empty()
-        || !config
-            .mode
+/// Names end up in file paths.
+fn valid_name(name: &str) -> bool {
+    !name.is_empty()
+        && name
             .chars()
             .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
-    {
+}
+
+fn instantiate(config: &DriverConfig) -> Result<Driver, String> {
+    if !valid_name(&config.mode) {
         return Err("Mode names may only contain letters, digits, - and _.".into());
     }
 
@@ -132,6 +174,31 @@ fn instantiate(config: &DriverConfig) -> Result<Driver, String> {
     engine
         .instantiate(&module, &config.settings)
         .map_err(|error| error.to_string())
+}
+
+/// Missing manialinks only cost the UI, so they do not stop the mode.
+fn load_layers(names: &[String]) -> Vec<DriverLayer> {
+    let directory = std::env::var("TM_DRIVER_MANIALINKS_DIR").unwrap_or("./manialinks".into());
+    names
+        .iter()
+        .filter_map(|name| {
+            if !valid_name(name) {
+                tracing::warn!("Skipping the manialink {name}. Names may only contain letters, digits, - and _.");
+                return None;
+            }
+            let path = format!("{directory}/{name}.xml");
+            match std::fs::read_to_string(&path) {
+                Ok(manialink) => Some(DriverLayer {
+                    name: name.clone(),
+                    manialink,
+                }),
+                Err(error) => {
+                    tracing::warn!("Could not read the manialink {path}: {error}");
+                    None
+                }
+            }
+        })
+        .collect()
 }
 
 fn engine() -> Result<&'static DriverEngine, String> {
