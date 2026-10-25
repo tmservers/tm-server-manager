@@ -4,6 +4,9 @@ pub use chat::*;
 mod player;
 pub use player::*;
 
+mod driver;
+pub use driver::*;
+
 #[derive(Debug, Clone)]
 #[non_exhaustive]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
