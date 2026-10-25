@@ -5,7 +5,9 @@ use std::{path::PathBuf, process::Command};
 
 use tm_server_types::{
     base::{Player, RoundTime},
-    event::{DriverHold, DriverSection, Event, Scores, StartMatch, StartRound},
+    event::{
+        DriverHold, DriverSection, Event, Scores, StartLine, StartMatch, StartRound, WayPoint,
+    },
     method::DriverCommand,
 };
 
@@ -64,6 +66,33 @@ pub fn match_start() -> Event {
 
 pub fn round_start(count: u32) -> Event {
     Event::StartRoundStart(StartRound { count, time: 0 })
+}
+
+pub fn start_line(account_id: &str) -> Event {
+    Event::StartLine(StartLine {
+        account_id: account_id.into(),
+        time: 0,
+    })
+}
+
+/// A player passed a checkpoint of the race, counting from 0.
+pub fn way_point(account_id: &str, checkpoint_in_race: u32) -> Event {
+    Event::WayPoint(WayPoint {
+        account_id: account_id.into(),
+        time: 0,
+        racetime: 0,
+        laptime: 0,
+        speed: 0.,
+        checkpoint_in_race,
+        checkpoint_in_lap: checkpoint_in_race,
+        is_end_race: false,
+        is_end_lap: false,
+        is_infinite_laps: false,
+        is_independent_laps: false,
+        current_race_checkpoints: vec![],
+        current_lap_checkpoints: vec![],
+        block_id: String::new(),
+    })
 }
 
 /// The scores the modescript sends right before the round end hold.

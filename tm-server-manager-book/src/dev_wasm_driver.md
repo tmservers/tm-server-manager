@@ -1,6 +1,7 @@
 # WASM Mode Driver
 
-Status: phases 0–3 and the TimeAttack mode are implemented on the `wasm-driver/*` branches.
+Status: phases 0–3 and the TimeAttack and ReverseCup modes are implemented on the
+`wasm-driver/*` branches.
 Everything except the modescript and the manialink is covered by tests, but nothing has run
 against a real server yet. The manager (and its database) stays untouched until the feature is
 fleshed out. See [Next steps](#next-steps).
@@ -58,6 +59,11 @@ tm-server-bridge ── post_event (standard callbacks, as before) ──▶ tm-
 of the best race. Single attempt rounds count the last race, time attack rounds the best one.
 Race times stay in Nadeo's `Scores` library because that is race data, not mode state.
 
+Every result also says whether the player `started` a race in the round and how many checkpoints
+(`progress`, the finish included) they passed in their last race. The host counts both from the
+standard `Trackmania.Event.StartLine` and `Trackmania.Event.WayPoint` callbacks. Players who
+started but left before the scores were sent are added without a name.
+
 ### `Driver.Hold`, the only custom callback
 
 The standard callbacks are fire and forget, so the modescript would run into the next round before
@@ -90,6 +96,7 @@ the only place that knows how each command reaches the server.
 | `EndMatch` | `Driver.EndMatch` | NextMap only ends the map. |
 | `SetLayer` / `RemoveLayer` | `Driver.SetLayer [name, manialink]` / `Driver.RemoveLayer [name]` | Only layers created by the script can read its netvars. |
 | `SetNetState` | `Driver.SetNetState [json]` | Writes `Net_Driver_State` and bumps `Net_Driver_StateSerial`. |
+| `ChatMessage` | standard `ChatSendServerMessage` | – |
 
 Round format, finish timeout and spawn permissions reset to their defaults when a match starts.
 A config change does **not** start a new match: NextMap only ends the map, so the modescript keeps
@@ -104,8 +111,10 @@ The modescript never sees points. A mode keeps them and publishes them in two pl
 - **Players:** `SetNetState` with the standings JSON of `tm_driver_sdk::standings`:
 
   ```json
-  {"title": "Rounds", "info": "2 / 5 rounds", "players": [{"account_id": "...", "name": "...", "points": 16, "round_points": 10}]}
+  {"title": "Rounds", "info": "2 / 5 rounds", "players": [{"account_id": "...", "name": "...", "points": 16, "round_points": 10, "status": ""}]}
   ```
+
+  A `status` like `Last Chance` or `Eliminated` replaces the points of a player.
 
   `tm-driver-modes/manialinks/standings.xml` renders it. Manialinks are selected next to the mode in
   the config (`Driver.manialinks`). The bridge installs them as layers when the config loads and
@@ -126,7 +135,8 @@ A replay needs:
 - The same mode module and settings. Matches will pin the module by hash once the manager
   stores modes.
 - Every event the driver handled (`Driver::handles`): `StartMatch_Start`, `StartRound_Start`,
-  `Trackmania.Scores`, `EndMatch_Start` and the holds. The manager already stores the standard
+  `Trackmania.Event.StartLine`, `Trackmania.Event.WayPoint`, `Trackmania.Scores`,
+  `EndMatch_Start` and the holds. The manager already stores the standard
   callbacks. The bridge does not forward holds yet because the script repeats them while it
   waits. Storing each hold once is part of the database integration.
 
@@ -153,8 +163,39 @@ the same trick `TM_RoundsThenTimeattack` from the community modes uses:
 4. At the end the scores carry everyone's best race of the round. The mode ranks by it, reports
    the round result, publishes standings and ends the map.
 
-Points exist because `TmMode::Driver` standings sum round points. By default the best of N
-finishers gets N points, so the points keep the order of the times.
+Points exist so the standings and round results rank players like the other modes do. By
+default the best of N finishers gets N points, so the points keep the order of the times.
+
+## ReverseCup
+
+A port of the community `TM_ReverseCup` script with the same settings and rules:
+
+- Every participant starts with `starting_points` and loses points by finish position. The
+  repartition depends on the players left (`complex_points_repartition`, otherwise
+  `points_repartition`). While more players are left than it has values, every eliminated player
+  removes its first value (`fast_forward_points_repartition`). Giving up costs `dnf_points_loss`.
+- A player who runs out of points is in last chance (or eliminated with `disable_last_chance`).
+  A player in last chance is eliminated by losing the most points of the round, so several
+  players can share a rank. With `last_chance_dnf_mode: "only_least_checkpoints"` only the players
+  in last chance with the fewest checkpoints lose points for giving up.
+- Eliminated players get `SetCanSpawn(false)` and a chat message. The match ends once
+  `number_of_winners` players are left (a single participant plays until eliminated).
+- A round only counts for `rounds_per_map` if someone lost points. Maps change until the match
+  is over.
+- Round results report the lost points (negative) with the finishers by time, then everyone
+  without a finish by checkpoints.
+
+Differences to the original:
+
+- The participants are the players who start in the first valid round, not the players on the
+  server when the first map starts. Everyone else in the scores cannot spawn anymore from then on.
+  Someone joining later can race the round they joined in, which does not count for them.
+- The original skips a round that would put everyone in last chance anyway. The mode does that
+  right after the previous round, so the round is not started at all.
+- Participants who did not start in a round (for example because they left) always lose the dnf
+  points. The checkpoints of `only_least_checkpoints` are counted over the race, not the lap.
+- Not ported: waiting for `S_NbOfPlayers`, the live ranking, dossard colors, the podium and big
+  messages. Warmup is the modescript's.
 
 ## WIT interface and host
 
@@ -178,11 +219,12 @@ import host;  // log
 
 ## Guest SDK and modes
 
-- `tm-driver-sdk`: wit-bindgen bindings, a `Mode` trait, `export_mode!` and the `standings` helper.
-  Mode logic compiles natively too, so it can be unit tested without wasm.
+- `tm-driver-sdk`: wit-bindgen bindings, a `Mode` trait, `export_mode!`, the `standings` helper
+  and shared `settings`. Mode logic compiles natively too, so it can be unit tested without wasm.
 - `tm-driver-modes/rounds`: Rounds (points repartition, rounds per map, maps per match, points
   limit with tie break, finish timeout).
 - `tm-driver-modes/time-attack`: TimeAttack (time limit, maps per match, points by rank).
+- `tm-driver-modes/reverse-cup`: ReverseCup (see [ReverseCup](#reversecup)).
 
 ## Configuration
 
@@ -195,8 +237,11 @@ manialinks from `TM_DRIVER_MANIALINKS_DIR` (default `./manialinks`) as `<name>.x
 in the manager (pinned by hash per match) replaces this later.
 
 ```sh
-cargo build -p tm-driver-mode-rounds --target wasm32-unknown-unknown --release
+cargo build -p tm-driver-mode-rounds -p tm-driver-mode-time-attack -p tm-driver-mode-reverse-cup \
+  --target wasm32-unknown-unknown --release
 cp target/wasm32-unknown-unknown/release/tm_driver_mode_rounds.wasm $TM_DRIVER_MODES_DIR/rounds.wasm
+cp target/wasm32-unknown-unknown/release/tm_driver_mode_time_attack.wasm $TM_DRIVER_MODES_DIR/time-attack.wasm
+cp target/wasm32-unknown-unknown/release/tm_driver_mode_reverse_cup.wasm $TM_DRIVER_MODES_DIR/reverse-cup.wasm
 cp tm-driver-modes/manialinks/standings.xml $TM_DRIVER_MANIALINKS_DIR/
 ```
 
@@ -225,6 +270,27 @@ Settings of the time attack mode (every field is optional):
 }
 ```
 
+Settings of the reverse cup mode (every field is optional, these are the defaults of the original):
+
+```json
+{
+  "starting_points": 100,
+  "points_repartition": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+  "complex_points_repartition": {"2": [4, 8], "3": [2, 6, 9], "4": [0, 4, 7, 10], "5": [0, 4, 7, 10, 13]},
+  "fast_forward_points_repartition": true,
+  "dnf_points_loss": 20,
+  "disable_last_chance": false,
+  "last_chance_dnf_mode": "all_players",
+  "allow_fast_forward_rounds": true,
+  "number_of_winners": 1,
+  "rounds_per_map": 5,
+  "finish_timeout": "automatic"
+}
+```
+
+A key of `complex_points_repartition` can list several player counts, e.g. `"4,5"`.
+`last_chance_dnf_mode` is `"all_players"` or `"only_least_checkpoints"`.
+
 ## Phases
 
 0. ✅ Typed boundary in `tm-server-types` and the controller.
@@ -233,8 +299,8 @@ Settings of the time attack mode (every field is optional):
 3. ✅ Bridge integration behind `ModeSettingsV2::Driver`.
 4. Database integration: store the events the driver handles (holds once per seq) and resume by
    replay, record round results, a `TmMode` for driver matches, pin modes by hash, team commands.
-5. Port the remaining modes: ✅ TimeAttack, Cup, ReverseCup, Knockout. Check parity with recorded
-   matches.
+5. Port the remaining modes: ✅ TimeAttack, ✅ ReverseCup, Cup, Knockout. Check parity with
+   recorded matches.
 6. More manialinks on top of `Net_Driver_State`; remove the legacy script swapping; user uploads.
 
 ## Next steps
@@ -249,6 +315,11 @@ Settings of the time attack mode (every field is optional):
    - Time attack rounds start players again after a finish or give up and stop at the time limit.
    - The standings manialink parses the JSON with `fromjson` and renders its rows.
    - A config change between driver modes applies the new round format on the next map.
+   - The `StartLine` and `WayPoint` callbacks arrive, so round results know who started and how
+     far they got.
+   - `SetCanSpawn(false)` keeps eliminated players and spectators from spawning, also on the
+     next map, and chat messages of the mode show up.
+   - The standings manialink shows the status of players in last chance and eliminated players.
 2. **Database integration (phase 4)** once the feature is fleshed out.
 
 ## Risks
