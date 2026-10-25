@@ -200,6 +200,7 @@ impl Rounds {
                 name: self.names.get(account_id).cloned().unwrap_or_default(),
                 points,
                 round_points: self.round_points.get(account_id).copied().unwrap_or(0),
+                status: String::new(),
             })
             .collect();
         // Stable so equal points keep a fixed order.
@@ -345,8 +346,8 @@ mod tests {
                 "title": "Rounds",
                 "info": "2 / 5 rounds",
                 "players": [
-                    {"account_id": "b", "name": "b", "points": 16, "round_points": 10},
-                    {"account_id": "a", "name": "a", "points": 10, "round_points": 0},
+                    {"account_id": "b", "name": "b", "points": 16, "round_points": 10, "status": ""},
+                    {"account_id": "a", "name": "a", "points": 10, "round_points": 0, "status": ""},
                 ]
             })
         );

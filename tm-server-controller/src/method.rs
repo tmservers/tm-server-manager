@@ -161,6 +161,9 @@ impl ModeScriptMethodsXmlRpc for TrackmaniaServer {
                         .await?
                 }
                 DriverCall::NextMap => self.next_map().await?,
+                DriverCall::ChatSendServerMessage(message) => {
+                    self.chat_send_server_massage(message).await?
+                }
             };
         }
         Ok(())

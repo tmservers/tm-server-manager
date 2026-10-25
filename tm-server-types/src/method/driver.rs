@@ -25,6 +25,8 @@ pub enum DriverCommand {
     RemoveLayer(String),
     /// Text readable by manialinks through `netread Text Net_Driver_State for Teams[0]`.
     SetNetState(String),
+    /// A message for everyone in the chat.
+    ChatMessage(String),
 }
 
 /// How a command reaches the server.
@@ -37,6 +39,8 @@ pub enum DriverCall {
     },
     /// The standard `NextMap` method.
     NextMap,
+    /// The standard `ChatSendServerMessage` method.
+    ChatSendServerMessage(String),
 }
 
 impl DriverCommand {
@@ -93,6 +97,9 @@ impl DriverCommand {
             ),
             DriverCommand::RemoveLayer(name) => (Self::REMOVE_LAYER, vec![name.clone()]),
             DriverCommand::SetNetState(state) => (Self::SET_NET_STATE, vec![state.clone()]),
+            DriverCommand::ChatMessage(message) => {
+                return DriverCall::ChatSendServerMessage(message.clone());
+            }
         };
         DriverCall::ModeScript { method, params }
     }
@@ -150,7 +157,9 @@ mod tests {
     fn modescript(command: DriverCommand) -> (&'static str, Vec<String>) {
         match command.call() {
             DriverCall::ModeScript { method, params } => (method, params),
-            DriverCall::NextMap => panic!("Expected a modescript method"),
+            DriverCall::NextMap | DriverCall::ChatSendServerMessage(_) => {
+                panic!("Expected a modescript method")
+            }
         }
     }
 
@@ -199,7 +208,11 @@ mod tests {
     }
 
     #[test]
-    fn end_map_uses_next_map() {
+    fn standard_methods() {
         assert_eq!(DriverCommand::EndMap.call(), DriverCall::NextMap);
+        assert_eq!(
+            DriverCommand::ChatMessage("hi".into()).call(),
+            DriverCall::ChatSendServerMessage("hi".into())
+        );
     }
 }

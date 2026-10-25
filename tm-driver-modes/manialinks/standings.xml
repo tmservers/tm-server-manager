@@ -5,6 +5,7 @@
 	<label id="Label_Name" pos="7 -2.25" size="28 4" valign="center2" textsize="1.5" textcolor="ffffff"/>
 	<label id="Label_RoundPoints" pos="42 -2.25" size="8 4" halign="right" valign="center2" textsize="1" textcolor="66ff99"/>
 	<label id="Label_Points" pos="50.5 -2.25" size="8 4" halign="right" valign="center2" textsize="1.5" textfont="GameFontSemiBold" textcolor="ffffff"/>
+	<label id="Label_Status" pos="50.5 -2.25" size="16 4" halign="right" valign="center2" textsize="1" textfont="GameFontSemiBold" textcolor="ff5555" hidden="1"/>
 </framemodel>
 
 <frame id="Frame_Standings" pos="-158 62" hidden="1">
@@ -37,6 +38,7 @@
 	Text name;
 	Integer points;
 	Integer round_points;
+	Text status;
 }
 
 #Struct K_Standings {
@@ -48,6 +50,16 @@
 Void SetText(CMlFrame _Frame, Text _ControlId, Text _Value) {
 	declare CMlLabel Label <=> (_Frame.GetFirstChild(_ControlId) as CMlLabel);
 	if (Label != Null) Label.Value = _Value;
+}
+
+Void SetTextColor(CMlFrame _Frame, Text _ControlId, Vec3 _Color) {
+	declare CMlLabel Label <=> (_Frame.GetFirstChild(_ControlId) as CMlLabel);
+	if (Label != Null) Label.TextColor = _Color;
+}
+
+Void SetVisible(CMlFrame _Frame, Text _ControlId, Boolean _Visible) {
+	declare CMlControl Control <=> _Frame.GetFirstChild(_ControlId);
+	if (Control != Null) Control.Visible = _Visible;
 }
 
 Void Update(Text _State) {
@@ -77,11 +89,20 @@ Void Update(Text _State) {
 		SetText(Row, "Label_Points", TL::ToText(Standing.points));
 		if (Standing.round_points > 0) {
 			SetText(Row, "Label_RoundPoints", "+"^TL::ToText(Standing.round_points));
+			SetTextColor(Row, "Label_RoundPoints", <0.4, 1., 0.6>);
 		} else if (Standing.round_points < 0) {
 			SetText(Row, "Label_RoundPoints", TL::ToText(Standing.round_points));
+			SetTextColor(Row, "Label_RoundPoints", <1., 0.4, 0.4>);
 		} else {
 			SetText(Row, "Label_RoundPoints", "");
 		}
+
+		// A status like Eliminated replaces the points.
+		declare Boolean HasStatus = Standing.status != "";
+		SetText(Row, "Label_Status", Standing.status);
+		SetVisible(Row, "Label_Status", HasStatus);
+		SetVisible(Row, "Label_Points", !HasStatus);
+		SetVisible(Row, "Label_RoundPoints", !HasStatus);
 	}
 }
 

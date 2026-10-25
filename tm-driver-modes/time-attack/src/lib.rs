@@ -154,6 +154,7 @@ impl TimeAttack {
                 name: self.names.get(account_id).cloned().unwrap_or_default(),
                 points,
                 round_points: self.map_points.get(account_id).copied().unwrap_or(0),
+                status: String::new(),
             })
             .collect();
         // Stable so equal points keep a fixed order.
@@ -268,8 +269,8 @@ mod tests {
                 "title": "Time Attack",
                 "info": "0 / 1 maps",
                 "players": [
-                    {"account_id": "a", "name": "a", "points": 2, "round_points": 2},
-                    {"account_id": "b", "name": "b", "points": 1, "round_points": 1},
+                    {"account_id": "a", "name": "a", "points": 2, "round_points": 2, "status": ""},
+                    {"account_id": "b", "name": "b", "points": 1, "round_points": 1, "status": ""},
                 ]
             })
         );

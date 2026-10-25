@@ -100,6 +100,8 @@ interface types {
         /// Results of the current round for the tournament manager.
         /// The last one returned for a round counts.
         round-result(list<player-result>),
+        /// A message for everyone in the chat.
+        chat-message(string),
     }
 }
 

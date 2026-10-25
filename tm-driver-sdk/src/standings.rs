@@ -25,6 +25,8 @@ pub struct Standing {
     pub points: i32,
     /// Points of the last round. 0 hides them.
     pub round_points: i32,
+    /// Shown instead of the points when not empty, e.g. `Eliminated`.
+    pub status: String,
 }
 
 impl Standings {
@@ -50,6 +52,7 @@ mod tests {
             "Text name;",
             "Integer points;",
             "Integer round_points;",
+            "Text status;",
         ] {
             assert!(
                 manialink.contains(member),
@@ -69,12 +72,13 @@ mod tests {
                 name: "$f00kistz".into(),
                 points: 10,
                 round_points: 10,
+                status: String::new(),
             }],
         };
         assert_eq!(
             standings.command(),
             Command::SetNetState(
-                r#"{"title":"Rounds","info":"1 / 5 rounds","players":[{"account_id":"a","name":"$f00kistz","points":10,"round_points":10}]}"#
+                r#"{"title":"Rounds","info":"1 / 5 rounds","players":[{"account_id":"a","name":"$f00kistz","points":10,"round_points":10,"status":""}]}"#
                     .into()
             )
         );

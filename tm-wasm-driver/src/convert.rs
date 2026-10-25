@@ -91,6 +91,7 @@ pub(crate) fn reply(commands: Vec<Command>) -> DriverReply {
             }
             Command::RemoveLayer(name) => DriverCommand::RemoveLayer(name),
             Command::SetNetState(state) => DriverCommand::SetNetState(state),
+            Command::ChatMessage(message) => DriverCommand::ChatMessage(message),
             Command::RoundResult(results) => {
                 reply.round_result = Some(DriverRoundResult {
                     results: results.into_iter().map(player_result).collect(),
