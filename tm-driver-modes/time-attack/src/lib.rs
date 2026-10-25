@@ -3,13 +3,13 @@
 //! Every map is one time attack round: players restart as often as they like
 //! until the time limit runs out and their best time counts. Standings of
 //! driver matches sum round points, so the ranking of every map is turned into
-//! points. By default the best of N players gets N points, the second N - 1 and
-//! so on, which keeps the order of the times.
+//! points. By default the best of N finishers gets N points, the second N - 1
+//! and so on, which keeps the order of the times.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
-use tm_driver_sdk::{Command, Event, Mode, PlayerPoints, RaceResult, RoundEnd, RoundFormat};
+use tm_driver_sdk::{Command, Event, Mode, PlayerResult, RaceResult, RoundEnd, RoundFormat};
 
 tm_driver_sdk::export_mode!(TimeAttack);
 
@@ -21,7 +21,7 @@ pub struct Settings {
     /// Maps played in the match. 0 means no limit.
     pub maps_per_match: u32,
     /// Points by rank at the end of every map. Ranks beyond the list get the last value.
-    /// When empty the best of N players gets N points, the second N - 1 and so on.
+    /// When empty the best of N finishers gets N points, the second N - 1 and so on.
     pub points_repartition: Vec<i32>,
 }
 
@@ -39,9 +39,6 @@ impl Default for Settings {
 pub struct TimeAttack {
     settings: Settings,
     match_points: BTreeMap<String, i32>,
-    map_points: BTreeMap<String, i32>,
-    /// Players whose round and map points are shown and need to be reset on the next map.
-    points_shown: BTreeSet<String>,
     maps_played: u32,
 }
 
@@ -59,35 +56,26 @@ impl Mode for TimeAttack {
         Ok(Self {
             settings,
             match_points: BTreeMap::new(),
-            map_points: BTreeMap::new(),
-            points_shown: BTreeSet::new(),
             maps_played: 0,
         })
     }
 
     fn step(&mut self, event: Event) -> Vec<Command> {
         match event {
-            Event::MatchStart(_) => {
+            Event::MatchStart => {
                 self.match_points.clear();
-                self.map_points.clear();
-                self.points_shown.clear();
                 self.maps_played = 0;
-                vec![self.round_format()]
+                Vec::new()
             }
-            Event::MapStart(_) => {
-                self.map_points.clear();
-                let mut commands: Vec<Command> = std::mem::take(&mut self.points_shown)
-                    .into_iter()
-                    .map(|account_id| points(account_id, Some(0), Some(0), None))
-                    .collect();
-                // A config change keeps the match of the modescript going, so the rules
-                // of the previous mode might still be active.
-                commands.push(self.round_format());
-                commands
-            }
-            Event::RoundStart(_) => Vec::new(),
+            // The script waits here, so this is where the rules for the map are set.
+            // A config change keeps the match of the modescript going, so the rules
+            // of the previous mode might still be active.
+            Event::MapStart => vec![Command::SetRoundFormat(RoundFormat::TimeAttack(
+                self.settings.time_limit_ms,
+            ))],
+            Event::RoundStart => Vec::new(),
             Event::RoundEnd(round_end) => self.round_end(round_end),
-            Event::MapEnd(_) => {
+            Event::MapEnd => {
                 self.maps_played += 1;
                 if self.settings.maps_per_match > 0
                     && self.maps_played >= self.settings.maps_per_match
@@ -97,21 +85,7 @@ impl Mode for TimeAttack {
                     Vec::new()
                 }
             }
-            Event::MatchEnd(_) => Vec::new(),
-            // The scores of a returning player might have been reset by the server.
-            Event::PlayerJoin(join) => match self.match_points.get(&join.player.account_id) {
-                Some(&match_points) => {
-                    let map_points = self.map_points.get(&join.player.account_id).copied();
-                    vec![points(
-                        join.player.account_id,
-                        None,
-                        map_points,
-                        Some(match_points),
-                    )]
-                }
-                None => Vec::new(),
-            },
-            Event::PlayerLeave(_) => Vec::new(),
+            Event::MatchEnd => Vec::new(),
         }
     }
 
@@ -125,59 +99,43 @@ impl Mode for TimeAttack {
 }
 
 impl TimeAttack {
-    fn round_format(&self) -> Command {
-        Command::SetRoundFormat(RoundFormat::TimeAttack(self.settings.time_limit_ms))
-    }
-
     fn round_end(&mut self, round_end: RoundEnd) -> Vec<Command> {
         // A forced round was cut short. The map continues with a new time attack round.
         if round_end.forced {
             return Vec::new();
         }
 
-        let participants = round_end.results.len();
         let mut finishers: Vec<&RaceResult> = round_end
             .results
             .iter()
-            .filter(|r| r.time.is_some())
+            .filter(|r| r.best_time.is_some())
             .collect();
-        // Stable so equal times keep the order of the modescript.
-        finishers.sort_by_key(|r| r.time);
+        // Stable so equal times keep the order of the scores.
+        finishers.sort_by_key(|r| r.best_time);
 
-        let mut commands = Vec::with_capacity(finishers.len() + 1);
-        for (rank, result) in finishers.into_iter().enumerate() {
-            let round_points = self.points_for(rank, participants);
-            let map_points = self
-                .map_points
-                .entry(result.account_id.clone())
-                .or_default();
-            *map_points += round_points;
-            let map_points = *map_points;
-            let match_points = self
+        let finisher_count = finishers.len();
+        let mut results = Vec::with_capacity(finisher_count);
+        for (rank, finisher) in finishers.into_iter().enumerate() {
+            let points = self.points_for(rank, finisher_count);
+            *self
                 .match_points
-                .entry(result.account_id.clone())
-                .or_default();
-            *match_points += round_points;
-
-            self.points_shown.insert(result.account_id.clone());
-            commands.push(points(
-                result.account_id.clone(),
-                Some(round_points),
-                Some(map_points),
-                Some(*match_points),
-            ));
+                .entry(finisher.account_id.clone())
+                .or_default() += points;
+            results.push(PlayerResult {
+                account_id: finisher.account_id.clone(),
+                points,
+                position: rank as u32 + 1,
+            });
         }
 
         // Every map is a single time attack round.
-        commands.push(Command::EndMap);
-        commands
+        vec![Command::RoundResult(results), Command::EndMap]
     }
 
-    fn points_for(&self, rank: usize, participants: usize) -> i32 {
+    fn points_for(&self, rank: usize, finishers: usize) -> i32 {
         let repartition = &self.settings.points_repartition;
         if repartition.is_empty() {
-            // Finishers are a subset of the participants so this is at least 1.
-            return i32::try_from(participants - rank).unwrap_or(i32::MAX);
+            return i32::try_from(finishers - rank).unwrap_or(i32::MAX);
         }
         repartition
             .get(rank)
@@ -187,94 +145,69 @@ impl TimeAttack {
     }
 }
 
-fn points(
-    account_id: String,
-    round_points: Option<i32>,
-    map_points: Option<i32>,
-    match_points: Option<i32>,
-) -> Command {
-    Command::SetPlayerPoints(PlayerPoints {
-        account_id,
-        round_points,
-        map_points,
-        match_points,
-    })
-}
-
 #[cfg(test)]
 mod tests {
-    use tm_driver_sdk::{MapStart, MatchStart};
-
     use super::*;
 
-    fn finish(account_id: &str, time: u32) -> RaceResult {
+    /// In time attack rounds the best race counts, not the last one.
+    fn finish(account_id: &str, best_time: u32) -> RaceResult {
         RaceResult {
             account_id: account_id.into(),
-            time: Some(time),
-            checkpoints: vec![time],
+            name: account_id.into(),
+            previous_time: Some(best_time + 1_000),
+            previous_checkpoints: vec![],
+            best_time: Some(best_time),
+            best_checkpoints: vec![best_time],
         }
     }
 
     fn dnf(account_id: &str) -> RaceResult {
         RaceResult {
             account_id: account_id.into(),
-            time: None,
-            checkpoints: vec![],
+            name: account_id.into(),
+            previous_time: None,
+            previous_checkpoints: vec![],
+            best_time: None,
+            best_checkpoints: vec![],
         }
     }
 
     fn round_end(results: Vec<RaceResult>) -> Event {
         Event::RoundEnd(RoundEnd {
-            time: 0,
-            round: 1,
             forced: false,
             results,
         })
     }
 
-    fn map_start() -> Event {
-        Event::MapStart(MapStart {
-            time: 0,
-            map_uid: "uid".into(),
-            map_name: "map".into(),
-            players: vec![],
-        })
-    }
-
     fn started(settings: &str) -> TimeAttack {
         let mut mode = TimeAttack::init(settings).unwrap();
-        mode.step(Event::MatchStart(MatchStart {
-            time: 0,
-            players: vec![],
-        }));
-        mode.step(map_start());
+        mode.step(Event::MatchStart);
+        mode.step(Event::MapStart);
         mode
     }
 
-    fn player_points(commands: &[Command]) -> Vec<(String, Option<i32>, Option<i32>)> {
+    fn round_result(commands: &[Command]) -> Vec<(String, i32, u32)> {
         commands
             .iter()
-            .filter_map(|c| match c {
-                Command::SetPlayerPoints(p) => {
-                    Some((p.account_id.clone(), p.round_points, p.match_points))
-                }
+            .find_map(|c| match c {
+                Command::RoundResult(results) => Some(
+                    results
+                        .iter()
+                        .map(|r| (r.account_id.clone(), r.points, r.position))
+                        .collect(),
+                ),
                 _ => None,
             })
-            .collect()
+            .expect("Every valid round has a result")
     }
 
     #[test]
-    fn sets_the_round_format() {
+    fn sets_the_round_format_on_map_start() {
         let mut mode = TimeAttack::init(r#"{"time_limit_ms": 60000}"#).unwrap();
-        let format = || Command::SetRoundFormat(RoundFormat::TimeAttack(60_000));
         assert_eq!(
-            mode.step(Event::MatchStart(MatchStart {
-                time: 0,
-                players: vec![]
-            })),
-            [format()]
+            mode.step(Event::MapStart),
+            [Command::SetRoundFormat(RoundFormat::TimeAttack(60_000))]
         );
-        assert_eq!(mode.step(map_start()), [format()]);
     }
 
     #[test]
@@ -287,11 +220,8 @@ mod tests {
         ]));
 
         assert_eq!(
-            player_points(&commands),
-            [
-                ("a".into(), Some(3), Some(3)),
-                ("b".into(), Some(2), Some(2)),
-            ]
+            round_result(&commands),
+            [("a".into(), 2, 1), ("b".into(), 1, 2)]
         );
         assert_eq!(commands.last(), Some(&Command::EndMap));
     }
@@ -305,12 +235,8 @@ mod tests {
             finish("c", 42_000),
         ]));
         assert_eq!(
-            player_points(&commands),
-            [
-                ("a".into(), Some(10), Some(10)),
-                ("b".into(), Some(5), Some(5)),
-                ("c".into(), Some(5), Some(5)),
-            ]
+            round_result(&commands),
+            [("a".into(), 10, 1), ("b".into(), 5, 2), ("c".into(), 5, 3)]
         );
     }
 
@@ -318,8 +244,6 @@ mod tests {
     fn forced_rounds_replay_the_map() {
         let mut mode = started("");
         let commands = mode.step(Event::RoundEnd(RoundEnd {
-            time: 0,
-            round: 1,
             forced: true,
             results: vec![finish("a", 40_000)],
         }));
@@ -330,23 +254,13 @@ mod tests {
     fn points_add_up_over_maps() {
         let mut mode = started(r#"{"maps_per_match": 2}"#);
         mode.step(round_end(vec![finish("a", 40_000), finish("b", 41_000)]));
-        assert!(mode.step(Event::MapEnd(0)).is_empty());
+        assert!(mode.step(Event::MapEnd).is_empty());
 
-        // The points of the last map are reset on the next map.
-        assert_eq!(
-            player_points(&mode.step(map_start())),
-            [("a".into(), Some(0), None), ("b".into(), Some(0), None)]
-        );
-
-        let commands = mode.step(round_end(vec![finish("b", 39_000), finish("a", 40_000)]));
-        assert_eq!(
-            player_points(&commands),
-            [
-                ("b".into(), Some(2), Some(3)),
-                ("a".into(), Some(1), Some(3))
-            ]
-        );
-        assert_eq!(mode.step(Event::MapEnd(0)), [Command::EndMatch]);
+        mode.step(Event::MapStart);
+        mode.step(round_end(vec![finish("b", 39_000), finish("a", 40_000)]));
+        assert_eq!(mode.match_points["a"], 3);
+        assert_eq!(mode.match_points["b"], 3);
+        assert_eq!(mode.step(Event::MapEnd), [Command::EndMatch]);
     }
 
     #[test]
@@ -356,8 +270,8 @@ mod tests {
 
         let mut restored = TimeAttack::restore(&mode.snapshot()).unwrap();
         assert_eq!(restored.settings, mode.settings);
-        restored.step(Event::MapEnd(0));
-        assert_eq!(restored.step(Event::MapEnd(0)), [Command::EndMatch]);
+        restored.step(Event::MapEnd);
+        assert_eq!(restored.step(Event::MapEnd), [Command::EndMatch]);
     }
 
     #[test]

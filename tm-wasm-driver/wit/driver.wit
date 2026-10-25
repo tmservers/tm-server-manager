@@ -2,98 +2,45 @@ package tmservers:driver@0.1.0;
 
 /// Types exchanged between the driver host and a mode.
 ///
-/// They mirror `DriverEvent` and `DriverCommand` of tm-server-types without the
-/// transport details (session, seq and acknowledgements) which the host handles.
+/// Events are built from the standard callbacks of the server. The host
+/// handles the transport details of the driver modescript: waiting holds and
+/// letting them continue.
 interface types {
-    /// A player as seen by the driver modescript.
-    record player {
-        account-id: string,
-        name: string,
-        /// 0 is blue, 1 is red and -1 means no team.
-        team: s32,
-        spectator: bool,
-    }
-
-    record match-start {
-        /// Server time in milliseconds.
-        time: s32,
-        players: list<player>,
-    }
-
-    record map-start {
-        time: s32,
-        map-uid: string,
-        map-name: string,
-        players: list<player>,
-    }
-
-    record round-start {
-        time: s32,
-        /// Starts at 1 on every map and counts every started round.
-        round: u32,
-        players: list<player>,
-    }
-
+    /// The races of one player as reported by the standard scores callback.
     record race-result {
         account-id: string,
-        /// Best race time of the round in milliseconds. None if the player did not finish.
-        /// Single attempt rounds only have one race per player.
-        time: option<u32>,
-        /// Checkpoint times of the best race in milliseconds since its start.
-        checkpoints: list<u32>,
+        name: string,
+        /// Time of the last race in milliseconds. None if the player did not finish it.
+        /// In single attempt rounds this is the race of the round.
+        previous-time: option<u32>,
+        previous-checkpoints: list<u32>,
+        /// Best race time in milliseconds. None if the player did not finish.
+        /// In time attack rounds this is the best race of the round.
+        best-time: option<u32>,
+        best-checkpoints: list<u32>,
     }
 
     record round-end {
-        time: s32,
-        round: u32,
         /// The round was forced to end or skipped (e.g. after a pause) and should not count.
         forced: bool,
-        /// Finishers ordered by time first, then everyone else who took part.
+        /// Every player of the scores, including players without a time.
         results: list<race-result>,
-    }
-
-    record player-join {
-        time: s32,
-        player: player,
-    }
-
-    record player-leave {
-        time: s32,
-        account-id: string,
     }
 
     /// Everything a mode gets told about.
     ///
-    /// The server waits for the commands of every event except player-join and
-    /// player-leave before it continues.
+    /// The server waits for the commands of map-start, round-end and map-end
+    /// before it continues. match-start, round-start and match-end are informative.
     variant event {
-        match-start(match-start),
-        map-start(map-start),
-        round-start(round-start),
+        match-start,
+        map-start,
+        round-start,
         round-end(round-end),
-        /// Carries the server time in milliseconds.
-        map-end(s32),
-        /// Carries the server time in milliseconds.
-        match-end(s32),
-        player-join(player-join),
-        player-leave(player-leave),
-    }
-
-    /// Points shown in the scores table. None keeps the current value.
-    record player-points {
-        account-id: string,
-        round-points: option<s32>,
-        map-points: option<s32>,
-        match-points: option<s32>,
-    }
-
-    record can-spawn {
-        account-id: string,
-        can-spawn: bool,
+        map-end,
+        match-end,
     }
 
     /// How long the remaining players have to finish once the first player finished.
-    /// Only used by single attempt rounds.
     variant finish-timeout {
         /// 5 seconds plus a sixth of the author time.
         automatic,
@@ -102,41 +49,52 @@ interface types {
         milliseconds(u32),
     }
 
+    /// How rounds are played.
+    variant round-format {
+        /// One attempt per player. The round ends once nobody is racing anymore or the
+        /// finish timeout ran out. Automatic is the default when a match starts.
+        single-attempt(finish-timeout),
+        /// Players restart as often as they like and their best time counts.
+        /// The round ends after this many milliseconds. 0 behaves like a single attempt.
+        time-attack(u32),
+    }
+
+    record can-spawn {
+        account-id: string,
+        can-spawn: bool,
+    }
+
     record layer {
         name: string,
         manialink: string,
     }
 
-    /// How rounds are played.
-    variant round-format {
-        /// One attempt per player. The round ends once nobody is racing anymore or the
-        /// finish timeout ran out. This is the default when a match starts.
-        single-attempt,
-        /// Players restart as often as they like and their best time counts.
-        /// The round ends after this many milliseconds. 0 behaves like single-attempt.
-        time-attack(u32),
+    /// Points and position of a player in the current round.
+    record player-result {
+        account-id: string,
+        points: s32,
+        /// Starts at 1.
+        position: u32,
     }
 
     variant command {
-        set-player-points(player-points),
+        /// Applies to the next round that starts. Send it in reply to map-start or round-end.
+        set-round-format(round-format),
         /// Players that cannot spawn are out of the race (e.g. eliminated).
         set-can-spawn(can-spawn),
-        set-finish-timeout(finish-timeout),
-        force-end-round,
-        /// Ends the map once the current event is handled.
+        /// Ends the map once the current hold continues.
         end-map,
-        /// Ends the match once the current event is handled.
+        /// Ends the match once the current hold continues.
         end-match,
-        /// Big message for everyone. An empty text hides it.
-        set-message(string),
         /// Creates or replaces a manialink layer.
         set-layer(layer),
         remove-layer(string),
         /// Readable by manialinks through `netread Text Net_Driver_State for Teams[0]`.
+        /// The script keeps no points, so this is how standings reach the players.
         set-net-state(string),
-        /// Applies to the next round that starts, which includes the round of a
-        /// round-start event when sent in reply to it.
-        set-round-format(round-format),
+        /// Results of the current round for the tournament manager.
+        /// The last one returned for a round counts.
+        round-result(list<player-result>),
     }
 }
 

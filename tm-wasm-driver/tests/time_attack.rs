@@ -4,16 +4,12 @@ mod common;
 
 use std::sync::OnceLock;
 
+use common::{hold, match_start, scores};
 use tm_server_types::{
-    event::{
-        DriverEvent, DriverMapEnd, DriverMapStart, DriverMatchStart, DriverRaceResult,
-        DriverRoundEnd, DriverRoundStart,
-    },
-    method::{DriverCommand, DriverPlayerPoints, DriverRoundFormat},
+    event::{DriverPlayerResult, DriverRoundResult, DriverSection},
+    method::{DriverCommand, DriverRoundFormat},
 };
 use tm_wasm_driver::{Driver, DriverEngine, DriverError, DriverLimits};
-
-const SESSION: i32 = 3;
 
 /// Builds the time attack mode once per test binary.
 fn time_attack_wasm() -> &'static [u8] {
@@ -27,90 +23,59 @@ fn time_attack(settings: &str) -> Result<Driver, DriverError> {
     engine.instantiate(&module, settings)
 }
 
-fn points(account_id: &str, round: i32, total: i32) -> DriverCommand {
-    DriverCommand::SetPlayerPoints(DriverPlayerPoints {
-        account_id: account_id.into(),
-        round_points: Some(round),
-        map_points: Some(round),
-        match_points: Some(total),
-    })
-}
-
 #[test]
 fn plays_a_match() {
     let mut driver = time_attack(r#"{"time_limit_ms": 60000}"#).unwrap();
-    let format = DriverCommand::SetRoundFormat(DriverRoundFormat::TimeAttack(60_000));
 
-    let match_start = DriverEvent::MatchStart(DriverMatchStart {
-        session: SESSION,
-        seq: 1,
-        time: 0,
-        players: vec![],
-    });
+    driver.handle(&match_start()).unwrap();
     assert_eq!(
-        driver.handle(&match_start).unwrap(),
-        [format.clone(), DriverCommand::Ack(1)]
-    );
-
-    let map_start = DriverEvent::MapStart(DriverMapStart {
-        session: SESSION,
-        seq: 2,
-        time: 0,
-        map_uid: "olsKnq_qAghcVAnEkoeUnVHFZei".into(),
-        map_name: "Training - 01".into(),
-        players: vec![],
-    });
-    assert_eq!(
-        driver.handle(&map_start).unwrap(),
-        [format, DriverCommand::Ack(2)]
-    );
-
-    let round_start = DriverEvent::RoundStart(DriverRoundStart {
-        session: SESSION,
-        seq: 3,
-        time: 0,
-        round: 1,
-        players: vec![],
-    });
-    assert_eq!(
-        driver.handle(&round_start).unwrap(),
-        [DriverCommand::Ack(3)]
-    );
-
-    // The modescript reports the best time of every player once the time limit ran out.
-    let round_end = DriverEvent::RoundEnd(DriverRoundEnd {
-        session: SESSION,
-        seq: 4,
-        time: 60_000,
-        round: 1,
-        forced: false,
-        results: [("b", 41_000), ("a", 42_000), ("c", -1)]
-            .into_iter()
-            .map(|(account_id, time)| DriverRaceResult {
-                account_id: account_id.into(),
-                time,
-                checkpoints: vec![],
-            })
-            .collect(),
-    });
-    assert_eq!(
-        driver.handle(&round_end).unwrap(),
+        driver
+            .handle(&hold(1, DriverSection::MapStart))
+            .unwrap()
+            .commands,
         [
-            points("b", 3, 3),
-            points("a", 2, 2),
-            DriverCommand::EndMap,
-            DriverCommand::Ack(4)
+            DriverCommand::SetRoundFormat(DriverRoundFormat::TimeAttack(60_000)),
+            DriverCommand::Continue(1)
         ]
     );
 
-    let map_end = DriverEvent::MapEnd(DriverMapEnd {
-        session: SESSION,
-        seq: 5,
-        time: 61_000,
-    });
+    // The time limit ran out. Time attack ranks by the best race, not the last one.
+    driver
+        .handle(&scores(&[
+            ("a", 42_000, 42_000),
+            ("b", 45_000, 41_000),
+            ("c", -1, -1),
+        ]))
+        .unwrap();
+    let reply = driver.handle(&hold(2, DriverSection::RoundEnd)).unwrap();
     assert_eq!(
-        driver.handle(&map_end).unwrap(),
-        [DriverCommand::EndMatch, DriverCommand::Ack(5)]
+        reply.commands,
+        [DriverCommand::EndMap, DriverCommand::Continue(2)]
+    );
+    assert_eq!(
+        reply.round_result,
+        Some(DriverRoundResult {
+            results: vec![
+                DriverPlayerResult {
+                    account_id: "b".into(),
+                    points: 2,
+                    position: 1,
+                },
+                DriverPlayerResult {
+                    account_id: "a".into(),
+                    points: 1,
+                    position: 2,
+                },
+            ]
+        })
+    );
+
+    assert_eq!(
+        driver
+            .handle(&hold(3, DriverSection::MapEnd))
+            .unwrap()
+            .commands,
+        [DriverCommand::EndMatch, DriverCommand::Continue(3)]
     );
 }
 

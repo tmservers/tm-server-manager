@@ -3,12 +3,14 @@
 //! Follows the rules of the Nadeo Rounds mode: finishers get points by their
 //! position, the map ends after a number of rounds and the match ends after a
 //! number of maps or once a player reached the points limit.
+//!
+//! The points only live in this mode. They reach the manager as round results.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 use tm_driver_sdk::{
-    Command, Event, FinishTimeout, Mode, PlayerPoints, RaceResult, RoundEnd, RoundFormat,
+    Command, Event, FinishTimeout, Mode, PlayerResult, RaceResult, RoundEnd, RoundFormat,
 };
 
 tm_driver_sdk::export_mode!(Rounds);
@@ -65,8 +67,6 @@ pub struct Rounds {
     settings: Settings,
     match_points: BTreeMap<String, i32>,
     map_points: BTreeMap<String, i32>,
-    /// Players whose round points are shown and need to be reset on the next round.
-    round_points_shown: BTreeSet<String>,
     valid_rounds_on_map: u32,
     maps_played: u32,
 }
@@ -91,7 +91,6 @@ impl Mode for Rounds {
             settings,
             match_points: BTreeMap::new(),
             map_points: BTreeMap::new(),
-            round_points_shown: BTreeSet::new(),
             valid_rounds_on_map: 0,
             maps_played: 0,
         })
@@ -99,31 +98,24 @@ impl Mode for Rounds {
 
     fn step(&mut self, event: Event) -> Vec<Command> {
         match event {
-            Event::MatchStart(_) => {
+            Event::MatchStart => {
                 self.match_points.clear();
-                self.map_points.clear();
-                self.round_points_shown.clear();
-                self.valid_rounds_on_map = 0;
                 self.maps_played = 0;
-                self.round_rules().to_vec()
+                Vec::new()
             }
-            Event::MapStart(_) => {
+            // The script waits here, so this is where the rules for the map are set.
+            // A config change keeps the match of the modescript going, so the rules
+            // of the previous mode might still be active.
+            Event::MapStart => {
+                self.map_points.clear();
                 self.valid_rounds_on_map = 0;
-                let mut commands: Vec<Command> = std::mem::take(&mut self.map_points)
-                    .into_keys()
-                    .map(|account_id| points(account_id, None, Some(0), None))
-                    .collect();
-                // A config change keeps the match of the modescript going, so the rules
-                // of the previous mode might still be active.
-                commands.extend(self.round_rules());
-                commands
+                vec![Command::SetRoundFormat(RoundFormat::SingleAttempt(
+                    self.settings.finish_timeout.into(),
+                ))]
             }
-            Event::RoundStart(_) => std::mem::take(&mut self.round_points_shown)
-                .into_iter()
-                .map(|account_id| points(account_id, Some(0), None, None))
-                .collect(),
+            Event::RoundStart => Vec::new(),
             Event::RoundEnd(round_end) => self.round_end(round_end),
-            Event::MapEnd(_) => {
+            Event::MapEnd => {
                 self.maps_played += 1;
                 if self.match_is_over() {
                     vec![Command::EndMatch]
@@ -131,25 +123,7 @@ impl Mode for Rounds {
                     Vec::new()
                 }
             }
-            Event::MatchEnd(_) => Vec::new(),
-            // The scores of a returning player might have been reset by the server.
-            Event::PlayerJoin(join) => match self.match_points.get(&join.player.account_id) {
-                Some(&match_points) => {
-                    let map_points = self
-                        .map_points
-                        .get(&join.player.account_id)
-                        .copied()
-                        .unwrap_or(0);
-                    vec![points(
-                        join.player.account_id,
-                        None,
-                        Some(map_points),
-                        Some(match_points),
-                    )]
-                }
-                None => Vec::new(),
-            },
-            Event::PlayerLeave(_) => Vec::new(),
+            Event::MatchEnd => Vec::new(),
         }
     }
 
@@ -163,15 +137,8 @@ impl Mode for Rounds {
 }
 
 impl Rounds {
-    fn round_rules(&self) -> [Command; 2] {
-        [
-            Command::SetRoundFormat(RoundFormat::SingleAttempt),
-            Command::SetFinishTimeout(self.settings.finish_timeout.into()),
-        ]
-    }
-
     fn round_end(&mut self, round_end: RoundEnd) -> Vec<Command> {
-        // Points of forced rounds do not count. The round points were already reset on round start.
+        // Forced rounds do not count.
         if round_end.forced {
             return Vec::new();
         }
@@ -179,37 +146,32 @@ impl Rounds {
         let mut finishers: Vec<&RaceResult> = round_end
             .results
             .iter()
-            .filter(|r| r.time.is_some())
+            .filter(|r| r.previous_time.is_some())
             .collect();
-        // Stable so equal times keep the order of the modescript.
-        finishers.sort_by_key(|r| r.time);
+        // Stable so equal times keep the order of the scores.
+        finishers.sort_by_key(|r| r.previous_time);
 
-        let mut commands = Vec::with_capacity(finishers.len() + 1);
-        for (position, result) in finishers.into_iter().enumerate() {
-            let round_points = self.points_for(position);
-            let map_points = self
+        let mut results = Vec::with_capacity(finishers.len());
+        for (rank, finisher) in finishers.into_iter().enumerate() {
+            let points = self.points_for(rank);
+            *self
                 .map_points
-                .entry(result.account_id.clone())
-                .or_default();
-            *map_points += round_points;
-            let map_points = *map_points;
-            let match_points = self
+                .entry(finisher.account_id.clone())
+                .or_default() += points;
+            *self
                 .match_points
-                .entry(result.account_id.clone())
-                .or_default();
-            *match_points += round_points;
-
-            self.round_points_shown.insert(result.account_id.clone());
-            commands.push(points(
-                result.account_id.clone(),
-                Some(round_points),
-                Some(map_points),
-                Some(*match_points),
-            ));
+                .entry(finisher.account_id.clone())
+                .or_default() += points;
+            results.push(PlayerResult {
+                account_id: finisher.account_id.clone(),
+                points,
+                position: rank as u32 + 1,
+            });
         }
 
         self.valid_rounds_on_map += 1;
 
+        let mut commands = vec![Command::RoundResult(results)];
         if self.points_limit() == PointsLimit::Reached {
             commands.push(Command::EndMatch);
         } else if self.settings.rounds_per_map > 0
@@ -217,14 +179,13 @@ impl Rounds {
         {
             commands.push(Command::EndMap);
         }
-
         commands
     }
 
-    fn points_for(&self, position: usize) -> i32 {
+    fn points_for(&self, rank: usize) -> i32 {
         let repartition = &self.settings.points_repartition;
         repartition
-            .get(position)
+            .get(rank)
             .or(repartition.last())
             .copied()
             .unwrap_or(0)
@@ -258,46 +219,34 @@ impl Rounds {
     }
 }
 
-fn points(
-    account_id: String,
-    round_points: Option<i32>,
-    map_points: Option<i32>,
-    match_points: Option<i32>,
-) -> Command {
-    Command::SetPlayerPoints(PlayerPoints {
-        account_id,
-        round_points,
-        map_points,
-        match_points,
-    })
-}
-
 #[cfg(test)]
 mod tests {
-    use tm_driver_sdk::{MapStart, MatchStart, RoundStart};
-
     use super::*;
 
     fn finish(account_id: &str, time: u32) -> RaceResult {
         RaceResult {
             account_id: account_id.into(),
-            time: Some(time),
-            checkpoints: vec![time],
+            name: account_id.into(),
+            previous_time: Some(time),
+            previous_checkpoints: vec![time],
+            best_time: Some(time),
+            best_checkpoints: vec![time],
         }
     }
 
     fn dnf(account_id: &str) -> RaceResult {
         RaceResult {
             account_id: account_id.into(),
-            time: None,
-            checkpoints: vec![],
+            name: account_id.into(),
+            previous_time: None,
+            previous_checkpoints: vec![],
+            best_time: None,
+            best_checkpoints: vec![],
         }
     }
 
     fn round_end(results: Vec<RaceResult>) -> Event {
         Event::RoundEnd(RoundEnd {
-            time: 0,
-            round: 1,
             forced: false,
             results,
         })
@@ -305,29 +254,35 @@ mod tests {
 
     fn started(settings: &str) -> Rounds {
         let mut mode = Rounds::init(settings).unwrap();
-        mode.step(Event::MatchStart(MatchStart {
-            time: 0,
-            players: vec![],
-        }));
-        mode.step(Event::MapStart(MapStart {
-            time: 0,
-            map_uid: "uid".into(),
-            map_name: "map".into(),
-            players: vec![],
-        }));
+        mode.step(Event::MatchStart);
+        mode.step(Event::MapStart);
         mode
     }
 
-    fn player_points(commands: &[Command]) -> Vec<(String, Option<i32>, Option<i32>)> {
+    fn round_result(commands: &[Command]) -> Vec<(String, i32, u32)> {
         commands
             .iter()
-            .filter_map(|c| match c {
-                Command::SetPlayerPoints(p) => {
-                    Some((p.account_id.clone(), p.round_points, p.match_points))
-                }
+            .find_map(|c| match c {
+                Command::RoundResult(results) => Some(
+                    results
+                        .iter()
+                        .map(|r| (r.account_id.clone(), r.points, r.position))
+                        .collect(),
+                ),
                 _ => None,
             })
-            .collect()
+            .expect("Every valid round has a result")
+    }
+
+    #[test]
+    fn sets_the_round_format_on_map_start() {
+        let mut mode = Rounds::init(r#"{"finish_timeout": {"milliseconds": 7000}}"#).unwrap();
+        assert_eq!(
+            mode.step(Event::MapStart),
+            [Command::SetRoundFormat(RoundFormat::SingleAttempt(
+                FinishTimeout::Milliseconds(7000)
+            ))]
+        );
     }
 
     #[test]
@@ -343,36 +298,22 @@ mod tests {
         ]));
 
         assert_eq!(
-            player_points(&commands),
+            round_result(&commands),
             [
-                ("a".into(), Some(10), Some(10)),
-                ("b".into(), Some(6), Some(6)),
-                ("c".into(), Some(4), Some(4)),
+                ("a".into(), 10, 1),
+                ("b".into(), 6, 2),
+                ("c".into(), 4, 3),
                 // Beyond the repartition everyone gets the last value.
-                ("e".into(), Some(4), Some(4)),
+                ("e".into(), 4, 4),
             ]
         );
-    }
-
-    #[test]
-    fn round_points_reset_on_next_round() {
-        let mut mode = started("");
-        mode.step(round_end(vec![finish("a", 30_000)]));
-
-        let commands = mode.step(Event::RoundStart(RoundStart {
-            time: 0,
-            round: 2,
-            players: vec![],
-        }));
-        assert_eq!(player_points(&commands), [("a".into(), Some(0), None)]);
+        assert_eq!(mode.match_points["a"], 10);
     }
 
     #[test]
     fn forced_rounds_do_not_count() {
         let mut mode = started("");
         let commands = mode.step(Event::RoundEnd(RoundEnd {
-            time: 0,
-            round: 1,
             forced: true,
             results: vec![finish("a", 30_000)],
         }));
@@ -393,7 +334,7 @@ mod tests {
                 .contains(&Command::EndMap)
         );
         // One map per match by default.
-        assert_eq!(mode.step(Event::MapEnd(0)), [Command::EndMatch]);
+        assert_eq!(mode.step(Event::MapEnd), [Command::EndMatch]);
     }
 
     #[test]
@@ -415,10 +356,8 @@ mod tests {
 
         let mut restored = Rounds::restore(&mode.snapshot()).unwrap();
         assert_eq!(restored.settings, mode.settings);
-        assert_eq!(
-            player_points(&restored.step(round_end(vec![finish("b", 1)]))),
-            [("b".into(), Some(10), Some(16))]
-        );
+        restored.step(round_end(vec![finish("b", 1)]));
+        assert_eq!(restored.match_points["b"], 16);
     }
 
     #[test]

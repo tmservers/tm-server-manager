@@ -5,7 +5,7 @@ use std::sync::{Mutex, OnceLock};
 use tm_server_controller::method::{ModeScriptMethodsXmlRpc, XmlRpcMethods};
 use tm_server_types::{
     config::Driver as DriverConfig,
-    event::{DriverEvent, Event},
+    event::{DriverRoundResult, Event},
 };
 use tm_wasm_driver::{Driver, DriverEngine, DriverLimits};
 use tokio::sync::mpsc;
@@ -23,12 +23,12 @@ struct ActiveDriver {
     driver: Driver,
 }
 
-/// Feeds the driver callbacks of the server into the active mode and sends its commands back.
+/// Feeds the callbacks of the server into the active mode and sends its commands back.
 pub fn setup_driver() {
-    let (sender, mut receiver) = mpsc::unbounded_channel::<DriverEvent>();
+    let (sender, mut receiver) = mpsc::unbounded_channel::<Event>();
 
     TRACKMANIA.wait().on_event(move |event| {
-        if let Event::Driver(event) = event {
+        if Driver::handles(event) {
             _ = sender.send(event.clone());
         }
     });
@@ -36,38 +36,44 @@ pub fn setup_driver() {
     // A single task so the commands of every callback are sent in order.
     tokio::spawn(async move {
         while let Some(event) = receiver.recv().await {
-            let commands = {
+            let reply = {
                 let mut active = ACTIVE.lock().unwrap();
                 let Some(active) = active.as_mut() else {
-                    tracing::warn!(
-                        "Received {} but no driver mode is loaded.",
-                        event.callback_name()
-                    );
+                    // The standard callbacks also arrive while other modes run.
+                    if matches!(event, Event::DriverHold(_)) {
+                        tracing::warn!("The driver modescript waits but no driver mode is loaded.");
+                    }
                     continue;
                 };
 
                 match active.driver.handle(&event) {
-                    Ok(commands) => commands,
+                    Ok(reply) => reply,
                     Err(error) => {
-                        tracing::error!(
-                            "Driver mode {} failed to handle {}: {error}",
-                            active.mode,
-                            event.callback_name()
-                        );
+                        tracing::error!("Driver mode {} failed: {error}", active.mode);
                         continue;
                     }
                 }
             };
 
-            if commands.is_empty() {
+            if let Some(round_result) = reply.round_result {
+                report_round_result(round_result);
+            }
+            if reply.commands.is_empty() {
                 continue;
             }
-            if let Err(error) = TRACKMANIA.wait().driver_commands(&commands).await {
-                // Without the ack the modescript asks again and gets the same reply.
+            if let Err(error) = TRACKMANIA.wait().driver_commands(&reply.commands).await {
+                // Without the continue the modescript asks again and gets the same reply.
                 tracing::error!("Could not send the driver commands: {error}");
             }
         }
     });
+}
+
+/// Hands the points of a round to the manager.
+fn report_round_result(round_result: DriverRoundResult) {
+    // TODO: Post it as Event::DriverRoundResult once the client bindings are regenerated.
+    // Transmuting it into the stale generated event would be undefined behaviour.
+    tracing::info!("Round result of the driver: {round_result:?}");
 }
 
 /// Loads the mode of a driver configuration.

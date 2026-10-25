@@ -2,9 +2,11 @@
 //!
 //! A mode is a component implementing the `mode` world of `wit/driver.wit`.
 //! The host keeps it in a sandbox: no WASI, a fuel and a wall clock budget for
-//! every call and a memory limit. On top of the mode it handles the transport
-//! details of the modescript protocol: sessions, acknowledging decision
-//! callbacks and answering repeated callbacks without stepping the mode twice.
+//! every call and a memory limit.
+//!
+//! Modes are fed from the standard callbacks of the server. On top of that the
+//! host handles the [`DriverHold`]s of the modescript: it steps the mode, lets
+//! the hold continue and answers repeated holds without stepping the mode twice.
 
 use std::{
     sync::{
@@ -16,7 +18,10 @@ use std::{
 };
 
 use serde::{Deserialize, Serialize};
-use tm_server_types::{event::DriverEvent, method::DriverCommand};
+use tm_server_types::{
+    event::{DriverHold, DriverRoundResult, DriverSection, Event},
+    method::DriverCommand,
+};
 use wasmtime::{
     Config, Engine, Store, StoreLimits, StoreLimitsBuilder,
     component::{Component, HasSelf, Linker},
@@ -24,12 +29,21 @@ use wasmtime::{
 
 mod convert;
 
-wasmtime::component::bindgen!({
-    path: "wit",
-    world: "mode",
-});
+// In its own module because the world defines its own `Event`.
+mod bindings {
+    wasmtime::component::bindgen!({
+        path: "wit",
+        world: "mode",
+    });
+}
 
-use tmservers::driver::host::{Host, LogLevel};
+use bindings::{
+    Mode,
+    tmservers::driver::{
+        host::{Host, LogLevel},
+        types as wit,
+    },
+};
 
 /// How often the epoch of the engine advances. This is the precision of call timeouts.
 const EPOCH_TICK: Duration = Duration::from_millis(10);
@@ -169,7 +183,7 @@ impl DriverEngine {
             .map_err(DriverError::Trap)?
             .map_err(DriverError::Rejected)?;
         driver.session = snapshot.session;
-        driver.last_decision = snapshot.last_decision;
+        driver.last_hold = snapshot.last_hold;
         Ok(driver)
     }
 
@@ -200,7 +214,8 @@ impl DriverEngine {
             fuel_per_call: self.limits.fuel_per_call,
             epoch_deadline: self.epoch_deadline(),
             session: None,
-            last_decision: None,
+            last_hold: None,
+            round_results: None,
             poisoned: false,
         })
     }
@@ -229,65 +244,105 @@ pub struct Driver {
     fuel_per_call: u64,
     epoch_deadline: u64,
     session: Option<i32>,
-    /// Reply to the last decision callback in case the modescript asks again.
-    last_decision: Option<(u32, Vec<DriverCommand>)>,
+    /// Commands for the last hold in case the modescript asks again.
+    last_hold: Option<(u32, Vec<DriverCommand>)>,
+    /// Race times of the scores sent right before the round end hold.
+    round_results: Option<Vec<wit::RaceResult>>,
     poisoned: bool,
 }
 
+/// What should happen after an event.
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct DriverReply {
+    /// Commands for the server in order.
+    pub commands: Vec<DriverCommand>,
+    /// Results of the current round for the manager.
+    pub round_result: Option<DriverRoundResult>,
+}
+
 impl Driver {
-    /// Feeds a callback of the driver modescript into the mode and returns the
-    /// commands to send back in order.
+    /// Whether an event can produce a reply. Lets callers skip the rest cheaply.
+    pub fn handles(event: &Event) -> bool {
+        matches!(
+            event,
+            Event::StartMatchStart(_)
+                | Event::StartRoundStart(_)
+                | Event::Scores(_)
+                | Event::EndMatchStart(_)
+                | Event::DriverHold(_)
+        )
+    }
+
+    /// Feeds a callback of the server into the mode.
     ///
-    /// Decision callbacks always end with [`DriverCommand::Ack`]. A repeated
-    /// decision callback gets the same reply without stepping the mode again so
-    /// nothing is applied twice.
-    pub fn handle(&mut self, event: &DriverEvent) -> Result<Vec<DriverCommand>, DriverError> {
+    /// Holds always end with [`DriverCommand::Continue`]. A repeated hold gets the
+    /// same commands without stepping the mode again so nothing is decided twice.
+    pub fn handle(&mut self, event: &Event) -> Result<DriverReply, DriverError> {
         if self.poisoned {
             return Err(DriverError::Poisoned);
         }
 
+        match event {
+            Event::StartMatchStart(_) => self.step(wit::Event::MatchStart),
+            Event::StartRoundStart(_) => self.step(wit::Event::RoundStart),
+            Event::EndMatchStart(_) => self.step(wit::Event::MatchEnd),
+            Event::Scores(scores) if scores.section == "PreEndRound" => {
+                self.round_results = Some(convert::race_results(scores));
+                Ok(DriverReply::default())
+            }
+            Event::DriverHold(hold) => self.hold(hold),
+            _ => Ok(DriverReply::default()),
+        }
+    }
+
+    fn hold(&mut self, hold: &DriverHold) -> Result<DriverReply, DriverError> {
         // A new session means the modescript restarted and counts from the start again.
-        if self.session != Some(event.session()) {
-            self.session = Some(event.session());
-            self.last_decision = None;
+        if self.session != Some(hold.session) {
+            self.session = Some(hold.session);
+            self.last_hold = None;
         }
 
-        if event.is_decision()
-            && let Some((seq, reply)) = &self.last_decision
-        {
-            if *seq == event.seq() {
-                return Ok(reply.clone());
+        if let Some((seq, commands)) = &self.last_hold {
+            if *seq == hold.seq {
+                // The round result already went out with the first reply.
+                return Ok(DriverReply {
+                    commands: commands.clone(),
+                    round_result: None,
+                });
             }
-            if *seq > event.seq() {
+            if *seq > hold.seq {
                 tracing::warn!(
-                    "Ignoring {} with seq {} because seq {seq} was already decided.",
-                    event.callback_name(),
-                    event.seq()
+                    "Ignoring the hold with seq {} because seq {seq} already continued.",
+                    hold.seq
                 );
-                return Ok(Vec::new());
+                return Ok(DriverReply::default());
             }
         }
 
-        let mut commands = match convert::event(event) {
-            Some(wit_event) => {
-                self.prepare_call();
-                match self.bindings.call_step(&mut self.store, &wit_event) {
-                    Ok(commands) => commands.into_iter().map(DriverCommand::from).collect(),
-                    Err(error) => {
-                        self.poisoned = true;
-                        return Err(DriverError::Trap(error));
-                    }
-                }
-            }
-            None => Vec::new(),
+        let event = match hold.section {
+            DriverSection::MapStart => wit::Event::MapStart,
+            DriverSection::RoundEnd => wit::Event::RoundEnd(wit::RoundEnd {
+                forced: hold.forced,
+                results: self.round_results.take().unwrap_or_default(),
+            }),
+            DriverSection::MapEnd => wit::Event::MapEnd,
         };
 
-        if event.is_decision() {
-            commands.push(DriverCommand::Ack(event.seq()));
-            self.last_decision = Some((event.seq(), commands.clone()));
-        }
+        let mut reply = self.step(event)?;
+        reply.commands.push(DriverCommand::Continue(hold.seq));
+        self.last_hold = Some((hold.seq, reply.commands.clone()));
+        Ok(reply)
+    }
 
-        Ok(commands)
+    fn step(&mut self, event: wit::Event) -> Result<DriverReply, DriverError> {
+        self.prepare_call();
+        match self.bindings.call_step(&mut self.store, &event) {
+            Ok(commands) => Ok(convert::reply(commands)),
+            Err(error) => {
+                self.poisoned = true;
+                Err(DriverError::Trap(error))
+            }
+        }
     }
 
     /// Captures everything needed to continue the mode with [`DriverEngine::restore`].
@@ -306,7 +361,7 @@ impl Driver {
 
         Ok(DriverSnapshot {
             session: self.session,
-            last_decision: self.last_decision.clone(),
+            last_hold: self.last_hold.clone(),
             state,
         })
     }
@@ -323,7 +378,7 @@ impl Driver {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DriverSnapshot {
     pub session: Option<i32>,
-    pub last_decision: Option<(u32, Vec<DriverCommand>)>,
+    pub last_hold: Option<(u32, Vec<DriverCommand>)>,
     /// Opaque state returned by the mode.
     pub state: Vec<u8>,
 }
@@ -334,7 +389,7 @@ struct HostState {
 }
 
 // The types interface only contains types but is still an import of the world.
-impl tmservers::driver::types::Host for HostState {}
+impl wit::Host for HostState {}
 
 impl Host for HostState {
     fn log(&mut self, level: LogLevel, mut message: String) {

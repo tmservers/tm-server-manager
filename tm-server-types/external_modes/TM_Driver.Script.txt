@@ -1,18 +1,23 @@
 /**
  *	Driver mode
  *
- *	Generic mode without any mode logic. It reports the match flow through typed
- *	Driver.* callbacks and waits on decision callbacks until the driver
- *	(tm-wasm-driver in the tm-server-bridge) acknowledged them with Driver.Ack.
- *	Points, eliminations and end conditions are all decided by the driver.
+ *	Generic mode without any mode logic. The match flow reaches the driver
+ *	(tm-wasm-driver in the tm-server-bridge) through the standard callbacks of
+ *	the base script. At a few points the script waits with the Driver.Hold
+ *	callback until the driver answers with Driver.Continue.
  *
- *	The callbacks and commands mirror tm_server_types::event::DriverEvent and
+ *	The script keeps no points. The driver keeps them and shows them through
+ *	manialinks reading Net_Driver_State. Race times stay in the Scores library
+ *	and reach the driver through the standard Trackmania.Scores callback.
+ *
+ *	Only what is not available through the standard XML-RPC methods is added
+ *	here. It mirrors tm_server_types::event::DriverHold and
  *	tm_server_types::method::DriverCommand. Keep them in sync.
  */
 #Extends "Modes/Nadeo/Trackmania/Base/TrackmaniaRoundsBase.Script.txt"
 
 #Const	CompatibleMapTypes	"TrackMania\\TM_Race,TM_Race"
-#Const	Version							"0.1.0"
+#Const	Version							"0.2.0"
 #Const	ScriptName					"Modes/Trackmania/TM_Driver.Script.txt"
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
@@ -34,7 +39,7 @@
 #Setting S_WarmUpNb 0 as _("Number of warm up")
 #Setting S_WarmUpDuration 0 as _("Duration of one warm up")
 #Setting S_WarmUpTimeout -1 as _("Warm up timeout")
-#Setting S_DriverDecisionTimeout 10000 as "Milliseconds to wait for a driver decision before showing a waiting message and asking again"
+#Setting S_DriverDecisionTimeout 10000 as "Milliseconds to wait for the driver before showing a waiting message and asking again"
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
 // Constants
@@ -52,108 +57,28 @@
 #Const C_CelebrateRecordGhost True
 #Const C_CelebrateRecordMedal True
 
-/// How often a decision callback is sent again once S_DriverDecisionTimeout passed.
+/// How often a hold is sent again once S_DriverDecisionTimeout passed.
 #Const C_Driver_ResendInterval 5000
 
-#Const C_Callback_Hello "Driver.Hello"
-#Const C_Callback_MatchStart "Driver.MatchStart"
-#Const C_Callback_MapStart "Driver.MapStart"
-#Const C_Callback_RoundStart "Driver.RoundStart"
-#Const C_Callback_RoundEnd "Driver.RoundEnd"
-#Const C_Callback_MapEnd "Driver.MapEnd"
-#Const C_Callback_MatchEnd "Driver.MatchEnd"
-#Const C_Callback_PlayerJoin "Driver.PlayerJoin"
-#Const C_Callback_PlayerLeave "Driver.PlayerLeave"
+#Const C_Callback_Hold "Driver.Hold"
+#Const C_Section_MapStart "MapStart"
+#Const C_Section_RoundEnd "RoundEnd"
+#Const C_Section_MapEnd "MapEnd"
 
-#Const C_Method_Ack "Driver.Ack"
-#Const C_Method_SetPlayerPoints "Driver.SetPlayerPoints"
+#Const C_Method_Continue "Driver.Continue"
+#Const C_Method_SetRoundFormat "Driver.SetRoundFormat"
 #Const C_Method_SetCanSpawn "Driver.SetCanSpawn"
-#Const C_Method_SetFinishTimeout "Driver.SetFinishTimeout"
-#Const C_Method_ForceEndRound "Driver.ForceEndRound"
-#Const C_Method_EndMap "Driver.EndMap"
 #Const C_Method_EndMatch "Driver.EndMatch"
-#Const C_Method_SetMessage "Driver.SetMessage"
 #Const C_Method_SetLayer "Driver.SetLayer"
 #Const C_Method_RemoveLayer "Driver.RemoveLayer"
 #Const C_Method_SetNetState "Driver.SetNetState"
-#Const C_Method_SetRoundFormat "Driver.SetRoundFormat"
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
-// Callback payloads
-// The member names are the json keys expected by tm-server-types.
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
-#Struct K_Driver_Player {
-	Text account_id;
-	Text name;
-	Integer team;
-	Boolean spectator;
-}
-
-#Struct K_Driver_Hello {
+/// The member names are the json keys expected by tm-server-types.
+#Struct K_Driver_Hold {
 	Integer session;
 	Integer seq;
-	Integer time;
-	Text script_version;
-}
-
-#Struct K_Driver_MatchStart {
-	Integer session;
-	Integer seq;
-	Integer time;
-	K_Driver_Player[] players;
-}
-
-#Struct K_Driver_MapStart {
-	Integer session;
-	Integer seq;
-	Integer time;
-	Text map_uid;
-	Text map_name;
-	K_Driver_Player[] players;
-}
-
-#Struct K_Driver_RoundStart {
-	Integer session;
-	Integer seq;
-	Integer time;
-	Integer round;
-	K_Driver_Player[] players;
-}
-
-#Struct K_Driver_RaceResult {
-	Text account_id;
-	Integer time;
-	Integer[] checkpoints;
-}
-
-#Struct K_Driver_RoundEnd {
-	Integer session;
-	Integer seq;
-	Integer time;
-	Integer round;
+	Text section;
 	Boolean forced;
-	K_Driver_RaceResult[] results;
-}
-
-/// Used for Driver.MapEnd and Driver.MatchEnd which carry no payload.
-#Struct K_Driver_Header {
-	Integer session;
-	Integer seq;
-	Integer time;
-}
-
-#Struct K_Driver_PlayerJoin {
-	Integer session;
-	Integer seq;
-	Integer time;
-	K_Driver_Player player;
-}
-
-#Struct K_Driver_PlayerLeave {
-	Integer session;
-	Integer seq;
-	Integer time;
-	Text account_id;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
@@ -161,13 +86,8 @@
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
 declare Integer G_Driver_Session;
 declare Integer G_Driver_Seq;
-/// Seq of the decision callback the script is waiting on. 0 when not waiting.
+/// Seq of the hold the script is waiting on. 0 when not waiting.
 declare Integer G_Driver_PendingSeq;
-declare Integer G_Driver_MapRound;
-declare Boolean[Text] G_Driver_RoundParticipants;
-/// Best race of every player in the current round.
-declare Integer[Text] G_Driver_RoundBestTimes;
-declare Integer[][Text] G_Driver_RoundBestCheckpoints;
 declare Boolean G_Driver_RoundIsTimeAttack;
 
 // State set by driver commands.
@@ -175,10 +95,7 @@ declare Boolean[Text] G_Driver_CanSpawn;
 declare Text G_Driver_FinishTimeout;
 /// Time limit of time attack rounds in milliseconds. 0 plays single attempt rounds.
 declare Integer G_Driver_TimeAttackLimit;
-declare Boolean G_Driver_ForceEndRound;
-declare Boolean G_Driver_EndMap;
 declare Boolean G_Driver_EndMatch;
-declare Text G_Driver_Message;
 declare Ident[Text] G_Driver_Layers;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
@@ -195,14 +112,24 @@ Log::RegisterScript(StateMgr::ScriptName, StateMgr::Version);
 ***
 StateMgr::Load();
 
-foreach (Callback in [C_Callback_Hello, C_Callback_MatchStart, C_Callback_MapStart, C_Callback_RoundStart, C_Callback_RoundEnd, C_Callback_MapEnd, C_Callback_MatchEnd, C_Callback_PlayerJoin, C_Callback_PlayerLeave]) {
-	XmlRpc::RegisterCallback(Callback, """
-* Name: {{{Callback}}}
+XmlRpc::RegisterCallback(C_Callback_Hold, """
+* Name: {{{C_Callback_Hold}}}
 * Type: CallbackArray
-* Description: Callback of the driver mode. See tm_server_types::event::DriverEvent for the payload.
+* Description: The script waits until the driver answers with Driver.Continue. See tm_server_types::event::DriverHold.
+* Data:
+	- Version >=3.0.0:
+	```
+	[
+		"{
+			"session": 123, //< Random number chosen when the script starts
+			"seq": 4, //< Increases with every hold, Driver.Continue answers with it
+			"section": "RoundEnd", //< MapStart, RoundEnd or MapEnd
+			"forced": false //< RoundEnd only: the round was forced to end and should not count
+		}"
+	]
+	```
 """);
-}
-foreach (Method in [C_Method_Ack, C_Method_SetPlayerPoints, C_Method_SetCanSpawn, C_Method_SetFinishTimeout, C_Method_ForceEndRound, C_Method_EndMap, C_Method_EndMatch, C_Method_SetMessage, C_Method_SetLayer, C_Method_RemoveLayer, C_Method_SetNetState, C_Method_SetRoundFormat]) {
+foreach (Method in [C_Method_Continue, C_Method_SetRoundFormat, C_Method_SetCanSpawn, C_Method_EndMatch, C_Method_SetLayer, C_Method_RemoveLayer, C_Method_SetNetState]) {
 	XmlRpc::RegisterMethod(Method, """
 * Name: {{{Method}}}
 * Type: TriggerModeScriptEventArray
@@ -215,10 +142,8 @@ foreach (Method in [C_Method_Ack, C_Method_SetPlayerPoints, C_Method_SetCanSpawn
 ***
 StateMgr::Unload();
 
-foreach (Callback in [C_Callback_Hello, C_Callback_MatchStart, C_Callback_MapStart, C_Callback_RoundStart, C_Callback_RoundEnd, C_Callback_MapEnd, C_Callback_MatchEnd, C_Callback_PlayerJoin, C_Callback_PlayerLeave]) {
-	XmlRpc::UnregisterCallback(Callback);
-}
-foreach (Method in [C_Method_Ack, C_Method_SetPlayerPoints, C_Method_SetCanSpawn, C_Method_SetFinishTimeout, C_Method_ForceEndRound, C_Method_EndMap, C_Method_EndMatch, C_Method_SetMessage, C_Method_SetLayer, C_Method_RemoveLayer, C_Method_SetNetState, C_Method_SetRoundFormat]) {
+XmlRpc::UnregisterCallback(C_Callback_Hold);
+foreach (Method in [C_Method_Continue, C_Method_SetRoundFormat, C_Method_SetCanSpawn, C_Method_EndMatch, C_Method_SetLayer, C_Method_RemoveLayer, C_Method_SetNetState]) {
 	XmlRpc::UnregisterMethod(Method);
 }
 ***
@@ -244,8 +169,9 @@ if (C_HudModulePath != "") Hud_Load(C_HudModulePath);
 ***Match_AfterLoadHud***
 ***
 ClientManiaAppUrl = C_ManiaAppUrl;
-Race::SortScores(Race::C_Sort_TotalPoints);
-UIModules_ScoresTable::SetScoreMode(UIModules_ScoresTable::C_Mode_Points);
+// Points live in the driver and are shown by its manialinks. The scores table shows race times.
+UIModules_ScoresTable::SetScoreMode(UIModules_ScoresTable::C_Mode_PrevTime);
+Race::SortScores(Race::C_Sort_PrevRaceTime);
 UIModules_Checkpoint::SetVisibilityTimeDiff(False);
 UIModules_Checkpoint::SetRankMode(UIModules_Checkpoint::C_RankMode_CurrentRace);
 UIModules_PauseMenu_Online::SetHelp(Description);
@@ -260,26 +186,6 @@ foreach (Event in PendingEvents) {
 		case CSmModeEvent::EType::OnPlayerAdded: {
 			StateMgr::InitializePlayer(Event.Player);
 			CarRank::InitializePlayer(Event.Player);
-			if (Event.Player != Null && Event.Player.User != Null) {
-				declare K_Driver_PlayerJoin PlayerJoin = K_Driver_PlayerJoin {
-					session = G_Driver_Session,
-					seq = Driver_NextSeq(),
-					time = Now,
-					player = Driver_Player(Event.Player)
-				};
-				XmlRpc::SendCallback(C_Callback_PlayerJoin, [PlayerJoin.tojson()]);
-			}
-		}
-		case CSmModeEvent::EType::OnPlayerRemoved: {
-			if (Event.User != Null) {
-				declare K_Driver_PlayerLeave PlayerLeave = K_Driver_PlayerLeave {
-					session = G_Driver_Session,
-					seq = Driver_NextSeq(),
-					time = Now,
-					account_id = Event.User.WebServicesUserId
-				};
-				XmlRpc::SendCallback(C_Callback_PlayerLeave, [PlayerLeave.tojson()]);
-			}
 		}
 	}
 }
@@ -298,8 +204,6 @@ StateMgr::Yield();
 ***
 // Initialize mode
 Clans::SetClansNb(0);
-Scores::SaveInScore(Scores::C_Points_Match);
-Scores::EnablePlayerNegativePoints(True, True, True);
 StateMgr::ForcePlayersStates([StateMgr::C_State_Waiting]);
 WarmUp::SetAvailability(True);
 Race::SetupRecord(
@@ -318,39 +222,15 @@ G_Driver_Session = ML::Rand(1, 2147483646);
 G_Driver_Seq = 0;
 G_Driver_PendingSeq = 0;
 G_Driver_FinishTimeout = "auto";
-
-declare K_Driver_Hello Hello = K_Driver_Hello {
-	session = G_Driver_Session,
-	seq = Driver_NextSeq(),
-	time = Now,
-	script_version = Version
-};
-XmlRpc::SendCallback(C_Callback_Hello, [Hello.tojson()]);
 ***
 
 ***Match_StartMatch***
 ***
-// Every match starts with the defaults. The driver sets what it needs in reply to MatchStart.
+// Every match starts with the defaults. The driver sets what it needs when the first map starts.
 G_Driver_EndMatch = False;
 G_Driver_CanSpawn.clear();
 G_Driver_FinishTimeout = "auto";
 G_Driver_TimeAttackLimit = 0;
-Scores::Clear();
-
-declare K_Driver_MatchStart MatchStart = K_Driver_MatchStart {
-	session = G_Driver_Session,
-	seq = Driver_NextSeq(),
-	time = Now,
-	players = Driver_Players()
-};
-Driver_Decide(C_Callback_MatchStart, MatchStart.seq, MatchStart.tojson());
-***
-
-***Match_InitMap***
-***
-G_Driver_MapRound = 0;
-G_Driver_EndMap = False;
-UIModules_ScoresTable::DisplayRoundPoints(True);
 ***
 
 ***Match_StartMap***
@@ -359,15 +239,7 @@ UIModules_ScoresTable::DisplayRoundPoints(True);
 Users_SetNbFakeUsers(C_FakeUsersNb, 0);
 CarRank::Reset();
 
-declare K_Driver_MapStart MapStart = K_Driver_MapStart {
-	session = G_Driver_Session,
-	seq = Driver_NextSeq(),
-	time = Now,
-	map_uid = Map.MapInfo.MapUid,
-	map_name = Map.MapName,
-	players = Driver_Players()
-};
-Driver_Decide(C_Callback_MapStart, MapStart.seq, MapStart.tojson());
+Driver_Hold(C_Section_MapStart, False);
 
 MB_WarmUp(S_WarmUpNb, S_WarmUpDuration * 1000, S_WarmUpTimeout * 1000);
 ***
@@ -377,36 +249,20 @@ MB_WarmUp(S_WarmUpNb, S_WarmUpDuration * 1000, S_WarmUpTimeout * 1000);
 if (!Driver_CanSpawn(_Player)) return False;
 ***
 
-***Match_InitRound***
-***
-G_Driver_MapRound += 1;
-G_Driver_RoundParticipants.clear();
-G_Driver_ForceEndRound = False;
-
-declare K_Driver_RoundStart RoundStart = K_Driver_RoundStart {
-	session = G_Driver_Session,
-	seq = Driver_NextSeq(),
-	time = Now,
-	round = G_Driver_MapRound,
-	players = Driver_Players()
-};
-Driver_Decide(C_Callback_RoundStart, RoundStart.seq, RoundStart.tojson());
-***
-
 ***Match_StartRound***
 ***
 StateMgr::ForcePlayersStates([StateMgr::C_State_Playing]);
 
-G_Driver_RoundBestTimes.clear();
-G_Driver_RoundBestCheckpoints.clear();
 G_Driver_RoundIsTimeAttack = G_Driver_TimeAttackLimit > 0;
 if (G_Driver_RoundIsTimeAttack) {
+	// The scores report the best race since the last clear, so every round starts clean.
+	Scores::Clear();
 	StartTime = Now + Race::C_SpawnDuration;
 	EndTime = StartTime + G_Driver_TimeAttackLimit;
 	UIModules_ScoresTable::SetScoreMode(UIModules_ScoresTable::C_Mode_BestTime);
 	UIModules_ScoresTable::SetFooterInfo(TL::Compose("%1 "^TL::TimeToText(G_Driver_TimeAttackLimit), _("Time Limit")));
 } else {
-	UIModules_ScoresTable::SetScoreMode(UIModules_ScoresTable::C_Mode_Points);
+	UIModules_ScoresTable::SetScoreMode(UIModules_ScoresTable::C_Mode_PrevTime);
 	UIModules_ScoresTable::SetFooterInfo("");
 }
 Driver_SortScores();
@@ -432,18 +288,6 @@ foreach (Event in Race::GetPendingEvents()) {
 				Scores::UpdatePlayerPrevRace(Event.Player);
 				Driver_SortScores();
 
-				if (Event.Player.User != Null) {
-					declare Text AccountId = Event.Player.User.WebServicesUserId;
-					if (!G_Driver_RoundBestTimes.existskey(AccountId) || Event.RaceTime < G_Driver_RoundBestTimes[AccountId]) {
-						declare Integer[] Checkpoints;
-						foreach (WaypointTime in Event.Player.RaceWaypointTimes) {
-							Checkpoints.add(WaypointTime);
-						}
-						G_Driver_RoundBestTimes[AccountId] = Event.RaceTime;
-						G_Driver_RoundBestCheckpoints[AccountId] = Checkpoints;
-					}
-				}
-
 				// Start the countdown if it's the first player to finish.
 				// Time attack rounds already end with their time limit.
 				if (EndTime <= 0) {
@@ -466,14 +310,6 @@ if (G_Driver_RoundIsTimeAttack && PlayersNbDead > 0) {
 	}
 }
 
-// Everyone who spawned in this round is part of the round result.
-foreach (Player in Players) {
-	if (Player.User == Null) continue;
-	if (Player.SpawnStatus == CSmPlayer::ESpawnStatus::Spawned) {
-		G_Driver_RoundParticipants[Player.User.WebServicesUserId] = True;
-	}
-}
-
 // Manage mode events
 foreach (Event in PendingEvents) {
 	if (Event.HasBeenPassed || Event.HasBeenDiscarded) continue;
@@ -488,19 +324,13 @@ if (!G_Driver_RoundIsTimeAttack && Players.count > 0 && PlayersNbAlive <= 0) {
 	MB_StopRound();
 	Round_Skipped = False;
 }
-// Finish timeout reached
+// Finish timeout or time limit reached
 if (EndTime > 0 && Now >= EndTime) {
 	MB_StopRound();
 	Round_Skipped = False;
 }
 // Forced end round or round skipped after pause
 if (Round_ForceEndRound || Round_SkipPauseRound) {
-	MB_StopRound();
-	Round_Skipped = False;
-}
-// Ended by the driver
-if (G_Driver_ForceEndRound) {
-	G_Driver_ForceEndRound = False;
 	MB_StopRound();
 	Round_Skipped = False;
 }
@@ -514,31 +344,7 @@ StateMgr::ForcePlayersStates([StateMgr::C_State_Waiting]);
 CarRank::Update(CarRank::C_SortCriteria_CurrentRace);
 
 declare Boolean Forced = Round_ForceEndRound || Round_SkipPauseRound || Round_Skipped;
-
-declare K_Driver_RoundEnd RoundEnd = K_Driver_RoundEnd {
-	session = G_Driver_Session,
-	seq = Driver_NextSeq(),
-	time = Now,
-	round = G_Driver_MapRound,
-	forced = Forced
-};
-// Finishers first sorted by their best time, then everyone else who took part.
-declare Integer[Text] BestTimes = G_Driver_RoundBestTimes.sort();
-foreach (AccountId => BestTime in BestTimes) {
-	RoundEnd.results.add(K_Driver_RaceResult {
-		account_id = AccountId,
-		time = BestTime,
-		checkpoints = G_Driver_RoundBestCheckpoints[AccountId]
-	});
-}
-foreach (AccountId => Participated in G_Driver_RoundParticipants) {
-	if (BestTimes.existskey(AccountId)) continue;
-	RoundEnd.results.add(K_Driver_RaceResult {
-		account_id = AccountId,
-		time = -1
-	});
-}
-Driver_Decide(C_Callback_RoundEnd, RoundEnd.seq, RoundEnd.tojson());
+Driver_Hold(C_Section_RoundEnd, Forced);
 
 if (Forced) {
 	// Do not launch the forced end round sequence after a pause
@@ -555,124 +361,78 @@ if (Forced) {
 	UIManager.UIAll.UISequence = CUIConfig::EUISequence::Playing;
 }
 
-// The points of the driver are applied at this point.
-// This keeps the existing score tracking of the manager working.
-if (Semver::Compare(XmlRpc::GetApiVersion(), ">=", "2.1.1")) {
-	Scores::XmlRpc_SendScores(Scores::C_Section_PreEndRound, "");
-}
-
-if (G_Driver_EndMatch) {
-	MB_StopMatch();
-} else if (G_Driver_EndMap) {
-	MB_StopMap();
-}
+// Maps are ended by the driver through the standard NextMap method.
+if (G_Driver_EndMatch) MB_StopMatch();
 ***
 
 ***Match_EndMap***
 ***
-declare K_Driver_Header MapEnd = K_Driver_Header {
-	session = G_Driver_Session,
-	seq = Driver_NextSeq(),
-	time = Now
-};
-Driver_Decide(C_Callback_MapEnd, MapEnd.seq, MapEnd.tojson());
+Driver_Hold(C_Section_MapEnd, False);
 
 if (G_Driver_EndMatch) MB_StopMatch();
-
 if (!MB_MapIsRunning() && MB_MatchIsRunning()) MB_SkipPodiumSequence();
-
-Race::SortScores(Race::C_Sort_TotalPoints);
-
-if (!MB_MatchIsRunning()) {
-	declare CSmScore Winner <=> Scores::GetBestPlayer(Scores::C_Sort_MatchPoints);
-	Scores::SetPlayerWinner(Winner);
-
-	declare K_Driver_Header MatchEnd = K_Driver_Header {
-		session = G_Driver_Session,
-		seq = Driver_NextSeq(),
-		time = Now
-	};
-	Driver_Decide(C_Callback_MatchEnd, MatchEnd.seq, MatchEnd.tojson());
-}
 ***
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
 // Functions
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
-Integer Driver_NextSeq() {
-	G_Driver_Seq += 1;
-	return G_Driver_Seq;
-}
-
-K_Driver_Player Driver_Player(CSmPlayer _Player) {
-	return K_Driver_Player {
-		account_id = _Player.User.WebServicesUserId,
-		name = _Player.User.Name,
-		// Clan 0 is no team, 1 is blue and 2 is red.
-		team = _Player.CurrentClan - 1,
-		spectator = Spectators.exists(_Player)
-	};
-}
-
-K_Driver_Player[] Driver_Players() {
-	declare K_Driver_Player[] DriverPlayers;
-	foreach (Player in Players) {
-		if (Player.User == Null) continue;
-		DriverPlayers.add(Driver_Player(Player));
-	}
-	return DriverPlayers;
-}
-
 Boolean Driver_CanSpawn(CSmPlayer _Player) {
 	if (_Player.User == Null) return False;
 	declare Text AccountId = _Player.User.WebServicesUserId;
 	return !G_Driver_CanSpawn.existskey(AccountId) || G_Driver_CanSpawn[AccountId];
 }
 
-/// Time attack rounds rank by the best time, everything else by points.
+/// Time attack rounds rank by the best race, everything else by the last race.
 Void Driver_SortScores() {
 	if (G_Driver_RoundIsTimeAttack) {
 		Race::SortScores(Race::C_Sort_BestRaceTime);
 	} else {
-		Race::SortScores(Race::C_Sort_TotalPoints);
+		Race::SortScores(Race::C_Sort_PrevRaceTime);
 	}
 }
 
-CSmScore Driver_FindScore(Text _AccountId) {
-	foreach (Score in Scores) {
-		if (Score.User != Null && Score.User.WebServicesUserId == _AccountId) return Score;
+Void Driver_SendHold(K_Driver_Hold _Hold) {
+	// The race times of the round reach the driver through the standard scores callback.
+	if (_Hold.section == C_Section_RoundEnd && Semver::Compare(XmlRpc::GetApiVersion(), ">=", "2.1.1")) {
+		Scores::XmlRpc_SendScores(Scores::C_Section_PreEndRound, "");
 	}
-	return Null;
+	XmlRpc::SendCallback(C_Callback_Hold, [_Hold.tojson()]);
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
-/** Sends a decision callback and blocks until the driver acknowledged it.
- *	Commands keep being applied while waiting. The callback is sent again
- *	periodically because the driver answers repeated callbacks without
- *	applying them twice.
+/** Waits until the driver continues the hold.
+ *	Commands keep being applied while waiting. The hold is sent again
+ *	periodically because the driver answers repeated holds without
+ *	deciding twice.
  *
- *	@param	_Callback		Name of the callback
- *	@param	_Seq				Seq of the callback which gets acknowledged
- *	@param	_Body				Json payload of the callback
+ *	@param	_Section		Where the script waits (C_Section_*)
+ *	@param	_Forced			RoundEnd only: the round should not count
  */
-Void Driver_Decide(Text _Callback, Integer _Seq, Text _Body) {
-	G_Driver_PendingSeq = _Seq;
-	XmlRpc::SendCallback(_Callback, [_Body]);
+Void Driver_Hold(Text _Section, Boolean _Forced) {
+	G_Driver_Seq += 1;
+	declare K_Driver_Hold Hold = K_Driver_Hold {
+		session = G_Driver_Session,
+		seq = G_Driver_Seq,
+		section = _Section,
+		forced = _Forced
+	};
+	G_Driver_PendingSeq = Hold.seq;
+	Driver_SendHold(Hold);
 
 	declare Integer ResendTime = Now + S_DriverDecisionTimeout;
 	declare Boolean Waiting = False;
-	while (G_Driver_PendingSeq == _Seq && !ServerShutdownRequested) {
+	while (G_Driver_PendingSeq == Hold.seq && !ServerShutdownRequested) {
 		MB_Yield();
-		if (G_Driver_PendingSeq == _Seq && Now >= ResendTime) {
+		if (G_Driver_PendingSeq == Hold.seq && Now >= ResendTime) {
 			if (!Waiting) {
 				Waiting = True;
 				UIModules_BigMessage::SetMessage(_("Waiting for the match driver..."));
 			}
-			XmlRpc::SendCallback(_Callback, [_Body]);
+			Driver_SendHold(Hold);
 			ResendTime = Now + C_Driver_ResendInterval;
 		}
 	}
-	if (Waiting) UIModules_BigMessage::SetMessage(G_Driver_Message);
+	if (Waiting) UIModules_BigMessage::SetMessage("");
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
@@ -713,36 +473,26 @@ Void Driver_RemoveLayer(Text _Name) {
 /** Applies a command sent by the driver.
  *
  *	@param	_Method			Name of the command (Driver.*)
- *	@param	_Params			Text params as encoded by DriverCommand::params
+ *	@param	_Params			Text params as encoded by DriverCommand::call
  */
 Void Driver_ApplyCommand(Text _Method, Text[] _Params) {
-	if (_Method == C_Method_Ack) {
+	if (_Method == C_Method_Continue) {
 		if (_Params.count >= 1 && TL::ToInteger(_Params[0]) == G_Driver_PendingSeq) {
 			G_Driver_PendingSeq = 0;
 		}
-	} else if (_Method == C_Method_SetPlayerPoints) {
-		if (_Params.count < 4) return;
-		declare CSmScore Score <=> Driver_FindScore(_Params[0]);
-		if (Score == Null) return;
-		if (_Params[1] != "") Scores::SetPlayerRoundPoints(Score, TL::ToInteger(_Params[1]));
-		if (_Params[2] != "") Scores::SetPlayerMapPoints(Score, TL::ToInteger(_Params[2]));
-		if (_Params[3] != "") Scores::SetPlayerMatchPoints(Score, TL::ToInteger(_Params[3]));
+	} else if (_Method == C_Method_SetRoundFormat) {
+		if (_Params.count < 2) return;
+		if (_Params[0] == "time_attack") {
+			G_Driver_TimeAttackLimit = TL::ToInteger(_Params[1]);
+		} else {
+			G_Driver_TimeAttackLimit = 0;
+			G_Driver_FinishTimeout = _Params[1];
+		}
 	} else if (_Method == C_Method_SetCanSpawn) {
 		if (_Params.count < 2) return;
 		G_Driver_CanSpawn[_Params[0]] = (_Params[1] == "1");
-	} else if (_Method == C_Method_SetFinishTimeout) {
-		if (_Params.count < 1) return;
-		G_Driver_FinishTimeout = _Params[0];
-	} else if (_Method == C_Method_ForceEndRound) {
-		G_Driver_ForceEndRound = True;
-	} else if (_Method == C_Method_EndMap) {
-		G_Driver_EndMap = True;
 	} else if (_Method == C_Method_EndMatch) {
 		G_Driver_EndMatch = True;
-	} else if (_Method == C_Method_SetMessage) {
-		if (_Params.count < 1) return;
-		G_Driver_Message = _Params[0];
-		UIModules_BigMessage::SetMessage(G_Driver_Message);
 	} else if (_Method == C_Method_SetLayer) {
 		if (_Params.count < 2) return;
 		Driver_SetLayer(_Params[0], _Params[1]);
@@ -755,12 +505,5 @@ Void Driver_ApplyCommand(Text _Method, Text[] _Params) {
 		declare netwrite Integer Net_Driver_StateSerial for Teams[0] = 0;
 		Net_Driver_State = _Params[0];
 		Net_Driver_StateSerial += 1;
-	} else if (_Method == C_Method_SetRoundFormat) {
-		if (_Params.count < 1) return;
-		if (_Params[0] == "time_attack" && _Params.count >= 2) {
-			G_Driver_TimeAttackLimit = TL::ToInteger(_Params[1]);
-		} else {
-			G_Driver_TimeAttackLimit = 0;
-		}
 	}
 }

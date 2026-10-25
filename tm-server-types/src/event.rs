@@ -124,8 +124,10 @@ pub enum Event {
     KnockoutElimination(KnockoutElimination),
     SkipOutro(SkipOutro),
 
-    /// Callbacks of the generic driver modescript.
-    Driver(DriverEvent),
+    /// The driver modescript waits for the driver.
+    DriverHold(DriverHold),
+    /// Results decided by the driver. Posted by the bridge, never sent by the server.
+    DriverRoundResult(DriverRoundResult),
 }
 
 impl Event {
@@ -264,33 +266,9 @@ impl Event {
                     json::from_str(&mut body).map_err(|e| (name.to_string(), e, body))?,
                 ),
 
-                DriverEvent::HELLO => Event::Driver(DriverEvent::Hello(
+                DriverHold::CALLBACK => Event::DriverHold(
                     json::from_str(&mut body).map_err(|e| (name.to_string(), e, body))?,
-                )),
-                DriverEvent::MATCH_START => Event::Driver(DriverEvent::MatchStart(
-                    json::from_str(&mut body).map_err(|e| (name.to_string(), e, body))?,
-                )),
-                DriverEvent::MAP_START => Event::Driver(DriverEvent::MapStart(
-                    json::from_str(&mut body).map_err(|e| (name.to_string(), e, body))?,
-                )),
-                DriverEvent::ROUND_START => Event::Driver(DriverEvent::RoundStart(
-                    json::from_str(&mut body).map_err(|e| (name.to_string(), e, body))?,
-                )),
-                DriverEvent::ROUND_END => Event::Driver(DriverEvent::RoundEnd(
-                    json::from_str(&mut body).map_err(|e| (name.to_string(), e, body))?,
-                )),
-                DriverEvent::MAP_END => Event::Driver(DriverEvent::MapEnd(
-                    json::from_str(&mut body).map_err(|e| (name.to_string(), e, body))?,
-                )),
-                DriverEvent::MATCH_END => Event::Driver(DriverEvent::MatchEnd(
-                    json::from_str(&mut body).map_err(|e| (name.to_string(), e, body))?,
-                )),
-                DriverEvent::PLAYER_JOIN => Event::Driver(DriverEvent::PlayerJoin(
-                    json::from_str(&mut body).map_err(|e| (name.to_string(), e, body))?,
-                )),
-                DriverEvent::PLAYER_LEAVE => Event::Driver(DriverEvent::PlayerLeave(
-                    json::from_str(&mut body).map_err(|e| (name.to_string(), e, body))?,
-                )),
+                ),
                 // The driver callbacks are ours so an unknown one means the modescript
                 // and these types are out of sync. Never let it slip through as Custom.
                 _ if name.starts_with("Driver.") => {

@@ -2,10 +2,8 @@ use async_fn_traits::{AsyncFn0, AsyncFn1};
 use tm_server_types::{
     base::PlayerInfo,
     event::{
-        DriverEvent, DriverHello, DriverMapEnd, DriverMapStart, DriverMatchEnd, DriverMatchStart,
-        DriverPlayerJoin, DriverPlayerLeave, DriverRoundEnd, DriverRoundStart, EndRoundEnd,
-        EndRoundStart, PlayerChat, PlayerConnect, PlayerDisconnect, Scores, StartMap, StartMatch,
-        StartRound, StartServer, WayPoint,
+        DriverHold, EndRoundEnd, EndRoundStart, PlayerChat, PlayerConnect, PlayerDisconnect,
+        Scores, StartMap, StartMatch, StartRound, StartServer, WayPoint,
     },
 };
 
@@ -134,76 +132,10 @@ pub trait TypedCallbacks {
         + Sync
         + 'static,
     );
-    // Callbacks of the generic driver modescript.
-    // Each hook runs in its own task so there is no ordering between different hooks.
-    // Use `on_event` when the order of all driver callbacks matters.
-    fn on_driver_hello(
+    /// The driver modescript waits for the driver.
+    fn on_driver_hold(
         &self,
-        execute: impl for<'a> AsyncFn1<&'a DriverHello, OutputFuture: Send, Output = ()>
-        + Send
-        + Sync
-        + 'static,
-    );
-
-    fn on_driver_match_start(
-        &self,
-        execute: impl for<'a> AsyncFn1<&'a DriverMatchStart, OutputFuture: Send, Output = ()>
-        + Send
-        + Sync
-        + 'static,
-    );
-
-    fn on_driver_map_start(
-        &self,
-        execute: impl for<'a> AsyncFn1<&'a DriverMapStart, OutputFuture: Send, Output = ()>
-        + Send
-        + Sync
-        + 'static,
-    );
-
-    fn on_driver_round_start(
-        &self,
-        execute: impl for<'a> AsyncFn1<&'a DriverRoundStart, OutputFuture: Send, Output = ()>
-        + Send
-        + Sync
-        + 'static,
-    );
-
-    fn on_driver_round_end(
-        &self,
-        execute: impl for<'a> AsyncFn1<&'a DriverRoundEnd, OutputFuture: Send, Output = ()>
-        + Send
-        + Sync
-        + 'static,
-    );
-
-    fn on_driver_map_end(
-        &self,
-        execute: impl for<'a> AsyncFn1<&'a DriverMapEnd, OutputFuture: Send, Output = ()>
-        + Send
-        + Sync
-        + 'static,
-    );
-
-    fn on_driver_match_end(
-        &self,
-        execute: impl for<'a> AsyncFn1<&'a DriverMatchEnd, OutputFuture: Send, Output = ()>
-        + Send
-        + Sync
-        + 'static,
-    );
-
-    fn on_driver_player_join(
-        &self,
-        execute: impl for<'a> AsyncFn1<&'a DriverPlayerJoin, OutputFuture: Send, Output = ()>
-        + Send
-        + Sync
-        + 'static,
-    );
-
-    fn on_driver_player_leave(
-        &self,
-        execute: impl for<'a> AsyncFn1<&'a DriverPlayerLeave, OutputFuture: Send, Output = ()>
+        execute: impl for<'a> AsyncFn1<&'a DriverHold, OutputFuture: Send, Output = ()>
         + Send
         + Sync
         + 'static,
@@ -371,93 +303,13 @@ impl TypedCallbacks for TrackmaniaServer {
         self.on("Maniaplanet.StartMap_End", execute);
     }
 
-    fn on_driver_hello(
+    fn on_driver_hold(
         &self,
-        execute: impl for<'a> AsyncFn1<&'a DriverHello, OutputFuture: Send, Output = ()>
+        execute: impl for<'a> AsyncFn1<&'a DriverHold, OutputFuture: Send, Output = ()>
         + Send
         + Sync
         + 'static,
     ) {
-        self.on(DriverEvent::HELLO, execute);
-    }
-
-    fn on_driver_match_start(
-        &self,
-        execute: impl for<'a> AsyncFn1<&'a DriverMatchStart, OutputFuture: Send, Output = ()>
-        + Send
-        + Sync
-        + 'static,
-    ) {
-        self.on(DriverEvent::MATCH_START, execute);
-    }
-
-    fn on_driver_map_start(
-        &self,
-        execute: impl for<'a> AsyncFn1<&'a DriverMapStart, OutputFuture: Send, Output = ()>
-        + Send
-        + Sync
-        + 'static,
-    ) {
-        self.on(DriverEvent::MAP_START, execute);
-    }
-
-    fn on_driver_round_start(
-        &self,
-        execute: impl for<'a> AsyncFn1<&'a DriverRoundStart, OutputFuture: Send, Output = ()>
-        + Send
-        + Sync
-        + 'static,
-    ) {
-        self.on(DriverEvent::ROUND_START, execute);
-    }
-
-    fn on_driver_round_end(
-        &self,
-        execute: impl for<'a> AsyncFn1<&'a DriverRoundEnd, OutputFuture: Send, Output = ()>
-        + Send
-        + Sync
-        + 'static,
-    ) {
-        self.on(DriverEvent::ROUND_END, execute);
-    }
-
-    fn on_driver_map_end(
-        &self,
-        execute: impl for<'a> AsyncFn1<&'a DriverMapEnd, OutputFuture: Send, Output = ()>
-        + Send
-        + Sync
-        + 'static,
-    ) {
-        self.on(DriverEvent::MAP_END, execute);
-    }
-
-    fn on_driver_match_end(
-        &self,
-        execute: impl for<'a> AsyncFn1<&'a DriverMatchEnd, OutputFuture: Send, Output = ()>
-        + Send
-        + Sync
-        + 'static,
-    ) {
-        self.on(DriverEvent::MATCH_END, execute);
-    }
-
-    fn on_driver_player_join(
-        &self,
-        execute: impl for<'a> AsyncFn1<&'a DriverPlayerJoin, OutputFuture: Send, Output = ()>
-        + Send
-        + Sync
-        + 'static,
-    ) {
-        self.on(DriverEvent::PLAYER_JOIN, execute);
-    }
-
-    fn on_driver_player_leave(
-        &self,
-        execute: impl for<'a> AsyncFn1<&'a DriverPlayerLeave, OutputFuture: Send, Output = ()>
-        + Send
-        + Sync
-        + 'static,
-    ) {
-        self.on(DriverEvent::PLAYER_LEAVE, execute);
+        self.on(DriverHold::CALLBACK, execute);
     }
 }

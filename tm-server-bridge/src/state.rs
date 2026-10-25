@@ -22,9 +22,9 @@ pub async fn setup_state_synchronization() {
 
     // Sync all events to spacetimedb.
     server.on_event(|event| {
-        // The generated bindings do not know the driver callbacks yet so transmuting
-        // them would be undefined behaviour. Forward them once the bindings are regenerated.
-        if matches!(event, tm_server_controller::event::Event::Driver(_)) {
+        // Holds only concern the driver. The generated bindings do not know them
+        // either, so transmuting them would be undefined behaviour.
+        if matches!(event, tm_server_controller::event::Event::DriverHold(_)) {
             return;
         }
 

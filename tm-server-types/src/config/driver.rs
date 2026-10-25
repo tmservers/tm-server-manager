@@ -57,40 +57,23 @@ impl Default for Driver {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{event::DriverEvent, method::DriverCommand};
+    use crate::{event::DriverHold, method::DriverCommand};
 
     /// The modescript and the Rust types have to agree on every name.
     #[test]
-    fn script_knows_every_callback_and_command() {
-        let names = [
-            DriverEvent::HELLO,
-            DriverEvent::MATCH_START,
-            DriverEvent::MAP_START,
-            DriverEvent::ROUND_START,
-            DriverEvent::ROUND_END,
-            DriverEvent::MAP_END,
-            DriverEvent::MATCH_END,
-            DriverEvent::PLAYER_JOIN,
-            DriverEvent::PLAYER_LEAVE,
-            DriverCommand::ACK,
-            DriverCommand::SET_PLAYER_POINTS,
-            DriverCommand::SET_CAN_SPAWN,
-            DriverCommand::SET_FINISH_TIMEOUT,
-            DriverCommand::FORCE_END_ROUND,
-            DriverCommand::END_MAP,
-            DriverCommand::END_MATCH,
-            DriverCommand::SET_MESSAGE,
-            DriverCommand::SET_LAYER,
-            DriverCommand::REMOVE_LAYER,
-            DriverCommand::SET_NET_STATE,
-            DriverCommand::SET_ROUND_FORMAT,
-        ];
-        for name in names {
+    fn script_knows_every_callback_and_method() {
+        for name in std::iter::once(DriverHold::CALLBACK).chain(DriverCommand::MODESCRIPT_METHODS) {
             assert!(
                 Driver::SCRIPT.contains(&format!("\"{name}\"")),
                 "{name} is missing in TM_Driver.Script.txt"
             );
         }
+    }
+
+    /// Everything else reaches the driver through the standard callbacks.
+    #[test]
+    fn script_only_sends_holds() {
+        assert_eq!(Driver::SCRIPT.matches("XmlRpc::SendCallback(").count(), 1);
     }
 
     #[test]
