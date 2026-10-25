@@ -18,7 +18,7 @@ use tm_server_manager_api_rs::event_raw_server_stateQueryTableAccess;
 use tm_server_manager_api_rs::login_as_server;
 use tm_server_manager_api_rs::raw_server_permitted_playersQueryTableAccess;
 use tm_server_manager_api_rs::raw_server_player_destinationQueryTableAccess;
-use tokio::sync::RwLock;
+use tokio::sync::{RwLock, oneshot};
 use tokio::time::sleep;
 
 use crate::SPACETIME;
@@ -88,14 +88,23 @@ impl MyDbConnection {
 
         let spacetime = self.read();
 
-        let Ok(server_id) = spacetime
-            .procedures
-            .login_as_server_async(tm_server_login, tm_server_password, tm_account_id, seamless)
-            .await
-            .unwrap()
-        else {
-            tracing::error!("Server could not be authenticated successfully");
-            return false;
+        // Not every codegen emits the async procedure wrappers, the callback version always exists.
+        let (login_sender, login) = oneshot::channel();
+        spacetime.procedures.login_as_server_then(
+            tm_server_login,
+            tm_server_password,
+            tm_account_id,
+            seamless,
+            move |_, result| {
+                _ = login_sender.send(result);
+            },
+        );
+        let server_id = match login.await {
+            Ok(Ok(Ok(server_id))) => server_id,
+            result => {
+                tracing::error!("Server could not be authenticated successfully: {result:?}");
+                return false;
+            }
         };
 
         tracing::info!("Successfully connected to tmservers.live!");
