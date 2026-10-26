@@ -68,14 +68,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let server: &'static TrackmaniaServer = Box::leak(Box::new(TrackmaniaServer::new(url).await?));
     let _: bool = server.call("SetApiVersion", "2023-03-25").await?;
     server.authenticate("SuperAdmin", password).await?;
-    let _: bool = server
-        .call(
-            "TriggerModeScriptEventArray",
-            ("XmlRpc.SetApiVersion", ["3.11"]),
-        )
-        .await?;
     server.enable_callbacks(true).await?;
-    server.enable_mode_script_callbacks(true).await?;
     tracing::info!("Connected to the server.");
 
     let engine: &'static DriverEngine =
@@ -91,9 +84,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     {
         tracing::error!("{error}");
     }
+    // Mode script calls are refused until a mode script runs, so they come after the install.
     if let Err(error) = install_script(server).await {
         tracing::error!("{error}");
     }
+    enable_mode_script_callbacks(server).await?;
 
     tracing::info!("{HELP}");
     let mut lines = BufReader::new(tokio::io::stdin()).lines();
@@ -243,6 +238,33 @@ fn read_settings(settings: &str) -> Result<String, String> {
     } else {
         std::fs::read_to_string(settings).map_err(|e| format!("Could not read {settings}: {e}"))
     }
+}
+
+/// The server refuses mode script calls with "Not in script mode" until the script of the
+/// server runs. Retries for a while so the install has time to take effect.
+async fn enable_mode_script_callbacks(
+    server: &TrackmaniaServer,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let mut attempts = 0;
+    loop {
+        let result: Result<bool, _> = server
+            .call(
+                "TriggerModeScriptEventArray",
+                ("XmlRpc.SetApiVersion", ["3.11"]),
+            )
+            .await;
+        match result {
+            Ok(_) => break,
+            Err(error) if attempts < 30 && error.to_string().contains("Not in script mode") => {
+                attempts += 1;
+                tracing::info!("Waiting for the server to run the modescript ({attempts}/30).");
+                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+            }
+            Err(error) => return Err(error.into()),
+        }
+    }
+    server.enable_mode_script_callbacks(true).await?;
+    Ok(())
 }
 
 /// Starts the driver modescript of the repository, which also starts a new match.
