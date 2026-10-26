@@ -17,3 +17,8 @@ wasmtime = { version = "50.0.0", default-features = false, features = ["runtime"
 wit-component = "0.262.0"
 thiserror = "2.0.21"
 tracing = "0.1.44"
+
+# Only used by the runner in main.rs.
+tm-server-controller.workspace = true
+tokio.workspace = true
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }

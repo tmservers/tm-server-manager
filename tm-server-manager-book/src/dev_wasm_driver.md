@@ -305,7 +305,16 @@ A key of `complex_points_repartition` can list several player counts, e.g. `"4,5
 
 ## Next steps
 
-1. **Run the modescript and the manialink on a real server.** Check:
+1. **Run the modescript and the manialink on a real server.** The runner in
+   `tm-wasm-driver/src/main.rs` does that without the bridge and the manager: it installs the
+   modescript, shows the manialinks and drives the server with a mode it builds from the
+   repository (`load <mode> [settings]`, `reload`, `script`, `next`).
+
+   ```sh
+   TM_SERVER_URL=127.0.0.1:5000 cargo run -p tm-wasm-driver -- reverse-cup '{"starting_points": 10}'
+   ```
+
+   Check:
    - The script compiles. `ServerShutdownRequested` and the raw `UIManager.UILayerCreate` API
      are not used by any script we checked.
    - Holds block and continue as expected, and a missing driver shows the waiting message.
