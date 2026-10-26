@@ -18,7 +18,7 @@
 #Extends "Modes/Nadeo/Trackmania/Base/TrackmaniaRoundsBase.Script.txt"
 
 #Const	CompatibleMapTypes	"TrackMania\\TM_Race,TM_Race"
-#Const	Version							"0.3.0"
+#Const	Version							"0.4.0"
 #Const	ScriptName					"Modes/Trackmania/TM_Driver.Script.txt"
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
@@ -74,6 +74,7 @@
 #Const C_Method_RemoveLayer "Driver.RemoveLayer"
 #Const C_Method_SetNetState "Driver.SetNetState"
 #Const C_Method_SetStandings "Driver.SetStandings"
+#Const C_Method_SetWarmUp "Driver.SetWarmUp"
 
 #Const C_LayerKind_ScoresTable "scores_table"
 
@@ -100,6 +101,11 @@ declare Text G_Driver_FinishTimeout;
 /// Time limit of time attack rounds in milliseconds. 0 plays single attempt rounds.
 declare Integer G_Driver_TimeAttackLimit;
 declare Boolean G_Driver_EndMatch;
+/// The built-in warmup before the first round of every map: rounds, duration and timeout
+/// in milliseconds as MB_WarmUp takes them.
+declare Integer G_Driver_WarmUpNb;
+declare Integer G_Driver_WarmUpDuration;
+declare Integer G_Driver_WarmUpTimeout;
 declare Ident[Text] G_Driver_Layers;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
@@ -133,7 +139,7 @@ XmlRpc::RegisterCallback(C_Callback_Hold, """
 	]
 	```
 """);
-foreach (Method in [C_Method_Continue, C_Method_SetRoundFormat, C_Method_SetCanSpawn, C_Method_EndMatch, C_Method_SetLayer, C_Method_RemoveLayer, C_Method_SetNetState, C_Method_SetStandings]) {
+foreach (Method in [C_Method_Continue, C_Method_SetRoundFormat, C_Method_SetCanSpawn, C_Method_EndMatch, C_Method_SetLayer, C_Method_RemoveLayer, C_Method_SetNetState, C_Method_SetStandings, C_Method_SetWarmUp]) {
 	XmlRpc::RegisterMethod(Method, """
 * Name: {{{Method}}}
 * Type: TriggerModeScriptEventArray
@@ -147,7 +153,7 @@ foreach (Method in [C_Method_Continue, C_Method_SetRoundFormat, C_Method_SetCanS
 StateMgr::Unload();
 
 XmlRpc::UnregisterCallback(C_Callback_Hold);
-foreach (Method in [C_Method_Continue, C_Method_SetRoundFormat, C_Method_SetCanSpawn, C_Method_EndMatch, C_Method_SetLayer, C_Method_RemoveLayer, C_Method_SetNetState, C_Method_SetStandings]) {
+foreach (Method in [C_Method_Continue, C_Method_SetRoundFormat, C_Method_SetCanSpawn, C_Method_EndMatch, C_Method_SetLayer, C_Method_RemoveLayer, C_Method_SetNetState, C_Method_SetStandings, C_Method_SetWarmUp]) {
 	XmlRpc::UnregisterMethod(Method);
 }
 ***
@@ -243,6 +249,9 @@ declare Boolean[Text] Driver_SpawnPermissions for This = [];
 Driver_SpawnPermissions.clear();
 G_Driver_FinishTimeout = "auto";
 G_Driver_TimeAttackLimit = 0;
+G_Driver_WarmUpNb = S_WarmUpNb;
+G_Driver_WarmUpDuration = S_WarmUpDuration * 1000;
+G_Driver_WarmUpTimeout = S_WarmUpTimeout * 1000;
 ***
 
 ***Match_StartMap***
@@ -253,7 +262,15 @@ CarRank::Reset();
 
 Driver_Hold(C_Section_MapStart, False);
 
-MB_WarmUp(S_WarmUpNb, S_WarmUpDuration * 1000, S_WarmUpTimeout * 1000);
+// The warmup has its own spawn rules. Players who cannot spawn, e.g. eliminated
+// players, do not warm up either.
+declare Boolean[Text] Driver_SpawnPermissions for This = [];
+foreach (Score in Scores) {
+	if (Score.User == Null) continue;
+	declare Text AccountId = Score.User.WebServicesUserId;
+	WarmUp::CanPlay(Score, !Driver_SpawnPermissions.existskey(AccountId) || Driver_SpawnPermissions[AccountId]);
+}
+MB_WarmUp(G_Driver_WarmUpNb, G_Driver_WarmUpDuration, G_Driver_WarmUpTimeout);
 ***
 
 ***Rounds_CheckCanSpawn***
@@ -473,6 +490,15 @@ Void Driver_ApplyCommand(Text _Method, Text[] _Params) {
 		} else {
 			G_Driver_TimeAttackLimit = 0;
 			G_Driver_FinishTimeout = _Params[1];
+		}
+	} else if (_Method == C_Method_SetWarmUp) {
+		if (_Params.count < 3) return;
+		G_Driver_WarmUpNb = TL::ToInteger(_Params[0]);
+		G_Driver_WarmUpDuration = TL::ToInteger(_Params[1]);
+		if (_Params[2] == "auto") {
+			G_Driver_WarmUpTimeout = -1;
+		} else {
+			G_Driver_WarmUpTimeout = TL::ToInteger(_Params[2]);
 		}
 	} else if (_Method == C_Method_SetCanSpawn) {
 		if (_Params.count < 2) return;

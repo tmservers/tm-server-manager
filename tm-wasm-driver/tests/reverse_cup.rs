@@ -5,8 +5,8 @@ mod common;
 use std::sync::OnceLock;
 
 use common::{
-    hold, match_start, publishes_standings, ranking, round_start, round_start_scores, scores,
-    start_line, way_point, without_standings,
+    hold, match_start, no_warm_up, publishes_standings, ranking, round_start, round_start_scores,
+    scores, start_line, way_point, without_standings,
 };
 use tm_server_types::{
     event::{DriverPlayerResult, DriverRoundResult, DriverSection, Event},
@@ -107,6 +107,7 @@ fn plays_a_match() {
             DriverCommand::SetRoundFormat(DriverRoundFormat::SingleAttempt(
                 DriverFinishTimeout::Automatic
             )),
+            no_warm_up(),
             DriverCommand::Continue(1)
         ]
     );
@@ -191,8 +192,12 @@ fn standings_show_the_players_once_they_start() {
 
     driver.handle(&match_start()).unwrap();
     driver.handle(&hold(1, DriverSection::MapStart)).unwrap();
-    // Warmup races happen outside of rounds.
+    // Warmup races happen outside of rounds, even if a warmup round looked like one.
+    driver.handle(&Event::WarmupStart).unwrap();
     driver.handle(&start_line("a")).unwrap();
+    driver.handle(&round_start(1)).unwrap();
+    driver.handle(&start_line("b")).unwrap();
+    driver.handle(&Event::WarmupEnd).unwrap();
     assert!(driver.standings().players.is_empty());
 
     driver.handle(&round_start(1)).unwrap();

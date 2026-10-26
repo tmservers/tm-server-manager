@@ -10,7 +10,7 @@
 use serde::Deserialize;
 use tm_driver_sdk::{
     Command, Event, Mode, RaceResult, RoundEnd, RoundFormat, Standings,
-    settings::FinishTimeoutSetting,
+    settings::{FinishTimeoutSetting, WarmUpSetting},
 };
 
 tm_driver_sdk::export_mode!(Rounds);
@@ -30,6 +30,8 @@ pub struct Settings {
     /// Keep playing while the leading players are tied.
     pub use_tie_break: bool,
     pub finish_timeout: FinishTimeoutSetting,
+    /// The warmup before the first round of every map.
+    pub warmup: WarmUpSetting,
 }
 
 impl Default for Settings {
@@ -41,6 +43,7 @@ impl Default for Settings {
             points_limit: 0,
             use_tie_break: true,
             finish_timeout: FinishTimeoutSetting::Automatic,
+            warmup: WarmUpSetting::default(),
         }
     }
 }
@@ -77,9 +80,12 @@ impl Mode for Rounds {
             // of the previous mode might still be active.
             Event::MapStart => {
                 standings.info = self.info(standings);
-                vec![Command::SetRoundFormat(RoundFormat::SingleAttempt(
-                    self.settings.finish_timeout.into(),
-                ))]
+                vec![
+                    Command::SetRoundFormat(RoundFormat::SingleAttempt(
+                        self.settings.finish_timeout.into(),
+                    )),
+                    Command::SetWarmUp(self.settings.warmup.into()),
+                ]
             }
             Event::RoundEnd(round_end) => self.round_end(standings, round_end),
             Event::MapEnd => {
@@ -203,7 +209,7 @@ fn maps_per_match(setting: Option<u32>, standings: &Standings) -> u32 {
 
 #[cfg(test)]
 mod tests {
-    use tm_driver_sdk::{FinishTimeout, Player, Status, testing::Harness};
+    use tm_driver_sdk::{FinishTimeout, Player, Status, WarmUp, testing::Harness};
 
     use super::*;
 
@@ -258,14 +264,23 @@ mod tests {
     }
 
     #[test]
-    fn sets_the_round_format_on_map_start() {
-        let mut harness =
-            Harness::<Rounds>::new(r#"{"finish_timeout": {"milliseconds": 7000}}"#).unwrap();
+    fn sets_the_round_format_and_warmup_on_map_start() {
+        let mut harness = Harness::<Rounds>::new(
+            r#"{"finish_timeout": {"milliseconds": 7000}, "warmup": {"rounds": 1, "duration_ms": 60000}}"#,
+        )
+        .unwrap();
         assert_eq!(
             harness.step(Event::MapStart),
-            [Command::SetRoundFormat(RoundFormat::SingleAttempt(
-                FinishTimeout::Milliseconds(7000)
-            ))]
+            [
+                Command::SetRoundFormat(RoundFormat::SingleAttempt(FinishTimeout::Milliseconds(
+                    7000
+                ))),
+                Command::SetWarmUp(WarmUp {
+                    rounds: 1,
+                    duration_ms: 60_000,
+                    timeout_ms: None,
+                }),
+            ]
         );
     }
 

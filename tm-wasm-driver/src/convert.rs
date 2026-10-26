@@ -10,12 +10,13 @@ use tm_server_types::{
     event::{DriverPlayerResult, DriverRoundResult, Scores},
     method::{
         DriverCanSpawn, DriverCommand, DriverFinishTimeout, DriverLayer, DriverLayerKind,
-        DriverRoundFormat, DriverStanding, DriverStandings, DriverStatus,
+        DriverRoundFormat, DriverStanding, DriverStandings, DriverStatus, DriverWarmUp,
     },
 };
 
 use crate::bindings::tmservers::driver::types::{
     CanSpawn, Command, FinishTimeout, Layer, RaceResult, RoundFormat, Standing, Standings, Status,
+    WarmUp,
 };
 
 /// Race times of every player of a scores callback together with the progress
@@ -80,6 +81,15 @@ pub(crate) fn commands(commands: Vec<Command>, playlist: &[String]) -> Vec<Drive
                 Command::SetRoundFormat(format) => {
                     DriverCommand::SetRoundFormat(round_format(format))
                 }
+                Command::SetWarmUp(WarmUp {
+                    rounds,
+                    duration_ms,
+                    timeout_ms,
+                }) => DriverCommand::SetWarmUp(DriverWarmUp {
+                    rounds,
+                    duration_ms,
+                    timeout_ms,
+                }),
                 Command::SetCanSpawn(CanSpawn {
                     account_id,
                     can_spawn,

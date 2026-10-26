@@ -2,7 +2,7 @@
 
 mod common;
 
-use common::{hold, map_start, match_start, scores, without_standings};
+use common::{hold, map_start, match_start, no_warm_up, scores, without_standings};
 use tm_server_types::{
     event::DriverSection,
     method::{DriverCommand, DriverFinishTimeout, DriverRoundFormat},
@@ -50,6 +50,7 @@ fn plays_the_playlist_in_order_once() {
             DriverCommand::SetRoundFormat(DriverRoundFormat::SingleAttempt(
                 DriverFinishTimeout::Automatic
             )),
+            no_warm_up(),
             next_map("m2"),
             DriverCommand::Continue(1)
         ]

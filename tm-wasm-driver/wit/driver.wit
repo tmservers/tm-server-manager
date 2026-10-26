@@ -125,6 +125,17 @@ interface types {
         time-attack(u32),
     }
 
+    /// A warmup with the built-in warmup of the game.
+    record warm-up {
+        /// Warmup rounds, 0 for none.
+        rounds: u32,
+        /// How long one warmup round lasts. 0 lets every player drive once.
+        duration-ms: u32,
+        /// Time to finish after the first player finished in rounds of one try.
+        /// None computes it from the author time like the finish timeout.
+        timeout-ms: option<u32>,
+    }
+
     record can-spawn {
         account-id: string,
         can-spawn: bool,
@@ -138,6 +149,9 @@ interface types {
     variant command {
         /// Applies to the next round that starts. Send it in reply to map-start or round-end.
         set-round-format(round-format),
+        /// The warmup before the first round of the map. Send it in reply to map-start,
+        /// warmup races are no rounds and never reach the mode.
+        set-warm-up(warm-up),
         /// Players that cannot spawn are out of the race (e.g. eliminated).
         /// The host leaves out permissions it already sent in this match.
         set-can-spawn(can-spawn),

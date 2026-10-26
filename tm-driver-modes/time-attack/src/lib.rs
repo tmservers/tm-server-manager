@@ -7,7 +7,9 @@
 //! on, which keeps the order of the times.
 
 use serde::Deserialize;
-use tm_driver_sdk::{Command, Event, Mode, RaceResult, RoundEnd, RoundFormat, Standings};
+use tm_driver_sdk::{
+    Command, Event, Mode, RaceResult, RoundEnd, RoundFormat, Standings, settings::WarmUpSetting,
+};
 
 tm_driver_sdk::export_mode!(TimeAttack);
 
@@ -22,6 +24,8 @@ pub struct Settings {
     /// Points by rank at the end of every map. Ranks beyond the list get the last value.
     /// When empty the best of N finishers gets N points, the second N - 1 and so on.
     pub points_repartition: Vec<i32>,
+    /// The warmup before the time attack round of every map.
+    pub warmup: WarmUpSetting,
 }
 
 impl Default for Settings {
@@ -30,6 +34,7 @@ impl Default for Settings {
             time_limit_ms: 300_000,
             maps_per_match: None,
             points_repartition: Vec::new(),
+            warmup: WarmUpSetting::default(),
         }
     }
 }
@@ -61,9 +66,10 @@ impl Mode for TimeAttack {
             // of the previous mode might still be active.
             Event::MapStart => {
                 standings.info = self.info(standings);
-                vec![Command::SetRoundFormat(RoundFormat::TimeAttack(
-                    self.settings.time_limit_ms,
-                ))]
+                vec![
+                    Command::SetRoundFormat(RoundFormat::TimeAttack(self.settings.time_limit_ms)),
+                    Command::SetWarmUp(self.settings.warmup.into()),
+                ]
             }
             Event::RoundEnd(round_end) => self.round_end(standings, round_end),
             Event::MapEnd => {
@@ -151,7 +157,7 @@ fn maps_per_match(setting: Option<u32>, standings: &Standings) -> u32 {
 
 #[cfg(test)]
 mod tests {
-    use tm_driver_sdk::{Status, testing::Harness};
+    use tm_driver_sdk::{Status, WarmUp, testing::Harness};
 
     use super::*;
 
@@ -207,11 +213,21 @@ mod tests {
     }
 
     #[test]
-    fn sets_the_round_format_on_map_start() {
-        let mut harness = Harness::<TimeAttack>::new(r#"{"time_limit_ms": 60000}"#).unwrap();
+    fn sets_the_round_format_and_warmup_on_map_start() {
+        let mut harness = Harness::<TimeAttack>::new(
+            r#"{"time_limit_ms": 60000, "warmup": {"rounds": 1, "timeout_ms": 5000}}"#,
+        )
+        .unwrap();
         assert_eq!(
             harness.step(Event::MapStart),
-            [Command::SetRoundFormat(RoundFormat::TimeAttack(60_000))]
+            [
+                Command::SetRoundFormat(RoundFormat::TimeAttack(60_000)),
+                Command::SetWarmUp(WarmUp {
+                    rounds: 1,
+                    duration_ms: 0,
+                    timeout_ms: Some(5000),
+                }),
+            ]
         );
         assert_eq!(harness.standings.info, "Map 1 / 1");
     }

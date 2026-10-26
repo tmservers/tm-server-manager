@@ -9,7 +9,7 @@ use tm_server_types::{
         DriverHold, DriverSection, Event, Scores, StartLine, StartMap, StartMatch, StartRound,
         WayPoint,
     },
-    method::{DriverCommand, DriverStatus},
+    method::{DriverCommand, DriverStatus, DriverWarmUp},
 };
 use tm_wasm_driver::Driver;
 
@@ -176,6 +176,11 @@ fn race_time(time: i32) -> RoundTime {
 
 fn checkpoints(time: i32) -> Vec<u32> {
     if time < 0 { vec![] } else { vec![time as u32] }
+}
+
+/// What modes send at map start without a warmup in their settings.
+pub fn no_warm_up() -> DriverCommand {
+    DriverCommand::SetWarmUp(DriverWarmUp::default())
 }
 
 /// The commands of a reply without the standings the host publishes.

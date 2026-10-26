@@ -243,6 +243,7 @@ impl DriverEngine {
             next_map_chosen: false,
             names: BTreeMap::new(),
             in_round: false,
+            in_warm_up: false,
             round_progress: BTreeMap::new(),
             round_results: None,
             poisoned: false,
@@ -295,6 +296,8 @@ pub struct Driver {
     names: BTreeMap<String, String>,
     /// A round runs, from its start to its end hold. Warmup races are outside.
     in_round: bool,
+    /// The built-in warmup runs.
+    in_warm_up: bool,
     /// Players who started a race in the current round and how many checkpoints
     /// they passed in their last race.
     round_progress: BTreeMap<String, u32>,
@@ -319,6 +322,8 @@ impl Driver {
             event,
             Event::StartMatchStart(_)
                 | Event::StartMapStart(_)
+                | Event::WarmupStart
+                | Event::WarmupEnd
                 | Event::StartRoundStart(_)
                 | Event::StartLine(_)
                 | Event::WayPoint(_)
@@ -349,6 +354,14 @@ impl Driver {
                 self.next_map_chosen = false;
                 Ok(DriverReply::default())
             }
+            Event::WarmupStart => {
+                self.in_warm_up = true;
+                Ok(DriverReply::default())
+            }
+            Event::WarmupEnd => {
+                self.in_warm_up = false;
+                Ok(DriverReply::default())
+            }
             Event::StartRoundStart(_) => {
                 self.round_progress.clear();
                 self.in_round = true;
@@ -360,7 +373,7 @@ impl Driver {
                     .insert(start_line.account_id.clone(), 0)
                     .is_none();
                 // Time attack rounds start players again and again.
-                if !first || !self.in_round {
+                if !first || !self.in_round || self.in_warm_up {
                     return Ok(DriverReply::default());
                 }
                 self.step(wit::Event::RaceStart(wit::Player {

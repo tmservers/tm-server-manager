@@ -37,6 +37,7 @@ fn plays_a_match() {
         ),
         [
             DriverCommand::SetRoundFormat(DriverRoundFormat::TimeAttack(60_000)),
+            common::no_warm_up(),
             DriverCommand::Continue(1)
         ]
     );

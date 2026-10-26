@@ -5,11 +5,13 @@ mod common;
 use std::sync::OnceLock;
 
 use common::{
-    SESSION, forced_round_end, hold, match_start, publishes_standings, ranking, round_start,
-    scores, without_standings,
+    SESSION, forced_round_end, hold, match_start, no_warm_up, publishes_standings, ranking,
+    round_start, scores, without_standings,
 };
 use tm_server_types::{
-    event::{DriverHold, DriverPlayerResult, DriverRoundResult, DriverSection, Event},
+    event::{
+        DriverHold, DriverPlayerResult, DriverRoundResult, DriverSection, Event, PlayLoopStart,
+    },
     method::{DriverCommand, DriverFinishTimeout, DriverRoundFormat, DriverStatus},
 };
 use tm_wasm_driver::{Driver, DriverEngine, DriverError, DriverLimits, DriverReply};
@@ -57,6 +59,7 @@ fn plays_a_match() {
             DriverCommand::SetRoundFormat(DriverRoundFormat::SingleAttempt(
                 DriverFinishTimeout::Automatic
             )),
+            no_warm_up(),
             DriverCommand::Continue(1)
         ]
     );
@@ -247,11 +250,13 @@ fn replays_are_deterministic() {
 #[test]
 fn ignores_unrelated_callbacks() {
     let mut driver = rounds("");
-    assert!(!Driver::handles(&Event::WarmupStart));
-    assert_eq!(
-        driver.handle(&Event::WarmupStart).unwrap(),
-        DriverReply::default()
-    );
+    let play_loop = Event::PlayLoopStart(PlayLoopStart {
+        count: 1,
+        valid: 1,
+        time: 0,
+    });
+    assert!(!Driver::handles(&play_loop));
+    assert_eq!(driver.handle(&play_loop).unwrap(), DriverReply::default());
 }
 
 #[test]

@@ -14,6 +14,8 @@ pub enum DriverCommand {
     Continue(u32),
     /// How the rounds starting from now on are played.
     SetRoundFormat(DriverRoundFormat),
+    /// The warmup of the built-in warmup before the first round of the map that starts.
+    SetWarmUp(DriverWarmUp),
     /// Players that cannot spawn are out of the race (e.g. eliminated).
     SetCanSpawn(DriverCanSpawn),
     /// Ends the map once the current hold continues.
@@ -69,9 +71,10 @@ impl DriverCommand {
     pub const REMOVE_LAYER: &str = "Driver.RemoveLayer";
     pub const SET_NET_STATE: &str = "Driver.SetNetState";
     pub const SET_STANDINGS: &str = "Driver.SetStandings";
+    pub const SET_WARM_UP: &str = "Driver.SetWarmUp";
 
     /// Methods implemented by the driver modescript.
-    pub const MODESCRIPT_METHODS: [&str; 8] = [
+    pub const MODESCRIPT_METHODS: [&str; 9] = [
         Self::CONTINUE,
         Self::SET_ROUND_FORMAT,
         Self::SET_CAN_SPAWN,
@@ -80,6 +83,7 @@ impl DriverCommand {
         Self::REMOVE_LAYER,
         Self::SET_NET_STATE,
         Self::SET_STANDINGS,
+        Self::SET_WARM_UP,
     ];
 
     pub fn call(&self) -> DriverCall {
@@ -100,6 +104,17 @@ impl DriverCommand {
                         vec!["time_attack".to_string(), time_limit.to_string()]
                     }
                 },
+            ),
+            DriverCommand::SetWarmUp(warm_up) => (
+                Self::SET_WARM_UP,
+                vec![
+                    warm_up.rounds.to_string(),
+                    warm_up.duration_ms.to_string(),
+                    match warm_up.timeout_ms {
+                        Some(ms) => ms.to_string(),
+                        None => "auto".to_string(),
+                    },
+                ],
             ),
             DriverCommand::SetCanSpawn(can_spawn) => (
                 Self::SET_CAN_SPAWN,
@@ -187,6 +202,21 @@ pub enum DriverFinishTimeout {
     /// The round ends once every player finished or gave up.
     Disabled,
     Milliseconds(u32),
+}
+
+/// A warmup with the built-in warmup of the game.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
+#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
+pub struct DriverWarmUp {
+    /// Warmup rounds, 0 for none.
+    pub rounds: u32,
+    /// How long one warmup round lasts. 0 lets every player drive once.
+    pub duration_ms: u32,
+    /// Time to finish after the first player finished in rounds of one try.
+    /// None computes it from the author time like the finish timeout.
+    pub timeout_ms: Option<u32>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -429,6 +459,30 @@ mod tests {
             ))
             .1,
             ["time_attack", "300000"]
+        );
+    }
+
+    #[test]
+    fn warm_ups() {
+        assert_eq!(
+            modescript(DriverCommand::SetWarmUp(DriverWarmUp {
+                rounds: 2,
+                duration_ms: 60_000,
+                timeout_ms: None,
+            })),
+            (
+                "Driver.SetWarmUp",
+                vec!["2".into(), "60000".into(), "auto".into()]
+            )
+        );
+        assert_eq!(
+            modescript(DriverCommand::SetWarmUp(DriverWarmUp {
+                rounds: 1,
+                duration_ms: 0,
+                timeout_ms: Some(5000),
+            }))
+            .1,
+            ["1", "0", "5000"]
         );
     }
 

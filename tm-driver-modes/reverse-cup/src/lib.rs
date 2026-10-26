@@ -22,7 +22,7 @@ use std::{
 use serde::Deserialize;
 use tm_driver_sdk::{
     CanSpawn, Command, Event, Mode, RaceResult, RoundEnd, RoundFormat, Standings, Status,
-    settings::FinishTimeoutSetting,
+    settings::{FinishTimeoutSetting, WarmUpSetting},
 };
 
 tm_driver_sdk::export_mode!(ReverseCup);
@@ -52,6 +52,8 @@ pub struct Settings {
     /// Valid rounds played on every map. 0 means no limit.
     pub rounds_per_map: u32,
     pub finish_timeout: FinishTimeoutSetting,
+    /// The warmup before the first round of every map.
+    pub warmup: WarmUpSetting,
 }
 
 impl Default for Settings {
@@ -73,6 +75,7 @@ impl Default for Settings {
             number_of_winners: 1,
             rounds_per_map: 5,
             finish_timeout: FinishTimeoutSetting::Automatic,
+            warmup: WarmUpSetting::default(),
         }
     }
 }
@@ -130,9 +133,12 @@ impl Mode for ReverseCup {
             // of the previous mode might still be active.
             Event::MapStart => {
                 standings.info = self.info(standings);
-                vec![Command::SetRoundFormat(RoundFormat::SingleAttempt(
-                    self.settings.finish_timeout.into(),
-                ))]
+                vec![
+                    Command::SetRoundFormat(RoundFormat::SingleAttempt(
+                        self.settings.finish_timeout.into(),
+                    )),
+                    Command::SetWarmUp(self.settings.warmup.into()),
+                ]
             }
             Event::RoundEnd(round_end) => self.round_end(standings, round_end),
             Event::MapEnd => {
@@ -477,7 +483,7 @@ fn ordinal(n: u32) -> String {
 
 #[cfg(test)]
 mod tests {
-    use tm_driver_sdk::{FinishTimeout, Player, Standing, testing::Harness};
+    use tm_driver_sdk::{FinishTimeout, Player, Standing, WarmUp, testing::Harness};
 
     use super::*;
 
@@ -611,14 +617,23 @@ mod tests {
     }
 
     #[test]
-    fn sets_the_round_format_on_map_start() {
-        let mut harness =
-            Harness::<ReverseCup>::new(r#"{"finish_timeout": {"milliseconds": 7000}}"#).unwrap();
+    fn sets_the_round_format_and_warmup_on_map_start() {
+        let mut harness = Harness::<ReverseCup>::new(
+            r#"{"finish_timeout": {"milliseconds": 7000}, "warmup": {"rounds": 1, "duration_ms": 60000}}"#,
+        )
+        .unwrap();
         assert_eq!(
             harness.step(Event::MapStart),
-            [Command::SetRoundFormat(RoundFormat::SingleAttempt(
-                FinishTimeout::Milliseconds(7000)
-            ))]
+            [
+                Command::SetRoundFormat(RoundFormat::SingleAttempt(FinishTimeout::Milliseconds(
+                    7000
+                ))),
+                Command::SetWarmUp(WarmUp {
+                    rounds: 1,
+                    duration_ms: 60_000,
+                    timeout_ms: None,
+                }),
+            ]
         );
     }
 
