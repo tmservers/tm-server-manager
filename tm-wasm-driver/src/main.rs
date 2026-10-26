@@ -62,8 +62,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         )
         .init();
 
-    let url = std::env::var("TM_SERVER_URL")
-        .map_err(|_| "TM_SERVER_URL must be set, e.g. 127.0.0.1:5000")?;
+    let url = std::env::var("TM_SERVER_URL").unwrap_or("127.0.0.1:5001".into());
 
     let server: &'static TrackmaniaServer = Box::leak(Box::new(TrackmaniaServer::new(url).await?));
     let _: bool = server.call("SetApiVersion", "2023-03-25").await?;
