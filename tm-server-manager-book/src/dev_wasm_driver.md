@@ -114,7 +114,7 @@ as `tm_server_types::method::DriverStandings`.
 | Field | Meaning |
 |---|---|
 | `players[].rank` | Position in the match, ties share a rank. Set by the mode, usually with `Standings::rank()`. |
-| `players[].status` | `playing`, `finalist`, `last_chance`, `eliminated` (with a final rank) or `winner`. |
+| `players[].status` | `playing`, `finalist`, `last_chance`, `eliminated` (with a final rank), `winner` or `spectator` (takes no part, not ranked). |
 | `players[].points` | Points of the match. |
 | `players[].map_points` | Points of the current map. |
 | `players[].round_points` | Points of the last round. |
@@ -169,8 +169,9 @@ corrections can later edit the standings without the mode knowing about it.
 - Manialinks are selected next to the mode in the config (`Driver.manialinks`). The bridge installs
   them as layers when the config loads and whenever the modescript (re)starts.
   `tm-driver-modes/manialinks` has:
-  - `standings`: the table of the match with ranks (ties included), points, round points and
-    statuses. It highlights the local player and always shows them, in the last row if needed.
+  - `standings`: the top 10 of the match with ranks (ties included), points, round points and
+    statuses, spectators left out. It highlights the local player and always shows them, in the
+    last row if needed.
   - `my-standing`: place, points or status and the last round of the local player.
   - `scores-table`: replaces the scores table of the game, see below.
 - Data of a mode the standings can not hold goes through `SetNetState` (`Net_Driver_State`) to
@@ -192,9 +193,19 @@ scores table is the UI module `Race_ScoresTable`, a manialink in such a layer.
   `Common.UIModules.SetProperties` (`{"uimodules": [{"id": "Race_ScoresTable", "visible": false,
   "visible_update": true}]}`) and shows it again otherwise. `DriverCommand::show_layers` adds that
   to the layers, the bridge and the runner use it whenever they install layers.
-- `scores-table.xml` shows up to 32 players in two columns with the same data as `standings`.
-  It does not show race times, avatars, club tags or the ping like Nadeo's table and has no
-  interaction yet.
+- `scores-table.xml` lists up to 100 players with rank, club tag, name, round points and points.
+  Statuses replace the points like in the original modes: `Last Chance` and `Eliminated` in red,
+  `Spectator` in green, `Finalist` and `Winner`. 18 rows are visible and the mouse wheel scrolls
+  through the rest (a frame with `scroll="1"`). The local player is highlighted and gets an extra
+  row below the list while the visible rows do not show them, the spectated player is
+  highlighted too.
+- Club tags and logins come from `Scores` on the client, so they are only known for connected
+  players.
+- While a player watches someone else (`InputPlayer != GUIPlayer`, as a spectator or after
+  finishing), clicking a player who still races spectates them with
+  `ClientUI.Spectator_SetForcedTarget_Clear()` and `SetSpectateTarget(login)`, like the live
+  ranking of the original reverse cup.
+- Race times, avatars and the ping are not shown.
 
 The manager comes with the database integration. Until then the bridge only logs the round
 results the host derives, and the manager records driver matches like Rounds: positions follow
@@ -267,8 +278,9 @@ A port of the community `TM_ReverseCup` script with the same settings and rules:
 Differences to the original:
 
 - The participants are the players who start in the first valid round, not the players on the
-  server when the first map starts. Everyone else in the scores cannot spawn anymore from then on.
-  Someone joining later can race the round they joined in, which does not count for them.
+  server when the first map starts. Everyone else in the scores cannot spawn anymore from then on
+  and shows up as `Spectator` like in the original. Someone joining later can race the round
+  they joined in, which does not count for them.
 - The original skips a round that would put everyone in last chance anyway. The mode does that
   right after the previous round, so the round is not started at all.
 - Participants who did not start in a round (for example because they left) always lose the dnf
@@ -410,6 +422,8 @@ A key of `complex_points_repartition` can list several player counts, e.g. `"4,5
    - The scores table key opens `scores-table` instead of Nadeo's table, also for spectators, it
      opens by itself for 3 seconds after every round and on the podium, and Nadeo's table comes
      back with a config without it.
+   - The mouse wheel scrolls the scores table (`ScrollMax` of `Frame_Rows`), club tags show up
+     and clicking a player as a spectator switches the camera to them.
    - A config change between driver modes applies the new round format on the next map.
    - The `StartLine` and `WayPoint` callbacks arrive, so round results know who started and how
      far they got.
