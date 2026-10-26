@@ -2,8 +2,8 @@
 
 Status: phases 0–3 and the TimeAttack and ReverseCup modes are implemented on the
 `wasm-driver/*` branches.
-Everything except the modescript and the manialink is covered by tests, but nothing has run
-against a real server yet. The manager (and its database) stays untouched until the feature is
+Everything except the modescript and the manialinks is covered by tests. The modescript runs on a
+real server with the runner, the rest still needs a real match. The manager (and its database) stays untouched until the feature is
 fleshed out. See [Next steps](#next-steps).
 
 ## Idea
@@ -26,9 +26,9 @@ The mode decides what happens and sends commands back.
 | Database | Untouched until the feature is fleshed out. The manager integration comes last. |
 | Who writes modes | First-party modes first (in-repo Rust crates). The host is sandboxed from day one (fuel, epoch deadline, memory cap, no WASI) so user uploads can be added later. |
 | ABI | WIT component model (`tm-wasm-driver/wit/driver.wit`). |
-| Scoring source of truth | The mode. Points never exist in the modescript. |
+| Scoring | One `standings` structure every mode shares (see [Standings](#standings)). The host keeps it and hands it to the mode with every event, the mode applies its rules and returns it. Points never exist in the modescript and modes keep nothing but their settings. |
 | What the modescript adds | Only what the standard XML-RPC protocol lacks. Everything else uses the standard callbacks and methods. |
-| UI | Manialinks selected next to the mode read `Net_Driver_State`, which the mode writes. |
+| UI | The host publishes the standings to `Net_Driver_Standings`. Manialinks selected next to the mode render them, so every manialink works with every mode (see [UI](#ui)). |
 | Boundary typing | No `Event::Custom` and no hand-built JSON. Every callback and command is a Rust type in `tm-server-types`. |
 
 ## Architecture
@@ -39,7 +39,7 @@ TM server ── TM_Driver.Script.txt (#Extends TrackmaniaRoundsBase, loaded onc
    ▼                                         │
 tm-server-controller   Event                 /  driver_commands(&[DriverCommand])
    ▼                                         │
-tm-wasm-driver         one wasm instance per match, hold dedup, Continue, replay
+tm-wasm-driver         one wasm instance per match, standings, hold dedup, Continue, replay
    ▼                                         ▲
 tm-server-bridge ── post_event (standard callbacks, as before) ──▶ tm-server-manager
 ```
@@ -91,11 +91,12 @@ the only place that knows how each command reaches the server.
 |---|---|---|
 | `Continue` | `Driver.Continue [seq]` | Holds don't exist in the standard protocol. Only sent by the host. |
 | `SetRoundFormat` | `Driver.SetRoundFormat [single_attempt, auto\|off\|ms]` or `[time_attack, ms]` | Round shape and finish timeout. |
-| `SetCanSpawn` | `Driver.SetCanSpawn [account_id, 1\|0]` | Eliminations without forcing spectators, which the allowlist sync manages. |
+| `SetCanSpawn` | `Driver.SetCanSpawn [account_id, 1\|0]` | Eliminations without forcing spectators, which the allowlist sync manages. The host leaves out permissions it sent before in the match. |
 | `EndMap` | standard `NextMap` | – |
 | `EndMatch` | `Driver.EndMatch` | NextMap only ends the map. |
 | `SetLayer` / `RemoveLayer` | `Driver.SetLayer [name, manialink]` / `Driver.RemoveLayer [name]` | Only layers created by the script can read its netvars. |
-| `SetNetState` | `Driver.SetNetState [json]` | Writes `Net_Driver_State` and bumps `Net_Driver_StateSerial`. |
+| `SetStandings` | `Driver.SetStandings [json]` | Writes `Net_Driver_Standings` and bumps `Net_Driver_StandingsSerial`. Only sent by the host. |
+| `SetNetState` | `Driver.SetNetState [json]` | Writes `Net_Driver_State` and bumps `Net_Driver_StateSerial`. For data of a mode the standings can not hold. |
 | `ChatMessage` | standard `ChatSendServerMessage` | – |
 
 Round format, finish timeout and spawn permissions reset to their defaults when a match starts.
@@ -104,30 +105,85 @@ its match and its state. Modes therefore set their round rules on `map-start`.
 
 Planned later: team commands (`SetPlayerTeam`, team points through the standings).
 
-## Points and UI
+## Standings
 
-The modescript never sees points. A mode keeps them and publishes them in two places:
+Every mode works on the same structure, the `standings` record of the WIT. The host publishes it
+as `tm_server_types::method::DriverStandings`.
 
-- **Players:** `SetNetState` with the standings JSON of `tm_driver_sdk::standings`:
+| Field | Meaning |
+|---|---|
+| `players[].rank` | Position in the match, ties share a rank. Set by the mode, usually with `Standings::rank()`. |
+| `players[].status` | `playing`, `finalist`, `last_chance`, `eliminated` (with a final rank) or `winner`. |
+| `players[].points` | Points of the match. |
+| `players[].map_points` | Points of the current map. |
+| `players[].round_points` | Points of the last round. |
+| `rounds_on_map` | Rounds of the current map that counted. |
+| `maps_played` | Maps that ended in this match. |
+| `info` | Progress as text, e.g. `2 / 5 rounds`. |
+
+Who does what:
+
+- **Host:** keeps the standings and hands them to `step` with every event. Before the mode gets an
+  event the host clears what belongs to it, so every mode has the same lifecycle:
+
+  | Event | Cleared before the mode gets it |
+  |---|---|
+  | `match-start` | everything |
+  | `map-start` | `map_points`, `rounds_on_map` |
+  | `round-end` | `round_points` |
+  | `map-end` | `maps_played` counts the ending map |
+
+  It publishes the standings whenever they change and derives the round result for the manager:
+  the round points of everyone in the standings who raced or got points, positioned by the race
+  (finishers by time, then everyone else by checkpoints). Spawn permissions it sent before in the
+  match are left out, so modes can simply repeat them.
+- **Mode:** applies its rules and returns the standings: points, statuses, ranks, counted rounds,
+  `info`, and when maps and matches end. `Mode::step` only gets `&self`, so a mode keeps nothing
+  besides its settings.
+
+Modes become small functions of their settings, the standings and an event, which makes them
+easy to test. The manager and the manialinks read one format for every mode, and admin
+corrections can later edit the standings without the mode knowing about it.
+
+## UI
+
+| Approach | Verdict |
+|---|---|
+| Every mode writes its own json for its own manialinks | Each mode reinvents its UI and depends on it. |
+| The modescript mirrors the points into Nadeo's scores table | Native look, but points would live in the script again. |
+| The bridge renders manialinks and sends them with `SendDisplayManialinkPage` | No netvars, but every update resends whole pages and those manialinks cannot read the netvars of the script. |
+| **The host publishes the shared standings, selectable manialinks render them** | Chosen. Any manialink works with any mode. |
+
+- The host sends the standings as json with `SetStandings`. The script writes them to
+  `Net_Driver_Standings` and bumps `Net_Driver_StandingsSerial`, which the manialinks watch.
 
   ```json
-  {"title": "Rounds", "info": "2 / 5 rounds", "players": [{"account_id": "...", "name": "...", "points": 16, "round_points": 10, "status": ""}]}
+  {"title": "Rounds", "info": "2 / 5 rounds", "rounds_on_map": 2, "maps_played": 0,
+   "players": [{"account_id": "...", "name": "...", "rank": 1, "status": "playing",
+                "points": 16, "map_points": 16, "round_points": 10}]}
   ```
 
-  A `status` like `Last Chance` or `Eliminated` replaces the points of a player.
+- Manialinks parse it with `fromjson`. A test checks that every manialink reading
+  `Net_Driver_Standings` declares a struct member for every field.
+- Manialinks are selected next to the mode in the config (`Driver.manialinks`). The bridge installs
+  them as layers when the config loads and whenever the modescript (re)starts. Nadeo's scores
+  table shows race times only. `tm-driver-modes/manialinks` has:
+  - `standings`: the table of the match with ranks (ties included), points, round points and
+    statuses. It highlights the local player and always shows them, in the last row if needed.
+  - `my-standing`: place, points or status and the last round of the local player.
+- Data of a mode the standings can not hold goes through `SetNetState` (`Net_Driver_State`) to
+  manialinks of that mode.
 
-  `tm-driver-modes/manialinks/standings.xml` renders it. Manialinks are selected next to the mode in
-  the config (`Driver.manialinks`). The bridge installs them as layers when the config loads and
-  whenever the modescript (re)starts. Nadeo's scores table shows race times only.
-- **Manager:** comes with the database integration. Until then the bridge only logs the
-  `round-result` of a mode, and the manager records driver matches like Rounds: positions follow
-  the scores, points stay at zero. `Event::DriverRoundResult` already exists for the integration.
+The manager comes with the database integration. Until then the bridge only logs the round
+results the host derives, and the manager records driver matches like Rounds: positions follow
+the scores, points stay at zero. `Event::DriverRoundResult` already exists for the integration.
 
 ## Resuming
 
 There are no snapshots. The host and the modes are deterministic: modes run without WASI,
 NaNs are canonicalized and relaxed SIMD uses its deterministic lowering. Replaying the events a
-driver handled therefore rebuilds exactly the same driver, including the reply to the last hold.
+driver handled therefore rebuilds exactly the same driver, including its standings and the reply
+to the last hold.
 `DriverEngine::replay(module, settings, events)` does that.
 
 A replay needs:
@@ -148,7 +204,7 @@ A replay needs:
   records, warmup and the standard callbacks.
 - Waits with `Driver.Hold` at map start, round end and map end.
 - Sends `Trackmania.Scores` (`PreEndRound`) right before the round end hold.
-- Implements the seven `Driver.*` methods above and nothing else.
+- Implements the eight `Driver.*` methods above and nothing else.
 
 ## TimeAttack
 
@@ -160,8 +216,8 @@ the same trick `TM_RoundsThenTimeattack` from the community modes uses:
    `EndTime = StartTime + time_limit` and shows the time limit and best times in the scores table.
 3. Players who finished or gave up are started again with `Race::Start`. The round only ends with
    the time limit (or when an admin forces it).
-4. At the end the scores carry everyone's best race of the round. The mode ranks by it, reports
-   the round result, publishes standings and ends the map.
+4. At the end the scores carry everyone's best race of the round. The mode awards points by it
+   and ends the map.
 
 Points exist so the standings and round results rank players like the other modes do. By
 default the best of N finishers gets N points, so the points keep the order of the times.
@@ -182,8 +238,9 @@ A port of the community `TM_ReverseCup` script with the same settings and rules:
   `number_of_winners` players are left (a single participant plays until eliminated).
 - A round only counts for `rounds_per_map` if someone lost points. Maps change until the match
   is over.
-- Round results report the lost points (negative) with the finishers by time, then everyone
-  without a finish by checkpoints.
+- Lost points are the negative round points of the standings. Players with points are
+  `playing`, players in last chance have 0 points and eliminated players keep the rank they were
+  eliminated with. The remaining players become `winner` when the match ends.
 
 Differences to the original:
 
@@ -203,13 +260,14 @@ Differences to the original:
 
 ```wit
 export init: func(settings: string) -> result<_, string>;
-export step: func(event: event) -> list<command>;
+export name: func() -> string;  // shown above the standings
+export step: func(standings: standings, event: event) -> decision;  // standings + commands
 import host;  // log
 ```
 
 - `Driver::handles(&Event)` tells the bridge which callbacks matter. `Driver::handle(&Event)`
-  returns a `DriverReply` with the commands for the server and an optional round result for the
-  manager. Replies to holds end with `Continue(seq)`.
+  returns a `DriverReply` with the commands for the server and the round result for the manager.
+  Replies to holds end with `Continue(seq)`. `Driver::standings()` returns the standings.
 - `DriverEngine::replay` rebuilds a driver from the events it handled before.
 - Commands of a mode are converted with exhaustive matches, so both sides have to stay in sync.
 - The host accepts a component or a core module built for `wasm32-unknown-unknown` with the SDK
@@ -219,8 +277,10 @@ import host;  // log
 
 ## Guest SDK and modes
 
-- `tm-driver-sdk`: wit-bindgen bindings, a `Mode` trait, `export_mode!`, the `standings` helper
-  and shared `settings`. Mode logic compiles natively too, so it can be unit tested without wasm.
+- `tm-driver-sdk`: wit-bindgen bindings, the `Mode` trait, `export_mode!`, helpers on the
+  standings (`join`, `award`, `rank`, `crown_leaders`, `in_match`) and shared `settings`. Mode
+  logic compiles natively too. `testing::Harness` runs a mode with the lifecycle of the host, so
+  modes are unit tested without wasm.
 - `tm-driver-modes/rounds`: Rounds (points repartition, rounds per map, maps per match, points
   limit with tie break, finish timeout).
 - `tm-driver-modes/time-attack`: TimeAttack (time limit, maps per match, points by rank).
@@ -230,7 +290,8 @@ import host;  // log
 
 `ModeSettingsV2::Driver(Driver { mode, settings, decision_timeout, manialinks })` selects the driver
 script. `mode` names the wasm module, `settings` is the JSON passed to `init` and `manialinks`
-names the manialinks shown next to the mode (`["standings"]` by default).
+names the manialinks shown next to the mode (`["standings"]` by default, e.g.
+`["standings", "my-standing"]`).
 
 For now the bridge loads modes from `TM_DRIVER_MODES_DIR` (default `./modes`) as `<mode>.wasm` and
 manialinks from `TM_DRIVER_MANIALINKS_DIR` (default `./manialinks`) as `<name>.xml`. A registry
@@ -242,7 +303,7 @@ cargo build -p tm-driver-mode-rounds -p tm-driver-mode-time-attack -p tm-driver-
 cp target/wasm32-unknown-unknown/release/tm_driver_mode_rounds.wasm $TM_DRIVER_MODES_DIR/rounds.wasm
 cp target/wasm32-unknown-unknown/release/tm_driver_mode_time_attack.wasm $TM_DRIVER_MODES_DIR/time-attack.wasm
 cp target/wasm32-unknown-unknown/release/tm_driver_mode_reverse_cup.wasm $TM_DRIVER_MODES_DIR/reverse-cup.wasm
-cp tm-driver-modes/manialinks/standings.xml $TM_DRIVER_MANIALINKS_DIR/
+cp tm-driver-modes/manialinks/*.xml $TM_DRIVER_MANIALINKS_DIR/
 ```
 
 Settings of the rounds mode (every field is optional):
@@ -301,7 +362,7 @@ A key of `complex_points_repartition` can list several player counts, e.g. `"4,5
    replay, record round results, a `TmMode` for driver matches, pin modes by hash, team commands.
 5. Port the remaining modes: ✅ TimeAttack, ✅ ReverseCup, Cup, Knockout. Check parity with
    recorded matches.
-6. More manialinks on top of `Net_Driver_State`; remove the legacy script swapping; user uploads.
+6. More manialinks on top of the standings; remove the legacy script swapping; user uploads.
 
 ## Next steps
 
@@ -322,7 +383,8 @@ A key of `complex_points_repartition` can list several player counts, e.g. `"4,5
      it every round) and the best race since `Scores::Clear` in time attack rounds.
    - `NextMap` sent during the round end hold ends the map once the hold continues.
    - Time attack rounds start players again after a finish or give up and stop at the time limit.
-   - The standings manialink parses the JSON with `fromjson` and renders its rows.
+   - The manialinks parse the standings with `fromjson`, `LocalUser.WebServicesUserId` matches
+     the account ids and their positions do not cover Nadeo's UI.
    - A config change between driver modes applies the new round format on the next map.
    - The `StartLine` and `WayPoint` callbacks arrive, so round results know who started and how
      far they got.
@@ -336,5 +398,7 @@ A key of `complex_points_repartition` can list several player counts, e.g. `"4,5
 - `TrackmaniaRoundsBase` ships in the game's title pack and can change with game updates. Keep the
   script small.
 - Large JSON in netvars costs bandwidth. The standings are only published when they change.
+  The size limit of a netvar text is unknown, a big lobby (about 150 bytes per player) needs a
+  check.
 - The epoch deadline (wall clock limit per call) is configured but not covered by a test,
   because none of the test modes runs long enough to hit it.
