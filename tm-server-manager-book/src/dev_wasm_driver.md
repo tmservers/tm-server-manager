@@ -94,6 +94,7 @@ the only place that knows how each command reaches the server.
 | `SetRoundFormat` | `Driver.SetRoundFormat [single_attempt, auto\|off\|ms]` or `[time_attack, ms]` | Round shape and finish timeout. |
 | `SetCanSpawn` | `Driver.SetCanSpawn [account_id, 1\|0]` | Eliminations without forcing spectators, which the allowlist sync manages. The host leaves out permissions it sent before in the match. |
 | `EndMap` | standard `NextMap` | – |
+| `SetNextMap` | standard `SetNextMapIdent [uid]` | – |
 | `EndMatch` | `Driver.EndMatch` | NextMap only ends the map. |
 | `SetLayer` / `RemoveLayer` | `Driver.SetLayer [name, manialink, normal\|scores_table]` / `Driver.RemoveLayer [name]` | Only layers created by the script can read its netvars. `scores_table` layers become the scores table, see [Scores table](#scores-table). |
 | `SetUiModuleVisible` | standard `Common.UIModules.SetProperties` | – |
@@ -121,6 +122,8 @@ as `tm_server_types::method::DriverStandings`.
 | `players[].round_points` | Points of the last round. |
 | `rounds_on_map` | Rounds of the current map that counted. |
 | `maps_played` | Maps that ended in this match. |
+| `map_name` | Name of the current map, set by the host. |
+| `map_count` | Maps in the playlist, 0 without one. Set by the host. |
 | `info` | Progress as text, e.g. `2 / 5 rounds`. |
 
 Who does what:
@@ -250,6 +253,26 @@ A replay needs:
   callbacks. The bridge does not forward holds yet because the script repeats them while it
   waits. Storing each hold once is part of the database integration.
 
+## Playlist
+
+The map pool of the server config (`MapPoolConfig`) is the playlist of a match. The bridge
+downloads its maps and puts them into the match settings like for every other mode, and hands
+their uids to the driver with `Driver::set_playlist`. The runner starts with the map list of the
+server and changes it with `maps`.
+
+- The host remembers the current map from `Maniaplanet.StartMap_Start` and puts its name and
+  the size of the playlist into the standings (`map_name`, `map_count`).
+- When a map starts, the host sets the next map of the playlist with the standard
+  `SetNextMapIdent`, wrapping around at its end. Whenever a mode ends the match, the next map is
+  the first one, so every match plays the playlist from the start. A map outside the playlist
+  continues with its first map.
+- A mode picks the next map itself with `set-next-map(index)`, e.g. for map picks. The host then
+  leaves the next map alone until the following map starts.
+- Rounds and time attack play the playlist once unless `maps_per_match` says otherwise, the
+  reverse cup goes on until only the winners are left.
+- The maps have to be in the map list of the server, `SetNextMapIdent` only chooses among them.
+  The host does not check that.
+
 ## Generic modescript
 
 `tm-server-types/external_modes/TM_Driver.Script.txt`, installed as `Modes/Trackmania/TM_Driver`.
@@ -372,21 +395,22 @@ Settings of the rounds mode (every field is optional):
 {
   "points_repartition": [10, 6, 4, 3, 2, 1],
   "rounds_per_map": 5,
-  "maps_per_match": 1,
+  "maps_per_match": null,
   "points_limit": 0,
   "use_tie_break": true,
   "finish_timeout": "automatic"
 }
 ```
 
-`finish_timeout` is `"automatic"`, `"disabled"` or `{ "milliseconds": 5000 }`.
+`finish_timeout` is `"automatic"`, `"disabled"` or `{ "milliseconds": 5000 }`. Without
+`maps_per_match` (or with `null`) the match plays the playlist once, `0` means no limit.
 
 Settings of the time attack mode (every field is optional):
 
 ```json
 {
   "time_limit_ms": 300000,
-  "maps_per_match": 1,
+  "maps_per_match": null,
   "points_repartition": []
 }
 ```
@@ -429,7 +453,7 @@ A key of `complex_points_repartition` can list several player counts, e.g. `"4,5
 1. **Run the modescript and the manialink on a real server.** The runner in
    `tm-wasm-driver/src/main.rs` does that without the bridge and the manager: it installs the
    modescript, shows the manialinks and drives the server with a mode it builds from the
-   repository (`load <mode> [settings]`, `reload`, `script`, `next`).
+   repository (`load <mode> [settings]`, `reload`, `maps [map ...]`, `script`, `next`).
 
    ```sh
    TM_SERVER_URL=127.0.0.1:5000 cargo run -p tm-wasm-driver -- reverse-cup '{"starting_points": 10}'
@@ -451,6 +475,8 @@ A key of `complex_points_repartition` can list several player counts, e.g. `"4,5
    - The mouse wheel scrolls the scores table (`ScrollMax` of `Frame_Rows`), club tags show up
      and clicking a player as a spectator switches the camera to them.
    - A config change between driver modes applies the new round format on the next map.
+   - The playlist runs in order: `SetNextMapIdent` sent while a map runs picks the map after it,
+     and a new match starts with the first map of the playlist.
    - The `StartLine` and `WayPoint` callbacks arrive, so round results know who started and how
      far they got.
    - `SetCanSpawn(false)` keeps eliminated players and spectators from spawning, also on the
