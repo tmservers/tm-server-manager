@@ -57,6 +57,8 @@ interface types {
         eliminated,
         /// Won the match.
         winner,
+        /// Takes no part in the match, e.g. joined a reverse cup too late. Not ranked.
+        spectator,
     }
 
     record standing {

@@ -146,6 +146,7 @@ fn standing(standing: &Standing) -> DriverStanding {
             Status::LastChance => DriverStatus::LastChance,
             Status::Eliminated => DriverStatus::Eliminated,
             Status::Winner => DriverStatus::Winner,
+            Status::Spectator => DriverStatus::Spectator,
         },
         points: standing.points,
         map_points: standing.map_points,
@@ -153,9 +154,9 @@ fn standing(standing: &Standing) -> DriverStanding {
     }
 }
 
-/// The round as the manager records it: the round points of everyone in the
-/// standings who raced or got points, in the order of the race. Finishers come
-/// first by time, then everyone else by the checkpoints they passed.
+/// The round as the manager records it: the round points of everyone taking part
+/// who raced or got points, in the order of the race. Finishers come first by time,
+/// then everyone else by the checkpoints they passed.
 pub(crate) fn round_result(
     standings: &Standings,
     results: &[RaceResult],
@@ -178,7 +179,9 @@ pub(crate) fn round_result(
             (player, race)
         })
         .filter(|(player, race)| {
-            player.round_points != 0 || race.is_some_and(|r| r.started || time(r).is_some())
+            player.status != Status::Spectator
+                && (player.round_points != 0
+                    || race.is_some_and(|r| r.started || time(r).is_some()))
         })
         .collect();
     // Stable so ties keep the order of the standings.
@@ -308,6 +311,7 @@ mod tests {
             player("left", 5, Status::Playing, -20),
             // Did not race and got nothing.
             player("idle", 6, Status::Playing, 0),
+            player("spectator", 0, Status::Spectator, 0),
         ];
         let results = [
             race("slow", Some(31_000), Some(31_000), 3),
@@ -316,6 +320,8 @@ mod tests {
             race("fast", Some(30_000), Some(30_000), 3),
             // Not in the standings, e.g. a late player.
             race("late", Some(29_000), Some(29_000), 3),
+            // Raced without taking part.
+            race("spectator", Some(28_000), Some(28_000), 3),
         ];
 
         assert_eq!(

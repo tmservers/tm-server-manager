@@ -310,6 +310,8 @@ pub enum DriverStatus {
     Eliminated,
     /// Won the match.
     Winner,
+    /// Takes no part in the match, e.g. joined a reverse cup too late. Not ranked.
+    Spectator,
 }
 
 #[cfg(test)]

@@ -115,10 +115,10 @@ macro_rules! export_mode {
                         standings,
                         commands,
                     }
-        }
+                }
             }
 
-            $crate::bindings::__export_mode!(Export with_types_in $crate::bindings);
+    $crate::bindings::__export_mode!(Export with_types_in $crate::bindings);
         };
     };
 }

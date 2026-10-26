@@ -165,6 +165,8 @@ fn plays_a_match() {
             ("a".into(), 1, DriverStatus::Winner, 2, -4),
             ("b".into(), 2, DriverStatus::Eliminated, 0, -8),
             ("c".into(), 3, DriverStatus::Eliminated, 0, 0),
+            // Watched without taking part.
+            ("s".into(), 0, DriverStatus::Spectator, 0, 0),
         ]
     );
     assert_eq!(driver.standings().info, "1 left, 3 / 5 rounds");

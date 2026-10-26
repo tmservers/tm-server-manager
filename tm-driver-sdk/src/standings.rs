@@ -49,17 +49,22 @@ impl Standings {
         &mut self.players[index]
     }
 
-    /// Players who are not eliminated.
-    pub fn in_match(&self) -> impl Iterator<Item = &Standing> {
+    /// Players taking part in the match, everyone but spectators.
+    pub fn participants(&self) -> impl Iterator<Item = &Standing> {
         self.players
             .iter()
-            .filter(|p| p.status != Status::Eliminated)
+            .filter(|p| p.status != Status::Spectator)
+    }
+
+    /// Participants who are not eliminated.
+    pub fn in_match(&self) -> impl Iterator<Item = &Standing> {
+        self.players.iter().filter(|p| p.is_in_match())
     }
 
     /// Ranks the players the usual way and orders them by rank: winners, finalists,
     /// players and players in last chance, each by points. Players with the same
-    /// status and points share a rank. Eliminated players come last and keep the rank
-    /// the mode gave them when they were eliminated.
+    /// status and points share a rank. Eliminated players follow and keep the rank
+    /// the mode gave them when they were eliminated. Spectators come last unranked.
     pub fn rank(&mut self) {
         fn group(status: Status) -> u8 {
             match status {
@@ -68,6 +73,7 @@ impl Standings {
                 Status::Playing => 2,
                 Status::LastChance => 3,
                 Status::Eliminated => 4,
+                Status::Spectator => 5,
             }
         }
 
@@ -77,6 +83,7 @@ impl Standings {
                 .cmp(&group(b.status))
                 .then_with(|| match a.status {
                     Status::Eliminated => a.rank.cmp(&b.rank),
+                    Status::Spectator => std::cmp::Ordering::Equal,
                     _ => b.points.cmp(&a.points),
                 })
         });
@@ -84,8 +91,13 @@ impl Standings {
         let mut previous = None;
         let mut rank = 0;
         for (index, player) in self.players.iter_mut().enumerate() {
-            if player.status == Status::Eliminated {
-                continue;
+            match player.status {
+                Status::Eliminated => continue,
+                Status::Spectator => {
+                    player.rank = 0;
+                    continue;
+                }
+                _ => {}
             }
             let key = (group(player.status), player.points);
             if previous != Some(key) {
@@ -105,6 +117,11 @@ impl Standings {
 }
 
 impl Standing {
+    /// Takes part and is not eliminated.
+    pub fn is_in_match(&self) -> bool {
+        !matches!(self.status, Status::Eliminated | Status::Spectator)
+    }
+
     /// Adds points to the round, the map and the match.
     pub fn award(&mut self, points: i32) {
         self.round_points = self.round_points.saturating_add(points);
@@ -139,6 +156,7 @@ mod tests {
     #[test]
     fn ranks_by_status_and_points() {
         let mut standings = standings(&[
+            ("spectator", Status::Spectator, 0, 3),
             ("eliminated_last", Status::Eliminated, 0, 7),
             ("last_chance", Status::LastChance, 0, 0),
             ("third", Status::Playing, 10, 0),
@@ -159,6 +177,7 @@ mod tests {
                 ("last_chance", 5),
                 ("eliminated", 6),
                 ("eliminated_last", 7),
+                ("spectator", 0),
             ]
         );
     }
