@@ -75,6 +75,8 @@
 #Const C_Method_SetNetState "Driver.SetNetState"
 #Const C_Method_SetStandings "Driver.SetStandings"
 
+#Const C_LayerKind_ScoresTable "scores_table"
+
 /// The member names are the json keys expected by tm-server-types.
 #Struct K_Driver_Hold {
 	Integer session;
@@ -417,15 +419,29 @@ Void Driver_SendHold(K_Driver_Hold _Hold) {
 	XmlRpc::SendCallback(C_Callback_Hold, [_Hold.tojson()]);
 }
 
-Void Driver_SetLayer(Text _Name, Text _Manialink) {
+/** Creates or replaces a layer for every player.
+ *	Layers of the kind scores_table are the scores table: the game shows them while
+ *	a player holds the scores table key and whenever ScoreTableVisibility forces it.
+ */
+Void Driver_SetLayer(Text _Name, Text _Manialink, Text _Kind) {
+	declare CUILayer Layer <=> Null;
 	if (G_Driver_Layers.existskey(_Name) && UIManager.UILayers.existskey(G_Driver_Layers[_Name])) {
-		UIManager.UILayers[G_Driver_Layers[_Name]].ManialinkPage = _Manialink;
-		return;
+		Layer <=> UIManager.UILayers[G_Driver_Layers[_Name]];
 	}
-	declare CUILayer Layer <=> UIManager.UILayerCreate();
+	declare Boolean IsNew = Layer == Null;
+	if (IsNew) Layer <=> UIManager.UILayerCreate();
+
+	if (_Kind == C_LayerKind_ScoresTable) {
+		Layer.Type = CUILayer::EUILayerType::ScoresTable;
+	} else {
+		Layer.Type = CUILayer::EUILayerType::Normal;
+	}
 	Layer.ManialinkPage = _Manialink;
-	G_Driver_Layers[_Name] = Layer.Id;
-	UIManager.UIAll.UILayers.add(Layer);
+
+	if (IsNew) {
+		G_Driver_Layers[_Name] = Layer.Id;
+		UIManager.UIAll.UILayers.add(Layer);
+	}
 }
 
 Void Driver_RemoveLayer(Text _Name) {
@@ -463,7 +479,9 @@ Void Driver_ApplyCommand(Text _Method, Text[] _Params) {
 		G_Driver_EndMatch = True;
 	} else if (_Method == C_Method_SetLayer) {
 		if (_Params.count < 2) return;
-		Driver_SetLayer(_Params[0], _Params[1]);
+		declare Text Kind = "normal";
+		if (_Params.count >= 3) Kind = _Params[2];
+		Driver_SetLayer(_Params[0], _Params[1], Kind);
 	} else if (_Method == C_Method_RemoveLayer) {
 		if (_Params.count < 1) return;
 		Driver_RemoveLayer(_Params[0]);

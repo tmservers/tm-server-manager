@@ -40,15 +40,17 @@ pub fn setup_driver() {
         }
     });
 
-    // A (re)started modescript lost the layers of the manialinks.
+    // A (re)started modescript lost the layers of the manialinks and shows the
+    // scores table of the game again.
     server.on_start_server_end(async |_: &StartServer| {
         let layers = ACTIVE
             .lock()
             .unwrap()
             .as_ref()
-            .map(|active| active.layers.clone())
-            .unwrap_or_default();
-        send(layers.into_iter().map(DriverCommand::SetLayer).collect()).await;
+            .map(|active| active.layers.clone());
+        if let Some(layers) = layers {
+            send(DriverCommand::show_layers(&layers)).await;
+        }
     });
 
     // A single task so the commands of every callback are sent in order.
@@ -115,7 +117,7 @@ pub async fn load(config: &DriverConfig) {
                 .filter(|previous| !layers.iter().any(|layer| layer.name == previous.name))
                 .map(|previous| DriverCommand::RemoveLayer(previous.name))
                 .collect();
-            commands.extend(layers.iter().cloned().map(DriverCommand::SetLayer));
+            commands.extend(DriverCommand::show_layers(&layers));
 
             *ACTIVE.lock().unwrap() = Some(ActiveDriver {
                 mode: config.mode.clone(),
@@ -186,10 +188,7 @@ fn load_layers(names: &[String]) -> Vec<DriverLayer> {
             }
             let path = format!("{directory}/{name}.xml");
             match std::fs::read_to_string(&path) {
-                Ok(manialink) => Some(DriverLayer {
-                    name: name.clone(),
-                    manialink,
-                }),
+                Ok(manialink) => Some(DriverLayer::selected(name.clone(), manialink)),
                 Err(error) => {
                     tracing::warn!("Could not read the manialink {path}: {error}");
                     None

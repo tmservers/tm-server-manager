@@ -5,7 +5,8 @@
 //! ```
 //!
 //! Installs the driver modescript, shows the manialinks of `tm-driver-modes/manialinks` and
-//! feeds the callbacks of the server into the mode. A mode is the name of a crate in
+//! feeds the callbacks of the server into the mode. `scores-table` replaces the scores table
+//! of the game. A mode is the name of a crate in
 //! `tm-driver-modes`, which gets built first, or the path of a `.wasm` file. Settings are inline
 //! json or the path of a json file.
 //!
@@ -143,9 +144,10 @@ fn drive(server: &'static TrackmaniaServer, active: Shared, layers: Vec<DriverLa
     // A single task so the commands of every callback are sent in order.
     tokio::spawn(async move {
         while let Some(event) = receiver.recv().await {
-            // A (re)started modescript lost the layers of the manialinks.
+            // A (re)started modescript lost the layers of the manialinks and shows the
+            // scores table of the game again.
             if let Event::StartServerEnd(_) = event {
-                send(server, set_layers(&layers)).await;
+                send(server, DriverCommand::show_layers(&layers)).await;
                 continue;
             }
 
@@ -214,7 +216,7 @@ async fn load(
     tracing::info!("Loaded {mode}.");
 
     // Ignored until the driver modescript runs, which shows them once it started.
-    send(server, set_layers(layers)).await;
+    send(server, DriverCommand::show_layers(layers)).await;
     Ok(())
 }
 
@@ -330,22 +332,14 @@ fn load_layers() -> Result<Vec<DriverLayer>, String> {
     {
         let path = entry.map_err(|e| e.to_string())?.path();
         if path.extension().is_some_and(|extension| extension == "xml") {
-            layers.push(DriverLayer {
-                name: path.file_stem().unwrap().to_string_lossy().into_owned(),
-                manialink: std::fs::read_to_string(&path).map_err(|e| e.to_string())?,
-            });
+            layers.push(DriverLayer::selected(
+                path.file_stem().unwrap().to_string_lossy(),
+                std::fs::read_to_string(&path).map_err(|e| e.to_string())?,
+            ));
         }
     }
     layers.sort_by(|a, b| a.name.cmp(&b.name));
     Ok(layers)
-}
-
-fn set_layers(layers: &[DriverLayer]) -> Vec<DriverCommand> {
-    layers
-        .iter()
-        .cloned()
-        .map(DriverCommand::SetLayer)
-        .collect()
 }
 
 async fn send(server: &TrackmaniaServer, commands: Vec<DriverCommand>) {

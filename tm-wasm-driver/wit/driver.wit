@@ -129,7 +129,8 @@ interface types {
         end-map,
         /// Ends the match once the current hold continues.
         end-match,
-        /// Creates or replaces a manialink layer.
+        /// Creates or replaces a manialink layer that is always shown. The scores table
+        /// is chosen with the manialinks of the config.
         set-layer(layer),
         remove-layer(string),
         /// Readable by manialinks through `netread Text Net_Driver_State for Teams[0]`.

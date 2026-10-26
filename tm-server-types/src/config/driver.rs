@@ -53,7 +53,7 @@ impl Default for Driver {
             mode: "rounds".into(),
             settings: "{}".into(),
             decision_timeout: 10_000,
-            manialinks: vec!["standings".into()],
+            manialinks: vec!["standings".into(), "scores-table".into()],
         }
     }
 }
@@ -72,6 +72,13 @@ mod tests {
                 "{name} is missing in TM_Driver.Script.txt"
             );
         }
+    }
+
+    /// Layers of the kind scores_table become the scores table of the game.
+    #[test]
+    fn script_knows_layer_kinds() {
+        assert!(Driver::SCRIPT.contains("\"scores_table\""));
+        assert!(Driver::SCRIPT.contains("CUILayer::EUILayerType::ScoresTable"));
     }
 
     /// Everything else reaches the driver through the standard callbacks.

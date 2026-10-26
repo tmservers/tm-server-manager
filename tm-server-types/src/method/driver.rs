@@ -23,6 +23,8 @@ pub enum DriverCommand {
     /// Creates or replaces a manialink layer.
     SetLayer(DriverLayer),
     RemoveLayer(String),
+    /// Shows or hides a UI module of the game, e.g. its scores table.
+    SetUiModuleVisible(DriverUiModule),
     /// Text readable by manialinks through `netread Text Net_Driver_State for Teams[0]`.
     /// For data of a mode the standings can not hold.
     SetNetState(String),
@@ -46,6 +48,11 @@ pub enum DriverCall {
     NextMap,
     /// The standard `ChatSendServerMessage` method.
     ChatSendServerMessage(String),
+}
+
+impl DriverCall {
+    /// The standard method that changes the UI modules of the game.
+    pub const UI_MODULES_SET_PROPERTIES: &str = "Common.UIModules.SetProperties";
 }
 
 impl DriverCommand {
@@ -100,9 +107,25 @@ impl DriverCommand {
             DriverCommand::EndMatch => (Self::END_MATCH, Vec::new()),
             DriverCommand::SetLayer(layer) => (
                 Self::SET_LAYER,
-                vec![layer.name.clone(), layer.manialink.clone()],
+                vec![
+                    layer.name.clone(),
+                    layer.manialink.clone(),
+                    match layer.kind {
+                        DriverLayerKind::Normal => "normal",
+                        DriverLayerKind::ScoresTable => "scores_table",
+                    }
+                    .to_string(),
+                ],
             ),
             DriverCommand::RemoveLayer(name) => (Self::REMOVE_LAYER, vec![name.clone()]),
+            DriverCommand::SetUiModuleVisible(module) => (
+                DriverCall::UI_MODULES_SET_PROPERTIES,
+                vec![format!(
+                    r#"{{"uimodules":[{{"id":"{}","visible":{},"visible_update":true}}]}}"#,
+                    module.id.replace('\\', "\\\\").replace('"', "\\\""),
+                    module.visible
+                )],
+            ),
             DriverCommand::SetNetState(state) => (Self::SET_NET_STATE, vec![state.clone()]),
             DriverCommand::SetStandings(standings) => {
                 (Self::SET_STANDINGS, vec![standings.clone()])
@@ -112,6 +135,24 @@ impl DriverCommand {
             }
         };
         DriverCall::ModeScript { method, params }
+    }
+
+    /// Shows these manialinks. The scores table of the game is hidden while one of
+    /// them replaces it and shown again otherwise.
+    pub fn show_layers(layers: &[DriverLayer]) -> Vec<DriverCommand> {
+        let replaced = layers
+            .iter()
+            .any(|layer| layer.kind == DriverLayerKind::ScoresTable);
+        let mut commands: Vec<DriverCommand> = layers
+            .iter()
+            .cloned()
+            .map(DriverCommand::SetLayer)
+            .collect();
+        commands.push(DriverCommand::SetUiModuleVisible(DriverUiModule {
+            id: DriverUiModule::SCORES_TABLE.into(),
+            visible: !replaced,
+        }));
+        commands
     }
 }
 
@@ -158,6 +199,58 @@ pub struct DriverCanSpawn {
 pub struct DriverLayer {
     pub name: String,
     pub manialink: String,
+    pub kind: DriverLayerKind,
+}
+
+impl DriverLayer {
+    /// Manialinks whose name ends with this replace the scores table of the game.
+    pub const SCORES_TABLE_SUFFIX: &str = "scores-table";
+
+    /// A layer for a manialink selected by name, e.g. in the config. A name ending
+    /// with `scores-table` makes it the scores table.
+    pub fn selected(name: impl Into<String>, manialink: impl Into<String>) -> Self {
+        let name = name.into();
+        let kind = if name.ends_with(Self::SCORES_TABLE_SUFFIX) {
+            DriverLayerKind::ScoresTable
+        } else {
+            DriverLayerKind::Normal
+        };
+        Self {
+            name,
+            manialink: manialink.into(),
+            kind,
+        }
+    }
+}
+
+/// How the game shows a layer.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
+#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
+pub enum DriverLayerKind {
+    /// Always shown.
+    #[default]
+    Normal,
+    /// Shown while a player holds the scores table key and whenever the modescript
+    /// forces the scores table, e.g. at the end of a round.
+    ScoresTable,
+}
+
+/// A UI module of the game, see `Common.UIModules.SetProperties`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
+#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
+pub struct DriverUiModule {
+    /// Id of the module, e.g. `Race_ScoresTable`.
+    pub id: String,
+    pub visible: bool,
+}
+
+impl DriverUiModule {
+    /// The scores table of the game.
+    pub const SCORES_TABLE: &str = "Race_ScoresTable";
 }
 
 /// The scores of a driver match. Every driver mode works on this one structure:
@@ -230,6 +323,74 @@ mod tests {
                 panic!("Expected a modescript method")
             }
         }
+    }
+
+    #[test]
+    fn layers() {
+        assert_eq!(
+            modescript(DriverCommand::SetLayer(DriverLayer::selected(
+                "standings",
+                "<manialink/>"
+            ))),
+            (
+                "Driver.SetLayer",
+                vec!["standings".into(), "<manialink/>".into(), "normal".into()]
+            )
+        );
+        assert_eq!(
+            modescript(DriverCommand::SetLayer(DriverLayer::selected(
+                "scores-table",
+                "<manialink/>"
+            )))
+            .1[2],
+            "scores_table"
+        );
+        assert_eq!(
+            DriverLayer::selected("teams-scores-table", "").kind,
+            DriverLayerKind::ScoresTable
+        );
+    }
+
+    #[test]
+    fn ui_modules_use_the_standard_method() {
+        assert_eq!(
+            modescript(DriverCommand::SetUiModuleVisible(DriverUiModule {
+                id: DriverUiModule::SCORES_TABLE.into(),
+                visible: false,
+            })),
+            (
+                "Common.UIModules.SetProperties",
+                vec![
+                    r#"{"uimodules":[{"id":"Race_ScoresTable","visible":false,"visible_update":true}]}"#
+                        .into()
+                ]
+            )
+        );
+    }
+
+    #[test]
+    fn a_scores_table_manialink_hides_the_one_of_the_game() {
+        let scores_table = |visible| {
+            DriverCommand::SetUiModuleVisible(DriverUiModule {
+                id: "Race_ScoresTable".into(),
+                visible,
+            })
+        };
+        let standings = DriverLayer::selected("standings", "");
+        let replacement = DriverLayer::selected("scores-table", "");
+
+        assert_eq!(
+            DriverCommand::show_layers(&[standings.clone(), replacement.clone()]),
+            [
+                DriverCommand::SetLayer(standings.clone()),
+                DriverCommand::SetLayer(replacement),
+                scores_table(false),
+            ]
+        );
+        assert_eq!(
+            DriverCommand::show_layers(std::slice::from_ref(&standings)),
+            [DriverCommand::SetLayer(standings), scores_table(true)]
+        );
     }
 
     #[test]

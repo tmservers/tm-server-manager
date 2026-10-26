@@ -1,0 +1,212 @@
+<manialink name="Driver_ScoresTable" version="3">
+<framemodel id="Model_Row">
+	<quad id="Quad_Background" size="89 5" bgcolor="000000" opacity="0.4"/>
+	<label id="Label_Rank" pos="3.5 -2.5" size="6 4" halign="center" valign="center2" textsize="1.5" textfont="GameFontSemiBold" textcolor="ffffff"/>
+	<label id="Label_Name" pos="8 -2.5" size="48 4" valign="center2" textsize="1.5" textcolor="ffffff"/>
+	<label id="Label_RoundPoints" pos="68 -2.5" size="10 4" halign="right" valign="center2" textsize="1.2" textcolor="66ff99"/>
+	<label id="Label_Points" pos="87 -2.5" size="16 4" halign="right" valign="center2" textsize="1.5" textfont="GameFontSemiBold" textcolor="ffffff"/>
+	<label id="Label_Status" pos="87 -2.5" size="22 4" halign="right" valign="center2" textsize="1.2" textfont="GameFontSemiBold" textcolor="ff5555" hidden="1"/>
+</framemodel>
+
+<framemodel id="Model_Header">
+	<label pos="3.5 -2" size="6 3" halign="center" valign="center2" textsize="0.8" textcolor="ffffff88" text="#"/>
+	<label pos="8 -2" size="30 3" valign="center2" textsize="0.8" textcolor="ffffff88" text="Player"/>
+	<label pos="68 -2" size="12 3" halign="right" valign="center2" textsize="0.8" textcolor="ffffff88" text="Round"/>
+	<label pos="87 -2" size="14 3" halign="right" valign="center2" textsize="0.8" textcolor="ffffff88" text="Points"/>
+</framemodel>
+
+<frame id="Frame_ScoresTable" pos="-95 60" hidden="1">
+	<quad size="190 112" bgcolor="000000" opacity="0.8"/>
+	<quad size="190 12" bgcolor="000000" opacity="0.6"/>
+	<label id="Label_Title" pos="4 -6" size="110 8" valign="center2" textsize="4" textfont="GameFontBlack" textcolor="ffffff"/>
+	<label id="Label_Info" pos="186 -6" size="70 6" halign="right" valign="center2" textsize="1.5" textcolor="ffffffaa"/>
+	<label id="Label_Empty" pos="95 -50" size="120 6" halign="center" valign="center2" textsize="2" textcolor="ffffff88" text="The standings start with the first round." hidden="1"/>
+	<frameinstance modelid="Model_Header" pos="3 -13"/>
+	<frameinstance modelid="Model_Header" pos="98 -13"/>
+	<frameinstance modelid="Model_Row" id="Row_0" pos="3 -18"/>
+	<frameinstance modelid="Model_Row" id="Row_1" pos="3 -23.5"/>
+	<frameinstance modelid="Model_Row" id="Row_2" pos="3 -29"/>
+	<frameinstance modelid="Model_Row" id="Row_3" pos="3 -34.5"/>
+	<frameinstance modelid="Model_Row" id="Row_4" pos="3 -40"/>
+	<frameinstance modelid="Model_Row" id="Row_5" pos="3 -45.5"/>
+	<frameinstance modelid="Model_Row" id="Row_6" pos="3 -51"/>
+	<frameinstance modelid="Model_Row" id="Row_7" pos="3 -56.5"/>
+	<frameinstance modelid="Model_Row" id="Row_8" pos="3 -62"/>
+	<frameinstance modelid="Model_Row" id="Row_9" pos="3 -67.5"/>
+	<frameinstance modelid="Model_Row" id="Row_10" pos="3 -73"/>
+	<frameinstance modelid="Model_Row" id="Row_11" pos="3 -78.5"/>
+	<frameinstance modelid="Model_Row" id="Row_12" pos="3 -84"/>
+	<frameinstance modelid="Model_Row" id="Row_13" pos="3 -89.5"/>
+	<frameinstance modelid="Model_Row" id="Row_14" pos="3 -95"/>
+	<frameinstance modelid="Model_Row" id="Row_15" pos="3 -100.5"/>
+	<frameinstance modelid="Model_Row" id="Row_16" pos="98 -18"/>
+	<frameinstance modelid="Model_Row" id="Row_17" pos="98 -23.5"/>
+	<frameinstance modelid="Model_Row" id="Row_18" pos="98 -29"/>
+	<frameinstance modelid="Model_Row" id="Row_19" pos="98 -34.5"/>
+	<frameinstance modelid="Model_Row" id="Row_20" pos="98 -40"/>
+	<frameinstance modelid="Model_Row" id="Row_21" pos="98 -45.5"/>
+	<frameinstance modelid="Model_Row" id="Row_22" pos="98 -51"/>
+	<frameinstance modelid="Model_Row" id="Row_23" pos="98 -56.5"/>
+	<frameinstance modelid="Model_Row" id="Row_24" pos="98 -62"/>
+	<frameinstance modelid="Model_Row" id="Row_25" pos="98 -67.5"/>
+	<frameinstance modelid="Model_Row" id="Row_26" pos="98 -73"/>
+	<frameinstance modelid="Model_Row" id="Row_27" pos="98 -78.5"/>
+	<frameinstance modelid="Model_Row" id="Row_28" pos="98 -84"/>
+	<frameinstance modelid="Model_Row" id="Row_29" pos="98 -89.5"/>
+	<frameinstance modelid="Model_Row" id="Row_30" pos="98 -95"/>
+	<frameinstance modelid="Model_Row" id="Row_31" pos="98 -100.5"/>
+</frame>
+
+<script><!--
+/**
+ *	The scores table of driver matches, built from the standings the driver host
+ *	publishes through Net_Driver_Standings. The json is
+ *	tm_server_types::method::DriverStandings.
+ *
+ *	The driver modescript makes this a layer of the type ScoresTable, so the game
+ *	shows it like its own scores table: while a player holds the scores table key
+ *	and whenever the script forces it, e.g. at the end of a round. The scores table
+ *	of the game is hidden meanwhile.
+ */
+#Include "TextLib" as TL
+
+#Const C_Rows 32
+
+#Struct K_Standing {
+	Text account_id;
+	Text name;
+	Integer rank;
+	Text status;
+	Integer points;
+	Integer map_points;
+	Integer round_points;
+}
+
+#Struct K_Standings {
+	Text title;
+	Text info;
+	Integer rounds_on_map;
+	Integer maps_played;
+	K_Standing[] players;
+}
+
+Void SetText(CMlFrame _Frame, Text _ControlId, Text _Value) {
+	declare CMlLabel Label <=> (_Frame.GetFirstChild(_ControlId) as CMlLabel);
+	if (Label != Null) Label.Value = _Value;
+}
+
+Void SetTextColor(CMlFrame _Frame, Text _ControlId, Vec3 _Color) {
+	declare CMlLabel Label <=> (_Frame.GetFirstChild(_ControlId) as CMlLabel);
+	if (Label != Null) Label.TextColor = _Color;
+}
+
+Void SetVisible(CMlFrame _Frame, Text _ControlId, Boolean _Visible) {
+	declare CMlControl Control <=> _Frame.GetFirstChild(_ControlId);
+	if (Control != Null) Control.Visible = _Visible;
+}
+
+/// Shown instead of the points, empty for players who are still playing.
+Text StatusText(Text _Status) {
+	switch (_Status) {
+		case "finalist": return "Finalist";
+		case "last_chance": return "Last Chance";
+		case "eliminated": return "Eliminated";
+		case "winner": return "Winner";
+	}
+	return "";
+}
+
+Vec3 StatusColor(Text _Status) {
+	switch (_Status) {
+		case "finalist": return <1., 0.6, 0.>;
+		case "last_chance": return <1., 0.33, 0.33>;
+		case "winner": return <1., 0.8, 0.>;
+	}
+	return <0.6, 0.6, 0.6>;
+}
+
+Void Update(Text _Standings) {
+	declare CMlFrame Frame_ScoresTable <=> (Page.GetFirstChild("Frame_ScoresTable") as CMlFrame);
+	declare K_Standings Standings;
+	if (_Standings == "" || !Standings.fromjson(_Standings)) {
+		Frame_ScoresTable.Visible = False;
+		return;
+	}
+
+	Frame_ScoresTable.Visible = True;
+	SetText(Frame_ScoresTable, "Label_Title", Standings.title);
+	SetText(Frame_ScoresTable, "Label_Info", Standings.info);
+	SetVisible(Frame_ScoresTable, "Label_Empty", Standings.players.count == 0);
+
+	declare Text Me = "";
+	if (LocalUser != Null) Me = LocalUser.WebServicesUserId;
+
+	// The players are ordered by rank. The local player always gets a row, the last one if needed.
+	declare Integer[] Shown;
+	for (Index, 0, C_Rows - 1) {
+		if (Standings.players.existskey(Index)) Shown.add(Index);
+	}
+	foreach (Index => Standing in Standings.players) {
+		if (Standing.account_id == Me && Index >= C_Rows) Shown[C_Rows - 1] = Index;
+	}
+
+	for (RowIndex, 0, C_Rows - 1) {
+		declare CMlFrame Row <=> (Page.GetFirstChild("Row_"^RowIndex) as CMlFrame);
+		if (Row == Null) continue;
+		if (!Shown.existskey(RowIndex)) {
+			Row.Visible = False;
+			continue;
+		}
+
+		declare K_Standing Standing = Standings.players[Shown[RowIndex]];
+		Row.Visible = True;
+		if (Standing.rank > 0) {
+			SetText(Row, "Label_Rank", TL::ToText(Standing.rank));
+		} else {
+			SetText(Row, "Label_Rank", "-");
+		}
+		SetText(Row, "Label_Name", Standing.name);
+		SetText(Row, "Label_Points", TL::ToText(Standing.points));
+		if (Standing.round_points > 0) {
+			SetText(Row, "Label_RoundPoints", "+"^TL::ToText(Standing.round_points));
+			SetTextColor(Row, "Label_RoundPoints", <0.4, 1., 0.6>);
+		} else if (Standing.round_points < 0) {
+			SetText(Row, "Label_RoundPoints", TL::ToText(Standing.round_points));
+			SetTextColor(Row, "Label_RoundPoints", <1., 0.4, 0.4>);
+		} else {
+			SetText(Row, "Label_RoundPoints", "");
+		}
+
+		// A status like Eliminated replaces the points.
+		declare Text Status = StatusText(Standing.status);
+		declare Boolean HasStatus = Status != "";
+		SetText(Row, "Label_Status", Status);
+		SetTextColor(Row, "Label_Status", StatusColor(Standing.status));
+		SetVisible(Row, "Label_Status", HasStatus);
+		SetVisible(Row, "Label_Points", !HasStatus);
+
+		declare CMlQuad Quad_Background <=> (Row.GetFirstChild("Quad_Background") as CMlQuad);
+		if (Quad_Background != Null) {
+			if (Standing.account_id == Me) {
+				Quad_Background.BgColor = <0.1, 0.35, 0.6>;
+			} else {
+				Quad_Background.BgColor = <0., 0., 0.>;
+			}
+		}
+	}
+}
+
+main() {
+	declare netread Text Net_Driver_Standings for Teams[0];
+	declare netread Integer Net_Driver_StandingsSerial for Teams[0];
+	declare Integer LastSerial = -1;
+
+	while (True) {
+		yield;
+		if (LastSerial == Net_Driver_StandingsSerial) continue;
+		LastSerial = Net_Driver_StandingsSerial;
+		Update(Net_Driver_Standings);
+	}
+}
+--></script>
+</manialink>

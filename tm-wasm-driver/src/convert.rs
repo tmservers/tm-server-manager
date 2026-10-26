@@ -9,8 +9,8 @@ use tm_server_types::{
     base::{Player, RoundTime},
     event::{DriverPlayerResult, DriverRoundResult, Scores},
     method::{
-        DriverCanSpawn, DriverCommand, DriverFinishTimeout, DriverLayer, DriverRoundFormat,
-        DriverStanding, DriverStandings, DriverStatus,
+        DriverCanSpawn, DriverCommand, DriverFinishTimeout, DriverLayer, DriverLayerKind,
+        DriverRoundFormat, DriverStanding, DriverStandings, DriverStatus,
     },
 };
 
@@ -86,9 +86,12 @@ pub(crate) fn commands(commands: Vec<Command>) -> Vec<DriverCommand> {
             }),
             Command::EndMap => DriverCommand::EndMap,
             Command::EndMatch => DriverCommand::EndMatch,
-            Command::SetLayer(Layer { name, manialink }) => {
-                DriverCommand::SetLayer(DriverLayer { name, manialink })
-            }
+            // The scores table is chosen with the manialinks of the config, not by modes.
+            Command::SetLayer(Layer { name, manialink }) => DriverCommand::SetLayer(DriverLayer {
+                name,
+                manialink,
+                kind: DriverLayerKind::Normal,
+            }),
             Command::RemoveLayer(name) => DriverCommand::RemoveLayer(name),
             Command::SetNetState(state) => DriverCommand::SetNetState(state),
             Command::ChatMessage(message) => DriverCommand::ChatMessage(message),
