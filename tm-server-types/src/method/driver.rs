@@ -24,7 +24,12 @@ pub enum DriverCommand {
     SetLayer(DriverLayer),
     RemoveLayer(String),
     /// Text readable by manialinks through `netread Text Net_Driver_State for Teams[0]`.
+    /// For data of a mode the standings can not hold.
     SetNetState(String),
+    /// [`DriverStandings`] as json, readable by manialinks through
+    /// `netread Text Net_Driver_Standings for Teams[0]`. Sent by the driver host
+    /// whenever the standings change and never produced by a mode itself.
+    SetStandings(String),
     /// A message for everyone in the chat.
     ChatMessage(String),
 }
@@ -51,9 +56,10 @@ impl DriverCommand {
     pub const SET_LAYER: &str = "Driver.SetLayer";
     pub const REMOVE_LAYER: &str = "Driver.RemoveLayer";
     pub const SET_NET_STATE: &str = "Driver.SetNetState";
+    pub const SET_STANDINGS: &str = "Driver.SetStandings";
 
     /// Methods implemented by the driver modescript.
-    pub const MODESCRIPT_METHODS: [&str; 7] = [
+    pub const MODESCRIPT_METHODS: [&str; 8] = [
         Self::CONTINUE,
         Self::SET_ROUND_FORMAT,
         Self::SET_CAN_SPAWN,
@@ -61,6 +67,7 @@ impl DriverCommand {
         Self::SET_LAYER,
         Self::REMOVE_LAYER,
         Self::SET_NET_STATE,
+        Self::SET_STANDINGS,
     ];
 
     pub fn call(&self) -> DriverCall {
@@ -97,6 +104,9 @@ impl DriverCommand {
             ),
             DriverCommand::RemoveLayer(name) => (Self::REMOVE_LAYER, vec![name.clone()]),
             DriverCommand::SetNetState(state) => (Self::SET_NET_STATE, vec![state.clone()]),
+            DriverCommand::SetStandings(standings) => {
+                (Self::SET_STANDINGS, vec![standings.clone()])
+            }
             DriverCommand::ChatMessage(message) => {
                 return DriverCall::ChatSendServerMessage(message.clone());
             }
@@ -148,6 +158,65 @@ pub struct DriverCanSpawn {
 pub struct DriverLayer {
     pub name: String,
     pub manialink: String,
+}
+
+/// The scores of a driver match. Every driver mode works on this one structure:
+/// the driver host keeps it, hands it to the mode with every event and shows what
+/// the mode returns to the players. Manialinks parse it as json, so the field
+/// names must not change.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
+#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
+pub struct DriverStandings {
+    /// Name of the mode.
+    pub title: String,
+    /// Progress of the match as text, e.g. `2 / 5 rounds`.
+    pub info: String,
+    /// Rounds of the current map that counted.
+    pub rounds_on_map: u32,
+    /// Maps that ended in this match.
+    pub maps_played: u32,
+    /// Ordered by rank, unranked players last.
+    pub players: Vec<DriverStanding>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
+#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
+pub struct DriverStanding {
+    pub account_id: String,
+    pub name: String,
+    /// Players with the same rank are tied. 0 if the mode did not rank the player.
+    pub rank: u32,
+    pub status: DriverStatus,
+    /// Points of the match.
+    pub points: i32,
+    /// Points of the current map.
+    pub map_points: i32,
+    /// Points of the last round.
+    pub round_points: i32,
+}
+
+/// Where a player stands in a driver match.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
+#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
+pub enum DriverStatus {
+    /// Takes part and has neither won nor lost yet.
+    #[default]
+    Playing,
+    /// Wins the match by winning a round (cup).
+    Finalist,
+    /// The next bad round eliminates the player (reverse cup).
+    LastChance,
+    /// Out of the match with a final rank.
+    Eliminated,
+    /// Won the match.
+    Winner,
 }
 
 #[cfg(test)]
@@ -204,6 +273,18 @@ mod tests {
             }))
             .1,
             ["a", "0"]
+        );
+    }
+
+    #[test]
+    fn standings_and_net_state() {
+        assert_eq!(
+            modescript(DriverCommand::SetStandings("{}".into())),
+            ("Driver.SetStandings", vec!["{}".into()])
+        );
+        assert_eq!(
+            modescript(DriverCommand::SetNetState("{}".into())),
+            ("Driver.SetNetState", vec!["{}".into()])
         );
     }
 
