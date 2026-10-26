@@ -1,9 +1,29 @@
 <manialink name="Driver_MyStanding" version="3">
+<!--
+	Style: the classes below set fonts, text and backgrounds. The C_Style constants
+	at the top of the script set the colors that change with the standings.
+	Colors are hex, opacities go from 0 to 1.
+-->
+<stylesheet>
+	<style class="rank" textfont="GameFontBlack" textprefix="$i" textcolor="ffffff" textsize="4.5"/>
+	<style class="score" textfont="OswaldMono" textcolor="ffffff" textsize="2.5"/>
+	<style class="status" textfont="GameFontBlack" textprefix="$i$t" textcolor="ffffff" textsize="1.5"/>
+	<style class="detail" textfont="GameFontSemiBold" textprefix="$i" textcolor="ffffffaa" textsize="1"/>
+	<style class="accent" bgcolor="009b5f" opacity="1"/>
+	<style class="cell" bgcolor="000000" opacity="0.85"/>
+	<style class="row" bgcolor="000000" opacity="0.55"/>
+	<style class="state" bgcolor="ffffff" opacity="0.9"/>
+</stylesheet>
+
 <frame id="Frame_MyStanding" pos="104 -62" hidden="1">
-	<quad size="54 12" bgcolor="000000" opacity="0.6"/>
-	<label id="Label_Rank" pos="3 -6" size="20 10" valign="center2" textsize="5" textfont="GameFontBlack" textcolor="ffffff"/>
-	<label id="Label_Score" pos="51 -4" size="30 5" halign="right" valign="center2" textsize="2.5" textfont="GameFontSemiBold" textcolor="ffffff"/>
-	<label id="Label_Detail" pos="51 -9" size="30 4" halign="right" valign="center2" textsize="1" textcolor="ffffffaa"/>
+	<quad class="accent" size="54 0.5"/>
+	<quad class="cell" pos="0 -0.5" size="18 11.5"/>
+	<label id="Label_Rank" class="rank" pos="9 -6.25" size="17 10" halign="center" valign="center2"/>
+	<quad class="row" pos="18.5 -0.5" size="35.5 11.5"/>
+	<quad id="Quad_State" class="state" pos="18.5 -0.5" z-index="1" size="35.5 7" hidden="1"/>
+	<label id="Label_Score" class="score" pos="52 -4" z-index="2" size="32 5" halign="right" valign="center2"/>
+	<label id="Label_Status" class="status" pos="36.25 -4" z-index="2" size="33 5" halign="center" valign="center2" hidden="1"/>
+	<label id="Label_Detail" class="detail" pos="52 -9.5" z-index="2" size="32 4" halign="right" valign="center2"/>
 </frame>
 
 <script><!--
@@ -13,6 +33,23 @@
  *	The json is tm_server_types::method::DriverStandings.
  */
 #Include "TextLib" as TL
+#Include "ColorLib" as CL
+
+// Style: colors as hex, applied with every update.
+#Const C_Style_GainedColor "66ff99"
+#Const C_Style_LostColor "ff6666"
+#Const C_Style_DetailColor "ffffff"
+#Const C_Style_FinalistColor "e08a00"
+#Const C_Style_LastChanceColor "d61919"
+#Const C_Style_EliminatedColor "6e1414"
+#Const C_Style_WinnerColor "c99a06"
+#Const C_Style_SpectatorColor "2e9e23"
+#Const C_Style_FinalistText "Finalist"
+#Const C_Style_LastChanceText "Last Chance"
+#Const C_Style_EliminatedText "Eliminated"
+#Const C_Style_WinnerText "Winner"
+#Const C_Style_SpectatorText "Spectator"
+#Const C_Style_PointsSuffix " pts"
 
 #Struct K_Standing {
 	Text account_id;
@@ -37,9 +74,45 @@ Void SetText(Text _ControlId, Text _Value) {
 	if (Label != Null) Label.Value = _Value;
 }
 
-Void SetTextColor(Text _ControlId, Vec3 _Color) {
+Void SetTextColor(Text _ControlId, Text _Color) {
 	declare CMlLabel Label <=> (Page.GetFirstChild(_ControlId) as CMlLabel);
-	if (Label != Null) Label.TextColor = _Color;
+	if (Label != Null) Label.TextColor = CL::Hex6ToRgb(_Color);
+}
+
+Void SetVisible(Text _ControlId, Boolean _Visible) {
+	declare CMlControl Control <=> Page.GetFirstChild(_ControlId);
+	if (Control != Null) Control.Visible = _Visible;
+}
+
+/// Shows a quad in a color or hides it for an empty color.
+Void SetQuadColor(Text _ControlId, Text _Color) {
+	declare CMlQuad Quad <=> (Page.GetFirstChild(_ControlId) as CMlQuad);
+	if (Quad == Null) return;
+	Quad.Visible = _Color != "";
+	if (_Color != "") Quad.BgColor = CL::Hex6ToRgb(_Color);
+}
+
+/// Shown instead of the points like in the original modes, empty for players who are still playing.
+Text StatusText(Text _Status) {
+	switch (_Status) {
+		case "finalist": return C_Style_FinalistText;
+		case "last_chance": return C_Style_LastChanceText;
+		case "eliminated": return C_Style_EliminatedText;
+		case "winner": return C_Style_WinnerText;
+		case "spectator": return C_Style_SpectatorText;
+	}
+	return "";
+}
+
+Text StatusColor(Text _Status) {
+	switch (_Status) {
+		case "finalist": return C_Style_FinalistColor;
+		case "last_chance": return C_Style_LastChanceColor;
+		case "eliminated": return C_Style_EliminatedColor;
+		case "winner": return C_Style_WinnerColor;
+		case "spectator": return C_Style_SpectatorColor;
+	}
+	return "";
 }
 
 /// 1st, 2nd, 3rd, 4th, 11th, 21st, ...
@@ -68,7 +141,7 @@ Void Update(Text _Standings) {
 		}
 	}
 
-	// Spectators and players who do not take part see nothing.
+	// Players who are not part of the standings see nothing.
 	Frame_MyStanding.Visible = Found;
 	if (!Found) return;
 
@@ -78,39 +151,23 @@ Void Update(Text _Standings) {
 		SetText("Label_Rank", "-");
 	}
 
-	switch (Mine.status) {
-		case "finalist": {
-			SetText("Label_Score", "Finalist");
-			SetTextColor("Label_Score", <1., 0.6, 0.>);
-		}
-		case "last_chance": {
-			SetText("Label_Score", "Last Chance");
-			SetTextColor("Label_Score", <1., 0., 0.>);
-		}
-		case "eliminated": {
-			SetText("Label_Score", "Eliminated");
-			SetTextColor("Label_Score", <1., 0., 0.>);
-		}
-		case "spectator": {
-			SetText("Label_Score", "Spectator");
-			SetTextColor("Label_Score", <0.28, 0.85, 0.21>);
-		}
-		case "winner": {
-			SetText("Label_Score", "Winner");
-			SetTextColor("Label_Score", <1., 0.8, 0.>);
-		}
-		default: {
-			SetText("Label_Score", TL::ToText(Mine.points)^" pts");
-			SetTextColor("Label_Score", <1., 1., 1.>);
-		}
-	}
+	// A status like Last Chance replaces the points in a colored cell.
+	declare Text Status = StatusText(Mine.status);
+	SetText("Label_Status", Status);
+	SetText("Label_Score", TL::ToText(Mine.points)^C_Style_PointsSuffix);
+	SetVisible("Label_Status", Status != "");
+	SetVisible("Label_Score", Status == "");
+	SetQuadColor("Quad_State", StatusColor(Mine.status));
 
 	if (Mine.round_points > 0) {
 		SetText("Label_Detail", "+"^TL::ToText(Mine.round_points)^" last round");
+		SetTextColor("Label_Detail", C_Style_GainedColor);
 	} else if (Mine.round_points < 0) {
 		SetText("Label_Detail", TL::ToText(Mine.round_points)^" last round");
+		SetTextColor("Label_Detail", C_Style_LostColor);
 	} else {
 		SetText("Label_Detail", Standings.info);
+		SetTextColor("Label_Detail", C_Style_DetailColor);
 	}
 }
 

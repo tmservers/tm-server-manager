@@ -1,27 +1,52 @@
 <manialink name="Driver_Standings" version="3">
+<!--
+	Style: the classes below set fonts, text and backgrounds. The C_Style constants
+	at the top of the script set the colors that change with the standings.
+	Colors are hex, opacities go from 0 to 1.
+-->
+<stylesheet>
+	<style class="title" textfont="GameFontBlack" textprefix="$i$t" textcolor="ffffff" textsize="2"/>
+	<style class="info" textfont="GameFontSemiBold" textprefix="$i" textcolor="ffffffaa" textsize="1"/>
+	<style class="name" textfont="GameFontSemiBold" textprefix="$i" textcolor="ffffff" textsize="1.3"/>
+	<style class="number" textfont="OswaldMono" textcolor="ffffff" textsize="1.5"/>
+	<style class="round-points" textfont="OswaldMono" textcolor="ffffff" textsize="1.1"/>
+	<style class="status" textfont="GameFontBlack" textprefix="$i$t" textcolor="ffffff" textsize="0.7"/>
+	<style class="header" bgcolor="000000" opacity="0.85"/>
+	<style class="accent" bgcolor="009b5f" opacity="1"/>
+	<style class="row" bgcolor="000000" opacity="0.5"/>
+	<style class="cell" bgcolor="000000" opacity="0.8"/>
+	<style class="highlight" bgcolor="ffffff" opacity="0.8"/>
+	<style class="state" bgcolor="ffffff" opacity="0.9"/>
+</stylesheet>
+
 <framemodel id="Model_Row">
-	<quad id="Quad_Background" size="52 4.5" bgcolor="000000" opacity="0.5"/>
-	<label id="Label_Rank" pos="3 -2.25" size="5 4" halign="center" valign="center2" textsize="1.5" textfont="GameFontSemiBold" textcolor="ffffff"/>
-	<label id="Label_Name" pos="7 -2.25" size="28 4" valign="center2" textsize="1.5" textcolor="ffffff"/>
-	<label id="Label_RoundPoints" pos="42 -2.25" size="8 4" halign="right" valign="center2" textsize="1" textcolor="66ff99"/>
-	<label id="Label_Points" pos="50.5 -2.25" size="8 4" halign="right" valign="center2" textsize="1.5" textfont="GameFontSemiBold" textcolor="ffffff"/>
-	<label id="Label_Status" pos="50.5 -2.25" size="16 4" halign="right" valign="center2" textsize="1" textfont="GameFontSemiBold" textcolor="ff5555" hidden="1"/>
+	<quad class="cell" size="6 4.5"/>
+	<label id="Label_Rank" class="number" pos="3 -2.25" size="5.5 4" halign="center" valign="center2"/>
+	<quad class="row" pos="6.5 0" size="33 4.5"/>
+	<quad id="Quad_Highlight" class="highlight" pos="6.5 0" z-index="1" size="33 4.5" hidden="1"/>
+	<label id="Label_Name" class="name" pos="8 -2.25" z-index="2" size="24 4" valign="center2"/>
+	<label id="Label_RoundPoints" class="round-points" pos="39 -2.25" z-index="2" size="7 4" halign="right" valign="center2"/>
+	<quad class="cell" pos="40 0" size="12 4.5"/>
+	<quad id="Quad_State" class="state" pos="40 0" z-index="1" size="12 4.5" hidden="1"/>
+	<label id="Label_Points" class="number" pos="51 -2.25" z-index="2" size="11 4" halign="right" valign="center2"/>
+	<label id="Label_Status" class="status" pos="46 -2.25" z-index="2" size="11.5 4" halign="center" valign="center2" hidden="1"/>
 </framemodel>
 
 <frame id="Frame_Standings" pos="-158 62" hidden="1">
-	<quad size="52 6" bgcolor="000000" opacity="0.8"/>
-	<label id="Label_Title" pos="2 -3" size="30 5" valign="center2" textsize="2" textfont="GameFontSemiBold" textcolor="ffffff"/>
-	<label id="Label_Info" pos="50.5 -3" size="20 5" halign="right" valign="center2" textsize="1" textcolor="ffffffaa"/>
-	<frameinstance modelid="Model_Row" id="Row_0" pos="0 -6.5"/>
-	<frameinstance modelid="Model_Row" id="Row_1" pos="0 -11.5"/>
-	<frameinstance modelid="Model_Row" id="Row_2" pos="0 -16.5"/>
-	<frameinstance modelid="Model_Row" id="Row_3" pos="0 -21.5"/>
-	<frameinstance modelid="Model_Row" id="Row_4" pos="0 -26.5"/>
-	<frameinstance modelid="Model_Row" id="Row_5" pos="0 -31.5"/>
-	<frameinstance modelid="Model_Row" id="Row_6" pos="0 -36.5"/>
-	<frameinstance modelid="Model_Row" id="Row_7" pos="0 -41.5"/>
-	<frameinstance modelid="Model_Row" id="Row_8" pos="0 -46.5"/>
-	<frameinstance modelid="Model_Row" id="Row_9" pos="0 -51.5"/>
+	<quad class="header" size="52 6"/>
+	<label id="Label_Title" class="title" pos="2 -3" size="30 5" valign="center2"/>
+	<label id="Label_Info" class="info" pos="50.5 -3" size="20 5" halign="right" valign="center2"/>
+	<quad class="accent" pos="0 -6" size="52 0.4"/>
+	<frameinstance modelid="Model_Row" id="Row_0" pos="0 -6.9"/>
+	<frameinstance modelid="Model_Row" id="Row_1" pos="0 -11.9"/>
+	<frameinstance modelid="Model_Row" id="Row_2" pos="0 -16.9"/>
+	<frameinstance modelid="Model_Row" id="Row_3" pos="0 -21.9"/>
+	<frameinstance modelid="Model_Row" id="Row_4" pos="0 -26.9"/>
+	<frameinstance modelid="Model_Row" id="Row_5" pos="0 -31.9"/>
+	<frameinstance modelid="Model_Row" id="Row_6" pos="0 -36.9"/>
+	<frameinstance modelid="Model_Row" id="Row_7" pos="0 -41.9"/>
+	<frameinstance modelid="Model_Row" id="Row_8" pos="0 -46.9"/>
+	<frameinstance modelid="Model_Row" id="Row_9" pos="0 -51.9"/>
 </frame>
 
 <script><!--
@@ -31,6 +56,22 @@
  *	The json is tm_server_types::method::DriverStandings.
  */
 #Include "TextLib" as TL
+#Include "ColorLib" as CL
+
+// Style: colors as hex, applied with every update.
+#Const C_Style_OwnColor "1e5f99"
+#Const C_Style_GainedColor "66ff99"
+#Const C_Style_LostColor "ff6666"
+#Const C_Style_FinalistColor "e08a00"
+#Const C_Style_LastChanceColor "d61919"
+#Const C_Style_EliminatedColor "6e1414"
+#Const C_Style_WinnerColor "c99a06"
+#Const C_Style_SpectatorColor "2e9e23"
+#Const C_Style_FinalistText "Finalist"
+#Const C_Style_LastChanceText "Last Chance"
+#Const C_Style_EliminatedText "Eliminated"
+#Const C_Style_WinnerText "Winner"
+#Const C_Style_SpectatorText "Spectator"
 
 #Const C_MaxRows 10
 
@@ -57,9 +98,9 @@ Void SetText(CMlFrame _Frame, Text _ControlId, Text _Value) {
 	if (Label != Null) Label.Value = _Value;
 }
 
-Void SetTextColor(CMlFrame _Frame, Text _ControlId, Vec3 _Color) {
+Void SetTextColor(CMlFrame _Frame, Text _ControlId, Text _Color) {
 	declare CMlLabel Label <=> (_Frame.GetFirstChild(_ControlId) as CMlLabel);
-	if (Label != Null) Label.TextColor = _Color;
+	if (Label != Null) Label.TextColor = CL::Hex6ToRgb(_Color);
 }
 
 Void SetVisible(CMlFrame _Frame, Text _ControlId, Boolean _Visible) {
@@ -67,25 +108,35 @@ Void SetVisible(CMlFrame _Frame, Text _ControlId, Boolean _Visible) {
 	if (Control != Null) Control.Visible = _Visible;
 }
 
+/// Shows a quad in a color or hides it for an empty color.
+Void SetQuadColor(CMlFrame _Frame, Text _ControlId, Text _Color) {
+	declare CMlQuad Quad <=> (_Frame.GetFirstChild(_ControlId) as CMlQuad);
+	if (Quad == Null) return;
+	Quad.Visible = _Color != "";
+	if (_Color != "") Quad.BgColor = CL::Hex6ToRgb(_Color);
+}
+
 /// Shown instead of the points like in the original modes, empty for players who are still playing.
 Text StatusText(Text _Status) {
 	switch (_Status) {
-		case "finalist": return "Finalist";
-		case "last_chance": return "Last Chance";
-		case "eliminated": return "Eliminated";
-		case "winner": return "Winner";
-		case "spectator": return "Spectator";
+		case "finalist": return C_Style_FinalistText;
+		case "last_chance": return C_Style_LastChanceText;
+		case "eliminated": return C_Style_EliminatedText;
+		case "winner": return C_Style_WinnerText;
+		case "spectator": return C_Style_SpectatorText;
 	}
 	return "";
 }
 
-Vec3 StatusColor(Text _Status) {
+Text StatusColor(Text _Status) {
 	switch (_Status) {
-		case "finalist": return <1., 0.6, 0.>;
-		case "winner": return <1., 0.8, 0.>;
-		case "spectator": return <0.28, 0.85, 0.21>;
+		case "finalist": return C_Style_FinalistColor;
+		case "last_chance": return C_Style_LastChanceColor;
+		case "eliminated": return C_Style_EliminatedColor;
+		case "winner": return C_Style_WinnerColor;
+		case "spectator": return C_Style_SpectatorColor;
 	}
-	return <1., 0., 0.>;
+	return "";
 }
 
 Void Update(Text _Standings) {
@@ -133,30 +184,26 @@ Void Update(Text _Standings) {
 		SetText(Row, "Label_Points", TL::ToText(Standing.points));
 		if (Standing.round_points > 0) {
 			SetText(Row, "Label_RoundPoints", "+"^TL::ToText(Standing.round_points));
-			SetTextColor(Row, "Label_RoundPoints", <0.4, 1., 0.6>);
+			SetTextColor(Row, "Label_RoundPoints", C_Style_GainedColor);
 		} else if (Standing.round_points < 0) {
 			SetText(Row, "Label_RoundPoints", TL::ToText(Standing.round_points));
-			SetTextColor(Row, "Label_RoundPoints", <1., 0.4, 0.4>);
+			SetTextColor(Row, "Label_RoundPoints", C_Style_LostColor);
 		} else {
 			SetText(Row, "Label_RoundPoints", "");
 		}
 
-		// A status like Eliminated replaces the points.
+		// A status like Last Chance replaces the points in a colored cell.
 		declare Text Status = StatusText(Standing.status);
-		declare Boolean HasStatus = Status != "";
 		SetText(Row, "Label_Status", Status);
-		SetTextColor(Row, "Label_Status", StatusColor(Standing.status));
-		SetVisible(Row, "Label_Status", HasStatus);
-		SetVisible(Row, "Label_Points", !HasStatus);
-		SetVisible(Row, "Label_RoundPoints", !HasStatus);
+		SetVisible(Row, "Label_Status", Status != "");
+		SetVisible(Row, "Label_Points", Status == "");
+		SetVisible(Row, "Label_RoundPoints", Status == "");
+		SetQuadColor(Row, "Quad_State", StatusColor(Standing.status));
 
-		declare CMlQuad Quad_Background <=> (Row.GetFirstChild("Quad_Background") as CMlQuad);
-		if (Quad_Background != Null) {
-			if (Standing.account_id == Me) {
-				Quad_Background.BgColor = <0.1, 0.35, 0.6>;
-			} else {
-				Quad_Background.BgColor = <0., 0., 0.>;
-			}
+		if (Standing.account_id == Me) {
+			SetQuadColor(Row, "Quad_Highlight", C_Style_OwnColor);
+		} else {
+			SetQuadColor(Row, "Quad_Highlight", "");
 		}
 	}
 }

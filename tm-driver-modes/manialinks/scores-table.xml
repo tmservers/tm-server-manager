@@ -1,30 +1,59 @@
 <manialink name="Driver_ScoresTable" version="3">
+<!--
+	Style: the classes below set fonts, text and backgrounds. The C_Style constants
+	at the top of the script set the colors that change while the table is shown.
+	Colors are hex, opacities go from 0 to 1.
+-->
+<stylesheet>
+	<style class="title" textfont="GameFontBlack" textprefix="$i$t" textcolor="ffffff" textsize="5"/>
+	<style class="info" textfont="GameFontSemiBold" textprefix="$i" textcolor="ffffffaa" textsize="1.6"/>
+	<style class="column" textfont="GameFontSemiBold" textprefix="$i$t" textcolor="ffffff88" textsize="0.8"/>
+	<style class="name" textfont="GameFontSemiBold" textprefix="$i" textcolor="ffffff" textsize="1.5"/>
+	<style class="tag" textfont="GameFontSemiBold" textprefix="$i" textcolor="ffffffcc" textsize="1.3"/>
+	<style class="number" textfont="OswaldMono" textcolor="ffffff" textsize="1.8"/>
+	<style class="round-points" textfont="OswaldMono" textcolor="ffffff" textsize="1.4"/>
+	<style class="status" textfont="GameFontBlack" textprefix="$i$t" textcolor="ffffff" textsize="1"/>
+	<style class="header" bgcolor="000000" opacity="0.85"/>
+	<style class="accent" bgcolor="009b5f" opacity="1"/>
+	<style class="panel" bgcolor="000000" opacity="0.55"/>
+	<style class="row" bgcolor="000000" opacity="0.5"/>
+	<style class="cell" bgcolor="000000" opacity="0.8"/>
+	<style class="highlight" bgcolor="ffffff" opacity="0.8"/>
+	<style class="state" bgcolor="ffffff" opacity="0.9"/>
+	<style class="hover" bgcolor="ffffff" opacity="0"/>
+</stylesheet>
+
 <framemodel id="Model_Row">
-	<quad id="Quad_Background" size="176 5" bgcolor="000000" opacity="0.4"/>
-	<label id="Label_Rank" pos="4 -2.5" size="7 4" halign="center" valign="center2" textsize="1.5" textfont="GameFontSemiBold" textcolor="ffffff"/>
-	<label id="Label_ClubTag" pos="9 -2.5" size="14 4" valign="center2" textsize="1.5" textcolor="ffffff"/>
-	<label id="Label_Name" pos="24 -2.5" size="92 4" valign="center2" textsize="1.5" textcolor="ffffff"/>
-	<label id="Label_RoundPoints" pos="142 -2.5" size="14 4" halign="right" valign="center2" textsize="1.2" textcolor="66ff99"/>
-	<label id="Label_Points" pos="173 -2.5" size="24 4" halign="right" valign="center2" textsize="1.5" textfont="GameFontSemiBold" textcolor="ffffff"/>
-	<label id="Label_Status" pos="173 -2.5" size="30 4" halign="right" valign="center2" textsize="1.2" textfont="GameFontSemiBold" textcolor="ff0000" hidden="1"/>
-	<quad id="Quad_Button" z-index="1" size="176 5" bgcolor="ffffff" opacity="0" scriptevents="1"/>
+	<quad class="cell" size="9 5"/>
+	<label id="Label_Rank" class="number" pos="4.5 -2.5" size="8 4" halign="center" valign="center2"/>
+	<quad class="row" pos="9.5 0" size="129 5"/>
+	<quad id="Quad_Highlight" class="highlight" pos="9.5 0" z-index="1" size="129 5" hidden="1"/>
+	<label id="Label_ClubTag" class="tag" pos="11.5 -2.5" z-index="2" size="14 4" valign="center2"/>
+	<label id="Label_Name" class="name" pos="26 -2.5" z-index="2" size="96 4" valign="center2"/>
+	<label id="Label_RoundPoints" class="round-points" pos="137 -2.5" z-index="2" size="12 4" halign="right" valign="center2"/>
+	<quad class="cell" pos="139 0" size="37 5"/>
+	<quad id="Quad_State" class="state" pos="139 0" z-index="1" size="37 5" hidden="1"/>
+	<label id="Label_Points" class="number" pos="174 -2.5" z-index="2" size="34 4" halign="right" valign="center2"/>
+	<label id="Label_Status" class="status" pos="157.5 -2.5" z-index="2" size="35 4" halign="center" valign="center2" hidden="1"/>
+	<quad id="Quad_Button" class="hover" z-index="3" size="176 5" scriptevents="1"/>
 </framemodel>
 
-<frame id="Frame_ScoresTable" pos="-90 66" hidden="1">
-	<quad size="180 130" bgcolor="000000" opacity="0.8"/>
-	<quad size="180 12" bgcolor="000000" opacity="0.6"/>
-	<label id="Label_Title" pos="4 -6" size="110 8" valign="center2" textsize="4" textfont="GameFontBlack" textcolor="ffffff"/>
-	<label id="Label_Info" pos="176 -6" size="70 6" halign="right" valign="center2" textsize="1.5" textcolor="ffffffaa"/>
+<frame id="Frame_ScoresTable" pos="-90 68" hidden="1">
+	<quad class="header" size="180 11"/>
+	<label id="Label_Title" class="title" pos="4 -5.5" size="110 8" valign="center2"/>
+	<label id="Label_Info" class="info" pos="176 -5.5" size="70 6" halign="right" valign="center2"/>
+	<quad class="accent" pos="0 -11" size="180 0.6"/>
+	<quad class="panel" pos="0 -11.6" size="180 120.4"/>
 
 	<frame pos="2 -13">
-		<label pos="4 -2" size="7 3" halign="center" valign="center2" textsize="0.8" textcolor="ffffff88" text="#"/>
-		<label pos="9 -2" size="14 3" valign="center2" textsize="0.8" textcolor="ffffff88" text="Club"/>
-		<label pos="24 -2" size="40 3" valign="center2" textsize="0.8" textcolor="ffffff88" text="Player"/>
-		<label pos="142 -2" size="14 3" halign="right" valign="center2" textsize="0.8" textcolor="ffffff88" text="Round"/>
-		<label pos="173 -2" size="24 3" halign="right" valign="center2" textsize="0.8" textcolor="ffffff88" text="Points"/>
+		<label class="column" pos="4.5 -2" size="8 3" halign="center" valign="center2" text="#"/>
+		<label class="column" pos="11.5 -2" size="14 3" valign="center2" text="Club"/>
+		<label class="column" pos="26 -2" size="40 3" valign="center2" text="Player"/>
+		<label class="column" pos="137 -2" size="14 3" halign="right" valign="center2" text="Round"/>
+		<label class="column" pos="174 -2" size="30 3" halign="right" valign="center2" text="Points"/>
 	</frame>
 
-	<label id="Label_Empty" pos="90 -60" size="120 6" halign="center" valign="center2" textsize="2" textcolor="ffffff88" text="The standings start with the first round." hidden="1"/>
+	<label id="Label_Empty" class="info" pos="90 -60" size="120 6" halign="center" valign="center2" text="The standings start with the first round." hidden="1"/>
 
 	<!-- 18 rows are visible, the mouse wheel scrolls through the others. -->
 	<frame id="Frame_Rows" pos="2 -18" size="176 99" scroll="1" scrollmax="0 0" scrollgrid="0 5.5">
@@ -132,7 +161,7 @@
 
 	<!-- The local player when the visible rows do not show them. -->
 	<frameinstance modelid="Model_Row" id="Row_Own" pos="2 -118" hidden="1"/>
-	<label id="Label_Hint" pos="90 -126.5" size="170 4" halign="center" valign="center2" textsize="0.8" textcolor="ffffff88"/>
+	<label id="Label_Hint" class="column" pos="90 -127.5" size="170 4" halign="center" valign="center2"/>
 </frame>
 
 <script><!--
@@ -151,6 +180,24 @@
  */
 #Include "TextLib" as TL
 #Include "MathLib" as ML
+#Include "ColorLib" as CL
+
+// Style: colors as hex, applied while the table is shown.
+#Const C_Style_OwnColor "1e5f99"
+#Const C_Style_WatchedColor "5a5a5a"
+#Const C_Style_HoverOpacity 0.15
+#Const C_Style_GainedColor "66ff99"
+#Const C_Style_LostColor "ff6666"
+#Const C_Style_FinalistColor "e08a00"
+#Const C_Style_LastChanceColor "d61919"
+#Const C_Style_EliminatedColor "6e1414"
+#Const C_Style_WinnerColor "c99a06"
+#Const C_Style_SpectatorColor "2e9e23"
+#Const C_Style_FinalistText "Finalist"
+#Const C_Style_LastChanceText "Last Chance"
+#Const C_Style_EliminatedText "Eliminated"
+#Const C_Style_WinnerText "Winner"
+#Const C_Style_SpectatorText "Spectator"
 
 #Const C_Rows 100
 #Const C_VisibleRows 18
@@ -185,9 +232,9 @@ Void SetText(CMlFrame _Frame, Text _ControlId, Text _Value) {
 	if (Label != Null) Label.Value = _Value;
 }
 
-Void SetTextColor(CMlFrame _Frame, Text _ControlId, Vec3 _Color) {
+Void SetTextColor(CMlFrame _Frame, Text _ControlId, Text _Color) {
 	declare CMlLabel Label <=> (_Frame.GetFirstChild(_ControlId) as CMlLabel);
-	if (Label != Null) Label.TextColor = _Color;
+	if (Label != Null) Label.TextColor = CL::Hex6ToRgb(_Color);
 }
 
 Void SetVisible(CMlFrame _Frame, Text _ControlId, Boolean _Visible) {
@@ -195,25 +242,35 @@ Void SetVisible(CMlFrame _Frame, Text _ControlId, Boolean _Visible) {
 	if (Control != Null) Control.Visible = _Visible;
 }
 
+/// Shows a quad in a color or hides it for an empty color.
+Void SetQuadColor(CMlFrame _Frame, Text _ControlId, Text _Color) {
+	declare CMlQuad Quad <=> (_Frame.GetFirstChild(_ControlId) as CMlQuad);
+	if (Quad == Null) return;
+	Quad.Visible = _Color != "";
+	if (_Color != "") Quad.BgColor = CL::Hex6ToRgb(_Color);
+}
+
 /// Shown instead of the points like in the original modes, empty for players who are still playing.
 Text StatusText(Text _Status) {
 	switch (_Status) {
-		case "finalist": return "Finalist";
-		case "last_chance": return "Last Chance";
-		case "eliminated": return "Eliminated";
-		case "winner": return "Winner";
-		case "spectator": return "Spectator";
+		case "finalist": return C_Style_FinalistText;
+		case "last_chance": return C_Style_LastChanceText;
+		case "eliminated": return C_Style_EliminatedText;
+		case "winner": return C_Style_WinnerText;
+		case "spectator": return C_Style_SpectatorText;
 	}
 	return "";
 }
 
-Vec3 StatusColor(Text _Status) {
+Text StatusColor(Text _Status) {
 	switch (_Status) {
-		case "finalist": return <1., 0.6, 0.>;
-		case "winner": return <1., 0.8, 0.>;
-		case "spectator": return <0.28, 0.85, 0.21>;
+		case "finalist": return C_Style_FinalistColor;
+		case "last_chance": return C_Style_LastChanceColor;
+		case "eliminated": return C_Style_EliminatedColor;
+		case "winner": return C_Style_WinnerColor;
+		case "spectator": return C_Style_SpectatorColor;
 	}
-	return <1., 0., 0.>;
+	return "";
 }
 
 /// The local player watches someone else, e.g. as a spectator or after finishing.
@@ -257,31 +314,27 @@ Void UpdateRow(CMlFrame _Row, K_Standing _Standing, K_User[Text] _Users, Text _M
 	SetText(_Row, "Label_Points", TL::ToText(_Standing.points));
 	if (_Standing.round_points > 0) {
 		SetText(_Row, "Label_RoundPoints", "+"^TL::ToText(_Standing.round_points));
-		SetTextColor(_Row, "Label_RoundPoints", <0.4, 1., 0.6>);
+		SetTextColor(_Row, "Label_RoundPoints", C_Style_GainedColor);
 	} else if (_Standing.round_points < 0) {
 		SetText(_Row, "Label_RoundPoints", TL::ToText(_Standing.round_points));
-		SetTextColor(_Row, "Label_RoundPoints", <1., 0.4, 0.4>);
+		SetTextColor(_Row, "Label_RoundPoints", C_Style_LostColor);
 	} else {
 		SetText(_Row, "Label_RoundPoints", "");
 	}
 
-	// A status like Last Chance replaces the points.
+	// A status like Last Chance replaces the points in a colored cell.
 	declare Text Status = StatusText(_Standing.status);
-	declare Boolean HasStatus = Status != "";
 	SetText(_Row, "Label_Status", Status);
-	SetTextColor(_Row, "Label_Status", StatusColor(_Standing.status));
-	SetVisible(_Row, "Label_Status", HasStatus);
-	SetVisible(_Row, "Label_Points", !HasStatus);
+	SetVisible(_Row, "Label_Status", Status != "");
+	SetVisible(_Row, "Label_Points", Status == "");
+	SetQuadColor(_Row, "Quad_State", StatusColor(_Standing.status));
 
-	declare CMlQuad Quad_Background <=> (_Row.GetFirstChild("Quad_Background") as CMlQuad);
-	if (Quad_Background != Null) {
-		if (_Standing.account_id == _Me) {
-			Quad_Background.BgColor = <0.1, 0.35, 0.6>;
-		} else if (_Standing.account_id == _Watched) {
-			Quad_Background.BgColor = <0.35, 0.35, 0.35>;
-		} else {
-			Quad_Background.BgColor = <0., 0., 0.>;
-		}
+	if (_Standing.account_id == _Me) {
+		SetQuadColor(_Row, "Quad_Highlight", C_Style_OwnColor);
+	} else if (_Standing.account_id == _Watched) {
+		SetQuadColor(_Row, "Quad_Highlight", C_Style_WatchedColor);
+	} else {
+		SetQuadColor(_Row, "Quad_Highlight", "");
 	}
 
 	// Only players who still race can be spectated.
@@ -367,7 +420,7 @@ main() {
 					SetSpectateTarget(Driver_SpectateLogin);
 				}
 			} else if (Event.Type == CMlScriptEvent::Type::MouseOver) {
-				if (Driver_SpectateLogin != "" && IsSpectating()) Quad_Button.Opacity = 0.15;
+				if (Driver_SpectateLogin != "" && IsSpectating()) Quad_Button.Opacity = C_Style_HoverOpacity;
 			} else if (Event.Type == CMlScriptEvent::Type::MouseOut) {
 				Quad_Button.Opacity = 0.;
 			}
