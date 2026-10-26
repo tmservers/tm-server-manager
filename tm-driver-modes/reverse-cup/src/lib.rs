@@ -5,8 +5,8 @@
 //! points is in last chance and is eliminated by losing the most points of a
 //! round. The match ends once only the winners are left.
 //!
-//! The players who start in the first valid round take part in the match.
-//! Everyone else cannot spawn anymore. The original mode skips a round that
+//! The players who start a race before the first round counts take part in the
+//! match with their starting points. Everyone else cannot spawn anymore. The original mode skips a round that
 //! would put everyone in last chance anyway. This mode does that right after
 //! the previous round, so the round is not started at all.
 //!
@@ -142,6 +142,19 @@ impl Mode for ReverseCup {
                     Vec::new()
                 }
             }
+            // Players take part from their first race on, so the standings show them
+            // with their starting points during the first round.
+            Event::RaceStart(player) => {
+                if self.registration_open(standings)
+                    && standings.player(&player.account_id).is_none()
+                {
+                    standings.join(&player.account_id, &player.name).points =
+                        self.settings.starting_points;
+                    standings.rank();
+                    standings.info = self.info(standings);
+                }
+                Vec::new()
+            }
             Event::MatchStart | Event::RoundStart | Event::MatchEnd => Vec::new(),
         }
     }
@@ -149,17 +162,17 @@ impl Mode for ReverseCup {
 
 impl ReverseCup {
     fn round_end(&self, standings: &mut Standings, round_end: RoundEnd) -> Vec<Command> {
-        // Forced rounds do not count, not even to find the participants.
-        if standings.participants().next().is_none() && !round_end.forced {
+        // Starters the race starts did not bring in, e.g. after the driver restarted.
+        if self.registration_open(standings) {
             self.register(standings, &round_end.results);
         }
-        let mut commands = block_others(standings, &round_end.results);
         if round_end.forced
             || standings.participants().next().is_none()
             || self.match_over(standings)
         {
-            return commands;
+            return self.block_late_players(standings, &round_end.results);
         }
+        let mut commands = Vec::new();
 
         for result in &round_end.results {
             // Players who left before the scores were sent have no name.
@@ -230,6 +243,7 @@ impl ReverseCup {
         if losses.iter().any(|&(_, loss)| loss < 0) {
             standings.rounds_on_map += 1;
         }
+        commands.extend(self.block_late_players(standings, &round_end.results));
 
         let match_over = self.match_over(standings);
         if match_over {
@@ -256,10 +270,31 @@ impl ReverseCup {
         commands
     }
 
-    /// The players who started in the first valid round take part in the match.
+    /// Players can take part until the first round counts.
+    fn registration_open(&self, standings: &Standings) -> bool {
+        standings.rounds_on_map == 0 && standings.maps_played == 0
+    }
+
+    /// Everyone who started a race takes part while registration is open.
     fn register(&self, standings: &mut Standings, results: &[RaceResult]) {
         for result in results.iter().filter(|r| r.started) {
-            standings.join(&result.account_id, &result.name).points = self.settings.starting_points;
+            if standings.player(&result.account_id).is_none() {
+                standings.join(&result.account_id, &result.name).points =
+                    self.settings.starting_points;
+            }
+        }
+    }
+
+    /// Players who could still take part are not blocked.
+    fn block_late_players(
+        &self,
+        standings: &mut Standings,
+        results: &[RaceResult],
+    ) -> Vec<Command> {
+        if self.registration_open(standings) {
+            Vec::new()
+        } else {
+            block_others(standings, results)
         }
     }
 
@@ -442,7 +477,7 @@ fn ordinal(n: u32) -> String {
 
 #[cfg(test)]
 mod tests {
-    use tm_driver_sdk::{FinishTimeout, Standing, testing::Harness};
+    use tm_driver_sdk::{FinishTimeout, Player, Standing, testing::Harness};
 
     use super::*;
 
@@ -520,10 +555,20 @@ mod tests {
     }
 
     /// A match whose participants already reached these standings.
+    /// A match whose participants already reached these standings. A map was played
+    /// already, so registration is closed.
     fn playing(settings: &str, players: Vec<Standing>) -> Harness<ReverseCup> {
         let mut harness = started(settings);
         harness.standings.players = players;
+        harness.standings.maps_played = 1;
         harness
+    }
+
+    fn race_start(account_id: &str) -> Event {
+        Event::RaceStart(Player {
+            account_id: account_id.into(),
+            name: account_id.into(),
+        })
     }
 
     fn status(harness: &Harness<ReverseCup>, account_id: &str) -> (Status, i32) {
@@ -614,6 +659,30 @@ mod tests {
     }
 
     #[test]
+    fn players_take_part_from_their_first_race() {
+        let mut harness = started("");
+        assert!(harness.step(race_start("a")).is_empty());
+        harness.step(race_start("b"));
+        assert_eq!(status(&harness, "a"), (Status::Playing, 100));
+        assert_eq!(harness.standing("a").rank, 1);
+        assert_eq!(harness.standings.info, "2 left, 0 / 5 rounds");
+
+        harness.step(round_end(vec![finish("a", 30_000), finish("b", 31_000)]));
+        assert_eq!(status(&harness, "b"), (Status::Playing, 92));
+
+        // The first round counted, so later players do not take part anymore.
+        harness.step(race_start("c"));
+        assert!(harness.standings.player("c").is_none());
+        let commands = harness.step(round_end(vec![
+            finish("c", 29_000),
+            finish("a", 30_000),
+            finish("b", 31_000),
+        ]));
+        assert_eq!(blocked(&commands), ["c"]);
+        assert_eq!(harness.standing("c").status, Status::Spectator);
+    }
+
+    #[test]
     fn forced_rounds_do_not_count() {
         let forced = |results| {
             Event::RoundEnd(RoundEnd {
@@ -621,9 +690,16 @@ mod tests {
                 results,
             })
         };
+        // Players who started take part, but nobody loses points and nobody is blocked
+        // while registration is open.
         let mut harness = started("");
-        assert!(harness.step(forced(vec![finish("a", 30_000)])).is_empty());
-        assert!(harness.standings.players.is_empty());
+        assert!(
+            harness
+                .step(forced(vec![finish("a", 30_000), spectator("s")]))
+                .is_empty()
+        );
+        assert_eq!(status(&harness, "a"), (Status::Playing, 100));
+        assert!(harness.standings.player("s").is_none());
 
         let mut harness = playing("", vec![alive("a", 50)]);
         let commands = harness.step(forced(vec![finish("a", 30_000), finish("c", 31_000)]));

@@ -46,6 +46,6 @@ fn clear(standings: &mut Standings, event: &Event) {
             }
         }
         Event::MapEnd => standings.maps_played = standings.maps_played.saturating_add(1),
-        Event::RoundStart | Event::MatchEnd => {}
+        Event::RoundStart | Event::RaceStart(_) | Event::MatchEnd => {}
     }
 }

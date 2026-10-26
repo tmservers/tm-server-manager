@@ -236,6 +236,8 @@ impl DriverEngine {
             time_attack: false,
             session: None,
             last_hold: None,
+            names: BTreeMap::new(),
+            in_round: false,
             round_progress: BTreeMap::new(),
             round_results: None,
             poisoned: false,
@@ -278,6 +280,10 @@ pub struct Driver {
     session: Option<i32>,
     /// Commands for the last hold in case the modescript asks again.
     last_hold: Option<(u32, Vec<DriverCommand>)>,
+    /// Names of the players from the scores, so race starts carry them.
+    names: BTreeMap<String, String>,
+    /// A round runs, from its start to its end hold. Warmup races are outside.
+    in_round: bool,
     /// Players who started a race in the current round and how many checkpoints
     /// they passed in their last race.
     round_progress: BTreeMap<String, u32>,
@@ -328,11 +334,26 @@ impl Driver {
             }
             Event::StartRoundStart(_) => {
                 self.round_progress.clear();
+                self.in_round = true;
                 self.step(wit::Event::RoundStart)
             }
             Event::StartLine(start_line) => {
-                self.round_progress.insert(start_line.account_id.clone(), 0);
-                Ok(DriverReply::default())
+                let first = self
+                    .round_progress
+                    .insert(start_line.account_id.clone(), 0)
+                    .is_none();
+                // Time attack rounds start players again and again.
+                if !first || !self.in_round {
+                    return Ok(DriverReply::default());
+                }
+                self.step(wit::Event::RaceStart(wit::Player {
+                    account_id: start_line.account_id.clone(),
+                    name: self
+                        .names
+                        .get(&start_line.account_id)
+                        .cloned()
+                        .unwrap_or_default(),
+                }))
             }
             Event::WayPoint(way_point) => {
                 // Counts from 0 for the first checkpoint.
@@ -343,8 +364,15 @@ impl Driver {
                 Ok(DriverReply::default())
             }
             Event::EndMatchStart(_) => self.step(wit::Event::MatchEnd),
-            Event::Scores(scores) if scores.section == "PreEndRound" => {
-                self.round_results = Some(convert::race_results(scores, &self.round_progress));
+            Event::Scores(scores) => {
+                // The modescript also sends the scores when a round starts, before the races.
+                for player in &scores.players {
+                    self.names
+                        .insert(player.account_id.clone(), player.name.clone());
+                }
+                if scores.section == "PreEndRound" {
+                    self.round_results = Some(convert::race_results(scores, &self.round_progress));
+                }
                 Ok(DriverReply::default())
             }
             Event::DriverHold(hold) => self.hold(hold),
@@ -378,6 +406,8 @@ impl Driver {
             }
         }
 
+        // The script waits between rounds.
+        self.in_round = false;
         let event = match hold.section {
             DriverSection::MapStart => wit::Event::MapStart,
             DriverSection::RoundEnd => wit::Event::RoundEnd(wit::RoundEnd {
@@ -479,7 +509,7 @@ fn clear(standings: &mut wit::Standings, event: &wit::Event) {
             }
         }
         wit::Event::MapEnd => standings.maps_played = standings.maps_played.saturating_add(1),
-        wit::Event::RoundStart | wit::Event::MatchEnd => {}
+        wit::Event::RoundStart | wit::Event::RaceStart(_) | wit::Event::MatchEnd => {}
     }
 }
 

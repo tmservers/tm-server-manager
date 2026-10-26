@@ -89,6 +89,12 @@ impl Mode for Rounds {
                     Vec::new()
                 }
             }
+            // Everyone who races shows up in the standings before the first round ends.
+            Event::RaceStart(player) => {
+                standings.join(&player.account_id, &player.name);
+                standings.rank();
+                Vec::new()
+            }
             Event::MatchStart | Event::RoundStart | Event::MatchEnd => Vec::new(),
         }
     }
@@ -186,7 +192,7 @@ impl Rounds {
 
 #[cfg(test)]
 mod tests {
-    use tm_driver_sdk::{FinishTimeout, Status, testing::Harness};
+    use tm_driver_sdk::{FinishTimeout, Player, Status, testing::Harness};
 
     use super::*;
 
@@ -286,6 +292,21 @@ mod tests {
 
         assert_eq!(scores(&harness), [("b", 1, 16, 10), ("a", 2, 10, 0)]);
         assert_eq!(harness.standing("b").map_points, 16);
+    }
+
+    #[test]
+    fn players_show_up_when_they_start() {
+        let mut harness = started("");
+        assert!(
+            harness
+                .step(Event::RaceStart(Player {
+                    account_id: "a".into(),
+                    name: "$f00a".into(),
+                }))
+                .is_empty()
+        );
+        assert_eq!(scores(&harness), [("a", 1, 0, 0)]);
+        assert_eq!(harness.standing("a").name, "$f00a");
     }
 
     #[test]

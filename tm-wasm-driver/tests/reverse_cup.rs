@@ -5,7 +5,8 @@ mod common;
 use std::sync::OnceLock;
 
 use common::{
-    hold, match_start, ranking, round_start, scores, start_line, way_point, without_standings,
+    hold, match_start, publishes_standings, ranking, round_start, round_start_scores, scores,
+    start_line, way_point, without_standings,
 };
 use tm_server_types::{
     event::{DriverPlayerResult, DriverRoundResult, DriverSection, Event},
@@ -180,6 +181,42 @@ fn plays_a_match() {
         ),
         [DriverCommand::EndMatch, DriverCommand::Continue(5)]
     );
+}
+
+#[test]
+fn standings_show_the_players_once_they_start() {
+    let engine = DriverEngine::new(DriverLimits::default()).unwrap();
+    let module = engine.compile(reverse_cup_wasm()).unwrap();
+    let mut driver = engine.instantiate(&module, SETTINGS).unwrap();
+
+    driver.handle(&match_start()).unwrap();
+    driver.handle(&hold(1, DriverSection::MapStart)).unwrap();
+    // Warmup races happen outside of rounds.
+    driver.handle(&start_line("a")).unwrap();
+    assert!(driver.standings().players.is_empty());
+
+    driver.handle(&round_start(1)).unwrap();
+    driver
+        .handle(&round_start_scores(&["a", "b", "s"]))
+        .unwrap();
+    assert!(publishes_standings(
+        &driver.handle(&start_line("a")).unwrap().commands
+    ));
+    driver.handle(&start_line("b")).unwrap();
+    // Starting again, e.g. in time attack rounds, changes nothing.
+    assert_eq!(
+        driver.handle(&start_line("a")).unwrap(),
+        DriverReply::default()
+    );
+
+    assert_eq!(
+        ranking(&driver),
+        [
+            ("a".into(), 1, DriverStatus::Playing, 10, 0),
+            ("b".into(), 1, DriverStatus::Playing, 10, 0),
+        ]
+    );
+    assert_eq!(driver.standings().info, "2 left, 0 / 5 rounds");
 }
 
 #[test]

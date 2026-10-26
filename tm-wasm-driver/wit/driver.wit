@@ -25,6 +25,12 @@ interface types {
         best-checkpoints: list<u32>,
     }
 
+    record player {
+        account-id: string,
+        /// Empty if the host did not get the name from the scores yet.
+        name: string,
+    }
+
     record round-end {
         /// The round was forced to end or skipped (e.g. after a pause) and should not count.
         forced: bool,
@@ -35,11 +41,15 @@ interface types {
     /// Everything a mode gets told about.
     ///
     /// The server waits for the commands of map-start, round-end and map-end
-    /// before it continues. match-start, round-start and match-end are informative.
+    /// before it continues. match-start, round-start, race-start and match-end are
+    /// informative.
     variant event {
         match-start,
         map-start,
         round-start,
+        /// A player started their first race of the current round, e.g. so the
+        /// standings show everyone who plays before the first round ends.
+        race-start(player),
         round-end(round-end),
         map-end,
         match-end,

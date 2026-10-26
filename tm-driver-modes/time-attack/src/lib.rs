@@ -75,6 +75,12 @@ impl Mode for TimeAttack {
                     Vec::new()
                 }
             }
+            // Everyone who races shows up in the standings before the first round ends.
+            Event::RaceStart(player) => {
+                standings.join(&player.account_id, &player.name);
+                standings.rank();
+                Vec::new()
+            }
             Event::MatchStart | Event::RoundStart | Event::MatchEnd => Vec::new(),
         }
     }

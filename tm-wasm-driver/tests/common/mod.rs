@@ -99,9 +99,19 @@ pub fn way_point(account_id: &str, checkpoint_in_race: u32) -> Event {
 /// The scores the modescript sends right before the round end hold.
 /// Every player has the time of the last and of the best race in milliseconds, -1 for none.
 pub fn scores(players: &[(&str, i32, i32)]) -> Event {
+    scores_of_section("PreEndRound", players)
+}
+
+/// The scores the modescript sends when a round starts, so the host knows the names.
+pub fn round_start_scores(players: &[&str]) -> Event {
+    let players: Vec<(&str, i32, i32)> = players.iter().map(|&p| (p, -1, -1)).collect();
+    scores_of_section("", &players)
+}
+
+fn scores_of_section(section: &str, players: &[(&str, i32, i32)]) -> Event {
     Event::Scores(Scores {
         response_id: String::new(),
-        section: "PreEndRound".into(),
+        section: section.into(),
         use_teams: false,
         winner_team: -1,
         winner_player: String::new(),
