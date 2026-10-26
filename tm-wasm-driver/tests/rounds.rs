@@ -193,7 +193,7 @@ fn resumes_by_replaying_the_events() {
 
     // The bridge went away before the server got the reply to the last hold.
     drop(driver);
-    let mut resumed = engine.replay(&module, POINTS_LIMIT, &events).unwrap();
+    let mut resumed = engine.replay(&module, POINTS_LIMIT, &[], &events).unwrap();
 
     // The modescript asks again and gets the same commands without deciding twice.
     resumed.handle(&scores(&[("a", 30_000, 30_000)])).unwrap();

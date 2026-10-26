@@ -164,6 +164,7 @@ impl ModeScriptMethodsXmlRpc for TrackmaniaServer {
                 DriverCall::ChatSendServerMessage(message) => {
                     self.chat_send_server_massage(message).await?
                 }
+                DriverCall::SetNextMapIdent(uid) => self.call("SetNextMapIdent", uid).await?,
             };
         }
         Ok(())
@@ -333,7 +334,7 @@ impl XmlRpcMethods for TrackmaniaServer {
     }
 
     async fn get_map_list(&self, max: i32, start: i32) -> Result<Vec<MapInfo>, ClientError> {
-        self.call("GetMapList", ()).await
+        self.call("GetMapList", (max, start)).await
     }
 
     async fn remove_map(&self, map_file: impl Into<String>) -> Result<bool, ClientError> {

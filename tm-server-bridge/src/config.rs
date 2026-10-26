@@ -24,7 +24,9 @@ pub fn metadata_update(_: &EventContext, new_metadata: &EventRawServerState) {
 
         // The mode has to be ready before the driver modescript starts sending callbacks.
         match config.get_mode() {
-            ModeSettingsV2::Driver(driver_config) => driver::load(driver_config).await,
+            ModeSettingsV2::Driver(driver_config) => {
+                driver::load(driver_config, config.get_maps().maps()).await
+            }
             _ => driver::unload(),
         }
 

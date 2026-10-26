@@ -9,6 +9,8 @@ impl Default for Standings {
             players: Vec::new(),
             rounds_on_map: 0,
             maps_played: 0,
+            map_name: String::new(),
+            map_count: 0,
             info: String::new(),
         }
     }

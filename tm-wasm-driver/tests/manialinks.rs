@@ -7,11 +7,13 @@ use std::{collections::BTreeSet, path::PathBuf};
 use tm_server_types::method::{DriverStanding, DriverStandings, DriverStatus};
 
 /// How the standings structs of a manialink declare their members.
-const MEMBERS: [&str; 12] = [
+const MEMBERS: [&str; 14] = [
     "Text title;",
     "Text info;",
     "Integer rounds_on_map;",
     "Integer maps_played;",
+    "Text map_name;",
+    "Integer map_count;",
     "K_Standing[] players;",
     "Text account_id;",
     "Text name;",

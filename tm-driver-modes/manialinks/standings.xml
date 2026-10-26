@@ -90,6 +90,8 @@
 	Text info;
 	Integer rounds_on_map;
 	Integer maps_played;
+	Text map_name;
+	Integer map_count;
 	K_Standing[] players;
 }
 

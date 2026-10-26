@@ -4,9 +4,10 @@
 use std::{path::PathBuf, process::Command};
 
 use tm_server_types::{
-    base::{Player, RoundTime},
+    base::{Map, Player, RoundTime},
     event::{
-        DriverHold, DriverSection, Event, Scores, StartLine, StartMatch, StartRound, WayPoint,
+        DriverHold, DriverSection, Event, Scores, StartLine, StartMap, StartMatch, StartRound,
+        WayPoint,
     },
     method::{DriverCommand, DriverStatus},
 };
@@ -63,6 +64,34 @@ pub fn forced_round_end(seq: u32) -> Event {
 
 pub fn match_start() -> Event {
     Event::StartMatchStart(StartMatch { count: 1, time: 0 })
+}
+
+/// The standard callback before the map start hold, the map is named after its uid.
+pub fn map_start(uid: &str) -> Event {
+    Event::StartMapStart(StartMap {
+        count: 1,
+        valid: 1,
+        restarted: false,
+        time: 0,
+        map: Map {
+            uid: uid.into(),
+            name: format!("Map {uid}"),
+            filename: format!("{uid}.Map.Gbx"),
+            author_account_id: String::new(),
+            author_nickname: String::new(),
+            environment: "Stadium".into(),
+            mood: String::new(),
+            bronze_time: 0,
+            silver_time: 0,
+            gold_time: 0,
+            author_time: 30_000,
+            copperprice: 0,
+            lap_race: false,
+            number_laps: 0,
+            map_type: r"TrackMania\TM_Race".into(),
+            map_style: String::new(),
+        },
+    })
 }
 
 pub fn round_start(count: u32) -> Event {

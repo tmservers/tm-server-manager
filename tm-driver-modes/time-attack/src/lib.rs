@@ -16,8 +16,9 @@ tm_driver_sdk::export_mode!(TimeAttack);
 pub struct Settings {
     /// How long every map is played in milliseconds.
     pub time_limit_ms: u32,
-    /// Maps played in the match. 0 means no limit.
-    pub maps_per_match: u32,
+    /// Maps played in the match. By default the playlist once, one map without a
+    /// playlist. 0 means no limit.
+    pub maps_per_match: Option<u32>,
     /// Points by rank at the end of every map. Ranks beyond the list get the last value.
     /// When empty the best of N finishers gets N points, the second N - 1 and so on.
     pub points_repartition: Vec<i32>,
@@ -27,7 +28,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             time_limit_ms: 300_000,
-            maps_per_match: 1,
+            maps_per_match: None,
             points_repartition: Vec::new(),
         }
     }
@@ -66,9 +67,8 @@ impl Mode for TimeAttack {
             }
             Event::RoundEnd(round_end) => self.round_end(standings, round_end),
             Event::MapEnd => {
-                if self.settings.maps_per_match > 0
-                    && standings.maps_played >= self.settings.maps_per_match
-                {
+                let maps = maps_per_match(self.settings.maps_per_match, standings);
+                if maps > 0 && standings.maps_played >= maps {
                     standings.crown_leaders();
                     vec![Command::EndMatch]
                 } else {
@@ -125,9 +125,9 @@ impl TimeAttack {
 
     fn info(&self, standings: &Standings) -> String {
         let map = standings.maps_played + 1;
-        match self.settings.maps_per_match {
+        match maps_per_match(self.settings.maps_per_match, standings) {
             0 => format!("Map {map}"),
-            limit => format!("Map {map} / {limit}"),
+            maps => format!("Map {map} / {maps}"),
         }
     }
 
@@ -142,6 +142,11 @@ impl TimeAttack {
             .copied()
             .unwrap_or(0)
     }
+}
+
+/// The setting or the maps of the playlist.
+fn maps_per_match(setting: Option<u32>, standings: &Standings) -> u32 {
+    setting.unwrap_or(standings.map_count.max(1))
 }
 
 #[cfg(test)]
@@ -269,6 +274,22 @@ mod tests {
         assert_eq!(harness.step(Event::MapEnd), [Command::EndMatch]);
         assert_eq!(harness.standing("a").status, Status::Winner);
         assert_eq!(harness.standing("b").status, Status::Winner);
+    }
+
+    #[test]
+    fn plays_the_playlist_once() {
+        let mut harness = Harness::<TimeAttack>::new("").unwrap();
+        harness.map_count = 3;
+        harness.step(Event::MatchStart);
+        harness.step(Event::MapStart);
+        assert_eq!(harness.standings.info, "Map 1 / 3");
+        for _ in 0..2 {
+            harness.step(round_end(vec![finish("a", 40_000)]));
+            assert!(harness.step(Event::MapEnd).is_empty());
+            harness.step(Event::MapStart);
+        }
+        harness.step(round_end(vec![finish("a", 40_000)]));
+        assert_eq!(harness.step(Event::MapEnd), [Command::EndMatch]);
     }
 
     #[test]

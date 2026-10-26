@@ -41,7 +41,8 @@
 <frame id="Frame_ScoresTable" pos="-90 68" hidden="1">
 	<quad class="header" size="180 11"/>
 	<label id="Label_Title" class="title" pos="4 -5.5" size="110 8" valign="center2"/>
-	<label id="Label_Info" class="info" pos="176 -5.5" size="70 6" halign="right" valign="center2"/>
+	<label id="Label_Map" class="info" pos="176 -3.6" size="70 4" halign="right" valign="center2"/>
+	<label id="Label_Info" class="column" pos="176 -7.8" size="70 4" halign="right" valign="center2"/>
 	<quad class="accent" pos="0 -11" size="180 0.6"/>
 	<quad class="panel" pos="0 -11.6" size="180 120.4"/>
 
@@ -218,6 +219,8 @@
 	Text info;
 	Integer rounds_on_map;
 	Integer maps_played;
+	Text map_name;
+	Integer map_count;
 	K_Standing[] players;
 }
 
@@ -359,6 +362,7 @@ Void Update(Text _Standings, Text _Watched) {
 
 	Frame_ScoresTable.Visible = True;
 	SetText(Frame_ScoresTable, "Label_Title", Standings.title);
+	SetText(Frame_ScoresTable, "Label_Map", Standings.map_name);
 	SetText(Frame_ScoresTable, "Label_Info", Standings.info);
 	SetVisible(Frame_ScoresTable, "Label_Empty", Standings.players.count == 0);
 

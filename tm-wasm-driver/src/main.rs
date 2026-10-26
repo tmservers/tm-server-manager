@@ -10,9 +10,14 @@
 //! `tm-driver-modes`, which gets built first, or the path of a `.wasm` file. Settings are inline
 //! json or the path of a json file.
 //!
+//! The playlist starts as the map list of the server. The driver plays it in order and
+//! starts every match with its first map.
+//!
 //! Commands while it runs:
 //! - `load <mode> [settings]` starts a mode with a fresh state.
 //! - `reload` builds and loads the last mode again.
+//! - `maps` shows the playlist. `maps <map> ...` plays these maps from now on, given by their
+//!   uid or their file in the Maps folder of the server, which gets added to its map list.
 //! - `script` installs the driver modescript again, which starts a new match.
 //! - `next` ends the map.
 //! - `quit`
@@ -34,6 +39,7 @@ use tm_server_controller::{
     method::{ModeScriptMethodsXmlRpc, XmlRpcMethods},
 };
 use tm_server_types::{
+    base::MapInfo,
     config::Driver as DriverConfig,
     event::Event,
     method::{DriverCommand, DriverLayer, DriverStandings, DriverStatus},
@@ -42,7 +48,7 @@ use tm_wasm_driver::{Driver, DriverEngine, DriverLimits};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tracing_subscriber::{EnvFilter, filter::LevelFilter};
 
-const HELP: &str = "Commands: load <mode> [settings], reload, script, next, quit";
+const HELP: &str = "Commands: load <mode> [settings], reload, maps [map ...], script, next, quit";
 
 struct Active {
     /// The arguments of the `load` that started this mode.
@@ -51,6 +57,9 @@ struct Active {
 }
 
 type Shared = Arc<Mutex<Option<Active>>>;
+
+/// Uids of the maps every loaded mode plays.
+type Playlist = Arc<Mutex<Vec<String>>>;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
@@ -87,10 +96,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let active = Shared::default();
     drive(server, active.clone(), layers.clone());
 
+    let playlist = Playlist::default();
+    match server_maps(server).await {
+        Ok(maps) => {
+            *playlist.lock().unwrap() = maps.into_iter().map(|map| map.uid).collect();
+            tracing::info!(
+                "The playlist has the {} maps of the server.",
+                playlist.lock().unwrap().len()
+            );
+        }
+        Err(error) => tracing::warn!("{error}"),
+    }
+
     // The mode has to be ready before the modescript starts sending callbacks.
     let source = std::env::args().skip(1).collect::<Vec<_>>().join(" ");
     if !source.is_empty()
-        && let Err(error) = load(engine, server, &active, &layers, &source).await
+        && let Err(error) = load(engine, server, &active, &layers, &playlist, &source).await
     {
         tracing::error!("{error}");
     }
@@ -107,14 +128,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let (command, arguments) = line.split_once(' ').unwrap_or((line, ""));
         let result = match command {
             "" => Ok(()),
-            "load" => load(engine, server, &active, &layers, arguments).await,
+            "load" => load(engine, server, &active, &layers, &playlist, arguments).await,
             "reload" => {
                 let source = active.lock().unwrap().as_ref().map(|a| a.source.clone());
                 match source {
-                    Some(source) => load(engine, server, &active, &layers, &source).await,
+                    Some(source) => {
+                        load(engine, server, &active, &layers, &playlist, &source).await
+                    }
                     None => Err("No mode was loaded yet.".into()),
                 }
             }
+            "maps" => maps(server, &active, &playlist, arguments).await,
             "script" => install_script(server).await,
             "next" => server
                 .next_map()
@@ -192,6 +216,7 @@ async fn load(
     server: &TrackmaniaServer,
     active: &Shared,
     layers: &[DriverLayer],
+    playlist: &Playlist,
     source: &str,
 ) -> Result<(), String> {
     let source = source.trim();
@@ -205,9 +230,10 @@ async fn load(
     let wasm = build(mode).await?;
     let settings = read_settings(settings.trim())?;
     let module = engine.compile(&wasm).map_err(|e| e.to_string())?;
-    let driver = engine
+    let mut driver = engine
         .instantiate(&module, &settings)
         .map_err(|e| e.to_string())?;
+    driver.set_playlist(playlist.lock().unwrap().clone());
     *active.lock().unwrap() = Some(Active {
         source: source.into(),
         driver,
@@ -216,6 +242,74 @@ async fn load(
 
     // Ignored until the driver modescript runs, which shows them once it started.
     send(server, DriverCommand::show_layers(layers)).await;
+    Ok(())
+}
+
+async fn server_maps(server: &TrackmaniaServer) -> Result<Vec<MapInfo>, String> {
+    server
+        .get_map_list(-1, 0)
+        .await
+        .map_err(|e| format!("Could not get the maps of the server: {e}"))
+}
+
+/// Shows the playlist, or plays these maps from now on. A map is its uid or its file in
+/// the Maps folder of the server, which gets added to the map list of the server.
+async fn maps(
+    server: &TrackmaniaServer,
+    active: &Shared,
+    playlist: &Playlist,
+    arguments: &str,
+) -> Result<(), String> {
+    let mut server_list = server_maps(server).await?;
+    let wanted: Vec<&str> = arguments.split_whitespace().collect();
+    if wanted.is_empty() {
+        let current = playlist.lock().unwrap().clone();
+        for (index, uid) in current.iter().enumerate() {
+            let name = server_list
+                .iter()
+                .find(|map| &map.uid == uid)
+                .map_or("not on the server", |map| map.name.as_str());
+            tracing::info!("{}. {name} ({uid})", index + 1);
+        }
+        return Ok(());
+    }
+
+    let mut uids = Vec::new();
+    for map in wanted {
+        // The server separates folders with backslashes.
+        let file = map.replace('/', r"\");
+        let find = |list: &[MapInfo]| {
+            list.iter()
+                .find(|m| m.uid == map || m.file_name == file)
+                .map(|m| m.uid.clone())
+        };
+        let uid = match find(&server_list) {
+            Some(uid) => uid,
+            None => {
+                server
+                    .add_map(map)
+                    .await
+                    .map_err(|e| format!("Could not add {map} to the server: {e}"))?;
+                server_list = server_maps(server).await?;
+                find(&server_list).ok_or(format!("{map} is no map of the server"))?
+            }
+        };
+        uids.push(uid);
+    }
+
+    *playlist.lock().unwrap() = uids.clone();
+    if let Some(active) = active.lock().unwrap().as_mut() {
+        active.driver.set_playlist(uids.clone());
+    }
+    // The playlist starts right away.
+    let _: bool = server
+        .call("JumpToMapIdent", uids[0].clone())
+        .await
+        .map_err(|e| format!("Could not start the playlist: {e}"))?;
+    tracing::info!(
+        "Playing {} maps. `script` starts a new match with them.",
+        uids.len()
+    );
     Ok(())
 }
 

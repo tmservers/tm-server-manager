@@ -231,7 +231,7 @@ fn resumes_by_replaying_the_events() {
 
     let mut driver = engine.instantiate(&module, SETTINGS).unwrap();
     play(&mut driver, &events);
-    let mut resumed = engine.replay(&module, SETTINGS, &events).unwrap();
+    let mut resumed = engine.replay(&module, SETTINGS, &[], &events).unwrap();
 
     // b only survived the second round thanks to the checkpoints, so both end the
     // match the same way.

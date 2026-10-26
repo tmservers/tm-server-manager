@@ -98,6 +98,10 @@ interface types {
         rounds-on-map: u32,
         /// Maps that ended in this match. The host counts the ending map before map-end.
         maps-played: u32,
+        /// Name of the current map. Set by the host.
+        map-name: string,
+        /// Maps in the playlist of the match, 0 without one. Set by the host.
+        map-count: u32,
         /// Progress of the match shown with the standings, e.g. `2 / 5 rounds`.
         info: string,
     }
@@ -141,6 +145,9 @@ interface types {
         end-map,
         /// Ends the match once the current hold continues.
         end-match,
+        /// Plays this map of the playlist next, counted from 0. Without it the host
+        /// plays the playlist in order and starts every match with its first map.
+        set-next-map(u32),
         /// Creates or replaces a manialink layer that is always shown. The scores table
         /// is chosen with the manialinks of the config.
         set-layer(layer),

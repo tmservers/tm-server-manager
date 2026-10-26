@@ -71,30 +71,46 @@ fn race_time(time: &RoundTime) -> Option<u32> {
     }
 }
 
-/// The commands of a mode for the server.
-pub(crate) fn commands(commands: Vec<Command>) -> Vec<DriverCommand> {
+/// The commands of a mode for the server. Maps are given by their place in the playlist.
+pub(crate) fn commands(commands: Vec<Command>, playlist: &[String]) -> Vec<DriverCommand> {
     commands
         .into_iter()
-        .map(|command| match command {
-            Command::SetRoundFormat(format) => DriverCommand::SetRoundFormat(round_format(format)),
-            Command::SetCanSpawn(CanSpawn {
-                account_id,
-                can_spawn,
-            }) => DriverCommand::SetCanSpawn(DriverCanSpawn {
-                account_id,
-                can_spawn,
-            }),
-            Command::EndMap => DriverCommand::EndMap,
-            Command::EndMatch => DriverCommand::EndMatch,
-            // The scores table is chosen with the manialinks of the config, not by modes.
-            Command::SetLayer(Layer { name, manialink }) => DriverCommand::SetLayer(DriverLayer {
-                name,
-                manialink,
-                kind: DriverLayerKind::Normal,
-            }),
-            Command::RemoveLayer(name) => DriverCommand::RemoveLayer(name),
-            Command::SetNetState(state) => DriverCommand::SetNetState(state),
-            Command::ChatMessage(message) => DriverCommand::ChatMessage(message),
+        .filter_map(|command| {
+            Some(match command {
+                Command::SetRoundFormat(format) => {
+                    DriverCommand::SetRoundFormat(round_format(format))
+                }
+                Command::SetCanSpawn(CanSpawn {
+                    account_id,
+                    can_spawn,
+                }) => DriverCommand::SetCanSpawn(DriverCanSpawn {
+                    account_id,
+                    can_spawn,
+                }),
+                Command::EndMap => DriverCommand::EndMap,
+                Command::EndMatch => DriverCommand::EndMatch,
+                Command::SetNextMap(index) => match playlist.get(index as usize) {
+                    Some(uid) => DriverCommand::SetNextMap(uid.clone()),
+                    None => {
+                        tracing::warn!(
+                            "The mode chose map {index} of a playlist with {} maps.",
+                            playlist.len()
+                        );
+                        return None;
+                    }
+                },
+                // The scores table is chosen with the manialinks of the config, not by modes.
+                Command::SetLayer(Layer { name, manialink }) => {
+                    DriverCommand::SetLayer(DriverLayer {
+                        name,
+                        manialink,
+                        kind: DriverLayerKind::Normal,
+                    })
+                }
+                Command::RemoveLayer(name) => DriverCommand::RemoveLayer(name),
+                Command::SetNetState(state) => DriverCommand::SetNetState(state),
+                Command::ChatMessage(message) => DriverCommand::ChatMessage(message),
+            })
         })
         .collect()
 }
@@ -116,6 +132,8 @@ pub(crate) fn empty_standings() -> Standings {
         players: Vec::new(),
         rounds_on_map: 0,
         maps_played: 0,
+        map_name: String::new(),
+        map_count: 0,
         info: String::new(),
     }
 }
@@ -131,6 +149,8 @@ pub(crate) fn standings(title: &str, standings: &Standings) -> DriverStandings {
         info: standings.info.clone(),
         rounds_on_map: standings.rounds_on_map,
         maps_played: standings.maps_played,
+        map_name: standings.map_name.clone(),
+        map_count: standings.map_count,
         players,
     }
 }
@@ -257,6 +277,25 @@ mod tests {
     }
 
     #[test]
+    fn maps_are_chosen_from_the_playlist() {
+        let playlist = ["first".to_string(), "second".to_string()];
+        assert_eq!(
+            commands(
+                vec![
+                    Command::SetNextMap(1),
+                    Command::SetNextMap(2),
+                    Command::EndMap
+                ],
+                &playlist
+            ),
+            [
+                DriverCommand::SetNextMap("second".into()),
+                DriverCommand::EndMap
+            ]
+        );
+    }
+
+    #[test]
     fn round_formats_keep_their_values() {
         assert_eq!(
             round_format(RoundFormat::SingleAttempt(FinishTimeout::Milliseconds(
@@ -289,6 +328,8 @@ mod tests {
                 "info": "1 / 5 rounds",
                 "rounds_on_map": 1,
                 "maps_played": 0,
+                "map_name": "",
+                "map_count": 0,
                 "players": [
                     {"account_id": "first", "name": "first", "rank": 1, "status": "winner", "points": 10, "map_points": 10, "round_points": 10},
                     {"account_id": "second", "name": "second", "rank": 2, "status": "last_chance", "points": -6, "map_points": -6, "round_points": -6},

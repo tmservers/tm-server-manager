@@ -6,6 +6,9 @@ use crate::{Command, Event, Mode, Standing, Standings};
 pub struct Harness<M> {
     pub mode: M,
     pub standings: Standings,
+    /// What the host puts into the standings before every event.
+    pub map_name: String,
+    pub map_count: u32,
 }
 
 impl<M: Mode> Harness<M> {
@@ -13,12 +16,16 @@ impl<M: Mode> Harness<M> {
         Ok(Self {
             mode: M::init(settings)?,
             standings: Standings::default(),
+            map_name: String::new(),
+            map_count: 0,
         })
     }
 
     /// Steps the mode after clearing the standings the way the host does.
     pub fn step(&mut self, event: Event) -> Vec<Command> {
         clear(&mut self.standings, &event);
+        self.standings.map_name = self.map_name.clone();
+        self.standings.map_count = self.map_count;
         self.mode.step(&mut self.standings, event)
     }
 

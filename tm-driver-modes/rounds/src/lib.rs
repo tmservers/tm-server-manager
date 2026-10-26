@@ -22,8 +22,9 @@ pub struct Settings {
     pub points_repartition: Vec<i32>,
     /// Valid rounds played on every map. 0 means no limit.
     pub rounds_per_map: u32,
-    /// Maps played in the match. 0 means no limit.
-    pub maps_per_match: u32,
+    /// Maps played in the match. By default the playlist once, one map without a
+    /// playlist. 0 means no limit.
+    pub maps_per_match: Option<u32>,
     /// The match ends once a player reached this many points. 0 disables it.
     pub points_limit: i32,
     /// Keep playing while the leading players are tied.
@@ -36,7 +37,7 @@ impl Default for Settings {
         Self {
             points_repartition: vec![10, 6, 4, 3, 2, 1],
             rounds_per_map: 5,
-            maps_per_match: 1,
+            maps_per_match: None,
             points_limit: 0,
             use_tie_break: true,
             finish_timeout: FinishTimeoutSetting::Automatic,
@@ -146,9 +147,15 @@ impl Rounds {
     }
 
     fn info(&self, standings: &Standings) -> String {
-        match self.settings.rounds_per_map {
+        let rounds = match self.settings.rounds_per_map {
             0 => format!("{} rounds", standings.rounds_on_map),
             limit => format!("{} / {limit} rounds", standings.rounds_on_map),
+        };
+        let map = standings.maps_played + 1;
+        match maps_per_match(self.settings.maps_per_match, standings) {
+            1 => rounds,
+            0 => format!("Map {map}, {rounds}"),
+            maps => format!("Map {map} / {maps}, {rounds}"),
         }
     }
 
@@ -180,14 +187,18 @@ impl Rounds {
         let points_limit = self.points_limit(standings);
         if points_limit == PointsLimit::Reached {
             true
-        } else if self.settings.maps_per_match > 0 {
-            standings.maps_played >= self.settings.maps_per_match
-                && points_limit != PointsLimit::Tie
+        } else if let maps @ 1.. = maps_per_match(self.settings.maps_per_match, standings) {
+            standings.maps_played >= maps && points_limit != PointsLimit::Tie
         } else {
             // Without any limit the match ends after the first map.
             self.settings.rounds_per_map == 0 && self.settings.points_limit <= 0
         }
     }
+}
+
+/// The setting or the maps of the playlist.
+fn maps_per_match(setting: Option<u32>, standings: &Standings) -> u32 {
+    setting.unwrap_or(standings.map_count.max(1))
 }
 
 #[cfg(test)]
@@ -351,6 +362,21 @@ mod tests {
         assert_eq!(harness.standing("a").map_points, 0);
         harness.step(round_end(vec![finish("a", 1)]));
         assert_eq!(harness.standing("a").points, 20);
+        assert_eq!(harness.step(Event::MapEnd), [Command::EndMatch]);
+    }
+
+    #[test]
+    fn plays_the_playlist_once() {
+        let mut harness = Harness::<Rounds>::new(r#"{"rounds_per_map": 1}"#).unwrap();
+        harness.map_count = 2;
+        harness.step(Event::MatchStart);
+        harness.step(Event::MapStart);
+        assert_eq!(harness.standings.info, "Map 1 / 2, 0 / 1 rounds");
+        harness.step(round_end(vec![finish("a", 1)]));
+        assert!(harness.step(Event::MapEnd).is_empty());
+
+        harness.step(Event::MapStart);
+        harness.step(round_end(vec![finish("a", 1)]));
         assert_eq!(harness.step(Event::MapEnd), [Command::EndMatch]);
     }
 

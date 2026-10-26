@@ -98,11 +98,13 @@ fn report_round_result(round_result: DriverRoundResult) {
     tracing::info!("Round result of the driver: {round_result:?}");
 }
 
-/// Loads the mode of a driver configuration and shows its manialinks.
+/// Loads the mode of a driver configuration and shows its manialinks. The driver plays
+/// the map pool of the configuration in order.
 /// Has to happen before the driver modescript gets loaded so no callback is missed.
-pub async fn load(config: &DriverConfig) {
+pub async fn load(config: &DriverConfig, maps: Vec<String>) {
     match instantiate(config) {
-        Ok(driver) => {
+        Ok(mut driver) => {
+            driver.set_playlist(maps);
             tracing::info!("Loaded driver mode {}.", config.mode);
             let layers = load_layers(&config.manialinks);
 

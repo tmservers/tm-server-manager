@@ -194,9 +194,11 @@ impl DriverEngine {
         &self,
         module: &DriverModule,
         settings: &str,
+        playlist: &[String],
         events: impl IntoIterator<Item = &'a Event>,
     ) -> Result<Driver, DriverError> {
         let mut driver = self.instantiate(module, settings)?;
+        driver.set_playlist(playlist.iter().cloned());
         for event in events {
             driver.handle(event)?;
         }
@@ -236,6 +238,9 @@ impl DriverEngine {
             time_attack: false,
             session: None,
             last_hold: None,
+            playlist: Vec::new(),
+            map: None,
+            next_map_chosen: false,
             names: BTreeMap::new(),
             in_round: false,
             round_progress: BTreeMap::new(),
@@ -280,6 +285,12 @@ pub struct Driver {
     session: Option<i32>,
     /// Commands for the last hold in case the modescript asks again.
     last_hold: Option<(u32, Vec<DriverCommand>)>,
+    /// Uids of the maps the match plays in order.
+    playlist: Vec<String>,
+    /// Uid and name of the current map.
+    map: Option<(String, String)>,
+    /// The mode chose the next map since the current one started.
+    next_map_chosen: bool,
     /// Names of the players from the scores, so race starts carry them.
     names: BTreeMap<String, String>,
     /// A round runs, from its start to its end hold. Warmup races are outside.
@@ -307,6 +318,7 @@ impl Driver {
         matches!(
             event,
             Event::StartMatchStart(_)
+                | Event::StartMapStart(_)
                 | Event::StartRoundStart(_)
                 | Event::StartLine(_)
                 | Event::WayPoint(_)
@@ -331,6 +343,11 @@ impl Driver {
                 self.spawn_permissions.clear();
                 self.time_attack = false;
                 self.step(wit::Event::MatchStart)
+            }
+            Event::StartMapStart(start) => {
+                self.map = Some((start.map.uid.clone(), start.map.name.clone()));
+                self.next_map_chosen = false;
+                Ok(DriverReply::default())
             }
             Event::StartRoundStart(_) => {
                 self.round_progress.clear();
@@ -428,8 +445,22 @@ impl Driver {
         convert::standings(&self.name, &self.standings)
     }
 
+    /// The uids of the maps the match plays, e.g. the map pool of the config. The maps
+    /// have to be in the map list of the server. Set it before the first event, a
+    /// replay needs the same playlist.
+    pub fn set_playlist(&mut self, maps: impl IntoIterator<Item = impl Into<String>>) {
+        self.playlist = maps.into_iter().map(Into::into).collect();
+    }
+
     fn step(&mut self, event: wit::Event) -> Result<DriverReply, DriverError> {
         clear(&mut self.standings, &event);
+        // Only the host knows the map, the mode can not change it.
+        self.standings.map_name = self
+            .map
+            .as_ref()
+            .map(|(_, name)| name.clone())
+            .unwrap_or_default();
+        self.standings.map_count = self.playlist.len() as u32;
 
         self.prepare_call();
         let decision = match self
@@ -452,8 +483,12 @@ impl Driver {
                 _ => None,
             };
 
-        let mut commands = convert::commands(decision.commands);
+        let mut commands = convert::commands(decision.commands, &self.playlist);
         commands.retain(|command| match command {
+            DriverCommand::SetNextMap(_) => {
+                self.next_map_chosen = true;
+                true
+            }
             // Repeated permissions only cost calls to the server.
             DriverCommand::SetCanSpawn(DriverCanSpawn {
                 account_id,
@@ -471,6 +506,21 @@ impl Driver {
             _ => true,
         });
 
+        // Unless the mode chose, the playlist goes on in order and a new match starts
+        // with its first map.
+        if !self.next_map_chosen && !self.playlist.is_empty() {
+            let next = if commands.contains(&DriverCommand::EndMatch) {
+                Some(0)
+            } else if let wit::Event::MapStart = event {
+                Some(self.next_map_index())
+            } else {
+                None
+            };
+            if let Some(index) = next {
+                commands.push(DriverCommand::SetNextMap(self.playlist[index].clone()));
+            }
+        }
+
         let standings = serde_json::to_string(&self.standings())
             .expect("The standings only contain types json can represent");
         if self.published.as_ref() != Some(&standings) {
@@ -482,6 +532,19 @@ impl Driver {
             commands,
             round_result,
         })
+    }
+
+    /// The map after the current one in the playlist, the first one if the current
+    /// map is not part of it.
+    fn next_map_index(&self) -> usize {
+        let current = self
+            .map
+            .as_ref()
+            .and_then(|(uid, _)| self.playlist.iter().position(|map| map == uid));
+        match current {
+            Some(index) => (index + 1) % self.playlist.len(),
+            None => 0,
+        }
     }
 
     fn prepare_call(&mut self) {

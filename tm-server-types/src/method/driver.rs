@@ -18,6 +18,9 @@ pub enum DriverCommand {
     SetCanSpawn(DriverCanSpawn),
     /// Ends the map once the current hold continues.
     EndMap,
+    /// Plays the map with this uid after the current one. It has to be in the map
+    /// list of the server.
+    SetNextMap(String),
     /// Ends the match once the current hold continues.
     EndMatch,
     /// Creates or replaces a manialink layer.
@@ -48,6 +51,8 @@ pub enum DriverCall {
     NextMap,
     /// The standard `ChatSendServerMessage` method.
     ChatSendServerMessage(String),
+    /// The standard `SetNextMapIdent` method.
+    SetNextMapIdent(String),
 }
 
 impl DriverCall {
@@ -104,6 +109,7 @@ impl DriverCommand {
                 ],
             ),
             DriverCommand::EndMap => return DriverCall::NextMap,
+            DriverCommand::SetNextMap(uid) => return DriverCall::SetNextMapIdent(uid.clone()),
             DriverCommand::EndMatch => (Self::END_MATCH, Vec::new()),
             DriverCommand::SetLayer(layer) => (
                 Self::SET_LAYER,
@@ -270,6 +276,10 @@ pub struct DriverStandings {
     pub rounds_on_map: u32,
     /// Maps that ended in this match.
     pub maps_played: u32,
+    /// Name of the current map.
+    pub map_name: String,
+    /// Maps in the playlist of the match, 0 without one.
+    pub map_count: u32,
     /// Ordered by rank, unranked players last.
     pub players: Vec<DriverStanding>,
 }
@@ -321,9 +331,9 @@ mod tests {
     fn modescript(command: DriverCommand) -> (&'static str, Vec<String>) {
         match command.call() {
             DriverCall::ModeScript { method, params } => (method, params),
-            DriverCall::NextMap | DriverCall::ChatSendServerMessage(_) => {
-                panic!("Expected a modescript method")
-            }
+            DriverCall::NextMap
+            | DriverCall::ChatSendServerMessage(_)
+            | DriverCall::SetNextMapIdent(_) => panic!("Expected a modescript method"),
         }
     }
 
@@ -454,6 +464,10 @@ mod tests {
     #[test]
     fn standard_methods() {
         assert_eq!(DriverCommand::EndMap.call(), DriverCall::NextMap);
+        assert_eq!(
+            DriverCommand::SetNextMap("uid".into()).call(),
+            DriverCall::SetNextMapIdent("uid".into())
+        );
         assert_eq!(
             DriverCommand::ChatMessage("hi".into()).call(),
             DriverCall::ChatSendServerMessage("hi".into())
