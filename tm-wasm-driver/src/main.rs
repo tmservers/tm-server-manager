@@ -63,12 +63,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     let url = std::env::var("TM_SERVER_URL")
         .map_err(|_| "TM_SERVER_URL must be set, e.g. 127.0.0.1:5000")?;
-    let password = std::env::var("TM_SUPERADMIN_PASSWORD").unwrap_or("SuperAdmin".into());
 
     let server: &'static TrackmaniaServer = Box::leak(Box::new(TrackmaniaServer::new(url).await?));
     let _: bool = server.call("SetApiVersion", "2023-03-25").await?;
-    server.authenticate("SuperAdmin", password).await?;
+
+    server.authenticate("SuperAdmin", "SuperAdmin").await?;
+
+    let _: bool = server
+        .call(
+            "TriggerModeScriptEventArray",
+            ("XmlRpc.SetApiVersion", ["3.11"]),
+        )
+        .await?;
+
     server.enable_callbacks(true).await?;
+    server.enable_mode_script_callbacks(true).await?;
+
     tracing::info!("Connected to the server.");
 
     let engine: &'static DriverEngine =
