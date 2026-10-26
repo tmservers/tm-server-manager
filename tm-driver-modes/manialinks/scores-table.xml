@@ -1,60 +1,138 @@
 <manialink name="Driver_ScoresTable" version="3">
 <framemodel id="Model_Row">
-	<quad id="Quad_Background" size="89 5" bgcolor="000000" opacity="0.4"/>
-	<label id="Label_Rank" pos="3.5 -2.5" size="6 4" halign="center" valign="center2" textsize="1.5" textfont="GameFontSemiBold" textcolor="ffffff"/>
-	<label id="Label_Name" pos="8 -2.5" size="48 4" valign="center2" textsize="1.5" textcolor="ffffff"/>
-	<label id="Label_RoundPoints" pos="68 -2.5" size="10 4" halign="right" valign="center2" textsize="1.2" textcolor="66ff99"/>
-	<label id="Label_Points" pos="87 -2.5" size="16 4" halign="right" valign="center2" textsize="1.5" textfont="GameFontSemiBold" textcolor="ffffff"/>
-	<label id="Label_Status" pos="87 -2.5" size="22 4" halign="right" valign="center2" textsize="1.2" textfont="GameFontSemiBold" textcolor="ff5555" hidden="1"/>
+	<quad id="Quad_Background" size="176 5" bgcolor="000000" opacity="0.4"/>
+	<label id="Label_Rank" pos="4 -2.5" size="7 4" halign="center" valign="center2" textsize="1.5" textfont="GameFontSemiBold" textcolor="ffffff"/>
+	<label id="Label_ClubTag" pos="9 -2.5" size="14 4" valign="center2" textsize="1.5" textcolor="ffffff"/>
+	<label id="Label_Name" pos="24 -2.5" size="92 4" valign="center2" textsize="1.5" textcolor="ffffff"/>
+	<label id="Label_RoundPoints" pos="142 -2.5" size="14 4" halign="right" valign="center2" textsize="1.2" textcolor="66ff99"/>
+	<label id="Label_Points" pos="173 -2.5" size="24 4" halign="right" valign="center2" textsize="1.5" textfont="GameFontSemiBold" textcolor="ffffff"/>
+	<label id="Label_Status" pos="173 -2.5" size="30 4" halign="right" valign="center2" textsize="1.2" textfont="GameFontSemiBold" textcolor="ff0000" hidden="1"/>
+	<quad id="Quad_Button" z-index="1" size="176 5" bgcolor="ffffff" opacity="0" scriptevents="1"/>
 </framemodel>
 
-<framemodel id="Model_Header">
-	<label pos="3.5 -2" size="6 3" halign="center" valign="center2" textsize="0.8" textcolor="ffffff88" text="#"/>
-	<label pos="8 -2" size="30 3" valign="center2" textsize="0.8" textcolor="ffffff88" text="Player"/>
-	<label pos="68 -2" size="12 3" halign="right" valign="center2" textsize="0.8" textcolor="ffffff88" text="Round"/>
-	<label pos="87 -2" size="14 3" halign="right" valign="center2" textsize="0.8" textcolor="ffffff88" text="Points"/>
-</framemodel>
-
-<frame id="Frame_ScoresTable" pos="-95 60" hidden="1">
-	<quad size="190 112" bgcolor="000000" opacity="0.8"/>
-	<quad size="190 12" bgcolor="000000" opacity="0.6"/>
+<frame id="Frame_ScoresTable" pos="-90 66" hidden="1">
+	<quad size="180 130" bgcolor="000000" opacity="0.8"/>
+	<quad size="180 12" bgcolor="000000" opacity="0.6"/>
 	<label id="Label_Title" pos="4 -6" size="110 8" valign="center2" textsize="4" textfont="GameFontBlack" textcolor="ffffff"/>
-	<label id="Label_Info" pos="186 -6" size="70 6" halign="right" valign="center2" textsize="1.5" textcolor="ffffffaa"/>
-	<label id="Label_Empty" pos="95 -50" size="120 6" halign="center" valign="center2" textsize="2" textcolor="ffffff88" text="The standings start with the first round." hidden="1"/>
-	<frameinstance modelid="Model_Header" pos="3 -13"/>
-	<frameinstance modelid="Model_Header" pos="98 -13"/>
-	<frameinstance modelid="Model_Row" id="Row_0" pos="3 -18"/>
-	<frameinstance modelid="Model_Row" id="Row_1" pos="3 -23.5"/>
-	<frameinstance modelid="Model_Row" id="Row_2" pos="3 -29"/>
-	<frameinstance modelid="Model_Row" id="Row_3" pos="3 -34.5"/>
-	<frameinstance modelid="Model_Row" id="Row_4" pos="3 -40"/>
-	<frameinstance modelid="Model_Row" id="Row_5" pos="3 -45.5"/>
-	<frameinstance modelid="Model_Row" id="Row_6" pos="3 -51"/>
-	<frameinstance modelid="Model_Row" id="Row_7" pos="3 -56.5"/>
-	<frameinstance modelid="Model_Row" id="Row_8" pos="3 -62"/>
-	<frameinstance modelid="Model_Row" id="Row_9" pos="3 -67.5"/>
-	<frameinstance modelid="Model_Row" id="Row_10" pos="3 -73"/>
-	<frameinstance modelid="Model_Row" id="Row_11" pos="3 -78.5"/>
-	<frameinstance modelid="Model_Row" id="Row_12" pos="3 -84"/>
-	<frameinstance modelid="Model_Row" id="Row_13" pos="3 -89.5"/>
-	<frameinstance modelid="Model_Row" id="Row_14" pos="3 -95"/>
-	<frameinstance modelid="Model_Row" id="Row_15" pos="3 -100.5"/>
-	<frameinstance modelid="Model_Row" id="Row_16" pos="98 -18"/>
-	<frameinstance modelid="Model_Row" id="Row_17" pos="98 -23.5"/>
-	<frameinstance modelid="Model_Row" id="Row_18" pos="98 -29"/>
-	<frameinstance modelid="Model_Row" id="Row_19" pos="98 -34.5"/>
-	<frameinstance modelid="Model_Row" id="Row_20" pos="98 -40"/>
-	<frameinstance modelid="Model_Row" id="Row_21" pos="98 -45.5"/>
-	<frameinstance modelid="Model_Row" id="Row_22" pos="98 -51"/>
-	<frameinstance modelid="Model_Row" id="Row_23" pos="98 -56.5"/>
-	<frameinstance modelid="Model_Row" id="Row_24" pos="98 -62"/>
-	<frameinstance modelid="Model_Row" id="Row_25" pos="98 -67.5"/>
-	<frameinstance modelid="Model_Row" id="Row_26" pos="98 -73"/>
-	<frameinstance modelid="Model_Row" id="Row_27" pos="98 -78.5"/>
-	<frameinstance modelid="Model_Row" id="Row_28" pos="98 -84"/>
-	<frameinstance modelid="Model_Row" id="Row_29" pos="98 -89.5"/>
-	<frameinstance modelid="Model_Row" id="Row_30" pos="98 -95"/>
-	<frameinstance modelid="Model_Row" id="Row_31" pos="98 -100.5"/>
+	<label id="Label_Info" pos="176 -6" size="70 6" halign="right" valign="center2" textsize="1.5" textcolor="ffffffaa"/>
+
+	<frame pos="2 -13">
+		<label pos="4 -2" size="7 3" halign="center" valign="center2" textsize="0.8" textcolor="ffffff88" text="#"/>
+		<label pos="9 -2" size="14 3" valign="center2" textsize="0.8" textcolor="ffffff88" text="Club"/>
+		<label pos="24 -2" size="40 3" valign="center2" textsize="0.8" textcolor="ffffff88" text="Player"/>
+		<label pos="142 -2" size="14 3" halign="right" valign="center2" textsize="0.8" textcolor="ffffff88" text="Round"/>
+		<label pos="173 -2" size="24 3" halign="right" valign="center2" textsize="0.8" textcolor="ffffff88" text="Points"/>
+	</frame>
+
+	<label id="Label_Empty" pos="90 -60" size="120 6" halign="center" valign="center2" textsize="2" textcolor="ffffff88" text="The standings start with the first round." hidden="1"/>
+
+	<!-- 18 rows are visible, the mouse wheel scrolls through the others. -->
+	<frame id="Frame_Rows" pos="2 -18" size="176 99" scroll="1" scrollmax="0 0" scrollgrid="0 5.5">
+		<frameinstance modelid="Model_Row" id="Row_0" pos="0 0"/>
+		<frameinstance modelid="Model_Row" id="Row_1" pos="0 -5.5"/>
+		<frameinstance modelid="Model_Row" id="Row_2" pos="0 -11"/>
+		<frameinstance modelid="Model_Row" id="Row_3" pos="0 -16.5"/>
+		<frameinstance modelid="Model_Row" id="Row_4" pos="0 -22"/>
+		<frameinstance modelid="Model_Row" id="Row_5" pos="0 -27.5"/>
+		<frameinstance modelid="Model_Row" id="Row_6" pos="0 -33"/>
+		<frameinstance modelid="Model_Row" id="Row_7" pos="0 -38.5"/>
+		<frameinstance modelid="Model_Row" id="Row_8" pos="0 -44"/>
+		<frameinstance modelid="Model_Row" id="Row_9" pos="0 -49.5"/>
+		<frameinstance modelid="Model_Row" id="Row_10" pos="0 -55"/>
+		<frameinstance modelid="Model_Row" id="Row_11" pos="0 -60.5"/>
+		<frameinstance modelid="Model_Row" id="Row_12" pos="0 -66"/>
+		<frameinstance modelid="Model_Row" id="Row_13" pos="0 -71.5"/>
+		<frameinstance modelid="Model_Row" id="Row_14" pos="0 -77"/>
+		<frameinstance modelid="Model_Row" id="Row_15" pos="0 -82.5"/>
+		<frameinstance modelid="Model_Row" id="Row_16" pos="0 -88"/>
+		<frameinstance modelid="Model_Row" id="Row_17" pos="0 -93.5"/>
+		<frameinstance modelid="Model_Row" id="Row_18" pos="0 -99"/>
+		<frameinstance modelid="Model_Row" id="Row_19" pos="0 -104.5"/>
+		<frameinstance modelid="Model_Row" id="Row_20" pos="0 -110"/>
+		<frameinstance modelid="Model_Row" id="Row_21" pos="0 -115.5"/>
+		<frameinstance modelid="Model_Row" id="Row_22" pos="0 -121"/>
+		<frameinstance modelid="Model_Row" id="Row_23" pos="0 -126.5"/>
+		<frameinstance modelid="Model_Row" id="Row_24" pos="0 -132"/>
+		<frameinstance modelid="Model_Row" id="Row_25" pos="0 -137.5"/>
+		<frameinstance modelid="Model_Row" id="Row_26" pos="0 -143"/>
+		<frameinstance modelid="Model_Row" id="Row_27" pos="0 -148.5"/>
+		<frameinstance modelid="Model_Row" id="Row_28" pos="0 -154"/>
+		<frameinstance modelid="Model_Row" id="Row_29" pos="0 -159.5"/>
+		<frameinstance modelid="Model_Row" id="Row_30" pos="0 -165"/>
+		<frameinstance modelid="Model_Row" id="Row_31" pos="0 -170.5"/>
+		<frameinstance modelid="Model_Row" id="Row_32" pos="0 -176"/>
+		<frameinstance modelid="Model_Row" id="Row_33" pos="0 -181.5"/>
+		<frameinstance modelid="Model_Row" id="Row_34" pos="0 -187"/>
+		<frameinstance modelid="Model_Row" id="Row_35" pos="0 -192.5"/>
+		<frameinstance modelid="Model_Row" id="Row_36" pos="0 -198"/>
+		<frameinstance modelid="Model_Row" id="Row_37" pos="0 -203.5"/>
+		<frameinstance modelid="Model_Row" id="Row_38" pos="0 -209"/>
+		<frameinstance modelid="Model_Row" id="Row_39" pos="0 -214.5"/>
+		<frameinstance modelid="Model_Row" id="Row_40" pos="0 -220"/>
+		<frameinstance modelid="Model_Row" id="Row_41" pos="0 -225.5"/>
+		<frameinstance modelid="Model_Row" id="Row_42" pos="0 -231"/>
+		<frameinstance modelid="Model_Row" id="Row_43" pos="0 -236.5"/>
+		<frameinstance modelid="Model_Row" id="Row_44" pos="0 -242"/>
+		<frameinstance modelid="Model_Row" id="Row_45" pos="0 -247.5"/>
+		<frameinstance modelid="Model_Row" id="Row_46" pos="0 -253"/>
+		<frameinstance modelid="Model_Row" id="Row_47" pos="0 -258.5"/>
+		<frameinstance modelid="Model_Row" id="Row_48" pos="0 -264"/>
+		<frameinstance modelid="Model_Row" id="Row_49" pos="0 -269.5"/>
+		<frameinstance modelid="Model_Row" id="Row_50" pos="0 -275"/>
+		<frameinstance modelid="Model_Row" id="Row_51" pos="0 -280.5"/>
+		<frameinstance modelid="Model_Row" id="Row_52" pos="0 -286"/>
+		<frameinstance modelid="Model_Row" id="Row_53" pos="0 -291.5"/>
+		<frameinstance modelid="Model_Row" id="Row_54" pos="0 -297"/>
+		<frameinstance modelid="Model_Row" id="Row_55" pos="0 -302.5"/>
+		<frameinstance modelid="Model_Row" id="Row_56" pos="0 -308"/>
+		<frameinstance modelid="Model_Row" id="Row_57" pos="0 -313.5"/>
+		<frameinstance modelid="Model_Row" id="Row_58" pos="0 -319"/>
+		<frameinstance modelid="Model_Row" id="Row_59" pos="0 -324.5"/>
+		<frameinstance modelid="Model_Row" id="Row_60" pos="0 -330"/>
+		<frameinstance modelid="Model_Row" id="Row_61" pos="0 -335.5"/>
+		<frameinstance modelid="Model_Row" id="Row_62" pos="0 -341"/>
+		<frameinstance modelid="Model_Row" id="Row_63" pos="0 -346.5"/>
+		<frameinstance modelid="Model_Row" id="Row_64" pos="0 -352"/>
+		<frameinstance modelid="Model_Row" id="Row_65" pos="0 -357.5"/>
+		<frameinstance modelid="Model_Row" id="Row_66" pos="0 -363"/>
+		<frameinstance modelid="Model_Row" id="Row_67" pos="0 -368.5"/>
+		<frameinstance modelid="Model_Row" id="Row_68" pos="0 -374"/>
+		<frameinstance modelid="Model_Row" id="Row_69" pos="0 -379.5"/>
+		<frameinstance modelid="Model_Row" id="Row_70" pos="0 -385"/>
+		<frameinstance modelid="Model_Row" id="Row_71" pos="0 -390.5"/>
+		<frameinstance modelid="Model_Row" id="Row_72" pos="0 -396"/>
+		<frameinstance modelid="Model_Row" id="Row_73" pos="0 -401.5"/>
+		<frameinstance modelid="Model_Row" id="Row_74" pos="0 -407"/>
+		<frameinstance modelid="Model_Row" id="Row_75" pos="0 -412.5"/>
+		<frameinstance modelid="Model_Row" id="Row_76" pos="0 -418"/>
+		<frameinstance modelid="Model_Row" id="Row_77" pos="0 -423.5"/>
+		<frameinstance modelid="Model_Row" id="Row_78" pos="0 -429"/>
+		<frameinstance modelid="Model_Row" id="Row_79" pos="0 -434.5"/>
+		<frameinstance modelid="Model_Row" id="Row_80" pos="0 -440"/>
+		<frameinstance modelid="Model_Row" id="Row_81" pos="0 -445.5"/>
+		<frameinstance modelid="Model_Row" id="Row_82" pos="0 -451"/>
+		<frameinstance modelid="Model_Row" id="Row_83" pos="0 -456.5"/>
+		<frameinstance modelid="Model_Row" id="Row_84" pos="0 -462"/>
+		<frameinstance modelid="Model_Row" id="Row_85" pos="0 -467.5"/>
+		<frameinstance modelid="Model_Row" id="Row_86" pos="0 -473"/>
+		<frameinstance modelid="Model_Row" id="Row_87" pos="0 -478.5"/>
+		<frameinstance modelid="Model_Row" id="Row_88" pos="0 -484"/>
+		<frameinstance modelid="Model_Row" id="Row_89" pos="0 -489.5"/>
+		<frameinstance modelid="Model_Row" id="Row_90" pos="0 -495"/>
+		<frameinstance modelid="Model_Row" id="Row_91" pos="0 -500.5"/>
+		<frameinstance modelid="Model_Row" id="Row_92" pos="0 -506"/>
+		<frameinstance modelid="Model_Row" id="Row_93" pos="0 -511.5"/>
+		<frameinstance modelid="Model_Row" id="Row_94" pos="0 -517"/>
+		<frameinstance modelid="Model_Row" id="Row_95" pos="0 -522.5"/>
+		<frameinstance modelid="Model_Row" id="Row_96" pos="0 -528"/>
+		<frameinstance modelid="Model_Row" id="Row_97" pos="0 -533.5"/>
+		<frameinstance modelid="Model_Row" id="Row_98" pos="0 -539"/>
+		<frameinstance modelid="Model_Row" id="Row_99" pos="0 -544.5"/>
+	</frame>
+
+	<!-- The local player when the visible rows do not show them. -->
+	<frameinstance modelid="Model_Row" id="Row_Own" pos="2 -118" hidden="1"/>
+	<label id="Label_Hint" pos="90 -126.5" size="170 4" halign="center" valign="center2" textsize="0.8" textcolor="ffffff88"/>
 </frame>
 
 <script><!--
@@ -67,10 +145,16 @@
  *	shows it like its own scores table: while a player holds the scores table key
  *	and whenever the script forces it, e.g. at the end of a round. The scores table
  *	of the game is hidden meanwhile.
+ *
+ *	Club tags and logins come from the scores of the connected players. Spectators
+ *	click a player to spectate them.
  */
 #Include "TextLib" as TL
+#Include "MathLib" as ML
 
-#Const C_Rows 32
+#Const C_Rows 100
+#Const C_VisibleRows 18
+#Const C_RowHeight 5.5
 
 #Struct K_Standing {
 	Text account_id;
@@ -90,6 +174,12 @@
 	K_Standing[] players;
 }
 
+/// A connected user, found by their account id.
+#Struct K_User {
+	Text Login;
+	Text ClubTag;
+}
+
 Void SetText(CMlFrame _Frame, Text _ControlId, Text _Value) {
 	declare CMlLabel Label <=> (_Frame.GetFirstChild(_ControlId) as CMlLabel);
 	if (Label != Null) Label.Value = _Value;
@@ -105,13 +195,14 @@ Void SetVisible(CMlFrame _Frame, Text _ControlId, Boolean _Visible) {
 	if (Control != Null) Control.Visible = _Visible;
 }
 
-/// Shown instead of the points, empty for players who are still playing.
+/// Shown instead of the points like in the original modes, empty for players who are still playing.
 Text StatusText(Text _Status) {
 	switch (_Status) {
 		case "finalist": return "Finalist";
 		case "last_chance": return "Last Chance";
 		case "eliminated": return "Eliminated";
 		case "winner": return "Winner";
+		case "spectator": return "Spectator";
 	}
 	return "";
 }
@@ -119,13 +210,93 @@ Text StatusText(Text _Status) {
 Vec3 StatusColor(Text _Status) {
 	switch (_Status) {
 		case "finalist": return <1., 0.6, 0.>;
-		case "last_chance": return <1., 0.33, 0.33>;
 		case "winner": return <1., 0.8, 0.>;
+		case "spectator": return <0.28, 0.85, 0.21>;
 	}
-	return <0.6, 0.6, 0.6>;
+	return <1., 0., 0.>;
 }
 
-Void Update(Text _Standings) {
+/// The local player watches someone else, e.g. as a spectator or after finishing.
+Boolean IsSpectating() {
+	return InputPlayer != GUIPlayer;
+}
+
+K_User[Text] ConnectedUsers() {
+	declare K_User[Text] Users;
+	foreach (Score in Scores) {
+		if (Score.User == Null) continue;
+		Users[Score.User.WebServicesUserId] = K_User {
+			Login = Score.User.Login,
+			ClubTag = Score.User.ClubTag
+		};
+	}
+	return Users;
+}
+
+Void UpdateRow(CMlFrame _Row, K_Standing _Standing, K_User[Text] _Users, Text _Me, Text _Watched) {
+	_Row.Visible = True;
+	if (_Standing.rank > 0) {
+		SetText(_Row, "Label_Rank", TL::ToText(_Standing.rank));
+	} else {
+		SetText(_Row, "Label_Rank", "-");
+	}
+
+	declare Text Login = "";
+	declare Text ClubTag = "";
+	if (_Users.existskey(_Standing.account_id)) {
+		Login = _Users[_Standing.account_id].Login;
+		ClubTag = _Users[_Standing.account_id].ClubTag;
+	}
+	if (ClubTag != "") {
+		SetText(_Row, "Label_ClubTag", "$<"^ClubTag^"$>");
+	} else {
+		SetText(_Row, "Label_ClubTag", "");
+	}
+	SetText(_Row, "Label_Name", _Standing.name);
+
+	SetText(_Row, "Label_Points", TL::ToText(_Standing.points));
+	if (_Standing.round_points > 0) {
+		SetText(_Row, "Label_RoundPoints", "+"^TL::ToText(_Standing.round_points));
+		SetTextColor(_Row, "Label_RoundPoints", <0.4, 1., 0.6>);
+	} else if (_Standing.round_points < 0) {
+		SetText(_Row, "Label_RoundPoints", TL::ToText(_Standing.round_points));
+		SetTextColor(_Row, "Label_RoundPoints", <1., 0.4, 0.4>);
+	} else {
+		SetText(_Row, "Label_RoundPoints", "");
+	}
+
+	// A status like Last Chance replaces the points.
+	declare Text Status = StatusText(_Standing.status);
+	declare Boolean HasStatus = Status != "";
+	SetText(_Row, "Label_Status", Status);
+	SetTextColor(_Row, "Label_Status", StatusColor(_Standing.status));
+	SetVisible(_Row, "Label_Status", HasStatus);
+	SetVisible(_Row, "Label_Points", !HasStatus);
+
+	declare CMlQuad Quad_Background <=> (_Row.GetFirstChild("Quad_Background") as CMlQuad);
+	if (Quad_Background != Null) {
+		if (_Standing.account_id == _Me) {
+			Quad_Background.BgColor = <0.1, 0.35, 0.6>;
+		} else if (_Standing.account_id == _Watched) {
+			Quad_Background.BgColor = <0.35, 0.35, 0.35>;
+		} else {
+			Quad_Background.BgColor = <0., 0., 0.>;
+		}
+	}
+
+	// Only players who still race can be spectated.
+	declare CMlQuad Quad_Button <=> (_Row.GetFirstChild("Quad_Button") as CMlQuad);
+	if (Quad_Button != Null) {
+		declare Text Driver_SpectateLogin for Quad_Button = "";
+		if (_Standing.status == "eliminated" || _Standing.status == "spectator") {
+			Driver_SpectateLogin = "";
+		} else {
+			Driver_SpectateLogin = Login;
+		}
+	}
+}
+
+Void Update(Text _Standings, Text _Watched) {
 	declare CMlFrame Frame_ScoresTable <=> (Page.GetFirstChild("Frame_ScoresTable") as CMlFrame);
 	declare K_Standings Standings;
 	if (_Standings == "" || !Standings.fromjson(_Standings)) {
@@ -140,72 +311,83 @@ Void Update(Text _Standings) {
 
 	declare Text Me = "";
 	if (LocalUser != Null) Me = LocalUser.WebServicesUserId;
+	declare K_User[Text] Users = ConnectedUsers();
 
-	// The players are ordered by rank. The local player always gets a row, the last one if needed.
-	declare Integer[] Shown;
+	// The players are ordered by rank, spectators last.
+	declare CMlFrame Frame_Rows <=> (Frame_ScoresTable.GetFirstChild("Frame_Rows") as CMlFrame);
+	declare Integer Own = -1;
 	for (Index, 0, C_Rows - 1) {
-		if (Standings.players.existskey(Index)) Shown.add(Index);
-	}
-	foreach (Index => Standing in Standings.players) {
-		if (Standing.account_id == Me && Index >= C_Rows) Shown[C_Rows - 1] = Index;
-	}
-
-	for (RowIndex, 0, C_Rows - 1) {
-		declare CMlFrame Row <=> (Page.GetFirstChild("Row_"^RowIndex) as CMlFrame);
+		declare CMlFrame Row <=> (Frame_Rows.GetFirstChild("Row_"^Index) as CMlFrame);
 		if (Row == Null) continue;
-		if (!Shown.existskey(RowIndex)) {
+		if (!Standings.players.existskey(Index)) {
 			Row.Visible = False;
 			continue;
 		}
-
-		declare K_Standing Standing = Standings.players[Shown[RowIndex]];
-		Row.Visible = True;
-		if (Standing.rank > 0) {
-			SetText(Row, "Label_Rank", TL::ToText(Standing.rank));
-		} else {
-			SetText(Row, "Label_Rank", "-");
-		}
-		SetText(Row, "Label_Name", Standing.name);
-		SetText(Row, "Label_Points", TL::ToText(Standing.points));
-		if (Standing.round_points > 0) {
-			SetText(Row, "Label_RoundPoints", "+"^TL::ToText(Standing.round_points));
-			SetTextColor(Row, "Label_RoundPoints", <0.4, 1., 0.6>);
-		} else if (Standing.round_points < 0) {
-			SetText(Row, "Label_RoundPoints", TL::ToText(Standing.round_points));
-			SetTextColor(Row, "Label_RoundPoints", <1., 0.4, 0.4>);
-		} else {
-			SetText(Row, "Label_RoundPoints", "");
-		}
-
-		// A status like Eliminated replaces the points.
-		declare Text Status = StatusText(Standing.status);
-		declare Boolean HasStatus = Status != "";
-		SetText(Row, "Label_Status", Status);
-		SetTextColor(Row, "Label_Status", StatusColor(Standing.status));
-		SetVisible(Row, "Label_Status", HasStatus);
-		SetVisible(Row, "Label_Points", !HasStatus);
-
-		declare CMlQuad Quad_Background <=> (Row.GetFirstChild("Quad_Background") as CMlQuad);
-		if (Quad_Background != Null) {
-			if (Standing.account_id == Me) {
-				Quad_Background.BgColor = <0.1, 0.35, 0.6>;
-			} else {
-				Quad_Background.BgColor = <0., 0., 0.>;
-			}
-		}
+		UpdateRow(Row, Standings.players[Index], Users, Me, _Watched);
 	}
+	foreach (Index => Standing in Standings.players) {
+		if (Standing.account_id == Me) Own = Index;
+	}
+
+	declare Integer Rows = ML::Min(Standings.players.count, C_Rows);
+	Frame_Rows.ScrollMax = <0., ML::ToReal(ML::Max(0, Rows - C_VisibleRows)) * C_RowHeight>;
+
+	// The local player keeps a row of their own while the first rows do not show them.
+	declare CMlFrame Row_Own <=> (Frame_ScoresTable.GetFirstChild("Row_Own") as CMlFrame);
+	if (Own >= C_VisibleRows) {
+		UpdateRow(Row_Own, Standings.players[Own], Users, Me, _Watched);
+	} else {
+		Row_Own.Visible = False;
+	}
+
+	declare Text[] Hints;
+	if (Rows > C_VisibleRows) Hints.add("Scroll for more players");
+	if (IsSpectating()) Hints.add("Click a player to spectate");
+	SetText(Frame_ScoresTable, "Label_Hint", TL::Join(" - ", Hints));
 }
 
 main() {
 	declare netread Text Net_Driver_Standings for Teams[0];
 	declare netread Integer Net_Driver_StandingsSerial for Teams[0];
 	declare Integer LastSerial = -1;
+	declare Integer LastUserCount = -1;
+	declare Text LastWatched = "-";
+	declare Boolean LastSpectating = False;
 
 	while (True) {
 		yield;
-		if (LastSerial == Net_Driver_StandingsSerial) continue;
+
+		foreach (Event in PendingEvents) {
+			if (Event.ControlId != "Quad_Button") continue;
+			declare Text Driver_SpectateLogin for Event.Control = "";
+			declare CMlQuad Quad_Button <=> (Event.Control as CMlQuad);
+			if (Event.Type == CMlScriptEvent::Type::MouseClick) {
+				if (Driver_SpectateLogin != "" && IsSpectating()) {
+					ClientUI.Spectator_SetForcedTarget_Clear();
+					SetSpectateTarget(Driver_SpectateLogin);
+				}
+			} else if (Event.Type == CMlScriptEvent::Type::MouseOver) {
+				if (Driver_SpectateLogin != "" && IsSpectating()) Quad_Button.Opacity = 0.15;
+			} else if (Event.Type == CMlScriptEvent::Type::MouseOut) {
+				Quad_Button.Opacity = 0.;
+			}
+		}
+
+		// The spectated player, the connected users and spectating change the table too.
+		declare Text Watched = "";
+		if (GUIPlayer != Null && GUIPlayer.User != Null) Watched = GUIPlayer.User.WebServicesUserId;
+		declare Boolean Spectating = IsSpectating();
+		if (
+			LastSerial == Net_Driver_StandingsSerial &&
+			LastUserCount == Scores.count &&
+			LastWatched == Watched &&
+			LastSpectating == Spectating
+		) continue;
 		LastSerial = Net_Driver_StandingsSerial;
-		Update(Net_Driver_Standings);
+		LastUserCount = Scores.count;
+		LastWatched = Watched;
+		LastSpectating = Spectating;
+		Update(Net_Driver_Standings, Watched);
 	}
 }
 --></script>

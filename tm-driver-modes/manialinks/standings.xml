@@ -67,13 +67,14 @@ Void SetVisible(CMlFrame _Frame, Text _ControlId, Boolean _Visible) {
 	if (Control != Null) Control.Visible = _Visible;
 }
 
-/// Shown instead of the points, empty for players who are still playing.
+/// Shown instead of the points like in the original modes, empty for players who are still playing.
 Text StatusText(Text _Status) {
 	switch (_Status) {
 		case "finalist": return "Finalist";
 		case "last_chance": return "Last Chance";
 		case "eliminated": return "Eliminated";
 		case "winner": return "Winner";
+		case "spectator": return "Spectator";
 	}
 	return "";
 }
@@ -81,10 +82,10 @@ Text StatusText(Text _Status) {
 Vec3 StatusColor(Text _Status) {
 	switch (_Status) {
 		case "finalist": return <1., 0.6, 0.>;
-		case "last_chance": return <1., 0.33, 0.33>;
 		case "winner": return <1., 0.8, 0.>;
+		case "spectator": return <0.28, 0.85, 0.21>;
 	}
-	return <0.6, 0.6, 0.6>;
+	return <1., 0., 0.>;
 }
 
 Void Update(Text _Standings) {
@@ -102,14 +103,16 @@ Void Update(Text _Standings) {
 	declare Text Me = "";
 	if (LocalUser != Null) Me = LocalUser.WebServicesUserId;
 
-	// The players are ordered by rank. The local player always gets a row, the last one if needed.
+	// The players are ordered by rank, spectators last and left out here. The local
+	// player always gets a row, the last one if needed.
 	declare Integer[] Shown;
-	for (Index, 0, C_MaxRows - 1) {
-		if (Standings.players.existskey(Index)) Shown.add(Index);
-	}
+	declare Integer Own = -1;
 	foreach (Index => Standing in Standings.players) {
-		if (Standing.account_id == Me && Index >= C_MaxRows) Shown[C_MaxRows - 1] = Index;
+		if (Standing.status == "spectator") continue;
+		if (Shown.count < C_MaxRows) Shown.add(Index);
+		if (Standing.account_id == Me) Own = Index;
 	}
+	if (Own >= 0 && !Shown.exists(Own) && Shown.count == C_MaxRows) Shown[C_MaxRows - 1] = Own;
 
 	for (RowIndex, 0, C_MaxRows - 1) {
 		declare CMlFrame Row <=> (Page.GetFirstChild("Row_"^RowIndex) as CMlFrame);

@@ -85,11 +85,15 @@ Void Update(Text _Standings) {
 		}
 		case "last_chance": {
 			SetText("Label_Score", "Last Chance");
-			SetTextColor("Label_Score", <1., 0.33, 0.33>);
+			SetTextColor("Label_Score", <1., 0., 0.>);
 		}
 		case "eliminated": {
 			SetText("Label_Score", "Eliminated");
-			SetTextColor("Label_Score", <0.6, 0.6, 0.6>);
+			SetTextColor("Label_Score", <1., 0., 0.>);
+		}
+		case "spectator": {
+			SetText("Label_Score", "Spectator");
+			SetTextColor("Label_Score", <0.28, 0.85, 0.21>);
 		}
 		case "winner": {
 			SetText("Label_Score", "Winner");
