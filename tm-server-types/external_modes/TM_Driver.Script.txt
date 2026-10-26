@@ -90,8 +90,8 @@ declare Integer G_Driver_Seq;
 declare Integer G_Driver_PendingSeq;
 declare Boolean G_Driver_RoundIsTimeAttack;
 
-// State set by driver commands.
-declare Boolean[Text] G_Driver_CanSpawn;
+// State set by driver commands. The spawn permissions are declared for This because
+// Rounds_CheckCanSpawn runs inside a function of the base script.
 declare Text G_Driver_FinishTimeout;
 /// Time limit of time attack rounds in milliseconds. 0 plays single attempt rounds.
 declare Integer G_Driver_TimeAttackLimit;
@@ -190,10 +190,17 @@ foreach (Event in PendingEvents) {
 	}
 }
 
-// Driver commands are applied in the order they arrive.
+// This runs inside a function of the base script, which cannot see the functions of
+// this script. The commands are queued so none is lost while the script sleeps, and
+// Driver_ApplyCommands applies them in the order they arrived.
+declare Text[][] Driver_PendingCommands for This = [];
 foreach (Event in XmlRpc.PendingEvents) {
 	if (Event.Type == CXmlRpcEvent::EType::CallbackArray) {
-		Driver_ApplyCommand(Event.ParamArray1, Event.ParamArray2);
+		declare Text[] Driver_Command = [Event.ParamArray1];
+		foreach (Driver_Param in Event.ParamArray2) {
+			Driver_Command.add(Driver_Param);
+		}
+		Driver_PendingCommands.add(Driver_Command);
 	}
 }
 
@@ -228,7 +235,8 @@ G_Driver_FinishTimeout = "auto";
 ***
 // Every match starts with the defaults. The driver sets what it needs when the first map starts.
 G_Driver_EndMatch = False;
-G_Driver_CanSpawn.clear();
+declare Boolean[Text] Driver_SpawnPermissions for This = [];
+Driver_SpawnPermissions.clear();
 G_Driver_FinishTimeout = "auto";
 G_Driver_TimeAttackLimit = 0;
 ***
@@ -246,11 +254,16 @@ MB_WarmUp(S_WarmUpNb, S_WarmUpDuration * 1000, S_WarmUpTimeout * 1000);
 
 ***Rounds_CheckCanSpawn***
 ***
-if (!Driver_CanSpawn(_Player)) return False;
+// Inside a function of the base script, so Driver_CanSpawn is not visible here.
+if (_Player.User == Null) return False;
+declare Boolean[Text] Driver_SpawnPermissions for This = [];
+declare Text Driver_AccountId = _Player.User.WebServicesUserId;
+if (Driver_SpawnPermissions.existskey(Driver_AccountId) && !Driver_SpawnPermissions[Driver_AccountId]) return False;
 ***
 
 ***Match_StartRound***
 ***
+Driver_ApplyCommands();
 StateMgr::ForcePlayersStates([StateMgr::C_State_Playing]);
 
 G_Driver_RoundIsTimeAttack = G_Driver_TimeAttackLimit > 0;
@@ -275,6 +288,8 @@ CarRank::ThrottleUpdate(CarRank::C_SortCriteria_CurrentRace);
 
 ***Match_PlayLoop***
 ***
+Driver_ApplyCommands();
+
 // Manage race events
 foreach (Event in Race::GetPendingEvents()) {
 	Race::ValidEvent(Event);
@@ -378,8 +393,9 @@ if (!MB_MapIsRunning() && MB_MatchIsRunning()) MB_SkipPodiumSequence();
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
 Boolean Driver_CanSpawn(CSmPlayer _Player) {
 	if (_Player.User == Null) return False;
+	declare Boolean[Text] Driver_SpawnPermissions for This = [];
 	declare Text AccountId = _Player.User.WebServicesUserId;
-	return !G_Driver_CanSpawn.existskey(AccountId) || G_Driver_CanSpawn[AccountId];
+	return !Driver_SpawnPermissions.existskey(AccountId) || Driver_SpawnPermissions[AccountId];
 }
 
 /// Time attack rounds rank by the best race, everything else by the last race.
@@ -397,57 +413,6 @@ Void Driver_SendHold(K_Driver_Hold _Hold) {
 		Scores::XmlRpc_SendScores(Scores::C_Section_PreEndRound, "");
 	}
 	XmlRpc::SendCallback(C_Callback_Hold, [_Hold.tojson()]);
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
-/** Waits until the driver continues the hold.
- *	Commands keep being applied while waiting. The hold is sent again
- *	periodically because the driver answers repeated holds without
- *	deciding twice.
- *
- *	@param	_Section		Where the script waits (C_Section_*)
- *	@param	_Forced			RoundEnd only: the round should not count
- */
-Void Driver_Hold(Text _Section, Boolean _Forced) {
-	G_Driver_Seq += 1;
-	declare K_Driver_Hold Hold = K_Driver_Hold {
-		session = G_Driver_Session,
-		seq = G_Driver_Seq,
-		section = _Section,
-		forced = _Forced
-	};
-	G_Driver_PendingSeq = Hold.seq;
-	Driver_SendHold(Hold);
-
-	declare Integer ResendTime = Now + S_DriverDecisionTimeout;
-	declare Boolean Waiting = False;
-	while (G_Driver_PendingSeq == Hold.seq && !ServerShutdownRequested) {
-		MB_Yield();
-		if (G_Driver_PendingSeq == Hold.seq && Now >= ResendTime) {
-			if (!Waiting) {
-				Waiting = True;
-				UIModules_BigMessage::SetMessage(_("Waiting for the match driver..."));
-			}
-			Driver_SendHold(Hold);
-			ResendTime = Now + C_Driver_ResendInterval;
-		}
-	}
-	if (Waiting) UIModules_BigMessage::SetMessage("");
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
-/// Computes the end time of the round after the first player finished.
-Integer Driver_FinishTimeout() {
-	if (G_Driver_FinishTimeout == "off") return -1;
-	if (G_Driver_FinishTimeout != "auto") return Now + TL::ToInteger(G_Driver_FinishTimeout);
-
-	declare Integer FinishTimeout = 5000;
-	if (Map.TMObjective_IsLapRace && Race::GetLapsNb() > 0 && Map.TMObjective_NbLaps > 0) {
-		FinishTimeout += ((Map.TMObjective_AuthorTime / Map.TMObjective_NbLaps) * Race::GetLapsNb()) / 6;
-	} else {
-		FinishTimeout += Map.TMObjective_AuthorTime / 6;
-	}
-	return Now + FinishTimeout;
 }
 
 Void Driver_SetLayer(Text _Name, Text _Manialink) {
@@ -490,7 +455,8 @@ Void Driver_ApplyCommand(Text _Method, Text[] _Params) {
 		}
 	} else if (_Method == C_Method_SetCanSpawn) {
 		if (_Params.count < 2) return;
-		G_Driver_CanSpawn[_Params[0]] = (_Params[1] == "1");
+		declare Boolean[Text] Driver_SpawnPermissions for This = [];
+		Driver_SpawnPermissions[_Params[0]] = (_Params[1] == "1");
 	} else if (_Method == C_Method_EndMatch) {
 		G_Driver_EndMatch = True;
 	} else if (_Method == C_Method_SetLayer) {
@@ -506,4 +472,69 @@ Void Driver_ApplyCommand(Text _Method, Text[] _Params) {
 		Net_Driver_State = _Params[0];
 		Net_Driver_StateSerial += 1;
 	}
+}
+
+/// Applies the commands Match_Yield queued, in the order they arrived.
+Void Driver_ApplyCommands() {
+	declare Text[][] Driver_PendingCommands for This = [];
+	foreach (Command in Driver_PendingCommands) {
+		declare Text[] Params;
+		foreach (Index => Param in Command) {
+			if (Index > 0) Params.add(Param);
+		}
+		if (Command.count > 0) Driver_ApplyCommand(Command[0], Params);
+	}
+	Driver_PendingCommands.clear();
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
+/** Waits until the driver continues the hold.
+ *	Commands keep being applied while waiting. The hold is sent again
+ *	periodically because the driver answers repeated holds without
+ *	deciding twice.
+ *
+ *	@param	_Section		Where the script waits (C_Section_*)
+ *	@param	_Forced			RoundEnd only: the round should not count
+ */
+Void Driver_Hold(Text _Section, Boolean _Forced) {
+	G_Driver_Seq += 1;
+	declare K_Driver_Hold Hold = K_Driver_Hold {
+		session = G_Driver_Session,
+		seq = G_Driver_Seq,
+		section = _Section,
+		forced = _Forced
+	};
+	G_Driver_PendingSeq = Hold.seq;
+	Driver_SendHold(Hold);
+
+	declare Integer ResendTime = Now + S_DriverDecisionTimeout;
+	declare Boolean Waiting = False;
+	while (G_Driver_PendingSeq == Hold.seq && !ServerShutdownRequested) {
+		MB_Yield();
+		Driver_ApplyCommands();
+		if (G_Driver_PendingSeq == Hold.seq && Now >= ResendTime) {
+			if (!Waiting) {
+				Waiting = True;
+				UIModules_BigMessage::SetMessage(_("Waiting for the match driver..."));
+			}
+			Driver_SendHold(Hold);
+			ResendTime = Now + C_Driver_ResendInterval;
+		}
+	}
+	if (Waiting) UIModules_BigMessage::SetMessage("");
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
+/// Computes the end time of the round after the first player finished.
+Integer Driver_FinishTimeout() {
+	if (G_Driver_FinishTimeout == "off") return -1;
+	if (G_Driver_FinishTimeout != "auto") return Now + TL::ToInteger(G_Driver_FinishTimeout);
+
+	declare Integer FinishTimeout = 5000;
+	if (Map.TMObjective_IsLapRace && Race::GetLapsNb() > 0 && Map.TMObjective_NbLaps > 0) {
+		FinishTimeout += ((Map.TMObjective_AuthorTime / Map.TMObjective_NbLaps) * Race::GetLapsNb()) / 6;
+	} else {
+		FinishTimeout += Map.TMObjective_AuthorTime / 6;
+	}
+	return Now + FinishTimeout;
 }
