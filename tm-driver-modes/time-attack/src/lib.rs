@@ -1,18 +1,13 @@
 //! Time attack mode for the wasm driver.
 //!
 //! Every map is one time attack round: players restart as often as they like
-//! until the time limit runs out and their best time counts. Standings of
-//! driver matches sum round points, so the ranking of every map is turned into
-//! points. By default the best of N finishers gets N points, the second N - 1
-//! and so on, which keeps the order of the times.
-
-use std::collections::BTreeMap;
+//! until the time limit runs out and their best time counts. The ranking of
+//! every map is turned into points so the standings can add up several maps.
+//! By default the best of N finishers gets N points, the second N - 1 and so
+//! on, which keeps the order of the times.
 
 use serde::Deserialize;
-use tm_driver_sdk::{
-    Command, Event, Mode, PlayerResult, RaceResult, RoundEnd, RoundFormat,
-    standings::{Standing, Standings},
-};
+use tm_driver_sdk::{Command, Event, Mode, RaceResult, RoundEnd, RoundFormat, Standings};
 
 tm_driver_sdk::export_mode!(TimeAttack);
 
@@ -41,14 +36,11 @@ impl Default for Settings {
 #[derive(Debug, Clone)]
 pub struct TimeAttack {
     settings: Settings,
-    match_points: BTreeMap<String, i32>,
-    /// Points of the last map.
-    map_points: BTreeMap<String, i32>,
-    names: BTreeMap<String, String>,
-    maps_played: u32,
 }
 
 impl Mode for TimeAttack {
+    const NAME: &'static str = "Time Attack";
+
     fn init(settings: &str) -> Result<Self, String> {
         let settings: Settings = if settings.trim().is_empty() {
             Settings::default()
@@ -58,56 +50,50 @@ impl Mode for TimeAttack {
         if settings.time_limit_ms == 0 {
             return Err("The time limit has to be at least one millisecond.".into());
         }
-
-        Ok(Self {
-            settings,
-            match_points: BTreeMap::new(),
-            map_points: BTreeMap::new(),
-            names: BTreeMap::new(),
-            maps_played: 0,
-        })
+        Ok(Self { settings })
     }
 
-    fn step(&mut self, event: Event) -> Vec<Command> {
+    fn step(&self, standings: &mut Standings, event: Event) -> Vec<Command> {
         match event {
-            Event::MatchStart => {
-                self.match_points.clear();
-                self.map_points.clear();
-                self.maps_played = 0;
-                vec![self.standings()]
-            }
             // The script waits here, so this is where the rules for the map are set.
             // A config change keeps the match of the modescript going, so the rules
             // of the previous mode might still be active.
             Event::MapStart => {
-                self.map_points.clear();
-                vec![
-                    Command::SetRoundFormat(RoundFormat::TimeAttack(self.settings.time_limit_ms)),
-                    self.standings(),
-                ]
+                standings.info = self.info(standings);
+                vec![Command::SetRoundFormat(RoundFormat::TimeAttack(
+                    self.settings.time_limit_ms,
+                ))]
             }
-            Event::RoundStart => Vec::new(),
-            Event::RoundEnd(round_end) => self.round_end(round_end),
+            Event::RoundEnd(round_end) => self.round_end(standings, round_end),
             Event::MapEnd => {
-                self.maps_played += 1;
                 if self.settings.maps_per_match > 0
-                    && self.maps_played >= self.settings.maps_per_match
+                    && standings.maps_played >= self.settings.maps_per_match
                 {
+                    standings.crown_leaders();
                     vec![Command::EndMatch]
                 } else {
                     Vec::new()
                 }
             }
-            Event::MatchEnd => Vec::new(),
+            Event::MatchStart | Event::RoundStart | Event::MatchEnd => Vec::new(),
         }
     }
 }
 
 impl TimeAttack {
-    fn round_end(&mut self, round_end: RoundEnd) -> Vec<Command> {
+    fn round_end(&self, standings: &mut Standings, round_end: RoundEnd) -> Vec<Command> {
         // A forced round was cut short. The map continues with a new time attack round.
         if round_end.forced {
             return Vec::new();
+        }
+
+        // Everyone who raced shows up in the standings, with points or without.
+        for result in round_end
+            .results
+            .iter()
+            .filter(|r| r.started || r.best_time.is_some())
+        {
+            standings.join(&result.account_id, &result.name);
         }
 
         let mut finishers: Vec<&RaceResult> = round_end
@@ -117,58 +103,26 @@ impl TimeAttack {
             .collect();
         // Stable so equal times keep the order of the scores.
         finishers.sort_by_key(|r| r.best_time);
-
         let finisher_count = finishers.len();
-        self.map_points.clear();
-        let mut results = Vec::with_capacity(finisher_count);
         for (rank, finisher) in finishers.into_iter().enumerate() {
-            let points = self.points_for(rank, finisher_count);
-            self.names
-                .insert(finisher.account_id.clone(), finisher.name.clone());
-            self.map_points.insert(finisher.account_id.clone(), points);
-            *self
-                .match_points
-                .entry(finisher.account_id.clone())
-                .or_default() += points;
-            results.push(PlayerResult {
-                account_id: finisher.account_id.clone(),
-                points,
-                position: rank as u32 + 1,
-            });
+            standings
+                .join(&finisher.account_id, &finisher.name)
+                .award(self.points_for(rank, finisher_count));
         }
 
+        standings.rounds_on_map += 1;
+        standings.rank();
+        standings.info = self.info(standings);
         // Every map is a single time attack round.
-        vec![
-            Command::RoundResult(results),
-            self.standings(),
-            Command::EndMap,
-        ]
+        vec![Command::EndMap]
     }
 
-    fn standings(&self) -> Command {
-        let mut players: Vec<Standing> = self
-            .match_points
-            .iter()
-            .map(|(account_id, &points)| Standing {
-                account_id: account_id.clone(),
-                name: self.names.get(account_id).cloned().unwrap_or_default(),
-                points,
-                round_points: self.map_points.get(account_id).copied().unwrap_or(0),
-                status: String::new(),
-            })
-            .collect();
-        // Stable so equal points keep a fixed order.
-        players.sort_by_key(|p| std::cmp::Reverse(p.points));
-
-        Standings {
-            title: "Time Attack".into(),
-            info: match self.settings.maps_per_match {
-                0 => format!("{} maps", self.maps_played),
-                limit => format!("{} / {limit} maps", self.maps_played),
-            },
-            players,
+    fn info(&self, standings: &Standings) -> String {
+        let map = standings.maps_played + 1;
+        match self.settings.maps_per_match {
+            0 => format!("Map {map}"),
+            limit => format!("Map {map} / {limit}"),
         }
-        .command()
     }
 
     fn points_for(&self, rank: usize, finishers: usize) -> i32 {
@@ -186,6 +140,8 @@ impl TimeAttack {
 
 #[cfg(test)]
 mod tests {
+    use tm_driver_sdk::{Status, testing::Harness};
+
     use super::*;
 
     /// In time attack rounds the best race counts, not the last one.
@@ -222,111 +178,91 @@ mod tests {
         })
     }
 
-    fn started(settings: &str) -> TimeAttack {
-        let mut mode = TimeAttack::init(settings).unwrap();
-        mode.step(Event::MatchStart);
-        mode.step(Event::MapStart);
-        mode
+    fn started(settings: &str) -> Harness<TimeAttack> {
+        let mut harness = Harness::new(settings).unwrap();
+        harness.step(Event::MatchStart);
+        harness.step(Event::MapStart);
+        harness
     }
 
-    fn round_result(commands: &[Command]) -> Vec<(String, i32, u32)> {
-        commands
+    /// Account, rank and points of the map of every player in the order of the standings.
+    fn map_points(harness: &Harness<TimeAttack>) -> Vec<(&str, u32, i32)> {
+        harness
+            .standings
+            .players
             .iter()
-            .find_map(|c| match c {
-                Command::RoundResult(results) => Some(
-                    results
-                        .iter()
-                        .map(|r| (r.account_id.clone(), r.points, r.position))
-                        .collect(),
-                ),
-                _ => None,
-            })
-            .expect("Every valid round has a result")
+            .map(|p| (p.account_id.as_str(), p.rank, p.map_points))
+            .collect()
     }
 
     #[test]
     fn sets_the_round_format_on_map_start() {
-        let mut mode = TimeAttack::init(r#"{"time_limit_ms": 60000}"#).unwrap();
+        let mut harness = Harness::<TimeAttack>::new(r#"{"time_limit_ms": 60000}"#).unwrap();
         assert_eq!(
-            mode.step(Event::MapStart)[0],
-            Command::SetRoundFormat(RoundFormat::TimeAttack(60_000))
+            harness.step(Event::MapStart),
+            [Command::SetRoundFormat(RoundFormat::TimeAttack(60_000))]
         );
-    }
-
-    #[test]
-    fn publishes_standings() {
-        let mut mode = started("");
-        let commands = mode.step(round_end(vec![finish("b", 41_000), finish("a", 40_000)]));
-        let Some(Command::SetNetState(state)) = commands
-            .iter()
-            .find(|c| matches!(c, Command::SetNetState(_)))
-        else {
-            panic!("The standings are published");
-        };
-        assert_eq!(
-            serde_json::from_str::<serde_json::Value>(state).unwrap(),
-            serde_json::json!({
-                "title": "Time Attack",
-                "info": "0 / 1 maps",
-                "players": [
-                    {"account_id": "a", "name": "a", "points": 2, "round_points": 2, "status": ""},
-                    {"account_id": "b", "name": "b", "points": 1, "round_points": 1, "status": ""},
-                ]
-            })
-        );
+        assert_eq!(harness.standings.info, "Map 1 / 1");
     }
 
     #[test]
     fn default_points_keep_the_order_of_times() {
-        let mut mode = started("");
-        let commands = mode.step(round_end(vec![
+        let mut harness = started("");
+        let commands = harness.step(round_end(vec![
             finish("b", 41_000),
             finish("a", 40_000),
             dnf("c"),
         ]));
 
         assert_eq!(
-            round_result(&commands),
-            [("a".into(), 2, 1), ("b".into(), 1, 2)]
+            map_points(&harness),
+            [("a", 1, 2), ("b", 2, 1), ("c", 3, 0)]
         );
-        assert_eq!(commands.last(), Some(&Command::EndMap));
+        assert_eq!(commands, [Command::EndMap]);
     }
 
     #[test]
     fn points_repartition() {
-        let mut mode = started(r#"{"points_repartition": [10, 5]}"#);
-        let commands = mode.step(round_end(vec![
+        let mut harness = started(r#"{"points_repartition": [10, 5]}"#);
+        harness.step(round_end(vec![
             finish("a", 40_000),
             finish("b", 41_000),
             finish("c", 42_000),
         ]));
         assert_eq!(
-            round_result(&commands),
-            [("a".into(), 10, 1), ("b".into(), 5, 2), ("c".into(), 5, 3)]
+            map_points(&harness),
+            [("a", 1, 10), ("b", 2, 5), ("c", 2, 5)]
         );
     }
 
     #[test]
     fn forced_rounds_replay_the_map() {
-        let mut mode = started("");
-        let commands = mode.step(Event::RoundEnd(RoundEnd {
+        let mut harness = started("");
+        let commands = harness.step(Event::RoundEnd(RoundEnd {
             forced: true,
             results: vec![finish("a", 40_000)],
         }));
         assert!(commands.is_empty());
+        assert!(harness.standings.players.is_empty());
     }
 
     #[test]
     fn points_add_up_over_maps() {
-        let mut mode = started(r#"{"maps_per_match": 2}"#);
-        mode.step(round_end(vec![finish("a", 40_000), finish("b", 41_000)]));
-        assert!(mode.step(Event::MapEnd).is_empty());
+        let mut harness = started(r#"{"maps_per_match": 2}"#);
+        harness.step(round_end(vec![finish("a", 40_000), finish("b", 41_000)]));
+        assert!(harness.step(Event::MapEnd).is_empty());
 
-        mode.step(Event::MapStart);
-        mode.step(round_end(vec![finish("b", 39_000), finish("a", 40_000)]));
-        assert_eq!(mode.match_points["a"], 3);
-        assert_eq!(mode.match_points["b"], 3);
-        assert_eq!(mode.step(Event::MapEnd), [Command::EndMatch]);
+        harness.step(Event::MapStart);
+        assert_eq!(harness.standings.info, "Map 2 / 2");
+        harness.step(round_end(vec![finish("b", 39_000), finish("a", 40_000)]));
+        assert_eq!(harness.standing("a").points, 3);
+        assert_eq!(harness.standing("b").points, 3);
+        assert_eq!(harness.standing("b").map_points, 2);
+
+        // Tied leaders both win.
+        assert_eq!(harness.step(Event::MapEnd), [Command::EndMatch]);
+        assert_eq!(harness.standing("a").status, Status::Winner);
+        assert_eq!(harness.standing("b").status, Status::Winner);
     }
 
     #[test]

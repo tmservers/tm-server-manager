@@ -8,6 +8,12 @@
 //! host handles the [`DriverHold`]s of the modescript: it steps the mode, lets
 //! the hold continue and answers repeated holds without stepping the mode twice.
 //!
+//! The scores of a match live in standings every mode shares. The host keeps
+//! them and hands them to the mode with every event, so modes keep nothing but
+//! their settings. The host clears what belongs to a new match, map or round,
+//! publishes the standings for the manialinks whenever they change and derives
+//! the round results for the manager from them.
+//!
 //! Modes and the host are deterministic. Replaying the events of a match with
 //! [`DriverEngine::replay`] rebuilds exactly the same driver, so a crashed bridge
 //! resumes from the event stream and nothing else has to be persisted.
@@ -24,7 +30,7 @@ use std::{
 
 use tm_server_types::{
     event::{DriverHold, DriverRoundResult, DriverSection, Event},
-    method::DriverCommand,
+    method::{DriverCanSpawn, DriverCommand, DriverRoundFormat, DriverStandings},
 };
 use wasmtime::{
     Config, Engine, Store, StoreLimits, StoreLimitsBuilder,
@@ -173,6 +179,11 @@ impl DriverEngine {
             .call_init(&mut driver.store, settings)
             .map_err(DriverError::Trap)?
             .map_err(DriverError::Rejected)?;
+        driver.prepare_call();
+        driver.name = driver
+            .bindings
+            .call_name(&mut driver.store)
+            .map_err(DriverError::Trap)?;
         Ok(driver)
     }
 
@@ -218,6 +229,11 @@ impl DriverEngine {
             bindings,
             fuel_per_call: self.limits.fuel_per_call,
             epoch_deadline: self.epoch_deadline(),
+            name: String::new(),
+            standings: convert::empty_standings(),
+            published: None,
+            spawn_permissions: BTreeMap::new(),
+            time_attack: false,
             session: None,
             last_hold: None,
             round_progress: BTreeMap::new(),
@@ -249,6 +265,16 @@ pub struct Driver {
     bindings: Mode,
     fuel_per_call: u64,
     epoch_deadline: u64,
+    /// Name of the mode, shown above the standings.
+    name: String,
+    /// The scores of the match, handed to the mode with every event.
+    standings: wit::Standings,
+    /// The standings as the manialinks got them last.
+    published: Option<String>,
+    /// Spawn permissions sent in this match, so repeated ones are left out.
+    spawn_permissions: BTreeMap<String, bool>,
+    /// The mode made rounds time attack rounds, so their best race counts.
+    time_attack: bool,
     session: Option<i32>,
     /// Commands for the last hold in case the modescript asks again.
     last_hold: Option<(u32, Vec<DriverCommand>)>,
@@ -294,7 +320,12 @@ impl Driver {
         }
 
         match event {
-            Event::StartMatchStart(_) => self.step(wit::Event::MatchStart),
+            Event::StartMatchStart(_) => {
+                // Every match starts with the defaults of the modescript.
+                self.spawn_permissions.clear();
+                self.time_attack = false;
+                self.step(wit::Event::MatchStart)
+            }
             Event::StartRoundStart(_) => {
                 self.round_progress.clear();
                 self.step(wit::Event::RoundStart)
@@ -326,6 +357,8 @@ impl Driver {
         if self.session != Some(hold.session) {
             self.session = Some(hold.session);
             self.last_hold = None;
+            self.spawn_permissions.clear();
+            self.time_attack = false;
         }
 
         if let Some((seq, commands)) = &self.last_hold {
@@ -360,15 +393,65 @@ impl Driver {
         Ok(reply)
     }
 
+    /// The standings of the match as the mode left them, ordered by rank.
+    pub fn standings(&self) -> DriverStandings {
+        convert::standings(&self.name, &self.standings)
+    }
+
     fn step(&mut self, event: wit::Event) -> Result<DriverReply, DriverError> {
+        clear(&mut self.standings, &event);
+
         self.prepare_call();
-        match self.bindings.call_step(&mut self.store, &event) {
-            Ok(commands) => Ok(convert::reply(commands)),
+        let decision = match self
+            .bindings
+            .call_step(&mut self.store, &self.standings, &event)
+        {
+            Ok(decision) => decision,
             Err(error) => {
                 self.poisoned = true;
-                Err(DriverError::Trap(error))
+                return Err(DriverError::Trap(error));
             }
+        };
+        self.standings = decision.standings;
+
+        let round_result =
+            match &event {
+                wit::Event::RoundEnd(round_end) if !round_end.forced => Some(
+                    convert::round_result(&self.standings, &round_end.results, self.time_attack),
+                ),
+                _ => None,
+            };
+
+        let mut commands = convert::commands(decision.commands);
+        commands.retain(|command| match command {
+            // Repeated permissions only cost calls to the server.
+            DriverCommand::SetCanSpawn(DriverCanSpawn {
+                account_id,
+                can_spawn,
+            }) => {
+                self.spawn_permissions
+                    .insert(account_id.clone(), *can_spawn)
+                    != Some(*can_spawn)
+            }
+            DriverCommand::SetRoundFormat(format) => {
+                self.time_attack =
+                    matches!(format, DriverRoundFormat::TimeAttack(limit) if *limit > 0);
+                true
+            }
+            _ => true,
+        });
+
+        let standings = serde_json::to_string(&self.standings())
+            .expect("The standings only contain types json can represent");
+        if self.published.as_ref() != Some(&standings) {
+            self.published = Some(standings.clone());
+            commands.push(DriverCommand::SetStandings(standings));
         }
+
+        Ok(DriverReply {
+            commands,
+            round_result,
+        })
     }
 
     fn prepare_call(&mut self) {
@@ -376,6 +459,27 @@ impl Driver {
         _ = self.store.set_fuel(self.fuel_per_call);
         self.store.set_epoch_deadline(self.epoch_deadline);
         self.store.data_mut().log_budget = LOG_BUDGET;
+    }
+}
+
+/// Clears what belongs to a new match, map or round before the mode gets the event,
+/// so every mode has the same lifecycle of its standings.
+fn clear(standings: &mut wit::Standings, event: &wit::Event) {
+    match event {
+        wit::Event::MatchStart => *standings = convert::empty_standings(),
+        wit::Event::MapStart => {
+            standings.rounds_on_map = 0;
+            for player in &mut standings.players {
+                player.map_points = 0;
+            }
+        }
+        wit::Event::RoundEnd(_) => {
+            for player in &mut standings.players {
+                player.round_points = 0;
+            }
+        }
+        wit::Event::MapEnd => standings.maps_played = standings.maps_played.saturating_add(1),
+        wit::Event::RoundStart | wit::Event::MatchEnd => {}
     }
 }
 

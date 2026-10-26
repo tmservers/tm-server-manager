@@ -4082,7 +4082,6 @@ name = "tm-driver-sdk"
 version = "0.1.0-dev"
 dependencies = [
  "serde",
- "serde_json",
  "wit-bindgen 0.63.0",
 ]
 
@@ -4162,6 +4161,7 @@ dependencies = [
 name = "tm-wasm-driver"
 version = "0.1.0-dev"
 dependencies = [
+ "serde_json",
  "thiserror 2.0.21",
  "tm-server-controller",
  "tm-server-types",

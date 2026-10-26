@@ -35,7 +35,7 @@ use tm_server_controller::{
 use tm_server_types::{
     config::Driver as DriverConfig,
     event::Event,
-    method::{DriverCommand, DriverLayer},
+    method::{DriverCommand, DriverLayer, DriverStandings, DriverStatus},
 };
 use tm_wasm_driver::{Driver, DriverEngine, DriverLimits};
 use tokio::io::{AsyncBufReadExt, BufReader};
@@ -150,7 +150,7 @@ fn drive(server: &'static TrackmaniaServer, active: Shared, layers: Vec<DriverLa
             }
 
             tracing::debug!("<- {event:?}");
-            let reply = {
+            let (reply, standings) = {
                 let mut active = active.lock().unwrap();
                 let Some(active) = active.as_mut() else {
                     if matches!(event, Event::DriverHold(_)) {
@@ -159,7 +159,14 @@ fn drive(server: &'static TrackmaniaServer, active: Shared, layers: Vec<DriverLa
                     continue;
                 };
                 match active.driver.handle(&event) {
-                    Ok(reply) => reply,
+                    Ok(reply) => {
+                        let changed = reply
+                            .commands
+                            .iter()
+                            .any(|c| matches!(c, DriverCommand::SetStandings(_)));
+                        let standings = changed.then(|| active.driver.standings());
+                        (reply, standings)
+                    }
                     Err(error) => {
                         tracing::error!("The mode failed: {error}");
                         continue;
@@ -169,6 +176,9 @@ fn drive(server: &'static TrackmaniaServer, active: Shared, layers: Vec<DriverLa
 
             if let Some(round_result) = reply.round_result {
                 tracing::info!("Round result: {round_result:?}");
+            }
+            if let Some(standings) = standings {
+                tracing::info!("Standings: {}", summary(&standings));
             }
             send(server, reply.commands).await;
         }
@@ -352,13 +362,41 @@ async fn send(server: &TrackmaniaServer, commands: Vec<DriverCommand>) {
 /// A command for the log without the large json and manialinks.
 fn describe(command: &DriverCommand) -> String {
     match command {
+        DriverCommand::SetStandings(standings) => {
+            tracing::debug!("Standings json: {standings}");
+            format!("SetStandings({} bytes)", standings.len())
+        }
         DriverCommand::SetNetState(state) => {
-            tracing::debug!("Standings: {state}");
+            tracing::debug!("Net state: {state}");
             format!("SetNetState({} bytes)", state.len())
         }
         DriverCommand::SetLayer(layer) => format!("SetLayer({})", layer.name),
         command => format!("{command:?}"),
     }
+}
+
+/// The standings in one line, e.g. `Rounds (2 / 5 rounds): 1. a 16 (+10), 2. b 10`.
+fn summary(standings: &DriverStandings) -> String {
+    let players: Vec<String> = standings
+        .players
+        .iter()
+        .map(|player| {
+            let score = match player.status {
+                DriverStatus::Playing => match player.round_points {
+                    0 => player.points.to_string(),
+                    round => format!("{} ({round:+})", player.points),
+                },
+                status => format!("{status:?}"),
+            };
+            format!("{}. {} {score}", player.rank, player.name)
+        })
+        .collect();
+    format!(
+        "{} ({}): {}",
+        standings.title,
+        standings.info,
+        players.join(", ")
+    )
 }
 
 /// The repository, where the modescript, the modes and the manialinks live.

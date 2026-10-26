@@ -45,6 +45,51 @@ interface types {
         match-end,
     }
 
+    /// Where a player stands in the match.
+    enum status {
+        /// Takes part and has neither won nor lost yet.
+        playing,
+        /// Wins the match by winning a round (cup).
+        finalist,
+        /// The next bad round eliminates the player (reverse cup).
+        last-chance,
+        /// Out of the match. The rank the mode gave the player at the elimination is final.
+        eliminated,
+        /// Won the match.
+        winner,
+    }
+
+    record standing {
+        account-id: string,
+        name: string,
+        /// Players with the same rank are tied. 0 until the mode ranks the player.
+        rank: u32,
+        status: status,
+        /// Points of the match.
+        points: s32,
+        /// Points of the current map. The host clears them when a map starts.
+        map-points: s32,
+        /// Points of the current round. The host clears them before every round end.
+        round-points: s32,
+    }
+
+    /// The scores of a match in one structure every mode shares.
+    ///
+    /// The host keeps the standings and hands them to the mode with every event.
+    /// What the mode returns is shown to the players and reported to the manager,
+    /// so a mode keeps no scores of its own. The host clears what belongs to a new
+    /// match, map or round before the mode gets the event.
+    record standings {
+        /// Every player taking part in the match.
+        players: list<standing>,
+        /// Rounds of the current map that counted. The host clears them when a map starts.
+        rounds-on-map: u32,
+        /// Maps that ended in this match. The host counts the ending map before map-end.
+        maps-played: u32,
+        /// Progress of the match shown with the standings, e.g. `2 / 5 rounds`.
+        info: string,
+    }
+
     /// How long the remaining players have to finish once the first player finished.
     variant finish-timeout {
         /// 5 seconds plus a sixth of the author time.
@@ -74,18 +119,11 @@ interface types {
         manialink: string,
     }
 
-    /// Points and position of a player in the current round.
-    record player-result {
-        account-id: string,
-        points: s32,
-        /// Starts at 1.
-        position: u32,
-    }
-
     variant command {
         /// Applies to the next round that starts. Send it in reply to map-start or round-end.
         set-round-format(round-format),
         /// Players that cannot spawn are out of the race (e.g. eliminated).
+        /// The host leaves out permissions it already sent in this match.
         set-can-spawn(can-spawn),
         /// Ends the map once the current hold continues.
         end-map,
@@ -95,13 +133,19 @@ interface types {
         set-layer(layer),
         remove-layer(string),
         /// Readable by manialinks through `netread Text Net_Driver_State for Teams[0]`.
-        /// The script keeps no points, so this is how standings reach the players.
+        /// The host publishes the standings itself, this is for data of a mode the
+        /// standings can not hold.
         set-net-state(string),
-        /// Results of the current round for the tournament manager.
-        /// The last one returned for a round counts.
-        round-result(list<player-result>),
         /// A message for everyone in the chat.
         chat-message(string),
+    }
+
+    /// What a mode returns for an event.
+    record decision {
+        /// The standings after the event. The host keeps them for the next event.
+        standings: standings,
+        /// Applied in order.
+        commands: list<command>,
     }
 }
 
@@ -120,16 +164,18 @@ interface host {
 
 /// A game mode controlling the driver modescript.
 ///
-/// Modes run without WASI. Everything they know comes from their settings and
-/// events, so replaying the events of a match rebuilds exactly the same state.
-/// That is how a mode resumes, there are no snapshots.
+/// Modes run without WASI. Everything they know comes from their settings, the
+/// standings and the events, so replaying the events of a match rebuilds exactly
+/// the same standings. That is how a mode resumes, there are no snapshots.
 world mode {
-    use types.{event, command};
+    use types.{event, standings, decision};
 
     import host;
 
     /// Called once with the json settings of the match.
     export init: func(settings: string) -> result<_, string>;
-    /// Called for every event. The returned commands are applied in order.
-    export step: func(event: event) -> list<command>;
+    /// Name of the mode, shown above the standings.
+    export name: func() -> string;
+    /// Called for every event with the standings the mode returned last.
+    export step: func(standings: standings, event: event) -> decision;
 }

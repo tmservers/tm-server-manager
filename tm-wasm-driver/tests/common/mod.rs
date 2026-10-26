@@ -8,8 +8,9 @@ use tm_server_types::{
     event::{
         DriverHold, DriverSection, Event, Scores, StartLine, StartMatch, StartRound, WayPoint,
     },
-    method::DriverCommand,
+    method::{DriverCommand, DriverStatus},
 };
+use tm_wasm_driver::Driver;
 
 pub const SESSION: i32 = 7;
 
@@ -138,11 +139,11 @@ fn checkpoints(time: i32) -> Vec<u32> {
     if time < 0 { vec![] } else { vec![time as u32] }
 }
 
-/// The commands of a reply without the standings, the modes test those themselves.
+/// The commands of a reply without the standings the host publishes.
 pub fn without_standings(commands: &[DriverCommand]) -> Vec<DriverCommand> {
     commands
         .iter()
-        .filter(|c| !matches!(c, DriverCommand::SetNetState(_)))
+        .filter(|c| !matches!(c, DriverCommand::SetStandings(_)))
         .cloned()
         .collect()
 }
@@ -150,5 +151,15 @@ pub fn without_standings(commands: &[DriverCommand]) -> Vec<DriverCommand> {
 pub fn publishes_standings(commands: &[DriverCommand]) -> bool {
     commands
         .iter()
-        .any(|c| matches!(c, DriverCommand::SetNetState(_)))
+        .any(|c| matches!(c, DriverCommand::SetStandings(_)))
+}
+
+/// Account, rank, status, points and round points of every player in the order of the standings.
+pub fn ranking(driver: &Driver) -> Vec<(String, u32, DriverStatus, i32, i32)> {
+    driver
+        .standings()
+        .players
+        .into_iter()
+        .map(|p| (p.account_id, p.rank, p.status, p.points, p.round_points))
+        .collect()
 }

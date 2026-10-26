@@ -4,9 +4,15 @@
 //! `cdylib` for `wasm32-unknown-unknown`. The driver host turns the resulting
 //! core module into a component when it loads it.
 //!
-//! Modes run without WASI. Everything they know comes from their settings and
-//! [`Event`]s, so replaying the events of a match rebuilds the same mode. A mode
-//! must not depend on wall clock time or randomness to stay replayable.
+//! The scores of a match live in [`Standings`] every mode shares. The host keeps
+//! them and hands them to the mode with every event, so a mode keeps nothing but
+//! its settings. The host also shows the standings to the players and reports
+//! them to the manager, a mode only applies its rules to them.
+//!
+//! Modes run without WASI. Everything they know comes from their settings, the
+//! standings and the [`Event`]s, so replaying the events of a match rebuilds the
+//! same standings. A mode must not depend on wall clock time or randomness to
+//! stay replayable.
 
 // Lets the generated bindings and the export macro use the same paths inside
 // this crate and inside the mode crates.
@@ -30,19 +36,30 @@ pub mod bindings {
 }
 
 pub mod settings;
-pub mod standings;
+mod standings;
+pub mod testing;
 
 pub use bindings::tmservers::driver::host::LogLevel;
 pub use bindings::tmservers::driver::types::{
-    CanSpawn, Command, Event, FinishTimeout, Layer, PlayerResult, RaceResult, RoundEnd, RoundFormat,
+    CanSpawn, Command, Decision, Event, FinishTimeout, Layer, RaceResult, RoundEnd, RoundFormat,
+    Standing, Standings, Status,
 };
 
 /// A game mode. One instance lives for the whole match.
 pub trait Mode: Sized + 'static {
+    /// Shown above the standings, e.g. `Reverse Cup`.
+    const NAME: &'static str;
+
     /// Creates the mode from the json settings of the match.
     fn init(settings: &str) -> Result<Self, String>;
-    /// Handles an event and returns the commands for the server in order.
-    fn step(&mut self, event: Event) -> Vec<Command>;
+
+    /// Applies the rules of the mode to an event and returns the commands for the
+    /// server in order.
+    ///
+    /// The scores live in `standings`, which the host keeps between events. That is
+    /// why a mode only gets `&self`: everything besides its settings belongs into the
+    /// standings.
+    fn step(&self, standings: &mut Standings, event: Event) -> Vec<Command>;
 }
 
 /// Logs through the driver host. Prints to stderr when running natively (e.g. in tests).
@@ -77,20 +94,31 @@ macro_rules! export_mode {
                     ::core::result::Result::Ok(())
                 }
 
-                fn step(event: $crate::Event) -> ::std::vec::Vec<$crate::Command> {
-                    MODE.with(|m| match m.borrow_mut().as_mut() {
+                fn name() -> ::std::string::String {
+                    ::std::string::String::from(<$mode as $crate::Mode>::NAME)
+                }
+
+                fn step(
+                    mut standings: $crate::Standings,
+                    event: $crate::Event,
+                ) -> $crate::Decision {
+                    let commands = MODE.with(|m| match m.borrow().as_ref() {
                         ::core::option::Option::Some(mode) => {
-                            <$mode as $crate::Mode>::step(mode, event)
+                            <$mode as $crate::Mode>::step(mode, &mut standings, event)
                         }
                         ::core::option::Option::None => {
                             $crate::log($crate::LogLevel::Error, "step was called before init");
                             ::std::vec::Vec::new()
                         }
-                    })
-                }
+                    });
+                    $crate::Decision {
+                        standings,
+                        commands,
+                    }
+        }
             }
 
-    $crate::bindings::__export_mode!(Export with_types_in $crate::bindings);
+            $crate::bindings::__export_mode!(Export with_types_in $crate::bindings);
         };
     };
 }

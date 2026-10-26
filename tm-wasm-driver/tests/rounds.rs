@@ -5,12 +5,12 @@ mod common;
 use std::sync::OnceLock;
 
 use common::{
-    SESSION, forced_round_end, hold, match_start, publishes_standings, round_start, scores,
-    without_standings,
+    SESSION, forced_round_end, hold, match_start, publishes_standings, ranking, round_start,
+    scores, without_standings,
 };
 use tm_server_types::{
     event::{DriverHold, DriverPlayerResult, DriverRoundResult, DriverSection, Event},
-    method::{DriverCommand, DriverFinishTimeout, DriverRoundFormat},
+    method::{DriverCommand, DriverFinishTimeout, DriverRoundFormat, DriverStatus},
 };
 use tm_wasm_driver::{Driver, DriverEngine, DriverError, DriverLimits, DriverReply};
 
@@ -95,6 +95,17 @@ fn plays_a_match() {
         ),
         [DriverCommand::EndMatch, DriverCommand::Continue(3)]
     );
+
+    // The host keeps the standings, the mode crowned the leader.
+    assert_eq!(
+        ranking(&driver),
+        [
+            ("a".into(), 1, DriverStatus::Winner, 10, 10),
+            ("b".into(), 2, DriverStatus::Playing, 6, 6),
+        ]
+    );
+    assert_eq!(driver.standings().title, "Rounds");
+    assert_eq!(driver.standings().maps_played, 1);
 }
 
 #[test]

@@ -4,10 +4,12 @@ mod common;
 
 use std::sync::OnceLock;
 
-use common::{hold, match_start, round_start, scores, start_line, way_point, without_standings};
+use common::{
+    hold, match_start, ranking, round_start, scores, start_line, way_point, without_standings,
+};
 use tm_server_types::{
     event::{DriverPlayerResult, DriverRoundResult, DriverSection, Event},
-    method::{DriverCanSpawn, DriverCommand, DriverFinishTimeout, DriverRoundFormat},
+    method::{DriverCanSpawn, DriverCommand, DriverFinishTimeout, DriverRoundFormat, DriverStatus},
 };
 use tm_wasm_driver::{Driver, DriverEngine, DriverLimits, DriverReply};
 
@@ -157,6 +159,15 @@ fn plays_a_match() {
             results: vec![result("a", -4, 1), result("b", -8, 2)]
         })
     );
+    assert_eq!(
+        ranking(&driver),
+        [
+            ("a".into(), 1, DriverStatus::Winner, 2, -4),
+            ("b".into(), 2, DriverStatus::Eliminated, 0, -8),
+            ("c".into(), 3, DriverStatus::Eliminated, 0, 0),
+        ]
+    );
+    assert_eq!(driver.standings().info, "1 left, 3 / 5 rounds");
 
     assert_eq!(
         without_standings(
