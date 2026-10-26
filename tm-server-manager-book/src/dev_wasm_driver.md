@@ -94,7 +94,8 @@ the only place that knows how each command reaches the server.
 | `SetCanSpawn` | `Driver.SetCanSpawn [account_id, 1\|0]` | Eliminations without forcing spectators, which the allowlist sync manages. The host leaves out permissions it sent before in the match. |
 | `EndMap` | standard `NextMap` | – |
 | `EndMatch` | `Driver.EndMatch` | NextMap only ends the map. |
-| `SetLayer` / `RemoveLayer` | `Driver.SetLayer [name, manialink]` / `Driver.RemoveLayer [name]` | Only layers created by the script can read its netvars. |
+| `SetLayer` / `RemoveLayer` | `Driver.SetLayer [name, manialink, normal\|scores_table]` / `Driver.RemoveLayer [name]` | Only layers created by the script can read its netvars. `scores_table` layers become the scores table, see [Scores table](#scores-table). |
+| `SetUiModuleVisible` | standard `Common.UIModules.SetProperties` | – |
 | `SetStandings` | `Driver.SetStandings [json]` | Writes `Net_Driver_Standings` and bumps `Net_Driver_StandingsSerial`. Only sent by the host. |
 | `SetNetState` | `Driver.SetNetState [json]` | Writes `Net_Driver_State` and bumps `Net_Driver_StateSerial`. For data of a mode the standings can not hold. |
 | `ChatMessage` | standard `ChatSendServerMessage` | – |
@@ -166,13 +167,34 @@ corrections can later edit the standings without the mode knowing about it.
 - Manialinks parse it with `fromjson`. A test checks that every manialink reading
   `Net_Driver_Standings` declares a struct member for every field.
 - Manialinks are selected next to the mode in the config (`Driver.manialinks`). The bridge installs
-  them as layers when the config loads and whenever the modescript (re)starts. Nadeo's scores
-  table shows race times only. `tm-driver-modes/manialinks` has:
+  them as layers when the config loads and whenever the modescript (re)starts.
+  `tm-driver-modes/manialinks` has:
   - `standings`: the table of the match with ranks (ties included), points, round points and
     statuses. It highlights the local player and always shows them, in the last row if needed.
   - `my-standing`: place, points or status and the last round of the local player.
+  - `scores-table`: replaces the scores table of the game, see below.
 - Data of a mode the standings can not hold goes through `SetNetState` (`Net_Driver_State`) to
   manialinks of that mode.
+
+### Scores table
+
+The game does not draw its scores table itself. It shows every UI layer of the type
+`CUILayer::EUILayerType::ScoresTable` while a player holds the scores table key (whatever they
+bound) and whenever the script forces it with `UIManager.UIAll.ScoreTableVisibility`. Nadeo's
+scores table is the UI module `Race_ScoresTable`, a manialink in such a layer.
+
+- A manialink whose name ends with `scores-table` becomes a layer of that type
+  (`Driver.SetLayer [name, manialink, scores_table]`), so it opens with the same key.
+- The modescript forces the scores table visible during the 3 seconds after every counted round,
+  like the Nadeo modes, and back to normal afterwards. The podium of the base script shows it at
+  the end of the match.
+- While such a manialink is installed, the host hides Nadeo's module with the standard
+  `Common.UIModules.SetProperties` (`{"uimodules": [{"id": "Race_ScoresTable", "visible": false,
+  "visible_update": true}]}`) and shows it again otherwise. `DriverCommand::show_layers` adds that
+  to the layers, the bridge and the runner use it whenever they install layers.
+- `scores-table.xml` shows up to 32 players in two columns with the same data as `standings`.
+  It does not show race times, avatars, club tags or the ping like Nadeo's table and has no
+  interaction yet.
 
 The manager comes with the database integration. Until then the bridge only logs the round
 results the host derives, and the manager records driver matches like Rounds: positions follow
@@ -290,8 +312,8 @@ import host;  // log
 
 `ModeSettingsV2::Driver(Driver { mode, settings, decision_timeout, manialinks })` selects the driver
 script. `mode` names the wasm module, `settings` is the JSON passed to `init` and `manialinks`
-names the manialinks shown next to the mode (`["standings"]` by default, e.g.
-`["standings", "my-standing"]`).
+names the manialinks shown next to the mode (`["standings", "scores-table"]` by default, e.g.
+`["standings", "my-standing", "scores-table"]`).
 
 For now the bridge loads modes from `TM_DRIVER_MODES_DIR` (default `./modes`) as `<mode>.wasm` and
 manialinks from `TM_DRIVER_MANIALINKS_DIR` (default `./manialinks`) as `<name>.xml`. A registry
@@ -385,6 +407,9 @@ A key of `complex_points_repartition` can list several player counts, e.g. `"4,5
    - Time attack rounds start players again after a finish or give up and stop at the time limit.
    - The manialinks parse the standings with `fromjson`, `LocalUser.WebServicesUserId` matches
      the account ids and their positions do not cover Nadeo's UI.
+   - The scores table key opens `scores-table` instead of Nadeo's table, also for spectators, it
+     opens by itself for 3 seconds after every round and on the podium, and Nadeo's table comes
+     back with a config without it.
    - A config change between driver modes applies the new round format on the next map.
    - The `StartLine` and `WayPoint` callbacks arrive, so round results know who started and how
      far they got.
