@@ -1,0 +1,126 @@
+<manialink name="Driver_MyStanding" version="3">
+<frame id="Frame_MyStanding" pos="104 -62" hidden="1">
+	<quad size="54 12" bgcolor="000000" opacity="0.6"/>
+	<label id="Label_Rank" pos="3 -6" size="20 10" valign="center2" textsize="5" textfont="GameFontBlack" textcolor="ffffff"/>
+	<label id="Label_Score" pos="51 -4" size="30 5" halign="right" valign="center2" textsize="2.5" textfont="GameFontSemiBold" textcolor="ffffff"/>
+	<label id="Label_Detail" pos="51 -9" size="30 4" halign="right" valign="center2" textsize="1" textcolor="ffffffaa"/>
+</frame>
+
+<script><!--
+/**
+ *	Shows where the local player stands, from the standings the driver host
+ *	publishes through Net_Driver_Standings. Works with every driver mode.
+ *	The json is tm_server_types::method::DriverStandings.
+ */
+#Include "TextLib" as TL
+
+#Struct K_Standing {
+	Text account_id;
+	Text name;
+	Integer rank;
+	Text status;
+	Integer points;
+	Integer map_points;
+	Integer round_points;
+}
+
+#Struct K_Standings {
+	Text title;
+	Text info;
+	Integer rounds_on_map;
+	Integer maps_played;
+	K_Standing[] players;
+}
+
+Void SetText(Text _ControlId, Text _Value) {
+	declare CMlLabel Label <=> (Page.GetFirstChild(_ControlId) as CMlLabel);
+	if (Label != Null) Label.Value = _Value;
+}
+
+Void SetTextColor(Text _ControlId, Vec3 _Color) {
+	declare CMlLabel Label <=> (Page.GetFirstChild(_ControlId) as CMlLabel);
+	if (Label != Null) Label.TextColor = _Color;
+}
+
+/// 1st, 2nd, 3rd, 4th, 11th, 21st, ...
+Text Ordinal(Integer _Rank) {
+	declare Text Rank = TL::ToText(_Rank);
+	if (_Rank % 100 >= 11 && _Rank % 100 <= 13) return Rank^"th";
+	switch (_Rank % 10) {
+		case 1: return Rank^"st";
+		case 2: return Rank^"nd";
+		case 3: return Rank^"rd";
+	}
+	return Rank^"th";
+}
+
+Void Update(Text _Standings) {
+	declare CMlFrame Frame_MyStanding <=> (Page.GetFirstChild("Frame_MyStanding") as CMlFrame);
+	declare K_Standings Standings;
+	declare K_Standing Mine;
+	declare Boolean Found = False;
+	if (LocalUser != Null && _Standings != "" && Standings.fromjson(_Standings)) {
+		foreach (Standing in Standings.players) {
+			if (Standing.account_id == LocalUser.WebServicesUserId) {
+				Mine = Standing;
+				Found = True;
+			}
+		}
+	}
+
+	// Spectators and players who do not take part see nothing.
+	Frame_MyStanding.Visible = Found;
+	if (!Found) return;
+
+	if (Mine.rank > 0) {
+		SetText("Label_Rank", Ordinal(Mine.rank));
+	} else {
+		SetText("Label_Rank", "-");
+	}
+
+	switch (Mine.status) {
+		case "finalist": {
+			SetText("Label_Score", "Finalist");
+			SetTextColor("Label_Score", <1., 0.6, 0.>);
+		}
+		case "last_chance": {
+			SetText("Label_Score", "Last Chance");
+			SetTextColor("Label_Score", <1., 0.33, 0.33>);
+		}
+		case "eliminated": {
+			SetText("Label_Score", "Eliminated");
+			SetTextColor("Label_Score", <0.6, 0.6, 0.6>);
+		}
+		case "winner": {
+			SetText("Label_Score", "Winner");
+			SetTextColor("Label_Score", <1., 0.8, 0.>);
+		}
+		default: {
+			SetText("Label_Score", TL::ToText(Mine.points)^" pts");
+			SetTextColor("Label_Score", <1., 1., 1.>);
+		}
+	}
+
+	if (Mine.round_points > 0) {
+		SetText("Label_Detail", "+"^TL::ToText(Mine.round_points)^" last round");
+	} else if (Mine.round_points < 0) {
+		SetText("Label_Detail", TL::ToText(Mine.round_points)^" last round");
+	} else {
+		SetText("Label_Detail", Standings.info);
+	}
+}
+
+main() {
+	declare netread Text Net_Driver_Standings for Teams[0];
+	declare netread Integer Net_Driver_StandingsSerial for Teams[0];
+	declare Integer LastSerial = -1;
+
+	while (True) {
+		yield;
+		if (LastSerial == Net_Driver_StandingsSerial) continue;
+		LastSerial = Net_Driver_StandingsSerial;
+		Update(Net_Driver_Standings);
+	}
+}
+--></script>
+</manialink>
