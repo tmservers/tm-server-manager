@@ -177,6 +177,26 @@ corrections can later edit the standings without the mode knowing about it.
 - Data of a mode the standings can not hold goes through `SetNetState` (`Net_Driver_State`) to
   manialinks of that mode.
 
+### Styling
+
+Nadeo's TM2020 UI modules are not public, so the manialinks follow the conventions of Nadeo's
+TM2020 manialinks and of community modes that copy them, e.g. the live ranking of the original
+reverse cup: `GameFontBlack` and `GameFontSemiBold` with `$i` (and `$t` for titles), `OswaldMono`
+for numbers, black backgrounds between 0.5 and 0.85 opacity, cells for ranks and points, a green
+accent line under the header and colored cells instead of the points for special statuses.
+Nadeo's slanted backgrounds are `.dds` images and not reproduced.
+
+Every manialink starts with its style:
+
+- A `<stylesheet>` with classes for fonts, text colors and backgrounds (`title`, `info`, `name`,
+  `number`, `status`, `header`, `accent`, `row`, `cell`, ...).
+- `C_Style_*` constants at the top of the script for what changes at runtime: the highlight of
+  the local and the spectated player, gained and lost round points, the color and the text of
+  every status. Colors are hex like in the stylesheet.
+
+Highlights and status colors are drawn on extra quads above the rows, so the script never
+overwrites a color of the stylesheet.
+
 ### Scores table
 
 The game does not draw its scores table itself. It shows every UI layer of the type
