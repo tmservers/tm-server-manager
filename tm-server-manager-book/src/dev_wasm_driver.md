@@ -92,6 +92,7 @@ the only place that knows how each command reaches the server.
 |---|---|---|
 | `Continue` | `Driver.Continue [seq]` | Holds don't exist in the standard protocol. Only sent by the host. |
 | `SetRoundFormat` | `Driver.SetRoundFormat [single_attempt, auto\|off\|ms]` or `[time_attack, ms]` | Round shape and finish timeout. |
+| `SetWarmUp` | `Driver.SetWarmUp [rounds, duration_ms, auto\|timeout_ms]` | The built-in warmup only takes its settings from the script. |
 | `SetCanSpawn` | `Driver.SetCanSpawn [account_id, 1\|0]` | Eliminations without forcing spectators, which the allowlist sync manages. The host leaves out permissions it sent before in the match. |
 | `EndMap` | standard `NextMap` | – |
 | `SetNextMap` | standard `SetNextMapIdent [uid]` | – |
@@ -280,10 +281,33 @@ server and changes it with `maps`.
 - Extends `TrackmaniaRoundsBase`, so Nadeo still handles spawning, checkpoints, finishes, replays,
   records, warmup and the standard callbacks.
 - Waits with `Driver.Hold` at map start, round end and map end.
+- Runs the built-in warmup after the map start hold, see [Warmup](#warmup).
 - Sends `Trackmania.Scores` (`PreEndRound`) right before the round end hold, and with an empty
   section (like the answer to `Trackmania.GetScores`) when a round starts. The host takes the
   names from there, so `race-start` carries them.
 - Implements the eight `Driver.*` methods above and nothing else.
+
+## Warmup
+
+The driver uses the built-in warmup instead of emulating one. The base script already runs
+`MB_WarmUp` before the first round of every map, which brings the warmup UI of the game, the
+`Trackmania.WarmUp.*` callbacks and its own rounds that never reach the round labels of the
+script, so warmup races are never scored. Emulating it with rounds that do not count would
+rebuild all of that for nothing.
+
+- Every mode has a `warmup` setting (`tm_driver_sdk::settings::WarmUpSetting`) and sends it with
+  `set-warm-up` in reply to `map-start`, so it applies to every map, the first one included.
+  The script hands it to `MB_WarmUp` right after the hold. Without a driver command the script
+  uses its `S_WarmUpNb`, `S_WarmUpDuration` and `S_WarmUpTimeout` settings, which are reset when
+  a match starts.
+- `rounds` is the number of warmup rounds, 0 for none. `duration_ms` is how long one warmup
+  round lasts, 0 lets every player drive once. `timeout_ms` is the time to finish after the
+  first player finished in those rounds of one try, computed from the author time without it.
+- The warmup has its own spawn rules, so the script copies the spawn permissions into
+  `WarmUp::CanPlay` before the warmup. Eliminated players and spectators of a reverse cup do
+  not warm up, like in the original.
+- The host follows `Trackmania.WarmUp.Start` and `End` and never sends `race-start` for warmup
+  races, so a reverse cup does not register players because they warmed up.
 
 ## TimeAttack
 
@@ -398,7 +422,8 @@ Settings of the rounds mode (every field is optional):
   "maps_per_match": null,
   "points_limit": 0,
   "use_tie_break": true,
-  "finish_timeout": "automatic"
+  "finish_timeout": "automatic",
+  "warmup": {"rounds": 0, "duration_ms": 0, "timeout_ms": null}
 }
 ```
 
@@ -411,7 +436,8 @@ Settings of the time attack mode (every field is optional):
 {
   "time_limit_ms": 300000,
   "maps_per_match": null,
-  "points_repartition": []
+  "points_repartition": [],
+  "warmup": {"rounds": 0, "duration_ms": 0, "timeout_ms": null}
 }
 ```
 
@@ -429,7 +455,8 @@ Settings of the reverse cup mode (every field is optional, these are the default
   "allow_fast_forward_rounds": true,
   "number_of_winners": 1,
   "rounds_per_map": 5,
-  "finish_timeout": "automatic"
+  "finish_timeout": "automatic",
+  "warmup": {"rounds": 0, "duration_ms": 0, "timeout_ms": null}
 }
 ```
 
@@ -467,6 +494,8 @@ A key of `complex_points_repartition` can list several player counts, e.g. `"4,5
      it every round) and the best race since `Scores::Clear` in time attack rounds.
    - `NextMap` sent during the round end hold ends the map once the hold continues.
    - Time attack rounds start players again after a finish or give up and stop at the time limit.
+   - A warmup set by a mode runs before the first round of every map with the warmup UI of the
+     game, `duration_ms: 0` gives every player one try, and eliminated players can not warm up.
    - The manialinks parse the standings with `fromjson`, `LocalUser.WebServicesUserId` matches
      the account ids and their positions do not cover Nadeo's UI.
    - The scores table key opens `scores-table` instead of Nadeo's table, also for spectators, it
