@@ -51,6 +51,7 @@ tm-server-bridge ── post_event (standard callbacks, as before) ──▶ tm-
 | `match-start` | `Maniaplanet.StartMatch_Start` | no |
 | `map-start` | `Driver.Hold` (`MapStart`) | yes |
 | `round-start` | `Maniaplanet.StartRound_Start` | no |
+| `race-start` | the first `Trackmania.Event.StartLine` of a player in a round (not in warmups) | no |
 | `round-end` | `Driver.Hold` (`RoundEnd`) + the `Trackmania.Scores` (`PreEndRound`) sent right before it | yes |
 | `map-end` | `Driver.Hold` (`MapEnd`) | yes |
 | `match-end` | `Maniaplanet.EndMatch_Start` | no |
@@ -256,7 +257,9 @@ A replay needs:
 - Extends `TrackmaniaRoundsBase`, so Nadeo still handles spawning, checkpoints, finishes, replays,
   records, warmup and the standard callbacks.
 - Waits with `Driver.Hold` at map start, round end and map end.
-- Sends `Trackmania.Scores` (`PreEndRound`) right before the round end hold.
+- Sends `Trackmania.Scores` (`PreEndRound`) right before the round end hold, and with an empty
+  section (like the answer to `Trackmania.GetScores`) when a round starts. The host takes the
+  names from there, so `race-start` carries them.
 - Implements the eight `Driver.*` methods above and nothing else.
 
 ## TimeAttack
@@ -279,6 +282,9 @@ default the best of N finishers gets N points, so the points keep the order of t
 
 A port of the community `TM_ReverseCup` script with the same settings and rules:
 
+- The players who start a race before the first round counts take part. They show up in the
+  standings with their starting points from their first race on, so the scores table lists them
+  during the first round already. Once a round counted, everyone else cannot spawn anymore.
 - Every participant starts with `starting_points` and loses points by finish position. The
   repartition depends on the players left (`complex_points_repartition`, otherwise
   `points_repartition`). While more players are left than it has values, every eliminated player
@@ -297,8 +303,8 @@ A port of the community `TM_ReverseCup` script with the same settings and rules:
 
 Differences to the original:
 
-- The participants are the players who start in the first valid round, not the players on the
-  server when the first map starts. Everyone else in the scores cannot spawn anymore from then on
+- The participants are the players who start a race before the first round counts, not the
+  players on the server when the first map starts. Everyone else in the scores cannot spawn anymore from then on
   and shows up as `Spectator` like in the original. Someone joining later can race the round
   they joined in, which does not count for them.
 - The original skips a round that would put everyone in last chance anyway. The mode does that
