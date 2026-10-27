@@ -31,7 +31,7 @@ use std::{
 };
 
 use tm_server_types::{
-    base::PlayerInfo,
+    base::{Map, PlayerInfo},
     event::{DriverHold, DriverRoundResult, DriverSection, Event},
     method::{DriverCanSpawn, DriverCommand, DriverRound, DriverStandings, DriverUsers},
 };
@@ -63,6 +63,8 @@ use bindings::{
 
 /// How often the epoch of the engine advances. This is the precision of call timeouts.
 const EPOCH_TICK: Duration = Duration::from_millis(10);
+/// Log messages a mode may write in one call. Further messages are dropped.
+const LOG_BUDGET: u32 = 64;
 /// Longest log message of a mode in bytes. Longer messages get truncated.
 const MAX_LOG_MESSAGE: usize = 1024;
 
@@ -116,7 +118,7 @@ impl DriverEngine {
         config.strategy(wasmtime::Strategy::Cranelift);
         config.cranelift_opt_level(wasmtime::OptLevel::Speed);
         config.epoch_interruption(true);
-        // Enable determinsim
+        // The same events have to give the same results, e.g. when a match is replayed.
         config.cranelift_nan_canonicalization(true);
         config.relaxed_simd_deterministic(true);
         let engine = Engine::new(&config).map_err(DriverError::Instantiate)?;
@@ -149,6 +151,8 @@ impl DriverEngine {
         })
     }
 
+    /// Compiles a mode. Takes a component or a core module, e.g. a mode crate built
+    /// for `wasm32-unknown-unknown`, which is turned into a component.
     pub fn compile(&self, wasm: &[u8]) -> Result<Component, DriverError> {
         let component = match WasmKind::of(wasm) {
             Some(WasmKind::Component) => Component::new(&self.engine, wasm),
@@ -170,6 +174,7 @@ impl DriverEngine {
         Ok(component)
     }
 
+    /// Starts a mode for a match with its json settings, which the mode may reject.
     pub fn instantiate(
         &self,
         component: &Component,
@@ -190,7 +195,8 @@ impl DriverEngine {
         Ok(driver)
     }
 
-    // Restore Match state from a Event stream.
+    /// Rebuilds the driver of a match from the events it handled, e.g. after the
+    /// bridge restarted. Needs the settings and the playlist of the match.
     pub fn replay<'a>(
         &self,
         component: &Component,
@@ -214,7 +220,7 @@ impl DriverEngine {
                 .memories(4)
                 .tables(16)
                 .build(),
-            log_budget: 64,
+            log_budget: LOG_BUDGET,
             users: BTreeMap::new(),
             map_count: 0,
         };
@@ -286,8 +292,7 @@ pub struct Driver {
     last_hold: Option<(u32, Vec<DriverCommand>)>,
     /// Uids of the maps the match plays in order.
     playlist: Vec<String>,
-    /// Uid and name of the current map.
-    map: Option<(String, String)>,
+    map: Option<Map>,
     /// The mode chose the next map since the current one started.
     next_map_chosen: bool,
     /// Players on the server, who take part in round results without racing.
@@ -304,9 +309,9 @@ pub struct Driver {
 /// What the manialinks got last, so only changes are sent.
 #[derive(Default)]
 struct Published {
-    standings: Option<String>,
-    round: Option<String>,
-    users: Option<String>,
+    users: Option<DriverUsers>,
+    standings: Option<DriverStandings>,
+    round: Option<DriverRound>,
 }
 
 /// What should happen after an event.
@@ -358,7 +363,7 @@ impl Driver {
                 self.step(wit::Event::MatchStart)
             }
             Event::StartMapStart(start) => {
-                self.map = Some((start.map.uid.clone(), start.map.name.clone()));
+                self.map = Some(start.map.clone());
                 self.next_map_chosen = false;
                 Ok(DriverReply::default())
             }
@@ -456,7 +461,7 @@ impl Driver {
 
     /// The standings of the match as the mode left them, ordered by position.
     pub fn standings(&self) -> DriverStandings {
-        let map_name = self.map.as_ref().map_or("", |(_, name)| name.as_str());
+        let map_name = self.map.as_ref().map_or("", |map| map.name.as_str());
         convert::standings(
             &self.name,
             map_name,
@@ -480,6 +485,8 @@ impl Driver {
     /// replay needs the same playlist.
     pub fn set_playlist(&mut self, maps: impl IntoIterator<Item = impl Into<String>>) {
         self.playlist = maps.into_iter().map(Into::into).collect();
+        // The mode reads it through the host functions.
+        self.store.data_mut().map_count = self.playlist.len() as u32;
     }
 
     /// Learns the players who are on the server already, e.g. when the driver is
@@ -519,40 +526,56 @@ impl Driver {
 
     fn step(&mut self, event: wit::Event) -> Result<DriverReply, DriverError> {
         clear(&mut self.standings, &event);
-        // The mode reads it through the host functions.
-        self.store.data_mut().map_count = self.playlist.len() as u32;
-
-        self.prepare_call();
-        let decision = match self
-            .bindings
-            .call_step(&mut self.store, &self.standings, &event)
-        {
-            Ok(decision) => decision,
-            Err(error) => {
-                self.poisoned = true;
-                return Err(DriverError::Trap(error));
-            }
-        };
+        let decision = self.call_step(&event)?;
         self.standings = decision.standings;
 
-        // The mode reports the round and never gets it back.
+        let round_result = self.take_round(&event);
+        let mut commands = self.commands(decision.commands);
+        commands.extend(self.default_next_map(&event, &commands));
+        commands.extend(self.publish());
+
+        Ok(DriverReply {
+            commands,
+            round_result,
+        })
+    }
+
+    /// A trap poisons the driver, the mode could be in any state afterwards.
+    fn call_step(&mut self, event: &wit::Event) -> Result<wit::Decision, DriverError> {
+        self.prepare_call();
+        self.bindings
+            .call_step(&mut self.store, &self.standings, event)
+            .map_err(|error| {
+                self.poisoned = true;
+                DriverError::Trap(error)
+            })
+    }
+
+    /// Takes the round the mode placed out of the standings, the mode never gets it
+    /// back. Unless it was forced, it becomes the last round and goes to the manager.
+    fn take_round(&mut self, event: &wit::Event) -> Option<DriverRoundResult> {
         let round = std::mem::take(&mut self.standings.round);
-        let round_result = match &event {
+        match event {
             wit::Event::RoundEnd(round_end) if !round_end.forced => {
                 self.round_number += 1;
                 self.last_round = round;
                 Some(convert::round_result(&self.last_round))
             }
             _ => None,
-        };
+        }
+    }
 
-        let mut commands = convert::commands(decision.commands, &self.playlist);
+    /// The commands of the mode for the server.
+    fn commands(&mut self, commands: Vec<wit::Command>) -> Vec<DriverCommand> {
+        let mut commands = convert::commands(commands, &self.playlist);
+        if commands
+            .iter()
+            .any(|command| matches!(command, DriverCommand::SetNextMap(_)))
+        {
+            self.next_map_chosen = true;
+        }
+        // Repeated permissions only cost calls to the server.
         commands.retain(|command| match command {
-            DriverCommand::SetNextMap(_) => {
-                self.next_map_chosen = true;
-                true
-            }
-            // Repeated permissions only cost calls to the server.
             DriverCommand::SetCanSpawn(DriverCanSpawn {
                 account_id,
                 can_spawn,
@@ -563,52 +586,27 @@ impl Driver {
             }
             _ => true,
         });
-
-        // Unless the mode chose, the playlist goes on in order and a new match starts
-        // with its first map.
-        if !self.next_map_chosen && !self.playlist.is_empty() {
-            let next = if commands.contains(&DriverCommand::EndMatch) {
-                Some(0)
-            } else if let wit::Event::MapStart = event {
-                Some(self.next_map_index())
-            } else {
-                None
-            };
-            if let Some(index) = next {
-                commands.push(DriverCommand::SetNextMap(self.playlist[index].clone()));
-            }
-        }
-
-        commands.extend(self.publish());
-
-        Ok(DriverReply {
-            commands,
-            round_result,
-        })
+        commands
     }
 
-    /// Publishes what changed for the manialinks. The players come first so the
-    /// standings can show their names right away.
-    fn publish(&mut self) -> Vec<DriverCommand> {
-        let mut commands = Vec::new();
-
-        let users = json(&self.users());
-        if self.published.users.as_ref() != Some(&users) {
-            self.published.users = Some(users.clone());
-            commands.push(DriverCommand::SetUsers(users));
+    /// Unless the mode chose, the playlist goes on in order and a new match starts
+    /// with its first map.
+    fn default_next_map(
+        &self,
+        event: &wit::Event,
+        commands: &[DriverCommand],
+    ) -> Option<DriverCommand> {
+        if self.next_map_chosen || self.playlist.is_empty() {
+            return None;
         }
-        let standings = json(&self.standings());
-        if self.published.standings.as_ref() != Some(&standings) {
-            self.published.standings = Some(standings.clone());
-            commands.push(DriverCommand::SetStandings(standings));
-        }
-        let round = json(&self.last_round());
-        if self.published.round.as_ref() != Some(&round) {
-            self.published.round = Some(round.clone());
-            commands.push(DriverCommand::SetRound(round));
-        }
-
-        commands
+        let index = if commands.contains(&DriverCommand::EndMatch) {
+            0
+        } else if let wit::Event::MapStart = event {
+            self.next_map_index()
+        } else {
+            return None;
+        };
+        Some(DriverCommand::SetNextMap(self.playlist[index].clone()))
     }
 
     /// The map after the current one in the playlist, the first one if the current
@@ -617,18 +615,34 @@ impl Driver {
         let current = self
             .map
             .as_ref()
-            .and_then(|(uid, _)| self.playlist.iter().position(|map| map == uid));
+            .and_then(|map| self.playlist.iter().position(|uid| *uid == map.uid));
         match current {
             Some(index) => (index + 1) % self.playlist.len(),
             None => 0,
         }
     }
 
+    /// Publishes what changed for the manialinks. The players come first so the
+    /// standings can show their names right away.
+    fn publish(&mut self) -> Vec<DriverCommand> {
+        let mut commands = Vec::new();
+        if let Some(users) = changed(self.users(), &mut self.published.users) {
+            commands.push(DriverCommand::SetUsers(json(users)));
+        }
+        if let Some(standings) = changed(self.standings(), &mut self.published.standings) {
+            commands.push(DriverCommand::SetStandings(json(standings)));
+        }
+        if let Some(round) = changed(self.last_round(), &mut self.published.round) {
+            commands.push(DriverCommand::SetRound(json(round)));
+        }
+        commands
+    }
+
     fn prepare_call(&mut self) {
         // Setting fuel only fails if fuel is not enabled, which the engine always does.
         _ = self.store.set_fuel(self.fuel_per_call);
         self.store.set_epoch_deadline(self.epoch_deadline);
-        self.store.data_mut().log_budget = 64;
+        self.store.data_mut().log_budget = LOG_BUDGET;
     }
 }
 
@@ -645,6 +659,14 @@ fn clear(standings: &mut wit::Standings, event: &wit::Event) {
         | wit::Event::RoundEnd(_)
         | wit::Event::MatchEnd => {}
     }
+}
+
+/// The value if it differs from what was published last, which it replaces then.
+fn changed<T: PartialEq>(value: T, published: &mut Option<T>) -> Option<&T> {
+    if published.as_ref() == Some(&value) {
+        return None;
+    }
+    Some(&*published.insert(value))
 }
 
 fn json(value: &impl serde::Serialize) -> String {
