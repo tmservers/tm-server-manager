@@ -78,7 +78,7 @@ fn plays_the_playlist_in_order_once() {
 
 #[test]
 fn a_match_that_ends_early_starts_over_with_the_first_map() {
-    let mut driver = rounds(r#"{"points_limit": 10, "use_tie_break": false}"#);
+    let mut driver = rounds(r#"{"points_limit": 10}"#);
     driver.set_playlist(["m1", "m2", "m3"]);
     driver.handle(&match_start()).unwrap();
     driver.handle(&map_start("m1")).unwrap();

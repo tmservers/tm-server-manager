@@ -19,7 +19,7 @@ fn rounds(settings: &str) -> Driver {
 }
 
 /// The settings of a match that ends once a player has more than 25 points.
-const POINTS_LIMIT: &str = r#"{"rounds_per_map": 0, "points_limit": 25, "use_tie_break": false}"#;
+const POINTS_LIMIT: &str = r#"{"rounds_per_map": 0, "points_limit": 25}"#;
 
 fn result(account_id: &str, points: i32, position: u32) -> DriverPlayerResult {
     DriverPlayerResult {

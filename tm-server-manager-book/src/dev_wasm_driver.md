@@ -190,8 +190,8 @@ then by account.
   them, which differ as well.
 - Players who joined since the last round have no position yet (0, shown as `-`) and follow the
   ranked players by name (`Standings::list_newcomers`).
-- Equal points only matter where a mode makes a rule of them: the tie break of the rounds mode
-  keeps playing while the leaders have the same points. Without it the last round decides.
+- No match is played on because of a tie: leaders with the same points at the points limit or
+  after the last map are told apart by the race like everyone else.
 
 Modes become small functions of their settings, the standings and an event, which makes them
 easy to test. The manager and the manialinks read one format for every mode, and admin
@@ -516,7 +516,7 @@ import host;  // log, find-user, map-count
   logic compiles natively too. `testing::Harness` runs a mode with the lifecycle of the host, so
   modes are unit tested without wasm.
 - `tm-driver-modes/rounds`: Rounds (points repartition, rounds per map, maps per match, points
-  limit with tie break, finish timeout).
+  limit, finish timeout).
 - `tm-driver-modes/time-attack`: TimeAttack (time limit, maps per match, points by rank).
 - `tm-driver-modes/reverse-cup`: ReverseCup (see [ReverseCup](#reversecup)).
 - `tm-driver-modes/knockout`: Knockout with lives (see [Knockout](#knockout)).
@@ -550,7 +550,6 @@ Settings of the rounds mode (every field is optional):
   "rounds_per_map": 5,
   "maps_per_match": null,
   "points_limit": 0,
-  "use_tie_break": true,
   "finish_timeout": "automatic",
   "warmup": {"rounds": 0, "duration_ms": 0, "timeout_ms": null}
 }

@@ -29,8 +29,6 @@ pub struct Settings {
     pub maps_per_match: Option<u32>,
     /// The match ends once a player reached this many points. 0 disables it.
     pub points_limit: i32,
-    /// Keep playing while the leading players are tied.
-    pub use_tie_break: bool,
     pub finish_timeout: FinishTimeoutSetting,
     /// The warmup before the first round of every map.
     pub warmup: WarmUpSetting,
@@ -43,7 +41,6 @@ impl Default for Settings {
             rounds_per_map: 5,
             maps_per_match: None,
             points_limit: 0,
-            use_tie_break: true,
             finish_timeout: FinishTimeoutSetting::Automatic,
             warmup: WarmUpSetting::default(),
         }
@@ -53,14 +50,6 @@ impl Default for Settings {
 #[derive(Debug, Clone)]
 pub struct Rounds {
     settings: Settings,
-}
-
-#[derive(Debug, PartialEq, Eq)]
-enum PointsLimit {
-    NotReached,
-    Reached,
-    /// Reached or not, the leading players have the same points.
-    Tie,
 }
 
 impl Mode for Rounds {
@@ -136,7 +125,7 @@ impl Rounds {
         standings.place_round(&round_end.results, CountedRace::Last);
         standings.info = self.info(standings);
 
-        if self.points_limit(standings) == PointsLimit::Reached {
+        if self.points_limit_reached(standings) {
             standings.crown_leaders();
             vec![Command::EndMatch]
         } else if self.settings.rounds_per_map > 0
@@ -170,27 +159,20 @@ impl Rounds {
             .unwrap_or(0)
     }
 
-    fn points_limit(&self, standings: &Standings) -> PointsLimit {
-        let mut leaders: Vec<i32> = standings.entries.iter().map(|p| p.score).collect();
-        leaders.sort_unstable_by(|a, b| b.cmp(a));
-
-        if self.settings.use_tie_break && leaders.len() > 1 && leaders[0] == leaders[1] {
-            return PointsLimit::Tie;
-        }
-        match leaders.first() {
-            Some(&best) if self.settings.points_limit > 0 && best >= self.settings.points_limit => {
-                PointsLimit::Reached
-            }
-            _ => PointsLimit::NotReached,
-        }
+    /// Players with the same points at the limit are told apart like every other tie.
+    fn points_limit_reached(&self, standings: &Standings) -> bool {
+        self.settings.points_limit > 0
+            && standings
+                .entries
+                .iter()
+                .any(|p| p.score >= self.settings.points_limit)
     }
 
     fn match_is_over(&self, standings: &Standings) -> bool {
-        let points_limit = self.points_limit(standings);
-        if points_limit == PointsLimit::Reached {
+        if self.points_limit_reached(standings) {
             true
         } else if let maps @ 1.. = maps_per_match(self.settings.maps_per_match) {
-            standings.maps_played >= maps && points_limit != PointsLimit::Tie
+            standings.maps_played >= maps
         } else {
             // Without any limit the match ends after the first map.
             self.settings.rounds_per_map == 0 && self.settings.points_limit <= 0
@@ -419,23 +401,19 @@ mod tests {
     }
 
     #[test]
-    fn points_limit_respects_tie_break() {
-        let mut harness = started(r#"{"points_repartition": [5, 5], "points_limit": 10}"#);
-        harness.step(round_end(vec![finish("a", 1), finish("b", 2)]));
+    fn points_limit_ends_the_match() {
+        let mut harness = started(r#"{"points_repartition": [5, 4], "points_limit": 10}"#);
         let commands = harness.step(round_end(vec![finish("a", 1), finish("b", 2)]));
-        // Both reached 10 points but they are tied.
         assert!(!commands.contains(&Command::EndMatch));
 
-        let commands = harness.step(round_end(vec![finish("a", 1)]));
+        let commands = harness.step(round_end(vec![finish("a", 1), finish("b", 2)]));
         assert!(commands.contains(&Command::EndMatch));
         assert_eq!(harness.standing("a").label, Some(Label::winner()));
     }
 
     #[test]
-    fn without_tie_break_the_last_round_decides() {
-        let mut harness = started(
-            r#"{"points_repartition": [5, 5], "points_limit": 10, "use_tie_break": false}"#,
-        );
+    fn the_last_round_decides_a_tie_at_the_points_limit() {
+        let mut harness = started(r#"{"points_repartition": [5, 5], "points_limit": 10}"#);
         harness.step(round_end(vec![finish("a", 1), finish("b", 2)]));
         let commands = harness.step(round_end(vec![finish("b", 1), finish("a", 2)]));
         // Both reached 10 points, b won the last round.
@@ -448,5 +426,7 @@ mod tests {
     #[test]
     fn rejects_unknown_settings() {
         assert!(Rounds::from_json(r#"{"rounds_per_mpa": 3}"#).is_err());
+        // Ties are always broken, so there is nothing to play on for.
+        assert!(Rounds::from_json(r#"{"use_tie_break": true}"#).is_err());
     }
 }
