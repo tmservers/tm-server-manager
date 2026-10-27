@@ -22,22 +22,22 @@ dotenvy.workspace = true
 
 #takumi.workspace = true
 
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing.workspace = true
+tracing-subscriber.workspace = true
 
 serde = { workspace = true, features = ['derive'] }
 
-nadeo-api = "*"
+nadeo-api.workspace = true
 
 # This is needed because openssl is an implicit dependency.
 # If we want to compile for docker musl we need to statically link
 # against it and otherwise it wont be found.
-openssl = { version = "0.10", features = ["vendored"], optional = true }
+openssl = { workspace = true, optional = true }
 
 
 [dev-dependencies]
-testcontainers = { version = "*", features = ["blocking"] }
-#insta = { version = "*" }
+testcontainers = { workspace = true, features = ["blocking"] }
+#insta.workspace = true
 
 [features]
 tracing = []
