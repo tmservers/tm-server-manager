@@ -15,6 +15,9 @@ interface types {
         started: bool,
         /// Checkpoints the player passed in the last race of the round, the finish included.
         progress: u32,
+        /// The race times at those checkpoints in milliseconds, so players who got
+        /// equally far can be told apart.
+        progress-times: list<u32>,
         /// Time of the last finished race of the round in milliseconds. None without a
         /// finish. In single attempt rounds this is the race of the round.
         previous-time: option<u32>,

@@ -262,6 +262,7 @@ mod tests {
             account_id: account_id.into(),
             started: true,
             progress,
+            progress_times: vec![],
             previous_time: previous,
             previous_checkpoints: vec![],
             best_time: best,

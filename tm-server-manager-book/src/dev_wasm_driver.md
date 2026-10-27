@@ -62,8 +62,10 @@ attempt rounds count the last race, time attack rounds the best one. The host bu
 the standard callbacks: `Trackmania.Event.StartLine` starts a race and a
 `Trackmania.Event.WayPoint` with `isendrace` finishes it. The modescript sends no scores.
 
-Every result also says whether the player `started` a race in the round and how many checkpoints
-(`progress`, the finish included) they passed in their last race. Players who left stay in the
+Every result also says whether the player `started` a race in the round, how many checkpoints
+(`progress`, the finish included) they passed in their last race and at which race times
+(`progress_times`, from the `curracecheckpoints` of the waypoints), so players who got equally far
+can be told apart without a finish. Players who left stay in the
 results of the round they started in. The players on the server come from
 `ManiaPlanet.PlayerConnect`, `PlayerDisconnect` and `PlayerInfoChanged`. The bridge hands the
 players that were on the server when the mode loaded to `Driver::add_players`, which learns them

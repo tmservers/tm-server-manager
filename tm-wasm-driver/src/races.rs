@@ -15,6 +15,8 @@ struct Finish {
 struct Race {
     /// Checkpoints passed in the current race, the finish included.
     progress: u32,
+    /// The race times at those checkpoints.
+    progress_times: Vec<u32>,
     /// The last finished race of the round.
     previous: Option<Finish>,
     /// The best finished race of the round.
@@ -37,6 +39,7 @@ impl Races {
         match self.race_mut(account_id) {
             Some(race) => {
                 race.progress = 0;
+                race.progress_times.clear();
                 false
             }
             None => {
@@ -59,6 +62,7 @@ impl Races {
 
         // Counts from 0 for the first checkpoint.
         race.progress = way_point.checkpoint_in_race + 1;
+        race.progress_times = way_point.current_race_checkpoints.clone();
         if way_point.is_end_race {
             let finish = Finish {
                 time: way_point.racetime,
@@ -87,6 +91,7 @@ impl Races {
                 account_id: account_id.clone(),
                 started: true,
                 progress: race.progress,
+                progress_times: race.progress_times.clone(),
                 previous_time: race.previous.as_ref().map(|finish| finish.time),
                 previous_checkpoints: checkpoints(&race.previous),
                 best_time: race.best.as_ref().map(|finish| finish.time),
@@ -104,6 +109,7 @@ impl Races {
                     account_id: account_id.clone(),
                     started: false,
                     progress: 0,
+                    progress_times: Vec::new(),
                     previous_time: None,
                     previous_checkpoints: Vec::new(),
                     best_time: None,
@@ -164,9 +170,25 @@ mod tests {
         let results = races.results([]);
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].progress, 0);
+        assert!(results[0].progress_times.is_empty());
         assert_eq!(results[0].previous_time, Some(30_000));
         assert_eq!(results[0].best_time, Some(30_000));
         assert_eq!(results[0].best_checkpoints, [30_000]);
+    }
+
+    #[test]
+    fn races_without_a_finish_keep_their_checkpoint_times() {
+        let mut races = Races::default();
+        races.start("a");
+        races.way_point(&WayPoint {
+            current_race_checkpoints: vec![10_000, 21_000],
+            ..way_point("a", 1, None)
+        });
+
+        let results = races.results([]);
+        assert_eq!(results[0].progress, 2);
+        assert_eq!(results[0].progress_times, [10_000, 21_000]);
+        assert_eq!(results[0].previous_time, None);
     }
 
     #[test]
