@@ -66,7 +66,8 @@ Every result also says whether the player `started` a race in the round and how 
 (`progress`, the finish included) they passed in their last race. Players who left stay in the
 results of the round they started in. The players on the server come from
 `ManiaPlanet.PlayerConnect`, `PlayerDisconnect` and `PlayerInfoChanged`. The bridge hands the
-players that were on the server when the mode loaded to the driver as `PlayerInfoChanged`.
+players that were on the server when the mode loaded to `Driver::add_players`, which learns them
+like their `PlayerInfoChanged` callbacks but publishes them once.
 
 A round end whose round start the host did not see is `forced`, so it does not count. That happens
 when the bridge restarted during the round and missed its races.

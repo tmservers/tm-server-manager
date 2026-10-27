@@ -243,16 +243,10 @@ async fn load(
         .map_err(|e| e.to_string())?;
     driver.set_playlist(playlist.lock().unwrap().clone());
 
-    // Players already on the server do not connect again.
     let mut commands = DriverCommand::show_layers(layers);
+    // Players already on the server do not connect again.
     match server.get_player_list().await {
-        Ok(players) => {
-            for player in players {
-                if let Ok(reply) = driver.handle(&Event::PlayerInfoChanged(player)) {
-                    commands.extend(reply.commands);
-                }
-            }
-        }
+        Ok(players) => commands.extend(driver.add_players(players)),
         Err(error) => tracing::warn!("Could not get the players of the server: {error}"),
     }
 

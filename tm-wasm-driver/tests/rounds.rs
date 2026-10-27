@@ -5,10 +5,9 @@ mod common;
 use std::sync::OnceLock;
 
 use common::{
-    SESSION, finish, forced_round_end, hold, match_start, no_warm_up, play, player_info,
+    SESSION, finish, forced_round_end, hold, match_start, no_warm_up, play, player, player_info,
     publishes_standings, race, ranking, round_start, without_published,
 };
-use tm_server_types::base::PlayerInfo;
 use tm_server_types::{
     event::{
         DriverHold, DriverPlayerResult, DriverRoundResult, DriverSection, Event, PlayLoopStart,
@@ -202,15 +201,23 @@ fn publishes_the_players_it_knows() {
             .is_empty()
     );
     // The server shows up as a player too.
-    let server = Event::PlayerInfoChanged(PlayerInfo {
-        flags: 0b100000,
-        ..match player_info("server", "Server") {
-            Event::PlayerInfoChanged(info) => info,
-            _ => unreachable!(),
-        }
-    });
+    let server = Event::PlayerInfoChanged(common::server());
     assert!(driver.handle(&server).unwrap().commands.is_empty());
     assert_eq!(driver.users().users.len(), 1);
+}
+
+#[test]
+fn players_already_on_the_server_are_published_once() {
+    let mut driver = rounds("");
+    let commands = driver.add_players([player("a", "A"), player("b", "B"), common::server()]);
+    let users = commands
+        .iter()
+        .filter(|c| matches!(c, DriverCommand::SetUsers(_)))
+        .count();
+    assert_eq!(users, 1);
+    assert_eq!(driver.users().users.len(), 2);
+    // Nothing changed, so nothing is published.
+    assert!(driver.add_players([player("a", "A")]).is_empty());
 }
 
 #[test]

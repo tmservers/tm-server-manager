@@ -31,6 +31,7 @@ use std::{
 };
 
 use tm_server_types::{
+    base::PlayerInfo,
     event::{DriverHold, DriverRoundResult, DriverSection, Event},
     method::{DriverCanSpawn, DriverCommand, DriverRound, DriverStandings, DriverUsers},
 };
@@ -396,23 +397,9 @@ impl Driver {
                 Ok(DriverReply::default())
             }
             Event::PlayerInfoChanged(info) => {
-                // The server shows up as a player too.
-                if info.is_server() {
+                if !self.learn(info) {
                     return Ok(DriverReply::default());
                 }
-                self.connected.insert(info.account_id.clone());
-                let user = self
-                    .store
-                    .data_mut()
-                    .users
-                    .entry(info.account_id.clone())
-                    .or_insert_with(|| wit::User {
-                        account_id: info.account_id.clone(),
-                        name: String::new(),
-                        club_tag: String::new(),
-                        zone: String::new(),
-                    });
-                user.name = info.nick_name.clone();
                 Ok(DriverReply {
                     commands: self.publish(),
                     round_result: None,
@@ -493,6 +480,41 @@ impl Driver {
     /// replay needs the same playlist.
     pub fn set_playlist(&mut self, maps: impl IntoIterator<Item = impl Into<String>>) {
         self.playlist = maps.into_iter().map(Into::into).collect();
+    }
+
+    /// Learns the players who are on the server already, e.g. when the driver is
+    /// loaded during a match, since they do not connect again. The same as their
+    /// `PlayerInfoChanged` callbacks, but publishes once for all of them.
+    pub fn add_players(
+        &mut self,
+        players: impl IntoIterator<Item = PlayerInfo>,
+    ) -> Vec<DriverCommand> {
+        for player in players {
+            self.learn(&player);
+        }
+        self.publish()
+    }
+
+    /// Remembers a player on the server, e.g. for the names in the standings. False
+    /// for the server, which shows up as a player too.
+    fn learn(&mut self, info: &PlayerInfo) -> bool {
+        if info.is_server() {
+            return false;
+        }
+        self.connected.insert(info.account_id.clone());
+        let user = self
+            .store
+            .data_mut()
+            .users
+            .entry(info.account_id.clone())
+            .or_insert_with(|| wit::User {
+                account_id: info.account_id.clone(),
+                name: String::new(),
+                club_tag: String::new(),
+                zone: String::new(),
+            });
+        user.name = info.nick_name.clone();
+        true
     }
 
     fn step(&mut self, event: wit::Event) -> Result<DriverReply, DriverError> {

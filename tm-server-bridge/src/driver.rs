@@ -106,17 +106,13 @@ pub async fn load(config: &DriverConfig, maps: Vec<String>) {
         Ok(mut driver) => {
             driver.set_playlist(maps);
             // Players already on the server do not connect again.
-            let mut known_players = Vec::new();
-            match TRACKMANIA.wait().get_player_list().await {
-                Ok(players) => {
-                    for player in players {
-                        if let Ok(reply) = driver.handle(&Event::PlayerInfoChanged(player)) {
-                            known_players.extend(reply.commands);
-                        }
-                    }
+            let known_players = match TRACKMANIA.wait().get_player_list().await {
+                Ok(players) => driver.add_players(players),
+                Err(error) => {
+                    tracing::warn!("Could not get the players of the server: {error}");
+                    Vec::new()
                 }
-                Err(error) => tracing::warn!("Could not get the players of the server: {error}"),
-            }
+            };
             tracing::info!("Loaded driver mode {}.", config.mode);
             let layers = load_layers(&config.manialinks);
 

@@ -141,9 +141,9 @@ pub fn race(account_id: &str, racetime: u32) -> Vec<Event> {
     vec![start_line(account_id), finish(account_id, 0, racetime)]
 }
 
-/// The server tells about a player on it, e.g. once they connected.
-pub fn player_info(account_id: &str, name: &str) -> Event {
-    Event::PlayerInfoChanged(PlayerInfo {
+/// A player on the server.
+pub fn player(account_id: &str, name: &str) -> PlayerInfo {
+    PlayerInfo {
         account_id: account_id.into(),
         nick_name: name.into(),
         player_id: 0,
@@ -151,7 +151,20 @@ pub fn player_info(account_id: &str, name: &str) -> Event {
         spectator_status: 0,
         ladder_ranking: 0,
         flags: 0,
-    })
+    }
+}
+
+/// The server, which shows up as a player too.
+pub fn server() -> PlayerInfo {
+    PlayerInfo {
+        flags: 0b100000,
+        ..player("server", "Server")
+    }
+}
+
+/// The server tells about a player on it, e.g. once they connected.
+pub fn player_info(account_id: &str, name: &str) -> Event {
+    Event::PlayerInfoChanged(player(account_id, name))
 }
 
 /// Handles every event and returns the reply to the last one.
