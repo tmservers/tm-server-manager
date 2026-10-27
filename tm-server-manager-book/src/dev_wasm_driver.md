@@ -643,8 +643,9 @@ script starts with `"lives": 3`.
    - The script compiles. `ServerShutdownRequested` and the raw `UIManager.UILayerCreate` API
      are not used by any script we checked.
    - Holds block and continue as expected, and a missing driver shows the waiting message.
-   - The finish waypoints carry the race time and the checkpoints, and players already on the
-     server when the mode loads show up with their names.
+   - Every waypoint carries the race times of all checkpoints so far (`curracecheckpoints`),
+     because their count is how far a player got. Finish waypoints carry the race time, and
+     players already on the server when the mode loads show up with their names.
    - `NextMap` sent during the round end hold ends the map once the hold continues.
    - Time attack rounds start players again after a finish or give up and stop at the time limit.
    - A warmup set by a mode runs before the first round of every map with the warmup UI of the
