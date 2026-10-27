@@ -124,7 +124,7 @@ impl Standings {
             .participants()
             .filter_map(|player| {
                 let race = results.iter().find(|r| r.account_id == player.account_id);
-                let raced = race.is_some_and(|r| r.started || time(r).is_some());
+                let raced = race.is_some_and(|r| r.started);
                 let score = self
                     .round
                     .iter()

@@ -10,8 +10,8 @@ interface types {
     /// callbacks of the server.
     record race-result {
         account-id: string,
-        /// The player started a race in this round. False for spectators and players
-        /// that could not spawn.
+        /// The player started a race in this round, so everyone with a time did.
+        /// False for spectators and players that could not spawn.
         started: bool,
         /// Checkpoints the player passed in the last race of the round, the finish included.
         progress: u32,

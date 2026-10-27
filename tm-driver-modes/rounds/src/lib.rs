@@ -112,11 +112,7 @@ impl Rounds {
         }
 
         // Everyone who raced shows up in the standings, with points or without.
-        for result in round_end
-            .results
-            .iter()
-            .filter(|r| r.started || r.previous_time.is_some())
-        {
+        for result in round_end.results.iter().filter(|r| r.started) {
             standings.join(&result.account_id);
         }
 
