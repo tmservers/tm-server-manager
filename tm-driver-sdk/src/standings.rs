@@ -65,6 +65,13 @@ impl Standings {
     /// Eliminated players follow and keep the position the mode gave them when they
     /// were eliminated. Spectators come last without a position.
     pub fn rank(&mut self) {
+        self.rank_by(|player| Reverse(player.score));
+    }
+
+    /// Ranks like [`Standings::rank`], but the players still in the match by a key
+    /// instead of their points, the lowest first, e.g. by the time of their last
+    /// race. Players with the same key share a position.
+    pub fn rank_by<K: Ord>(&mut self, key: impl Fn(&Entry) -> K) {
         fn group(status: Status) -> u8 {
             match status {
                 Status::Playing => 0,
@@ -78,7 +85,7 @@ impl Standings {
             group(a.status)
                 .cmp(&group(b.status))
                 .then_with(|| match a.status {
-                    Status::Playing => b.score.cmp(&a.score),
+                    Status::Playing => key(a).cmp(&key(b)),
                     Status::Eliminated => a.position.cmp(&b.position),
                     Status::Spectator => Ordering::Equal,
                 })
@@ -89,8 +96,9 @@ impl Standings {
         for (index, player) in self.entries.iter_mut().enumerate() {
             match player.status {
                 Status::Playing => {
-                    if previous != Some(player.score) {
-                        previous = Some(player.score);
+                    let key = key(player);
+                    if previous.as_ref() != Some(&key) {
+                        previous = Some(key);
                         position = index as u32 + 1;
                     }
                     player.position = position;
@@ -271,6 +279,32 @@ mod tests {
                 ("eliminated", 6),
                 ("eliminated_last", 7),
                 ("spectator", 0),
+            ]
+        );
+    }
+
+    #[test]
+    fn ranks_by_a_key() {
+        let mut standings = standings(&[
+            ("eliminated", Status::Eliminated, 0, 5),
+            ("no_time", Status::Playing, 0, 0),
+            ("slow", Status::Playing, 0, 0),
+            ("fast", Status::Playing, 0, 0),
+            ("tied", Status::Playing, 0, 0),
+        ]);
+        for (account_id, time) in [("slow", 31_000), ("fast", 30_000), ("tied", 30_000)] {
+            standings.player_mut(account_id).unwrap().time = Some(time);
+        }
+        standings.rank_by(|p| (p.time.is_none(), p.time));
+
+        assert_eq!(
+            positions(&standings),
+            [
+                ("fast", 1),
+                ("tied", 1),
+                ("slow", 3),
+                ("no_time", 4),
+                ("eliminated", 5),
             ]
         );
     }

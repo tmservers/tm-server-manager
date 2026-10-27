@@ -427,7 +427,8 @@ import host;  // log, find-user, map-count
 
 - `tm-driver-sdk`: wit-bindgen bindings, the `Mode` trait (a mode names its `Settings` type and
   the SDK parses the json of the config into it, empty settings are `{}`), `export_mode!`, helpers on the
-  standings (`join`, `award`, `round_entry`, `rank`, `place_round`, `crown_leaders`, `in_match`),
+  standings (`join`, `award`, `round_entry`, `rank`, `rank_by`, `place_round`, `crown_leaders`,
+  `in_match`),
   the host functions (`user`, `name`, `map_count`) and shared `settings`. Mode
   logic compiles natively too. `testing::Harness` runs a mode with the lifecycle of the host, so
   modes are unit tested without wasm.
