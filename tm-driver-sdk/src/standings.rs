@@ -2,7 +2,7 @@
 
 use std::cmp::{Ordering, Reverse};
 
-use crate::{Entry, Label, RaceResult, Standings, Status, Tone};
+use crate::{CanSpawn, Command, Entry, Label, RaceResult, Standings, Status, Tone};
 
 impl Default for Standings {
     /// Standings without players, like the host hands them over when a match starts.
@@ -107,6 +107,28 @@ impl Standings {
                 Status::Spectator => player.position = 0,
             }
         }
+    }
+
+    /// Keeps everyone in the results who does not take part from spawning and shows
+    /// them as spectators, e.g. once the participants of a match are known. Nothing
+    /// happens without participants. The host leaves out permissions it sent before,
+    /// so calling it after every round is fine.
+    pub fn block_others(&mut self, results: &[RaceResult]) -> Vec<Command> {
+        if self.participants().next().is_none() {
+            return Vec::new();
+        }
+        let mut commands = Vec::new();
+        for result in results {
+            let status = self.player(&result.account_id).map(|p| p.status);
+            if matches!(status, None | Some(Status::Spectator)) {
+                self.join(&result.account_id).status = Status::Spectator;
+                commands.push(Command::SetCanSpawn(CanSpawn {
+                    account_id: result.account_id.clone(),
+                    can_spawn: false,
+                }));
+            }
+        }
+        commands
     }
 
     /// Every player ranked first wins the match.
@@ -326,6 +348,35 @@ mod tests {
         standings.award("a", -2);
         assert_eq!(standings.player("a").unwrap().score, 11);
         assert_eq!(standings.round_entry("a").score, 8);
+    }
+
+    #[test]
+    fn others_cannot_spawn() {
+        let mut standings = standings(&[
+            ("a", Status::Playing, 0, 1),
+            ("out", Status::Eliminated, 0, 2),
+        ]);
+        let results = [
+            race("a", Some(30_000), Some(30_000), 1),
+            race("late", Some(29_000), Some(29_000), 1),
+            // On the server without racing, e.g. after the elimination.
+            RaceResult {
+                started: false,
+                ..race("out", None, None, 0)
+            },
+        ];
+
+        assert_eq!(
+            standings.block_others(&results),
+            [Command::SetCanSpawn(CanSpawn {
+                account_id: "late".into(),
+                can_spawn: false,
+            })]
+        );
+        assert_eq!(standings.player("late").unwrap().status, Status::Spectator);
+        assert_eq!(standings.player("out").unwrap().status, Status::Eliminated);
+        // Players can only be told apart from spectators once someone takes part.
+        assert!(Standings::default().block_others(&results).is_empty());
     }
 
     #[test]

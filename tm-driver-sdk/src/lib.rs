@@ -108,6 +108,18 @@ pub fn name(account_id: &str) -> String {
         .unwrap_or_else(|| account_id.into())
 }
 
+/// A place for chat messages: 1st, 2nd, 3rd, 4th, …, 11th, 12th, 13th, …, 21st, …
+pub fn ordinal(n: u32) -> String {
+    let suffix = match (n % 10, n % 100) {
+        (_, 11..=13) => "th",
+        (1, _) => "st",
+        (2, _) => "nd",
+        (3, _) => "rd",
+        _ => "th",
+    };
+    format!("{n}{suffix}")
+}
+
 /// Maps in the playlist of the match, 0 without one. Natively (e.g. in tests) the
 /// map count of the [`testing::Harness`].
 pub fn map_count() -> u32 {
@@ -169,4 +181,24 @@ macro_rules! export_mode {
     $crate::bindings::__export_mode!(Export with_types_in $crate::bindings);
         };
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ordinals() {
+        let ordinals: Vec<String> = [1, 2, 3, 4, 11, 12, 13, 21, 22, 101, 111]
+            .into_iter()
+            .map(ordinal)
+            .collect();
+        assert_eq!(
+            ordinals,
+            [
+                "1st", "2nd", "3rd", "4th", "11th", "12th", "13th", "21st", "22nd", "101st",
+                "111th"
+            ]
+        );
+    }
 }

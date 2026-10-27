@@ -239,7 +239,7 @@ impl ReverseCup {
             commands.push(Command::ChatMessage(format!(
                 "$f90$i$<{}$> takes {} place!",
                 tm_driver_sdk::name(&account_id),
-                ordinal(position)
+                tm_driver_sdk::ordinal(position)
             )));
             commands.push(Command::SetCanSpawn(CanSpawn {
                 account_id,
@@ -296,7 +296,7 @@ impl ReverseCup {
         if self.registration_open(standings) {
             Vec::new()
         } else {
-            block_others(standings, results)
+            standings.block_others(results)
         }
     }
 
@@ -430,26 +430,6 @@ impl ReverseCup {
     }
 }
 
-/// Everyone else cannot spawn anymore once the participants are known and shows
-/// up as a spectator. The host leaves out the permissions it sent before.
-fn block_others(standings: &mut Standings, results: &[RaceResult]) -> Vec<Command> {
-    if standings.participants().next().is_none() {
-        return Vec::new();
-    }
-    let mut commands = Vec::new();
-    for result in results {
-        let status = standings.player(&result.account_id).map(|p| p.status);
-        if matches!(status, None | Some(Status::Spectator)) {
-            standings.join(&result.account_id).status = Status::Spectator;
-            commands.push(Command::SetCanSpawn(CanSpawn {
-                account_id: result.account_id.clone(),
-                can_spawn: false,
-            }));
-        }
-    }
-    commands
-}
-
 /// Players in last chance have no points left but are still in the match.
 fn in_last_chance(player: &Entry) -> bool {
     player.is_in_match() && player.score == 0
@@ -470,18 +450,6 @@ fn winners_message(standings: &Standings) -> Option<String> {
         [winner] => Some(format!("{winner} wins the match!")),
         _ => Some(format!("{} win the match!", winners.join(", "))),
     }
-}
-
-/// 1st, 2nd, 3rd, 4th, …, 11th, 12th, 13th, …, 21st, …
-fn ordinal(n: u32) -> String {
-    let suffix = match (n % 10, n % 100) {
-        (_, 11..=13) => "th",
-        (1, _) => "st",
-        (2, _) => "nd",
-        (3, _) => "rd",
-        _ => "th",
-    };
-    format!("{n}{suffix}")
 }
 
 #[cfg(test)]
@@ -1053,21 +1021,6 @@ mod tests {
         );
         assert!(
             ReverseCup::from_json(r#"{"last_chance_dnf_mode": "only_least_checkpoints"}"#).is_ok()
-        );
-    }
-
-    #[test]
-    fn ordinals() {
-        let ordinals: Vec<String> = [1, 2, 3, 4, 11, 12, 13, 21, 22, 101, 111]
-            .into_iter()
-            .map(ordinal)
-            .collect();
-        assert_eq!(
-            ordinals,
-            [
-                "1st", "2nd", "3rd", "4th", "11th", "12th", "13th", "21st", "22nd", "101st",
-                "111th"
-            ]
         );
     }
 }
