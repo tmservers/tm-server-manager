@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
-/// The generic driver modescript. The mode logic runs in a wasm blob inside the bridge.
+/// The generic driver modescript. The mode logic runs in a wasm blob, which the bridge is
+/// going to run.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]

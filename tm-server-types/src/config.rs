@@ -279,7 +279,7 @@ pub enum ModeSettingsV2 {
     ReverseCup(ReverseCupV2),
     TimeAttack(TimeAttack),
     Knockout(Knockout),
-    /// Generic modescript controlled by a wasm driver in the bridge.
+    /// Generic modescript controlled by a wasm driver, which the bridge is going to run.
     Driver(Driver),
 }
 

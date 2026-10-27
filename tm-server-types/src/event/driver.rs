@@ -47,7 +47,7 @@ pub enum DriverSection {
 /// Points and positions the driver decided for the current round.
 ///
 /// This is no callback of the server. Recording it in the manager comes with its
-/// database integration, until then the bridge only logs it.
+/// database integration, until then the runner of `tm-wasm-driver` only logs it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]

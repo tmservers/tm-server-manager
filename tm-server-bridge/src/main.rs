@@ -14,7 +14,6 @@ use tokio::{signal, sync::Mutex};
 mod chat;
 mod config;
 mod connection;
-mod driver;
 mod methods;
 mod state;
 
@@ -136,9 +135,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
         server.chat_manual_routing(true, false).await?;
     }
-
-    // Before connecting to spacetime because that is where the configuration comes from.
-    driver::setup_driver();
 
     if !SPACETIME.connect(false).await {
         tracing::error!("Could not connect to SpacetimeDB server");

@@ -155,7 +155,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     Ok(())
 }
 
-/// Feeds the callbacks into the active mode and sends its commands back, like the bridge.
+/// Feeds the callbacks into the active mode and sends its commands back, like the bridge
+/// will.
 fn drive(server: &'static TrackmaniaServer, active: Shared, layers: Vec<DriverLayer>) {
     let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel::<Event>();
     server.on_event(move |event| {

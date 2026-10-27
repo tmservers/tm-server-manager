@@ -1,7 +1,8 @@
 # WASM Mode Driver
 
-Status: phases 0–3 and the TimeAttack, ReverseCup and Knockout modes are implemented on the
-`wasm-driver/*` branches.
+Status: phases 0–2 and the TimeAttack, ReverseCup and Knockout modes are implemented on the
+`wasm-driver/*` branches. The bridge integration (phase 3) comes later, until then the runner in
+`tm-wasm-driver/src/main.rs` drives a server with a mode.
 Everything except the modescript and the manialinks is covered by tests. The modescript runs on a
 real server with the runner, the rest still needs a real match. The manager (and its database) stays untouched until the feature is
 fleshed out. See [Next steps](#next-steps).
@@ -67,12 +68,12 @@ at the checkpoints they passed in their last race (`round_checkpoints`, the fini
 the `curracecheckpoints` of the waypoints). How many there are tells how far a player got, the
 times tell players who got equally far apart without a finish. Players who left stay in the
 results of the round they started in. The players on the server come from
-`ManiaPlanet.PlayerConnect`, `PlayerDisconnect` and `PlayerInfoChanged`. The bridge hands the
-players that were on the server when the mode loaded to `Driver::add_players`, which learns them
+`ManiaPlanet.PlayerConnect`, `PlayerDisconnect` and `PlayerInfoChanged`. The runner hands the
+players that are on the server when a mode loads to `Driver::add_players`, which learns them
 like their `PlayerInfoChanged` callbacks but publishes them once.
 
 A round end whose round start the host did not see is `invalid`, so it does not count. That happens
-when the bridge restarted during the round and missed its races. A round the script forced to end
+when the driver restarted during the round and missed its races. A round the script forced to end
 or skipped is invalid as well.
 
 ### `Driver.Hold`, the only custom callback
@@ -234,8 +235,9 @@ corrections can later edit the standings without the mode knowing about it.
   structs.
 - Manialinks parse them with `fromjson`. A test checks that every manialink reading one of the
   netvars declares a struct member for every field of its json.
-- Manialinks are selected next to the mode in the config (`Driver.manialinks`). The bridge installs
-  them as layers when the config loads and whenever the modescript (re)starts.
+- The runner installs every manialink of `tm-driver-modes/manialinks` as a layer when it starts and
+  whenever the modescript (re)starts. Later the config selects them next to the mode
+  (`Driver.manialinks`).
   `tm-driver-modes/manialinks` has:
   - `standings`: the top 10 of the match with positions (ties included), names, points, points
     of the last round and statuses, spectators left out. It highlights the local player and
@@ -280,7 +282,7 @@ scores table is the UI module `Race_ScoresTable`, a manialink in such a layer.
 - While such a manialink is installed, the host hides Nadeo's module with the standard
   `Common.UIModules.SetProperties` (`{"uimodules": [{"id": "Race_ScoresTable", "visible": false,
   "visible_update": true}]}`) and shows it again otherwise. `DriverCommand::show_layers` adds that
-  to the layers, the bridge and the runner use it whenever they install layers.
+  to the layers, the runner uses it whenever it installs layers.
 - `scores-table.xml` lists up to 100 players with position, club tag, name, round points and points.
   Labels and statuses replace the points like in the original modes: labels by their tone
   (`Last Chance` in red, `Winner` in gold), `Eliminated` in dark red and `Spectator` in green.
@@ -297,9 +299,8 @@ scores table is the UI module `Race_ScoresTable`, a manialink in such a layer.
   ranking of the original reverse cup.
 - Race times, avatars and the ping are not shown.
 
-The manager comes with the database integration. Until then the bridge only logs the round
-results the host derives, and the manager records driver matches like Rounds: positions follow
-the scores, points stay at zero. `Event::DriverRoundResult` already exists for the integration.
+The manager comes with the database integration. Until then the runner only logs the round
+results the host derives. `Event::DriverRoundResult` already exists for the integration.
 
 ## Resuming
 
@@ -316,16 +317,15 @@ A replay needs:
 - Every event the driver handled (`Driver::handles`): `StartMatch_Start`, `StartRound_Start`,
   `Trackmania.Event.StartLine`, `Trackmania.Event.WayPoint`, `PlayerConnect`,
   `PlayerDisconnect`, `PlayerInfoChanged`, `EndMatch_Start` and the holds. The manager already
-  stores the standard callbacks. The bridge does not forward holds yet because the script repeats
-  them while it waits, and the players it hands over when a mode loads are no callbacks. Storing
+  stores the standard callbacks. Holds have to be stored once per seq because the script repeats
+  them while it waits, and the players handed over when a mode loads are no callbacks. Storing
   both is part of the database integration.
 
 ## Playlist
 
-The map pool of the server config (`MapPoolConfig`) is the playlist of a match. The bridge
-downloads its maps and puts them into the match settings like for every other mode, and hands
-their uids to the driver with `Driver::set_playlist`. The runner starts with the map list of the
-server and changes it with `maps`.
+The host plays the uids of a playlist it gets with `Driver::set_playlist`. The runner starts with
+the map list of the server and changes it with `maps`. Once the bridge integrates the driver, the
+map pool of the server config (`MapPoolConfig`) becomes the playlist of a match.
 
 - The host remembers the current map from `Maniaplanet.StartMap_Start` and publishes its name
   and the size of the playlist with the standings (`map_name`, `map_count`). Modes get the size
@@ -499,7 +499,7 @@ export step: func(standings: standings, event: event) -> decision;  // standings
 import host;  // log, find-user, map-count
 ```
 
-- `Driver::handles(&Event)` tells the bridge which callbacks matter. `Driver::handle(&Event)`
+- `Driver::handles(&Event)` tells the runner (later the bridge) which callbacks matter. `Driver::handle(&Event)`
   returns a `DriverReply` with the commands for the server and the round result for the manager.
   Replies to holds end with `Continue(seq)`. `Driver::standings()`, `Driver::last_round()` and
   `Driver::users()` return what the host publishes.
@@ -528,24 +528,21 @@ import host;  // log, find-user, map-count
 
 ## Configuration
 
-`ModeSettingsV2::Driver(Driver { mode, settings, decision_timeout, manialinks })` selects the driver
-script. `mode` names the wasm module, `settings` is the JSON passed to `init` and `manialinks`
-names the manialinks shown next to the mode (`["standings", "scores-table"]` by default, e.g.
-`["standings", "my-standing", "scores-table"]`).
-
-For now the bridge loads modes from `TM_DRIVER_MODES_DIR` (default `./modes`) as `<mode>.wasm` and
-manialinks from `TM_DRIVER_MANIALINKS_DIR` (default `./manialinks`) as `<name>.xml`. A registry
-in the manager (pinned by hash per match) replaces this later.
+Until the bridge integrates the driver, the runner loads a mode by the name of its crate in
+`tm-driver-modes`, which it builds first, or by the path of a `.wasm` file, with settings as
+inline json or a json file (see [Next steps](#next-steps)). The modes build by hand with:
 
 ```sh
 cargo build -p tm-driver-mode-rounds -p tm-driver-mode-time-attack -p tm-driver-mode-reverse-cup \
   -p tm-driver-mode-knockout --target wasm32-unknown-unknown --release
-cp target/wasm32-unknown-unknown/release/tm_driver_mode_rounds.wasm $TM_DRIVER_MODES_DIR/rounds.wasm
-cp target/wasm32-unknown-unknown/release/tm_driver_mode_time_attack.wasm $TM_DRIVER_MODES_DIR/time-attack.wasm
-cp target/wasm32-unknown-unknown/release/tm_driver_mode_reverse_cup.wasm $TM_DRIVER_MODES_DIR/reverse-cup.wasm
-cp target/wasm32-unknown-unknown/release/tm_driver_mode_knockout.wasm $TM_DRIVER_MODES_DIR/knockout.wasm
-cp tm-driver-modes/manialinks/*.xml $TM_DRIVER_MANIALINKS_DIR/
 ```
+
+For the integration the config of a match already has
+`ModeSettingsV2::Driver(Driver { mode, settings, decision_timeout, manialinks })`, which selects
+the driver script. `mode` names the wasm module, `settings` is the JSON passed to `init` and
+`manialinks` names the manialinks shown next to the mode (`["standings", "scores-table"]` by
+default, e.g. `["standings", "my-standing", "scores-table"]`). A registry in the manager
+(pinned by hash per match) is going to provide the modes.
 
 Settings of the rounds mode (every field is optional):
 
@@ -621,7 +618,8 @@ script starts with `"lives": 3`.
 0. ✅ Typed boundary in `tm-server-types` and the controller.
 1. ✅ Generic modescript (not run on a server yet).
 2. ✅ `tm-wasm-driver` host, SDK and the Rounds mode with tests running the real wasm.
-3. ✅ Bridge integration behind `ModeSettingsV2::Driver`.
+3. Bridge integration behind `ModeSettingsV2::Driver`, after testing with the runner, which stands
+   in for it until then.
 4. Database integration: store the events the driver handles (holds once per seq) and resume by
    replay, record round results, a `TmMode` for driver matches, pin modes by hash, team commands.
 5. Port the remaining modes: ✅ TimeAttack, ✅ ReverseCup, ✅ Knockout, Cup. Check parity with

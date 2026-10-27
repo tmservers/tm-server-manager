@@ -22,12 +22,6 @@ pub async fn setup_state_synchronization() {
 
     // Sync all events to spacetimedb.
     server.on_event(|event| {
-        // Holds are only the handshake between the modescript and the driver.
-        // They are sent again while the script waits, which would only flood the match events.
-        if matches!(event, tm_server_controller::event::Event::DriverHold(_)) {
-            return;
-        }
-
         let spacetime = SPACETIME.read();
         if spacetime
             .reducers

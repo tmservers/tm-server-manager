@@ -4,12 +4,10 @@ use tokio::{sync::Mutex, time::sleep};
 
 use nadeo_api::{NadeoRequest, auth::AuthType, request::Method};
 use serde::{Deserialize, Serialize};
-use tm_server_controller::{config::ModeSettingsV2, method::XmlRpcMethods};
+use tm_server_controller::method::XmlRpcMethods;
 use tm_server_manager_api_rs::{EventContext, EventRawServerState};
 
-use crate::{
-    NADEO, SERVER_METADATA, TRACKMANIA, TRACKMANIA_FILES, driver, state::check_allowed_players,
-};
+use crate::{NADEO, SERVER_METADATA, TRACKMANIA, TRACKMANIA_FILES, state::check_allowed_players};
 
 pub fn metadata_update(_: &EventContext, new_metadata: &EventRawServerState) {
     tracing::info!("Received new Server metadata. Trying to apply...");
@@ -21,14 +19,6 @@ pub fn metadata_update(_: &EventContext, new_metadata: &EventRawServerState) {
                 tm_server_controller::config::ServerConfigV2,
             >(new_metadata.config.clone())
         };
-
-        // The mode has to be ready before the driver modescript starts sending callbacks.
-        match config.get_mode() {
-            ModeSettingsV2::Driver(driver_config) => {
-                driver::load(driver_config, config.get_maps().maps()).await
-            }
-            _ => driver::unload(),
-        }
 
         // Get the script if its a non built in mode.
         if let Some(script) = config.get_mode().get_external_script() {

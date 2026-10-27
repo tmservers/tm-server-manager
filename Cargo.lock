@@ -4104,7 +4104,6 @@ dependencies = [
  "tm-server-controller",
  "tm-server-manager-api-rs",
  "tm-server-types",
- "tm-wasm-driver",
  "tokio",
  "tracing",
  "tracing-subscriber",
