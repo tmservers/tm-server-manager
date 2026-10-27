@@ -188,7 +188,7 @@ impl ReverseCup {
         if self.registration_open(standings) {
             self.register(standings, &round_end.results);
         }
-        if round_end.forced
+        if round_end.invalid
             || standings.participants().next().is_none()
             || self.match_over(standings)
         {
@@ -481,7 +481,7 @@ mod tests {
 
     fn round_end(results: Vec<RaceResult>) -> Event {
         Event::RoundEnd(RoundEnd {
-            forced: false,
+            invalid: false,
             results,
         })
     }
@@ -657,10 +657,10 @@ mod tests {
     }
 
     #[test]
-    fn forced_rounds_do_not_count() {
-        let forced = |results| {
+    fn invalid_rounds_do_not_count() {
+        let invalid = |results| {
             Event::RoundEnd(RoundEnd {
-                forced: true,
+                invalid: true,
                 results,
             })
         };
@@ -669,14 +669,14 @@ mod tests {
         let mut harness = started("");
         assert!(
             harness
-                .step(forced(vec![finish("a", 30_000), spectator("s")]))
+                .step(invalid(vec![finish("a", 30_000), spectator("s")]))
                 .is_empty()
         );
         assert_eq!(status(&harness, "a"), (Status::Playing, 100));
         assert!(harness.standings.player("s").is_none());
 
         let mut harness = playing("", vec![alive("a", 50)]);
-        let commands = harness.step(forced(vec![finish("a", 30_000), finish("c", 31_000)]));
+        let commands = harness.step(invalid(vec![finish("a", 30_000), finish("c", 31_000)]));
         assert_eq!(blocked(&commands), ["c"]);
         assert_eq!(status(&harness, "a"), (Status::Playing, 50));
         assert_eq!(harness.standings.rounds_on_map, 0);

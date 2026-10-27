@@ -97,8 +97,8 @@ impl Mode for Rounds {
 
 impl Rounds {
     fn round_end(&self, standings: &mut Standings, round_end: RoundEnd) -> Vec<Command> {
-        // Forced rounds do not count.
-        if round_end.forced {
+        // Invalid rounds do not count.
+        if round_end.invalid {
             return Vec::new();
         }
 
@@ -218,7 +218,7 @@ mod tests {
 
     fn round_end(results: Vec<RaceResult>) -> Event {
         Event::RoundEnd(RoundEnd {
-            forced: false,
+            invalid: false,
             results,
         })
     }
@@ -339,10 +339,10 @@ mod tests {
     }
 
     #[test]
-    fn forced_rounds_do_not_count() {
+    fn invalid_rounds_do_not_count() {
         let mut harness = started("");
         let commands = harness.step(Event::RoundEnd(RoundEnd {
-            forced: true,
+            invalid: true,
             results: vec![finish("a", 30_000)],
         }));
         assert!(commands.is_empty());

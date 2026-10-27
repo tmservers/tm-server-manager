@@ -71,8 +71,9 @@ results of the round they started in. The players on the server come from
 players that were on the server when the mode loaded to `Driver::add_players`, which learns them
 like their `PlayerInfoChanged` callbacks but publishes them once.
 
-A round end whose round start the host did not see is `forced`, so it does not count. That happens
-when the bridge restarted during the round and missed its races.
+A round end whose round start the host did not see is `invalid`, so it does not count. That happens
+when the bridge restarted during the round and missed its races. A round the script forced to end
+or skipped is invalid as well.
 
 ### `Driver.Hold`, the only custom callback
 
@@ -84,8 +85,9 @@ the mode decided to end the map. `Driver.Hold` makes the script wait:
 ```
 
 - `section` is `MapStart`, `RoundEnd` or `MapEnd`.
-- `forced` (round end only) says the round was forced to end or skipped and should not count.
-  The standard `EndRound_End.isvalid` would only arrive after the hold.
+- `forced` (round end only) says the round was forced to end or skipped, so the mode gets it as
+  an `invalid` round end. The standard `EndRound_End.isvalid` would only arrive after the hold.
+  The name stays `forced` while the manager stores the holds as they are.
 - `session` is random per script start, so a restarted script resets the host's tracking.
 - The script keeps yielding while it waits, so commands get applied. If `Driver.Continue` with the
   same `seq` doesn't arrive within `S_DriverDecisionTimeout`, it shows a waiting message and sends
@@ -138,7 +140,7 @@ same for the match and for a round:
 | `entries` | The match: one entry for every player taking part. |
 | `round` | The round that ended with the event, filled by the mode at `round-end`. Output only: the host takes it out after every event, keeps it as the last round and reports it to the manager. |
 | `rounds_on_map` | Rounds of the current map that counted, as the mode counts them. |
-| `rounds_played` | Rounds of the match that were not forced, counted by the host. |
+| `rounds_played` | Valid rounds of the match, counted by the host. |
 | `maps_played` | Maps that ended in this match. |
 | `info` | Progress as text, e.g. `2 / 5 rounds`. |
 
@@ -156,7 +158,7 @@ Who does what:
   | `match-start` | everything, also the last round |
   | `map-start` | `rounds_on_map` |
   | every event | `round` |
-  | `round-end` | `rounds_played` counts the ending round unless it was forced |
+  | `round-end` | `rounds_played` counts the ending round unless it is invalid |
   | `map-end` | `maps_played` counts the ending map |
 
   It publishes the standings, the last round and the players whenever they change, and everything
@@ -475,8 +477,8 @@ Differences to the originals:
 
 - The participants are the players who start a race before the first round that takes lives
   ended, not every player on the server. As long as nobody takes part, players can join.
-- Forced rounds do not count, like in the multi lives script. The original Knockout counts them
-  too, so a forced round can use up a round without elimination.
+- Invalid rounds, e.g. forced to end, do not count, like in the multi lives script. The original
+  Knockout counts them, so such a round can use up a round without elimination.
 - If everyone left would be eliminated, the originals eliminate everyone and rank the player who
   got the furthest first. The mode keeps that player in the match as the winner, the ranks are the
   same.

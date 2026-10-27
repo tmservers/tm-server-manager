@@ -438,12 +438,13 @@ impl Driver {
         }
 
         // The script waits between rounds. A round end without its start, e.g. after the
-        // bridge restarted, missed races, so it does not count.
+        // bridge restarted, missed races, so it is invalid like a round the script
+        // forced to end or skipped.
         let in_round = std::mem::take(&mut self.in_round);
         let event = match hold.section {
             DriverSection::MapStart => wit::Event::MapStart,
             DriverSection::RoundEnd => wit::Event::RoundEnd(wit::RoundEnd {
-                forced: hold.forced || !in_round,
+                invalid: hold.forced || !in_round,
                 results: self.races.results(&self.connected),
             }),
             DriverSection::MapEnd => wit::Event::MapEnd,
@@ -548,11 +549,12 @@ impl Driver {
     }
 
     /// Takes the round the mode placed out of the standings, the mode never gets it
-    /// back. Unless it was forced, it becomes the last round and goes to the manager.
+    /// back. Unless the round is invalid, it becomes the last round and goes to the
+    /// manager.
     fn take_round(&mut self, event: &wit::Event) -> Option<DriverRoundResult> {
         let round = std::mem::take(&mut self.standings.round);
         match event {
-            wit::Event::RoundEnd(round_end) if !round_end.forced => {
+            wit::Event::RoundEnd(round_end) if !round_end.invalid => {
                 self.last_round = round;
                 Some(convert::round_result(&self.last_round))
             }
@@ -649,7 +651,7 @@ fn clear(standings: &mut wit::Standings, event: &wit::Event) {
     match event {
         wit::Event::MatchStart => *standings = convert::empty_standings(),
         wit::Event::MapStart => standings.rounds_on_map = 0,
-        wit::Event::RoundEnd(round_end) if !round_end.forced => {
+        wit::Event::RoundEnd(round_end) if !round_end.invalid => {
             standings.rounds_played = standings.rounds_played.saturating_add(1);
         }
         wit::Event::MapEnd => standings.maps_played = standings.maps_played.saturating_add(1),

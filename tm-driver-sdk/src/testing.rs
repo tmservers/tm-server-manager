@@ -36,7 +36,7 @@ impl<M: Mode> Harness<M> {
         #[cfg(not(target_arch = "wasm32"))]
         native::set(self.map_count, self.users.clone());
 
-        let counts = matches!(&event, Event::RoundEnd(round_end) if !round_end.forced);
+        let counts = matches!(&event, Event::RoundEnd(round_end) if !round_end.invalid);
         let commands = self.mode.step(&mut self.standings, event);
         let round = std::mem::take(&mut self.standings.round);
         if counts {
@@ -66,7 +66,7 @@ fn clear(standings: &mut Standings, event: &Event) {
     match event {
         Event::MatchStart => *standings = Standings::default(),
         Event::MapStart => standings.rounds_on_map = 0,
-        Event::RoundEnd(round_end) if !round_end.forced => {
+        Event::RoundEnd(round_end) if !round_end.invalid => {
             standings.rounds_played = standings.rounds_played.saturating_add(1);
         }
         Event::MapEnd => standings.maps_played = standings.maps_played.saturating_add(1),

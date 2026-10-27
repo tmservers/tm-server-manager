@@ -96,8 +96,9 @@ impl Mode for TimeAttack {
 
 impl TimeAttack {
     fn round_end(&self, standings: &mut Standings, round_end: RoundEnd) -> Vec<Command> {
-        // A forced round was cut short. The map continues with a new time attack round.
-        if round_end.forced {
+        // An invalid round was cut short. The map continues with a new time attack
+        // round.
+        if round_end.invalid {
             return Vec::new();
         }
 
@@ -181,7 +182,7 @@ mod tests {
 
     fn round_end(results: Vec<RaceResult>) -> Event {
         Event::RoundEnd(RoundEnd {
-            forced: false,
+            invalid: false,
             results,
         })
     }
@@ -275,10 +276,10 @@ mod tests {
     }
 
     #[test]
-    fn forced_rounds_replay_the_map() {
+    fn invalid_rounds_replay_the_map() {
         let mut harness = started("");
         let commands = harness.step(Event::RoundEnd(RoundEnd {
-            forced: true,
+            invalid: true,
             results: vec![finish("a", 40_000)],
         }));
         assert!(commands.is_empty());

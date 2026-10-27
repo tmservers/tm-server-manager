@@ -175,8 +175,8 @@ impl Knockout {
     }
 
     fn round_end(&self, standings: &mut Standings, round_end: RoundEnd) -> Vec<Command> {
-        // The host counted the round unless it was forced.
-        let round = standings.rounds_played + u32::from(round_end.forced);
+        // The host counted the round unless it is invalid.
+        let round = standings.rounds_played + u32::from(round_end.invalid);
         // Players can join until the first round that takes lives ended. Their race
         // starts brought them in already, unless e.g. the driver restarted.
         if round <= self.settings.rounds_without_elimination + 1
@@ -184,7 +184,7 @@ impl Knockout {
         {
             self.register(standings, &round_end.results);
         }
-        if round_end.forced || standings.participants().next().is_none() {
+        if round_end.invalid || standings.participants().next().is_none() {
             standings.list_newcomers();
             return self.block_late_players(standings, &round_end.results);
         }
@@ -492,7 +492,7 @@ mod tests {
 
     fn round_end(results: Vec<RaceResult>) -> Event {
         Event::RoundEnd(RoundEnd {
-            forced: false,
+            invalid: false,
             results,
         })
     }
@@ -1146,16 +1146,16 @@ mod tests {
     }
 
     #[test]
-    fn forced_rounds_do_not_count() {
-        let forced = |results| {
+    fn invalid_rounds_do_not_count() {
+        let invalid = |results| {
             Event::RoundEnd(RoundEnd {
-                forced: true,
+                invalid: true,
                 results,
             })
         };
         let mut harness = playing("", &["a", "b", "c"]);
         // Nobody is eliminated, but starters still join, ranked from their next round.
-        let commands = harness.step(forced(vec![finish("d", 31_000), dnf("a", 1)]));
+        let commands = harness.step(invalid(vec![finish("d", 31_000), dnf("a", 1)]));
         assert!(commands.is_empty());
         assert_eq!(harness.standings.in_match().count(), 4);
         assert_eq!(harness.standing("d").position, 0);

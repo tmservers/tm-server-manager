@@ -28,9 +28,9 @@ interface types {
     }
 
     record round-end {
-        /// The round should not count: it was forced to end or skipped (e.g. after a
+        /// The round does not count: it was forced to end or skipped (e.g. after a
         /// pause), or the host did not see it start, e.g. after the bridge restarted.
-        forced: bool,
+        invalid: bool,
         /// Every connected player and everyone else who started in the round.
         results: list<race-result>,
     }
@@ -120,12 +120,12 @@ interface types {
         entries: list<entry>,
         /// The round that ended with this event, filled by the mode at round-end.
         /// The host takes it out after every event: it shows it as the last round
-        /// and reports it to the manager. Ignored for forced rounds.
+        /// and reports it to the manager. Ignored for invalid rounds.
         round: list<entry>,
         /// Rounds of the current map that counted, as the mode counts them. The host
         /// clears them when a map starts.
         rounds-on-map: u32,
-        /// Rounds of the match that were not forced. The host counts the ending round
+        /// Valid rounds of the match. The host counts the ending round
         /// before round-end.
         rounds-played: u32,
         /// Maps that ended in this match. The host counts the ending map before map-end.
