@@ -8,7 +8,8 @@
 
 use serde::Deserialize;
 use tm_driver_sdk::{
-    Command, Event, Mode, RaceResult, RoundEnd, RoundFormat, Standings, settings::WarmUpSetting,
+    Command, Event, Mode, RaceResult, RoundEnd, RoundFormat, Standings,
+    settings::{WarmUpSetting, maps_per_match},
 };
 
 tm_driver_sdk::export_mode!(TimeAttack);
@@ -144,11 +145,6 @@ impl TimeAttack {
             .copied()
             .unwrap_or(0)
     }
-}
-
-/// The setting or the maps of the playlist.
-fn maps_per_match(setting: Option<u32>) -> u32 {
-    setting.unwrap_or(tm_driver_sdk::map_count().max(1))
 }
 
 #[cfg(test)]

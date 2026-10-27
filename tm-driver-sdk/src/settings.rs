@@ -28,6 +28,12 @@ pub struct WarmUpSetting {
     pub timeout_ms: Option<u32>,
 }
 
+/// The maps of a match by a `maps_per_match` setting: the playlist once without
+/// the setting, one map without a playlist. 0 means no limit.
+pub fn maps_per_match(setting: Option<u32>) -> u32 {
+    setting.unwrap_or_else(|| crate::map_count().max(1))
+}
+
 impl From<WarmUpSetting> for WarmUp {
     fn from(value: WarmUpSetting) -> Self {
         WarmUp {
