@@ -135,7 +135,8 @@ same for the match and for a round:
 |---|---|
 | `entries` | The match: one entry for every player taking part. |
 | `round` | The round that ended with the event, filled by the mode at `round-end`. Output only: the host takes it out after every event, keeps it as the last round and reports it to the manager. |
-| `rounds_on_map` | Rounds of the current map that counted. |
+| `rounds_on_map` | Rounds of the current map that counted, as the mode counts them. |
+| `rounds_played` | Rounds of the match that were not forced, counted by the host. |
 | `maps_played` | Maps that ended in this match. |
 | `info` | Progress as text, e.g. `2 / 5 rounds`. |
 
@@ -153,6 +154,7 @@ Who does what:
   | `match-start` | everything, also the last round |
   | `map-start` | `rounds_on_map` |
   | every event | `round` |
+  | `round-end` | `rounds_played` counts the ending round unless it was forced |
   | `map-end` | `maps_played` counts the ending map |
 
   It publishes the standings, the last round and the players whenever they change, and everything

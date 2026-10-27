@@ -76,6 +76,7 @@ fn plays_a_match() {
             results: vec![result("a", 10, 1), result("b", 6, 2)]
         })
     );
+    assert_eq!(driver.last_round().number, 1);
 
     assert_eq!(
         without_published(
@@ -150,6 +151,7 @@ fn forced_rounds_have_no_result() {
     let reply = driver.handle(&forced_round_end(2)).unwrap();
     assert_eq!(reply.commands, [DriverCommand::Continue(2)]);
     assert_eq!(reply.round_result, None);
+    assert_eq!(driver.last_round().number, 0);
 }
 
 #[test]

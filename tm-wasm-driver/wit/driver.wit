@@ -119,8 +119,12 @@ interface types {
         /// The host takes it out after every event: it shows it as the last round
         /// and reports it to the manager. Ignored for forced rounds.
         round: list<entry>,
-        /// Rounds of the current map that counted. The host clears them when a map starts.
+        /// Rounds of the current map that counted, as the mode counts them. The host
+        /// clears them when a map starts.
         rounds-on-map: u32,
+        /// Rounds of the match that were not forced. The host counts the ending round
+        /// before round-end.
+        rounds-played: u32,
         /// Maps that ended in this match. The host counts the ending map before map-end.
         maps-played: u32,
         /// Progress of the match shown with the standings, e.g. `2 / 5 rounds`.

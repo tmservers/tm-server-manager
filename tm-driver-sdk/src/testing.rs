@@ -66,6 +66,9 @@ fn clear(standings: &mut Standings, event: &Event) {
     match event {
         Event::MatchStart => *standings = Standings::default(),
         Event::MapStart => standings.rounds_on_map = 0,
+        Event::RoundEnd(round_end) if !round_end.forced => {
+            standings.rounds_played = standings.rounds_played.saturating_add(1);
+        }
         Event::MapEnd => standings.maps_played = standings.maps_played.saturating_add(1),
         Event::RoundStart | Event::RaceStart(_) | Event::RoundEnd(_) | Event::MatchEnd => {}
     }

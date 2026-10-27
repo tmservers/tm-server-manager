@@ -243,7 +243,6 @@ impl DriverEngine {
             name: String::new(),
             standings: convert::empty_standings(),
             last_round: Vec::new(),
-            round_number: 0,
             published: Published::default(),
             spawn_permissions: BTreeMap::new(),
             session: None,
@@ -282,8 +281,6 @@ pub struct Driver {
     standings: wit::Standings,
     /// The last round that counted, as the mode placed it.
     last_round: Vec<wit::Entry>,
-    /// Rounds of the match that counted.
-    round_number: u32,
     published: Published,
     /// Spawn permissions sent in this match, so repeated ones are left out.
     spawn_permissions: BTreeMap<String, bool>,
@@ -357,7 +354,6 @@ impl Driver {
                 // Every match starts with the defaults of the modescript.
                 self.spawn_permissions.clear();
                 self.last_round.clear();
-                self.round_number = 0;
                 // Everything is published again, e.g. for a modescript that just started.
                 self.published = Published::default();
                 self.step(wit::Event::MatchStart)
@@ -472,7 +468,7 @@ impl Driver {
 
     /// The last round that counted, ordered by place.
     pub fn last_round(&self) -> DriverRound {
-        convert::round(self.round_number, &self.last_round)
+        convert::round(self.standings.rounds_played, &self.last_round)
     }
 
     /// The players the host knows, e.g. for their names.
@@ -557,7 +553,6 @@ impl Driver {
         let round = std::mem::take(&mut self.standings.round);
         match event {
             wit::Event::RoundEnd(round_end) if !round_end.forced => {
-                self.round_number += 1;
                 self.last_round = round;
                 Some(convert::round_result(&self.last_round))
             }
@@ -646,13 +641,17 @@ impl Driver {
     }
 }
 
-/// Clears what belongs to a new match or map before the mode gets the event, so
-/// every mode has the same lifecycle of its standings. The round is only output.
+/// Clears what belongs to a new match or map and counts the ending round or map
+/// before the mode gets the event, so every mode has the same lifecycle of its
+/// standings. The round is only output.
 fn clear(standings: &mut wit::Standings, event: &wit::Event) {
     standings.round.clear();
     match event {
         wit::Event::MatchStart => *standings = convert::empty_standings(),
         wit::Event::MapStart => standings.rounds_on_map = 0,
+        wit::Event::RoundEnd(round_end) if !round_end.forced => {
+            standings.rounds_played = standings.rounds_played.saturating_add(1);
+        }
         wit::Event::MapEnd => standings.maps_played = standings.maps_played.saturating_add(1),
         wit::Event::RoundStart
         | wit::Event::RaceStart(_)
