@@ -403,39 +403,56 @@ Differences to the original:
 
 ## Knockout
 
-A port of Nadeo's `TM_Knockout_Online` script with the same settings and rules:
+A port of the community `TM_MultiLivesKnockout` script, which gives the players of Nadeo's
+`TM_Knockout_Online` lives. With one life, the default, it is the original Knockout with its
+settings and rules:
 
-- Rounds have one try. The last players of every round are eliminated until one player is left,
-  who wins. Everyone without a finish is eliminated as well, even beyond the eliminations of the
-  round. If nobody finishes, the player who got the furthest wins.
-- One player is eliminated per round, plus one for every number in `extra_eliminations_above`
-  below the players left. The default `[4, 16, 16]` (the original's `S_EliminatedPlayersNbRanks`)
-  eliminates 4 players per round above 16 players, 2 above 4 players and 1 from there on.
-- The first `rounds_without_elimination` rounds of the match eliminate nobody. The players who
-  start a race before the first round with eliminations ended take part. They show up in the
-  standings from their first race on. Everyone else cannot spawn anymore from then on and shows
-  up as `Spectator`.
-- Eliminated players get `SetCanSpawn(false)`, a chat message and the rank of their race: finishers
-  by time, then everyone else by checkpoints and players who did not start last. Players
-  eliminated in the same round get different ranks like in the original.
+- Rounds have one try. The last players of every round lose a life until one player is left, who
+  wins. A player who loses their last life is eliminated. Everyone without a finish loses a life
+  as well, even beyond the losses of the round. If that would eliminate everyone left, the player
+  who got the furthest keeps their last life and wins.
+- Every participant starts with `lives` lives. One player loses a life per round, plus one for
+  every milestone of `extra_losses` still ahead, in any order. `above_players_left` counts the
+  players left: the default `[4, 16, 16]` (the original's `S_EliminatedPlayersNbRanks`) takes a
+  life from 4 players per round above 16 players, from 2 above 4 players and from 1 from there on.
+  `above_lives_left` counts the lives the players left have together, `before_round` the rounds
+  of the match: `[8, 16]` takes a life from 3 players per round before round 8, from 2 before
+  round 16 and from 1 from there on. These are the `S_EliminationMode`s 0, 1 and 2 of the multi
+  lives script. One player always stays.
+- The first `rounds_without_elimination` rounds of the match take no lives. The players who start
+  a race before the first round that takes lives ended take part. They show up in the standings
+  from their first race on. Everyone else cannot spawn anymore from then on and shows up as
+  `Spectator`.
+- Eliminated players get `SetCanSpawn(false)`, a chat message and the last ranks of the players
+  left, in the order of the race: finishers by time, then everyone else by checkpoints and players
+  who did not start last. Players eliminated in the same round get different ranks like in the
+  originals.
 - Maps change after `rounds_per_map` rounds (no limit by default) until the match is over.
-- Players in the match are `playing`, ranked by their last race and labeled with its time like in
-  the scores table of the original. Eliminated players are labeled `K.O.`, the last player
-  `Winner`. `info` shows the round that runs or comes next, the estimated rounds of the match, the
-  players left and the eliminations of the round, e.g. `Round 2 / 22, 64 left, 4 K.O.`.
+- The points of a player are the lives they have left, a lost life is `-1` in the round. Players
+  in the match are `playing`, ranked by their lives and their last race. With one life they are
+  labeled with the time of their last race like in the scores table of the original, with more
+  lives with hearts for their lives (text above 5 lives) like in the multi lives script, the last
+  life with a negative tone. Eliminated players are labeled `K.O.`, the last player `Winner`.
+- `info` shows the round that runs or comes next, the players left and how many lose a life in
+  it. With one life it also estimates the rounds of the match like the original, e.g.
+  `Round 2 / 22, 64 left, 4 K.O.`. Lives make the match too unpredictable for that:
+  `Round 2, 64 left, 4 lose a life`.
 - The rounds of the match are `rounds_played` of the standings, which the host counts.
 
-Differences to the original:
+Differences to the originals:
 
-- The participants are the players who start a race before the first round with eliminations
+- The participants are the players who start a race before the first round that takes lives
   ended, not every player on the server. As long as nobody takes part, players can join.
-- Forced rounds do not count. The original counts them too, so a forced round can use up a round
-  without elimination.
-- If nobody finishes, the original eliminates everyone and ranks the player who got the furthest
-  first. The mode keeps that player in the match as the winner, the ranks are the same.
+- Forced rounds do not count, like in the multi lives script. The original Knockout counts them
+  too, so a forced round can use up a round without elimination.
+- If everyone left would be eliminated, the originals eliminate everyone and rank the player who
+  got the furthest first. The mode keeps that player in the match as the winner, the ranks are the
+  same.
+- The milestones count in any order, the originals expect them sorted.
 - Not ported: the live ranking, the display of the eliminated players, dossard colors, the
-  podium, big messages, the `Trackmania.Knockout.Elimination` callback and `S_MatchPosition` of
-  the Cup of the Day. Warmup is the modescript's.
+  podium, big messages, the `Trackmania.Knockout.Elimination` and `Trackmania.Knockout.LostLife`
+  callbacks, `S_MatchName` and `S_AlternativeMatchInfosPosition` of the multi lives script and
+  `S_MatchPosition` of the Cup of the Day. Warmup is the modescript's.
 
 ## WIT interface and host
 
@@ -473,7 +490,7 @@ import host;  // log, find-user, map-count
   limit with tie break, finish timeout).
 - `tm-driver-modes/time-attack`: TimeAttack (time limit, maps per match, points by rank).
 - `tm-driver-modes/reverse-cup`: ReverseCup (see [ReverseCup](#reversecup)).
-- `tm-driver-modes/knockout`: Knockout (see [Knockout](#knockout)).
+- `tm-driver-modes/knockout`: Knockout with lives (see [Knockout](#knockout)).
 
 ## Configuration
 
@@ -546,21 +563,25 @@ Settings of the reverse cup mode (every field is optional, these are the default
 A key of `complex_points_repartition` can list several player counts, e.g. `"4,5"`.
 `last_chance_dnf_mode` is `"all_players"` or `"only_least_checkpoints"`.
 
-Settings of the knockout mode (every field is optional, these are the defaults of the original):
+Settings of the knockout mode (every field is optional, these are the defaults of the original
+Knockout):
 
 ```json
 {
+  "lives": 1,
   "rounds_without_elimination": 1,
-  "extra_eliminations_above": [4, 16, 16],
+  "extra_losses": {"above_players_left": [4, 16, 16]},
   "rounds_per_map": 0,
   "finish_timeout": {"milliseconds": 5000},
   "warmup": {"rounds": 0, "duration_ms": 0, "timeout_ms": null}
 }
 ```
 
-`rounds_per_map` 0 means no limit. The Cup of the Day eliminates with
-`"extra_eliminations_above": [8, 16, 16]` (4 players per round above 16 players, 2 above 8 and 1
-from there on), the Cup of the Week on Black tracks with `[16]`.
+`extra_losses` is `{"above_players_left": [...]}`, `{"above_lives_left": [...]}` or
+`{"before_round": [...]}`. `rounds_per_map` 0 means no limit. The Cup of the Day eliminates with
+`"extra_losses": {"above_players_left": [8, 16, 16]}` (4 players per round above 16 players, 2
+above 8 and 1 from there on), the Cup of the Week on Black tracks with `[16]`. The multi lives
+script starts with `"lives": 3`.
 
 ## Phases
 
@@ -611,7 +632,8 @@ from there on), the Cup of the Week on Black tracks with `[16]`.
      next map, and chat messages of the mode show up.
    - The standings manialink shows the labels of players in last chance and of the winners, and
      the status of eliminated players.
-   - The race times a knockout shows as labels fit into the status cells of the manialinks.
+   - The race times and hearts a knockout shows as labels fit into the status cells of the
+     manialinks, and the hearts (icons of the game font) render in `GameFontBlack`.
 2. **Database integration (phase 4)** once the feature is fleshed out.
 
 ## Risks

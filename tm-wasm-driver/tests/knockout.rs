@@ -11,10 +11,10 @@ use tm_server_types::{
     method::{DriverCanSpawn, DriverCommand, DriverFinishTimeout, DriverRoundFormat, DriverStatus},
 };
 
-fn result(account_id: &str, position: u32) -> DriverPlayerResult {
+fn result(account_id: &str, position: u32, points: i32) -> DriverPlayerResult {
     DriverPlayerResult {
         account_id: account_id.into(),
-        points: 0,
+        points,
         position,
     }
 }
@@ -83,12 +83,12 @@ fn plays_a_match() {
     assert_eq!(
         reply.round_result,
         Some(DriverRoundResult {
-            results: vec![result("c", 1), result("a", 2), result("b", 3)]
+            results: vec![result("c", 1, 0), result("a", 2, 0), result("b", 3, 0)]
         })
     );
     assert_eq!(driver.standings().info, "Round 2 / 3, 3 left, 1 K.O.");
 
-    // Giving up eliminates c. Players cannot join anymore, so s cannot spawn.
+    // Giving up costs c the only life. Players cannot join anymore, so s cannot spawn.
     let reply = play(&mut driver, &round_with_a_give_up(2, 3));
     assert_eq!(
         without_published(&reply.commands),
@@ -102,7 +102,7 @@ fn plays_a_match() {
     assert_eq!(
         reply.round_result,
         Some(DriverRoundResult {
-            results: vec![result("b", 1), result("a", 2), result("c", 3)]
+            results: vec![result("b", 1, 0), result("a", 2, 0), result("c", 3, -1)]
         })
     );
 
@@ -121,8 +121,15 @@ fn plays_a_match() {
     assert_eq!(
         ranking(&driver),
         [
-            ("a".into(), 1, DriverStatus::Playing, "Winner".into(), 0, 0),
-            ("b".into(), 2, DriverStatus::Eliminated, "K.O.".into(), 0, 0),
+            ("a".into(), 1, DriverStatus::Playing, "Winner".into(), 1, 0),
+            (
+                "b".into(),
+                2,
+                DriverStatus::Eliminated,
+                "K.O.".into(),
+                0,
+                -1
+            ),
             ("c".into(), 3, DriverStatus::Eliminated, "K.O.".into(), 0, 0),
             // Watched without taking part.
             ("s".into(), 0, DriverStatus::Spectator, String::new(), 0, 0),
@@ -156,7 +163,7 @@ fn players_in_the_match_show_their_last_race() {
                 1,
                 DriverStatus::Playing,
                 "0:30.000".into(),
-                0,
+                1,
                 0
             ),
             (
@@ -164,9 +171,66 @@ fn players_in_the_match_show_their_last_race() {
                 2,
                 DriverStatus::Playing,
                 "0:31.000".into(),
-                0,
+                1,
                 0
             ),
+        ]
+    );
+}
+
+#[test]
+fn players_lose_lives_before_they_are_eliminated() {
+    let mut driver = common::driver(KNOCKOUT, r#"{"lives": 2}"#);
+    driver.handle(&match_start()).unwrap();
+    driver.handle(&hold(1, DriverSection::MapStart)).unwrap();
+    play(&mut driver, &round(1, 2, &["a", "b"]));
+
+    // b loses a life and keeps racing.
+    let reply = play(&mut driver, &round(2, 3, &["a", "b"]));
+    assert_eq!(
+        without_published(&reply.commands),
+        [DriverCommand::Continue(3)]
+    );
+    assert_eq!(
+        reply.round_result,
+        Some(DriverRoundResult {
+            results: vec![result("a", 1, 0), result("b", 2, -1)]
+        })
+    );
+    // Full and lost hearts of the game font.
+    assert_eq!(
+        ranking(&driver),
+        [
+            (
+                "a".into(),
+                1,
+                DriverStatus::Playing,
+                "\u{e96c}\u{e96c}".into(),
+                2,
+                0
+            ),
+            (
+                "b".into(),
+                2,
+                DriverStatus::Playing,
+                "\u{e96f}\u{e96c}".into(),
+                1,
+                -1
+            ),
+        ]
+    );
+    assert_eq!(driver.standings().info, "Round 3, 2 left, 1 loses a life");
+
+    // The last life is gone.
+    let reply = play(&mut driver, &round(3, 4, &["a", "b"]));
+    assert_eq!(
+        without_published(&reply.commands),
+        [
+            DriverCommand::ChatMessage("$f90$i$<b$> takes 2nd place!".into()),
+            cannot_spawn("b"),
+            DriverCommand::ChatMessage("$<a$> wins the match!".into()),
+            DriverCommand::EndMatch,
+            DriverCommand::Continue(4)
         ]
     );
 }
