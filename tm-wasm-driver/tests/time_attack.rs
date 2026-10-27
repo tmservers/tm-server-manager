@@ -2,26 +2,18 @@
 
 mod common;
 
-use std::sync::OnceLock;
-
 use common::{
-    hold, match_start, play, player_info, publishes_standings, race, round_start, without_published,
+    TIME_ATTACK, hold, match_start, play, player_info, publishes_standings, race, round_start,
+    without_published,
 };
 use tm_server_types::{
     event::{DriverPlayerResult, DriverRoundResult, DriverSection},
     method::{DriverCommand, DriverRoundFormat},
 };
-use tm_wasm_driver::{Driver, DriverEngine, DriverError, DriverLimits};
-
-/// Builds the time attack mode once per test binary.
-fn time_attack_wasm() -> &'static [u8] {
-    static WASM: OnceLock<Vec<u8>> = OnceLock::new();
-    WASM.get_or_init(|| common::build_mode("tm-driver-mode-time-attack"))
-}
+use tm_wasm_driver::{Driver, DriverError};
 
 fn time_attack(settings: &str) -> Result<Driver, DriverError> {
-    let engine = DriverEngine::new(DriverLimits::default()).unwrap();
-    let module = engine.compile(time_attack_wasm()).unwrap();
+    let (engine, module) = common::compile(TIME_ATTACK);
     engine.instantiate(&module, settings)
 }
 

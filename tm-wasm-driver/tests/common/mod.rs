@@ -1,7 +1,7 @@
 //! Builds the first-party modes and the callbacks of the server for the integration tests.
 #![allow(dead_code)]
 
-use std::{path::PathBuf, process::Command};
+use std::{collections::BTreeMap, path::PathBuf, process::Command, sync::Mutex};
 
 use tm_server_types::{
     base::{Map, PlayerInfo},
@@ -10,12 +10,40 @@ use tm_server_types::{
     },
     method::{DriverCommand, DriverStatus, DriverWarmUp},
 };
-use tm_wasm_driver::{Driver, DriverReply};
+use tm_wasm_driver::{Driver, DriverEngine, DriverLimits, DriverReply};
+use wasmtime::component::Component;
 
 pub const SESSION: i32 = 7;
 
+pub const ROUNDS: &str = "tm-driver-mode-rounds";
+pub const TIME_ATTACK: &str = "tm-driver-mode-time-attack";
+pub const REVERSE_CUP: &str = "tm-driver-mode-reverse-cup";
+
+/// A mode crate of the workspace as a wasm module, built once per test binary.
+pub fn mode(package: &'static str) -> &'static [u8] {
+    static BUILT: Mutex<BTreeMap<&str, &[u8]>> = Mutex::new(BTreeMap::new());
+    // Held while building, so tests running in parallel wait for the first build.
+    let mut built = BUILT.lock().unwrap();
+    built
+        .entry(package)
+        .or_insert_with(|| build_mode(package).leak())
+}
+
+/// Compiles a mode crate of the workspace with the default limits.
+pub fn compile(package: &'static str) -> (DriverEngine, Component) {
+    let engine = DriverEngine::new(DriverLimits::default()).unwrap();
+    let module = engine.compile(mode(package)).unwrap();
+    (engine, module)
+}
+
+/// Starts a mode crate of the workspace with these settings.
+pub fn driver(package: &'static str, settings: &str) -> Driver {
+    let (engine, module) = compile(package);
+    engine.instantiate(&module, settings).unwrap()
+}
+
 /// Builds a mode crate of the workspace for wasm32-unknown-unknown and returns the module.
-pub fn build_mode(package: &str) -> Vec<u8> {
+fn build_mode(package: &str) -> Vec<u8> {
     let workspace = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..");
     let target_dir = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("modes");
     let status = Command::new(std::env::var("CARGO").unwrap_or_else(|_| "cargo".into()))

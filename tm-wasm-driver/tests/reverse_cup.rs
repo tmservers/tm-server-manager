@@ -2,23 +2,15 @@
 
 mod common;
 
-use std::sync::OnceLock;
-
 use common::{
-    finish, hold, match_start, no_warm_up, play, player_info, publishes_standings, ranking,
-    round_start, start_line, way_point, without_published,
+    REVERSE_CUP, finish, hold, match_start, no_warm_up, play, player_info, publishes_standings,
+    ranking, round_start, start_line, way_point, without_published,
 };
 use tm_server_types::{
     event::{DriverPlayerResult, DriverRoundResult, DriverSection, Event},
     method::{DriverCanSpawn, DriverCommand, DriverFinishTimeout, DriverRoundFormat, DriverStatus},
 };
-use tm_wasm_driver::{DriverEngine, DriverLimits, DriverReply};
-
-/// Builds the reverse cup mode once per test binary.
-fn reverse_cup_wasm() -> &'static [u8] {
-    static WASM: OnceLock<Vec<u8>> = OnceLock::new();
-    WASM.get_or_init(|| common::build_mode("tm-driver-mode-reverse-cup"))
-}
+use tm_wasm_driver::DriverReply;
 
 const SETTINGS: &str =
     r#"{"starting_points": 10, "last_chance_dnf_mode": "only_least_checkpoints"}"#;
@@ -73,9 +65,7 @@ fn final_round(round: u32, seq: u32) -> Vec<Event> {
 
 #[test]
 fn plays_a_match() {
-    let engine = DriverEngine::new(DriverLimits::default()).unwrap();
-    let module = engine.compile(reverse_cup_wasm()).unwrap();
-    let mut driver = engine.instantiate(&module, SETTINGS).unwrap();
+    let mut driver = common::driver(REVERSE_CUP, SETTINGS);
 
     driver.handle(&match_start()).unwrap();
     assert_eq!(
@@ -175,9 +165,7 @@ fn plays_a_match() {
 
 #[test]
 fn standings_show_the_players_once_they_start() {
-    let engine = DriverEngine::new(DriverLimits::default()).unwrap();
-    let module = engine.compile(reverse_cup_wasm()).unwrap();
-    let mut driver = engine.instantiate(&module, SETTINGS).unwrap();
+    let mut driver = common::driver(REVERSE_CUP, SETTINGS);
 
     driver.handle(&match_start()).unwrap();
     driver.handle(&hold(1, DriverSection::MapStart)).unwrap();
@@ -215,8 +203,7 @@ fn standings_show_the_players_once_they_start() {
 
 #[test]
 fn resumes_by_replaying_the_events() {
-    let engine = DriverEngine::new(DriverLimits::default()).unwrap();
-    let module = engine.compile(reverse_cup_wasm()).unwrap();
+    let (engine, module) = common::compile(REVERSE_CUP);
 
     // Everything the driver handled in the first two rounds, checkpoints included.
     let mut events = vec![match_start(), hold(1, DriverSection::MapStart)];

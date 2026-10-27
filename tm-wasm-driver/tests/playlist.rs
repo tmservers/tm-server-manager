@@ -3,19 +3,16 @@
 mod common;
 
 use common::{
-    hold, map_start, match_start, no_warm_up, play, race, round_start, without_published,
+    ROUNDS, hold, map_start, match_start, no_warm_up, play, race, round_start, without_published,
 };
 use tm_server_types::{
     event::DriverSection,
     method::{DriverCommand, DriverFinishTimeout, DriverRoundFormat},
 };
-use tm_wasm_driver::{Driver, DriverEngine, DriverLimits};
+use tm_wasm_driver::Driver;
 
 fn rounds(settings: &str) -> Driver {
-    let engine = DriverEngine::new(DriverLimits::default()).unwrap();
-    let wasm = common::build_mode("tm-driver-mode-rounds");
-    let module = engine.compile(&wasm).unwrap();
-    engine.instantiate(&module, settings).unwrap()
+    common::driver(ROUNDS, settings)
 }
 
 fn next_map(uid: &str) -> DriverCommand {

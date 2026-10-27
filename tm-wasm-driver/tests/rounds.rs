@@ -2,11 +2,9 @@
 
 mod common;
 
-use std::sync::OnceLock;
-
 use common::{
-    SESSION, finish, forced_round_end, hold, match_start, no_warm_up, play, player, player_info,
-    publishes_standings, race, ranking, round_start, without_published,
+    ROUNDS, SESSION, finish, forced_round_end, hold, match_start, no_warm_up, play, player,
+    player_info, publishes_standings, race, ranking, round_start, without_published,
 };
 use tm_server_types::{
     event::{
@@ -16,16 +14,8 @@ use tm_server_types::{
 };
 use tm_wasm_driver::{Driver, DriverEngine, DriverError, DriverLimits, DriverReply};
 
-/// Builds the rounds mode once per test binary.
-fn rounds_wasm() -> &'static [u8] {
-    static WASM: OnceLock<Vec<u8>> = OnceLock::new();
-    WASM.get_or_init(|| common::build_mode("tm-driver-mode-rounds"))
-}
-
 fn rounds(settings: &str) -> Driver {
-    let engine = DriverEngine::new(DriverLimits::default()).unwrap();
-    let module = engine.compile(rounds_wasm()).unwrap();
-    engine.instantiate(&module, settings).unwrap()
+    common::driver(ROUNDS, settings)
 }
 
 /// The settings of a match that ends once a player has more than 25 points.
@@ -260,8 +250,7 @@ fn new_session_starts_over() {
 
 #[test]
 fn resumes_by_replaying_the_events() {
-    let engine = DriverEngine::new(DriverLimits::default()).unwrap();
-    let module = engine.compile(rounds_wasm()).unwrap();
+    let (engine, module) = common::compile(ROUNDS);
     let mut driver = engine.instantiate(&module, POINTS_LIMIT).unwrap();
 
     // Everything the driver handled so far, like the event stream of the match.
@@ -305,8 +294,7 @@ fn resumes_by_replaying_the_events() {
 
 #[test]
 fn replays_are_deterministic() {
-    let engine = DriverEngine::new(DriverLimits::default()).unwrap();
-    let module = engine.compile(rounds_wasm()).unwrap();
+    let (engine, module) = common::compile(ROUNDS);
     let mut events = vec![
         match_start(),
         player_info("c", "c"),
@@ -347,8 +335,7 @@ fn ignores_unrelated_callbacks() {
 
 #[test]
 fn rejects_invalid_settings() {
-    let engine = DriverEngine::new(DriverLimits::default()).unwrap();
-    let module = engine.compile(rounds_wasm()).unwrap();
+    let (engine, module) = common::compile(ROUNDS);
     assert!(matches!(
         engine.instantiate(&module, r#"{"rounds_per_mpa": 3}"#),
         Err(DriverError::Rejected(_))
@@ -362,7 +349,7 @@ fn runs_out_of_fuel() {
         ..Default::default()
     })
     .unwrap();
-    let module = engine.compile(rounds_wasm()).unwrap();
+    let module = engine.compile(common::mode(ROUNDS)).unwrap();
     let error = match engine.instantiate(&module, "") {
         Err(error @ (DriverError::Trap(_) | DriverError::Instantiate(_))) => error,
         Err(error) => panic!("Unexpected error: {error}"),
