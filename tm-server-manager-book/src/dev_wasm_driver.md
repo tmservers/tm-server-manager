@@ -1,6 +1,6 @@
 # WASM Mode Driver
 
-Status: phases 0–3 and the TimeAttack and ReverseCup modes are implemented on the
+Status: phases 0–3 and the TimeAttack, ReverseCup and Knockout modes are implemented on the
 `wasm-driver/*` branches.
 Everything except the modescript and the manialinks is covered by tests. The modescript runs on a
 real server with the runner, the rest still needs a real match. The manager (and its database) stays untouched until the feature is
@@ -310,7 +310,7 @@ server and changes it with `maps`.
 - A mode picks the next map itself with `set-next-map(index)`, e.g. for map picks. The host then
   leaves the next map alone until the following map starts.
 - Rounds and time attack play the playlist once unless `maps_per_match` says otherwise, the
-  reverse cup goes on until only the winners are left.
+  reverse cup and the knockout go on until only the winners are left.
 - The maps have to be in the map list of the server, `SetNextMapIdent` only chooses among them.
   The host does not check that.
 
@@ -343,10 +343,10 @@ rebuild all of that for nothing.
   round lasts, 0 lets every player drive once. `timeout_ms` is the time to finish after the
   first player finished in those rounds of one try, computed from the author time without it.
 - The warmup has its own spawn rules, so the script copies the spawn permissions into
-  `WarmUp::CanPlay` before the warmup. Eliminated players and spectators of a reverse cup do
-  not warm up, like in the original.
+  `WarmUp::CanPlay` before the warmup. Eliminated players and spectators of a reverse cup or a
+  knockout do not warm up, like in the originals.
 - The host follows `Trackmania.WarmUp.Start` and `End` and never sends `race-start` for warmup
-  races, so a reverse cup does not register players because they warmed up.
+  races, so a reverse cup or a knockout does not register players because they warmed up.
 
 ## TimeAttack
 
@@ -401,6 +401,42 @@ Differences to the original:
 - Not ported: waiting for `S_NbOfPlayers`, the live ranking, dossard colors, the podium and big
   messages. Warmup is the modescript's.
 
+## Knockout
+
+A port of Nadeo's `TM_Knockout_Online` script with the same settings and rules:
+
+- Rounds have one try. The last players of every round are eliminated until one player is left,
+  who wins. Everyone without a finish is eliminated as well, even beyond the eliminations of the
+  round. If nobody finishes, the player who got the furthest wins.
+- One player is eliminated per round, plus one for every number in `extra_eliminations_above`
+  below the players left. The default `[4, 16, 16]` (the original's `S_EliminatedPlayersNbRanks`)
+  eliminates 4 players per round above 16 players, 2 above 4 players and 1 from there on.
+- The first `rounds_without_elimination` rounds of the match eliminate nobody. The players who
+  start a race before the first round with eliminations ended take part. They show up in the
+  standings from their first race on. Everyone else cannot spawn anymore from then on and shows
+  up as `Spectator`.
+- Eliminated players get `SetCanSpawn(false)`, a chat message and the rank of their race: finishers
+  by time, then everyone else by checkpoints and players who did not start last. Players
+  eliminated in the same round get different ranks like in the original.
+- Maps change after `rounds_per_map` rounds (no limit by default) until the match is over.
+- Players in the match are `playing`, ranked by their last race and labeled with its time like in
+  the scores table of the original. Eliminated players are labeled `K.O.`, the last player
+  `Winner`. `info` shows the round that runs or comes next, the estimated rounds of the match, the
+  players left and the eliminations of the round, e.g. `Round 2 / 22, 64 left, 4 K.O.`.
+- The rounds of the match are `rounds_played` of the standings, which the host counts.
+
+Differences to the original:
+
+- The participants are the players who start a race before the first round with eliminations
+  ended, not every player on the server. As long as nobody takes part, players can join.
+- Forced rounds do not count. The original counts them too, so a forced round can use up a round
+  without elimination.
+- If nobody finishes, the original eliminates everyone and ranks the player who got the furthest
+  first. The mode keeps that player in the match as the winner, the ranks are the same.
+- Not ported: the live ranking, the display of the eliminated players, dossard colors, the
+  podium, big messages, the `Trackmania.Knockout.Elimination` callback and `S_MatchPosition` of
+  the Cup of the Day. Warmup is the modescript's.
+
 ## WIT interface and host
 
 `tm-wasm-driver/wit/driver.wit` defines world `mode`:
@@ -437,6 +473,7 @@ import host;  // log, find-user, map-count
   limit with tie break, finish timeout).
 - `tm-driver-modes/time-attack`: TimeAttack (time limit, maps per match, points by rank).
 - `tm-driver-modes/reverse-cup`: ReverseCup (see [ReverseCup](#reversecup)).
+- `tm-driver-modes/knockout`: Knockout (see [Knockout](#knockout)).
 
 ## Configuration
 
@@ -451,10 +488,11 @@ in the manager (pinned by hash per match) replaces this later.
 
 ```sh
 cargo build -p tm-driver-mode-rounds -p tm-driver-mode-time-attack -p tm-driver-mode-reverse-cup \
-  --target wasm32-unknown-unknown --release
+  -p tm-driver-mode-knockout --target wasm32-unknown-unknown --release
 cp target/wasm32-unknown-unknown/release/tm_driver_mode_rounds.wasm $TM_DRIVER_MODES_DIR/rounds.wasm
 cp target/wasm32-unknown-unknown/release/tm_driver_mode_time_attack.wasm $TM_DRIVER_MODES_DIR/time-attack.wasm
 cp target/wasm32-unknown-unknown/release/tm_driver_mode_reverse_cup.wasm $TM_DRIVER_MODES_DIR/reverse-cup.wasm
+cp target/wasm32-unknown-unknown/release/tm_driver_mode_knockout.wasm $TM_DRIVER_MODES_DIR/knockout.wasm
 cp tm-driver-modes/manialinks/*.xml $TM_DRIVER_MANIALINKS_DIR/
 ```
 
@@ -508,6 +546,22 @@ Settings of the reverse cup mode (every field is optional, these are the default
 A key of `complex_points_repartition` can list several player counts, e.g. `"4,5"`.
 `last_chance_dnf_mode` is `"all_players"` or `"only_least_checkpoints"`.
 
+Settings of the knockout mode (every field is optional, these are the defaults of the original):
+
+```json
+{
+  "rounds_without_elimination": 1,
+  "extra_eliminations_above": [4, 16, 16],
+  "rounds_per_map": 0,
+  "finish_timeout": {"milliseconds": 5000},
+  "warmup": {"rounds": 0, "duration_ms": 0, "timeout_ms": null}
+}
+```
+
+`rounds_per_map` 0 means no limit. The Cup of the Day eliminates with
+`"extra_eliminations_above": [8, 16, 16]` (4 players per round above 16 players, 2 above 8 and 1
+from there on), the Cup of the Week on Black tracks with `[16]`.
+
 ## Phases
 
 0. ✅ Typed boundary in `tm-server-types` and the controller.
@@ -516,7 +570,7 @@ A key of `complex_points_repartition` can list several player counts, e.g. `"4,5
 3. ✅ Bridge integration behind `ModeSettingsV2::Driver`.
 4. Database integration: store the events the driver handles (holds once per seq) and resume by
    replay, record round results, a `TmMode` for driver matches, pin modes by hash, team commands.
-5. Port the remaining modes: ✅ TimeAttack, ✅ ReverseCup, Cup, Knockout. Check parity with
+5. Port the remaining modes: ✅ TimeAttack, ✅ ReverseCup, ✅ Knockout, Cup. Check parity with
    recorded matches.
 6. More manialinks on top of the standings; remove the legacy script swapping; user uploads.
 
@@ -557,6 +611,7 @@ A key of `complex_points_repartition` can list several player counts, e.g. `"4,5
      next map, and chat messages of the mode show up.
    - The standings manialink shows the labels of players in last chance and of the winners, and
      the status of eliminated players.
+   - The race times a knockout shows as labels fit into the status cells of the manialinks.
 2. **Database integration (phase 4)** once the feature is fleshed out.
 
 ## Risks

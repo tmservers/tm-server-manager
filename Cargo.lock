@@ -4051,6 +4051,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fd3ca314f692efd6c868f8408f53fe444634a845f96c028b97d35f6a1f79f0ee"
 
 [[package]]
+name = "tm-driver-mode-knockout"
+version = "0.1.0-dev"
+dependencies = [
+ "serde",
+ "tm-driver-sdk",
+]
+
+[[package]]
 name = "tm-driver-mode-reverse-cup"
 version = "0.1.0-dev"
 dependencies = [
