@@ -15,5 +15,5 @@ repository.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-tm-driver-sdk = { path = "../../tm-driver-sdk" }
+tm-driver-sdk.workspace = true
 serde = { workspace = true, features = ["derive"] }

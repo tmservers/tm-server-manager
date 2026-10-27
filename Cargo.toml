@@ -41,13 +41,33 @@ base64 = { version = "*" }
 dxr = "0.8"
 json = { package = "simd-json", version = "0.17" }
 serde = { version = "1" }
+serde_json = "1.0.154"
 uuid = { version = "1.12", features = ["serde"] }
+thiserror = "2"
 # This can be removed if we actualy have higher-ranked trait bounds for AsyncFnMuts Output type which is a supertrait of AsyncFn which is needed for event propagation in the trackmania server. 
 async_fn_traits = "*"
 petgraph = { version = "0.8.3", features = ['all'] }
 
 mlua = { version = "0.12", features = ["luau"] }
 #chumsky = { version = "1.0.0-alpha.8" }
+
+#========
+# Tracing
+#========
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+#=====
+# Wasm
+#=====
+wasmtime = { version = "50.0.0", default-features = false, features = [
+    "runtime",
+    "cranelift",
+    "component-model",
+    "std",
+] }
+wit-component = "0.262.0"
+wit-bindgen = "0.63.0"
 
 #============
 # SpacetimeDB
@@ -66,6 +86,7 @@ gbx-rs = { path = "./gbx-rs" }
 tm-server-manager-api-rs = { path = "./tm-server-manager-api-rs", version = "0.1.0-dev" }
 tm-server-types = { path = "./tm-server-types", version = "0.1.0-dev" }
 tm-server-controller = { path = "./tm-server-controller", version = "0.1.0-dev" }
+tm-driver-sdk = { path = "./tm-driver-sdk" }
 
 
 #=======
