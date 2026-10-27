@@ -384,7 +384,8 @@ import host;  // log
 
 ## Guest SDK and modes
 
-- `tm-driver-sdk`: wit-bindgen bindings, the `Mode` trait, `export_mode!`, helpers on the
+- `tm-driver-sdk`: wit-bindgen bindings, the `Mode` trait (a mode names its `Settings` type and
+  the SDK parses the json of the config into it, empty settings are `{}`), `export_mode!`, helpers on the
   standings (`join`, `award`, `rank`, `crown_leaders`, `in_match`) and shared `settings`. Mode
   logic compiles natively too. `testing::Harness` runs a mode with the lifecycle of the host, so
   modes are unit tested without wasm.

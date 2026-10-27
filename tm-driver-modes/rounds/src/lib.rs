@@ -64,12 +64,9 @@ enum PointsLimit {
 impl Mode for Rounds {
     const NAME: &'static str = "Rounds";
 
-    fn init(settings: &str) -> Result<Self, String> {
-        let settings = if settings.trim().is_empty() {
-            Settings::default()
-        } else {
-            serde_json::from_str(settings).map_err(|e| format!("Invalid settings: {e}"))?
-        };
+    type Settings = Settings;
+
+    fn init(settings: Settings) -> Result<Self, String> {
         Ok(Self { settings })
     }
 
@@ -410,6 +407,6 @@ mod tests {
 
     #[test]
     fn rejects_unknown_settings() {
-        assert!(Rounds::init(r#"{"rounds_per_mpa": 3}"#).is_err());
+        assert!(Rounds::from_json(r#"{"rounds_per_mpa": 3}"#).is_err());
     }
 }

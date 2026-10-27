@@ -4055,7 +4055,6 @@ name = "tm-driver-mode-reverse-cup"
 version = "0.1.0-dev"
 dependencies = [
  "serde",
- "serde_json",
  "tm-driver-sdk",
 ]
 
@@ -4064,7 +4063,6 @@ name = "tm-driver-mode-rounds"
 version = "0.1.0-dev"
 dependencies = [
  "serde",
- "serde_json",
  "tm-driver-sdk",
 ]
 
@@ -4073,7 +4071,6 @@ name = "tm-driver-mode-time-attack"
 version = "0.1.0-dev"
 dependencies = [
  "serde",
- "serde_json",
  "tm-driver-sdk",
 ]
 
@@ -4082,6 +4079,7 @@ name = "tm-driver-sdk"
 version = "0.1.0-dev"
 dependencies = [
  "serde",
+ "serde_json",
  "wit-bindgen 0.63.0",
 ]
 

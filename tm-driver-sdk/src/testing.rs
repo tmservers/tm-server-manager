@@ -14,7 +14,7 @@ pub struct Harness<M> {
 impl<M: Mode> Harness<M> {
     pub fn new(settings: &str) -> Result<Self, String> {
         Ok(Self {
-            mode: M::init(settings)?,
+            mode: M::from_json(settings)?,
             standings: Standings::default(),
             map_name: String::new(),
             map_count: 0,

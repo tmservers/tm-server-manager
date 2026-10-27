@@ -59,8 +59,6 @@ use bindings::{
 const EPOCH_TICK: Duration = Duration::from_millis(10);
 /// Longest log message of a mode in bytes. Longer messages get truncated.
 const MAX_LOG_MESSAGE: usize = 1024;
-/// Log messages a mode may emit during a single call.
-const LOG_BUDGET: u32 = 64;
 
 /// Resources a mode may use.
 #[derive(Debug, Clone, Copy)]
@@ -109,8 +107,10 @@ impl DriverEngine {
     pub fn new(limits: DriverLimits) -> Result<Self, DriverError> {
         let mut config = Config::new();
         config.consume_fuel(true);
+        config.strategy(wasmtime::Strategy::Cranelift);
+        config.cranelift_opt_level(wasmtime::OptLevel::Speed);
         config.epoch_interruption(true);
-        // Replays must produce the same results on every host.
+        // Enable determinsim
         config.cranelift_nan_canonicalization(true);
         config.relaxed_simd_deterministic(true);
         let engine = Engine::new(&config).map_err(DriverError::Instantiate)?;
@@ -143,9 +143,7 @@ impl DriverEngine {
         })
     }
 
-    /// Compiles a mode. Accepts a component or a core module built with `tm-driver-sdk`
-    /// for `wasm32-unknown-unknown`, which gets wrapped into a component.
-    pub fn compile(&self, wasm: &[u8]) -> Result<DriverModule, DriverError> {
+    pub fn compile(&self, wasm: &[u8]) -> Result<Component, DriverError> {
         let component = match WasmKind::of(wasm) {
             Some(WasmKind::Component) => Component::new(&self.engine, wasm),
             Some(WasmKind::Module) => {
@@ -163,16 +161,15 @@ impl DriverEngine {
         }
         .map_err(|e| DriverError::InvalidModule(format!("{e:#}")))?;
 
-        Ok(DriverModule { component })
+        Ok(component)
     }
 
-    /// Starts a new mode with the json settings of the match.
     pub fn instantiate(
         &self,
-        module: &DriverModule,
+        component: &Component,
         settings: &str,
     ) -> Result<Driver, DriverError> {
-        let mut driver = self.instantiate_raw(module)?;
+        let mut driver = self.instantiate_raw(component)?;
         driver.prepare_call();
         driver
             .bindings
@@ -187,17 +184,15 @@ impl DriverEngine {
         Ok(driver)
     }
 
-    /// Rebuilds a driver by feeding it the events it handled before, e.g. after the
-    /// bridge restarted. The replies are dropped because the server already got them.
-    /// A hold the modescript repeats afterwards gets the reply it got the first time.
+    // Restore Match state from a Event stream.
     pub fn replay<'a>(
         &self,
-        module: &DriverModule,
+        component: &Component,
         settings: &str,
         playlist: &[String],
         events: impl IntoIterator<Item = &'a Event>,
     ) -> Result<Driver, DriverError> {
-        let mut driver = self.instantiate(module, settings)?;
+        let mut driver = self.instantiate(component, settings)?;
         driver.set_playlist(playlist.iter().cloned());
         for event in events {
             driver.handle(event)?;
@@ -205,7 +200,7 @@ impl DriverEngine {
         Ok(driver)
     }
 
-    fn instantiate_raw(&self, module: &DriverModule) -> Result<Driver, DriverError> {
+    fn instantiate_raw(&self, component: &Component) -> Result<Driver, DriverError> {
         let state = HostState {
             limits: StoreLimitsBuilder::new()
                 .memory_size(self.limits.max_memory)
@@ -213,7 +208,7 @@ impl DriverEngine {
                 .memories(4)
                 .tables(16)
                 .build(),
-            log_budget: LOG_BUDGET,
+            log_budget: 64,
         };
         let mut store = Store::new(&self.engine, state);
         store.limiter(|state| &mut state.limits);
@@ -223,7 +218,7 @@ impl DriverEngine {
             .map_err(DriverError::Instantiate)?;
         store.set_epoch_deadline(self.epoch_deadline());
 
-        let bindings = Mode::instantiate(&mut store, &module.component, &self.linker)
+        let bindings = Mode::instantiate(&mut store, &component, &self.linker)
             .map_err(DriverError::Instantiate)?;
 
         Ok(Driver {
@@ -259,12 +254,6 @@ impl Drop for DriverEngine {
     fn drop(&mut self) {
         self.ticker_stop.store(true, Ordering::Relaxed);
     }
-}
-
-/// A compiled mode. Instantiating it again is cheap.
-#[derive(Clone)]
-pub struct DriverModule {
-    component: Component,
 }
 
 /// A running mode for one match.
@@ -564,7 +553,7 @@ impl Driver {
         // Setting fuel only fails if fuel is not enabled, which the engine always does.
         _ = self.store.set_fuel(self.fuel_per_call);
         self.store.set_epoch_deadline(self.epoch_deadline);
-        self.store.data_mut().log_budget = LOG_BUDGET;
+        self.store.data_mut().log_budget = 64;
     }
 }
 

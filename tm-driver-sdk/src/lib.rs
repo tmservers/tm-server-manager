@@ -50,8 +50,25 @@ pub trait Mode: Sized + 'static {
     /// Shown above the standings, e.g. `Reverse Cup`.
     const NAME: &'static str;
 
-    /// Creates the mode from the json settings of the match.
-    fn init(settings: &str) -> Result<Self, String>;
+    /// The settings of the match as json. Give the struct `#[serde(default)]` so
+    /// every field is optional and `#[serde(deny_unknown_fields)]` so typos are
+    /// rejected.
+    type Settings: serde::de::DeserializeOwned;
+
+    /// Creates the mode from the parsed settings of the match. Only validates them
+    /// and derives what the mode needs, the parsing is [`Mode::from_json`].
+    fn init(settings: Self::Settings) -> Result<Self, String>;
+
+    /// Creates the mode from the json settings of the match. Empty settings are `{}`.
+    fn from_json(settings: &str) -> Result<Self, String> {
+        let json = if settings.trim().is_empty() {
+            "{}"
+        } else {
+            settings
+        };
+        let settings = serde_json::from_str(json).map_err(|e| format!("Invalid settings: {e}"))?;
+        Self::init(settings)
+    }
 
     /// Applies the rules of the mode to an event and returns the commands for the
     /// server in order.
@@ -89,7 +106,7 @@ macro_rules! export_mode {
                 fn init(
                     settings: ::std::string::String,
                 ) -> ::core::result::Result<(), ::std::string::String> {
-                    let mode = <$mode as $crate::Mode>::init(&settings)?;
+                    let mode = <$mode as $crate::Mode>::from_json(&settings)?;
                     MODE.with(|m| *m.borrow_mut() = ::core::option::Option::Some(mode));
                     ::core::result::Result::Ok(())
                 }

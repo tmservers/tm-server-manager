@@ -101,13 +101,9 @@ pub struct ReverseCup {
 impl Mode for ReverseCup {
     const NAME: &'static str = "Reverse Cup";
 
-    fn init(settings: &str) -> Result<Self, String> {
-        let settings: Settings = if settings.trim().is_empty() {
-            Settings::default()
-        } else {
-            serde_json::from_str(settings).map_err(|e| format!("Invalid settings: {e}"))?
-        };
+    type Settings = Settings;
 
+    fn init(settings: Settings) -> Result<Self, String> {
         let mut complex_repartition = BTreeMap::new();
         for (counts, repartition) in &settings.complex_points_repartition {
             for count in counts.split(',') {
@@ -756,14 +752,14 @@ mod tests {
     #[test]
     fn repartition_by_players_left() {
         let mode =
-            ReverseCup::init(r#"{"complex_points_repartition": {"2, 3": [5, 10]}}"#).unwrap();
+            ReverseCup::from_json(r#"{"complex_points_repartition": {"2, 3": [5, 10]}}"#).unwrap();
         let mut standings = Standings {
             players: vec![alive("a", 50), alive("b", 50), alive("c", 50)],
             ..Default::default()
         };
         assert_eq!(mode.repartition(&standings), [5, 10]);
 
-        let mut mode = ReverseCup::init(
+        let mut mode = ReverseCup::from_json(
             r#"{"points_repartition": [1, 2, 3], "complex_points_repartition": {}}"#,
         )
         .unwrap();
@@ -1020,9 +1016,13 @@ mod tests {
 
     #[test]
     fn rejects_invalid_settings() {
-        assert!(ReverseCup::init(r#"{"starting_point": 100}"#).is_err());
-        assert!(ReverseCup::init(r#"{"complex_points_repartition": {"two": [4, 8]}}"#).is_err());
-        assert!(ReverseCup::init(r#"{"last_chance_dnf_mode": "only_least_checkpoints"}"#).is_ok());
+        assert!(ReverseCup::from_json(r#"{"starting_point": 100}"#).is_err());
+        assert!(
+            ReverseCup::from_json(r#"{"complex_points_repartition": {"two": [4, 8]}}"#).is_err()
+        );
+        assert!(
+            ReverseCup::from_json(r#"{"last_chance_dnf_mode": "only_least_checkpoints"}"#).is_ok()
+        );
     }
 
     #[test]

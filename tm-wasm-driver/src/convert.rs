@@ -1,8 +1,3 @@
-//! Conversions between the tm-server-types and the generated WIT types.
-//!
-//! The commands of a mode are matched exhaustively without a catch-all arm.
-//! Adding a command on either side fails to compile until it is mapped here.
-
 use std::{cmp::Reverse, collections::BTreeMap};
 
 use tm_server_types::{

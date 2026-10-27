@@ -47,12 +47,9 @@ pub struct TimeAttack {
 impl Mode for TimeAttack {
     const NAME: &'static str = "Time Attack";
 
-    fn init(settings: &str) -> Result<Self, String> {
-        let settings: Settings = if settings.trim().is_empty() {
-            Settings::default()
-        } else {
-            serde_json::from_str(settings).map_err(|e| format!("Invalid settings: {e}"))?
-        };
+    type Settings = Settings;
+
+    fn init(settings: Settings) -> Result<Self, String> {
         if settings.time_limit_ms == 0 {
             return Err("The time limit has to be at least one millisecond.".into());
         }
@@ -310,7 +307,7 @@ mod tests {
 
     #[test]
     fn rejects_invalid_settings() {
-        assert!(TimeAttack::init(r#"{"time_limit": 300}"#).is_err());
-        assert!(TimeAttack::init(r#"{"time_limit_ms": 0}"#).is_err());
+        assert!(TimeAttack::from_json(r#"{"time_limit": 300}"#).is_err());
+        assert!(TimeAttack::from_json(r#"{"time_limit_ms": 0}"#).is_err());
     }
 }
