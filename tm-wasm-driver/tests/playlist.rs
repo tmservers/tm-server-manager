@@ -2,7 +2,9 @@
 
 mod common;
 
-use common::{hold, map_start, match_start, no_warm_up, scores, without_standings};
+use common::{
+    hold, map_start, match_start, no_warm_up, play, race, round_start, without_published,
+};
 use tm_server_types::{
     event::DriverSection,
     method::{DriverCommand, DriverFinishTimeout, DriverRoundFormat},
@@ -24,7 +26,8 @@ fn next_map(uid: &str) -> DriverCommand {
 fn play_map(driver: &mut Driver, uid: &str, seq: u32) -> (Vec<DriverCommand>, Vec<DriverCommand>) {
     driver.handle(&map_start(uid)).unwrap();
     let map_start = driver.handle(&hold(seq, DriverSection::MapStart)).unwrap();
-    driver.handle(&scores(&[("a", 30_000, 30_000)])).unwrap();
+    driver.handle(&round_start(1)).unwrap();
+    play(driver, &race("a", 30_000));
     driver
         .handle(&hold(seq + 1, DriverSection::RoundEnd))
         .unwrap();
@@ -32,8 +35,8 @@ fn play_map(driver: &mut Driver, uid: &str, seq: u32) -> (Vec<DriverCommand>, Ve
         .handle(&hold(seq + 2, DriverSection::MapEnd))
         .unwrap();
     (
-        without_standings(&map_start.commands),
-        without_standings(&map_end.commands),
+        without_published(&map_start.commands),
+        without_published(&map_end.commands),
     )
 }
 
@@ -84,10 +87,11 @@ fn a_match_that_ends_early_starts_over_with_the_first_map() {
     driver.handle(&map_start("m1")).unwrap();
     driver.handle(&hold(1, DriverSection::MapStart)).unwrap();
 
-    driver.handle(&scores(&[("a", 30_000, 30_000)])).unwrap();
+    driver.handle(&round_start(1)).unwrap();
+    play(&mut driver, &race("a", 30_000));
     let round_end = driver.handle(&hold(2, DriverSection::RoundEnd)).unwrap();
     assert_eq!(
-        without_standings(&round_end.commands),
+        without_published(&round_end.commands),
         [
             DriverCommand::EndMatch,
             next_map("m1"),

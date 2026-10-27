@@ -4159,6 +4159,7 @@ dependencies = [
 name = "tm-wasm-driver"
 version = "0.1.0-dev"
 dependencies = [
+ "serde",
  "serde_json",
  "thiserror 2.0.21",
  "tm-server-controller",

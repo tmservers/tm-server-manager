@@ -7,9 +7,10 @@
  *	callback until the driver answers with Driver.Continue.
  *
  *	The script keeps no points. The driver keeps them in standings every mode
- *	shares and publishes them through Net_Driver_Standings for the manialinks.
- *	Race times stay in the Scores library and reach the driver through the
- *	standard Trackmania.Scores callback.
+ *	shares and publishes them for the manialinks through Net_Driver_Standings,
+ *	together with the last round (Net_Driver_Round) and the players it knows
+ *	(Net_Driver_Users). Race times reach the driver through the standard
+ *	waypoint callbacks.
  *
  *	Only what is not available through the standard XML-RPC methods is added
  *	here. It mirrors tm_server_types::event::DriverHold and
@@ -18,7 +19,7 @@
 #Extends "Modes/Nadeo/Trackmania/Base/TrackmaniaRoundsBase.Script.txt"
 
 #Const	CompatibleMapTypes	"TrackMania\\TM_Race,TM_Race"
-#Const	Version							"0.4.0"
+#Const	Version							"0.5.0"
 #Const	ScriptName					"Modes/Trackmania/TM_Driver.Script.txt"
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
@@ -26,7 +27,6 @@
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
 #Include "TextLib" as TL
 #Include "MathLib" as ML
-#Include "Libs/Nadeo/CMGame/Utils/Semver.Script.txt" as Semver
 #Include "Libs/Nadeo/Trackmania/MainMenu/Constants.Script.txt" as MenuConsts
 #Include "Libs/Nadeo/Trackmania/Modes/Rounds/StateManager.Script.txt" as StateMgr
 #Include "Libs/Nadeo/TMGame/Modes/Base/UIModules/ScoresTable_Server.Script.txt" as UIModules_ScoresTable
@@ -74,6 +74,8 @@
 #Const C_Method_RemoveLayer "Driver.RemoveLayer"
 #Const C_Method_SetNetState "Driver.SetNetState"
 #Const C_Method_SetStandings "Driver.SetStandings"
+#Const C_Method_SetRound "Driver.SetRound"
+#Const C_Method_SetUsers "Driver.SetUsers"
 #Const C_Method_SetWarmUp "Driver.SetWarmUp"
 
 #Const C_LayerKind_ScoresTable "scores_table"
@@ -114,7 +116,6 @@ declare Ident[Text] G_Driver_Layers;
 ***Match_LogVersions***
 ***
 Log::RegisterScript(ScriptName, Version);
-Log::RegisterScript(Semver::ScriptName, Semver::Version);
 Log::RegisterScript(StateMgr::ScriptName, StateMgr::Version);
 ***
 
@@ -139,7 +140,7 @@ XmlRpc::RegisterCallback(C_Callback_Hold, """
 	]
 	```
 """);
-foreach (Method in [C_Method_Continue, C_Method_SetRoundFormat, C_Method_SetCanSpawn, C_Method_EndMatch, C_Method_SetLayer, C_Method_RemoveLayer, C_Method_SetNetState, C_Method_SetStandings, C_Method_SetWarmUp]) {
+foreach (Method in [C_Method_Continue, C_Method_SetRoundFormat, C_Method_SetCanSpawn, C_Method_EndMatch, C_Method_SetLayer, C_Method_RemoveLayer, C_Method_SetNetState, C_Method_SetStandings, C_Method_SetRound, C_Method_SetUsers, C_Method_SetWarmUp]) {
 	XmlRpc::RegisterMethod(Method, """
 * Name: {{{Method}}}
 * Type: TriggerModeScriptEventArray
@@ -153,7 +154,7 @@ foreach (Method in [C_Method_Continue, C_Method_SetRoundFormat, C_Method_SetCanS
 StateMgr::Unload();
 
 XmlRpc::UnregisterCallback(C_Callback_Hold);
-foreach (Method in [C_Method_Continue, C_Method_SetRoundFormat, C_Method_SetCanSpawn, C_Method_EndMatch, C_Method_SetLayer, C_Method_RemoveLayer, C_Method_SetNetState, C_Method_SetStandings, C_Method_SetWarmUp]) {
+foreach (Method in [C_Method_Continue, C_Method_SetRoundFormat, C_Method_SetCanSpawn, C_Method_EndMatch, C_Method_SetLayer, C_Method_RemoveLayer, C_Method_SetNetState, C_Method_SetStandings, C_Method_SetRound, C_Method_SetUsers, C_Method_SetWarmUp]) {
 	XmlRpc::UnregisterMethod(Method);
 }
 ***
@@ -285,14 +286,12 @@ if (Driver_SpawnPermissions.existskey(Driver_AccountId) && !Driver_SpawnPermissi
 ***Match_StartRound***
 ***
 Driver_ApplyCommands();
-// The driver learns the names of the players before their races start. An empty
-// section is what Trackmania.GetScores answers with.
-Scores::XmlRpc_SendScores("", "");
 StateMgr::ForcePlayersStates([StateMgr::C_State_Playing]);
 
 G_Driver_RoundIsTimeAttack = G_Driver_TimeAttackLimit > 0;
 if (G_Driver_RoundIsTimeAttack) {
-	// The scores report the best race since the last clear, so every round starts clean.
+	// The scores table of the game shows the best race since the last clear, so every
+	// round starts clean.
 	Scores::Clear();
 	StartTime = Now + Race::C_SpawnDuration;
 	EndTime = StartTime + G_Driver_TimeAttackLimit;
@@ -432,10 +431,6 @@ Void Driver_SortScores() {
 }
 
 Void Driver_SendHold(K_Driver_Hold _Hold) {
-	// The race times of the round reach the driver through the standard scores callback.
-	if (_Hold.section == C_Section_RoundEnd && Semver::Compare(XmlRpc::GetApiVersion(), ">=", "2.1.1")) {
-		Scores::XmlRpc_SendScores(Scores::C_Section_PreEndRound, "");
-	}
 	XmlRpc::SendCallback(C_Callback_Hold, [_Hold.tojson()]);
 }
 
@@ -526,6 +521,18 @@ Void Driver_ApplyCommand(Text _Method, Text[] _Params) {
 		declare netwrite Integer Net_Driver_StandingsSerial for Teams[0] = 0;
 		Net_Driver_Standings = _Params[0];
 		Net_Driver_StandingsSerial += 1;
+	} else if (_Method == C_Method_SetRound) {
+		if (_Params.count < 1) return;
+		declare netwrite Text Net_Driver_Round for Teams[0] = "";
+		declare netwrite Integer Net_Driver_RoundSerial for Teams[0] = 0;
+		Net_Driver_Round = _Params[0];
+		Net_Driver_RoundSerial += 1;
+	} else if (_Method == C_Method_SetUsers) {
+		if (_Params.count < 1) return;
+		declare netwrite Text Net_Driver_Users for Teams[0] = "";
+		declare netwrite Integer Net_Driver_UsersSerial for Teams[0] = 0;
+		Net_Driver_Users = _Params[0];
+		Net_Driver_UsersSerial += 1;
 	}
 }
 

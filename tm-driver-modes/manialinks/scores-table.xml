@@ -168,16 +168,17 @@
 <script><!--
 /**
  *	The scores table of driver matches, built from the standings the driver host
- *	publishes through Net_Driver_Standings. The json is
- *	tm_server_types::method::DriverStandings.
+ *	publishes through Net_Driver_Standings, the players of Net_Driver_Users and the
+ *	last round of Net_Driver_Round. The json is
+ *	tm_server_types::method::DriverStandings, DriverUsers and DriverRound.
  *
  *	The driver modescript makes this a layer of the type ScoresTable, so the game
  *	shows it like its own scores table: while a player holds the scores table key
  *	and whenever the script forces it, e.g. at the end of a round. The scores table
  *	of the game is hidden meanwhile.
  *
- *	Club tags and logins come from the scores of the connected players. Spectators
- *	click a player to spectate them.
+ *	Club tags come from the host, until it knows them from the scores of the connected
+ *	players like the logins. Spectators click a player to spectate them.
  */
 #Include "TextLib" as TL
 #Include "MathLib" as ML
@@ -201,16 +202,14 @@
 #Const C_VisibleRows 18
 #Const C_RowHeight 5.5
 
-#Struct K_Standing {
+#Struct K_Entry {
 	Text account_id;
-	Text name;
-	Integer rank;
+	Integer position;
+	Integer score;
+	Integer time;
 	Text status;
 	Text label;
 	Text label_tone;
-	Integer points;
-	Integer map_points;
-	Integer round_points;
 }
 
 #Struct K_Standings {
@@ -220,11 +219,27 @@
 	Integer maps_played;
 	Text map_name;
 	Integer map_count;
-	K_Standing[] players;
+	K_Entry[] entries;
+}
+
+#Struct K_Round {
+	Integer number;
+	K_Entry[] entries;
+}
+
+#Struct K_User {
+	Text account_id;
+	Text name;
+	Text club_tag;
+	Text zone;
+}
+
+#Struct K_Users {
+	K_User[] users;
 }
 
 /// A connected user, found by their account id.
-#Struct K_User {
+#Struct K_Connected {
 	Text Login;
 	Text ClubTag;
 }
@@ -250,6 +265,34 @@ Void SetQuadColor(CMlFrame _Frame, Text _ControlId, Text _Color) {
 	if (Quad == Null) return;
 	Quad.Visible = _Color != "";
 	if (_Color != "") Quad.BgColor = CL::Hex6ToRgb(_Color);
+}
+
+/// The players the host knows by account id.
+K_User[Text] KnownUsers(Text _Users) {
+	declare K_User[Text] Known;
+	declare K_Users Parsed;
+	if (_Users == "" || !Parsed.fromjson(_Users)) return Known;
+	foreach (Known_User in Parsed.users) {
+		Known[Known_User.account_id] = Known_User;
+	}
+	return Known;
+}
+
+/// The name the host knows, the account id until then.
+Text PlayerName(K_User[Text] _Known, Text _AccountId) {
+	if (_Known.existskey(_AccountId) && _Known[_AccountId].name != "") return _Known[_AccountId].name;
+	return _AccountId;
+}
+
+/// The points of every player in the last round by account id.
+Integer[Text] RoundScores(Text _Round) {
+	declare Integer[Text] Result;
+	declare K_Round Parsed;
+	if (_Round == "" || !Parsed.fromjson(_Round)) return Result;
+	foreach (Round_Entry in Parsed.entries) {
+		Result[Round_Entry.account_id] = Round_Entry.score;
+	}
+	return Result;
 }
 
 /// Shown instead of the points like in the original modes: the label of the mode, e.g.
@@ -283,45 +326,58 @@ Boolean IsSpectating() {
 	return InputPlayer != GUIPlayer;
 }
 
-K_User[Text] ConnectedUsers() {
-	declare K_User[Text] Users;
+K_Connected[Text] ConnectedUsers() {
+	declare K_Connected[Text] Connected;
 	foreach (Score in Scores) {
 		if (Score.User == Null) continue;
-		Users[Score.User.WebServicesUserId] = K_User {
+		Connected[Score.User.WebServicesUserId] = K_Connected {
 			Login = Score.User.Login,
 			ClubTag = Score.User.ClubTag
 		};
 	}
-	return Users;
+	return Connected;
 }
 
-Void UpdateRow(CMlFrame _Row, K_Standing _Standing, K_User[Text] _Users, Text _Me, Text _Watched) {
+Void UpdateRow(
+	CMlFrame _Row,
+	K_Entry _Standing,
+	K_User[Text] _Known,
+	Integer[Text] _LastRound,
+	K_Connected[Text] _Connected,
+	Text _Me,
+	Text _Watched
+) {
 	_Row.Visible = True;
-	if (_Standing.rank > 0) {
-		SetText(_Row, "Label_Rank", TL::ToText(_Standing.rank));
+	if (_Standing.position > 0) {
+		SetText(_Row, "Label_Rank", TL::ToText(_Standing.position));
 	} else {
 		SetText(_Row, "Label_Rank", "-");
 	}
 
 	declare Text Login = "";
 	declare Text ClubTag = "";
-	if (_Users.existskey(_Standing.account_id)) {
-		Login = _Users[_Standing.account_id].Login;
-		ClubTag = _Users[_Standing.account_id].ClubTag;
+	if (_Connected.existskey(_Standing.account_id)) {
+		Login = _Connected[_Standing.account_id].Login;
+		ClubTag = _Connected[_Standing.account_id].ClubTag;
+	}
+	if (_Known.existskey(_Standing.account_id) && _Known[_Standing.account_id].club_tag != "") {
+		ClubTag = _Known[_Standing.account_id].club_tag;
 	}
 	if (ClubTag != "") {
 		SetText(_Row, "Label_ClubTag", "$<"^ClubTag^"$>");
 	} else {
 		SetText(_Row, "Label_ClubTag", "");
 	}
-	SetText(_Row, "Label_Name", _Standing.name);
+	SetText(_Row, "Label_Name", PlayerName(_Known, _Standing.account_id));
 
-	SetText(_Row, "Label_Points", TL::ToText(_Standing.points));
-	if (_Standing.round_points > 0) {
-		SetText(_Row, "Label_RoundPoints", "+"^TL::ToText(_Standing.round_points));
+	SetText(_Row, "Label_Points", TL::ToText(_Standing.score));
+	declare Integer RoundScore = 0;
+	if (_LastRound.existskey(_Standing.account_id)) RoundScore = _LastRound[_Standing.account_id];
+	if (RoundScore > 0) {
+		SetText(_Row, "Label_RoundPoints", "+"^TL::ToText(RoundScore));
 		SetTextColor(_Row, "Label_RoundPoints", C_Style_GainedColor);
-	} else if (_Standing.round_points < 0) {
-		SetText(_Row, "Label_RoundPoints", TL::ToText(_Standing.round_points));
+	} else if (RoundScore < 0) {
+		SetText(_Row, "Label_RoundPoints", TL::ToText(RoundScore));
 		SetTextColor(_Row, "Label_RoundPoints", C_Style_LostColor);
 	} else {
 		SetText(_Row, "Label_RoundPoints", "");
@@ -354,7 +410,7 @@ Void UpdateRow(CMlFrame _Row, K_Standing _Standing, K_User[Text] _Users, Text _M
 	}
 }
 
-Void Update(Text _Standings, Text _Watched) {
+Void Update(Text _Standings, Text _Round, Text _Users, Text _Watched) {
 	declare CMlFrame Frame_ScoresTable <=> (Page.GetFirstChild("Frame_ScoresTable") as CMlFrame);
 	declare K_Standings Standings;
 	if (_Standings == "" || !Standings.fromjson(_Standings)) {
@@ -366,35 +422,37 @@ Void Update(Text _Standings, Text _Watched) {
 	SetText(Frame_ScoresTable, "Label_Title", Standings.title);
 	SetText(Frame_ScoresTable, "Label_Map", Standings.map_name);
 	SetText(Frame_ScoresTable, "Label_Info", Standings.info);
-	SetVisible(Frame_ScoresTable, "Label_Empty", Standings.players.count == 0);
+	SetVisible(Frame_ScoresTable, "Label_Empty", Standings.entries.count == 0);
 
 	declare Text Me = "";
 	if (LocalUser != Null) Me = LocalUser.WebServicesUserId;
-	declare K_User[Text] Users = ConnectedUsers();
+	declare K_User[Text] Known = KnownUsers(_Users);
+	declare Integer[Text] LastRound = RoundScores(_Round);
+	declare K_Connected[Text] Connected = ConnectedUsers();
 
-	// The players are ordered by rank, spectators last.
+	// The players are ordered by position, spectators last.
 	declare CMlFrame Frame_Rows <=> (Frame_ScoresTable.GetFirstChild("Frame_Rows") as CMlFrame);
 	declare Integer Own = -1;
 	for (Index, 0, C_Rows - 1) {
 		declare CMlFrame Row <=> (Frame_Rows.GetFirstChild("Row_"^Index) as CMlFrame);
 		if (Row == Null) continue;
-		if (!Standings.players.existskey(Index)) {
+		if (!Standings.entries.existskey(Index)) {
 			Row.Visible = False;
 			continue;
 		}
-		UpdateRow(Row, Standings.players[Index], Users, Me, _Watched);
+		UpdateRow(Row, Standings.entries[Index], Known, LastRound, Connected, Me, _Watched);
 	}
-	foreach (Index => Standing in Standings.players) {
+	foreach (Index => Standing in Standings.entries) {
 		if (Standing.account_id == Me) Own = Index;
 	}
 
-	declare Integer Rows = ML::Min(Standings.players.count, C_Rows);
+	declare Integer Rows = ML::Min(Standings.entries.count, C_Rows);
 	Frame_Rows.ScrollMax = <0., ML::ToReal(ML::Max(0, Rows - C_VisibleRows)) * C_RowHeight>;
 
 	// The local player keeps a row of their own while the first rows do not show them.
 	declare CMlFrame Row_Own <=> (Frame_ScoresTable.GetFirstChild("Row_Own") as CMlFrame);
 	if (Own >= C_VisibleRows) {
-		UpdateRow(Row_Own, Standings.players[Own], Users, Me, _Watched);
+		UpdateRow(Row_Own, Standings.entries[Own], Known, LastRound, Connected, Me, _Watched);
 	} else {
 		Row_Own.Visible = False;
 	}
@@ -408,7 +466,13 @@ Void Update(Text _Standings, Text _Watched) {
 main() {
 	declare netread Text Net_Driver_Standings for Teams[0];
 	declare netread Integer Net_Driver_StandingsSerial for Teams[0];
+	declare netread Text Net_Driver_Round for Teams[0];
+	declare netread Integer Net_Driver_RoundSerial for Teams[0];
+	declare netread Text Net_Driver_Users for Teams[0];
+	declare netread Integer Net_Driver_UsersSerial for Teams[0];
 	declare Integer LastSerial = -1;
+	declare Integer LastRoundSerial = -1;
+	declare Integer LastUsersSerial = -1;
 	declare Integer LastUserCount = -1;
 	declare Text LastWatched = "-";
 	declare Boolean LastSpectating = False;
@@ -438,15 +502,19 @@ main() {
 		declare Boolean Spectating = IsSpectating();
 		if (
 			LastSerial == Net_Driver_StandingsSerial &&
+			LastRoundSerial == Net_Driver_RoundSerial &&
+			LastUsersSerial == Net_Driver_UsersSerial &&
 			LastUserCount == Scores.count &&
 			LastWatched == Watched &&
 			LastSpectating == Spectating
 		) continue;
 		LastSerial = Net_Driver_StandingsSerial;
+		LastRoundSerial = Net_Driver_RoundSerial;
+		LastUsersSerial = Net_Driver_UsersSerial;
 		LastUserCount = Scores.count;
 		LastWatched = Watched;
 		LastSpectating = Spectating;
-		Update(Net_Driver_Standings, Watched);
+		Update(Net_Driver_Standings, Net_Driver_Round, Net_Driver_Users, Watched);
 	}
 }
 --></script>

@@ -7,7 +7,9 @@
 //! The scores of a match live in [`Standings`] every mode shares. The host keeps
 //! them and hands them to the mode with every event, so a mode keeps nothing but
 //! its settings. The host also shows the standings to the players and reports
-//! them to the manager, a mode only applies its rules to them.
+//! them to the manager, a mode only applies its rules to them. What the host
+//! knows about the players and the match, e.g. names, comes from [`user`] and
+//! [`map_count`].
 //!
 //! Modes run without WASI. Everything they know comes from their settings, the
 //! standings and the [`Event`]s, so replaying the events of a match rebuilds the
@@ -41,8 +43,8 @@ pub mod testing;
 
 pub use bindings::tmservers::driver::host::LogLevel;
 pub use bindings::tmservers::driver::types::{
-    CanSpawn, Command, Decision, Event, FinishTimeout, Label, Layer, Player, RaceResult, RoundEnd,
-    RoundFormat, Standing, Standings, Status, Tone, WarmUp,
+    CanSpawn, Command, Decision, Entry, Event, FinishTimeout, Label, Layer, RaceResult, RoundEnd,
+    RoundFormat, Standings, Status, Tone, User, WarmUp,
 };
 
 /// A game mode. One instance lives for the whole match.
@@ -85,6 +87,35 @@ pub fn log(level: LogLevel, message: &str) {
     bindings::tmservers::driver::host::log(level, message);
     #[cfg(not(target_arch = "wasm32"))]
     eprintln!("[{level:?}] {message}");
+}
+
+/// What the host knows about a player. Natively (e.g. in tests) the users of the
+/// [`testing::Harness`].
+pub fn user(account_id: &str) -> Option<User> {
+    #[cfg(target_arch = "wasm32")]
+    let user = bindings::tmservers::driver::host::find_user(account_id);
+    #[cfg(not(target_arch = "wasm32"))]
+    let user = testing::native::user(account_id);
+    user
+}
+
+/// The name of a player, e.g. for chat messages. The account id while the host
+/// does not know the name.
+pub fn name(account_id: &str) -> String {
+    user(account_id)
+        .map(|user| user.name)
+        .filter(|name| !name.is_empty())
+        .unwrap_or_else(|| account_id.into())
+}
+
+/// Maps in the playlist of the match, 0 without one. Natively (e.g. in tests) the
+/// map count of the [`testing::Harness`].
+pub fn map_count() -> u32 {
+    #[cfg(target_arch = "wasm32")]
+    let count = bindings::tmservers::driver::host::map_count();
+    #[cfg(not(target_arch = "wasm32"))]
+    let count = testing::native::map_count();
+    count
 }
 
 /// Exports a [`Mode`] as the entry point of the wasm module.

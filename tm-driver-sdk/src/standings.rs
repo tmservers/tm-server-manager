@@ -2,75 +2,67 @@
 
 use std::cmp::{Ordering, Reverse};
 
-use crate::{Label, RaceResult, Standing, Standings, Status, Tone};
+use crate::{Entry, Label, RaceResult, Standings, Status, Tone};
 
 impl Default for Standings {
     /// Standings without players, like the host hands them over when a match starts.
     fn default() -> Self {
         Self {
-            players: Vec::new(),
+            entries: Vec::new(),
+            round: Vec::new(),
             rounds_on_map: 0,
             maps_played: 0,
-            map_name: String::new(),
-            map_count: 0,
             info: String::new(),
         }
     }
 }
 
 impl Standings {
-    pub fn player(&self, account_id: &str) -> Option<&Standing> {
-        self.players.iter().find(|p| p.account_id == account_id)
+    /// The entry of a player in the match.
+    pub fn player(&self, account_id: &str) -> Option<&Entry> {
+        self.entries.iter().find(|p| p.account_id == account_id)
     }
 
-    pub fn player_mut(&mut self, account_id: &str) -> Option<&mut Standing> {
-        self.players.iter_mut().find(|p| p.account_id == account_id)
+    pub fn player_mut(&mut self, account_id: &str) -> Option<&mut Entry> {
+        self.entries.iter_mut().find(|p| p.account_id == account_id)
     }
 
-    /// The standing of a player. A player new to the standings starts playing
-    /// without points. An empty name, e.g. of a player who left, keeps the known one.
-    pub fn join(&mut self, account_id: &str, name: &str) -> &mut Standing {
-        let index = match self.players.iter().position(|p| p.account_id == account_id) {
-            Some(index) => {
-                if !name.is_empty() {
-                    self.players[index].name = name.into();
-                }
-                index
-            }
-            None => {
-                self.players.push(Standing {
-                    account_id: account_id.into(),
-                    name: if name.is_empty() { account_id } else { name }.into(),
-                    rank: 0,
-                    status: Status::Playing,
-                    label: None,
-                    points: 0,
-                    map_points: 0,
-                    round_points: 0,
-                    round_position: 0,
-                });
-                self.players.len() - 1
-            }
-        };
-        &mut self.players[index]
+    /// The entry of a player in the match. A player new to the standings starts
+    /// playing without points.
+    pub fn join(&mut self, account_id: &str) -> &mut Entry {
+        join(&mut self.entries, account_id)
+    }
+
+    /// The entry of a player in the round that ends. A player new to the round
+    /// starts without points.
+    pub fn round_entry(&mut self, account_id: &str) -> &mut Entry {
+        join(&mut self.round, account_id)
     }
 
     /// Players taking part in the match, everyone but spectators.
-    pub fn participants(&self) -> impl Iterator<Item = &Standing> {
-        self.players
+    pub fn participants(&self) -> impl Iterator<Item = &Entry> {
+        self.entries
             .iter()
             .filter(|p| p.status != Status::Spectator)
     }
 
     /// Participants who are not eliminated.
-    pub fn in_match(&self) -> impl Iterator<Item = &Standing> {
-        self.players.iter().filter(|p| p.is_in_match())
+    pub fn in_match(&self) -> impl Iterator<Item = &Entry> {
+        self.entries.iter().filter(|p| p.is_in_match())
     }
 
-    /// Ranks the players the usual way and orders them by rank: the players still
-    /// in the match by points, players with the same points share a rank. Eliminated
-    /// players follow and keep the rank the mode gave them when they were eliminated.
-    /// Spectators come last unranked.
+    /// Adds points to the match and to the round of a player.
+    pub fn award(&mut self, account_id: &str, points: i32) {
+        let player = self.join(account_id);
+        player.score = player.score.saturating_add(points);
+        let round = self.round_entry(account_id);
+        round.score = round.score.saturating_add(points);
+    }
+
+    /// Ranks the players the usual way and orders them by position: the players
+    /// still in the match by points, players with the same points share a position.
+    /// Eliminated players follow and keep the position the mode gave them when they
+    /// were eliminated. Spectators come last without a position.
     pub fn rank(&mut self) {
         fn group(status: Status) -> u8 {
             match status {
@@ -81,90 +73,114 @@ impl Standings {
         }
 
         // Stable so ties keep their order.
-        self.players.sort_by(|a, b| {
+        self.entries.sort_by(|a, b| {
             group(a.status)
                 .cmp(&group(b.status))
                 .then_with(|| match a.status {
-                    Status::Playing => b.points.cmp(&a.points),
-                    Status::Eliminated => a.rank.cmp(&b.rank),
+                    Status::Playing => b.score.cmp(&a.score),
+                    Status::Eliminated => a.position.cmp(&b.position),
                     Status::Spectator => Ordering::Equal,
                 })
         });
 
         let mut previous = None;
-        let mut rank = 0;
-        for (index, player) in self.players.iter_mut().enumerate() {
+        let mut position = 0;
+        for (index, player) in self.entries.iter_mut().enumerate() {
             match player.status {
                 Status::Playing => {
-                    if previous != Some(player.points) {
-                        previous = Some(player.points);
-                        rank = index as u32 + 1;
+                    if previous != Some(player.score) {
+                        previous = Some(player.score);
+                        position = index as u32 + 1;
                     }
-                    player.rank = rank;
+                    player.position = position;
                 }
                 Status::Eliminated => {}
-                Status::Spectator => player.rank = 0,
+                Status::Spectator => player.position = 0,
             }
         }
     }
 
     /// Every player ranked first wins the match.
     pub fn crown_leaders(&mut self) {
-        for player in self.players.iter_mut().filter(|p| p.rank == 1) {
+        for player in self.entries.iter_mut().filter(|p| p.position == 1) {
             player.label = Some(Label::winner());
         }
     }
 
-    /// Places the participants in the round who raced or got points: finishers by
-    /// `time`, then everyone else by the checkpoints they passed. `time` is the race
-    /// that counts, e.g. the last one in single attempt rounds or the best one in time
-    /// attack rounds. Call it at the round end once the round points are awarded and
-    /// the players are ranked, ties keep the order of the standings.
+    /// Places the participants who raced or got points in the round that ends:
+    /// finishers by `time`, then everyone else by the checkpoints they passed.
+    /// `time` is the race that counts, e.g. the last one in single attempt rounds or
+    /// the best one in time attack rounds. The round entries get that time and the
+    /// status of the player in the match.
+    ///
+    /// Call it at the round end once the points are awarded and the players are
+    /// ranked, ties keep the order of the standings.
     pub fn place_round(
         &mut self,
         results: &[RaceResult],
         time: impl Fn(&RaceResult) -> Option<u32>,
     ) {
-        let mut placed: Vec<(usize, Option<u32>, u32)> =
-            self.players
-                .iter()
-                .enumerate()
-                .filter_map(|(index, player)| {
-                    let race = results.iter().find(|r| r.account_id == player.account_id);
-                    let raced = race.is_some_and(|r| r.started || time(r).is_some());
-                    (player.status != Status::Spectator && (player.round_points != 0 || raced))
-                        .then(|| {
-                            (
-                                index,
-                                race.and_then(|r| time(r)),
-                                race.map_or(0, |r| r.progress),
-                            )
-                        })
+        let mut placed: Vec<(Entry, u32)> = self
+            .participants()
+            .filter_map(|player| {
+                let race = results.iter().find(|r| r.account_id == player.account_id);
+                let raced = race.is_some_and(|r| r.started || time(r).is_some());
+                let score = self
+                    .round
+                    .iter()
+                    .find(|r| r.account_id == player.account_id)
+                    .map_or(0, |r| r.score);
+                (score != 0 || raced).then(|| {
+                    let entry = Entry {
+                        account_id: player.account_id.clone(),
+                        position: 0,
+                        score,
+                        time: race.and_then(&time),
+                        status: player.status,
+                        label: None,
+                    };
+                    (entry, race.map_or(0, |r| r.progress))
                 })
-                .collect();
+            })
+            .collect();
         // Stable so ties keep the order of the standings.
-        placed.sort_by_key(|&(_, time, progress)| (time.is_none(), time, Reverse(progress)));
+        placed.sort_by_key(|(entry, progress)| {
+            (entry.time.is_none(), entry.time, Reverse(*progress))
+        });
 
-        for player in &mut self.players {
-            player.round_position = 0;
-        }
-        for (position, (index, _, _)) in placed.into_iter().enumerate() {
-            self.players[index].round_position = position as u32 + 1;
-        }
+        self.round = placed
+            .into_iter()
+            .enumerate()
+            .map(|(index, (entry, _))| Entry {
+                position: index as u32 + 1,
+                ..entry
+            })
+            .collect();
     }
 }
 
-impl Standing {
+fn join<'a>(entries: &'a mut Vec<Entry>, account_id: &str) -> &'a mut Entry {
+    let index = match entries.iter().position(|p| p.account_id == account_id) {
+        Some(index) => index,
+        None => {
+            entries.push(Entry {
+                account_id: account_id.into(),
+                position: 0,
+                score: 0,
+                time: None,
+                status: Status::Playing,
+                label: None,
+            });
+            entries.len() - 1
+        }
+    };
+    &mut entries[index]
+}
+
+impl Entry {
     /// Takes part and is not eliminated.
     pub fn is_in_match(&self) -> bool {
         self.status == Status::Playing
-    }
-
-    /// Adds points to the round, the map and the match.
-    pub fn award(&mut self, points: i32) {
-        self.round_points = self.round_points.saturating_add(points);
-        self.map_points = self.map_points.saturating_add(points);
-        self.points = self.points.saturating_add(points);
     }
 }
 
@@ -188,20 +204,20 @@ mod tests {
 
     fn standings(players: &[(&str, Status, i32, u32)]) -> Standings {
         let mut standings = Standings::default();
-        for &(account_id, status, points, rank) in players {
-            let player = standings.join(account_id, "");
+        for &(account_id, status, score, position) in players {
+            let player = standings.join(account_id);
             player.status = status;
-            player.points = points;
-            player.rank = rank;
+            player.score = score;
+            player.position = position;
         }
         standings
     }
 
-    fn ranks(standings: &Standings) -> Vec<(&str, u32)> {
+    fn positions(standings: &Standings) -> Vec<(&str, u32)> {
         standings
-            .players
+            .entries
             .iter()
-            .map(|p| (p.account_id.as_str(), p.rank))
+            .map(|p| (p.account_id.as_str(), p.position))
             .collect()
     }
 
@@ -213,7 +229,6 @@ mod tests {
     ) -> RaceResult {
         RaceResult {
             account_id: account_id.into(),
-            name: account_id.into(),
             started: true,
             progress,
             previous_time: previous,
@@ -223,16 +238,13 @@ mod tests {
         }
     }
 
-    /// The players in the order of their places in the round, unplaced ones left out.
-    fn places(standings: &Standings) -> Vec<(&str, u32)> {
-        let mut places: Vec<(&str, u32)> = standings
-            .players
+    /// The players of the round in the order of their places.
+    fn places(standings: &Standings) -> Vec<(&str, u32, i32)> {
+        standings
+            .round
             .iter()
-            .filter(|p| p.round_position > 0)
-            .map(|p| (p.account_id.as_str(), p.round_position))
-            .collect();
-        places.sort_by_key(|&(_, position)| position);
-        places
+            .map(|p| (p.account_id.as_str(), p.position, p.score))
+            .collect()
     }
 
     #[test]
@@ -249,7 +261,7 @@ mod tests {
         standings.rank();
 
         assert_eq!(
-            ranks(&standings),
+            positions(&standings),
             [
                 ("tied_first", 1),
                 ("tied_second", 1),
@@ -263,24 +275,22 @@ mod tests {
     }
 
     #[test]
-    fn join_keeps_known_names() {
+    fn players_join_once() {
         let mut standings = Standings::default();
-        assert_eq!(standings.join("a", "").name, "a");
-        assert_eq!(standings.join("a", "$f00kistz").name, "$f00kistz");
-        assert_eq!(standings.join("a", "").name, "$f00kistz");
-        assert_eq!(standings.players.len(), 1);
+        standings.join("a").score = 5;
+        assert_eq!(standings.join("a").score, 5);
+        assert_eq!(standings.entries.len(), 1);
+        assert!(standings.round.is_empty());
     }
 
     #[test]
-    fn award_adds_to_round_map_and_match() {
+    fn award_adds_to_the_match_and_the_round() {
         let mut standings = Standings::default();
-        let player = standings.join("a", "a");
-        player.award(10);
-        player.award(-3);
-        assert_eq!(
-            (player.round_points, player.map_points, player.points),
-            (7, 7, 7)
-        );
+        standings.join("a").score = 3;
+        standings.award("a", 10);
+        standings.award("a", -2);
+        assert_eq!(standings.player("a").unwrap().score, 11);
+        assert_eq!(standings.round_entry("a").score, 8);
     }
 
     #[test]
@@ -293,7 +303,7 @@ mod tests {
         standings.rank();
         standings.crown_leaders();
         let labels: Vec<Option<Label>> =
-            standings.players.iter().map(|p| p.label.clone()).collect();
+            standings.entries.iter().map(|p| p.label.clone()).collect();
         assert_eq!(labels, [Some(Label::winner()), Some(Label::winner()), None]);
     }
 
@@ -311,9 +321,8 @@ mod tests {
             ("idle", Status::Playing, 0, 6),
             ("spectator", Status::Spectator, 0, 0),
         ]);
-        for (account_id, round_points) in [("slow", -6), ("fast", -2), ("far", -20), ("left", -20)]
-        {
-            standings.player_mut(account_id).unwrap().round_points = round_points;
+        for (account_id, points) in [("slow", -6), ("fast", -2), ("far", -20), ("left", -20)] {
+            standings.round_entry(account_id).score = points;
         }
         let results = [
             race("slow", Some(31_000), Some(31_000), 3),
@@ -330,13 +339,15 @@ mod tests {
         assert_eq!(
             places(&standings),
             [
-                ("fast", 1),
-                ("slow", 2),
-                ("far", 3),
-                ("spared", 4),
-                ("left", 5)
+                ("fast", 1, -2),
+                ("slow", 2, -6),
+                ("far", 3, -20),
+                ("spared", 4, 0),
+                ("left", 5, -20)
             ]
         );
+        assert_eq!(standings.round[0].time, Some(30_000));
+        assert_eq!(standings.round[2].time, None);
     }
 
     #[test]
@@ -349,8 +360,8 @@ mod tests {
         ];
 
         standings.place_round(&results, |r| r.best_time);
-        assert_eq!(places(&standings), [("b", 1), ("a", 2)]);
+        assert_eq!(places(&standings), [("b", 1, 0), ("a", 2, 0)]);
         standings.place_round(&results, |r| r.previous_time);
-        assert_eq!(places(&standings), [("a", 1), ("b", 2)]);
+        assert_eq!(places(&standings), [("a", 1, 0), ("b", 2, 0)]);
     }
 }

@@ -6,35 +6,30 @@ package tmservers:driver@0.1.0;
 /// handles the transport details of the driver modescript: waiting holds and
 /// letting them continue.
 interface types {
-    /// The races of one player as reported by the standard scores callback.
+    /// The races of one player in the current round, from the standard waypoint
+    /// callbacks of the server.
     record race-result {
         account-id: string,
-        name: string,
         /// The player started a race in this round. False for spectators and players
         /// that could not spawn.
         started: bool,
         /// Checkpoints the player passed in the last race of the round, the finish included.
         progress: u32,
-        /// Time of the last race in milliseconds. None if the player did not finish it.
-        /// In single attempt rounds this is the race of the round.
+        /// Time of the last finished race of the round in milliseconds. None without a
+        /// finish. In single attempt rounds this is the race of the round.
         previous-time: option<u32>,
         previous-checkpoints: list<u32>,
-        /// Best race time in milliseconds. None if the player did not finish.
-        /// In time attack rounds this is the best race of the round.
+        /// Best race time of the round in milliseconds. None without a finish.
+        /// In time attack rounds this is the race that counts.
         best-time: option<u32>,
         best-checkpoints: list<u32>,
     }
 
-    record player {
-        account-id: string,
-        /// Empty if the host did not get the name from the scores yet.
-        name: string,
-    }
-
     record round-end {
-        /// The round was forced to end or skipped (e.g. after a pause) and should not count.
+        /// The round should not count: it was forced to end or skipped (e.g. after a
+        /// pause), or the host did not see it start, e.g. after the bridge restarted.
         forced: bool,
-        /// Every player of the scores and everyone else who started in the round.
+        /// Every connected player and everyone else who started in the round.
         results: list<race-result>,
     }
 
@@ -47,21 +42,34 @@ interface types {
         match-start,
         map-start,
         round-start,
-        /// A player started their first race of the current round, e.g. so the
-        /// standings show everyone who plays before the first round ends.
-        race-start(player),
+        /// The account id of a player who started their first race of the current
+        /// round, e.g. so the standings show everyone who plays before the first
+        /// round ends.
+        race-start(string),
         round-end(round-end),
         map-end,
         match-end,
     }
 
+    /// What the host knows about a player. Read only metadata, a mode asks for it
+    /// with `host.find-user`.
+    record user {
+        account-id: string,
+        /// Empty until the host got the name from the server.
+        name: string,
+        /// Empty while unknown.
+        club-tag: string,
+        /// E.g. `World|Europe|Germany`. Empty while unknown.
+        zone: string,
+    }
+
     /// Whether a player takes part in the match and can still race. Who wins and
-    /// loses is told by the rank, what a mode calls a state (e.g. last chance) by
-    /// the label.
+    /// loses is told by the position, what a mode calls a state (e.g. last chance)
+    /// by the label.
     enum status {
         /// Takes part and can still race.
         playing,
-        /// Out of the match. The rank the mode gave the player at the elimination is final.
+        /// Out of the match. The position the mode gave the player at the elimination is final.
         eliminated,
         /// Takes no part in the match, e.g. joined too late. Not ranked and left out
         /// of round results.
@@ -84,23 +92,18 @@ interface types {
         tone: tone,
     }
 
-    record standing {
+    /// A player in the standings of the match or of a round.
+    record entry {
         account-id: string,
-        name: string,
-        /// Players with the same rank are tied. 0 until the mode ranks the player.
-        rank: u32,
+        /// Rank in the match or place in the round, from 1. Players with the same
+        /// position are tied. 0 until the mode sets it.
+        position: u32,
+        /// Points of the match or of the round.
+        score: s32,
+        /// E.g. the race that counted in the round, in milliseconds.
+        time: option<u32>,
         status: status,
         label: option<label>,
-        /// Points of the match.
-        points: s32,
-        /// Points of the current map. The host clears them when a map starts.
-        map-points: s32,
-        /// Points of the current round. The host clears them before every round end.
-        round-points: s32,
-        /// Place in the current round, 1 for the best, 0 for players who did not take
-        /// part. Set by the mode at the round end, the host reports it with the round
-        /// points to the manager. The host clears it before every round end.
-        round-position: u32,
     }
 
     /// The scores of a match in one structure every mode shares.
@@ -108,18 +111,18 @@ interface types {
     /// The host keeps the standings and hands them to the mode with every event.
     /// What the mode returns is shown to the players and reported to the manager,
     /// so a mode keeps no scores of its own. The host clears what belongs to a new
-    /// match, map or round before the mode gets the event.
+    /// match or map before the mode gets the event.
     record standings {
-        /// Every player taking part in the match.
-        players: list<standing>,
+        /// The match: one entry for every player taking part. Kept between events.
+        entries: list<entry>,
+        /// The round that ended with this event, filled by the mode at round-end.
+        /// The host takes it out after every event: it shows it as the last round
+        /// and reports it to the manager. Ignored for forced rounds.
+        round: list<entry>,
         /// Rounds of the current map that counted. The host clears them when a map starts.
         rounds-on-map: u32,
         /// Maps that ended in this match. The host counts the ending map before map-end.
         maps-played: u32,
-        /// Name of the current map. Set by the host.
-        map-name: string,
-        /// Maps in the playlist of the match, 0 without one. Set by the host.
-        map-count: u32,
         /// Progress of the match shown with the standings, e.g. `2 / 5 rounds`.
         info: string,
     }
@@ -203,6 +206,8 @@ interface types {
 
 /// Functions the host provides to modes.
 interface host {
+    use types.{user};
+
     enum log-level {
         trace,
         debug,
@@ -212,6 +217,10 @@ interface host {
     }
 
     log: func(level: log-level, message: string);
+    /// What the host knows about a player, e.g. the name for a chat message.
+    find-user: func(account-id: string) -> option<user>;
+    /// Maps in the playlist of the match, 0 without one.
+    map-count: func() -> u32;
 }
 
 /// A game mode controlling the driver modescript.

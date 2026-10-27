@@ -94,8 +94,8 @@ impl Mode for Rounds {
                 }
             }
             // Everyone who races shows up in the standings before the first round ends.
-            Event::RaceStart(player) => {
-                standings.join(&player.account_id, &player.name);
+            Event::RaceStart(account_id) => {
+                standings.join(&account_id);
                 standings.rank();
                 Vec::new()
             }
@@ -117,7 +117,7 @@ impl Rounds {
             .iter()
             .filter(|r| r.started || r.previous_time.is_some())
         {
-            standings.join(&result.account_id, &result.name);
+            standings.join(&result.account_id);
         }
 
         let mut finishers: Vec<&RaceResult> = round_end
@@ -128,9 +128,7 @@ impl Rounds {
         // Stable so equal times keep the order of the scores.
         finishers.sort_by_key(|r| r.previous_time);
         for (rank, finisher) in finishers.into_iter().enumerate() {
-            standings
-                .join(&finisher.account_id, &finisher.name)
-                .award(self.points_for(rank));
+            standings.award(&finisher.account_id, self.points_for(rank));
         }
 
         standings.rounds_on_map += 1;
@@ -156,7 +154,7 @@ impl Rounds {
             limit => format!("{} / {limit} rounds", standings.rounds_on_map),
         };
         let map = standings.maps_played + 1;
-        match maps_per_match(self.settings.maps_per_match, standings) {
+        match maps_per_match(self.settings.maps_per_match) {
             1 => rounds,
             0 => format!("Map {map}, {rounds}"),
             maps => format!("Map {map} / {maps}, {rounds}"),
@@ -173,7 +171,7 @@ impl Rounds {
     }
 
     fn points_limit(&self, standings: &Standings) -> PointsLimit {
-        let mut leaders: Vec<i32> = standings.players.iter().map(|p| p.points).collect();
+        let mut leaders: Vec<i32> = standings.entries.iter().map(|p| p.score).collect();
         leaders.sort_unstable_by(|a, b| b.cmp(a));
 
         if self.settings.use_tie_break && leaders.len() > 1 && leaders[0] == leaders[1] {
@@ -191,7 +189,7 @@ impl Rounds {
         let points_limit = self.points_limit(standings);
         if points_limit == PointsLimit::Reached {
             true
-        } else if let maps @ 1.. = maps_per_match(self.settings.maps_per_match, standings) {
+        } else if let maps @ 1.. = maps_per_match(self.settings.maps_per_match) {
             standings.maps_played >= maps && points_limit != PointsLimit::Tie
         } else {
             // Without any limit the match ends after the first map.
@@ -201,20 +199,19 @@ impl Rounds {
 }
 
 /// The setting or the maps of the playlist.
-fn maps_per_match(setting: Option<u32>, standings: &Standings) -> u32 {
-    setting.unwrap_or(standings.map_count.max(1))
+fn maps_per_match(setting: Option<u32>) -> u32 {
+    setting.unwrap_or(tm_driver_sdk::map_count().max(1))
 }
 
 #[cfg(test)]
 mod tests {
-    use tm_driver_sdk::{FinishTimeout, Label, Player, WarmUp, testing::Harness};
+    use tm_driver_sdk::{FinishTimeout, Label, WarmUp, testing::Harness};
 
     use super::*;
 
     fn finish(account_id: &str, time: u32) -> RaceResult {
         RaceResult {
             account_id: account_id.into(),
-            name: account_id.into(),
             started: true,
             progress: 1,
             previous_time: Some(time),
@@ -227,7 +224,6 @@ mod tests {
     fn dnf(account_id: &str) -> RaceResult {
         RaceResult {
             account_id: account_id.into(),
-            name: account_id.into(),
             started: true,
             progress: 1,
             previous_time: None,
@@ -251,13 +247,17 @@ mod tests {
         harness
     }
 
-    /// Account, rank, points and round points of every player in the order of the standings.
+    /// Account, position, points and points of the last round of every player in the
+    /// order of the standings.
     fn scores(harness: &Harness<Rounds>) -> Vec<(&str, u32, i32, i32)> {
         harness
             .standings
-            .players
+            .entries
             .iter()
-            .map(|p| (p.account_id.as_str(), p.rank, p.points, p.round_points))
+            .map(|p| {
+                let round = harness.round_entry(&p.account_id).map_or(0, |r| r.score);
+                (p.account_id.as_str(), p.position, p.score, round)
+            })
             .collect()
     }
 
@@ -308,13 +308,21 @@ mod tests {
         assert_eq!(harness.standings.info, "1 / 5 rounds");
 
         // Places follow the race, also for the finishers who got the same points.
-        let places: Vec<(&str, u32)> = harness
-            .standings
-            .players
+        let places: Vec<(&str, u32, Option<u32>)> = harness
+            .round
             .iter()
-            .map(|p| (p.account_id.as_str(), p.round_position))
+            .map(|p| (p.account_id.as_str(), p.position, p.time))
             .collect();
-        assert_eq!(places, [("a", 1), ("b", 2), ("c", 3), ("e", 4), ("d", 5)]);
+        assert_eq!(
+            places,
+            [
+                ("a", 1, Some(30_000)),
+                ("b", 2, Some(31_000)),
+                ("c", 3, Some(32_000)),
+                ("e", 4, Some(33_000)),
+                ("d", 5, None)
+            ]
+        );
     }
 
     #[test]
@@ -324,22 +332,13 @@ mod tests {
         harness.step(round_end(vec![finish("b", 30_000), dnf("a")]));
 
         assert_eq!(scores(&harness), [("b", 1, 16, 10), ("a", 2, 10, 0)]);
-        assert_eq!(harness.standing("b").map_points, 16);
     }
 
     #[test]
     fn players_show_up_when_they_start() {
         let mut harness = started("");
-        assert!(
-            harness
-                .step(Event::RaceStart(Player {
-                    account_id: "a".into(),
-                    name: "$f00a".into(),
-                }))
-                .is_empty()
-        );
+        assert!(harness.step(Event::RaceStart("a".into())).is_empty());
         assert_eq!(scores(&harness), [("a", 1, 0, 0)]);
-        assert_eq!(harness.standing("a").name, "$f00a");
     }
 
     #[test]
@@ -350,7 +349,8 @@ mod tests {
             results: vec![finish("a", 30_000)],
         }));
         assert!(commands.is_empty());
-        assert!(harness.standings.players.is_empty());
+        assert!(harness.standings.entries.is_empty());
+        assert!(harness.round.is_empty());
         assert_eq!(harness.standings.rounds_on_map, 0);
     }
 
@@ -375,15 +375,14 @@ mod tests {
     }
 
     #[test]
-    fn map_points_start_over_on_every_map() {
+    fn points_add_up_over_maps() {
         let mut harness = started(r#"{"rounds_per_map": 1, "maps_per_match": 2}"#);
         harness.step(round_end(vec![finish("a", 1)]));
         assert!(harness.step(Event::MapEnd).is_empty());
 
         harness.step(Event::MapStart);
-        assert_eq!(harness.standing("a").map_points, 0);
         harness.step(round_end(vec![finish("a", 1)]));
-        assert_eq!(harness.standing("a").points, 20);
+        assert_eq!(harness.standing("a").score, 20);
         assert_eq!(harness.step(Event::MapEnd), [Command::EndMatch]);
     }
 

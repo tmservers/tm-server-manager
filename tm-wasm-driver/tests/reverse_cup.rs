@@ -5,14 +5,14 @@ mod common;
 use std::sync::OnceLock;
 
 use common::{
-    hold, match_start, no_warm_up, publishes_standings, ranking, round_start, round_start_scores,
-    scores, start_line, way_point, without_standings,
+    finish, hold, match_start, no_warm_up, play, player_info, publishes_standings, ranking,
+    round_start, start_line, way_point, without_published,
 };
 use tm_server_types::{
     event::{DriverPlayerResult, DriverRoundResult, DriverSection, Event},
     method::{DriverCanSpawn, DriverCommand, DriverFinishTimeout, DriverRoundFormat, DriverStatus},
 };
-use tm_wasm_driver::{Driver, DriverEngine, DriverLimits, DriverReply};
+use tm_wasm_driver::{DriverEngine, DriverLimits, DriverReply};
 
 /// Builds the reverse cup mode once per test binary.
 fn reverse_cup_wasm() -> &'static [u8] {
@@ -39,9 +39,10 @@ fn cannot_spawn(account_id: &str) -> DriverCommand {
 }
 
 /// A round in which a finishes, b gives up after two checkpoints and c after one.
-/// s only watches.
+/// s is on the server and only watches.
 fn round_with_give_ups(round: u32, seq: u32) -> Vec<Event> {
     vec![
+        player_info("s", "s"),
         round_start(round),
         start_line("a"),
         start_line("b"),
@@ -51,13 +52,7 @@ fn round_with_give_ups(round: u32, seq: u32) -> Vec<Event> {
         way_point("c", 0),
         way_point("a", 1),
         way_point("b", 1),
-        way_point("a", 2),
-        scores(&[
-            ("a", 30_000, 30_000),
-            ("b", -1, -1),
-            ("c", -1, -1),
-            ("s", -1, -1),
-        ]),
+        finish("a", 2, 30_000),
         hold(seq, DriverSection::RoundEnd),
     ]
 }
@@ -70,23 +65,10 @@ fn final_round(round: u32, seq: u32) -> Vec<Event> {
         start_line("b"),
         way_point("a", 0),
         way_point("b", 0),
-        scores(&[
-            ("a", 30_000, 30_000),
-            ("b", 32_000, 32_000),
-            ("c", -1, -1),
-            ("s", -1, -1),
-        ]),
+        finish("a", 1, 30_000),
+        finish("b", 1, 32_000),
         hold(seq, DriverSection::RoundEnd),
     ]
-}
-
-/// Handles every event and returns the reply to the last one.
-fn play(driver: &mut Driver, events: &[Event]) -> DriverReply {
-    let mut reply = DriverReply::default();
-    for event in events {
-        reply = driver.handle(event).unwrap();
-    }
-    reply
 }
 
 #[test]
@@ -97,7 +79,7 @@ fn plays_a_match() {
 
     driver.handle(&match_start()).unwrap();
     assert_eq!(
-        without_standings(
+        without_published(
             &driver
                 .handle(&hold(1, DriverSection::MapStart))
                 .unwrap()
@@ -116,7 +98,7 @@ fn plays_a_match() {
     // and 9 points, giving up costs 20 and puts b and c in last chance.
     let reply = play(&mut driver, &round_with_give_ups(1, 2));
     assert_eq!(
-        without_standings(&reply.commands),
+        without_published(&reply.commands),
         [cannot_spawn("s"), DriverCommand::Continue(2)]
     );
     assert_eq!(
@@ -129,7 +111,7 @@ fn plays_a_match() {
     // In last chance only c, who passed the fewest checkpoints, loses points.
     let reply = play(&mut driver, &round_with_give_ups(2, 3));
     assert_eq!(
-        without_standings(&reply.commands),
+        without_published(&reply.commands),
         [
             DriverCommand::ChatMessage("$f90$i$<c$> takes 3rd place!".into()),
             cannot_spawn("c"),
@@ -146,7 +128,7 @@ fn plays_a_match() {
     // Two players lose 4 and 8 points, b loses the most and a wins.
     let reply = play(&mut driver, &final_round(3, 4));
     assert_eq!(
-        without_standings(&reply.commands),
+        without_published(&reply.commands),
         [
             DriverCommand::ChatMessage("$f90$i$<b$> takes 2nd place!".into()),
             cannot_spawn("b"),
@@ -181,7 +163,7 @@ fn plays_a_match() {
     assert_eq!(driver.standings().info, "1 left, 3 / 5 rounds");
 
     assert_eq!(
-        without_standings(
+        without_published(
             &driver
                 .handle(&hold(5, DriverSection::MapEnd))
                 .unwrap()
@@ -205,12 +187,12 @@ fn standings_show_the_players_once_they_start() {
     driver.handle(&round_start(1)).unwrap();
     driver.handle(&start_line("b")).unwrap();
     driver.handle(&Event::WarmupEnd).unwrap();
-    assert!(driver.standings().players.is_empty());
+    assert!(driver.standings().entries.is_empty());
 
     driver.handle(&round_start(1)).unwrap();
-    driver
-        .handle(&round_start_scores(&["a", "b", "s"]))
-        .unwrap();
+    for player in ["a", "b", "s"] {
+        driver.handle(&player_info(player, player)).unwrap();
+    }
     assert!(publishes_standings(
         &driver.handle(&start_line("a")).unwrap().commands
     ));

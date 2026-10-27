@@ -70,7 +70,7 @@ impl Mode for TimeAttack {
             }
             Event::RoundEnd(round_end) => self.round_end(standings, round_end),
             Event::MapEnd => {
-                let maps = maps_per_match(self.settings.maps_per_match, standings);
+                let maps = maps_per_match(self.settings.maps_per_match);
                 if maps > 0 && standings.maps_played >= maps {
                     standings.crown_leaders();
                     vec![Command::EndMatch]
@@ -79,8 +79,8 @@ impl Mode for TimeAttack {
                 }
             }
             // Everyone who races shows up in the standings before the first round ends.
-            Event::RaceStart(player) => {
-                standings.join(&player.account_id, &player.name);
+            Event::RaceStart(account_id) => {
+                standings.join(&account_id);
                 standings.rank();
                 Vec::new()
             }
@@ -102,7 +102,7 @@ impl TimeAttack {
             .iter()
             .filter(|r| r.started || r.best_time.is_some())
         {
-            standings.join(&result.account_id, &result.name);
+            standings.join(&result.account_id);
         }
 
         let mut finishers: Vec<&RaceResult> = round_end
@@ -114,9 +114,7 @@ impl TimeAttack {
         finishers.sort_by_key(|r| r.best_time);
         let finisher_count = finishers.len();
         for (rank, finisher) in finishers.into_iter().enumerate() {
-            standings
-                .join(&finisher.account_id, &finisher.name)
-                .award(self.points_for(rank, finisher_count));
+            standings.award(&finisher.account_id, self.points_for(rank, finisher_count));
         }
 
         standings.rounds_on_map += 1;
@@ -129,7 +127,7 @@ impl TimeAttack {
 
     fn info(&self, standings: &Standings) -> String {
         let map = standings.maps_played + 1;
-        match maps_per_match(self.settings.maps_per_match, standings) {
+        match maps_per_match(self.settings.maps_per_match) {
             0 => format!("Map {map}"),
             maps => format!("Map {map} / {maps}"),
         }
@@ -149,8 +147,8 @@ impl TimeAttack {
 }
 
 /// The setting or the maps of the playlist.
-fn maps_per_match(setting: Option<u32>, standings: &Standings) -> u32 {
-    setting.unwrap_or(standings.map_count.max(1))
+fn maps_per_match(setting: Option<u32>) -> u32 {
+    setting.unwrap_or(tm_driver_sdk::map_count().max(1))
 }
 
 #[cfg(test)]
@@ -163,7 +161,6 @@ mod tests {
     fn finish(account_id: &str, best_time: u32) -> RaceResult {
         RaceResult {
             account_id: account_id.into(),
-            name: account_id.into(),
             started: true,
             progress: 1,
             previous_time: Some(best_time + 1_000),
@@ -176,7 +173,6 @@ mod tests {
     fn dnf(account_id: &str) -> RaceResult {
         RaceResult {
             account_id: account_id.into(),
-            name: account_id.into(),
             started: true,
             progress: 1,
             previous_time: None,
@@ -200,13 +196,17 @@ mod tests {
         harness
     }
 
-    /// Account, rank and points of the map of every player in the order of the standings.
+    /// Account, position and points of the map of every player in the order of the
+    /// standings. Every map is a single round.
     fn map_points(harness: &Harness<TimeAttack>) -> Vec<(&str, u32, i32)> {
         harness
             .standings
-            .players
+            .entries
             .iter()
-            .map(|p| (p.account_id.as_str(), p.rank, p.map_points))
+            .map(|p| {
+                let round = harness.round_entry(&p.account_id).map_or(0, |r| r.score);
+                (p.account_id.as_str(), p.position, round)
+            })
             .collect()
     }
 
@@ -268,7 +268,7 @@ mod tests {
             results: vec![finish("a", 40_000)],
         }));
         assert!(commands.is_empty());
-        assert!(harness.standings.players.is_empty());
+        assert!(harness.standings.entries.is_empty());
     }
 
     #[test]
@@ -280,9 +280,12 @@ mod tests {
         harness.step(Event::MapStart);
         assert_eq!(harness.standings.info, "Map 2 / 2");
         harness.step(round_end(vec![finish("b", 39_000), finish("a", 40_000)]));
-        assert_eq!(harness.standing("a").points, 3);
-        assert_eq!(harness.standing("b").points, 3);
-        assert_eq!(harness.standing("b").map_points, 2);
+        assert_eq!(harness.standing("a").score, 3);
+        assert_eq!(harness.standing("b").score, 3);
+        assert_eq!(
+            harness.round_entry("b").map(|r| (r.position, r.score)),
+            Some((1, 2))
+        );
 
         // Tied leaders both win.
         assert_eq!(harness.step(Event::MapEnd), [Command::EndMatch]);

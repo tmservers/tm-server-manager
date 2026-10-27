@@ -4,7 +4,9 @@ mod common;
 
 use std::sync::OnceLock;
 
-use common::{hold, match_start, publishes_standings, scores, without_standings};
+use common::{
+    hold, match_start, play, player_info, publishes_standings, race, round_start, without_published,
+};
 use tm_server_types::{
     event::{DriverPlayerResult, DriverRoundResult, DriverSection},
     method::{DriverCommand, DriverRoundFormat},
@@ -29,7 +31,7 @@ fn plays_a_match() {
 
     driver.handle(&match_start()).unwrap();
     assert_eq!(
-        without_standings(
+        without_published(
             &driver
                 .handle(&hold(1, DriverSection::MapStart))
                 .unwrap()
@@ -43,17 +45,16 @@ fn plays_a_match() {
     );
 
     // The time limit ran out. Time attack ranks by the best race, not the last one.
-    driver
-        .handle(&scores(&[
-            ("a", 42_000, 42_000),
-            ("b", 45_000, 41_000),
-            ("c", -1, -1),
-        ]))
-        .unwrap();
+    // c is on the server without racing.
+    driver.handle(&round_start(1)).unwrap();
+    play(&mut driver, &race("a", 42_000));
+    play(&mut driver, &race("b", 41_000));
+    play(&mut driver, &race("b", 45_000));
+    driver.handle(&player_info("c", "c")).unwrap();
     let reply = driver.handle(&hold(2, DriverSection::RoundEnd)).unwrap();
     assert!(publishes_standings(&reply.commands));
     assert_eq!(
-        without_standings(&reply.commands),
+        without_published(&reply.commands),
         [DriverCommand::EndMap, DriverCommand::Continue(2)]
     );
     assert_eq!(
@@ -75,7 +76,7 @@ fn plays_a_match() {
     );
 
     assert_eq!(
-        without_standings(
+        without_published(
             &driver
                 .handle(&hold(3, DriverSection::MapEnd))
                 .unwrap()

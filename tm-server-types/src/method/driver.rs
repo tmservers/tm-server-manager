@@ -37,6 +37,14 @@ pub enum DriverCommand {
     /// `netread Text Net_Driver_Standings for Teams[0]`. Sent by the driver host
     /// whenever the standings change and never produced by a mode itself.
     SetStandings(String),
+    /// [`DriverRound`] as json, readable by manialinks through
+    /// `netread Text Net_Driver_Round for Teams[0]`. Sent by the driver host
+    /// whenever a round counted and never produced by a mode itself.
+    SetRound(String),
+    /// [`DriverUsers`] as json, readable by manialinks through
+    /// `netread Text Net_Driver_Users for Teams[0]`. Sent by the driver host
+    /// whenever it learns about a player and never produced by a mode itself.
+    SetUsers(String),
     /// A message for everyone in the chat.
     ChatMessage(String),
 }
@@ -71,10 +79,12 @@ impl DriverCommand {
     pub const REMOVE_LAYER: &str = "Driver.RemoveLayer";
     pub const SET_NET_STATE: &str = "Driver.SetNetState";
     pub const SET_STANDINGS: &str = "Driver.SetStandings";
+    pub const SET_ROUND: &str = "Driver.SetRound";
+    pub const SET_USERS: &str = "Driver.SetUsers";
     pub const SET_WARM_UP: &str = "Driver.SetWarmUp";
 
     /// Methods implemented by the driver modescript.
-    pub const MODESCRIPT_METHODS: [&str; 9] = [
+    pub const MODESCRIPT_METHODS: [&str; 11] = [
         Self::CONTINUE,
         Self::SET_ROUND_FORMAT,
         Self::SET_CAN_SPAWN,
@@ -83,6 +93,8 @@ impl DriverCommand {
         Self::REMOVE_LAYER,
         Self::SET_NET_STATE,
         Self::SET_STANDINGS,
+        Self::SET_ROUND,
+        Self::SET_USERS,
         Self::SET_WARM_UP,
     ];
 
@@ -151,6 +163,8 @@ impl DriverCommand {
             DriverCommand::SetStandings(standings) => {
                 (Self::SET_STANDINGS, vec![standings.clone()])
             }
+            DriverCommand::SetRound(round) => (Self::SET_ROUND, vec![round.clone()]),
+            DriverCommand::SetUsers(users) => (Self::SET_USERS, vec![users.clone()]),
             DriverCommand::ChatMessage(message) => {
                 return DriverCall::ChatSendServerMessage(message.clone());
             }
@@ -289,10 +303,10 @@ impl DriverUiModule {
     pub const SCORES_TABLE: &str = "Race_ScoresTable";
 }
 
-/// The scores of a driver match. Every driver mode works on this one structure:
-/// the driver host keeps it, hands it to the mode with every event and shows what
-/// the mode returns to the players. Manialinks parse it as json, so the field
-/// names must not change.
+/// The standings of a driver match as the manialinks get them through
+/// `Net_Driver_Standings`. Every driver mode works on these: the driver host keeps
+/// them, hands them to the mode with every event and shows what the mode returns
+/// to the players. Manialinks parse them as json, so the field names must not change.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
@@ -310,33 +324,69 @@ pub struct DriverStandings {
     pub map_name: String,
     /// Maps in the playlist of the match, 0 without one.
     pub map_count: u32,
-    /// Ordered by rank, unranked players last.
-    pub players: Vec<DriverStanding>,
+    /// Ordered by position, unranked players last.
+    pub entries: Vec<DriverEntry>,
 }
 
+/// The last round of a driver match as the manialinks get it through
+/// `Net_Driver_Round`.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
+#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
+pub struct DriverRound {
+    /// Counted rounds of the match, from 1. 0 before the first round ended.
+    pub number: u32,
+    /// Ordered by place.
+    pub entries: Vec<DriverEntry>,
+}
+
+/// A player in the standings of a driver match or of a round.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
-pub struct DriverStanding {
+pub struct DriverEntry {
     pub account_id: String,
-    pub name: String,
-    /// Players with the same rank are tied. 0 if the mode did not rank the player.
-    pub rank: u32,
+    /// Rank in the match or place in the round, from 1. Players with the same
+    /// position are tied. 0 if the mode did not set it.
+    pub position: u32,
+    /// Points of the match or of the round.
+    pub score: i32,
+    /// E.g. the race that counted in the round in milliseconds, -1 without a time.
+    pub time: i32,
     pub status: DriverStatus,
     /// Shown in place of the points, e.g. `Last Chance`. Empty without a label.
     pub label: String,
     pub label_tone: DriverLabelTone,
-    /// Points of the match.
-    pub points: i32,
-    /// Points of the current map.
-    pub map_points: i32,
-    /// Points of the last round.
-    pub round_points: i32,
+}
+
+/// The players a driver host knows as the manialinks get them through
+/// `Net_Driver_Users`, so the standings do not repeat the names.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
+#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
+pub struct DriverUsers {
+    pub users: Vec<DriverUser>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
+#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
+pub struct DriverUser {
+    pub account_id: String,
+    /// Empty until the host got the name from the server.
+    pub name: String,
+    /// Empty while unknown.
+    pub club_tag: String,
+    /// E.g. `World|Europe|Germany`. Empty while unknown.
+    pub zone: String,
 }
 
 /// Whether a player takes part in a driver match and can still race. Who wins is
-/// told by the rank, what a mode calls a state by the label.
+/// told by the position, what a mode calls a state by the label.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
@@ -346,7 +396,7 @@ pub enum DriverStatus {
     /// Takes part and can still race.
     #[default]
     Playing,
-    /// Out of the match with a final rank.
+    /// Out of the match with a final position.
     Eliminated,
     /// Takes no part in the match, e.g. joined too late. Not ranked.
     Spectator,
@@ -521,6 +571,14 @@ mod tests {
         assert_eq!(
             modescript(DriverCommand::SetStandings("{}".into())),
             ("Driver.SetStandings", vec!["{}".into()])
+        );
+        assert_eq!(
+            modescript(DriverCommand::SetRound("{}".into())),
+            ("Driver.SetRound", vec!["{}".into()])
+        );
+        assert_eq!(
+            modescript(DriverCommand::SetUsers("{}".into())),
+            ("Driver.SetUsers", vec!["{}".into()])
         );
         assert_eq!(
             modescript(DriverCommand::SetNetState("{}".into())),

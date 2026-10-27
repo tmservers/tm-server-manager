@@ -4,14 +4,13 @@
 use std::{path::PathBuf, process::Command};
 
 use tm_server_types::{
-    base::{Map, Player, RoundTime},
+    base::{Map, PlayerInfo},
     event::{
-        DriverHold, DriverSection, Event, Scores, StartLine, StartMap, StartMatch, StartRound,
-        WayPoint,
+        DriverHold, DriverSection, Event, StartLine, StartMap, StartMatch, StartRound, WayPoint,
     },
     method::{DriverCommand, DriverStatus, DriverWarmUp},
 };
-use tm_wasm_driver::Driver;
+use tm_wasm_driver::{Driver, DriverReply};
 
 pub const SESSION: i32 = 7;
 
@@ -125,57 +124,43 @@ pub fn way_point(account_id: &str, checkpoint_in_race: u32) -> Event {
     })
 }
 
-/// The scores the modescript sends right before the round end hold.
-/// Every player has the time of the last and of the best race in milliseconds, -1 for none.
-pub fn scores(players: &[(&str, i32, i32)]) -> Event {
-    scores_of_section("PreEndRound", players)
+/// A player finished the race in this time at a checkpoint, counting from 0.
+pub fn finish(account_id: &str, checkpoint_in_race: u32, racetime: u32) -> Event {
+    let Event::WayPoint(mut way_point) = way_point(account_id, checkpoint_in_race) else {
+        unreachable!()
+    };
+    way_point.racetime = racetime;
+    way_point.is_end_race = true;
+    way_point.is_end_lap = true;
+    way_point.current_race_checkpoints = vec![racetime];
+    Event::WayPoint(way_point)
 }
 
-/// The scores the modescript sends when a round starts, so the host knows the names.
-pub fn round_start_scores(players: &[&str]) -> Event {
-    let players: Vec<(&str, i32, i32)> = players.iter().map(|&p| (p, -1, -1)).collect();
-    scores_of_section("", &players)
+/// A player starts a race and finishes it in this time.
+pub fn race(account_id: &str, racetime: u32) -> Vec<Event> {
+    vec![start_line(account_id), finish(account_id, 0, racetime)]
 }
 
-fn scores_of_section(section: &str, players: &[(&str, i32, i32)]) -> Event {
-    Event::Scores(Scores {
-        response_id: String::new(),
-        section: section.into(),
-        use_teams: false,
-        winner_team: -1,
-        winner_player: String::new(),
-        teams: vec![],
-        players: players
-            .iter()
-            .map(|(account_id, previous, best)| Player {
-                best_race_checkpoints: checkpoints(*best),
-                previous_race_checkpoints: checkpoints(*previous),
-                best_lap_checkpoints: vec![],
-                account_id: account_id.to_string(),
-                name: account_id.to_string(),
-                team: -1,
-                rank: 0,
-                round_points: 0,
-                map_points: 0,
-                match_points: 0,
-                best_racetime: race_time(*best),
-                best_laptime: RoundTime::None,
-                previous_racetime: race_time(*previous),
-            })
-            .collect(),
+/// The server tells about a player on it, e.g. once they connected.
+pub fn player_info(account_id: &str, name: &str) -> Event {
+    Event::PlayerInfoChanged(PlayerInfo {
+        account_id: account_id.into(),
+        nick_name: name.into(),
+        player_id: 0,
+        team_id: -1,
+        spectator_status: 0,
+        ladder_ranking: 0,
+        flags: 0,
     })
 }
 
-fn race_time(time: i32) -> RoundTime {
-    if time < 0 {
-        RoundTime::None
-    } else {
-        RoundTime::Time(time as u32)
+/// Handles every event and returns the reply to the last one.
+pub fn play<'a>(driver: &mut Driver, events: impl IntoIterator<Item = &'a Event>) -> DriverReply {
+    let mut reply = DriverReply::default();
+    for event in events {
+        reply = driver.handle(event).unwrap();
     }
-}
-
-fn checkpoints(time: i32) -> Vec<u32> {
-    if time < 0 { vec![] } else { vec![time as u32] }
+    reply
 }
 
 /// What modes send at map start without a warmup in their settings.
@@ -183,11 +168,18 @@ pub fn no_warm_up() -> DriverCommand {
     DriverCommand::SetWarmUp(DriverWarmUp::default())
 }
 
-/// The commands of a reply without the standings the host publishes.
-pub fn without_standings(commands: &[DriverCommand]) -> Vec<DriverCommand> {
+/// The commands of a reply without what the host publishes for the manialinks.
+pub fn without_published(commands: &[DriverCommand]) -> Vec<DriverCommand> {
     commands
         .iter()
-        .filter(|c| !matches!(c, DriverCommand::SetStandings(_)))
+        .filter(|c| {
+            !matches!(
+                c,
+                DriverCommand::SetStandings(_)
+                    | DriverCommand::SetRound(_)
+                    | DriverCommand::SetUsers(_)
+            )
+        })
         .cloned()
         .collect()
 }
@@ -198,21 +190,27 @@ pub fn publishes_standings(commands: &[DriverCommand]) -> bool {
         .any(|c| matches!(c, DriverCommand::SetStandings(_)))
 }
 
-/// Account, rank, status, label, points and round points of every player in the
-/// order of the standings.
+/// Account, position, status, label, points and points of the last round of every
+/// player in the order of the standings.
 pub fn ranking(driver: &Driver) -> Vec<(String, u32, DriverStatus, String, i32, i32)> {
+    let round = driver.last_round();
     driver
         .standings()
-        .players
+        .entries
         .into_iter()
         .map(|p| {
+            let round_score = round
+                .entries
+                .iter()
+                .find(|r| r.account_id == p.account_id)
+                .map_or(0, |r| r.score);
             (
                 p.account_id,
-                p.rank,
+                p.position,
                 p.status,
                 p.label,
-                p.points,
-                p.round_points,
+                p.score,
+                round_score,
             )
         })
         .collect()

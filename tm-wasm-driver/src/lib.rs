@@ -4,22 +4,24 @@
 //! The host keeps it in a sandbox: no WASI, a fuel and a wall clock budget for
 //! every call and a memory limit.
 //!
-//! Modes are fed from the standard callbacks of the server. On top of that the
-//! host handles the [`DriverHold`]s of the modescript: it steps the mode, lets
-//! the hold continue and answers repeated holds without stepping the mode twice.
+//! Modes are fed from the standard callbacks of the server: the host builds the
+//! race results of a round from the waypoints and keeps the players it knows. On
+//! top of that the host handles the [`DriverHold`]s of the modescript: it steps
+//! the mode, lets the hold continue and answers repeated holds without stepping
+//! the mode twice.
 //!
 //! The scores of a match live in standings every mode shares. The host keeps
 //! them and hands them to the mode with every event, so modes keep nothing but
-//! their settings. The host clears what belongs to a new match, map or round,
-//! publishes the standings for the manialinks whenever they change and reports
-//! the round places the mode set in them to the manager.
+//! their settings. The host clears what belongs to a new match or map, publishes
+//! the standings, the last round and the players for the manialinks whenever
+//! they change and reports every round the mode placed to the manager.
 //!
 //! Modes and the host are deterministic. Replaying the events of a match with
 //! [`DriverEngine::replay`] rebuilds exactly the same driver, so a crashed bridge
 //! resumes from the event stream and nothing else has to be persisted.
 
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     sync::{
         Arc,
         atomic::{AtomicBool, Ordering},
@@ -30,7 +32,7 @@ use std::{
 
 use tm_server_types::{
     event::{DriverHold, DriverRoundResult, DriverSection, Event},
-    method::{DriverCanSpawn, DriverCommand, DriverStandings},
+    method::{DriverCanSpawn, DriverCommand, DriverRound, DriverStandings, DriverUsers},
 };
 use wasmtime::{
     Config, Engine, Store, StoreLimits, StoreLimitsBuilder,
@@ -38,6 +40,7 @@ use wasmtime::{
 };
 
 mod convert;
+mod races;
 
 // In its own module because the world defines its own `Event`.
 mod bindings {
@@ -46,6 +49,8 @@ mod bindings {
         world: "mode",
     });
 }
+
+use races::Races;
 
 use bindings::{
     Mode,
@@ -209,6 +214,8 @@ impl DriverEngine {
                 .tables(16)
                 .build(),
             log_budget: 64,
+            users: BTreeMap::new(),
+            map_count: 0,
         };
         let mut store = Store::new(&self.engine, state);
         store.limiter(|state| &mut state.limits);
@@ -228,18 +235,19 @@ impl DriverEngine {
             epoch_deadline: self.epoch_deadline(),
             name: String::new(),
             standings: convert::empty_standings(),
-            published: None,
+            last_round: Vec::new(),
+            round_number: 0,
+            published: Published::default(),
             spawn_permissions: BTreeMap::new(),
             session: None,
             last_hold: None,
             playlist: Vec::new(),
             map: None,
             next_map_chosen: false,
-            names: BTreeMap::new(),
+            connected: BTreeSet::new(),
             in_round: false,
             in_warm_up: false,
-            round_progress: BTreeMap::new(),
-            round_results: None,
+            races: Races::default(),
             poisoned: false,
         })
     }
@@ -265,8 +273,11 @@ pub struct Driver {
     name: String,
     /// The scores of the match, handed to the mode with every event.
     standings: wit::Standings,
-    /// The standings as the manialinks got them last.
-    published: Option<String>,
+    /// The last round that counted, as the mode placed it.
+    last_round: Vec<wit::Entry>,
+    /// Rounds of the match that counted.
+    round_number: u32,
+    published: Published,
     /// Spawn permissions sent in this match, so repeated ones are left out.
     spawn_permissions: BTreeMap<String, bool>,
     session: Option<i32>,
@@ -278,18 +289,23 @@ pub struct Driver {
     map: Option<(String, String)>,
     /// The mode chose the next map since the current one started.
     next_map_chosen: bool,
-    /// Names of the players from the scores, so race starts carry them.
-    names: BTreeMap<String, String>,
+    /// Players on the server, who take part in round results without racing.
+    connected: BTreeSet<String>,
     /// A round runs, from its start to its end hold. Warmup races are outside.
     in_round: bool,
     /// The built-in warmup runs.
     in_warm_up: bool,
-    /// Players who started a race in the current round and how many checkpoints
-    /// they passed in their last race.
-    round_progress: BTreeMap<String, u32>,
-    /// Race times of the scores sent right before the round end hold.
-    round_results: Option<Vec<wit::RaceResult>>,
+    /// The races of the current round.
+    races: Races,
     poisoned: bool,
+}
+
+/// What the manialinks got last, so only changes are sent.
+#[derive(Default)]
+struct Published {
+    standings: Option<String>,
+    round: Option<String>,
+    users: Option<String>,
 }
 
 /// What should happen after an event.
@@ -313,7 +329,9 @@ impl Driver {
                 | Event::StartRoundStart(_)
                 | Event::StartLine(_)
                 | Event::WayPoint(_)
-                | Event::Scores(_)
+                | Event::PlayerConnect(_)
+                | Event::PlayerDisconnect(_)
+                | Event::PlayerInfoChanged(_)
                 | Event::EndMatchStart(_)
                 | Event::DriverHold(_)
         )
@@ -332,6 +350,10 @@ impl Driver {
             Event::StartMatchStart(_) => {
                 // Every match starts with the defaults of the modescript.
                 self.spawn_permissions.clear();
+                self.last_round.clear();
+                self.round_number = 0;
+                // Everything is published again, e.g. for a modescript that just started.
+                self.published = Published::default();
                 self.step(wit::Event::MatchStart)
             }
             Event::StartMapStart(start) => {
@@ -348,48 +370,55 @@ impl Driver {
                 Ok(DriverReply::default())
             }
             Event::StartRoundStart(_) => {
-                self.round_progress.clear();
+                self.races.clear();
                 self.in_round = true;
                 self.step(wit::Event::RoundStart)
             }
             Event::StartLine(start_line) => {
-                let first = self
-                    .round_progress
-                    .insert(start_line.account_id.clone(), 0)
-                    .is_none();
+                let first = self.races.start(&start_line.account_id);
                 // Time attack rounds start players again and again.
                 if !first || !self.in_round || self.in_warm_up {
                     return Ok(DriverReply::default());
                 }
-                self.step(wit::Event::RaceStart(wit::Player {
-                    account_id: start_line.account_id.clone(),
-                    name: self
-                        .names
-                        .get(&start_line.account_id)
-                        .cloned()
-                        .unwrap_or_default(),
-                }))
+                self.step(wit::Event::RaceStart(start_line.account_id.clone()))
             }
             Event::WayPoint(way_point) => {
-                // Counts from 0 for the first checkpoint.
-                self.round_progress.insert(
-                    way_point.account_id.clone(),
-                    way_point.checkpoint_in_race + 1,
-                );
+                self.races.way_point(way_point);
                 Ok(DriverReply::default())
+            }
+            Event::PlayerConnect(connect) => {
+                self.connected.insert(connect.account_id.clone());
+                Ok(DriverReply::default())
+            }
+            Event::PlayerDisconnect(disconnect) => {
+                // The player stays known, e.g. for the name in the standings.
+                self.connected.remove(&disconnect.account_id);
+                Ok(DriverReply::default())
+            }
+            Event::PlayerInfoChanged(info) => {
+                // The server shows up as a player too.
+                if info.is_server() {
+                    return Ok(DriverReply::default());
+                }
+                self.connected.insert(info.account_id.clone());
+                let user = self
+                    .store
+                    .data_mut()
+                    .users
+                    .entry(info.account_id.clone())
+                    .or_insert_with(|| wit::User {
+                        account_id: info.account_id.clone(),
+                        name: String::new(),
+                        club_tag: String::new(),
+                        zone: String::new(),
+                    });
+                user.name = info.nick_name.clone();
+                Ok(DriverReply {
+                    commands: self.publish(),
+                    round_result: None,
+                })
             }
             Event::EndMatchStart(_) => self.step(wit::Event::MatchEnd),
-            Event::Scores(scores) => {
-                // The modescript also sends the scores when a round starts, before the races.
-                for player in &scores.players {
-                    self.names
-                        .insert(player.account_id.clone(), player.name.clone());
-                }
-                if scores.section == "PreEndRound" {
-                    self.round_results = Some(convert::race_results(scores, &self.round_progress));
-                }
-                Ok(DriverReply::default())
-            }
             Event::DriverHold(hold) => self.hold(hold),
             _ => Ok(DriverReply::default()),
         }
@@ -420,13 +449,14 @@ impl Driver {
             }
         }
 
-        // The script waits between rounds.
-        self.in_round = false;
+        // The script waits between rounds. A round end without its start, e.g. after the
+        // bridge restarted, missed races, so it does not count.
+        let in_round = std::mem::take(&mut self.in_round);
         let event = match hold.section {
             DriverSection::MapStart => wit::Event::MapStart,
             DriverSection::RoundEnd => wit::Event::RoundEnd(wit::RoundEnd {
-                forced: hold.forced,
-                results: self.round_results.take().unwrap_or_default(),
+                forced: hold.forced || !in_round,
+                results: self.races.results(&self.connected),
             }),
             DriverSection::MapEnd => wit::Event::MapEnd,
         };
@@ -437,9 +467,25 @@ impl Driver {
         Ok(reply)
     }
 
-    /// The standings of the match as the mode left them, ordered by rank.
+    /// The standings of the match as the mode left them, ordered by position.
     pub fn standings(&self) -> DriverStandings {
-        convert::standings(&self.name, &self.standings)
+        let map_name = self.map.as_ref().map_or("", |(_, name)| name.as_str());
+        convert::standings(
+            &self.name,
+            map_name,
+            self.playlist.len() as u32,
+            &self.standings,
+        )
+    }
+
+    /// The last round that counted, ordered by place.
+    pub fn last_round(&self) -> DriverRound {
+        convert::round(self.round_number, &self.last_round)
+    }
+
+    /// The players the host knows, e.g. for their names.
+    pub fn users(&self) -> DriverUsers {
+        convert::users(&self.store.data().users)
     }
 
     /// The uids of the maps the match plays, e.g. the map pool of the config. The maps
@@ -451,13 +497,8 @@ impl Driver {
 
     fn step(&mut self, event: wit::Event) -> Result<DriverReply, DriverError> {
         clear(&mut self.standings, &event);
-        // Only the host knows the map, the mode can not change it.
-        self.standings.map_name = self
-            .map
-            .as_ref()
-            .map(|(_, name)| name.clone())
-            .unwrap_or_default();
-        self.standings.map_count = self.playlist.len() as u32;
+        // The mode reads it through the host functions.
+        self.store.data_mut().map_count = self.playlist.len() as u32;
 
         self.prepare_call();
         let decision = match self
@@ -472,9 +513,13 @@ impl Driver {
         };
         self.standings = decision.standings;
 
+        // The mode reports the round and never gets it back.
+        let round = std::mem::take(&mut self.standings.round);
         let round_result = match &event {
             wit::Event::RoundEnd(round_end) if !round_end.forced => {
-                Some(convert::round_result(&self.standings))
+                self.round_number += 1;
+                self.last_round = round;
+                Some(convert::round_result(&self.last_round))
             }
             _ => None,
         };
@@ -512,17 +557,36 @@ impl Driver {
             }
         }
 
-        let standings = serde_json::to_string(&self.standings())
-            .expect("The standings only contain types json can represent");
-        if self.published.as_ref() != Some(&standings) {
-            self.published = Some(standings.clone());
-            commands.push(DriverCommand::SetStandings(standings));
-        }
+        commands.extend(self.publish());
 
         Ok(DriverReply {
             commands,
             round_result,
         })
+    }
+
+    /// Publishes what changed for the manialinks. The players come first so the
+    /// standings can show their names right away.
+    fn publish(&mut self) -> Vec<DriverCommand> {
+        let mut commands = Vec::new();
+
+        let users = json(&self.users());
+        if self.published.users.as_ref() != Some(&users) {
+            self.published.users = Some(users.clone());
+            commands.push(DriverCommand::SetUsers(users));
+        }
+        let standings = json(&self.standings());
+        if self.published.standings.as_ref() != Some(&standings) {
+            self.published.standings = Some(standings.clone());
+            commands.push(DriverCommand::SetStandings(standings));
+        }
+        let round = json(&self.last_round());
+        if self.published.round.as_ref() != Some(&round) {
+            self.published.round = Some(round.clone());
+            commands.push(DriverCommand::SetRound(round));
+        }
+
+        commands
     }
 
     /// The map after the current one in the playlist, the first one if the current
@@ -546,31 +610,32 @@ impl Driver {
     }
 }
 
-/// Clears what belongs to a new match, map or round before the mode gets the event,
-/// so every mode has the same lifecycle of its standings.
+/// Clears what belongs to a new match or map before the mode gets the event, so
+/// every mode has the same lifecycle of its standings. The round is only output.
 fn clear(standings: &mut wit::Standings, event: &wit::Event) {
+    standings.round.clear();
     match event {
         wit::Event::MatchStart => *standings = convert::empty_standings(),
-        wit::Event::MapStart => {
-            standings.rounds_on_map = 0;
-            for player in &mut standings.players {
-                player.map_points = 0;
-            }
-        }
-        wit::Event::RoundEnd(_) => {
-            for player in &mut standings.players {
-                player.round_points = 0;
-                player.round_position = 0;
-            }
-        }
+        wit::Event::MapStart => standings.rounds_on_map = 0,
         wit::Event::MapEnd => standings.maps_played = standings.maps_played.saturating_add(1),
-        wit::Event::RoundStart | wit::Event::RaceStart(_) | wit::Event::MatchEnd => {}
+        wit::Event::RoundStart
+        | wit::Event::RaceStart(_)
+        | wit::Event::RoundEnd(_)
+        | wit::Event::MatchEnd => {}
     }
+}
+
+fn json(value: &impl serde::Serialize) -> String {
+    serde_json::to_string(value).expect("Only types json can represent are published")
 }
 
 struct HostState {
     limits: StoreLimits,
     log_budget: u32,
+    /// The players the host knows, for `host.find-user`.
+    users: BTreeMap<String, wit::User>,
+    /// For `host.map-count`.
+    map_count: u32,
 }
 
 // The types interface only contains types but is still an import of the world.
@@ -598,6 +663,14 @@ impl Host for HostState {
             LogLevel::Warn => tracing::warn!(target: "tm_wasm_driver::mode", "{message}"),
             LogLevel::Error => tracing::error!(target: "tm_wasm_driver::mode", "{message}"),
         }
+    }
+
+    fn find_user(&mut self, account_id: String) -> Option<wit::User> {
+        self.users.get(&account_id).cloned()
+    }
+
+    fn map_count(&mut self) -> u32 {
+        self.map_count
     }
 }
 

@@ -42,7 +42,7 @@ use tm_server_types::{
     base::MapInfo,
     config::Driver as DriverConfig,
     event::Event,
-    method::{DriverCommand, DriverLayer, DriverStandings, DriverStatus},
+    method::{DriverCommand, DriverLayer, DriverRound, DriverStandings, DriverStatus, DriverUsers},
 };
 use tm_wasm_driver::{Driver, DriverEngine, DriverLimits};
 use tokio::io::{AsyncBufReadExt, BufReader};
@@ -185,11 +185,19 @@ fn drive(server: &'static TrackmaniaServer, active: Shared, layers: Vec<DriverLa
                 };
                 match active.driver.handle(&event) {
                     Ok(reply) => {
-                        let changed = reply
-                            .commands
-                            .iter()
-                            .any(|c| matches!(c, DriverCommand::SetStandings(_)));
-                        let standings = changed.then(|| active.driver.standings());
+                        let changed = reply.commands.iter().any(|c| {
+                            matches!(
+                                c,
+                                DriverCommand::SetStandings(_) | DriverCommand::SetRound(_)
+                            )
+                        });
+                        let standings = changed.then(|| {
+                            summary(
+                                &active.driver.standings(),
+                                &active.driver.last_round(),
+                                &active.driver.users(),
+                            )
+                        });
                         (reply, standings)
                     }
                     Err(error) => {
@@ -203,7 +211,7 @@ fn drive(server: &'static TrackmaniaServer, active: Shared, layers: Vec<DriverLa
                 tracing::info!("Round result: {round_result:?}");
             }
             if let Some(standings) = standings {
-                tracing::info!("Standings: {}", summary(&standings));
+                tracing::info!("Standings: {standings}");
             }
             send(server, reply.commands).await;
         }
@@ -234,6 +242,20 @@ async fn load(
         .instantiate(&module, &settings)
         .map_err(|e| e.to_string())?;
     driver.set_playlist(playlist.lock().unwrap().clone());
+
+    // Players already on the server do not connect again.
+    let mut commands = DriverCommand::show_layers(layers);
+    match server.get_player_list().await {
+        Ok(players) => {
+            for player in players {
+                if let Ok(reply) = driver.handle(&Event::PlayerInfoChanged(player)) {
+                    commands.extend(reply.commands);
+                }
+            }
+        }
+        Err(error) => tracing::warn!("Could not get the players of the server: {error}"),
+    }
+
     *active.lock().unwrap() = Some(Active {
         source: source.into(),
         driver,
@@ -241,7 +263,7 @@ async fn load(
     tracing::info!("Loaded {mode}.");
 
     // Ignored until the driver modescript runs, which shows them once it started.
-    send(server, DriverCommand::show_layers(layers)).await;
+    send(server, commands).await;
     Ok(())
 }
 
@@ -463,21 +485,31 @@ fn describe(command: &DriverCommand) -> String {
 }
 
 /// The standings in one line, e.g. `Rounds (2 / 5 rounds): 1. a 16 (+10), 2. b 10`.
-fn summary(standings: &DriverStandings) -> String {
+fn summary(standings: &DriverStandings, round: &DriverRound, users: &DriverUsers) -> String {
     let players: Vec<String> = standings
-        .players
+        .entries
         .iter()
         .map(|player| {
+            let name = users
+                .users
+                .iter()
+                .find(|user| user.account_id == player.account_id && !user.name.is_empty())
+                .map_or(&player.account_id, |user| &user.name);
+            let round_score = round
+                .entries
+                .iter()
+                .find(|entry| entry.account_id == player.account_id)
+                .map_or(0, |entry| entry.score);
             // A label replaces the points like in the manialinks.
             let score = match player.status {
                 _ if !player.label.is_empty() => player.label.clone(),
-                DriverStatus::Playing => match player.round_points {
-                    0 => player.points.to_string(),
-                    round => format!("{} ({round:+})", player.points),
+                DriverStatus::Playing => match round_score {
+                    0 => player.score.to_string(),
+                    round => format!("{} ({round:+})", player.score),
                 },
                 status => format!("{status:?}"),
             };
-            format!("{}. {} {score}", player.rank, player.name)
+            format!("{}. {name} {score}", player.position)
         })
         .collect();
     format!(

@@ -5,9 +5,10 @@ mod common;
 use std::sync::OnceLock;
 
 use common::{
-    SESSION, forced_round_end, hold, match_start, no_warm_up, publishes_standings, ranking,
-    round_start, scores, without_standings,
+    SESSION, finish, forced_round_end, hold, match_start, no_warm_up, play, player_info,
+    publishes_standings, race, ranking, round_start, without_published,
 };
+use tm_server_types::base::PlayerInfo;
 use tm_server_types::{
     event::{
         DriverHold, DriverPlayerResult, DriverRoundResult, DriverSection, Event, PlayLoopStart,
@@ -46,10 +47,10 @@ fn plays_a_match() {
     // A new match starts with empty standings.
     let reply = driver.handle(&match_start()).unwrap();
     assert!(publishes_standings(&reply.commands));
-    assert!(without_standings(&reply.commands).is_empty());
+    assert!(without_published(&reply.commands).is_empty());
 
     assert_eq!(
-        without_standings(
+        without_published(
             &driver
                 .handle(&hold(1, DriverSection::MapStart))
                 .unwrap()
@@ -68,18 +69,16 @@ fn plays_a_match() {
         DriverReply::default()
     );
 
-    // b has the better best time but rounds only count the last race.
-    driver
-        .handle(&scores(&[
-            ("a", 30_000, 30_000),
-            ("b", 31_000, 29_000),
-            ("c", -1, -1),
-        ]))
-        .unwrap();
+    // b has the better best time but rounds only count the last race. c is on the
+    // server without racing.
+    play(&mut driver, &race("a", 30_000));
+    play(&mut driver, &race("b", 29_000));
+    play(&mut driver, &race("b", 31_000));
+    driver.handle(&player_info("c", "c")).unwrap();
     let reply = driver.handle(&hold(2, DriverSection::RoundEnd)).unwrap();
     assert!(publishes_standings(&reply.commands));
     assert_eq!(
-        without_standings(&reply.commands),
+        without_published(&reply.commands),
         [DriverCommand::EndMap, DriverCommand::Continue(2)]
     );
     assert_eq!(
@@ -90,7 +89,7 @@ fn plays_a_match() {
     );
 
     assert_eq!(
-        without_standings(
+        without_published(
             &driver
                 .handle(&hold(3, DriverSection::MapEnd))
                 .unwrap()
@@ -124,19 +123,19 @@ fn repeated_holds_are_decided_once() {
     let mut driver = rounds(POINTS_LIMIT);
     driver.handle(&hold(1, DriverSection::MapStart)).unwrap();
 
-    driver.handle(&scores(&[("a", 30_000, 30_000)])).unwrap();
+    driver.handle(&round_start(1)).unwrap();
+    play(&mut driver, &race("a", 30_000));
     let first = driver.handle(&hold(2, DriverSection::RoundEnd)).unwrap();
-    // The modescript sends the scores again with every repeated hold.
-    driver.handle(&scores(&[("a", 30_000, 30_000)])).unwrap();
     let repeated = driver.handle(&hold(2, DriverSection::RoundEnd)).unwrap();
     assert_eq!(repeated.commands, first.commands);
     // The result was already reported with the first reply.
     assert_eq!(repeated.round_result, None);
 
     // a has 20 points now. With the repeated hold counted it would be 30.
-    driver.handle(&scores(&[("a", 30_000, 30_000)])).unwrap();
+    driver.handle(&round_start(2)).unwrap();
+    play(&mut driver, &race("a", 30_000));
     assert_eq!(
-        without_standings(
+        without_published(
             &driver
                 .handle(&hold(3, DriverSection::RoundEnd))
                 .unwrap()
@@ -156,11 +155,81 @@ fn repeated_holds_are_decided_once() {
 fn forced_rounds_have_no_result() {
     let mut driver = rounds("");
     driver.handle(&hold(1, DriverSection::MapStart)).unwrap();
-    driver.handle(&scores(&[("a", 30_000, 30_000)])).unwrap();
+    driver.handle(&round_start(1)).unwrap();
+    play(&mut driver, &race("a", 30_000));
 
     let reply = driver.handle(&forced_round_end(2)).unwrap();
     assert_eq!(reply.commands, [DriverCommand::Continue(2)]);
     assert_eq!(reply.round_result, None);
+}
+
+#[test]
+fn rounds_without_their_start_do_not_count() {
+    let mut driver = rounds("");
+    driver.handle(&hold(1, DriverSection::MapStart)).unwrap();
+    // The driver missed the start of the round, e.g. because the bridge restarted.
+    driver.handle(&finish("a", 0, 30_000)).unwrap();
+
+    let reply = driver.handle(&hold(2, DriverSection::RoundEnd)).unwrap();
+    assert_eq!(reply.round_result, None);
+    assert!(driver.standings().entries.is_empty());
+    assert_eq!(driver.last_round().number, 0);
+}
+
+#[test]
+fn publishes_the_players_it_knows() {
+    let mut driver = rounds("");
+    let reply = driver.handle(&player_info("a", "$f00A")).unwrap();
+    assert!(
+        reply
+            .commands
+            .iter()
+            .any(|c| matches!(c, DriverCommand::SetUsers(_)))
+    );
+    let users = driver.users().users;
+    assert_eq!(users.len(), 1);
+    assert_eq!(
+        (users[0].account_id.as_str(), users[0].name.as_str()),
+        ("a", "$f00A")
+    );
+
+    // Nothing changed, so nothing is published.
+    assert!(
+        driver
+            .handle(&player_info("a", "$f00A"))
+            .unwrap()
+            .commands
+            .is_empty()
+    );
+    // The server shows up as a player too.
+    let server = Event::PlayerInfoChanged(PlayerInfo {
+        flags: 0b100000,
+        ..match player_info("server", "Server") {
+            Event::PlayerInfoChanged(info) => info,
+            _ => unreachable!(),
+        }
+    });
+    assert!(driver.handle(&server).unwrap().commands.is_empty());
+    assert_eq!(driver.users().users.len(), 1);
+}
+
+#[test]
+fn a_new_match_publishes_everything_again() {
+    let mut driver = rounds("");
+    driver.handle(&player_info("a", "A")).unwrap();
+    driver.handle(&match_start()).unwrap();
+    let reply = driver.handle(&match_start()).unwrap();
+    let published: Vec<&str> = reply
+        .commands
+        .iter()
+        .map(|c| match c {
+            DriverCommand::SetUsers(_) => "users",
+            DriverCommand::SetStandings(_) => "standings",
+            DriverCommand::SetRound(_) => "round",
+            _ => "other",
+        })
+        .collect();
+    assert_eq!(published, ["users", "standings", "round"]);
 }
 
 #[test]
@@ -189,13 +258,13 @@ fn resumes_by_replaying_the_events() {
     let mut driver = engine.instantiate(&module, POINTS_LIMIT).unwrap();
 
     // Everything the driver handled so far, like the event stream of the match.
-    let events = vec![
+    let mut events = vec![
         match_start(),
         hold(1, DriverSection::MapStart),
         round_start(1),
-        scores(&[("a", 30_000, 30_000)]),
-        hold(2, DriverSection::RoundEnd),
     ];
+    events.extend(race("a", 30_000));
+    events.push(hold(2, DriverSection::RoundEnd));
     let mut decided = DriverReply::default();
     for event in &events {
         decided = driver.handle(event).unwrap();
@@ -206,17 +275,18 @@ fn resumes_by_replaying_the_events() {
     let mut resumed = engine.replay(&module, POINTS_LIMIT, &[], &events).unwrap();
 
     // The modescript asks again and gets the same commands without deciding twice.
-    resumed.handle(&scores(&[("a", 30_000, 30_000)])).unwrap();
     let repeated = resumed.handle(&hold(2, DriverSection::RoundEnd)).unwrap();
     assert_eq!(repeated.commands, decided.commands);
     assert_eq!(repeated.round_result, None);
 
     // The points of the first round are back: 10 + 10 + 10 reaches the limit in the third round.
-    resumed.handle(&scores(&[("a", 30_000, 30_000)])).unwrap();
+    resumed.handle(&round_start(2)).unwrap();
+    play(&mut resumed, &race("a", 30_000));
     resumed.handle(&hold(3, DriverSection::RoundEnd)).unwrap();
-    resumed.handle(&scores(&[("a", 30_000, 30_000)])).unwrap();
+    resumed.handle(&round_start(3)).unwrap();
+    play(&mut resumed, &race("a", 30_000));
     assert_eq!(
-        without_standings(
+        without_published(
             &resumed
                 .handle(&hold(4, DriverSection::RoundEnd))
                 .unwrap()
@@ -230,19 +300,21 @@ fn resumes_by_replaying_the_events() {
 fn replays_are_deterministic() {
     let engine = DriverEngine::new(DriverLimits::default()).unwrap();
     let module = engine.compile(rounds_wasm()).unwrap();
-    let events = [
+    let mut events = vec![
         match_start(),
+        player_info("c", "c"),
         hold(1, DriverSection::MapStart),
-        scores(&[("a", 30_000, 30_000), ("b", 29_000, 29_000), ("c", -1, -1)]),
-        hold(2, DriverSection::RoundEnd),
-        scores(&[
-            ("a", 28_000, 28_000),
-            ("b", -1, 29_000),
-            ("c", 31_000, 31_000),
-        ]),
+        round_start(1),
+    ];
+    events.extend(race("a", 30_000));
+    events.extend(race("b", 29_000));
+    events.extend([hold(2, DriverSection::RoundEnd), round_start(2)]);
+    events.extend(race("a", 28_000));
+    events.extend(race("c", 31_000));
+    events.extend([
         hold(3, DriverSection::RoundEnd),
         hold(4, DriverSection::MapEnd),
-    ];
+    ]);
 
     let replies = |events: &[Event]| {
         let mut driver = engine.instantiate(&module, POINTS_LIMIT).unwrap();

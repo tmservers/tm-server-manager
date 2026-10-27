@@ -1,72 +1,18 @@
 use std::collections::BTreeMap;
 
 use tm_server_types::{
-    base::{Player, RoundTime},
-    event::{DriverPlayerResult, DriverRoundResult, Scores},
+    event::{DriverPlayerResult, DriverRoundResult},
     method::{
-        DriverCanSpawn, DriverCommand, DriverFinishTimeout, DriverLabelTone, DriverLayer,
-        DriverLayerKind, DriverRoundFormat, DriverStanding, DriverStandings, DriverStatus,
-        DriverWarmUp,
+        DriverCanSpawn, DriverCommand, DriverEntry, DriverFinishTimeout, DriverLabelTone,
+        DriverLayer, DriverLayerKind, DriverRound, DriverRoundFormat, DriverStandings,
+        DriverStatus, DriverUser, DriverUsers, DriverWarmUp,
     },
 };
 
 use crate::bindings::tmservers::driver::types::{
-    CanSpawn, Command, FinishTimeout, Label, Layer, RaceResult, RoundFormat, Standing, Standings,
-    Status, Tone, WarmUp,
+    CanSpawn, Command, Entry, FinishTimeout, Label, Layer, RoundFormat, Standings, Status, Tone,
+    User, WarmUp,
 };
-
-/// Race times of every player of a scores callback together with the progress
-/// of the players who started in the round.
-pub(crate) fn race_results(
-    scores: &Scores,
-    round_progress: &BTreeMap<String, u32>,
-) -> Vec<RaceResult> {
-    let mut results: Vec<RaceResult> = scores
-        .players
-        .iter()
-        .map(|player| race_result(player, round_progress.get(&player.account_id).copied()))
-        .collect();
-
-    // A player who left before the scores were sent still took part in the round.
-    for (account_id, &progress) in round_progress {
-        if !results
-            .iter()
-            .any(|result| &result.account_id == account_id)
-        {
-            results.push(RaceResult {
-                account_id: account_id.clone(),
-                name: String::new(),
-                started: true,
-                progress,
-                previous_time: None,
-                previous_checkpoints: Vec::new(),
-                best_time: None,
-                best_checkpoints: Vec::new(),
-            });
-        }
-    }
-    results
-}
-
-fn race_result(player: &Player, progress: Option<u32>) -> RaceResult {
-    RaceResult {
-        account_id: player.account_id.clone(),
-        name: player.name.clone(),
-        started: progress.is_some(),
-        progress: progress.unwrap_or(0),
-        previous_time: race_time(&player.previous_racetime),
-        previous_checkpoints: player.previous_race_checkpoints.clone(),
-        best_time: race_time(&player.best_racetime),
-        best_checkpoints: player.best_race_checkpoints.clone(),
-    }
-}
-
-fn race_time(time: &RoundTime) -> Option<u32> {
-    match time {
-        RoundTime::Time(time) if *time > 0 => Some(*time),
-        RoundTime::Time(_) | RoundTime::None => None,
-    }
-}
 
 /// The commands of a mode for the server. Maps are given by their place in the playlist.
 pub(crate) fn commands(commands: Vec<Command>, playlist: &[String]) -> Vec<DriverCommand> {
@@ -135,35 +81,81 @@ fn round_format(format: RoundFormat) -> DriverRoundFormat {
 /// Standings without players, as every match starts.
 pub(crate) fn empty_standings() -> Standings {
     Standings {
-        players: Vec::new(),
+        entries: Vec::new(),
+        round: Vec::new(),
         rounds_on_map: 0,
         maps_played: 0,
-        map_name: String::new(),
-        map_count: 0,
         info: String::new(),
     }
 }
 
 /// The standings as the manialinks and the manager get them.
-pub(crate) fn standings(title: &str, standings: &Standings) -> DriverStandings {
-    let mut players: Vec<DriverStanding> = standings.players.iter().map(standing).collect();
-    // Stable so ties keep the order of the mode. Unranked players come last.
-    players.sort_by_key(|player| (player.rank == 0, player.rank));
-
+pub(crate) fn standings(
+    title: &str,
+    map_name: &str,
+    map_count: u32,
+    standings: &Standings,
+) -> DriverStandings {
     DriverStandings {
         title: title.into(),
         info: standings.info.clone(),
         rounds_on_map: standings.rounds_on_map,
         maps_played: standings.maps_played,
-        map_name: standings.map_name.clone(),
-        map_count: standings.map_count,
-        players,
+        map_name: map_name.into(),
+        map_count,
+        entries: ordered(&standings.entries),
     }
 }
 
-fn standing(standing: &Standing) -> DriverStanding {
-    // The manialinks parse the json into structs, so a missing label is empty.
-    let (label, label_tone) = match &standing.label {
+/// The last round as the manialinks get it.
+pub(crate) fn round(number: u32, entries: &[Entry]) -> DriverRound {
+    DriverRound {
+        number,
+        entries: ordered(entries),
+    }
+}
+
+/// The players the host knows as the manialinks get them.
+pub(crate) fn users(users: &BTreeMap<String, User>) -> DriverUsers {
+    DriverUsers {
+        users: users
+            .values()
+            .map(|user| DriverUser {
+                account_id: user.account_id.clone(),
+                name: user.name.clone(),
+                club_tag: user.club_tag.clone(),
+                zone: user.zone.clone(),
+            })
+            .collect(),
+    }
+}
+
+/// The round as the manager records it: the round points of everyone the mode
+/// placed in the round, in the order of their places.
+pub(crate) fn round_result(entries: &[Entry]) -> DriverRoundResult {
+    DriverRoundResult {
+        results: ordered(entries)
+            .into_iter()
+            .filter(|entry| entry.position > 0)
+            .map(|entry| DriverPlayerResult {
+                account_id: entry.account_id,
+                points: entry.score,
+                position: entry.position,
+            })
+            .collect(),
+    }
+}
+
+/// Ordered by position. Stable so ties keep the order of the mode, unplaced players last.
+fn ordered(entries: &[Entry]) -> Vec<DriverEntry> {
+    let mut entries: Vec<DriverEntry> = entries.iter().map(entry).collect();
+    entries.sort_by_key(|entry| (entry.position == 0, entry.position));
+    entries
+}
+
+fn entry(entry: &Entry) -> DriverEntry {
+    // The manialinks parse the json into structs, so missing values have defaults.
+    let (label, label_tone) = match &entry.label {
         Some(Label { text, tone }) => (
             text.clone(),
             match tone {
@@ -175,43 +167,20 @@ fn standing(standing: &Standing) -> DriverStanding {
         None => (String::new(), DriverLabelTone::Neutral),
     };
 
-    DriverStanding {
-        account_id: standing.account_id.clone(),
-        name: standing.name.clone(),
-        rank: standing.rank,
-        status: match standing.status {
+    DriverEntry {
+        account_id: entry.account_id.clone(),
+        position: entry.position,
+        score: entry.score,
+        time: entry
+            .time
+            .map_or(-1, |time| i32::try_from(time).unwrap_or(i32::MAX)),
+        status: match entry.status {
             Status::Playing => DriverStatus::Playing,
             Status::Eliminated => DriverStatus::Eliminated,
             Status::Spectator => DriverStatus::Spectator,
         },
         label,
         label_tone,
-        points: standing.points,
-        map_points: standing.map_points,
-        round_points: standing.round_points,
-    }
-}
-
-/// The round as the manager records it: the round points of everyone the mode
-/// placed in the round, in the order of their places.
-pub(crate) fn round_result(standings: &Standings) -> DriverRoundResult {
-    let mut players: Vec<&Standing> = standings
-        .players
-        .iter()
-        .filter(|player| player.round_position > 0)
-        .collect();
-    // Stable so shared places keep the order of the standings.
-    players.sort_by_key(|player| player.round_position);
-
-    DriverRoundResult {
-        results: players
-            .into_iter()
-            .map(|player| DriverPlayerResult {
-                account_id: player.account_id.clone(),
-                points: player.round_points,
-                position: player.round_position,
-            })
-            .collect(),
     }
 }
 
@@ -219,24 +188,14 @@ pub(crate) fn round_result(standings: &Standings) -> DriverRoundResult {
 mod tests {
     use super::*;
 
-    fn player(account_id: &str, rank: u32, status: Status, round_points: i32) -> Standing {
-        Standing {
+    fn player(account_id: &str, position: u32, status: Status, score: i32) -> Entry {
+        Entry {
             account_id: account_id.into(),
-            name: account_id.into(),
-            rank,
+            position,
+            score,
+            time: None,
             status,
             label: None,
-            points: round_points,
-            map_points: round_points,
-            round_points,
-            round_position: 0,
-        }
-    }
-
-    fn placed(account_id: &str, round_points: i32, round_position: u32) -> Standing {
-        Standing {
-            round_position,
-            ..player(account_id, 0, Status::Playing, round_points)
         }
     }
 
@@ -246,13 +205,6 @@ mod tests {
             .iter()
             .map(|r| (r.account_id.as_str(), r.points, r.position))
             .collect()
-    }
-
-    #[test]
-    fn unfinished_races_have_no_time() {
-        assert_eq!(race_time(&RoundTime::None), None);
-        assert_eq!(race_time(&RoundTime::Time(0)), None);
-        assert_eq!(race_time(&RoundTime::Time(45_210)), Some(45_210));
     }
 
     #[test]
@@ -289,23 +241,25 @@ mod tests {
     }
 
     #[test]
-    fn standings_are_ordered_by_rank() {
+    fn standings_are_ordered_by_position() {
         let mut standings = empty_standings();
         standings.info = "1 / 5 rounds".into();
         standings.rounds_on_map = 1;
-        let mut last_chance = player("second", 2, Status::Playing, -6);
+        let mut last_chance = player("second", 2, Status::Playing, 0);
         last_chance.label = Some(Label {
             text: "Last Chance".into(),
             tone: Tone::Negative,
         });
-        standings.players = vec![
+        let mut first = player("first", 1, Status::Playing, 10);
+        first.time = Some(30_000);
+        standings.entries = vec![
             player("unranked", 0, Status::Playing, 0),
             last_chance,
-            player("first", 1, Status::Playing, 10),
+            first,
             player("out", 3, Status::Eliminated, 0),
         ];
 
-        let standings = super::standings("Rounds", &standings);
+        let standings = super::standings("Rounds", "Map", 2, &standings);
         assert_eq!(
             serde_json::to_value(&standings).unwrap(),
             serde_json::json!({
@@ -313,13 +267,13 @@ mod tests {
                 "info": "1 / 5 rounds",
                 "rounds_on_map": 1,
                 "maps_played": 0,
-                "map_name": "",
-                "map_count": 0,
-                "players": [
-                    {"account_id": "first", "name": "first", "rank": 1, "status": "playing", "label": "", "label_tone": "neutral", "points": 10, "map_points": 10, "round_points": 10},
-                    {"account_id": "second", "name": "second", "rank": 2, "status": "playing", "label": "Last Chance", "label_tone": "negative", "points": -6, "map_points": -6, "round_points": -6},
-                    {"account_id": "out", "name": "out", "rank": 3, "status": "eliminated", "label": "", "label_tone": "neutral", "points": 0, "map_points": 0, "round_points": 0},
-                    {"account_id": "unranked", "name": "unranked", "rank": 0, "status": "playing", "label": "", "label_tone": "neutral", "points": 0, "map_points": 0, "round_points": 0},
+                "map_name": "Map",
+                "map_count": 2,
+                "entries": [
+                    {"account_id": "first", "position": 1, "score": 10, "time": 30000, "status": "playing", "label": "", "label_tone": "neutral"},
+                    {"account_id": "second", "position": 2, "score": 0, "time": -1, "status": "playing", "label": "Last Chance", "label_tone": "negative"},
+                    {"account_id": "out", "position": 3, "score": 0, "time": -1, "status": "eliminated", "label": "", "label_tone": "neutral"},
+                    {"account_id": "unranked", "position": 0, "score": 0, "time": -1, "status": "playing", "label": "", "label_tone": "neutral"},
                 ]
             })
         );
@@ -327,19 +281,40 @@ mod tests {
 
     #[test]
     fn round_results_follow_the_places_of_the_mode() {
-        let mut standings = empty_standings();
-        standings.players = vec![
-            placed("second", -6, 2),
-            // Did not take part in the round.
-            placed("idle", 0, 0),
-            placed("first", -2, 1),
+        let round = [
+            player("second", 2, Status::Playing, -6),
+            // Not placed by the mode.
+            player("idle", 0, Status::Playing, 0),
+            player("first", 1, Status::Playing, -2),
             // Took part without points.
-            placed("third", 0, 3),
+            player("third", 3, Status::Eliminated, 0),
         ];
 
         assert_eq!(
-            positions(&round_result(&standings)),
+            positions(&round_result(&round)),
             [("first", -2, 1), ("second", -6, 2), ("third", 0, 3)]
+        );
+        assert_eq!(super::round(4, &round).entries[0].account_id, "first");
+    }
+
+    #[test]
+    fn users_are_ordered_by_account() {
+        let user = |account_id: &str, name: &str| User {
+            account_id: account_id.into(),
+            name: name.into(),
+            club_tag: String::new(),
+            zone: String::new(),
+        };
+        let users = BTreeMap::from([
+            ("b".to_string(), user("b", "$f00B")),
+            ("a".to_string(), user("a", "A")),
+        ]);
+        assert_eq!(
+            serde_json::to_value(super::users(&users)).unwrap(),
+            serde_json::json!({"users": [
+                {"account_id": "a", "name": "A", "club_tag": "", "zone": ""},
+                {"account_id": "b", "name": "$f00B", "club_tag": "", "zone": ""},
+            ]})
         );
     }
 }
