@@ -55,20 +55,33 @@ interface types {
         match-end,
     }
 
-    /// Where a player stands in the match.
+    /// Whether a player takes part in the match and can still race. Who wins and
+    /// loses is told by the rank, what a mode calls a state (e.g. last chance) by
+    /// the label.
     enum status {
-        /// Takes part and has neither won nor lost yet.
+        /// Takes part and can still race.
         playing,
-        /// Wins the match by winning a round (cup).
-        finalist,
-        /// The next bad round eliminates the player (reverse cup).
-        last-chance,
         /// Out of the match. The rank the mode gave the player at the elimination is final.
         eliminated,
-        /// Won the match.
-        winner,
-        /// Takes no part in the match, e.g. joined a reverse cup too late. Not ranked.
+        /// Takes no part in the match, e.g. joined too late. Not ranked and left out
+        /// of round results.
         spectator,
+    }
+
+    /// How a label is shown.
+    enum tone {
+        neutral,
+        /// Something good, e.g. a win.
+        positive,
+        /// Something bad, e.g. being one round from elimination.
+        negative,
+    }
+
+    /// Shown in place of the points, e.g. `Last Chance` or `Winner`. Only for display,
+    /// the host and the manialinks know nothing about its text.
+    record label {
+        text: string,
+        tone: tone,
     }
 
     record standing {
@@ -77,12 +90,17 @@ interface types {
         /// Players with the same rank are tied. 0 until the mode ranks the player.
         rank: u32,
         status: status,
+        label: option<label>,
         /// Points of the match.
         points: s32,
         /// Points of the current map. The host clears them when a map starts.
         map-points: s32,
         /// Points of the current round. The host clears them before every round end.
         round-points: s32,
+        /// Place in the current round, 1 for the best, 0 for players who did not take
+        /// part. Set by the mode at the round end, the host reports it with the round
+        /// points to the manager. The host clears it before every round end.
+        round-position: u32,
     }
 
     /// The scores of a match in one structure every mode shares.

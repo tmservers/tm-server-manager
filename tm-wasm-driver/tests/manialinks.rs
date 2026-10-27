@@ -4,10 +4,10 @@
 
 use std::{collections::BTreeSet, path::PathBuf};
 
-use tm_server_types::method::{DriverStanding, DriverStandings, DriverStatus};
+use tm_server_types::method::{DriverLabelTone, DriverStanding, DriverStandings, DriverStatus};
 
 /// How the standings structs of a manialink declare their members.
-const MEMBERS: [&str; 14] = [
+const MEMBERS: [&str; 16] = [
     "Text title;",
     "Text info;",
     "Integer rounds_on_map;",
@@ -19,6 +19,8 @@ const MEMBERS: [&str; 14] = [
     "Text name;",
     "Integer rank;",
     "Text status;",
+    "Text label;",
+    "Text label_tone;",
     "Integer points;",
     "Integer map_points;",
     "Integer round_points;",
@@ -32,6 +34,8 @@ fn members_cover_the_json() {
             name: "a".into(),
             rank: 1,
             status: DriverStatus::Playing,
+            label: String::new(),
+            label_tone: DriverLabelTone::Neutral,
             points: 0,
             map_points: 0,
             round_points: 0,

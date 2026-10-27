@@ -11,8 +11,8 @@
 //! The scores of a match live in standings every mode shares. The host keeps
 //! them and hands them to the mode with every event, so modes keep nothing but
 //! their settings. The host clears what belongs to a new match, map or round,
-//! publishes the standings for the manialinks whenever they change and derives
-//! the round results for the manager from them.
+//! publishes the standings for the manialinks whenever they change and reports
+//! the round places the mode set in them to the manager.
 //!
 //! Modes and the host are deterministic. Replaying the events of a match with
 //! [`DriverEngine::replay`] rebuilds exactly the same driver, so a crashed bridge
@@ -30,7 +30,7 @@ use std::{
 
 use tm_server_types::{
     event::{DriverHold, DriverRoundResult, DriverSection, Event},
-    method::{DriverCanSpawn, DriverCommand, DriverRoundFormat, DriverStandings},
+    method::{DriverCanSpawn, DriverCommand, DriverStandings},
 };
 use wasmtime::{
     Config, Engine, Store, StoreLimits, StoreLimitsBuilder,
@@ -218,7 +218,7 @@ impl DriverEngine {
             .map_err(DriverError::Instantiate)?;
         store.set_epoch_deadline(self.epoch_deadline());
 
-        let bindings = Mode::instantiate(&mut store, &component, &self.linker)
+        let bindings = Mode::instantiate(&mut store, component, &self.linker)
             .map_err(DriverError::Instantiate)?;
 
         Ok(Driver {
@@ -230,7 +230,6 @@ impl DriverEngine {
             standings: convert::empty_standings(),
             published: None,
             spawn_permissions: BTreeMap::new(),
-            time_attack: false,
             session: None,
             last_hold: None,
             playlist: Vec::new(),
@@ -270,8 +269,6 @@ pub struct Driver {
     published: Option<String>,
     /// Spawn permissions sent in this match, so repeated ones are left out.
     spawn_permissions: BTreeMap<String, bool>,
-    /// The mode made rounds time attack rounds, so their best race counts.
-    time_attack: bool,
     session: Option<i32>,
     /// Commands for the last hold in case the modescript asks again.
     last_hold: Option<(u32, Vec<DriverCommand>)>,
@@ -335,7 +332,6 @@ impl Driver {
             Event::StartMatchStart(_) => {
                 // Every match starts with the defaults of the modescript.
                 self.spawn_permissions.clear();
-                self.time_attack = false;
                 self.step(wit::Event::MatchStart)
             }
             Event::StartMapStart(start) => {
@@ -405,7 +401,6 @@ impl Driver {
             self.session = Some(hold.session);
             self.last_hold = None;
             self.spawn_permissions.clear();
-            self.time_attack = false;
         }
 
         if let Some((seq, commands)) = &self.last_hold {
@@ -477,13 +472,12 @@ impl Driver {
         };
         self.standings = decision.standings;
 
-        let round_result =
-            match &event {
-                wit::Event::RoundEnd(round_end) if !round_end.forced => Some(
-                    convert::round_result(&self.standings, &round_end.results, self.time_attack),
-                ),
-                _ => None,
-            };
+        let round_result = match &event {
+            wit::Event::RoundEnd(round_end) if !round_end.forced => {
+                Some(convert::round_result(&self.standings))
+            }
+            _ => None,
+        };
 
         let mut commands = convert::commands(decision.commands, &self.playlist);
         commands.retain(|command| match command {
@@ -499,11 +493,6 @@ impl Driver {
                 self.spawn_permissions
                     .insert(account_id.clone(), *can_spawn)
                     != Some(*can_spawn)
-            }
-            DriverCommand::SetRoundFormat(format) => {
-                self.time_attack =
-                    matches!(format, DriverRoundFormat::TimeAttack(limit) if *limit > 0);
-                true
             }
             _ => true,
         });
@@ -571,6 +560,7 @@ fn clear(standings: &mut wit::Standings, event: &wit::Event) {
         wit::Event::RoundEnd(_) => {
             for player in &mut standings.players {
                 player.round_points = 0;
+                player.round_position = 0;
             }
         }
         wit::Event::MapEnd => standings.maps_played = standings.maps_played.saturating_add(1),

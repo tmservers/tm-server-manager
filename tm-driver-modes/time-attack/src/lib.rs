@@ -121,6 +121,7 @@ impl TimeAttack {
 
         standings.rounds_on_map += 1;
         standings.rank();
+        standings.place_round(&round_end.results, |r| r.best_time);
         standings.info = self.info(standings);
         // Every map is a single time attack round.
         vec![Command::EndMap]
@@ -154,7 +155,7 @@ fn maps_per_match(setting: Option<u32>, standings: &Standings) -> u32 {
 
 #[cfg(test)]
 mod tests {
-    use tm_driver_sdk::{Status, WarmUp, testing::Harness};
+    use tm_driver_sdk::{Label, WarmUp, testing::Harness};
 
     use super::*;
 
@@ -285,8 +286,8 @@ mod tests {
 
         // Tied leaders both win.
         assert_eq!(harness.step(Event::MapEnd), [Command::EndMatch]);
-        assert_eq!(harness.standing("a").status, Status::Winner);
-        assert_eq!(harness.standing("b").status, Status::Winner);
+        assert_eq!(harness.standing("a").label, Some(Label::winner()));
+        assert_eq!(harness.standing("b").label, Some(Label::winner()));
     }
 
     #[test]

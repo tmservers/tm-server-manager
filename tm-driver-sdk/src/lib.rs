@@ -41,8 +41,8 @@ pub mod testing;
 
 pub use bindings::tmservers::driver::host::LogLevel;
 pub use bindings::tmservers::driver::types::{
-    CanSpawn, Command, Decision, Event, FinishTimeout, Layer, Player, RaceResult, RoundEnd,
-    RoundFormat, Standing, Standings, Status, WarmUp,
+    CanSpawn, Command, Decision, Event, FinishTimeout, Label, Layer, Player, RaceResult, RoundEnd,
+    RoundFormat, Standing, Standings, Status, Tone, WarmUp,
 };
 
 /// A game mode. One instance lives for the whole match.

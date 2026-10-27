@@ -117,10 +117,12 @@ as `tm_server_types::method::DriverStandings`.
 | Field | Meaning |
 |---|---|
 | `players[].rank` | Position in the match, ties share a rank. Set by the mode, usually with `Standings::rank()`. |
-| `players[].status` | `playing`, `finalist`, `last_chance`, `eliminated` (with a final rank), `winner` or `spectator` (takes no part, not ranked). |
+| `players[].status` | Whether the player takes part and can still race: `playing`, `eliminated` (with a final rank) or `spectator` (takes no part, not ranked). |
+| `players[].label` | Optional text shown in place of the points, e.g. `Last Chance` or `Winner`, with a tone (`neutral`, `positive`, `negative`). Display only. |
 | `players[].points` | Points of the match. |
 | `players[].map_points` | Points of the current map. |
 | `players[].round_points` | Points of the last round. |
+| `players[].round_position` | Place in the last round, 0 for players who did not take part. Not published to the manialinks. |
 | `rounds_on_map` | Rounds of the current map that counted. |
 | `maps_played` | Maps that ended in this match. |
 | `map_name` | Name of the current map, set by the host. |
@@ -136,16 +138,21 @@ Who does what:
   |---|---|
   | `match-start` | everything |
   | `map-start` | `map_points`, `rounds_on_map` |
-  | `round-end` | `round_points` |
+  | `round-end` | `round_points`, `round_position` |
   | `map-end` | `maps_played` counts the ending map |
 
-  It publishes the standings whenever they change and derives the round result for the manager:
-  the round points of everyone in the standings who raced or got points, positioned by the race
-  (finishers by time, then everyone else by checkpoints). Spawn permissions it sent before in the
-  match are left out, so modes can simply repeat them.
-- **Mode:** applies its rules and returns the standings: points, statuses, ranks, counted rounds,
-  `info`, and when maps and matches end. `Mode::step` only gets `&self`, so a mode keeps nothing
-  besides its settings.
+  It publishes the standings whenever they change and reports the round result to the manager:
+  the round points and places of everyone the mode placed. Spawn permissions it sent before in the
+  match are left out, so modes can simply repeat them. The host knows nothing about how a mode
+  scores or ranks.
+- **Mode:** applies its rules and returns the standings: points, statuses, labels, ranks, places
+  in the round, counted rounds, `info`, and when maps and matches end. `Standings::place_round`
+  places the round by the race (finishers by the time that counts, then everyone else by
+  checkpoints). `Mode::step` only gets `&self`, so a mode keeps nothing besides its settings.
+
+Who wins and loses is told by the ranks, never by special point values like the original
+ReverseCup's `-1000` for last chance. A state a mode needs beyond the status, e.g. last chance, has
+to follow from the standings, and the mode shows it with a label.
 
 Modes become small functions of their settings, the standings and an event, which makes them
 easy to test. The manager and the manialinks read one format for every mode, and admin
@@ -166,6 +173,7 @@ corrections can later edit the standings without the mode knowing about it.
   ```json
   {"title": "Rounds", "info": "2 / 5 rounds", "rounds_on_map": 2, "maps_played": 0,
    "players": [{"account_id": "...", "name": "...", "rank": 1, "status": "playing",
+                "label": "", "label_tone": "neutral",
                 "points": 16, "map_points": 16, "round_points": 10}]}
   ```
 
@@ -196,8 +204,8 @@ Every manialink starts with its style:
 - A `<stylesheet>` with classes for fonts, text colors and backgrounds (`title`, `info`, `name`,
   `number`, `status`, `header`, `accent`, `row`, `cell`, ...).
 - `C_Style_*` constants at the top of the script for what changes at runtime: the highlight of
-  the local and the spectated player, gained and lost round points, the color and the text of
-  every status. Colors are hex like in the stylesheet.
+  the local and the spectated player, gained and lost round points, the color of every label
+  tone and the color and the text of the statuses. Colors are hex like in the stylesheet.
 
 Highlights and status colors are drawn on extra quads above the rows, so the script never
 overwrites a color of the stylesheet.
@@ -219,8 +227,9 @@ scores table is the UI module `Race_ScoresTable`, a manialink in such a layer.
   "visible_update": true}]}`) and shows it again otherwise. `DriverCommand::show_layers` adds that
   to the layers, the bridge and the runner use it whenever they install layers.
 - `scores-table.xml` lists up to 100 players with rank, club tag, name, round points and points.
-  Statuses replace the points like in the original modes: `Last Chance` and `Eliminated` in red,
-  `Spectator` in green, `Finalist` and `Winner`. 18 rows are visible and the mouse wheel scrolls
+  Labels and statuses replace the points like in the original modes: labels by their tone
+  (`Last Chance` in red, `Winner` in gold), `Eliminated` in dark red and `Spectator` in green.
+  18 rows are visible and the mouse wheel scrolls
   through the rest (a frame with `scroll="1"`). The local player is highlighted and gets an extra
   row below the list while the visible rows do not show them, the spectated player is
   highlighted too.
@@ -344,9 +353,10 @@ A port of the community `TM_ReverseCup` script with the same settings and rules:
   `number_of_winners` players are left (a single participant plays until eliminated).
 - A round only counts for `rounds_per_map` if someone lost points. Maps change until the match
   is over.
-- Lost points are the negative round points of the standings. Players with points are
-  `playing`, players in last chance have 0 points and eliminated players keep the rank they were
-  eliminated with. The remaining players become `winner` when the match ends.
+- Lost points are the negative round points of the standings. Players in the match are
+  `playing`: with points, or in last chance with 0 points and the label `Last Chance`. Eliminated
+  players keep the rank they were eliminated with. The remaining players get the label `Winner`
+  when the match ends.
 
 Differences to the original:
 
@@ -386,7 +396,7 @@ import host;  // log
 
 - `tm-driver-sdk`: wit-bindgen bindings, the `Mode` trait (a mode names its `Settings` type and
   the SDK parses the json of the config into it, empty settings are `{}`), `export_mode!`, helpers on the
-  standings (`join`, `award`, `rank`, `crown_leaders`, `in_match`) and shared `settings`. Mode
+  standings (`join`, `award`, `rank`, `place_round`, `crown_leaders`, `in_match`) and shared `settings`. Mode
   logic compiles natively too. `testing::Harness` runs a mode with the lifecycle of the host, so
   modes are unit tested without wasm.
 - `tm-driver-modes/rounds`: Rounds (points repartition, rounds per map, maps per match, points
@@ -511,7 +521,8 @@ A key of `complex_points_repartition` can list several player counts, e.g. `"4,5
      far they got.
    - `SetCanSpawn(false)` keeps eliminated players and spectators from spawning, also on the
      next map, and chat messages of the mode show up.
-   - The standings manialink shows the status of players in last chance and eliminated players.
+   - The standings manialink shows the labels of players in last chance and of the winners, and
+     the status of eliminated players.
 2. **Database integration (phase 4)** once the feature is fleshed out.
 
 ## Risks

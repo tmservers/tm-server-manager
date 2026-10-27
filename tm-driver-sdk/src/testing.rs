@@ -50,6 +50,7 @@ fn clear(standings: &mut Standings, event: &Event) {
         Event::RoundEnd(_) => {
             for player in &mut standings.players {
                 player.round_points = 0;
+                player.round_position = 0;
             }
         }
         Event::MapEnd => standings.maps_played = standings.maps_played.saturating_add(1),

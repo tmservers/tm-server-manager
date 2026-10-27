@@ -103,8 +103,15 @@ fn plays_a_match() {
     assert_eq!(
         ranking(&driver),
         [
-            ("a".into(), 1, DriverStatus::Winner, 10, 10),
-            ("b".into(), 2, DriverStatus::Playing, 6, 6),
+            (
+                "a".into(),
+                1,
+                DriverStatus::Playing,
+                "Winner".into(),
+                10,
+                10
+            ),
+            ("b".into(), 2, DriverStatus::Playing, String::new(), 6, 6),
         ]
     );
     assert_eq!(driver.standings().title, "Rounds");

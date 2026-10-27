@@ -135,6 +135,7 @@ impl Rounds {
 
         standings.rounds_on_map += 1;
         standings.rank();
+        standings.place_round(&round_end.results, |r| r.previous_time);
         standings.info = self.info(standings);
 
         if self.points_limit(standings) == PointsLimit::Reached {
@@ -206,7 +207,7 @@ fn maps_per_match(setting: Option<u32>, standings: &Standings) -> u32 {
 
 #[cfg(test)]
 mod tests {
-    use tm_driver_sdk::{FinishTimeout, Player, Status, WarmUp, testing::Harness};
+    use tm_driver_sdk::{FinishTimeout, Label, Player, WarmUp, testing::Harness};
 
     use super::*;
 
@@ -305,6 +306,15 @@ mod tests {
             ]
         );
         assert_eq!(harness.standings.info, "1 / 5 rounds");
+
+        // Places follow the race, also for the finishers who got the same points.
+        let places: Vec<(&str, u32)> = harness
+            .standings
+            .players
+            .iter()
+            .map(|p| (p.account_id.as_str(), p.round_position))
+            .collect();
+        assert_eq!(places, [("a", 1), ("b", 2), ("c", 3), ("e", 4), ("d", 5)]);
     }
 
     #[test]
@@ -360,8 +370,8 @@ mod tests {
 
         // One map per match by default. The leader wins.
         assert_eq!(harness.step(Event::MapEnd), [Command::EndMatch]);
-        assert_eq!(harness.standing("a").status, Status::Winner);
-        assert_eq!(harness.standing("b").status, Status::Playing);
+        assert_eq!(harness.standing("a").label, Some(Label::winner()));
+        assert_eq!(harness.standing("b").label, None);
     }
 
     #[test]
@@ -402,7 +412,7 @@ mod tests {
 
         let commands = harness.step(round_end(vec![finish("a", 1)]));
         assert!(commands.contains(&Command::EndMatch));
-        assert_eq!(harness.standing("a").status, Status::Winner);
+        assert_eq!(harness.standing("a").label, Some(Label::winner()));
     }
 
     #[test]

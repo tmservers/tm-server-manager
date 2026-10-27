@@ -39,15 +39,12 @@
 #Const C_Style_GainedColor "66ff99"
 #Const C_Style_LostColor "ff6666"
 #Const C_Style_DetailColor "ffffff"
-#Const C_Style_FinalistColor "e08a00"
-#Const C_Style_LastChanceColor "d61919"
+#Const C_Style_PositiveColor "c99a06"
+#Const C_Style_NegativeColor "d61919"
+#Const C_Style_NeutralColor "5a6470"
 #Const C_Style_EliminatedColor "6e1414"
-#Const C_Style_WinnerColor "c99a06"
 #Const C_Style_SpectatorColor "2e9e23"
-#Const C_Style_FinalistText "Finalist"
-#Const C_Style_LastChanceText "Last Chance"
 #Const C_Style_EliminatedText "Eliminated"
-#Const C_Style_WinnerText "Winner"
 #Const C_Style_SpectatorText "Spectator"
 #Const C_Style_PointsSuffix " pts"
 
@@ -56,6 +53,8 @@
 	Text name;
 	Integer rank;
 	Text status;
+	Text label;
+	Text label_tone;
 	Integer points;
 	Integer map_points;
 	Integer round_points;
@@ -94,24 +93,27 @@ Void SetQuadColor(Text _ControlId, Text _Color) {
 	if (_Color != "") Quad.BgColor = CL::Hex6ToRgb(_Color);
 }
 
-/// Shown instead of the points like in the original modes, empty for players who are still playing.
-Text StatusText(Text _Status) {
+/// Shown instead of the points like in the original modes: the label of the mode, e.g.
+/// Last Chance, or the status. Empty for players who are still playing without a label.
+Text StatusText(Text _Status, Text _Label) {
+	if (_Label != "") return _Label;
 	switch (_Status) {
-		case "finalist": return C_Style_FinalistText;
-		case "last_chance": return C_Style_LastChanceText;
 		case "eliminated": return C_Style_EliminatedText;
-		case "winner": return C_Style_WinnerText;
 		case "spectator": return C_Style_SpectatorText;
 	}
 	return "";
 }
 
-Text StatusColor(Text _Status) {
+Text StatusColor(Text _Status, Text _Label, Text _LabelTone) {
+	if (_Label != "") {
+		switch (_LabelTone) {
+			case "positive": return C_Style_PositiveColor;
+			case "negative": return C_Style_NegativeColor;
+		}
+		return C_Style_NeutralColor;
+	}
 	switch (_Status) {
-		case "finalist": return C_Style_FinalistColor;
-		case "last_chance": return C_Style_LastChanceColor;
 		case "eliminated": return C_Style_EliminatedColor;
-		case "winner": return C_Style_WinnerColor;
 		case "spectator": return C_Style_SpectatorColor;
 	}
 	return "";
@@ -154,12 +156,12 @@ Void Update(Text _Standings) {
 	}
 
 	// A status like Last Chance replaces the points in a colored cell.
-	declare Text Status = StatusText(Mine.status);
+	declare Text Status = StatusText(Mine.status, Mine.label);
 	SetText("Label_Status", Status);
 	SetText("Label_Score", TL::ToText(Mine.points)^C_Style_PointsSuffix);
 	SetVisible("Label_Status", Status != "");
 	SetVisible("Label_Score", Status == "");
-	SetQuadColor("Quad_State", StatusColor(Mine.status));
+	SetQuadColor("Quad_State", StatusColor(Mine.status, Mine.label, Mine.label_tone));
 
 	if (Mine.round_points > 0) {
 		SetText("Label_Detail", "+"^TL::ToText(Mine.round_points)^" last round");

@@ -324,6 +324,9 @@ pub struct DriverStanding {
     /// Players with the same rank are tied. 0 if the mode did not rank the player.
     pub rank: u32,
     pub status: DriverStatus,
+    /// Shown in place of the points, e.g. `Last Chance`. Empty without a label.
+    pub label: String,
+    pub label_tone: DriverLabelTone,
     /// Points of the match.
     pub points: i32,
     /// Points of the current map.
@@ -332,26 +335,36 @@ pub struct DriverStanding {
     pub round_points: i32,
 }
 
-/// Where a player stands in a driver match.
+/// Whether a player takes part in a driver match and can still race. Who wins is
+/// told by the rank, what a mode calls a state by the label.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub enum DriverStatus {
-    /// Takes part and has neither won nor lost yet.
+    /// Takes part and can still race.
     #[default]
     Playing,
-    /// Wins the match by winning a round (cup).
-    Finalist,
-    /// The next bad round eliminates the player (reverse cup).
-    LastChance,
     /// Out of the match with a final rank.
     Eliminated,
-    /// Won the match.
-    Winner,
-    /// Takes no part in the match, e.g. joined a reverse cup too late. Not ranked.
+    /// Takes no part in the match, e.g. joined too late. Not ranked.
     Spectator,
+}
+
+/// How the label of a standing is shown.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
+#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
+pub enum DriverLabelTone {
+    #[default]
+    Neutral,
+    /// Something good, e.g. a win.
+    Positive,
+    /// Something bad, e.g. being one round from elimination.
+    Negative,
 }
 
 #[cfg(test)]

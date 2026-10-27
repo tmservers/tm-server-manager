@@ -198,12 +198,22 @@ pub fn publishes_standings(commands: &[DriverCommand]) -> bool {
         .any(|c| matches!(c, DriverCommand::SetStandings(_)))
 }
 
-/// Account, rank, status, points and round points of every player in the order of the standings.
-pub fn ranking(driver: &Driver) -> Vec<(String, u32, DriverStatus, i32, i32)> {
+/// Account, rank, status, label, points and round points of every player in the
+/// order of the standings.
+pub fn ranking(driver: &Driver) -> Vec<(String, u32, DriverStatus, String, i32, i32)> {
     driver
         .standings()
         .players
         .into_iter()
-        .map(|p| (p.account_id, p.rank, p.status, p.points, p.round_points))
+        .map(|p| {
+            (
+                p.account_id,
+                p.rank,
+                p.status,
+                p.label,
+                p.points,
+                p.round_points,
+            )
+        })
         .collect()
 }

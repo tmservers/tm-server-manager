@@ -468,7 +468,9 @@ fn summary(standings: &DriverStandings) -> String {
         .players
         .iter()
         .map(|player| {
+            // A label replaces the points like in the manialinks.
             let score = match player.status {
+                _ if !player.label.is_empty() => player.label.clone(),
                 DriverStatus::Playing => match player.round_points {
                     0 => player.points.to_string(),
                     round => format!("{} ({round:+})", player.points),
