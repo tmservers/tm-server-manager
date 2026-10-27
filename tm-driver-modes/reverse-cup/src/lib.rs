@@ -6,9 +6,11 @@
 //! round. The match ends once only the winners are left.
 //!
 //! The players who start a race before the first round counts take part in the
-//! match with their starting points. Everyone else cannot spawn anymore. The original mode skips a round that
-//! would put everyone in last chance anyway. This mode does that right after
-//! the previous round, so the round is not started at all.
+//! match with their starting points. Everyone else cannot spawn anymore.
+//!
+//! The original mode skips a round that would put everyone in last chance
+//! anyway. This mode does that right after the previous round, so the round is
+//! not started at all.
 //!
 //! Participants, their points and statuses live in the standings the host keeps.
 //! Players with points are playing, players in last chance have 0 points and
@@ -561,7 +563,6 @@ mod tests {
         harness
     }
 
-    /// A match whose participants already reached these standings.
     /// A match whose participants already reached these standings. A map was played
     /// already, so registration is closed.
     fn playing(settings: &str, players: Vec<Entry>) -> Harness<ReverseCup> {
