@@ -322,7 +322,7 @@ impl ReverseCup {
             .filter(|account_id| last_chance(account_id))
             .filter_map(|account_id| race(account_id))
             .filter(|race| race.previous_time.is_none())
-            .map(|race| race.progress)
+            .map(|race| race.round_checkpoints.len())
             .min();
 
         let repartition = self.repartition(standings);
@@ -343,7 +343,7 @@ impl ReverseCup {
                     race => match (self.settings.last_chance_dnf_mode, race) {
                         (LastChanceDnfMode::OnlyLeastCheckpoints, Some(race))
                             if last_chance(&account_id)
-                                && Some(race.progress) != least_checkpoints =>
+                                && Some(race.round_checkpoints.len()) != least_checkpoints =>
                         {
                             0
                         }
@@ -448,8 +448,7 @@ mod tests {
         RaceResult {
             account_id: account_id.into(),
             started: true,
-            progress: 3,
-            progress_times: vec![time / 2, time / 2, time],
+            round_checkpoints: vec![time / 2, time / 2, time],
             previous_time: Some(time),
             previous_checkpoints: vec![time / 2, time / 2, time],
             best_time: Some(time),
@@ -462,8 +461,9 @@ mod tests {
         RaceResult {
             account_id: account_id.into(),
             started: true,
-            progress,
-            progress_times: vec![],
+            round_checkpoints: (1..=progress)
+                .map(|checkpoint| checkpoint * 10_000)
+                .collect(),
             previous_time: None,
             previous_checkpoints: vec![],
             best_time: None,

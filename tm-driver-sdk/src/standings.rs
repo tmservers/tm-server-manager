@@ -290,8 +290,9 @@ mod tests {
         RaceResult {
             account_id: account_id.into(),
             started: true,
-            progress,
-            progress_times: vec![],
+            round_checkpoints: (1..=progress)
+                .map(|checkpoint| checkpoint * 10_000)
+                .collect(),
             previous_time: previous,
             previous_checkpoints: vec![],
             best_time: best,

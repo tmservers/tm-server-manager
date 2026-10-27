@@ -133,12 +133,16 @@ pub fn start_line(account_id: &str) -> Event {
     })
 }
 
-/// A player passed a checkpoint of the race, counting from 0.
+/// A player passed a checkpoint of the race, counting from 0, ten seconds after the
+/// one before. Like the server, it carries the race times of every checkpoint so far.
 pub fn way_point(account_id: &str, checkpoint_in_race: u32) -> Event {
+    let checkpoints: Vec<u32> = (1..=checkpoint_in_race + 1)
+        .map(|checkpoint| checkpoint * 10_000)
+        .collect();
     Event::WayPoint(WayPoint {
         account_id: account_id.into(),
         time: 0,
-        racetime: 0,
+        racetime: checkpoints[checkpoints.len() - 1],
         laptime: 0,
         speed: 0.,
         checkpoint_in_race,
@@ -147,7 +151,7 @@ pub fn way_point(account_id: &str, checkpoint_in_race: u32) -> Event {
         is_end_lap: false,
         is_infinite_laps: false,
         is_independent_laps: false,
-        current_race_checkpoints: vec![],
+        current_race_checkpoints: checkpoints,
         current_lap_checkpoints: vec![],
         block_id: String::new(),
     })
@@ -161,7 +165,9 @@ pub fn finish(account_id: &str, checkpoint_in_race: u32, racetime: u32) -> Event
     way_point.racetime = racetime;
     way_point.is_end_race = true;
     way_point.is_end_lap = true;
-    way_point.current_race_checkpoints = vec![racetime];
+    if let Some(finish) = way_point.current_race_checkpoints.last_mut() {
+        *finish = racetime;
+    }
     Event::WayPoint(way_point)
 }
 

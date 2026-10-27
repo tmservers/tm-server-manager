@@ -62,10 +62,10 @@ attempt rounds count the last race, time attack rounds the best one. The host bu
 the standard callbacks: `Trackmania.Event.StartLine` starts a race and a
 `Trackmania.Event.WayPoint` with `isendrace` finishes it. The modescript sends no scores.
 
-Every result also says whether the player `started` a race in the round, how many checkpoints
-(`progress`, the finish included) they passed in their last race and at which race times
-(`progress_times`, from the `curracecheckpoints` of the waypoints), so players who got equally far
-can be told apart without a finish. Players who left stay in the
+Every result also says whether the player `started` a race in the round and holds the race times
+at the checkpoints they passed in their last race (`round_checkpoints`, the finish included, from
+the `curracecheckpoints` of the waypoints). How many there are tells how far a player got, the
+times tell players who got equally far apart without a finish. Players who left stay in the
 results of the round they started in. The players on the server come from
 `ManiaPlanet.PlayerConnect`, `PlayerDisconnect` and `PlayerInfoChanged`. The bridge hands the
 players that were on the server when the mode loaded to `Driver::add_players`, which learns them
@@ -179,8 +179,8 @@ time of the race that counts (`CountedRace::Last` in single attempt rounds, `Cou
 time attack rounds), then everyone else by the checkpoints they passed in their last race, and
 players who did not start last. Equal races go to the better race time at the last checkpoint,
 then at the one before and so on (`previous_checkpoints` or `best_checkpoints` of finishers,
-`progress_times` of everyone else). Races that are equal all the way go by name, the case aside,
-then by account.
+`round_checkpoints` of everyone else). Races that are equal all the way go by name, the case
+aside, then by account.
 
 - Points and losses of a round follow that order, so players with the same time get the points of
   different places.

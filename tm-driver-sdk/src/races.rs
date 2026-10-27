@@ -25,7 +25,7 @@ impl CountedRace {
     /// checkpoints a player without a finish passed in their last race.
     fn checkpoint_times(self, race: &RaceResult) -> &[u32] {
         match self {
-            _ if self.time(race).is_none() => &race.progress_times,
+            _ if self.time(race).is_none() => &race.round_checkpoints,
             CountedRace::Last => &race.previous_checkpoints,
             CountedRace::Best => &race.best_checkpoints,
         }
@@ -56,7 +56,7 @@ pub fn race_order<'a>(
         let race = (
             time.is_none(),
             time,
-            Reverse(race.map(|r| r.progress)),
+            Reverse(race.map(|r| r.round_checkpoints.len())),
             checkpoint_times,
         );
         (race, by_name(account_id))
@@ -86,8 +86,7 @@ mod tests {
         RaceResult {
             account_id: account_id.into(),
             started: true,
-            progress: checkpoints.len() as u32,
-            progress_times: checkpoints.to_vec(),
+            round_checkpoints: checkpoints.to_vec(),
             previous_time: time,
             previous_checkpoints: checkpoints.to_vec(),
             best_time: time,
