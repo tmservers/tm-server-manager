@@ -15,9 +15,10 @@
 //! Participants, their lives and statuses live in the standings the host keeps:
 //! the points of a player are the lives they have left. Players still in the
 //! match are ranked by their lives and their last race, eliminated players keep
-//! the rank they were eliminated with.
+//! the rank they were eliminated with. Nobody shares a rank: equal races go to the
+//! better times at the checkpoints and finally to the name.
 
-use std::cmp::Reverse;
+use std::cmp::{Ordering, Reverse};
 
 use serde::Deserialize;
 use tm_driver_sdk::{
@@ -127,7 +128,7 @@ impl Knockout {
             Event::RaceStart(account_id) => {
                 if self.registration_open(standings) && standings.player(&account_id).is_none() {
                     standings.join(&account_id).score = self.settings.lives;
-                    rank(standings);
+                    list_newcomers(standings);
                 }
                 Vec::new()
             }
@@ -186,14 +187,29 @@ impl Knockout {
             self.register(standings, &round_end.results);
         }
         if round_end.forced || standings.participants().next().is_none() {
+            list_newcomers(standings);
             return self.block_late_players(standings, &round_end.results);
         }
 
-        let mut commands = self.take_lives(standings, round, &round_end.results);
+        let order = race_order(standings, &round_end.results);
+        let mut commands = self.take_lives(standings, round, &order);
         standings.rounds_on_map += 1;
         commands.extend(self.block_late_players(standings, &round_end.results));
-        rank(standings);
+
+        // Nobody shares a place in the round or a position in the match. The round
+        // keeps the ties of the standings, so they follow the race first. The match
+        // ranks by the lives, then by the race.
+        let in_race = |account_id: &str| {
+            order
+                .iter()
+                .position(|(raced, _)| raced == account_id)
+                .unwrap_or(order.len())
+        };
+        standings
+            .entries
+            .sort_by_key(|player| in_race(&player.account_id));
         standings.place_round(&round_end.results, |r| r.previous_time);
+        standings.rank_by(|player| (Reverse(player.score), in_race(&player.account_id)));
 
         if self.match_over(standings) {
             commands.extend(winner_message(standings).map(Command::ChatMessage));
@@ -206,7 +222,7 @@ impl Knockout {
         commands
     }
 
-    /// Takes a life from the last players of the round and everyone without a
+    /// Takes a life from the last players of the race and everyone without a
     /// finish. Players who lose their last life are eliminated with the last ranks
     /// of the players left, in the order of the race. Everyone in the match gets the
     /// time of the round.
@@ -214,9 +230,8 @@ impl Knockout {
         &self,
         standings: &mut Standings,
         round: u32,
-        results: &[RaceResult],
+        order: &[(String, Option<u32>)],
     ) -> Vec<Command> {
-        let order = race_order(standings, results);
         let without_finish = order.iter().filter(|(_, time)| time.is_none()).count();
         let losses = match self.losses(standings, round) {
             0 => 0,
@@ -243,16 +258,16 @@ impl Knockout {
         let mut position = (order.len() - eliminated) as u32;
 
         let mut commands = Vec::new();
-        for (index, (account_id, time)) in order.into_iter().enumerate() {
+        for (index, (account_id, time)) in order.iter().enumerate() {
             let loses_life = index >= first_loser;
             if loses_life {
                 // The round shows who lost a life.
-                standings.round_entry(&account_id).score = -1;
+                standings.round_entry(account_id).score = -1;
             }
             let player = standings
-                .player_mut(&account_id)
+                .player_mut(account_id)
                 .expect("Only players in the match raced");
-            player.time = time;
+            player.time = *time;
             if !loses_life {
                 continue;
             }
@@ -265,11 +280,11 @@ impl Knockout {
             player.position = position;
             commands.push(Command::ChatMessage(format!(
                 "$f90$i$<{}$> takes {} place!",
-                tm_driver_sdk::name(&account_id),
+                tm_driver_sdk::name(account_id),
                 tm_driver_sdk::ordinal(position)
             )));
             commands.push(Command::SetCanSpawn(CanSpawn {
-                account_id,
+                account_id: account_id.clone(),
                 can_spawn: false,
             }));
         }
@@ -394,35 +409,77 @@ impl Knockout {
     }
 }
 
-/// The players in the match by their lives left and the time of their last round,
-/// everyone without a finish after the finishers with as many lives.
-fn rank(standings: &mut Standings) {
-    standings.rank_by(|player| (Reverse(player.score), player.time.is_none(), player.time));
+/// Players who joined since the last round have no position until a round counts
+/// for them. They follow the players in the match by name.
+fn list_newcomers(standings: &mut Standings) {
+    standings.entries.sort_by_cached_key(|player| {
+        let newcomer = player.is_in_match() && player.position == 0;
+        (
+            !player.is_in_match(),
+            newcomer.then(|| by_name(&player.account_id)),
+        )
+    });
 }
 
-/// The players in the match by their race with its time, the best first:
-/// finishers by time, then everyone else by the checkpoints they passed and the
-/// players who did not start last. Ties keep the order of the standings.
+/// The players in the match by their race with its time, the best first and
+/// without ties: see [`compare_races`], races that are equal all the way go by
+/// name.
 fn race_order(standings: &Standings, results: &[RaceResult]) -> Vec<(String, Option<u32>)> {
-    let mut order: Vec<(String, Option<u32>, Option<u32>)> = standings
+    let mut order: Vec<(&str, Option<&RaceResult>, (String, String))> = standings
         .in_match()
         .map(|player| {
             let race = results
                 .iter()
                 .find(|r| r.account_id == player.account_id && r.started);
             (
-                player.account_id.clone(),
-                race.and_then(|r| r.previous_time),
-                race.map(|r| r.progress),
+                player.account_id.as_str(),
+                race,
+                by_name(&player.account_id),
             )
         })
         .collect();
-    // Stable so ties keep the order of the standings.
-    order.sort_by_key(|&(_, time, progress)| (time.is_none(), time, Reverse(progress)));
+    order.sort_by(|(_, a, a_name), (_, b, b_name)| {
+        compare_races(*a, *b).then_with(|| a_name.cmp(b_name))
+    });
     order
         .into_iter()
-        .map(|(account_id, time, _)| (account_id, time))
+        .map(|(account_id, race, _)| (account_id.to_string(), race.and_then(|r| r.previous_time)))
         .collect()
+}
+
+/// Races of a round, the better first: finishers by time, then everyone else by
+/// the checkpoints they passed and the players who did not start last. Equal races
+/// go to the better time at the last checkpoint, then at the one before and so on.
+fn compare_races(a: Option<&RaceResult>, b: Option<&RaceResult>) -> Ordering {
+    let key = |race: Option<&RaceResult>| {
+        let time = race.and_then(|r| r.previous_time);
+        (time.is_none(), time, Reverse(race.map(|r| r.progress)))
+    };
+    key(a).cmp(&key(b)).then_with(|| {
+        checkpoint_times(a)
+            .iter()
+            .rev()
+            .cmp(checkpoint_times(b).iter().rev())
+    })
+}
+
+/// The race times at the checkpoints of the race that counted, or at the
+/// checkpoints a player without a finish passed.
+fn checkpoint_times(race: Option<&RaceResult>) -> &[u32] {
+    match race {
+        Some(race) if race.previous_time.is_some() => &race.previous_checkpoints,
+        Some(race) => &race.progress_times,
+        None => &[],
+    }
+}
+
+/// Orders players by name, the case aside, and players with the same name by their
+/// account, so nobody ties.
+fn by_name(account_id: &str) -> (String, String) {
+    (
+        tm_driver_sdk::name(account_id).to_lowercase(),
+        account_id.to_string(),
+    )
 }
 
 /// The last player in the match wins.
@@ -447,35 +504,49 @@ fn race_time(milliseconds: u32) -> String {
 
 #[cfg(test)]
 mod tests {
-    use tm_driver_sdk::{FinishTimeout, WarmUp, testing::Harness};
+    use tm_driver_sdk::{FinishTimeout, User, WarmUp, testing::Harness};
 
     use super::*;
 
-    fn finish(account_id: &str, time: u32) -> RaceResult {
+    /// Finished with these race times at the checkpoints, the finish last.
+    fn finish_at(account_id: &str, checkpoints: &[u32]) -> RaceResult {
+        let time = checkpoints.last().copied();
         RaceResult {
             account_id: account_id.into(),
             started: true,
-            progress: 3,
-            progress_times: vec![time / 2, time / 2, time],
-            previous_time: Some(time),
-            previous_checkpoints: vec![time / 2, time / 2, time],
-            best_time: Some(time),
-            best_checkpoints: vec![time / 2, time / 2, time],
+            progress: checkpoints.len() as u32,
+            progress_times: checkpoints.to_vec(),
+            previous_time: time,
+            previous_checkpoints: checkpoints.to_vec(),
+            best_time: time,
+            best_checkpoints: checkpoints.to_vec(),
         }
     }
 
-    /// Gave up after passing a number of checkpoints.
-    fn dnf(account_id: &str, progress: u32) -> RaceResult {
+    fn finish(account_id: &str, time: u32) -> RaceResult {
+        finish_at(account_id, &[time / 3, time / 3 * 2, time])
+    }
+
+    /// Gave up after passing checkpoints at these race times.
+    fn dnf_at(account_id: &str, checkpoints: &[u32]) -> RaceResult {
         RaceResult {
             account_id: account_id.into(),
             started: true,
-            progress,
-            progress_times: vec![],
+            progress: checkpoints.len() as u32,
+            progress_times: checkpoints.to_vec(),
             previous_time: None,
             previous_checkpoints: vec![],
             best_time: None,
             best_checkpoints: vec![],
         }
+    }
+
+    /// Gave up after passing a number of checkpoints.
+    fn dnf(account_id: &str, progress: u32) -> RaceResult {
+        let checkpoints: Vec<u32> = (1..=progress)
+            .map(|checkpoint| checkpoint * 10_000)
+            .collect();
+        dnf_at(account_id, &checkpoints)
     }
 
     /// Did not start in the round.
@@ -548,6 +619,19 @@ mod tests {
     /// The hearts of a player with lost lives and lives left.
     fn hearts(lost: usize, left: usize) -> String {
         LOST_LIFE.repeat(lost) + &LIFE.repeat(left)
+    }
+
+    /// Gives a player a name like the host does once it knows it.
+    fn named(harness: &mut Harness<Knockout>, account_id: &str, name: &str) {
+        harness.users.insert(
+            account_id.into(),
+            User {
+                account_id: account_id.into(),
+                name: name.into(),
+                club_tag: String::new(),
+                zone: String::new(),
+            },
+        );
     }
 
     fn chat(commands: &[Command]) -> Vec<&str> {
@@ -666,14 +750,29 @@ mod tests {
     fn players_take_part_from_their_first_race() {
         let mut harness = started("");
         assert_eq!(harness.standings.info, "Round 1 / 2, no K.O.");
-        assert!(harness.step(race_start("a")).is_empty());
-        harness.step(race_start("b"));
+        assert!(harness.step(race_start("b")).is_empty());
+        harness.step(race_start("a"));
+        // Listed by name without a position until a round counted for them.
         assert_eq!(
             ranking(&harness),
-            [("a", 1, Status::Playing, ""), ("b", 1, Status::Playing, "")]
+            [("a", 0, Status::Playing, ""), ("b", 0, Status::Playing, "")]
         );
         assert_eq!(lives(&harness), [("a", 1), ("b", 1)]);
         assert_eq!(harness.standings.info, "Round 1 / 2, 2 left, no K.O.");
+
+        // Players who join in the next round follow the ranked players.
+        harness.step(round_end(finishers(&["b", "a"])));
+        harness.step(race_start("d"));
+        harness.step(race_start("c"));
+        assert_eq!(
+            ranking(&harness),
+            [
+                ("b", 1, Status::Playing, "0:30.000"),
+                ("a", 2, Status::Playing, "0:31.000"),
+                ("c", 0, Status::Playing, ""),
+                ("d", 0, Status::Playing, ""),
+            ]
+        );
     }
 
     #[test]
@@ -857,6 +956,127 @@ mod tests {
     }
 
     #[test]
+    fn equal_times_go_to_the_better_last_checkpoint() {
+        let mut harness = playing("", &["a", "b", "c"]);
+        // a and b finish in the same time, b passed the last checkpoint earlier.
+        let commands = harness.step(round_end(vec![
+            finish_at("a", &[10_000, 20_500, 30_000]),
+            finish_at("b", &[10_100, 20_400, 30_000]),
+            finish("c", 29_000),
+        ]));
+        assert_eq!(chat(&commands), ["$f90$i$<a$> takes 3rd place!"]);
+        assert_eq!(
+            ranking(&harness),
+            [
+                ("c", 1, Status::Playing, "0:29.000"),
+                ("b", 2, Status::Playing, "0:30.000"),
+                ("a", 3, Status::Eliminated, "K.O."),
+            ]
+        );
+    }
+
+    #[test]
+    fn equal_last_checkpoints_go_to_the_one_before() {
+        let mut harness = playing("", &["a", "b", "c"]);
+        let commands = harness.step(round_end(vec![
+            finish_at("a", &[10_000, 20_000, 30_000]),
+            finish_at("b", &[9_900, 20_000, 30_000]),
+            finish("c", 29_000),
+        ]));
+        assert_eq!(chat(&commands), ["$f90$i$<a$> takes 3rd place!"]);
+    }
+
+    #[test]
+    fn equal_races_go_by_name() {
+        let mut harness = playing("", &["x", "y", "z"]);
+        named(&mut harness, "x", "bob");
+        named(&mut harness, "y", "Alice");
+        let race = [10_000, 20_000, 30_000];
+        let commands = harness.step(round_end(vec![
+            finish_at("x", &race),
+            finish_at("y", &race),
+            finish("z", 29_000),
+        ]));
+        // Alice comes before bob, whatever the case.
+        assert_eq!(chat(&commands), ["$f90$i$<bob$> takes 3rd place!"]);
+    }
+
+    #[test]
+    fn players_who_got_equally_far_go_by_their_checkpoints() {
+        let mut harness = playing("", &["a", "b", "c", "d"]);
+        // a and b give up after the second checkpoint, b got there first.
+        let commands = harness.step(round_end(vec![
+            finish("c", 30_000),
+            finish("d", 31_000),
+            dnf_at("a", &[10_000, 21_000]),
+            dnf_at("b", &[10_500, 20_000]),
+        ]));
+        assert_eq!(
+            chat(&commands),
+            [
+                "$f90$i$<b$> takes 3rd place!",
+                "$f90$i$<a$> takes 4th place!"
+            ]
+        );
+    }
+
+    #[test]
+    fn nobody_shares_a_position() {
+        let mut harness = playing(r#"{"lives": 3}"#, &["a", "b", "c"]);
+        // a and b finish in the same time and keep their lives, b with the better
+        // checkpoints.
+        harness.step(round_end(vec![
+            finish_at("a", &[10_000, 20_500, 30_000]),
+            finish_at("b", &[10_100, 20_400, 30_000]),
+            finish("c", 31_000),
+        ]));
+        let positions: Vec<(&str, u32)> = harness
+            .standings
+            .entries
+            .iter()
+            .map(|p| (p.account_id.as_str(), p.position))
+            .collect();
+        assert_eq!(positions, [("b", 1), ("a", 2), ("c", 3)]);
+    }
+
+    #[test]
+    fn the_round_keeps_the_order_of_the_race() {
+        let mut harness = playing(r#"{"lives": 2}"#, &["a", "b", "c", "d", "e"]);
+        // Five players, two lose a life per round.
+        harness.step(round_end(finishers(&["a", "b", "c", "d", "e"])));
+        // c and d finish in the same time, d with the better checkpoints. Both lose a
+        // life, which eliminates d.
+        let commands = harness.step(round_end(vec![
+            finish("a", 30_000),
+            finish("b", 31_000),
+            finish("e", 32_000),
+            finish_at("c", &[11_000, 22_000, 33_000]),
+            finish_at("d", &[11_000, 21_000, 33_000]),
+        ]));
+        assert_eq!(chat(&commands), ["$f90$i$<d$> takes 5th place!"]);
+        // The round follows the race although c is still in the match.
+        let places: Vec<(&str, u32, i32)> = harness
+            .round
+            .iter()
+            .map(|p| (p.account_id.as_str(), p.position, p.score))
+            .collect();
+        assert_eq!(
+            places,
+            [
+                ("a", 1, 0),
+                ("b", 2, 0),
+                ("e", 3, 0),
+                ("d", 4, -1),
+                ("c", 5, -1)
+            ]
+        );
+        assert_eq!(
+            lives(&harness),
+            [("a", 2), ("b", 2), ("e", 1), ("c", 1), ("d", 0)]
+        );
+    }
+
+    #[test]
     fn players_start_with_their_lives() {
         let mut harness = started(r#"{"lives": 3}"#);
         assert_eq!(harness.standings.info, "Round 1, no loss of life");
@@ -1010,10 +1230,11 @@ mod tests {
             })
         };
         let mut harness = playing("", &["a", "b", "c"]);
-        // Nobody is eliminated, but starters still join.
+        // Nobody is eliminated, but starters still join, ranked from their next round.
         let commands = harness.step(forced(vec![finish("d", 31_000), dnf("a", 1)]));
         assert!(commands.is_empty());
         assert_eq!(harness.standings.in_match().count(), 4);
+        assert_eq!(harness.standing("d").position, 0);
         assert_eq!(harness.standings.rounds_on_map, 1);
         assert_eq!(harness.standings.info, "Round 2 / 4, 4 left, 1 K.O.");
     }

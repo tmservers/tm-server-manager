@@ -425,13 +425,19 @@ settings and rules:
   a race before the first round that takes lives ended take part. They show up in the standings
   from their first race on. Everyone else cannot spawn anymore from then on and shows up as
   `Spectator`.
+- The race orders the players without ties: finishers by time, then everyone else by the
+  checkpoints they passed and players who did not start last. Equal races go to the better race
+  time at the last checkpoint (`previous_checkpoints` of finishers, `progress_times` of everyone
+  else), then at the one before and so on. Races that are equal all the way go by name, the case
+  aside, then by account.
 - Eliminated players get `SetCanSpawn(false)`, a chat message and the last ranks of the players
-  left, in the order of the race: finishers by time, then everyone else by checkpoints and players
-  who did not start last. Players eliminated in the same round get different ranks like in the
-  originals.
+  left, in the order of the race. Players eliminated in the same round get different ranks like in
+  the originals.
 - Maps change after `rounds_per_map` rounds (no limit by default) until the match is over.
-- The points of a player are the lives they have left, a lost life is `-1` in the round. Players
-  in the match are `playing`, ranked by their lives and their last race. With one life they are
+- The points of a player are the lives they have left, a lost life is `-1` in the round. The round
+  is placed in the order of the race. Players in the match are `playing`, ranked by their lives and
+  then the order of their last race, so nobody shares a position. Players who joined since the last
+  round have no position yet and follow by name. With one life players in the match are
   labeled with the time of their last race like in the scores table of the original, with more
   lives with hearts for their lives (text above 5 lives) like in the multi lives script, the last
   life with a negative tone. Eliminated players are labeled `K.O.`, the last player `Winner`.

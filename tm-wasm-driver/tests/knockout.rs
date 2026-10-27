@@ -52,6 +52,17 @@ fn round_with_a_give_up(round: u32, seq: u32) -> Vec<Event> {
     ]
 }
 
+/// A player passed a checkpoint with these race times at it and at every
+/// checkpoint before it, like the server sends them.
+fn way_point_at(account_id: &str, checkpoints: &[u32]) -> Event {
+    let Event::WayPoint(mut way_point) = way_point(account_id, checkpoints.len() as u32 - 1) else {
+        unreachable!()
+    };
+    way_point.racetime = checkpoints[checkpoints.len() - 1];
+    way_point.current_race_checkpoints = checkpoints.to_vec();
+    Event::WayPoint(way_point)
+}
+
 #[test]
 fn plays_a_match() {
     let mut driver = common::driver(KNOCKOUT, "");
@@ -231,6 +242,41 @@ fn players_lose_lives_before_they_are_eliminated() {
             DriverCommand::ChatMessage("$<a$> wins the match!".into()),
             DriverCommand::EndMatch,
             DriverCommand::Continue(4)
+        ]
+    );
+}
+
+#[test]
+fn players_who_got_equally_far_go_by_their_checkpoint_times() {
+    let mut driver = common::driver(KNOCKOUT, "");
+    driver.handle(&match_start()).unwrap();
+    driver.handle(&hold(1, DriverSection::MapStart)).unwrap();
+    play(&mut driver, &round(1, 2, &["a", "b", "c"]));
+
+    // b and c give up after the second checkpoint, c got there first.
+    let reply = play(
+        &mut driver,
+        &[
+            round_start(2),
+            start_line("a"),
+            start_line("b"),
+            start_line("c"),
+            way_point_at("b", &[10_000, 21_000]),
+            way_point_at("c", &[10_500, 20_000]),
+            finish("a", 2, 30_000),
+            hold(3, DriverSection::RoundEnd),
+        ],
+    );
+    assert_eq!(
+        without_published(&reply.commands),
+        [
+            DriverCommand::ChatMessage("$f90$i$<c$> takes 2nd place!".into()),
+            cannot_spawn("c"),
+            DriverCommand::ChatMessage("$f90$i$<b$> takes 3rd place!".into()),
+            cannot_spawn("b"),
+            DriverCommand::ChatMessage("$<a$> wins the match!".into()),
+            DriverCommand::EndMatch,
+            DriverCommand::Continue(3)
         ]
     );
 }
