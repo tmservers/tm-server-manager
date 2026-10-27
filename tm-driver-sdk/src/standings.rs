@@ -1,9 +1,6 @@
 //! Helpers for the standings every mode shares.
 
-use std::{
-    cmp::{Ordering, Reverse},
-    collections::BTreeMap,
-};
+use std::{cmp::Ordering, collections::BTreeMap};
 
 use crate::{
     CanSpawn, Command, CountedRace, Entry, Label, RaceResult, Standings, Status, Tone, race_order,
@@ -72,6 +69,19 @@ impl Standings {
     /// follow and keep the position the mode gave them when they were eliminated.
     /// Spectators come last without a position. Nobody shares a position.
     pub fn rank(&mut self, results: &[RaceResult], counted: CountedRace) {
+        self.rank_with(results, counted, |_, _| Ordering::Equal);
+    }
+
+    /// Ranks like [`Standings::rank`], but players with the same points go by the
+    /// tie break of the mode first, e.g. by the rounds they won. The entries still
+    /// have their positions from the last ranking. Only the ties `tie_break` leaves
+    /// go by the race of the round.
+    pub fn rank_with(
+        &mut self,
+        results: &[RaceResult],
+        counted: CountedRace,
+        tie_break: impl Fn(&Entry, &Entry) -> Ordering,
+    ) {
         let order = race_order(
             self.in_match().map(|p| p.account_id.as_str()),
             results,
@@ -87,8 +97,11 @@ impl Standings {
             group(a.status)
                 .cmp(&group(b.status))
                 .then_with(|| match a.status {
-                    Status::Playing => (Reverse(a.score), race.get(&a.account_id))
-                        .cmp(&(Reverse(b.score), race.get(&b.account_id))),
+                    Status::Playing => b
+                        .score
+                        .cmp(&a.score)
+                        .then_with(|| tie_break(a, b))
+                        .then_with(|| race.get(&a.account_id).cmp(&race.get(&b.account_id))),
                     Status::Eliminated => a.position.cmp(&b.position),
                     // Stable, so spectators keep their order.
                     Status::Spectator => Ordering::Equal,
@@ -327,6 +340,38 @@ mod tests {
                 ("eliminated", 6),
                 ("eliminated_last", 7),
                 ("spectator", 0),
+            ]
+        );
+    }
+
+    #[test]
+    fn modes_break_ties_of_points_their_own_way() {
+        let mut standings = standings(&[
+            ("ahead", Status::Playing, 10, 2),
+            ("first", Status::Playing, 10, 1),
+            ("new", Status::Playing, 10, 0),
+            ("newer", Status::Playing, 10, 0),
+            ("behind", Status::Playing, 5, 3),
+        ]);
+        let results = [
+            race("newer", Some(28_000), Some(28_000), 1),
+            race("new", Some(29_000), Some(29_000), 1),
+            race("ahead", Some(30_000), Some(30_000), 1),
+            race("first", Some(31_000), Some(31_000), 1),
+        ];
+        // Players with the same points keep their order, the race only tells the
+        // newcomers apart.
+        standings.rank_with(&results, CountedRace::Last, |a, b| {
+            (a.position == 0, a.position).cmp(&(b.position == 0, b.position))
+        });
+        assert_eq!(
+            positions(&standings),
+            [
+                ("first", 1),
+                ("ahead", 2),
+                ("newer", 3),
+                ("new", 4),
+                ("behind", 5)
             ]
         );
     }

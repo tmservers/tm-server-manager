@@ -188,6 +188,9 @@ then by account.
 - `Standings::rank` ranks the players in the match by points and players with the same points by
   that order, so nobody shares a position. Eliminated players keep the positions the mode gave
   them, which differ as well.
+- A mode can break ties of points its own way first with `Standings::rank_with`, e.g. by the
+  rounds a player won. The race of the round only decides the ties it leaves. The modes so far
+  use none.
 - Players who joined since the last round have no position yet (0, shown as `-`) and follow the
   ranked players by name (`Standings::list_newcomers`).
 - No match is played on because of a tie: leaders with the same points at the points limit or
@@ -509,7 +512,7 @@ import host;  // log, find-user, map-count
 
 - `tm-driver-sdk`: wit-bindgen bindings, the `Mode` trait (a mode names its `Settings` type and
   the SDK parses the json of the config into it, empty settings are `{}`), `export_mode!`, helpers on the
-  standings (`join`, `award`, `round_entry`, `rank`, `list_newcomers`, `place_round`,
+  standings (`join`, `award`, `round_entry`, `rank`, `rank_with`, `list_newcomers`, `place_round`,
   `crown_leaders`, `in_match`, `block_others`), `race_order` with `CountedRace` for the order of a
   round without ties, the host functions (`user`, `name`, `map_count`), `ordinal` for chat
   messages and shared `settings`. Mode
