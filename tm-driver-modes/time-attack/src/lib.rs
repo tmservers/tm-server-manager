@@ -5,10 +5,14 @@
 //! every map is turned into points so the standings can add up several maps.
 //! By default the best of N finishers gets N points, the second N - 1 and so
 //! on, which keeps the order of the times.
+//!
+//! Nobody ties: equal best times go to the better times at the checkpoints of
+//! those races and finally to the name, players with the same points by their
+//! race on the last map.
 
 use serde::Deserialize;
 use tm_driver_sdk::{
-    Command, Event, Mode, RaceResult, RoundEnd, RoundFormat, Standings,
+    Command, CountedRace, Event, Mode, RoundEnd, RoundFormat, Standings,
     settings::{WarmUpSetting, maps_per_match},
 };
 
@@ -82,7 +86,7 @@ impl Mode for TimeAttack {
             // Everyone who races shows up in the standings before the first round ends.
             Event::RaceStart(account_id) => {
                 standings.join(&account_id);
-                standings.rank();
+                standings.list_newcomers();
                 Vec::new()
             }
             Event::MatchStart | Event::RoundStart | Event::MatchEnd => Vec::new(),
@@ -102,21 +106,22 @@ impl TimeAttack {
             standings.join(&result.account_id);
         }
 
-        let mut finishers: Vec<&RaceResult> = round_end
-            .results
-            .iter()
-            .filter(|r| r.best_time.is_some())
-            .collect();
-        // Stable so equal times keep the order of the scores.
-        finishers.sort_by_key(|r| r.best_time);
-        let finisher_count = finishers.len();
-        for (rank, finisher) in finishers.into_iter().enumerate() {
-            standings.award(&finisher.account_id, self.points_for(rank, finisher_count));
+        let finishers = tm_driver_sdk::race_order(
+            round_end
+                .results
+                .iter()
+                .filter(|r| r.best_time.is_some())
+                .map(|r| r.account_id.as_str()),
+            &round_end.results,
+            CountedRace::Best,
+        );
+        for (rank, account_id) in finishers.iter().enumerate() {
+            standings.award(account_id, self.points_for(rank, finishers.len()));
         }
 
         standings.rounds_on_map += 1;
-        standings.rank();
-        standings.place_round(&round_end.results, |r| r.best_time);
+        standings.rank(&round_end.results, CountedRace::Best);
+        standings.place_round(&round_end.results, CountedRace::Best);
         standings.info = self.info(standings);
         // Every map is a single time attack round.
         vec![Command::EndMap]
@@ -145,7 +150,7 @@ impl TimeAttack {
 
 #[cfg(test)]
 mod tests {
-    use tm_driver_sdk::{Label, WarmUp, testing::Harness};
+    use tm_driver_sdk::{Label, RaceResult, WarmUp, testing::Harness};
 
     use super::*;
 
@@ -250,8 +255,25 @@ mod tests {
         ]));
         assert_eq!(
             map_points(&harness),
-            [("a", 1, 10), ("b", 2, 5), ("c", 2, 5)]
+            [("a", 1, 10), ("b", 2, 5), ("c", 3, 5)]
         );
+    }
+
+    #[test]
+    fn equal_best_times_go_to_the_better_checkpoints() {
+        let mut harness = started("");
+        // b passed the last checkpoint of the best race earlier.
+        harness.step(round_end(vec![
+            RaceResult {
+                best_checkpoints: vec![20_500, 40_000],
+                ..finish("a", 40_000)
+            },
+            RaceResult {
+                best_checkpoints: vec![20_400, 40_000],
+                ..finish("b", 40_000)
+            },
+        ]));
+        assert_eq!(map_points(&harness), [("b", 1, 2), ("a", 2, 1)]);
     }
 
     #[test]
@@ -281,10 +303,12 @@ mod tests {
             Some((1, 2))
         );
 
-        // Tied leaders both win.
+        // Tied on points, b won the last map.
         assert_eq!(harness.step(Event::MapEnd), [Command::EndMatch]);
-        assert_eq!(harness.standing("a").label, Some(Label::winner()));
+        assert_eq!(harness.standing("b").position, 1);
         assert_eq!(harness.standing("b").label, Some(Label::winner()));
+        assert_eq!(harness.standing("a").position, 2);
+        assert_eq!(harness.standing("a").label, None);
     }
 
     #[test]

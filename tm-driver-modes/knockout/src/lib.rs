@@ -18,12 +18,10 @@
 //! the rank they were eliminated with. Nobody shares a rank: equal races go to the
 //! better times at the checkpoints and finally to the name.
 
-use std::cmp::{Ordering, Reverse};
-
 use serde::Deserialize;
 use tm_driver_sdk::{
-    CanSpawn, Command, Event, Label, Mode, RaceResult, RoundEnd, RoundFormat, Standings, Status,
-    Tone,
+    CanSpawn, Command, CountedRace, Event, Label, Mode, RaceResult, RoundEnd, RoundFormat,
+    Standings, Status, Tone,
     settings::{FinishTimeoutSetting, WarmUpSetting},
 };
 
@@ -128,7 +126,7 @@ impl Knockout {
             Event::RaceStart(account_id) => {
                 if self.registration_open(standings) && standings.player(&account_id).is_none() {
                     standings.join(&account_id).score = self.settings.lives;
-                    list_newcomers(standings);
+                    standings.list_newcomers();
                 }
                 Vec::new()
             }
@@ -187,29 +185,16 @@ impl Knockout {
             self.register(standings, &round_end.results);
         }
         if round_end.forced || standings.participants().next().is_none() {
-            list_newcomers(standings);
+            standings.list_newcomers();
             return self.block_late_players(standings, &round_end.results);
         }
 
-        let order = race_order(standings, &round_end.results);
-        let mut commands = self.take_lives(standings, round, &order);
+        let mut commands = self.take_lives(standings, round, &round_end.results);
         standings.rounds_on_map += 1;
         commands.extend(self.block_late_players(standings, &round_end.results));
-
-        // Nobody shares a place in the round or a position in the match. The round
-        // keeps the ties of the standings, so they follow the race first. The match
-        // ranks by the lives, then by the race.
-        let in_race = |account_id: &str| {
-            order
-                .iter()
-                .position(|(raced, _)| raced == account_id)
-                .unwrap_or(order.len())
-        };
-        standings
-            .entries
-            .sort_by_key(|player| in_race(&player.account_id));
-        standings.place_round(&round_end.results, |r| r.previous_time);
-        standings.rank_by(|player| (Reverse(player.score), in_race(&player.account_id)));
+        // The points are the lives.
+        standings.rank(&round_end.results, CountedRace::Last);
+        standings.place_round(&round_end.results, CountedRace::Last);
 
         if self.match_over(standings) {
             commands.extend(winner_message(standings).map(Command::ChatMessage));
@@ -230,9 +215,23 @@ impl Knockout {
         &self,
         standings: &mut Standings,
         round: u32,
-        order: &[(String, Option<u32>)],
+        results: &[RaceResult],
     ) -> Vec<Command> {
-        let without_finish = order.iter().filter(|(_, time)| time.is_none()).count();
+        let order = tm_driver_sdk::race_order(
+            standings.in_match().map(|p| p.account_id.as_str()),
+            results,
+            CountedRace::Last,
+        );
+        let time = |account_id: &str| {
+            results
+                .iter()
+                .find(|r| r.account_id == account_id && r.started)
+                .and_then(|r| r.previous_time)
+        };
+        let without_finish = order
+            .iter()
+            .filter(|account_id| time(account_id).is_none())
+            .count();
         let losses = match self.losses(standings, round) {
             0 => 0,
             // Everyone without a finish loses a life, the slowest finishers fill up
@@ -247,18 +246,18 @@ impl Knockout {
         let mut first_loser = order.len() - losses;
         // Rather than everyone being out, the player who got the furthest keeps
         // their last life and wins, even without a finish.
-        if first_loser == 0 && order.iter().all(|(account_id, _)| last_life(account_id)) {
+        if first_loser == 0 && order.iter().all(|account_id| last_life(account_id)) {
             first_loser = 1;
         }
         let eliminated = order
             .iter()
             .skip(first_loser)
-            .filter(|(account_id, _)| last_life(account_id))
+            .filter(|account_id| last_life(account_id))
             .count();
         let mut position = (order.len() - eliminated) as u32;
 
         let mut commands = Vec::new();
-        for (index, (account_id, time)) in order.iter().enumerate() {
+        for (index, account_id) in order.iter().enumerate() {
             let loses_life = index >= first_loser;
             if loses_life {
                 // The round shows who lost a life.
@@ -267,7 +266,7 @@ impl Knockout {
             let player = standings
                 .player_mut(account_id)
                 .expect("Only players in the match raced");
-            player.time = *time;
+            player.time = time(account_id);
             if !loses_life {
                 continue;
             }
@@ -407,79 +406,6 @@ impl Knockout {
             format!("{rounds}, {left} left, {losses}")
         }
     }
-}
-
-/// Players who joined since the last round have no position until a round counts
-/// for them. They follow the players in the match by name.
-fn list_newcomers(standings: &mut Standings) {
-    standings.entries.sort_by_cached_key(|player| {
-        let newcomer = player.is_in_match() && player.position == 0;
-        (
-            !player.is_in_match(),
-            newcomer.then(|| by_name(&player.account_id)),
-        )
-    });
-}
-
-/// The players in the match by their race with its time, the best first and
-/// without ties: see [`compare_races`], races that are equal all the way go by
-/// name.
-fn race_order(standings: &Standings, results: &[RaceResult]) -> Vec<(String, Option<u32>)> {
-    let mut order: Vec<(&str, Option<&RaceResult>, (String, String))> = standings
-        .in_match()
-        .map(|player| {
-            let race = results
-                .iter()
-                .find(|r| r.account_id == player.account_id && r.started);
-            (
-                player.account_id.as_str(),
-                race,
-                by_name(&player.account_id),
-            )
-        })
-        .collect();
-    order.sort_by(|(_, a, a_name), (_, b, b_name)| {
-        compare_races(*a, *b).then_with(|| a_name.cmp(b_name))
-    });
-    order
-        .into_iter()
-        .map(|(account_id, race, _)| (account_id.to_string(), race.and_then(|r| r.previous_time)))
-        .collect()
-}
-
-/// Races of a round, the better first: finishers by time, then everyone else by
-/// the checkpoints they passed and the players who did not start last. Equal races
-/// go to the better time at the last checkpoint, then at the one before and so on.
-fn compare_races(a: Option<&RaceResult>, b: Option<&RaceResult>) -> Ordering {
-    let key = |race: Option<&RaceResult>| {
-        let time = race.and_then(|r| r.previous_time);
-        (time.is_none(), time, Reverse(race.map(|r| r.progress)))
-    };
-    key(a).cmp(&key(b)).then_with(|| {
-        checkpoint_times(a)
-            .iter()
-            .rev()
-            .cmp(checkpoint_times(b).iter().rev())
-    })
-}
-
-/// The race times at the checkpoints of the race that counted, or at the
-/// checkpoints a player without a finish passed.
-fn checkpoint_times(race: Option<&RaceResult>) -> &[u32] {
-    match race {
-        Some(race) if race.previous_time.is_some() => &race.previous_checkpoints,
-        Some(race) => &race.progress_times,
-        None => &[],
-    }
-}
-
-/// Orders players by name, the case aside, and players with the same name by their
-/// account, so nobody ties.
-fn by_name(account_id: &str) -> (String, String) {
-    (
-        tm_driver_sdk::name(account_id).to_lowercase(),
-        account_id.to_string(),
-    )
 }
 
 /// The last player in the match wins.

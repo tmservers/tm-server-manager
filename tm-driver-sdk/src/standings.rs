@@ -1,8 +1,14 @@
 //! Helpers for the standings every mode shares.
 
-use std::cmp::{Ordering, Reverse};
+use std::{
+    cmp::{Ordering, Reverse},
+    collections::BTreeMap,
+};
 
-use crate::{CanSpawn, Command, Entry, Label, RaceResult, Standings, Status, Tone};
+use crate::{
+    CanSpawn, Command, CountedRace, Entry, Label, RaceResult, Standings, Status, Tone, race_order,
+    races::by_name,
+};
 
 impl Default for Standings {
     /// Standings without players, like the host hands them over when a match starts.
@@ -60,53 +66,59 @@ impl Standings {
         round.score = round.score.saturating_add(points);
     }
 
-    /// Ranks the players the usual way and orders them by position: the players
-    /// still in the match by points, players with the same points share a position.
-    /// Eliminated players follow and keep the position the mode gave them when they
-    /// were eliminated. Spectators come last without a position.
-    pub fn rank(&mut self) {
-        self.rank_by(|player| Reverse(player.score));
-    }
+    /// Ranks the players the usual way at the end of a round and orders them by
+    /// position: the players still in the match by points, players with the same
+    /// points by their race in the round (see [`race_order`]). Eliminated players
+    /// follow and keep the position the mode gave them when they were eliminated.
+    /// Spectators come last without a position. Nobody shares a position.
+    pub fn rank(&mut self, results: &[RaceResult], counted: CountedRace) {
+        let order = race_order(
+            self.in_match().map(|p| p.account_id.as_str()),
+            results,
+            counted,
+        );
+        let race: BTreeMap<String, usize> = order
+            .into_iter()
+            .enumerate()
+            .map(|(index, account_id)| (account_id, index))
+            .collect();
 
-    /// Ranks like [`Standings::rank`], but the players still in the match by a key
-    /// instead of their points, the lowest first, e.g. by the time of their last
-    /// race. Players with the same key share a position.
-    pub fn rank_by<K: Ord>(&mut self, key: impl Fn(&Entry) -> K) {
-        fn group(status: Status) -> u8 {
-            match status {
-                Status::Playing => 0,
-                Status::Eliminated => 1,
-                Status::Spectator => 2,
-            }
-        }
-
-        // Stable so ties keep their order.
         self.entries.sort_by(|a, b| {
             group(a.status)
                 .cmp(&group(b.status))
                 .then_with(|| match a.status {
-                    Status::Playing => key(a).cmp(&key(b)),
+                    Status::Playing => (Reverse(a.score), race.get(&a.account_id))
+                        .cmp(&(Reverse(b.score), race.get(&b.account_id))),
                     Status::Eliminated => a.position.cmp(&b.position),
+                    // Stable, so spectators keep their order.
                     Status::Spectator => Ordering::Equal,
                 })
         });
 
-        let mut previous = None;
         let mut position = 0;
-        for (index, player) in self.entries.iter_mut().enumerate() {
+        for player in &mut self.entries {
             match player.status {
                 Status::Playing => {
-                    let key = key(player);
-                    if previous.as_ref() != Some(&key) {
-                        previous = Some(key);
-                        position = index as u32 + 1;
-                    }
+                    position += 1;
                     player.position = position;
                 }
                 Status::Eliminated => {}
                 Status::Spectator => player.position = 0,
             }
         }
+    }
+
+    /// Lists the players who joined since the last ranking, e.g. with their first
+    /// race, after the players in the match who have a position, by name. They get
+    /// a position with the next ranking.
+    pub fn list_newcomers(&mut self) {
+        self.entries.sort_by_cached_key(|player| {
+            let newcomer = player.is_in_match() && player.position == 0;
+            (
+                group(player.status),
+                newcomer.then(|| by_name(&player.account_id)),
+            )
+        });
     }
 
     /// Keeps everyone in the results who does not take part from spawning and shows
@@ -131,62 +143,66 @@ impl Standings {
         commands
     }
 
-    /// Every player ranked first wins the match.
+    /// The player ranked first wins the match.
     pub fn crown_leaders(&mut self) {
         for player in self.entries.iter_mut().filter(|p| p.position == 1) {
             player.label = Some(Label::winner());
         }
     }
 
-    /// Places the participants who raced or got points in the round that ends:
-    /// finishers by `time`, then everyone else by the checkpoints they passed.
-    /// `time` is the race that counts, e.g. the last one in single attempt rounds or
-    /// the best one in time attack rounds. The round entries get that time and the
-    /// status of the player in the match.
+    /// Places the participants who raced or got points in the round that ends by
+    /// their race (see [`race_order`]), so nobody shares a place. The round entries
+    /// get the time of the race that counts and the status of the player in the
+    /// match.
     ///
-    /// Call it at the round end once the points are awarded and the players are
-    /// ranked, ties keep the order of the standings.
-    pub fn place_round(
-        &mut self,
-        results: &[RaceResult],
-        time: impl Fn(&RaceResult) -> Option<u32>,
-    ) {
-        let mut placed: Vec<(Entry, u32)> = self
+    /// Call it at the round end once the points are awarded.
+    pub fn place_round(&mut self, results: &[RaceResult], counted: CountedRace) {
+        let placed: Vec<&str> = self
             .participants()
-            .filter_map(|player| {
-                let race = results.iter().find(|r| r.account_id == player.account_id);
-                let raced = race.is_some_and(|r| r.started);
-                let score = self
-                    .round
+            .filter(|player| {
+                let raced = results
                     .iter()
-                    .find(|r| r.account_id == player.account_id)
-                    .map_or(0, |r| r.score);
-                (score != 0 || raced).then(|| {
-                    let entry = Entry {
-                        account_id: player.account_id.clone(),
-                        position: 0,
-                        score,
-                        time: race.and_then(&time),
-                        status: player.status,
-                        label: None,
-                    };
-                    (entry, race.map_or(0, |r| r.progress))
-                })
+                    .any(|r| r.account_id == player.account_id && r.started);
+                raced || self.round_score(&player.account_id) != 0
             })
+            .map(|player| player.account_id.as_str())
             .collect();
-        // Stable so ties keep the order of the standings.
-        placed.sort_by_key(|(entry, progress)| {
-            (entry.time.is_none(), entry.time, Reverse(*progress))
-        });
+        let order = race_order(placed, results, counted);
 
-        self.round = placed
+        self.round = order
             .into_iter()
             .enumerate()
-            .map(|(index, (entry, _))| Entry {
-                position: index as u32 + 1,
-                ..entry
+            .map(|(index, account_id)| {
+                let race = results.iter().find(|r| r.account_id == account_id);
+                Entry {
+                    position: index as u32 + 1,
+                    score: self.round_score(&account_id),
+                    time: race.and_then(|r| counted.time(r)),
+                    status: self
+                        .player(&account_id)
+                        .map_or(Status::Playing, |p| p.status),
+                    label: None,
+                    account_id,
+                }
             })
             .collect();
+    }
+
+    /// The points of a player in the round that ends.
+    fn round_score(&self, account_id: &str) -> i32 {
+        self.round
+            .iter()
+            .find(|r| r.account_id == account_id)
+            .map_or(0, |r| r.score)
+    }
+}
+
+/// Players in the match first, then the eliminated ones and spectators last.
+fn group(status: Status) -> u8 {
+    match status {
+        Status::Playing => 0,
+        Status::Eliminated => 1,
+        Status::Spectator => 2,
     }
 }
 
@@ -280,25 +296,34 @@ mod tests {
     }
 
     #[test]
-    fn ranks_by_status_and_points() {
+    fn ranks_by_status_points_and_race() {
         let mut standings = standings(&[
             ("spectator", Status::Spectator, 0, 3),
             ("eliminated_last", Status::Eliminated, 0, 7),
             ("no_points", Status::Playing, 0, 0),
             ("third", Status::Playing, 10, 0),
             ("eliminated", Status::Eliminated, 0, 6),
-            ("tied_first", Status::Playing, 20, 0),
-            ("tied_second", Status::Playing, 20, 0),
+            ("slower", Status::Playing, 20, 0),
+            ("faster", Status::Playing, 20, 0),
+            ("absent", Status::Playing, 0, 0),
         ]);
-        standings.rank();
+        let results = [
+            race("slower", Some(31_000), Some(31_000), 1),
+            race("no_points", None, None, 0),
+            race("faster", Some(30_000), Some(30_000), 1),
+        ];
+        standings.rank(&results, CountedRace::Last);
 
+        // Players with the same points go by the race of the round, so nobody shares
+        // a position.
         assert_eq!(
             positions(&standings),
             [
-                ("tied_first", 1),
-                ("tied_second", 1),
+                ("faster", 1),
+                ("slower", 2),
                 ("third", 3),
                 ("no_points", 4),
+                ("absent", 5),
                 ("eliminated", 6),
                 ("eliminated_last", 7),
                 ("spectator", 0),
@@ -307,28 +332,17 @@ mod tests {
     }
 
     #[test]
-    fn ranks_by_a_key() {
+    fn newcomers_follow_by_name() {
         let mut standings = standings(&[
-            ("eliminated", Status::Eliminated, 0, 5),
-            ("no_time", Status::Playing, 0, 0),
-            ("slow", Status::Playing, 0, 0),
-            ("fast", Status::Playing, 0, 0),
-            ("tied", Status::Playing, 0, 0),
+            ("ranked", Status::Playing, 0, 1),
+            ("out", Status::Eliminated, 0, 2),
         ]);
-        for (account_id, time) in [("slow", 31_000), ("fast", 30_000), ("tied", 30_000)] {
-            standings.player_mut(account_id).unwrap().time = Some(time);
-        }
-        standings.rank_by(|p| (p.time.is_none(), p.time));
-
+        standings.join("zed");
+        standings.join("amy");
+        standings.list_newcomers();
         assert_eq!(
             positions(&standings),
-            [
-                ("fast", 1),
-                ("tied", 1),
-                ("slow", 3),
-                ("no_time", 4),
-                ("eliminated", 5),
-            ]
+            [("ranked", 1), ("amy", 0), ("zed", 0), ("out", 2)]
         );
     }
 
@@ -381,17 +395,28 @@ mod tests {
     }
 
     #[test]
-    fn leaders_win() {
+    fn the_leader_wins() {
         let mut standings = standings(&[
             ("a", Status::Playing, 10, 0),
             ("b", Status::Playing, 10, 0),
             ("c", Status::Playing, 5, 0),
         ]);
-        standings.rank();
+        // Tied on points, b drove the better race.
+        let results = [
+            race("a", Some(31_000), Some(31_000), 1),
+            race("b", Some(30_000), Some(30_000), 1),
+        ];
+        standings.rank(&results, CountedRace::Last);
         standings.crown_leaders();
-        let labels: Vec<Option<Label>> =
-            standings.entries.iter().map(|p| p.label.clone()).collect();
-        assert_eq!(labels, [Some(Label::winner()), Some(Label::winner()), None]);
+        let labels: Vec<(&str, Option<Label>)> = standings
+            .entries
+            .iter()
+            .map(|p| (p.account_id.as_str(), p.label.clone()))
+            .collect();
+        assert_eq!(
+            labels,
+            [("b", Some(Label::winner())), ("a", None), ("c", None)]
+        );
     }
 
     #[test]
@@ -422,7 +447,7 @@ mod tests {
             race("spectator", Some(28_000), Some(28_000), 3),
         ];
 
-        standings.place_round(&results, |r| r.previous_time);
+        standings.place_round(&results, CountedRace::Last);
         assert_eq!(
             places(&standings),
             [
@@ -446,9 +471,9 @@ mod tests {
             race("b", Some(45_000), Some(41_000), 3),
         ];
 
-        standings.place_round(&results, |r| r.best_time);
+        standings.place_round(&results, CountedRace::Best);
         assert_eq!(places(&standings), [("b", 1, 0), ("a", 2, 0)]);
-        standings.place_round(&results, |r| r.previous_time);
+        standings.place_round(&results, CountedRace::Last);
         assert_eq!(places(&standings), [("a", 1, 0), ("b", 2, 0)]);
     }
 }

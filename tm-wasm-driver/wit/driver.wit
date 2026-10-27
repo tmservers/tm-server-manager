@@ -98,8 +98,9 @@ interface types {
     /// A player in the standings of the match or of a round.
     record entry {
         account-id: string,
-        /// Rank in the match or place in the round, from 1. Players with the same
-        /// position are tied. 0 until the mode sets it.
+        /// Rank in the match or place in the round, from 1. The modes give every
+        /// player their own position. 0 until the mode sets it, e.g. for players who
+        /// just joined.
         position: u32,
         /// Points of the match or of the round.
         score: s32,

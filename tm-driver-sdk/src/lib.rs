@@ -37,6 +37,7 @@ pub mod bindings {
     });
 }
 
+mod races;
 pub mod settings;
 mod standings;
 pub mod testing;
@@ -46,6 +47,7 @@ pub use bindings::tmservers::driver::types::{
     CanSpawn, Command, Decision, Entry, Event, FinishTimeout, Label, Layer, RaceResult, RoundEnd,
     RoundFormat, Standings, Status, Tone, User, WarmUp,
 };
+pub use races::{CountedRace, race_order};
 
 /// A game mode. One instance lives for the whole match.
 pub trait Mode: Sized + 'static {

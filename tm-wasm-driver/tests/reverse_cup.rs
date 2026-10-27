@@ -191,11 +191,12 @@ fn standings_show_the_players_once_they_start() {
         DriverReply::default()
     );
 
+    // By name, without a position until the first round.
     assert_eq!(
         ranking(&driver),
         [
-            ("a".into(), 1, DriverStatus::Playing, String::new(), 10, 0),
-            ("b".into(), 1, DriverStatus::Playing, String::new(), 10, 0),
+            ("a".into(), 0, DriverStatus::Playing, String::new(), 10, 0),
+            ("b".into(), 0, DriverStatus::Playing, String::new(), 10, 0),
         ]
     );
     assert_eq!(driver.standings().info, "2 left, 0 / 5 rounds");

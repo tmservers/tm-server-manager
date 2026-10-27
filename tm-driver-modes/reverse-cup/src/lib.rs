@@ -14,17 +14,16 @@
 //!
 //! Participants, their points and statuses live in the standings the host keeps.
 //! Players with points are playing, players in last chance have 0 points and
-//! eliminated players keep the rank they were eliminated with.
+//! eliminated players keep the rank they were eliminated with. Nobody ties: equal
+//! races go to the better times at the checkpoints and finally to the name,
+//! players with the same points by their race in the last round.
 
-use std::{
-    cmp::Reverse,
-    collections::{BTreeMap, BTreeSet},
-};
+use std::collections::BTreeMap;
 
 use serde::Deserialize;
 use tm_driver_sdk::{
-    CanSpawn, Command, Entry, Event, Label, Mode, RaceResult, RoundEnd, RoundFormat, Standings,
-    Status, Tone,
+    CanSpawn, Command, CountedRace, Entry, Event, Label, Mode, RaceResult, RoundEnd, RoundFormat,
+    Standings, Status, Tone,
     settings::{FinishTimeoutSetting, WarmUpSetting},
 };
 
@@ -160,7 +159,7 @@ impl ReverseCup {
             Event::RaceStart(account_id) => {
                 if self.registration_open(standings) && standings.player(&account_id).is_none() {
                     standings.join(&account_id).score = self.settings.starting_points;
-                    standings.rank();
+                    standings.list_newcomers();
                     standings.info = self.info(standings);
                 }
                 Vec::new()
@@ -193,6 +192,7 @@ impl ReverseCup {
             || standings.participants().next().is_none()
             || self.match_over(standings)
         {
+            standings.list_newcomers();
             return self.block_late_players(standings, &round_end.results);
         }
         let mut commands = Vec::new();
@@ -204,8 +204,7 @@ impl ReverseCup {
             .min()
             .unwrap_or(0)
             .min(0);
-        let participants = standings.participants().count();
-        let eliminated_before = participants - standings.in_match().count();
+        let left = standings.in_match().count();
 
         let mut eliminated = Vec::new();
         for (account_id, loss) in &losses {
@@ -227,9 +226,11 @@ impl ReverseCup {
             }
         }
 
-        // Players eliminated in the same round share their position.
-        let position = (participants - eliminated_before - eliminated.len() + 1) as u32;
-        for account_id in eliminated {
+        // Players eliminated in the same round take the last positions of the players
+        // left, in the order of the race.
+        let first_position = left - eliminated.len();
+        for (index, account_id) in eliminated.into_iter().enumerate() {
+            let position = (first_position + index + 1) as u32;
             let player = standings
                 .player_mut(&account_id)
                 .expect("Only participants lose points");
@@ -258,8 +259,8 @@ impl ReverseCup {
                 "$c00Fast forward: every remaining player is now in Last Chance.".into(),
             ));
         }
-        standings.rank();
-        standings.place_round(&round_end.results, |r| r.previous_time);
+        standings.rank(&round_end.results, CountedRace::Last);
+        standings.place_round(&round_end.results, CountedRace::Last);
         standings.info = self.info(standings);
 
         if match_over {
@@ -300,73 +301,58 @@ impl ReverseCup {
         }
     }
 
-    /// Points lost by every player still in the match: finishers by time, then
-    /// everyone without a finish by checkpoints passed.
+    /// Points lost by every player still in the match in the order of the race:
+    /// finishers by their finish position, everyone without a finish the dnf points.
     fn losses(&self, standings: &Standings, results: &[RaceResult]) -> Vec<(String, i32)> {
-        let in_match = |account_id: &str| {
-            standings
-                .player(account_id)
-                .is_some_and(|p| p.is_in_match())
+        let order = tm_driver_sdk::race_order(
+            standings.in_match().map(|p| p.account_id.as_str()),
+            results,
+            CountedRace::Last,
+        );
+        // Players who did not start, for example because they left, have no race.
+        let race = |account_id: &str| {
+            results
+                .iter()
+                .find(|r| r.account_id == account_id && r.started)
         };
-        let mut finishers: Vec<&RaceResult> = results
+        let last_chance =
+            |account_id: &str| standings.player(account_id).is_some_and(in_last_chance);
+        let least_checkpoints = order
             .iter()
-            .filter(|r| r.previous_time.is_some() && in_match(&r.account_id))
-            .collect();
-        // Stable so equal times keep the order of the scores.
-        finishers.sort_by_key(|r| r.previous_time);
+            .filter(|account_id| last_chance(account_id))
+            .filter_map(|account_id| race(account_id))
+            .filter(|race| race.previous_time.is_none())
+            .map(|race| race.progress)
+            .min();
 
         let repartition = self.repartition(standings);
-        let mut losses: Vec<(String, i32)> = finishers
-            .iter()
-            .enumerate()
-            .map(|(rank, finisher)| {
-                let loss = repartition
-                    .get(rank)
-                    .or(repartition.last())
-                    .copied()
-                    .unwrap_or(0);
-                (finisher.account_id.clone(), -loss)
+        let mut finishers = 0;
+        order
+            .into_iter()
+            .map(|account_id| {
+                let loss = match race(&account_id) {
+                    Some(race) if race.previous_time.is_some() => {
+                        let loss = repartition
+                            .get(finishers)
+                            .or(repartition.last())
+                            .copied()
+                            .unwrap_or(0);
+                        finishers += 1;
+                        loss
+                    }
+                    race => match (self.settings.last_chance_dnf_mode, race) {
+                        (LastChanceDnfMode::OnlyLeastCheckpoints, Some(race))
+                            if last_chance(&account_id)
+                                && Some(race.progress) != least_checkpoints =>
+                        {
+                            0
+                        }
+                        _ => self.settings.dnf_points_loss,
+                    },
+                };
+                (account_id, -loss)
             })
-            .collect();
-
-        // Players who did not start, for example because they left, have no progress.
-        let finished: BTreeSet<&str> = finishers.iter().map(|r| r.account_id.as_str()).collect();
-        let progress: BTreeMap<&str, u32> = results
-            .iter()
-            .filter(|r| r.started)
-            .map(|r| (r.account_id.as_str(), r.progress))
-            .collect();
-        let mut dnfs: Vec<(&str, bool, Option<u32>)> = standings
-            .in_match()
-            .filter(|p| !finished.contains(p.account_id.as_str()))
-            .map(|p| {
-                let account_id = p.account_id.as_str();
-                (
-                    account_id,
-                    in_last_chance(p),
-                    progress.get(account_id).copied(),
-                )
-            })
-            .collect();
-        dnfs.sort_by_key(|&(account_id, _, progress)| (Reverse(progress), account_id));
-
-        let least_checkpoints = dnfs
-            .iter()
-            .filter(|&&(_, last_chance, _)| last_chance)
-            .filter_map(|&(_, _, progress)| progress)
-            .min();
-        for (account_id, last_chance, progress) in dnfs {
-            let loss = match (self.settings.last_chance_dnf_mode, last_chance, progress) {
-                (LastChanceDnfMode::OnlyLeastCheckpoints, true, Some(progress))
-                    if Some(progress) != least_checkpoints =>
-                {
-                    0
-                }
-                _ => -self.settings.dnf_points_loss,
-            };
-            losses.push((account_id.into(), loss));
-        }
-        losses
+            .collect()
     }
 
     /// Points lost by finish position with the players left in the match.
@@ -651,7 +637,8 @@ mod tests {
         assert!(harness.step(race_start("a")).is_empty());
         harness.step(race_start("b"));
         assert_eq!(status(&harness, "a"), (Status::Playing, 100));
-        assert_eq!(harness.standing("a").position, 1);
+        // Without a position until the first round.
+        assert_eq!(harness.standing("a").position, 0);
         assert_eq!(harness.standings.info, "2 left, 0 / 5 rounds");
 
         harness.step(round_end(vec![finish("a", 30_000), finish("b", 31_000)]));
@@ -723,6 +710,27 @@ mod tests {
             ]
         );
         assert_eq!(status(&harness, "d"), (Status::Playing, 30));
+    }
+
+    #[test]
+    fn equal_times_go_to_the_better_checkpoints() {
+        let mut harness = playing(
+            r#"{"points_repartition": [1, 2], "complex_points_repartition": {}}"#,
+            vec![alive("a", 50), alive("b", 50)],
+        );
+        // b passed the last checkpoint earlier and loses less.
+        harness.step(round_end(vec![
+            RaceResult {
+                previous_checkpoints: vec![10_000, 20_500, 30_000],
+                ..finish("a", 30_000)
+            },
+            RaceResult {
+                previous_checkpoints: vec![10_100, 20_400, 30_000],
+                ..finish("b", 30_000)
+            },
+        ]));
+        assert_eq!(round_points(&harness, &["a", "b"]), [("a", -2), ("b", -1)]);
+        assert_eq!(harness.standing("b").position, 1);
     }
 
     #[test]
@@ -831,8 +839,9 @@ mod tests {
         assert_eq!(status(&harness, "b"), IN_LAST_CHANCE);
         assert_eq!(status(&harness, "c"), (Status::Eliminated, 0));
         assert_eq!(status(&harness, "d"), (Status::Eliminated, 0));
+        // c raced, d did not.
         assert_eq!(harness.standing("c").position, 4);
-        assert_eq!(harness.standing("d").position, 4);
+        assert_eq!(harness.standing("d").position, 5);
         assert_eq!(status(&harness, "e"), (Status::Playing, 30));
     }
 
@@ -848,8 +857,9 @@ mod tests {
             dnf("c", 1),
         ]));
         assert_eq!(harness.standing("b").status, Status::Eliminated);
+        // b got further than c.
         assert_eq!(harness.standing("b").position, 2);
-        assert_eq!(harness.standing("c").position, 2);
+        assert_eq!(harness.standing("c").position, 3);
     }
 
     #[test]
@@ -877,8 +887,9 @@ mod tests {
             dnf("b", 2),
             dnf("c", 2),
         ]));
+        // Equal races go by name.
         assert_eq!(harness.standing("b").position, 2);
-        assert_eq!(harness.standing("c").position, 2);
+        assert_eq!(harness.standing("c").position, 3);
         assert_eq!(status(&harness, "a"), (Status::Playing, 48));
         assert_eq!(harness.standing("a").label, Some(Label::winner()));
         assert_eq!(harness.standing("a").position, 1);
@@ -886,7 +897,7 @@ mod tests {
             chat(&commands),
             [
                 "$f90$i$<b$> takes 2nd place!",
-                "$f90$i$<c$> takes 2nd place!",
+                "$f90$i$<c$> takes 3rd place!",
                 "$<a$> wins the match!",
             ]
         );

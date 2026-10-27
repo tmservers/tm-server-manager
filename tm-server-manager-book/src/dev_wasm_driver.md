@@ -127,7 +127,7 @@ same for the match and for a round:
 
 | Entry field | Meaning |
 |---|---|
-| `position` | Rank in the match or place in the round, ties share it. Set by the mode, usually with `Standings::rank()` and `Standings::place_round()`. |
+| `position` | Rank in the match or place in the round. Nobody shares it (see [No ties](#no-ties)), 0 while a player has none, e.g. right after joining. Set by the mode with `Standings::rank()` and `Standings::place_round()`. |
 | `score` | Points of the match or of the round. |
 | `time` | E.g. the race that counted in the round. |
 | `status` | Whether the player takes part and can still race: `playing`, `eliminated` (with a final position) or `spectator` (takes no part, no position). |
@@ -165,13 +165,33 @@ Who does what:
   so modes can simply repeat them. The host knows nothing about how a mode scores or ranks.
 - **Mode:** applies its rules and returns the standings: points, statuses, labels, positions,
   the round, counted rounds, `info`, and when maps and matches end. `Standings::award` adds points
-  to the match and the round, `Standings::place_round` places the round by the race (finishers by
-  the time that counts, then everyone else by checkpoints). `Mode::step` only gets `&self`, so a
-  mode keeps nothing besides its settings.
+  to the match and the round, `Standings::place_round` places the round by the race.
+  `Mode::step` only gets `&self`, so a mode keeps nothing besides its settings.
 
 Who wins and loses is told by the positions, never by special point values like the original
 ReverseCup's `-1000` for last chance. A state a mode needs beyond the status, e.g. last chance, has
 to follow from the standings, and the mode shows it with a label.
+
+### No ties
+
+Nobody ties in any mode. `race_order` of the SDK orders the races of a round: finishers by the
+time of the race that counts (`CountedRace::Last` in single attempt rounds, `CountedRace::Best` in
+time attack rounds), then everyone else by the checkpoints they passed in their last race, and
+players who did not start last. Equal races go to the better race time at the last checkpoint,
+then at the one before and so on (`previous_checkpoints` or `best_checkpoints` of finishers,
+`progress_times` of everyone else). Races that are equal all the way go by name, the case aside,
+then by account.
+
+- Points and losses of a round follow that order, so players with the same time get the points of
+  different places.
+- `Standings::place_round` places the round in that order.
+- `Standings::rank` ranks the players in the match by points and players with the same points by
+  that order, so nobody shares a position. Eliminated players keep the positions the mode gave
+  them, which differ as well.
+- Players who joined since the last round have no position yet (0, shown as `-`) and follow the
+  ranked players by name (`Standings::list_newcomers`).
+- Equal points only matter where a mode makes a rule of them: the tie break of the rounds mode
+  keeps playing while the leaders have the same points. Without it the last round decides.
 
 Modes become small functions of their settings, the standings and an event, which makes them
 easy to test. The manager and the manialinks read one format for every mode, and admin
@@ -364,7 +384,8 @@ the same trick `TM_RoundsThenTimeattack` from the community modes uses:
    and ends the map.
 
 Points exist so the standings and round results rank players like the other modes do. By
-default the best of N finishers gets N points, so the points keep the order of the times.
+default the best of N finishers gets N points, so the points keep the order of the times. Equal
+best times go by the checkpoints of those races (see [No ties](#no-ties)).
 
 ## ReverseCup
 
@@ -378,9 +399,10 @@ A port of the community `TM_ReverseCup` script with the same settings and rules:
   `points_repartition`). While more players are left than it has values, every eliminated player
   removes its first value (`fast_forward_points_repartition`). Giving up costs `dnf_points_loss`.
 - A player who runs out of points is in last chance (or eliminated with `disable_last_chance`).
-  A player in last chance is eliminated by losing the most points of the round, so several
-  players can share a rank. With `last_chance_dnf_mode: "only_least_checkpoints"` only the players
-  in last chance with the fewest checkpoints lose points for giving up.
+  A player in last chance is eliminated by losing the most points of the round. Players eliminated
+  in the same round get the last ranks of the players left in the order of the race. With
+  `last_chance_dnf_mode: "only_least_checkpoints"` only the players in last chance with the fewest
+  checkpoints lose points for giving up.
 - Eliminated players get `SetCanSpawn(false)` and a chat message. The match ends once
   `number_of_winners` players are left (a single participant plays until eliminated).
 - A round only counts for `rounds_per_map` if someone lost points. Maps change until the match
@@ -400,6 +422,8 @@ Differences to the original:
   right after the previous round, so the round is not started at all.
 - Participants who did not start in a round (for example because they left) always lose the dnf
   points. The checkpoints of `only_least_checkpoints` are counted over the race, not the lap.
+- Players eliminated in the same round share a rank in the original. Here their race decides, like
+  every other tie (see [No ties](#no-ties)).
 - Not ported: waiting for `S_NbOfPlayers`, the live ranking, dossard colors, the podium and big
   messages. Warmup is the modescript's.
 
@@ -425,11 +449,8 @@ settings and rules:
   a race before the first round that takes lives ended take part. They show up in the standings
   from their first race on. Everyone else cannot spawn anymore from then on and shows up as
   `Spectator`.
-- The race orders the players without ties: finishers by time, then everyone else by the
-  checkpoints they passed and players who did not start last. Equal races go to the better race
-  time at the last checkpoint (`previous_checkpoints` of finishers, `progress_times` of everyone
-  else), then at the one before and so on. Races that are equal all the way go by name, the case
-  aside, then by account.
+- The race orders the players without ties (see [No ties](#no-ties)), which decides who loses a
+  life.
 - Eliminated players get `SetCanSpawn(false)`, a chat message and the last ranks of the players
   left, in the order of the race. Players eliminated in the same round get different ranks like in
   the originals.
@@ -488,10 +509,10 @@ import host;  // log, find-user, map-count
 
 - `tm-driver-sdk`: wit-bindgen bindings, the `Mode` trait (a mode names its `Settings` type and
   the SDK parses the json of the config into it, empty settings are `{}`), `export_mode!`, helpers on the
-  standings (`join`, `award`, `round_entry`, `rank`, `rank_by`, `place_round`, `crown_leaders`,
-  `in_match`, `block_others`),
-  the host functions (`user`, `name`, `map_count`), `ordinal` for chat messages and shared
-  `settings`. Mode
+  standings (`join`, `award`, `round_entry`, `rank`, `list_newcomers`, `place_round`,
+  `crown_leaders`, `in_match`, `block_others`), `race_order` with `CountedRace` for the order of a
+  round without ties, the host functions (`user`, `name`, `map_count`), `ordinal` for chat
+  messages and shared `settings`. Mode
   logic compiles natively too. `testing::Harness` runs a mode with the lifecycle of the host, so
   modes are unit tested without wasm.
 - `tm-driver-modes/rounds`: Rounds (points repartition, rounds per map, maps per match, points

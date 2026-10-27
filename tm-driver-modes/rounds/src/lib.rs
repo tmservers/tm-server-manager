@@ -5,11 +5,13 @@
 //! number of maps or once a player reached the points limit.
 //!
 //! The points live in the standings the host keeps and hands over with every
-//! event. The mode only applies its rules to them.
+//! event. The mode only applies its rules to them. Nobody ties: equal races go to
+//! the better times at the checkpoints and finally to the name, players with the
+//! same points by their race in the last round.
 
 use serde::Deserialize;
 use tm_driver_sdk::{
-    Command, Event, Mode, RaceResult, RoundEnd, RoundFormat, Standings,
+    Command, CountedRace, Event, Mode, RoundEnd, RoundFormat, Standings,
     settings::{FinishTimeoutSetting, WarmUpSetting, maps_per_match},
 };
 
@@ -96,7 +98,7 @@ impl Mode for Rounds {
             // Everyone who races shows up in the standings before the first round ends.
             Event::RaceStart(account_id) => {
                 standings.join(&account_id);
-                standings.rank();
+                standings.list_newcomers();
                 Vec::new()
             }
             Event::MatchStart | Event::RoundStart | Event::MatchEnd => Vec::new(),
@@ -116,20 +118,22 @@ impl Rounds {
             standings.join(&result.account_id);
         }
 
-        let mut finishers: Vec<&RaceResult> = round_end
-            .results
-            .iter()
-            .filter(|r| r.previous_time.is_some())
-            .collect();
-        // Stable so equal times keep the order of the scores.
-        finishers.sort_by_key(|r| r.previous_time);
-        for (rank, finisher) in finishers.into_iter().enumerate() {
-            standings.award(&finisher.account_id, self.points_for(rank));
+        let finishers = tm_driver_sdk::race_order(
+            round_end
+                .results
+                .iter()
+                .filter(|r| r.previous_time.is_some())
+                .map(|r| r.account_id.as_str()),
+            &round_end.results,
+            CountedRace::Last,
+        );
+        for (rank, account_id) in finishers.iter().enumerate() {
+            standings.award(account_id, self.points_for(rank));
         }
 
         standings.rounds_on_map += 1;
-        standings.rank();
-        standings.place_round(&round_end.results, |r| r.previous_time);
+        standings.rank(&round_end.results, CountedRace::Last);
+        standings.place_round(&round_end.results, CountedRace::Last);
         standings.info = self.info(standings);
 
         if self.points_limit(standings) == PointsLimit::Reached {
@@ -196,20 +200,26 @@ impl Rounds {
 
 #[cfg(test)]
 mod tests {
-    use tm_driver_sdk::{FinishTimeout, Label, WarmUp, testing::Harness};
+    use tm_driver_sdk::{FinishTimeout, Label, RaceResult, WarmUp, testing::Harness};
 
     use super::*;
 
     fn finish(account_id: &str, time: u32) -> RaceResult {
+        finish_at(account_id, &[time])
+    }
+
+    /// Finished with these race times at the checkpoints, the finish last.
+    fn finish_at(account_id: &str, checkpoints: &[u32]) -> RaceResult {
+        let time = checkpoints.last().copied();
         RaceResult {
             account_id: account_id.into(),
             started: true,
-            progress: 1,
-            progress_times: vec![time],
-            previous_time: Some(time),
-            previous_checkpoints: vec![time],
-            best_time: Some(time),
-            best_checkpoints: vec![time],
+            progress: checkpoints.len() as u32,
+            progress_times: checkpoints.to_vec(),
+            previous_time: time,
+            previous_checkpoints: checkpoints.to_vec(),
+            best_time: time,
+            best_checkpoints: checkpoints.to_vec(),
         }
     }
 
@@ -291,9 +301,10 @@ mod tests {
             [
                 ("a", 1, 10, 10),
                 ("b", 2, 6, 6),
-                // Beyond the repartition everyone gets the last value.
+                // Beyond the repartition everyone gets the last value. The race tells
+                // them apart.
                 ("c", 3, 4, 4),
-                ("e", 3, 4, 4),
+                ("e", 4, 4, 4),
                 // Raced without a finish.
                 ("d", 5, 0, 0),
             ]
@@ -328,10 +339,23 @@ mod tests {
     }
 
     #[test]
+    fn equal_times_go_to_the_better_checkpoints() {
+        let mut harness = started(r#"{"points_repartition": [10, 6]}"#);
+        // b passed the last checkpoint earlier.
+        harness.step(round_end(vec![
+            finish_at("a", &[10_000, 20_500, 30_000]),
+            finish_at("b", &[10_100, 20_400, 30_000]),
+        ]));
+        assert_eq!(scores(&harness), [("b", 1, 10, 10), ("a", 2, 6, 6)]);
+    }
+
+    #[test]
     fn players_show_up_when_they_start() {
         let mut harness = started("");
-        assert!(harness.step(Event::RaceStart("a".into())).is_empty());
-        assert_eq!(scores(&harness), [("a", 1, 0, 0)]);
+        assert!(harness.step(Event::RaceStart("b".into())).is_empty());
+        harness.step(Event::RaceStart("a".into()));
+        // By name, without a position until their first round.
+        assert_eq!(scores(&harness), [("a", 0, 0, 0), ("b", 0, 0, 0)]);
     }
 
     #[test]
@@ -405,6 +429,20 @@ mod tests {
         let commands = harness.step(round_end(vec![finish("a", 1)]));
         assert!(commands.contains(&Command::EndMatch));
         assert_eq!(harness.standing("a").label, Some(Label::winner()));
+    }
+
+    #[test]
+    fn without_tie_break_the_last_round_decides() {
+        let mut harness = started(
+            r#"{"points_repartition": [5, 5], "points_limit": 10, "use_tie_break": false}"#,
+        );
+        harness.step(round_end(vec![finish("a", 1), finish("b", 2)]));
+        let commands = harness.step(round_end(vec![finish("b", 1), finish("a", 2)]));
+        // Both reached 10 points, b won the last round.
+        assert!(commands.contains(&Command::EndMatch));
+        assert_eq!(scores(&harness), [("b", 1, 10, 5), ("a", 2, 10, 5)]);
+        assert_eq!(harness.standing("b").label, Some(Label::winner()));
+        assert_eq!(harness.standing("a").label, None);
     }
 
     #[test]
