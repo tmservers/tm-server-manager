@@ -4,7 +4,7 @@
 //! the standings after it and what the driver did. Callbacks the driver only
 //! collects, e.g. waypoints, are summed up in the races.
 
-use std::{collections::BTreeSet, fmt::Write};
+use std::fmt::Write;
 
 use tm_server_types::{
     event::{DriverSection, Event},
@@ -17,23 +17,29 @@ use tm_wasm_driver::{Driver, DriverInput, DriverReply};
 
 use crate::{
     Failure,
-    server::Server,
+    observe::{Observer, SeenHold},
     world::{Races, World},
 };
 
 pub(crate) struct Report {
     text: String,
-    holds: BTreeSet<(i32, u32)>,
 }
 
 impl Report {
-    pub(crate) fn new(header: String, world: &World) -> Self {
+    /// The header of a report: the settings and, for a simulation, its world.
+    pub(crate) fn new(header: String, settings: &str, world: Option<&World>) -> Self {
         let mut report = Self {
             text: String::new(),
-            holds: BTreeSet::new(),
         };
         report.line(header);
-        report.line(format!("settings {}", world.settings));
+        report.line(format!("settings {settings}"));
+        if let Some(world) = world {
+            report.world(world);
+        }
+        report
+    }
+
+    fn world(&mut self, world: &World) {
         let maps: Vec<String> = world
             .maps
             .iter()
@@ -46,9 +52,9 @@ impl Report {
                 )
             })
             .collect();
-        report.line(format!("maps {}", maps.join(" · ")));
+        self.line(format!("maps {}", maps.join(" · ")));
         if !world.playlist.is_empty() {
-            report.line(format!("playlist {}", world.playlist.join(" ")));
+            self.line(format!("playlist {}", world.playlist.join(" ")));
         }
         let players: Vec<String> = world
             .players
@@ -72,29 +78,27 @@ impl Report {
                 text
             })
             .collect();
-        report.line(format!("players {}", players.join(" · ")));
-        if let Races::Random { ties, idle } = world.races {
-            let faults = &world.faults;
-            let chances = [
-                ("ties", ties),
-                ("idle", idle),
-                ("repeated holds", faults.repeated_holds),
-                ("forced rounds", faults.forced_rounds),
-                ("missed starts", faults.missed_starts),
-                ("bridge restarts", faults.bridge_restarts),
-                ("script restarts", faults.script_restarts),
-                ("playlist changes", faults.playlist_changes),
-            ];
-            let chances: Vec<String> = chances
-                .iter()
-                .filter(|(_, per_mille)| *per_mille > 0)
-                .map(|(name, per_mille)| format!("{name} {per_mille}‰"))
-                .collect();
-            if !chances.is_empty() {
-                report.line(format!("chances {}", chances.join(" · ")));
-            }
+        self.line(format!("players {}", players.join(" · ")));
+        let Races { ties, idle } = world.races;
+        let faults = &world.faults;
+        let chances = [
+            ("ties", ties),
+            ("idle", idle),
+            ("repeated holds", faults.repeated_holds),
+            ("forced rounds", faults.forced_rounds),
+            ("missed starts", faults.missed_starts),
+            ("bridge restarts", faults.bridge_restarts),
+            ("script restarts", faults.script_restarts),
+            ("playlist changes", faults.playlist_changes),
+        ];
+        let chances: Vec<String> = chances
+            .iter()
+            .filter(|(_, per_mille)| *per_mille > 0)
+            .map(|(name, per_mille)| format!("{name} {per_mille}‰"))
+            .collect();
+        if !chances.is_empty() {
+            self.line(format!("chances {}", chances.join(" · ")));
         }
-        report
     }
 
     fn line(&mut self, line: impl AsRef<str>) {
@@ -102,52 +106,59 @@ impl Report {
         self.text.push('\n');
     }
 
-    fn notes(&mut self, server: &mut Server, indent: &str) {
-        for note in server.take_notes() {
+    fn notes(&mut self, notes: &mut Vec<String>, indent: &str) {
+        for note in notes.drain(..) {
             self.line(format!("{indent}! {note}"));
         }
     }
 
+    /// Writes what an input changed. `notes` are what happened around it, e.g.
+    /// players joining, and go into the next block.
     pub(crate) fn after(
         &mut self,
         input: &DriverInput,
+        hold: Option<&SeenHold>,
         reply: &DriverReply,
         driver: &Driver,
-        server: &mut Server,
+        observer: &Observer,
+        notes: &mut Vec<String>,
     ) {
         let DriverInput::Event(event) = input else {
             return;
         };
         match event {
             Event::StartMatchStart(start) => {
-                self.notes(server, "");
+                self.notes(notes, "");
                 self.line(format!("\nmatch {}", start.count));
             }
             Event::EndMatchStart(_) => self.line("match end"),
-            Event::DriverHold(hold) => {
-                if !self.holds.insert((hold.session, hold.seq)) {
-                    self.line(format!("  hold {} again", hold.seq));
+            Event::DriverHold(_) => {
+                let Some(hold) = hold else {
+                    return;
+                };
+                if !hold.first {
+                    self.line(format!("  hold {} again", hold.hold.seq));
                     return;
                 }
-                match hold.section {
+                match hold.hold.section {
                     DriverSection::MapStart => {
-                        self.notes(server, "");
+                        self.notes(notes, "");
                         let mut line = format!(
                             "map {} · {} · {}",
-                            server.map_uid(),
-                            format(server.format()),
-                            warm_up(server.warm_up())
+                            observer.map(),
+                            format(observer.format()),
+                            warm_up(observer.warm_up())
                         );
-                        if let Some(next) = server.next_map() {
+                        if let Some(next) = observer.next_map() {
                             write!(line, " · next {next}").unwrap();
                         }
                         self.line(line);
                     }
-                    DriverSection::RoundEnd => self.round(hold.forced, reply, driver, server),
+                    DriverSection::RoundEnd => self.round(hold, reply, driver, observer, notes),
                     DriverSection::MapEnd => {
-                        self.notes(server, "  ");
+                        self.notes(notes, "  ");
                         let mut line = "map end".to_string();
-                        if let Some(next) = server.next_map() {
+                        if let Some(next) = observer.next_map() {
                             write!(line, " · next {next}").unwrap();
                         }
                         self.line(line);
@@ -159,12 +170,23 @@ impl Report {
         }
     }
 
-    fn round(&mut self, forced: bool, reply: &DriverReply, driver: &Driver, server: &mut Server) {
-        let forced = if forced { " · forced" } else { "" };
-        self.line(format!("round {}{forced}", server.rounds()));
-        self.notes(server, "  ");
+    fn round(
+        &mut self,
+        hold: &SeenHold,
+        reply: &DriverReply,
+        driver: &Driver,
+        observer: &Observer,
+        notes: &mut Vec<String>,
+    ) {
+        let counted = match (hold.hold.forced, hold.counts) {
+            (true, _) => " · forced",
+            (false, false) => " · without its start",
+            (false, true) => "",
+        };
+        self.line(format!("round {}{counted}", observer.rounds()));
+        self.notes(notes, "  ");
 
-        let races: Vec<String> = server
+        let races: Vec<String> = observer
             .truth()
             .racers
             .iter()
@@ -225,13 +247,14 @@ impl Report {
     pub(crate) fn finish(
         mut self,
         driver: &Driver,
-        server: &mut Server,
+        notes: &mut Vec<String>,
+        stopped: Option<&str>,
         inputs: usize,
         failure: Option<&Failure>,
     ) -> String {
-        self.notes(server, "");
+        self.notes(notes, "");
         self.line("");
-        match (failure, server.stopped()) {
+        match (failure, stopped) {
             (Some(failure), _) => self.line(format!(
                 "FAILED after input {}: {}",
                 failure.input, failure.message

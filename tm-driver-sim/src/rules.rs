@@ -11,7 +11,7 @@ pub use tm_server_types::method::{
     DriverCommand, DriverEntry, DriverRound, DriverStandings, DriverStatus,
 };
 
-pub use crate::server::{RoundTruth, SeenRace};
+pub use crate::observe::{RoundTruth, SeenRace};
 
 pub trait Rules {
     /// A match starts, e.g. to forget the points of the last one.
@@ -44,8 +44,6 @@ pub struct RoundEnd<'a> {
     pub commands: &'a [DriverCommand],
     /// The races of the round as the driver saw them.
     pub truth: &'a RoundTruth,
-    /// The driver ended the match before this round.
-    pub ended: bool,
 }
 
 /// A map that ends.

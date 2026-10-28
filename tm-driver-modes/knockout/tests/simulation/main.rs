@@ -1,16 +1,18 @@
 //! Simulated knockout matches, checked against the rules of the knockout: random
-//! ones, full servers and the scenarios of `scenarios/`. The matches of seeds 1 to
-//! 3 and the scenarios are kept as snapshots.
+//! ones, full servers and the logs saved in `logs/`. The matches of seeds 1 to 3
+//! are kept as snapshots.
 //!
 //! `SIM_SEEDS=5000 cargo test --release -p tm-driver-mode-knockout --test simulation`
 //! checks more matches, `SIM_SEED=42` only seed 42 and prints its report.
+//! `SIM_SAVE=tests/simulation/logs` saves the shrunk inputs of the first seed that
+//! fails, to keep it as a test.
 
 mod rules;
 
 use std::sync::OnceLock;
 
 use serde_json::json;
-use tm_driver_sim::{Rng, Simulator, random, seeds};
+use tm_driver_sim::{InputLog, Rng, Simulator, events::Race, random};
 
 fn simulator() -> &'static Simulator {
     static SIMULATOR: OnceLock<Simulator> = OnceLock::new();
@@ -42,31 +44,25 @@ fn settings(rng: &mut Rng) -> String {
     settings.to_string()
 }
 
-#[test]
-fn random_matches_follow_the_rules() {
-    simulator().check(seeds("SIM_SEEDS", 100..125), Simulator::world);
-}
+tm_driver_sim::simulation_tests!(simulator);
 
+/// A log does not follow the driver like a simulation does, so it can describe a
+/// match the driver never asked for. That fails instead of testing nonsense.
 #[test]
-fn full_servers_follow_the_rules() {
-    simulator().check(seeds("SIM_FULL_SERVERS", 100..102), Simulator::full_server);
-}
-
-#[test]
-fn snapshots_of_random_matches() {
-    for seed in 1..=3 {
-        let outcome = simulator().seed(seed);
-        assert_eq!(outcome.failure, None, "\n{}", outcome.report);
-        insta::assert_snapshot!(format!("seed_{seed}"), outcome.report);
-    }
-}
-
-#[test]
-fn scenarios() {
-    insta::glob!("scenarios/*.scn", |path| {
-        let scenario = std::fs::read_to_string(path).unwrap();
-        let outcome = simulator().scenario(&scenario).unwrap();
-        assert_eq!(outcome.failure, None, "\n{}", outcome.report);
-        insta::assert_snapshot!(outcome.report);
-    });
+fn a_log_with_an_eliminated_player_racing_fails() {
+    let mut log = InputLog::new(r#"{"rounds_without_elimination": 0}"#);
+    log.players(&["a", "b", "c"]).match_start().map_start("m1");
+    let races = [
+        ("a", Race::finish(&[10_000, 30_000])),
+        ("b", Race::finish(&[10_000, 31_000])),
+        ("c", Race::finish(&[10_000, 32_000])),
+    ];
+    log.round(&races);
+    // c lost the only life, but races again.
+    log.round(&races);
+    let failure = simulator().log("c races again", &log).failure;
+    assert_eq!(
+        failure.map(|failure| failure.message).as_deref(),
+        Some("c starts a race but cannot spawn")
+    );
 }

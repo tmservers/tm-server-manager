@@ -1,5 +1,0 @@
-# The best race of the round counts, not the last one. A race the time limit
-# cuts off does not count.
-settings {"time_limit_ms": 100000}
-players a b
-round a 31 30 35 | b 30.5 31 40

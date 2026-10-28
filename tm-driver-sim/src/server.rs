@@ -30,7 +30,7 @@ use tm_wasm_driver::{DriverInput, DriverReply};
 
 use crate::{
     Rng,
-    world::{Action, MapSpec, Moment, RacePlan, Races, World},
+    world::{Action, MapSpec, Moment, RacePlan, World},
 };
 
 /// From the start of a round until the players start racing.
@@ -51,89 +51,6 @@ pub(crate) enum Step {
     Input(DriverInput),
     /// The bridge restarts, so the driver resumes by replaying its inputs.
     RestartBridge,
-}
-
-/// What the driver could know about a round: the races as the callbacks that
-/// reached it tell them.
-#[derive(Debug, Clone, Default)]
-pub struct RoundTruth {
-    /// The racers in the order of their first start, with their races in order.
-    pub racers: Vec<(String, Vec<SeenRace>)>,
-    pub forced: bool,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SeenRace {
-    pub checkpoints: Vec<u32>,
-    pub finished: bool,
-}
-
-impl SeenRace {
-    pub fn time(&self) -> Option<u32> {
-        self.finished
-            .then(|| self.checkpoints.last().copied())
-            .flatten()
-    }
-}
-
-impl RoundTruth {
-    pub fn races(&self, account_id: &str) -> Option<&[SeenRace]> {
-        self.racers
-            .iter()
-            .find(|(racer, _)| racer == account_id)
-            .map(|(_, races)| races.as_slice())
-    }
-
-    /// The time of the last finished race of a player.
-    pub fn last_finish(&self, account_id: &str) -> Option<u32> {
-        self.races(account_id)?
-            .iter()
-            .rev()
-            .find_map(SeenRace::time)
-    }
-
-    /// The time of the fastest race of a player.
-    pub fn best_finish(&self, account_id: &str) -> Option<u32> {
-        self.races(account_id)?
-            .iter()
-            .filter_map(SeenRace::time)
-            .min()
-    }
-
-    fn start(&mut self, account_id: &str) {
-        self.races_mut(account_id).push(SeenRace {
-            checkpoints: Vec::new(),
-            finished: false,
-        });
-    }
-
-    fn way_point(&mut self, account_id: &str, checkpoints: &[u32], finished: bool) {
-        let races = self.races_mut(account_id);
-        if races.last().is_none_or(|race| race.finished) {
-            races.push(SeenRace {
-                checkpoints: Vec::new(),
-                finished: false,
-            });
-        }
-        let race = races.last_mut().expect("The player has a race");
-        race.checkpoints = checkpoints.to_vec();
-        race.finished = finished;
-    }
-
-    fn races_mut(&mut self, account_id: &str) -> &mut Vec<SeenRace> {
-        let index = match self
-            .racers
-            .iter()
-            .position(|(racer, _)| racer == account_id)
-        {
-            Some(index) => index,
-            None => {
-                self.racers.push((account_id.into(), Vec::new()));
-                self.racers.len() - 1
-            }
-        };
-        &mut self.racers[index].1
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -219,7 +136,6 @@ struct RoundRun {
     restarts: bool,
     finish_timeout: Option<u32>,
     first_finish: bool,
-    forced_at_end: bool,
     queue: BinaryHeap<Reverse<Scheduled>>,
     racers: BTreeMap<String, Racer>,
 }
@@ -235,7 +151,6 @@ pub(crate) struct Server {
     session: i32,
     seq: u32,
     hold: Option<Waiting>,
-    repeat_holds: bool,
 
     // What the commands of the driver set, like the globals of the modescript.
     format: DriverRoundFormat,
@@ -246,8 +161,6 @@ pub(crate) struct Server {
     next_map: Option<String>,
 
     connected: BTreeSet<String>,
-    /// The name of every player the driver heard of.
-    known: BTreeMap<String, String>,
     map: Option<usize>,
     matches_started: u32,
     matches_ended: u32,
@@ -259,8 +172,7 @@ pub(crate) struct Server {
     prepared: u32,
     restart_after: Option<u32>,
     round: Option<RoundRun>,
-    /// The last round that ended.
-    truth: RoundTruth,
+    /// What happened that the driver cannot tell, e.g. a start that did not reach it.
     notes: Vec<String>,
 }
 
@@ -277,7 +189,6 @@ impl Server {
             stopped: None,
             seq: 0,
             hold: None,
-            repeat_holds: false,
             format: DriverRoundFormat::SingleAttempt(DriverFinishTimeout::Automatic),
             warm_up: DriverWarmUp::default(),
             can_spawn: BTreeMap::new(),
@@ -285,7 +196,6 @@ impl Server {
             end_match: false,
             next_map: None,
             connected: BTreeSet::new(),
-            known: BTreeMap::new(),
             map: None,
             matches_started: 0,
             matches_ended: 0,
@@ -295,7 +205,6 @@ impl Server {
             prepared: 0,
             restart_after: None,
             round: None,
-            truth: RoundTruth::default(),
             notes: Vec::new(),
         }
     }
@@ -305,52 +214,18 @@ impl Server {
         self.stopped.as_deref()
     }
 
-    pub(crate) fn can_spawn(&self, account_id: &str) -> bool {
-        self.can_spawn.get(account_id) != Some(&false)
-    }
-
-    /// The name of every player the driver heard of.
-    pub(crate) fn known(&self) -> &BTreeMap<String, String> {
-        &self.known
-    }
-
-    pub(crate) fn map_uid(&self) -> &str {
-        self.map
-            .map_or("", |index| self.world.maps[index].uid.as_str())
-    }
-
-    pub(crate) fn format(&self) -> DriverRoundFormat {
-        self.format
-    }
-
-    pub(crate) fn warm_up(&self) -> DriverWarmUp {
-        self.warm_up
-    }
-
-    pub(crate) fn next_map(&self) -> Option<&str> {
-        self.next_map.as_deref()
-    }
-
-    /// The races of the last round that ended.
-    pub(crate) fn truth(&self) -> &RoundTruth {
-        &self.truth
-    }
-
-    /// What happened around the last round, e.g. players joining, for the report.
+    /// What happened that the driver cannot tell, for the report.
     pub(crate) fn take_notes(&mut self) -> Vec<String> {
         std::mem::take(&mut self.notes)
     }
 
-    pub(crate) fn rounds(&self) -> u32 {
-        self.rounds
+    fn can_spawn(&self, account_id: &str) -> bool {
+        self.can_spawn.get(account_id) != Some(&false)
     }
 
     pub(crate) fn next(&mut self) -> Option<Step> {
         loop {
             if let Some(step) = self.out.pop_front() {
-                if let Step::Input(input) = &step {
-                    self.learn(input);
-                }
                 return Some(step);
             }
             if let Some(waiting) = &mut self.hold {
@@ -431,43 +306,8 @@ impl Server {
         self.phase = Phase::Done;
     }
 
-    /// The names the driver knows once it got an input.
-    fn learn(&mut self, input: &DriverInput) {
-        match input {
-            DriverInput::Players(players) => {
-                for player in players.iter().filter(|player| !player.is_server()) {
-                    self.known
-                        .insert(player.account_id.clone(), player.nick_name.clone());
-                }
-            }
-            DriverInput::Event(Event::PlayerInfoChanged(player)) => {
-                self.known
-                    .insert(player.account_id.clone(), player.nick_name.clone());
-            }
-            _ => {}
-        }
-    }
-
-    /// Queues an input for the driver. The races of the round are recorded right
-    /// away, their round end comes after them anyway.
+    /// Queues an input for the driver.
     fn deliver(&mut self, input: DriverInput) {
-        let in_round = self
-            .round
-            .as_ref()
-            .is_some_and(|run| run.kind == Kind::Round);
-        match &input {
-            DriverInput::Event(Event::StartLine(start)) if in_round => {
-                self.truth.start(&start.account_id);
-            }
-            DriverInput::Event(Event::WayPoint(way_point)) if in_round => {
-                self.truth.way_point(
-                    &way_point.account_id,
-                    &way_point.current_race_checkpoints,
-                    way_point.is_end_race,
-                );
-            }
-            _ => {}
-        }
         self.out.push_back(Step::Input(input));
 
         if let Some(after) = &mut self.restart_after {
@@ -493,11 +333,10 @@ impl Server {
             section,
             forced,
         };
-        let repeat = self.repeat_holds
-            || self
-                .rng
-                .fork(&format!("repeat/{}/{}", self.session, self.seq))
-                .chance(self.world.faults.repeated_holds);
+        let repeat = self
+            .rng
+            .fork(&format!("repeat/{}/{}", self.session, self.seq))
+            .chance(self.world.faults.repeated_holds);
         self.event(Event::DriverHold(hold.clone()));
         self.hold = Some(Waiting {
             hold,
@@ -614,12 +453,6 @@ impl Server {
             self.stop(format!("Stopped after {} rounds", self.world.max_rounds));
             return;
         }
-        if let Races::Scripted(rounds) = &self.world.races
-            && number as usize > rounds.len()
-        {
-            self.stop("The scenario ends while the match goes on");
-            return;
-        }
         let single_attempt =
             !matches!(self.format, DriverRoundFormat::TimeAttack(limit) if limit > 0);
         let playing = self
@@ -640,30 +473,16 @@ impl Server {
             count: self.rounds_on_map,
             time: self.clock,
         }));
-        self.truth = RoundTruth::default();
         self.plan_round(Kind::Round);
     }
 
-    /// What happens before a round of the simulation starts.
+    /// Players coming and going and what goes wrong before a round.
     fn prepare(&mut self, number: u32) {
-        let actions = match &self.world.races {
-            Races::Scripted(rounds) => rounds
-                .get(number as usize - 1)
-                .map(|round| round.before.clone())
-                .unwrap_or_default(),
-            Races::Random { .. } => self.random_actions(number),
-        };
-        for action in actions {
+        for action in self.random_actions(number) {
             match action {
                 Action::Join(player) => self.join(&player),
                 Action::Leave(player) => self.leave(&player),
-                Action::RepeatHolds(repeat) => self.repeat_holds = repeat,
-                Action::RestartBridge => {
-                    self.notes.push("bridge restarts".into());
-                    self.out.push_back(Step::RestartBridge);
-                }
                 Action::RestartScript => {
-                    self.notes.push("modescript restarts".into());
                     self.session = session(&self.rng, number);
                     self.seq = 0;
                     // The script starts over on the map it was on.
@@ -671,15 +490,11 @@ impl Server {
                     self.map = None;
                     self.phase = Phase::StartMatch;
                 }
-                Action::Playlist(uids) => {
-                    self.notes.push(format!("playlist {}", uids.join(" ")));
-                    self.deliver(DriverInput::Playlist(uids));
-                }
+                Action::Playlist(uids) => self.deliver(DriverInput::Playlist(uids)),
             }
         }
     }
 
-    /// Players coming and going and what goes wrong before a random round.
     fn random_actions(&mut self, number: u32) -> Vec<Action> {
         let mut actions = Vec::new();
         let before = Moment {
@@ -723,7 +538,6 @@ impl Server {
         if !self.connected.insert(account_id.into()) {
             return;
         }
-        self.notes.push(format!("{account_id} joins"));
         self.event(Event::PlayerConnect(PlayerConnect {
             account_id: account_id.into(),
             is_spectator: self.watches(account_id),
@@ -736,7 +550,6 @@ impl Server {
         if !self.connected.remove(account_id) {
             return;
         }
-        self.notes.push(format!("{account_id} leaves"));
         if let Some(racer) = self
             .round
             .as_mut()
@@ -801,7 +614,6 @@ impl Server {
             restarts: time_limit.is_some(),
             finish_timeout,
             first_finish: false,
-            forced_at_end: false,
             queue: BinaryHeap::new(),
             racers: BTreeMap::new(),
         };
@@ -815,7 +627,7 @@ impl Server {
         rng.shuffle(&mut racers);
         for player in &racers {
             let mut races = self.rng.fork(&format!("{key}/race/{player}/0"));
-            let plan = self.plan_race(kind, player, 0, &map, &mut races);
+            let plan = self.plan_race(player, &map, &mut races);
             run.racers.insert(
                 player.clone(),
                 Racer {
@@ -851,29 +663,22 @@ impl Server {
         }
 
         if kind == Kind::Round {
-            match &self.world.races {
-                Races::Scripted(rounds) => {
-                    run.forced_at_end = rounds[self.rounds as usize - 1].forced;
-                }
-                Races::Random { .. } => {
-                    if rng.chance(self.world.faults.forced_rounds) {
-                        let at = start + rng.below(map.author_time() * 3 / 2);
-                        schedule(&mut run, &mut rng, at, Happening::ForceEnd);
-                    }
-                    let during = Moment {
-                        round: self.rounds,
-                        during: true,
-                    };
-                    for player in &self.world.players {
-                        let at = start + rng.below(map.author_time());
-                        if player.joins == Some(during) {
-                            let player = player.account_id.clone();
-                            schedule(&mut run, &mut rng, at, Happening::Join { player });
-                        } else if player.leaves == Some(during) {
-                            let player = player.account_id.clone();
-                            schedule(&mut run, &mut rng, at, Happening::Leave { player });
-                        }
-                    }
+            if rng.chance(self.world.faults.forced_rounds) {
+                let at = start + rng.below(map.author_time() * 3 / 2);
+                schedule(&mut run, &mut rng, at, Happening::ForceEnd);
+            }
+            let during = Moment {
+                round: self.rounds,
+                during: true,
+            };
+            for player in &self.world.players {
+                let at = start + rng.below(map.author_time());
+                if player.joins == Some(during) {
+                    let player = player.account_id.clone();
+                    schedule(&mut run, &mut rng, at, Happening::Join { player });
+                } else if player.leaves == Some(during) {
+                    let player = player.account_id.clone();
+                    schedule(&mut run, &mut rng, at, Happening::Leave { player });
                 }
             }
         }
@@ -884,46 +689,20 @@ impl Server {
         self.end_if_everyone_is_done();
     }
 
-    /// The next race of a player, None when the player stops racing.
-    fn plan_race(
-        &self,
-        kind: Kind,
-        player: &str,
-        race: usize,
-        map: &MapSpec,
-        rng: &mut Rng,
-    ) -> Option<RacePlan> {
-        match (&self.world.races, kind) {
-            (Races::Random { idle, .. }, _) => {
-                let spec = self.world.player(player)?;
-                Some(spec.random_race(map, rng, *idle))
-            }
-            // Scripted players warm up once at the pace of the author.
-            (Races::Scripted(_), Kind::WarmUp { .. }) => {
-                (race == 0).then(|| RacePlan::Finish(map.author_checkpoints()))
-            }
-            (Races::Scripted(rounds), Kind::Round) => {
-                let planned = rounds[self.rounds as usize - 1].races.get(player);
-                match planned.and_then(|races| races.get(race)) {
-                    Some(plan) => Some(plan.on(map)),
-                    // Players without a race do not move.
-                    None => (race == 0).then_some(RacePlan::Idle),
-                }
-            }
-        }
+    /// The next race of a player at the pace of the player.
+    fn plan_race(&self, player: &str, map: &MapSpec, rng: &mut Rng) -> Option<RacePlan> {
+        let spec = self.world.player(player)?;
+        Some(spec.random_race(map, rng, self.world.races.idle))
     }
 
     /// Now and then two players drive the same race, or races with the same time,
     /// so the ties of the modes come up.
     fn tie(&self, run: &mut RoundRun, racers: &[String], rng: &mut Rng) {
-        let Races::Random { ties, .. } = self.world.races else {
-            return;
-        };
         let finishers: Vec<&String> = racers
             .iter()
             .filter(|player| matches!(run.racers[*player].races.first(), Some(RacePlan::Finish(_))))
             .collect();
-        if finishers.len() < 2 || !rng.chance(ties) {
+        if finishers.len() < 2 || !rng.chance(self.world.races.ties) {
             return;
         }
         let (first, second) = (finishers[0], finishers[1]);
@@ -955,8 +734,7 @@ impl Server {
         };
         let Some(Reverse(next)) = run.queue.pop() else {
             // Everyone is done, which ends the round.
-            let forced = run.forced_at_end;
-            self.end_round(forced);
+            self.end_round(false);
             return;
         };
         self.clock = self.clock.max(next.time);
@@ -972,13 +750,11 @@ impl Server {
             Happening::Join { player } => self.join(&player),
             Happening::Leave { player } => self.leave(&player),
             Happening::ForceEnd => {
-                self.notes.push("forced to end".into());
                 self.end_round(true);
                 return;
             }
             Happening::TimeUp => {
-                let forced = run_forced(&self.round);
-                self.end_round(forced);
+                self.end_round(false);
                 return;
             }
         }
@@ -987,9 +763,11 @@ impl Server {
 
     fn start_race(&mut self, player: &str, race: usize) {
         let now = self.clock;
+        let can_spawn = self.can_spawn(player);
+        let connected = self.connected.contains(player);
         let run = self.round.as_mut().expect("A round runs");
         let racer = run.racers.get_mut(player).expect("A racer");
-        if racer.gone || !self.connected.contains(player) {
+        if racer.gone || !connected || !can_spawn {
             racer.done = true;
             return;
         }
@@ -1015,9 +793,6 @@ impl Server {
                 }
             }
             RacePlan::Idle => Some(IDLE),
-            RacePlan::FinishIn(_) | RacePlan::GiveUpAfter(_) => {
-                unreachable!("Races are planned on their map")
-            }
         };
         if let Some(after) = give_up {
             let happening = Happening::GiveUp {
@@ -1050,9 +825,6 @@ impl Server {
             }
             RacePlan::GiveUp(checkpoints) => (checkpoints.clone(), false),
             RacePlan::Idle => return,
-            RacePlan::FinishIn(_) | RacePlan::GiveUpAfter(_) => {
-                unreachable!("Races are planned on their map")
-            }
         };
         let so_far = checkpoints[..=checkpoint].to_vec();
         let racetime = so_far[checkpoint];
@@ -1094,13 +866,12 @@ impl Server {
         let now = self.clock;
         let map = self.current_map();
         let run = self.round.as_ref().expect("A round runs");
-        let kind = run.kind;
         let again = run.restarts
             && run.end.is_some_and(|end| now + RESPAWN < end)
             && !run.racers[player].gone;
         let next = if again {
             let key = format!("{}/race/{player}/{}", run.key, race + 1);
-            self.plan_race(kind, player, race + 1, &map, &mut self.rng.fork(&key))
+            self.plan_race(player, &map, &mut self.rng.fork(&key))
         } else {
             None
         };
@@ -1130,8 +901,7 @@ impl Server {
         if run.restarts || !run.racers.values().all(|racer| racer.done || racer.gone) {
             return;
         }
-        let forced = run.forced_at_end;
-        self.end_round(forced);
+        self.end_round(false);
     }
 
     fn end_round(&mut self, forced: bool) {
@@ -1158,10 +928,7 @@ impl Server {
         }
 
         match run.kind {
-            Kind::Round => {
-                self.truth.forced = forced;
-                self.emit_hold(DriverSection::RoundEnd, forced);
-            }
+            Kind::Round => self.emit_hold(DriverSection::RoundEnd, forced),
             Kind::WarmUp { left: 0 } => {
                 self.event(Event::WarmupEnd);
                 self.phase = Phase::StartRound;
@@ -1186,10 +953,6 @@ impl Server {
             Phase::StartMatch
         };
     }
-}
-
-fn run_forced(round: &Option<RoundRun>) -> bool {
-    round.as_ref().is_some_and(|run| run.forced_at_end)
 }
 
 fn schedule(run: &mut RoundRun, rng: &mut Rng, time: u32, happening: Happening) {
@@ -1269,7 +1032,7 @@ fn server_player() -> PlayerInfo {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::world::{Faults, PlayerSpec};
+    use crate::world::{Faults, PlayerSpec, Races};
 
     fn player(account_id: &str) -> PlayerSpec {
         PlayerSpec {
@@ -1294,7 +1057,7 @@ mod tests {
             }],
             playlist: Vec::new(),
             players: accounts.iter().map(|account| player(account)).collect(),
-            races: Races::Random { ties: 0, idle: 0 },
+            races: Races { ties: 0, idle: 0 },
             faults: Faults::default(),
             matches: 1,
             max_rounds: 1,

@@ -199,7 +199,7 @@ impl Rules for Knockout {
             if let Some(winner) = playing(end.after).find(|entry| entry.label != "Winner") {
                 return Err(format!("{} wins without the label", winner.account_id));
             }
-        } else if over && !end.ended {
+        } else if over {
             return Err("One player is left, but the match goes on".into());
         }
         Ok(())

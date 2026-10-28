@@ -1,9 +1,0 @@
-# Nobody is eliminated in the first round. Then the last player loses the only
-# life, giving up as well, until one player is left. s only watches and cannot
-# spawn once nobody can join anymore.
-maps m1:10/20
-players a b c
-watchers s
-round c 30 | a 31 | b 32
-round b 30 | a 31 | c dnf 1
-round a 30 | b 31

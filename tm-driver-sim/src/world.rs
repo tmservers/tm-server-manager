@@ -1,8 +1,5 @@
 //! What surrounds the driver in a simulation: the server with its maps and
-//! players, how they race and what goes wrong. Random from a seed or written down
-//! as a scenario.
-
-use std::collections::BTreeMap;
+//! players, how they race and what goes wrong, all random from a seed.
 
 use crate::Rng;
 
@@ -39,17 +36,6 @@ impl MapSpec {
     pub fn author_time(&self) -> u32 {
         self.sectors.iter().sum()
     }
-
-    /// The race times at the checkpoints at the pace of the author, the finish last.
-    pub fn author_checkpoints(&self) -> Vec<u32> {
-        self.sectors
-            .iter()
-            .scan(0, |time, sector| {
-                *time += sector;
-                Some(*time)
-            })
-            .collect()
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -78,28 +64,13 @@ pub struct Moment {
     pub during: bool,
 }
 
-#[derive(Debug, Clone)]
-pub enum Races {
-    /// Players race at their pace, as many rounds as the match takes.
-    Random {
-        /// Chance of a round with two equal races in per mille.
-        ties: u32,
-        /// Chance that a player does not move in a race in per mille.
-        idle: u32,
-    },
-    /// The rounds of a scenario, the simulation ends after the last one.
-    Scripted(Vec<ScriptedRound>),
-}
-
-#[derive(Debug, Clone, Default)]
-pub struct ScriptedRound {
-    /// What happens before the round starts.
-    pub before: Vec<Action>,
-    /// An admin ends the round once the races are over, so it does not count.
-    pub forced: bool,
-    /// The races of the players in order. Players who could race but are missing do
-    /// not move.
-    pub races: BTreeMap<String, Vec<RacePlan>>,
+/// How players race, beyond the pace of every player.
+#[derive(Debug, Clone, Copy)]
+pub struct Races {
+    /// Chance of a round with two equal races in per mille.
+    pub ties: u32,
+    /// Chance that a player does not move in a race in per mille.
+    pub idle: u32,
 }
 
 /// A race as it is going to happen.
@@ -107,51 +78,17 @@ pub struct ScriptedRound {
 pub enum RacePlan {
     /// Reaches the finish with these race times at the checkpoints, the finish last.
     Finish(Vec<u32>),
-    /// Reaches the finish in this time, as much faster or slower in every sector
-    /// than the author on the map it is driven on.
-    FinishIn(u32),
     /// Gives up after passing checkpoints at these race times.
     GiveUp(Vec<u32>),
-    /// Gives up after passing this many checkpoints at the pace of the author on the
-    /// map it is driven on.
-    GiveUpAfter(usize),
     /// Spawns but does not move.
     Idle,
 }
 
-impl RacePlan {
-    /// The race on a map, with the race times at the checkpoints known.
-    pub fn on(&self, map: &MapSpec) -> RacePlan {
-        match self {
-            RacePlan::FinishIn(time) => {
-                let author = u64::from(map.author_time().max(1));
-                let checkpoints = map
-                    .author_checkpoints()
-                    .iter()
-                    .map(|&at| (u64::from(at) * u64::from(*time) / author) as u32)
-                    .collect();
-                RacePlan::Finish(checkpoints)
-            }
-            RacePlan::GiveUpAfter(passed) => {
-                let mut checkpoints = map.author_checkpoints();
-                // Giving up never reaches the finish.
-                checkpoints.truncate((*passed).min(checkpoints.len().saturating_sub(1)));
-                RacePlan::GiveUp(checkpoints)
-            }
-            plan => plan.clone(),
-        }
-    }
-}
-
+/// Something that happens before a round.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Action {
     Join(String),
     Leave(String),
-    /// From now on every hold reaches the driver twice, like when the modescript
-    /// asks again before the answer arrived.
-    RepeatHolds(bool),
-    /// The bridge restarts and resumes the driver by replaying its inputs.
-    RestartBridge,
     /// The modescript restarts, which starts a new match.
     RestartScript,
     /// The driver gets a new playlist.
@@ -240,7 +177,7 @@ impl World {
             settings,
             maps,
             playlist,
-            races: Races::Random {
+            races: Races {
                 ties: *chances.pick(&[0, 100, 300]),
                 idle: *chances.pick(&[0, 10, 30]),
             },
@@ -390,26 +327,5 @@ mod tests {
             .map(account_id)
             .collect();
         assert_eq!(accounts, ["a", "z", "aa", "ab", "az", "ba", "zz", "aaa"]);
-    }
-
-    #[test]
-    fn scripted_races_keep_the_proportions_of_the_map() {
-        let map = MapSpec {
-            uid: "m".into(),
-            sectors: vec![10_000, 20_000, 10_000],
-        };
-        assert_eq!(
-            RacePlan::FinishIn(20_000).on(&map),
-            RacePlan::Finish(vec![5_000, 15_000, 20_000])
-        );
-        assert_eq!(
-            RacePlan::GiveUpAfter(2).on(&map),
-            RacePlan::GiveUp(vec![10_000, 30_000])
-        );
-        // Giving up never reaches the finish.
-        assert_eq!(
-            RacePlan::GiveUpAfter(5).on(&map),
-            RacePlan::GiveUp(vec![10_000, 30_000])
-        );
     }
 }

@@ -21,5 +21,5 @@ serde = { workspace = true, features = ["derive"] }
 [dev-dependencies]
 # Simulated matches of the mode, see tests/simulation.
 tm-driver-sim.workspace = true
-insta = { workspace = true, features = ["glob"] }
+insta.workspace = true
 serde_json.workspace = true

@@ -1,7 +1,0 @@
-# Two players drive exactly the same race. Accounts decide, not names: x ranks
-# before y although Alice comes before bob.
-settings {"rounds_without_elimination": 0}
-maps m1:10/10/10
-players x=bob y=Alice z
-round x 10/20/30 | y 10/20/30 | z 29
-round z 30 | x 31

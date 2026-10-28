@@ -8,6 +8,7 @@ maps m1 5 cp 0:33.727
 playlist m1
 players a Ant · b Bea · c Cid · d Eve joins before round 4 · e Eve joins during round 5
 chances ties 300‰ · idle 30‰ · repeated holds 100‰ · bridge restarts 100‰
+! playlist m1
 
 match 1
 map m1 · one try, automatic finish timeout · no warmup · next m1

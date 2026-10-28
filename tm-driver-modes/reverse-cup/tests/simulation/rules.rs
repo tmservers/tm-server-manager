@@ -142,7 +142,7 @@ impl Rules for ReverseCup {
         if ends_match(end.commands) && !over {
             return Err("The match ends before only the winners are left".into());
         }
-        if over && !end.ended && !ends_match(end.commands) {
+        if over && !ends_match(end.commands) {
             return Err(format!(
                 "Only the winners are left, but the match goes on: {} of {} players left, {} winners",
                 playing(end.after).count(),

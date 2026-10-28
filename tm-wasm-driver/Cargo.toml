@@ -24,3 +24,7 @@ serde_json.workspace = true
 tm-server-controller.workspace = true
 tokio.workspace = true
 tracing-subscriber.workspace = true
+
+[dev-dependencies]
+# Builds the rounds mode the tests run, and the callbacks of the server.
+tm-driver-sim.workspace = true

@@ -10,61 +10,54 @@ use tm_server_types::{
 use tm_wasm_driver::{Driver, DriverInput, DriverReply};
 
 use crate::{
-    World,
-    rules::{MapEnd, RoundEnd, Rules, ends_match},
-    server::Server,
+    observe::{Observer, SeenHold},
+    rules::{MapEnd, RoundEnd, Rules},
 };
 
 pub(crate) struct Checker {
-    world: World,
     rules: Box<dyn Rules>,
-    /// The commands of the first reply to every hold.
-    holds: BTreeMap<(i32, u32), Vec<DriverCommand>>,
+    /// The maps of the server, None when unknown, e.g. for a log.
+    maps: Option<BTreeSet<String>>,
     /// The standings after the last input that changed something.
     standings: DriverStandings,
     /// The status of every player of the match.
     statuses: BTreeMap<String, DriverStatus>,
-    match_ended: bool,
     playlist: u32,
 }
 
 impl Checker {
-    pub(crate) fn new(world: &World, rules: Box<dyn Rules>) -> Self {
+    pub(crate) fn new(rules: Box<dyn Rules>, maps: Option<BTreeSet<String>>) -> Self {
         Self {
-            world: world.clone(),
             rules,
-            holds: BTreeMap::new(),
+            maps,
             standings: DriverStandings::default(),
             statuses: BTreeMap::new(),
-            match_ended: false,
             playlist: 0,
         }
     }
 
-    /// Checks the reply to an input and the driver after it.
+    /// Checks the reply to an input and the driver after it. `reached` is false when
+    /// the reply never reached the server, which then still shows what it had.
     pub(crate) fn after(
         &mut self,
         input: &DriverInput,
+        hold: Option<&SeenHold>,
         reply: &DriverReply,
+        reached: bool,
         driver: &Driver,
-        server: &Server,
+        observer: &Observer,
     ) -> Result<(), String> {
         match input {
             DriverInput::Event(Event::StartMatchStart(_)) => {
                 self.statuses.clear();
-                self.match_ended = false;
                 self.rules.match_start();
             }
             DriverInput::Playlist(uids) => self.playlist = uids.len() as u32,
             _ => {}
         }
 
-        let hold = match input {
-            DriverInput::Event(Event::DriverHold(hold)) => Some(hold),
-            _ => None,
-        };
-        let first = match hold {
-            Some(hold) => self.check_hold(hold.session, hold.seq, reply)?,
+        match hold {
+            Some(hold) => check_hold(hold, reply)?,
             None => {
                 if let Some(command) = reply.commands.iter().find(|command| {
                     matches!(
@@ -76,12 +69,10 @@ impl Checker {
                 }) {
                     return Err(format!("{command:?} outside of a hold"));
                 }
-                false
             }
-        };
+        }
 
-        let counts = first
-            && hold.is_some_and(|hold| hold.section == DriverSection::RoundEnd && !hold.forced);
+        let counts = hold.is_some_and(|hold| hold.counts);
         if reply.round_result.is_some() != counts {
             return Err(if counts {
                 "A round that counted has no result for the manager".into()
@@ -102,25 +93,30 @@ impl Checker {
 
         let standings = driver.standings();
         let round = driver.last_round();
-        self.check_commands(&reply.commands, driver, &standings, &round)?;
+        let users = driver.users();
+        self.check_next_map(&reply.commands)?;
         check_standings(&standings)?;
         check_round(&round, &standings)?;
-        self.check_statuses(&standings, server)?;
-        check_users(&driver.users(), server)?;
+        check_statuses(&mut self.statuses, &standings)?;
+        check_users(&users, observer)?;
+        if reached {
+            check_published(observer, &standings, &round, &users)?;
+            check_spawns(&standings, observer)?;
+        }
 
-        if first && let Some(hold) = hold {
-            match hold.section {
-                DriverSection::RoundEnd if !hold.forced => {
+        if let Some(hold) = hold.filter(|hold| hold.first) {
+            match hold.hold.section {
+                DriverSection::RoundEnd if hold.counts => {
                     let end = RoundEnd {
                         before: &self.standings,
                         after: &standings,
                         round: &round,
                         commands: &reply.commands,
-                        truth: server.truth(),
-                        ended: self.match_ended,
+                        truth: observer.truth(),
                     };
                     self.rules.round_end(&end)?;
                 }
+                DriverSection::RoundEnd => check_unchanged(&self.standings, &standings)?,
                 DriverSection::MapEnd => {
                     let end = MapEnd {
                         after: &standings,
@@ -129,112 +125,130 @@ impl Checker {
                     };
                     self.rules.map_end(&end)?;
                 }
-                _ => {}
+                DriverSection::MapStart => {}
             }
-        }
-        if ends_match(&reply.commands) {
-            self.match_ended = true;
         }
         self.standings = standings;
         Ok(())
     }
 
-    /// A reply to a hold ends with its only `Continue`, and a hold that comes again
-    /// gets the same commands. True for the first reply.
-    fn check_hold(&mut self, session: i32, seq: u32, reply: &DriverReply) -> Result<bool, String> {
-        let continues = reply
-            .commands
-            .iter()
-            .filter(|command| matches!(command, DriverCommand::Continue(_)))
-            .count();
-        if continues != 1 || reply.commands.last() != Some(&DriverCommand::Continue(seq)) {
+    fn check_next_map(&self, commands: &[DriverCommand]) -> Result<(), String> {
+        for command in commands {
+            if let (DriverCommand::SetNextMap(uid), Some(maps)) = (command, &self.maps)
+                && !maps.contains(uid)
+            {
+                return Err(format!("The next map {uid} is not on the server"));
+            }
+        }
+        Ok(())
+    }
+}
+
+/// A reply to a hold ends with its only `Continue`, and a hold that comes again
+/// gets the same commands.
+fn check_hold(hold: &SeenHold, reply: &DriverReply) -> Result<(), String> {
+    let seq = hold.hold.seq;
+    let continues = reply
+        .commands
+        .iter()
+        .filter(|command| matches!(command, DriverCommand::Continue(_)))
+        .count();
+    if continues != 1 || reply.commands.last() != Some(&DriverCommand::Continue(seq)) {
+        return Err(format!(
+            "The reply to hold {seq} does not end with its only Continue"
+        ));
+    }
+    match &hold.answered {
+        Some(commands) if *commands != reply.commands => {
+            Err(format!("Hold {seq} got other commands when it came again"))
+        }
+        _ => Ok(()),
+    }
+}
+
+/// The server shows what the driver has: the driver published every change.
+fn check_published(
+    observer: &Observer,
+    standings: &DriverStandings,
+    round: &DriverRound,
+    users: &DriverUsers,
+) -> Result<(), String> {
+    let published = observer.published();
+    let stale = if published.standings.as_ref() != Some(standings) {
+        "standings"
+    } else if published.round.as_ref() != Some(round) {
+        "last round"
+    } else if published.users.as_ref() != Some(users) {
+        "players"
+    } else {
+        return Ok(());
+    };
+    Err(format!(
+        "The server shows other {stale} than the driver has"
+    ))
+}
+
+/// Nobody leaves the standings of a match and eliminated players stay eliminated.
+fn check_statuses(
+    statuses: &mut BTreeMap<String, DriverStatus>,
+    standings: &DriverStandings,
+) -> Result<(), String> {
+    let entries: BTreeMap<&str, &DriverEntry> = standings
+        .entries
+        .iter()
+        .map(|entry| (entry.account_id.as_str(), entry))
+        .collect();
+    for (account_id, before) in statuses.iter() {
+        let Some(entry) = entries.get(account_id.as_str()) else {
+            return Err(format!("{account_id} left the standings of the match"));
+        };
+        if *before == DriverStatus::Eliminated && entry.status != DriverStatus::Eliminated {
             return Err(format!(
-                "The reply to hold {seq} does not end with its only Continue"
+                "{account_id} went from Eliminated to {:?}",
+                entry.status
             ));
         }
-        match self.holds.get(&(session, seq)) {
-            Some(commands) if *commands != reply.commands => {
-                Err(format!("Hold {seq} got other commands when it came again"))
-            }
-            Some(_) => Ok(false),
-            None => {
-                self.holds.insert((session, seq), reply.commands.clone());
-                Ok(true)
-            }
+    }
+    for entry in &standings.entries {
+        statuses.insert(entry.account_id.clone(), entry.status);
+    }
+    Ok(())
+}
+
+/// Players still playing can spawn, everyone else cannot.
+fn check_spawns(standings: &DriverStandings, observer: &Observer) -> Result<(), String> {
+    for entry in &standings.entries {
+        let playing = entry.status == DriverStatus::Playing;
+        if playing != observer.can_spawn(&entry.account_id) {
+            let can = if playing { "cannot" } else { "can still" };
+            return Err(format!(
+                "{} is {:?} but {can} spawn",
+                entry.account_id, entry.status
+            ));
         }
     }
+    Ok(())
+}
 
-    /// The commands are valid for the server, and what the driver publishes is what
-    /// it has.
-    fn check_commands(
-        &self,
-        commands: &[DriverCommand],
-        driver: &Driver,
-        standings: &DriverStandings,
-        round: &DriverRound,
-    ) -> Result<(), String> {
-        for command in commands {
-            let (published, differs) = match command {
-                DriverCommand::SetNextMap(uid) if self.world.map(uid).is_none() => {
-                    return Err(format!("The next map {uid} is not on the server"));
-                }
-                DriverCommand::SetStandings(json) => {
-                    ("standings", parse::<DriverStandings>(json)? != *standings)
-                }
-                DriverCommand::SetRound(json) => ("round", parse::<DriverRound>(json)? != *round),
-                DriverCommand::SetUsers(json) => {
-                    ("players", parse::<DriverUsers>(json)? != driver.users())
-                }
-                _ => continue,
-            };
-            if differs {
-                return Err(format!(
-                    "The published {published} differ from the driver's"
-                ));
-            }
-        }
-        Ok(())
-    }
-
-    /// Nobody leaves the standings of a match, eliminated players and spectators stay
-    /// what they are, and none of them can spawn.
-    fn check_statuses(
-        &mut self,
-        standings: &DriverStandings,
-        server: &Server,
-    ) -> Result<(), String> {
-        let entries: BTreeMap<&str, &DriverEntry> = standings
+/// A round that did not count changes nobody's points or status. Players new to the
+/// match may show up.
+fn check_unchanged(before: &DriverStandings, after: &DriverStandings) -> Result<(), String> {
+    for old in &before.entries {
+        let Some(new) = after
             .entries
             .iter()
-            .map(|entry| (entry.account_id.as_str(), entry))
-            .collect();
-        for (account_id, before) in &self.statuses {
-            let Some(entry) = entries.get(account_id.as_str()) else {
-                return Err(format!("{account_id} left the standings of the match"));
-            };
-            let allowed = match before {
-                DriverStatus::Playing => true,
-                DriverStatus::Eliminated => entry.status == DriverStatus::Eliminated,
-                DriverStatus::Spectator => entry.status == DriverStatus::Spectator,
-            };
-            if !allowed {
-                return Err(format!(
-                    "{account_id} went from {before:?} to {:?}",
-                    entry.status
-                ));
-            }
+            .find(|entry| entry.account_id == old.account_id)
+        else {
+            continue;
+        };
+        if (new.score, new.status) != (old.score, old.status) {
+            return Err(format!(
+                "A round that did not count changed {} from {} {:?} to {} {:?}",
+                old.account_id, old.score, old.status, new.score, new.status
+            ));
         }
-        for entry in &standings.entries {
-            self.statuses.insert(entry.account_id.clone(), entry.status);
-            if entry.status != DriverStatus::Playing && server.can_spawn(&entry.account_id) {
-                return Err(format!(
-                    "{} is {:?} but can still spawn",
-                    entry.account_id, entry.status
-                ));
-            }
-        }
-        Ok(())
     }
+    Ok(())
 }
 
 /// Every player has one entry, the positions go from 1 without gaps and players
@@ -323,20 +337,16 @@ fn check_round(round: &DriverRound, standings: &DriverStandings) -> Result<(), S
 }
 
 /// The driver knows the name of everyone the server told it about.
-fn check_users(users: &DriverUsers, server: &Server) -> Result<(), String> {
+fn check_users(users: &DriverUsers, observer: &Observer) -> Result<(), String> {
     let names: BTreeMap<&str, &str> = users
         .users
         .iter()
         .map(|user| (user.account_id.as_str(), user.name.as_str()))
         .collect();
-    for (account_id, name) in server.known() {
+    for (account_id, name) in observer.known() {
         if names.get(account_id.as_str()) != Some(&name.as_str()) {
             return Err(format!("The driver does not know {account_id} as {name}"));
         }
     }
     Ok(())
-}
-
-fn parse<T: serde::de::DeserializeOwned>(json: &str) -> Result<T, String> {
-    serde_json::from_str(json).map_err(|e| format!("Published json is invalid: {e}"))
 }

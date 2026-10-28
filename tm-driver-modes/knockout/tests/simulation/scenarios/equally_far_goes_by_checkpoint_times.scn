@@ -1,6 +1,0 @@
-# b and c give up after the second checkpoint. c got there earlier, so c ranks
-# before b although b was faster at the first one.
-maps m1:10/10/10
-players a b c
-round a 30 | b 31 | c 32
-round a 30 | b dnf 10/21 | c dnf 10.5/20

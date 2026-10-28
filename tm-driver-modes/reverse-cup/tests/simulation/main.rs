@@ -1,16 +1,18 @@
-//! Simulated reverse cup matches, checked against the rules of the reverse cup:
-//! random ones, full servers and the scenarios of `scenarios/`. The matches of
-//! seeds 1 to 3 and the scenarios are kept as snapshots.
+//! Simulated reverse cup matches, checked against the rules of the reverse cup: random
+//! ones, full servers and the logs saved in `logs/`. The matches of seeds 1 to 3
+//! are kept as snapshots.
 //!
 //! `SIM_SEEDS=5000 cargo test --release -p tm-driver-mode-reverse-cup --test simulation`
 //! checks more matches, `SIM_SEED=42` only seed 42 and prints its report.
+//! `SIM_SAVE=tests/simulation/logs` saves the shrunk inputs of the first seed that
+//! fails, to keep it as a test.
 
 mod rules;
 
 use std::sync::OnceLock;
 
 use serde_json::{Value, json};
-use tm_driver_sim::{Rng, Simulator, random, seeds};
+use tm_driver_sim::{Rng, Simulator, random};
 
 fn simulator() -> &'static Simulator {
     static SIMULATOR: OnceLock<Simulator> = OnceLock::new();
@@ -50,31 +52,4 @@ fn settings(rng: &mut Rng) -> String {
     settings.to_string()
 }
 
-#[test]
-fn random_matches_follow_the_rules() {
-    simulator().check(seeds("SIM_SEEDS", 100..125), Simulator::world);
-}
-
-#[test]
-fn full_servers_follow_the_rules() {
-    simulator().check(seeds("SIM_FULL_SERVERS", 100..102), Simulator::full_server);
-}
-
-#[test]
-fn snapshots_of_random_matches() {
-    for seed in 1..=3 {
-        let outcome = simulator().seed(seed);
-        assert_eq!(outcome.failure, None, "\n{}", outcome.report);
-        insta::assert_snapshot!(format!("seed_{seed}"), outcome.report);
-    }
-}
-
-#[test]
-fn scenarios() {
-    insta::glob!("scenarios/*.scn", |path| {
-        let scenario = std::fs::read_to_string(path).unwrap();
-        let outcome = simulator().scenario(&scenario).unwrap();
-        assert_eq!(outcome.failure, None, "\n{}", outcome.report);
-        insta::assert_snapshot!(outcome.report);
-    });
-}
+tm_driver_sim::simulation_tests!(simulator);

@@ -1,16 +1,23 @@
 //! Simulated rounds matches, checked against the rules of the rounds mode: random
-//! ones, full servers and the scenarios of `scenarios/`. The matches of seeds 1 to
-//! 3 and the scenarios are kept as snapshots.
+//! ones, full servers and the logs saved in `logs/`. The matches of seeds 1 to 3
+//! are kept as snapshots.
 //!
 //! `SIM_SEEDS=5000 cargo test --release -p tm-driver-mode-rounds --test simulation`
 //! checks more matches, `SIM_SEED=42` only seed 42 and prints its report.
+//! `SIM_SAVE=tests/simulation/logs` saves the shrunk inputs of the first seed that
+//! fails, to keep it as a test.
 
 mod rules;
 
 use std::sync::OnceLock;
 
 use serde_json::json;
-use tm_driver_sim::{Rng, Simulator, random, seeds};
+use tm_driver_sim::{
+    InputLog, Rng, Simulator,
+    events::Race,
+    random,
+    rules::{RoundEnd, Rules},
+};
 
 fn simulator() -> &'static Simulator {
     static SIMULATOR: OnceLock<Simulator> = OnceLock::new();
@@ -45,31 +52,46 @@ fn settings(rng: &mut Rng) -> String {
     settings.to_string()
 }
 
-#[test]
-fn random_matches_follow_the_rules() {
-    simulator().check(seeds("SIM_SEEDS", 100..125), Simulator::world);
-}
+tm_driver_sim::simulation_tests!(simulator);
 
-#[test]
-fn full_servers_follow_the_rules() {
-    simulator().check(seeds("SIM_FULL_SERVERS", 100..102), Simulator::full_server);
-}
+/// Fails once b wins a round, to see what shrinking keeps.
+struct BMustNotWin;
 
-#[test]
-fn snapshots_of_random_matches() {
-    for seed in 1..=3 {
-        let outcome = simulator().seed(seed);
-        assert_eq!(outcome.failure, None, "\n{}", outcome.report);
-        insta::assert_snapshot!(format!("seed_{seed}"), outcome.report);
+impl Rules for BMustNotWin {
+    fn round_end(&mut self, end: &RoundEnd) -> Result<(), String> {
+        match end.round.entries.first() {
+            Some(winner) if winner.account_id == "b" => Err("b won a round".into()),
+            _ => Ok(()),
+        }
     }
 }
 
 #[test]
-fn scenarios() {
-    insta::glob!("scenarios/*.scn", |path| {
-        let scenario = std::fs::read_to_string(path).unwrap();
-        let outcome = simulator().scenario(&scenario).unwrap();
-        assert_eq!(outcome.failure, None, "\n{}", outcome.report);
-        insta::assert_snapshot!(outcome.report);
-    });
+fn shrinking_keeps_only_what_fails() {
+    let simulator = Simulator::new("rounds", &tm_driver_sim::wasm!())
+        .rules(|_| Ok(Box::new(BMustNotWin)));
+    let mut log = InputLog::new("{}");
+    log.players(&["a", "b", "c"]).match_start().map_start("m1");
+    let a_wins = [
+        ("a", Race::finish(&[10_000, 30_000])),
+        ("b", Race::finish(&[10_000, 31_000])),
+        ("c", Race::dnf(&[12_000])),
+    ];
+    for _ in 0..4 {
+        log.round(&a_wins);
+    }
+    log.round(&[
+        ("a", Race::finish(&[10_000, 30_000])),
+        ("b", Race::finish(&[10_000, 29_000])),
+    ]);
+    log.round(&a_wins);
+
+    let shrunk = simulator.shrink(&log);
+    let failure = simulator.log("shrunk", &shrunk).failure;
+    assert_eq!(
+        failure.map(|failure| failure.message).as_deref(),
+        Some("b won a round")
+    );
+    // The round start, the finish of b and the round end are all it takes.
+    assert!(shrunk.inputs.len() <= 4, "{:#?}", shrunk.inputs);
 }

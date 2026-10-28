@@ -5,16 +5,18 @@
 //! callbacks the driver handles, as [`DriverInput`]s, and follows the commands the
 //! driver answers with, so the driver steers the match like on a real server.
 //! Everything else, players, their races, time and what goes wrong, comes from a
-//! [`World`]: random from a seed, or written down as a scenario (see
-//! [`scenario`]).
+//! random [`World`] of a seed.
 //!
-//! Nothing depends on the wall clock or the order threads run in, so a seed or a
-//! scenario always gives the same simulation. After every input, checks test what
-//! has to hold for every mode, and at the end of every round and map the
-//! [`Rules`] of the mode. Once the simulation ended, replaying every input has to
-//! give the same driver, and a driver resumed at a random input has to answer the
-//! rest the same way. The report of a simulation describes the match, e.g. for
-//! snapshots.
+//! Nothing depends on the wall clock or the order threads run in, so a seed always
+//! gives the same simulation. After every input, checks test what has to hold for
+//! every mode, and at the end of every round and map the [`Rules`] of the mode.
+//! Once the simulation ended, replaying every input has to give the same driver,
+//! and a driver resumed at a random input has to answer the rest the same way. The
+//! report of a simulation describes the match, e.g. for snapshots.
+//!
+//! The same checks run on an [`InputLog`]: inputs written directly (see
+//! [`events`]), e.g. for a callback order the fake server does not produce, or the
+//! inputs of a seed that failed, shrunk to what matters.
 //!
 //! The simulator knows no mode. A mode tests itself with it in its own tests:
 //!
@@ -28,38 +30,84 @@
 //!     })
 //! }
 //!
-//! #[test]
-//! fn random_matches_follow_the_rules() {
-//!     simulator().check(tm_driver_sim::seeds("SIM_SEEDS", 100..125), Simulator::world);
-//! }
+//! tm_driver_sim::simulation_tests!(simulator);
 //! ```
 
 mod check;
+pub mod events;
+mod observe;
 pub mod random;
 mod report;
 mod rng;
 pub mod rules;
-pub mod scenario;
 mod server;
 mod wasm;
 mod world;
 
-use std::{ops::Range, sync::OnceLock, time::Duration};
+use std::{
+    collections::BTreeSet,
+    ops::Range,
+    path::{Path, PathBuf},
+    sync::OnceLock,
+    time::Duration,
+};
 
+pub use events::InputLog;
 pub use rng::Rng;
 pub use rules::Rules;
 use tm_wasm_driver::{Component, Driver, DriverEngine, DriverInput, DriverLimits, DriverReply};
 pub use wasm::build_wasm;
-pub use world::{
-    Action, Faults, MAX_PLAYERS, MapSpec, Moment, PlayerSpec, RacePlan, Races, ScriptedRound, World,
-};
+pub use world::{Action, Faults, MAX_PLAYERS, MapSpec, Moment, PlayerSpec, RacePlan, Races, World};
 
 use crate::{
     check::Checker,
+    observe::{Observer, SeenHold},
     report::Report,
     rules::NoRules,
     server::{Server, Step},
 };
+
+/// The tests every mode runs with its simulator: random matches, full servers, the
+/// matches of seeds 1 to 3 as snapshots and the logs saved in
+/// `tests/simulation/logs`. Takes the function that returns the simulator.
+#[macro_export]
+macro_rules! simulation_tests {
+    ($simulator:ident) => {
+        #[test]
+        fn random_matches_follow_the_rules() {
+            $simulator().check(
+                $crate::seeds("SIM_SEEDS", 100..125),
+                $crate::Simulator::world,
+            );
+        }
+
+        #[test]
+        fn full_servers_follow_the_rules() {
+            $simulator().check(
+                $crate::seeds("SIM_FULL_SERVERS", 100..102),
+                $crate::Simulator::full_server,
+            );
+        }
+
+        #[test]
+        fn snapshots_of_random_matches() {
+            for seed in 1..=3 {
+                let outcome = $simulator().seed(seed);
+                assert_eq!(outcome.failure, None, "\n{}", outcome.report);
+                ::insta::assert_snapshot!(format!("seed_{seed}"), outcome.report);
+            }
+        }
+
+        #[test]
+        fn saved_logs_pass() {
+            let logs = ::std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("tests")
+                .join("simulation")
+                .join("logs");
+            $simulator().check_logs(logs);
+        }
+    };
+}
 
 /// How a simulation went.
 pub struct Outcome {
@@ -137,27 +185,151 @@ impl Simulator {
         self.simulate(&self.world(seed), seed)
     }
 
-    /// Simulates a scenario, see [`scenario`].
-    pub fn scenario(&self, text: &str) -> Result<Outcome, String> {
-        let world = scenario::parse(text)?;
-        Ok(self.run(&world, 0, format!("{} · scenario", self.name)))
-    }
-
     /// Simulates a world. The seed decides what the world leaves open, e.g. the
     /// order of callbacks at the same moment.
     pub fn simulate(&self, world: &World, seed: u64) -> Outcome {
-        self.run(world, seed, format!("{} · seed {seed}", self.name))
+        let header = format!("{} · seed {seed}", self.name);
+        let mut run = match Run::start(self, header, &world.settings, Some(world)) {
+            Ok(run) => run,
+            Err(outcome) => return outcome,
+        };
+        let mut server = Server::new(world, seed);
+        let mut failure = None;
+        while let Some(step) = server.next() {
+            run.notes.extend(server.take_notes());
+            let done = match step {
+                Step::Input(input) => run.apply(&input).and_then(|(hold, reply)| {
+                    server.on_reply(&input, &reply);
+                    run.record(input, hold, reply, true)
+                }),
+                Step::RestartBridge => run.restart(),
+            };
+            if let Err(error) = done {
+                failure = Some(error);
+                break;
+            }
+        }
+        run.notes.extend(server.take_notes());
+        run.finish(seed, server.stopped(), failure)
+    }
+
+    /// Runs a log with every check, like a simulation that does not follow the
+    /// driver. The report calls it by `name`.
+    pub fn log(&self, name: &str, log: &InputLog) -> Outcome {
+        let header = format!("{} · {name}", self.name);
+        let mut run = match Run::start(self, header, &log.settings, None) {
+            Ok(run) => run,
+            Err(outcome) => return outcome,
+        };
+        let mut failure = None;
+        for input in &log.inputs {
+            let done = run
+                .apply(input)
+                .and_then(|(hold, reply)| run.record(input.clone(), hold, reply, true));
+            if let Err(error) = done {
+                failure = Some(error);
+                break;
+            }
+        }
+        run.finish(0, None, failure)
+    }
+
+    /// Runs every log in a directory, e.g. the shrunk logs of seeds that failed
+    /// once, and panics with every failure. Nothing happens without the directory.
+    pub fn check_logs(&self, dir: impl AsRef<Path>) {
+        let Ok(entries) = std::fs::read_dir(dir.as_ref()) else {
+            return;
+        };
+        let mut paths: Vec<PathBuf> = entries
+            .filter_map(|entry| Some(entry.ok()?.path()))
+            .filter(|path| path.extension().is_some_and(|extension| extension == "json"))
+            .collect();
+        paths.sort();
+
+        let mut failures = String::new();
+        for path in &paths {
+            let name = path.file_stem().map_or_else(String::new, |stem| {
+                stem.to_string_lossy().into_owned()
+            });
+            let log = InputLog::load(path).unwrap_or_else(|error| panic!("{error}"));
+            let outcome = self.log(&name, &log);
+            if let Some(failure) = outcome.failure {
+                failures += &format!(
+                    "{name}: {} after input {}\n{}\n",
+                    failure.message, failure.input, outcome.report
+                );
+            }
+        }
+        assert!(failures.is_empty(), "Saved logs failed:\n{failures}");
+    }
+
+    /// The shortest log this finds that fails with the same message as `log`, by
+    /// leaving out ever smaller runs of inputs. A log that does not fail comes back
+    /// as it is.
+    pub fn shrink(&self, log: &InputLog) -> InputLog {
+        let Some(target) = self.log("shrinking", log).failure else {
+            return log.clone();
+        };
+        let failing_at = |inputs: &[DriverInput]| {
+            let candidate = InputLog {
+                settings: log.settings.clone(),
+                inputs: inputs.to_vec(),
+                ..InputLog::default()
+            };
+            self.log("shrinking", &candidate)
+                .failure
+                .filter(|failure| failure.message == target.message)
+                .map(|failure| failure.input)
+        };
+
+        // Nothing after the failure matters.
+        let mut inputs = log.inputs[..(target.input + 1).min(log.inputs.len())].to_vec();
+        let mut chunk = inputs.len().div_ceil(2).max(1);
+        loop {
+            let mut start = 0;
+            let mut removed = false;
+            while start < inputs.len() {
+                let end = (start + chunk).min(inputs.len());
+                let candidate: Vec<DriverInput> = inputs[..start]
+                    .iter()
+                    .chain(&inputs[end..])
+                    .cloned()
+                    .collect();
+                match failing_at(&candidate) {
+                    Some(at) => {
+                        inputs = candidate;
+                        inputs.truncate(at + 1);
+                        removed = true;
+                    }
+                    None => start = end,
+                }
+            }
+            if chunk == 1 && !removed {
+                break;
+            }
+            if !removed {
+                chunk = chunk.div_ceil(2);
+            }
+        }
+        InputLog {
+            settings: log.settings.clone(),
+            inputs,
+            ..InputLog::default()
+        }
     }
 
     /// Simulates the worlds of these seeds in parallel and panics with every failure
-    /// and the report of the first one. A single seed prints its report.
+    /// and the report of the first one. A single seed prints its report. With
+    /// `SIM_SAVE` set to a directory, the inputs of the first failure are shrunk and
+    /// saved there as a log, e.g. to keep it in `tests/simulation/logs`.
     pub fn check(&self, seeds: Range<u64>, world: fn(&Simulator, u64) -> World) {
         if seeds.end - seeds.start == 1 {
             let outcome = self.simulate_caught(world, seeds.start);
             println!("{}", outcome.report);
             if let Some(failure) = &outcome.failure {
+                let saved = self.save(world, seeds.start, &outcome);
                 panic!(
-                    "seed {}: {} after input {}",
+                    "seed {}: {} after input {}{saved}",
                     seeds.start, failure.message, failure.input
                 );
             }
@@ -196,11 +368,42 @@ impl Simulator {
             );
         }
         let (seed, outcome) = &failures[0];
+        let saved = self.save(world, *seed, outcome);
         panic!(
-            "{} of the simulations of seeds {seeds:?} failed:\n{message}\n{}\nSIM_SEED={seed} runs only seed {seed}.",
+            "{} of the simulations of seeds {seeds:?} failed:\n{message}\n{}\nSIM_SEED={seed} runs only seed {seed}.{saved}",
             failures.len(),
             outcome.report
         );
+    }
+
+    /// Saves the shrunk inputs of a failed simulation if `SIM_SAVE` names a
+    /// directory, and tells where.
+    fn save(&self, world: fn(&Simulator, u64) -> World, seed: u64, outcome: &Outcome) -> String {
+        let Ok(dir) = std::env::var("SIM_SAVE") else {
+            return String::new();
+        };
+        if outcome.inputs.is_empty() {
+            return "\nNothing to save, the simulation failed before its first input.".into();
+        }
+        let log = InputLog {
+            settings: world(self, seed).settings,
+            inputs: outcome.inputs.clone(),
+            ..InputLog::default()
+        };
+        let shrunk = self.shrink(&log);
+        let path = Path::new(&dir).join(format!("{}-seed-{seed}.json", self.name));
+        let saved = std::fs::create_dir_all(&dir)
+            .map_err(|e| format!("{dir} could not be created: {e}"))
+            .and_then(|()| shrunk.save(&path));
+        match saved {
+            Ok(()) => format!(
+                "\nThe inputs of seed {seed}, shrunk from {} to {}, are in {}.",
+                log.inputs.len(),
+                shrunk.inputs.len(),
+                path.display()
+            ),
+            Err(error) => format!("\n{error}"),
+        }
     }
 
     /// Simulates the world of a seed. A panic, e.g. in the rules of a mode, becomes
@@ -222,87 +425,6 @@ impl Simulator {
                 }),
             }
         })
-    }
-
-    fn run(&self, world: &World, seed: u64, header: String) -> Outcome {
-        let engine = engine();
-        let mut report = Report::new(header, world);
-        let mut server = Server::new(world, seed);
-        let mut inputs = Vec::new();
-        let mut replies = Vec::new();
-
-        let start = (self.rules)(&world.settings).and_then(|rules| {
-            let driver = engine
-                .instantiate(&self.component, &world.settings)
-                .map_err(|e| e.to_string())?;
-            Ok((Checker::new(world, rules), driver))
-        });
-        let (mut checker, mut driver) = match start {
-            Ok(started) => started,
-            Err(message) => {
-                return Outcome {
-                    report: format!("FAILED to start: {message}\n"),
-                    inputs,
-                    failure: Some(Failure { input: 0, message }),
-                };
-            }
-        };
-
-        let mut failure = None;
-        while let Some(step) = server.next() {
-            match step {
-                Step::Input(input) => {
-                    let index = inputs.len();
-                    let reply = match driver.apply(&input) {
-                        Ok(reply) => reply,
-                        Err(error) => {
-                            inputs.push(input);
-                            failure = Some(Failure {
-                                input: index,
-                                message: format!("The driver failed: {error}"),
-                            });
-                            break;
-                        }
-                    };
-                    server.on_reply(&input, &reply);
-                    report.after(&input, &reply, &driver, &mut server);
-                    let checked = checker.after(&input, &reply, &driver, &server);
-                    inputs.push(input);
-                    replies.push(reply);
-                    if let Err(message) = checked {
-                        failure = Some(Failure {
-                            input: index,
-                            message,
-                        });
-                        break;
-                    }
-                }
-                Step::RestartBridge => {
-                    match engine.replay(&self.component, &world.settings, &inputs) {
-                        Ok(resumed) => driver = resumed,
-                        Err(error) => {
-                            failure = Some(Failure {
-                                input: inputs.len(),
-                                message: format!("The driver did not resume: {error}"),
-                            });
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        if failure.is_none() {
-            failure = self
-                .check_replays(&world.settings, seed, &inputs, &replies, &driver)
-                .err();
-        }
-        let report = report.finish(&driver, &mut server, inputs.len(), failure.as_ref());
-        Outcome {
-            report,
-            inputs,
-            failure,
-        }
     }
 
     /// The driver is the result of its inputs: replaying all of them gives the same
@@ -343,11 +465,151 @@ impl Simulator {
             if again != *reply {
                 return Err(failure(
                     index,
-                    format!("Resumed after {cut} inputs, the driver answers another way"),
+                    "A resumed driver answers another way".into(),
                 ));
             }
         }
         Ok(())
+    }
+}
+
+/// A driver going through inputs while every check watches.
+struct Run<'a> {
+    simulator: &'a Simulator,
+    settings: String,
+    driver: Driver,
+    observer: Observer,
+    checker: Checker,
+    report: Report,
+    inputs: Vec<DriverInput>,
+    replies: Vec<DriverReply>,
+    /// What happened around the inputs, for the report.
+    notes: Vec<String>,
+}
+
+impl<'a> Run<'a> {
+    fn start(
+        simulator: &'a Simulator,
+        header: String,
+        settings: &str,
+        world: Option<&World>,
+    ) -> Result<Self, Outcome> {
+        let started = (simulator.rules)(settings).and_then(|rules| {
+            let driver = engine()
+                .instantiate(&simulator.component, settings)
+                .map_err(|e| e.to_string())?;
+            Ok((rules, driver))
+        });
+        let (rules, driver) = started.map_err(|message| Outcome {
+            report: format!("FAILED to start: {message}\n"),
+            inputs: Vec::new(),
+            failure: Some(Failure { input: 0, message }),
+        })?;
+        let maps = world.map(|world| {
+            world
+                .maps
+                .iter()
+                .map(|map| map.uid.clone())
+                .collect::<BTreeSet<_>>()
+        });
+        Ok(Self {
+            simulator,
+            settings: settings.into(),
+            driver,
+            observer: Observer::new(),
+            checker: Checker::new(rules, maps),
+            report: Report::new(header, settings, world),
+            inputs: Vec::new(),
+            replies: Vec::new(),
+            notes: Vec::new(),
+        })
+    }
+
+    /// Hands an input to the driver. Fails for an input no server could have sent
+    /// and when the driver fails.
+    fn apply(&mut self, input: &DriverInput) -> Result<(Option<SeenHold>, DriverReply), Failure> {
+        let index = self.inputs.len();
+        let fail = |message: String| Failure {
+            input: index,
+            message,
+        };
+        let hold = self.observer.input(input).map_err(|message| {
+            self.inputs.push(input.clone());
+            fail(message)
+        })?;
+        let reply = self.driver.apply(input).map_err(|error| {
+            self.inputs.push(input.clone());
+            fail(format!("The driver failed: {error}"))
+        })?;
+        Ok((hold, reply))
+    }
+
+    /// Checks the reply to an input, which did or did not reach the server.
+    fn record(
+        &mut self,
+        input: DriverInput,
+        hold: Option<SeenHold>,
+        reply: DriverReply,
+        reached: bool,
+    ) -> Result<(), Failure> {
+        let index = self.inputs.len();
+        let checked = self.observer.reply(&input, &reply, reached).and_then(|()| {
+            self.notes.extend(self.observer.take_notes());
+            self.report.after(
+                &input,
+                hold.as_ref(),
+                &reply,
+                &self.driver,
+                &self.observer,
+                &mut self.notes,
+            );
+            self.checker.after(
+                &input,
+                hold.as_ref(),
+                &reply,
+                reached,
+                &self.driver,
+                &self.observer,
+            )
+        });
+        self.inputs.push(input);
+        self.replies.push(reply);
+        checked.map_err(|message| Failure {
+            input: index,
+            message,
+        })
+    }
+
+    /// The bridge restarts: the driver resumes by replaying its inputs.
+    fn restart(&mut self) -> Result<(), Failure> {
+        self.driver = engine()
+            .replay(&self.simulator.component, &self.settings, &self.inputs)
+            .map_err(|error| Failure {
+                input: self.inputs.len().saturating_sub(1),
+                message: format!("The driver did not resume: {error}"),
+            })?;
+        Ok(())
+    }
+
+    fn finish(mut self, seed: u64, stopped: Option<&str>, mut failure: Option<Failure>) -> Outcome {
+        if failure.is_none() {
+            failure = self
+                .simulator
+                .check_replays(&self.settings, seed, &self.inputs, &self.replies, &self.driver)
+                .err();
+        }
+        let report = self.report.finish(
+            &self.driver,
+            &mut self.notes,
+            stopped,
+            self.inputs.len(),
+            failure.as_ref(),
+        );
+        Outcome {
+            report,
+            inputs: self.inputs,
+            failure,
+        }
     }
 }
 

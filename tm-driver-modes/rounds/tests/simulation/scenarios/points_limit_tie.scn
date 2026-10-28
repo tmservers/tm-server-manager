@@ -1,6 +1,0 @@
-# Both players reach the points limit in the same round. The last round
-# decides who wins.
-settings {"points_repartition": [5, 5], "points_limit": 10}
-players a b
-round a 30 | b 31
-round b 30 | a 31
