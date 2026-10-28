@@ -74,6 +74,16 @@ struct Waiting {
     deliveries: u32,
     /// Reaches the driver a second time.
     repeat: bool,
+    /// The modescript restarts before the reply arrives.
+    restart: bool,
+}
+
+/// Where the modescript restarts in a round.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Restart {
+    DuringRound,
+    /// While its end waits for the driver, before the reply arrives.
+    AtHold,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -109,6 +119,8 @@ enum Happening {
         player: String,
     },
     ForceEnd,
+    /// The modescript restarts, which ends the round without its end.
+    RestartScript,
     /// The finish timeout after the first finish or the time limit ran out.
     TimeUp,
 }
@@ -174,6 +186,10 @@ pub(crate) struct Server {
     /// The round whose actions happened already.
     prepared: u32,
     restart_after: Option<u32>,
+    /// Where the modescript restarts in the round that comes next.
+    restart: Option<Restart>,
+    /// Restarts of the modescript so far.
+    restarts: u32,
     /// The bridge is down and misses this many more callbacks it can miss.
     down: Option<u32>,
     round: Option<RoundRun>,
@@ -209,6 +225,8 @@ impl Server {
             rounds: 0,
             prepared: 0,
             restart_after: None,
+            restart: None,
+            restarts: 0,
             down: None,
             round: None,
             notes: Vec::new(),
@@ -246,6 +264,13 @@ impl Server {
             }
             if let Some(waiting) = &mut self.hold {
                 let hold = waiting.hold.clone();
+                if !waiting.continued && waiting.restart {
+                    self.hold = None;
+                    self.notes
+                        .push("the modescript restarts before the reply arrives".into());
+                    self.restart_script();
+                    continue;
+                }
                 if !waiting.continued {
                     if waiting.deliveries >= 3 {
                         self.stop("The driver never let a hold continue");
@@ -284,6 +309,13 @@ impl Server {
     pub(crate) fn on_reply(&mut self, input: &DriverInput, reply: &DriverReply) -> bool {
         if matches!(self.out.front(), Some(Step::Crash { lose_reply: true })) {
             self.notes.push("the last reply is lost".into());
+            return false;
+        }
+        // A modescript that restarts before the reply arrives never applies it.
+        if let (DriverInput::Event(Event::DriverHold(hold)), Some(waiting)) = (input, &self.hold)
+            && waiting.restart
+            && (waiting.hold.session, waiting.hold.seq) == (hold.session, hold.seq)
+        {
             return false;
         }
         if let DriverInput::Event(Event::DriverHold(_)) = input {
@@ -384,12 +416,17 @@ impl Server {
             .rng
             .fork(&format!("repeat/{}/{}", self.session, self.seq))
             .chance(self.world.faults.repeated_holds);
+        let restart = section == DriverSection::RoundEnd && self.restart == Some(Restart::AtHold);
+        if restart {
+            self.restart = None;
+        }
         self.event(Event::DriverHold(hold.clone()));
         self.hold = Some(Waiting {
             hold,
             continued: false,
             deliveries: 1,
             repeat,
+            restart,
         });
     }
 
@@ -529,14 +566,7 @@ impl Server {
             match action {
                 Action::Join(player) => self.join(&player),
                 Action::Leave(player) => self.leave(&player),
-                Action::RestartScript => {
-                    self.session = session(&self.rng, number);
-                    self.seq = 0;
-                    // The script starts over on the map it was on.
-                    self.next_map = self.map.map(|index| self.world.maps[index].uid.clone());
-                    self.map = None;
-                    self.phase = Phase::StartMatch;
-                }
+                Action::RestartScript => self.restart_script(),
                 Action::Playlist(uids) => self.deliver(DriverInput::Playlist(uids)),
             }
         }
@@ -560,7 +590,11 @@ impl Server {
         let faults = &self.world.faults;
         let mut rng = self.rng.fork(&format!("faults/{number}"));
         if number > 1 && rng.chance(faults.script_restarts) {
-            actions.push(Action::RestartScript);
+            match rng.below(3) {
+                0 => actions.push(Action::RestartScript),
+                1 => self.restart = Some(Restart::DuringRound),
+                _ => self.restart = Some(Restart::AtHold),
+            }
         }
         if rng.chance(faults.playlist_changes) {
             let mut uids: Vec<String> = self.world.maps.iter().map(|map| map.uid.clone()).collect();
@@ -710,6 +744,11 @@ impl Server {
         }
 
         if kind == Kind::Round {
+            if self.restart == Some(Restart::DuringRound) {
+                self.restart = None;
+                let at = start + rng.below(map.author_time());
+                schedule(&mut run, &mut rng, at, Happening::RestartScript);
+            }
             if rng.chance(self.world.faults.forced_rounds) {
                 let at = start + rng.below(map.author_time() * 3 / 2);
                 schedule(&mut run, &mut rng, at, Happening::ForceEnd);
@@ -798,6 +837,12 @@ impl Server {
             Happening::Leave { player } => self.leave(&player),
             Happening::ForceEnd => {
                 self.end_round(true);
+                return;
+            }
+            Happening::RestartScript => {
+                self.leave_round();
+                self.notes.push("the modescript restarts during the round".into());
+                self.restart_script();
                 return;
             }
             Happening::TimeUp => {
@@ -951,11 +996,38 @@ impl Server {
         self.end_round(false);
     }
 
+    /// The modescript starts over, which starts a new match on the map it was on.
+    /// A round or hold that runs is gone.
+    fn restart_script(&mut self) {
+        self.restarts += 1;
+        self.session = session(&self.rng, self.restarts);
+        self.seq = 0;
+        self.next_map = self.map.map(|index| self.world.maps[index].uid.clone());
+        self.map = None;
+        self.round = None;
+        self.hold = None;
+        self.phase = Phase::StartMatch;
+    }
+
     fn end_round(&mut self, forced: bool) {
-        let run = self.round.take().expect("A round runs");
-        // Players about to come or go still do.
-        let mut pending: Vec<Scheduled> = run
-            .queue
+        let run = self.leave_round();
+        match run.kind {
+            Kind::Round => self.emit_hold(DriverSection::RoundEnd, forced),
+            Kind::WarmUp { left: 0 } => {
+                self.event(Event::WarmupEnd);
+                self.phase = Phase::StartRound;
+            }
+            Kind::WarmUp { left } => {
+                self.clock += END_ROUND;
+                self.plan_round(Kind::WarmUp { left: left - 1 });
+            }
+        }
+    }
+
+    /// Takes the round that ends. Players about to come or go still do.
+    fn leave_round(&mut self) -> RoundRun {
+        let mut run = self.round.take().expect("A round runs");
+        let mut pending: Vec<Scheduled> = std::mem::take(&mut run.queue)
             .into_iter()
             .map(|Reverse(scheduled)| scheduled)
             .filter(|scheduled| {
@@ -973,18 +1045,7 @@ impl Server {
                 _ => {}
             }
         }
-
-        match run.kind {
-            Kind::Round => self.emit_hold(DriverSection::RoundEnd, forced),
-            Kind::WarmUp { left: 0 } => {
-                self.event(Event::WarmupEnd);
-                self.phase = Phase::StartRound;
-            }
-            Kind::WarmUp { left } => {
-                self.clock += END_ROUND;
-                self.plan_round(Kind::WarmUp { left: left - 1 });
-            }
-        }
+        run
     }
 
     fn end_match(&mut self) {
