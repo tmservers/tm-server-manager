@@ -4,11 +4,13 @@
 
 use std::collections::BTreeMap;
 
-use crate::{Mode, Rng};
+use crate::Rng;
+
+/// A server holds at most this many players.
+pub const MAX_PLAYERS: u32 = 120;
 
 #[derive(Debug, Clone)]
 pub struct World {
-    pub mode: Mode,
     /// The json settings of the mode.
     pub settings: String,
     /// The map list of the server. The first map runs when the driver loads.
@@ -179,88 +181,81 @@ const NAMES: [&str; 16] = [
 ];
 
 impl World {
-    /// A world for a mode where everything varies with the seed: the settings of the
-    /// mode, the maps, how many players there are, how they race, when they come
-    /// and go and what goes wrong. Most worlds are plain, some have every fault.
-    pub fn random(mode: Mode, seed: u64) -> World {
-        let rng = Rng::new(seed);
-        let settings = mode.random_settings(&mut rng.fork("settings"));
-        let mut rng = rng.fork("world");
+    /// A random world with the settings of the mode. Everything else varies with the
+    /// seed: the maps, how many players there are, how they race, when they come and
+    /// go and what goes wrong. Most worlds are plain, some have every fault and a few
+    /// a crowd of players.
+    pub fn random(seed: u64, settings: String) -> World {
+        Self::generate(seed, settings, None)
+    }
 
-        let maps: Vec<MapSpec> = (1..=rng.between(1, 3))
+    /// A random world on a full server.
+    pub fn full_server(seed: u64, settings: String) -> World {
+        Self::generate(seed, settings, Some(MAX_PLAYERS))
+    }
+
+    /// Every part draws from its own stream, so a change to one does not reshuffle
+    /// the others.
+    fn generate(seed: u64, settings: String, players: Option<u32>) -> World {
+        let rng = Rng::new(seed).fork("world");
+
+        let mut maps = rng.fork("maps");
+        let maps: Vec<MapSpec> = (1..=maps.between(1, 3))
             .map(|n| MapSpec {
                 uid: format!("m{n}"),
-                sectors: (0..rng.between(2, 5))
-                    .map(|_| rng.between(3_000, 12_000))
+                sectors: (0..maps.between(2, 5))
+                    .map(|_| maps.between(3_000, 12_000))
                     .collect(),
             })
             .collect();
+
+        let mut order = rng.fork("playlist");
         let mut playlist: Vec<String> = maps.iter().map(|map| map.uid.clone()).collect();
-        match rng.below(4) {
+        match order.below(4) {
             0 => playlist.clear(),
             1 => {
-                rng.shuffle(&mut playlist);
-                playlist.truncate(rng.between(1, playlist.len() as u32) as usize);
+                order.shuffle(&mut playlist);
+                playlist.truncate(order.between(1, playlist.len() as u32) as usize);
             }
             _ => {}
         }
 
-        let count = match rng.below(100) {
-            0..=1 => 0,
-            2..=6 => 1,
-            7..=36 => rng.between(2, 4),
-            37..=76 => rng.between(5, 8),
-            _ => rng.between(9, 16),
-        };
-        let players = (0..count as usize)
-            .map(|index| {
-                let name = match rng.below(20) {
-                    0 => format!("$f00{}", NAMES[index]),
-                    // Two players with the same name.
-                    1 => NAMES[(index + 1) % NAMES.len()].to_string(),
-                    _ => NAMES[index].to_string(),
-                };
-                let joins = rng.chance(150).then(|| Moment {
-                    round: rng.between(1, 6),
-                    during: rng.chance(500),
-                });
-                let leaves = rng.chance(100).then(|| Moment {
-                    round: joins.map_or(0, |joins| joins.round) + rng.between(1, 10),
-                    during: rng.chance(500),
-                });
-                PlayerSpec {
-                    account_id: char::from(b'a' + index as u8).to_string(),
-                    name,
-                    pace: rng.between(950, 1_150),
-                    spread: rng.below(1_500),
-                    give_up: rng.below(200),
-                    joins,
-                    leaves,
-                    watches: rng.chance(80),
-                }
-            })
+        let count = players.unwrap_or_else(|| {
+            let mut crowd = rng.fork("crowd");
+            match crowd.below(100) {
+                0..=1 => 0,
+                2..=6 => 1,
+                7..=36 => crowd.between(2, 4),
+                37..=76 => crowd.between(5, 8),
+                77..=95 => crowd.between(9, 16),
+                _ => crowd.between(17, MAX_PLAYERS),
+            }
+        });
+        let players: Vec<PlayerSpec> = (0..count as usize)
+            .map(|index| PlayerSpec::random(index, &mut rng.fork(&format!("player/{index}"))))
             .collect();
 
+        let mut chances = rng.fork("chances");
         World {
-            mode,
             settings,
             maps,
             playlist,
-            players,
             races: Races::Random {
-                ties: *rng.pick(&[0, 100, 300]),
-                idle: *rng.pick(&[0, 10, 30]),
+                ties: *chances.pick(&[0, 100, 300]),
+                idle: *chances.pick(&[0, 10, 30]),
             },
             faults: Faults {
-                repeated_holds: *rng.pick(&[0, 0, 100, 400]),
-                forced_rounds: *rng.pick(&[0, 0, 30, 100]),
-                missed_starts: *rng.pick(&[0, 0, 20]),
-                bridge_restarts: *rng.pick(&[0, 30, 100]),
-                script_restarts: *rng.pick(&[0, 0, 0, 10]),
-                playlist_changes: *rng.pick(&[0, 0, 20]),
+                repeated_holds: *chances.pick(&[0, 0, 100, 400]),
+                forced_rounds: *chances.pick(&[0, 0, 30, 100]),
+                missed_starts: *chances.pick(&[0, 0, 20]),
+                bridge_restarts: *chances.pick(&[0, 30, 100]),
+                script_restarts: *chances.pick(&[0, 0, 0, 10]),
+                playlist_changes: *chances.pick(&[0, 0, 20]),
             },
-            matches: if rng.chance(200) { 2 } else { 1 },
-            max_rounds: 150,
+            matches: if chances.chance(200) { 2 } else { 1 },
+            // Crowded matches take long, the rounds tell enough.
+            max_rounds: if players.len() > 16 { 40 } else { 150 },
+            players,
         }
     }
 
@@ -276,6 +271,39 @@ impl World {
 }
 
 impl PlayerSpec {
+    /// A player of a random world with its own pace, maybe late, maybe leaving early
+    /// or only watching.
+    fn random(index: usize, rng: &mut Rng) -> PlayerSpec {
+        let name = match index / NAMES.len() {
+            0 => NAMES[index].to_string(),
+            again => format!("{}{again}", NAMES[index % NAMES.len()]),
+        };
+        let name = match rng.below(20) {
+            0 => format!("$f00{name}"),
+            // The same name as someone else.
+            1 => NAMES[(index + 1) % NAMES.len()].to_string(),
+            _ => name,
+        };
+        let joins = rng.chance(150).then(|| Moment {
+            round: rng.between(1, 6),
+            during: rng.chance(500),
+        });
+        let leaves = rng.chance(100).then(|| Moment {
+            round: joins.map_or(0, |joins| joins.round) + rng.between(1, 10),
+            during: rng.chance(500),
+        });
+        PlayerSpec {
+            account_id: account_id(index),
+            name,
+            pace: rng.between(950, 1_150),
+            spread: rng.below(1_500),
+            give_up: rng.below(200),
+            joins,
+            leaves,
+            watches: rng.chance(80),
+        }
+    }
+
     /// A race on a map at the pace of the player.
     pub(crate) fn random_race(&self, map: &MapSpec, rng: &mut Rng, idle: u32) -> RacePlan {
         if rng.chance(idle) {
@@ -302,13 +330,25 @@ impl PlayerSpec {
     }
 }
 
+/// Short accounts in the order of the players: `a` to `z`, then `aa`, `ab` and so on.
+fn account_id(index: usize) -> String {
+    let mut letters = Vec::new();
+    let mut rest = index + 1;
+    while rest > 0 {
+        rest -= 1;
+        letters.push(b'a' + (rest % 26) as u8);
+        rest /= 26;
+    }
+    letters.into_iter().rev().map(char::from).collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn worlds_follow_their_seed() {
-        let world = |seed| format!("{:?}", World::random(Mode::Knockout, seed));
+        let world = |seed| format!("{:?}", World::random(seed, String::new()));
         assert_eq!(world(5), world(5));
         assert_ne!(world(5), world(6));
     }
@@ -316,12 +356,40 @@ mod tests {
     #[test]
     fn players_leave_after_they_joined() {
         for seed in 0..200 {
-            for player in World::random(Mode::Rounds, seed).players {
+            for player in World::random(seed, String::new()).players {
                 if let (Some(joins), Some(leaves)) = (player.joins, player.leaves) {
                     assert!(leaves.round > joins.round);
                 }
             }
         }
+    }
+
+    #[test]
+    fn some_worlds_are_crowded() {
+        let counts: Vec<usize> = (0..300)
+            .map(|seed| World::random(seed, String::new()).players.len())
+            .collect();
+        assert!(counts.iter().any(|&count| count > 16));
+        assert!(counts.iter().all(|&count| count <= MAX_PLAYERS as usize));
+
+        let full = World::full_server(1, String::new());
+        assert_eq!(full.players.len(), MAX_PLAYERS as usize);
+        assert_eq!(full.players[119].account_id, "dp");
+        let accounts: std::collections::BTreeSet<&str> = full
+            .players
+            .iter()
+            .map(|player| player.account_id.as_str())
+            .collect();
+        assert_eq!(accounts.len(), full.players.len());
+    }
+
+    #[test]
+    fn accounts_go_on_after_z() {
+        let accounts: Vec<String> = [0, 25, 26, 27, 51, 52, 701, 702]
+            .into_iter()
+            .map(account_id)
+            .collect();
+        assert_eq!(accounts, ["a", "z", "aa", "ab", "az", "ba", "zz", "aaa"]);
     }
 
     #[test]

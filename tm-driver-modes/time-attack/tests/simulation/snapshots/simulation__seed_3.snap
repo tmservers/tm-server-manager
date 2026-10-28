@@ -1,0 +1,40 @@
+---
+source: tm-driver-modes/time-attack/tests/simulation/main.rs
+expression: outcome.report
+---
+time-attack · seed 3
+settings {"maps_per_match":1,"time_limit_ms":20000}
+maps m1 5 cp 0:33.727
+playlist m1
+players a Ant · b Bea · c Cid · d Eve joins before round 4 · e Eve joins during round 5
+chances ties 300‰ · idle 30‰ · repeated holds 100‰ · bridge restarts 100‰
+
+match 1
+map m1 · time attack 0:20.000 · no warmup · next m1
+round 1
+  races  c 3cp · b 3cp · a 3cp
+  round  1 b 0 · 2 c 0 · 3 a 0
+  match  1 b 0 · 2 c 0 · 3 a 0
+  info   Map 1 / 1
+  end map
+map end · next m1
+  end match
+match end
+
+match 2
+map m1 · time attack 0:20.000 · no warmup · next m1
+round 2
+  races  b 3cp · c 3cp · a 3cp
+  round  1 c 0 · 2 a 0 · 3 b 0
+  match  1 c 0 · 2 a 0 · 3 b 0
+  info   Map 1 / 1
+  end map
+map end · next m1
+  end match
+match end
+
+end
+  1 c 0 (Winner)
+  2 a 0
+  3 b 0
+inputs 40

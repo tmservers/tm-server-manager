@@ -1,0 +1,57 @@
+---
+source: tm-driver-modes/knockout/tests/simulation/main.rs
+expression: outcome.report
+input_file: tm-driver-modes/knockout/tests/simulation/scenarios/faults.scn
+---
+knockout · scenario
+settings {"lives": 2, "rounds_without_elimination": 1}
+maps m1 3 cp 0:30.000
+players a · b · c leaves before round 3 · s watches · d joins before round 2
+
+match 1
+map m1 · one try, finish timeout 0:05.000 · no warmup
+round 1
+  races  c 1cp · b 0:31.000 · a 0:30.000
+  round  1 a 0 · 2 b 0 · 3 c 0
+  match  1 a 2 (\u{e96c}\u{e96c}) · 2 b 2 (\u{e96c}\u{e96c}) · 3 c 2 (\u{e96c}\u{e96c})
+  info   Round 2, 3 left, 1 loses a life
+  hold 2 again
+round 2
+  ! d joins
+  ! bridge restarts
+  races  b 0:32.000 · d 0:31.000 · a 0:30.000 · c 0:33.000
+  round  1 a 0 · 2 d 0 · 3 b 0 · 4 c -1
+  match  1 a 2 (\u{e96c}\u{e96c}) · 2 d 2 (\u{e96c}\u{e96c}) · 3 b 2 (\u{e96c}\u{e96c}) · 4 c 1 (\u{e96f}\u{e96c}) · - s spectator
+  info   Round 3, 4 left, 1 loses a life
+  block  s
+  hold 3 again
+round 3
+  ! c leaves
+  races  d 0:32.000 · b 0:31.000 · a 0:30.000
+  round  1 a 0 · 2 b 0 · 3 d 0 · 4 c -1
+  match  1 a 2 (\u{e96c}\u{e96c}) · 2 b 2 (\u{e96c}\u{e96c}) · 3 d 2 (\u{e96c}\u{e96c}) · 4 c 0 out (K.O.) · - s spectator
+  info   Round 4, 3 left, 1 loses a life
+  chat   $f90$i$<c$> takes 4th place!
+  block  c
+! modescript restarts
+
+match 2
+map m1 · one try, finish timeout 0:05.000 · no warmup
+round 4
+  races  b 0:31.000 · a 0:30.000 · d 0:32.000
+  round  1 a 0 · 2 b 0 · 3 d 0
+  match  1 a 2 (\u{e96c}\u{e96c}) · 2 b 2 (\u{e96c}\u{e96c}) · 3 d 2 (\u{e96c}\u{e96c})
+  info   Round 2, 3 left, 1 loses a life
+round 5
+  races  a 0:30.000 · d 0:32.000 · b 0:31.000
+  round  1 a 0 · 2 b 0 · 3 d -1
+  match  1 a 2 (\u{e96c}\u{e96c}) · 2 b 2 (\u{e96c}\u{e96c}) · 3 d 1 (\u{e96f}\u{e96c}) · - s spectator
+  info   Round 3, 3 left, 1 loses a life
+  block  s
+
+end · The scenario ends while the match goes on
+  1 a 2 (\u{e96c}\u{e96c})
+  2 b 2 (\u{e96c}\u{e96c})
+  3 d 1 (\u{e96f}\u{e96c})
+  - s spectator
+inputs 84

@@ -1,0 +1,108 @@
+---
+source: tm-driver-modes/reverse-cup/tests/simulation/main.rs
+expression: outcome.report
+---
+reverse-cup · seed 3
+settings {"allow_fast_forward_rounds":true,"complex_points_repartition":{"2":[5,7,9,11,16,21,25,28],"3":[2,5,7,10,11,16,20,22]},"disable_last_chance":false,"dnf_points_loss":30,"fast_forward_points_repartition":false,"finish_timeout":"disabled","last_chance_dnf_mode":"all_players","number_of_winners":1,"points_repartition":[4,7,9,13],"rounds_per_map":1,"starting_points":9,"warmup":{"duration_ms":0,"rounds":2}}
+maps m1 5 cp 0:33.727
+playlist m1
+players a Ant · b Bea · c Cid · d Eve joins before round 4 · e Eve joins during round 5
+chances ties 300‰ · idle 30‰ · repeated holds 100‰ · bridge restarts 100‰
+
+match 1
+map m1 · one try, no finish timeout · warmup 2 × one try · next m1
+round 1
+  races  c 0:37.629 · b 0:35.688 · a 4cp
+  round  1 b -2 · 2 c -5 · 3 a -30
+  match  1 b 7 · 2 c 4 · 3 a 0 (Last Chance)
+  info   3 left, 1 / 1 rounds
+  end map
+map end · next m1
+map m1 · one try, no finish timeout · warmup 2 × one try · next m1
+round 2
+  races  b 0:39.529 · c 0:35.621 · a 0:37.492
+  round  1 c -2 · 2 a -5 · 3 b -7
+  match  1 c 2 · 2 a 0 (Last Chance) · 3 b 0 (Last Chance)
+  info   3 left, 1 / 1 rounds
+  end map
+map end · next m1
+map m1 · one try, no finish timeout · warmup 2 × one try · next m1
+round 3
+  ! bridge restarts
+  races  a 0:38.721 · b 0:34.263 · c 0:37.484
+  round  1 b -2 · 2 c -5 · 3 a -7
+  match  1 b 0 (Last Chance) · 2 c 0 (Last Chance) · 3 a 0 out
+  info   2 left, 1 / 1 rounds
+  chat   $f90$i$<Ant$> takes 3rd place!
+  end map
+  block  a
+map end · next m1
+map m1 · one try, no finish timeout · warmup 2 × one try · next m1
+round 4
+  ! d joins
+  races  b 0:39.341 · d 0:34.356 · c 0:34.356
+  round  1 c -5 · 2 b -7
+  match  1 c 0 (Winner) · 2 b 0 out · 3 a 0 out · - d spectator
+  info   1 left, 1 / 1 rounds
+  chat   $f90$i$<Bea$> takes 2nd place!
+  chat   $<Cid$> wins the match!
+  end match
+  block  b d
+map end · next m1
+  end match
+match end
+
+match 2
+map m1 · one try, no finish timeout · warmup 2 × one try · next m1
+round 5
+  ! e joins
+  races  a 0:42.569 · d 0:34.327 · b 0:42.569 · c 0cp
+  round  1 d -4 · 2 a -7 · 3 b -9 · 4 c -30
+  match  1 d 5 · 2 a 2 · 3 b 0 (Last Chance) · 4 c 0 (Last Chance) · - e spectator
+  info   4 left, 1 / 1 rounds
+  end map
+  block  e
+map end · next m1
+map m1 · one try, no finish timeout · warmup 2 × one try · next m1
+round 6
+  ! bridge restarts
+  races  c 3cp · d 0:32.810 · b 0:39.237 · a 0:39.237
+  round  1 d -4 · 2 b -7 · 3 a -9 · 4 c -30
+  match  1 d 1 · 2 b 0 (Last Chance) · 3 a 0 (Last Chance) · 4 c 0 out · - e spectator
+  info   3 left, 1 / 1 rounds
+  chat   $f90$i$<Cid$> takes 4th place!
+  end map
+  block  c
+map end · next m1
+map m1 · one try, no finish timeout · warmup 2 × one try · next m1
+round 7
+  races  b 0:38.371 · a 0:38.382 · d 0:32.342
+  round  1 d -2 · 2 b -5 · 3 a -7
+  match  1 d 0 (Last Chance) · 2 b 0 (Last Chance) · 3 a 0 out · 4 c 0 out · - e spectator
+  info   2 left, 1 / 1 rounds
+  chat   $f90$i$<Ant$> takes 3rd place!
+  end map
+  block  a
+map end · next m1
+map m1 · one try, no finish timeout · warmup 2 × one try · next m1
+round 8
+  races  d 1cp · b 0:37.773
+  round  1 b -5 · 2 d -30
+  match  1 b 0 (Winner) · 2 d 0 out · 3 a 0 out · 4 c 0 out · - e spectator
+  info   1 left, 1 / 1 rounds
+  chat   $f90$i$<Eve$> takes 2nd place!
+  chat   $<Bea$> wins the match!
+  end match
+  block  d
+  hold 23 again
+map end · next m1
+  end match
+match end
+
+end
+  1 b 0 (Winner)
+  2 d 0 out
+  3 a 0 out
+  4 c 0 out
+  - e spectator
+inputs 470

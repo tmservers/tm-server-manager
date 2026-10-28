@@ -1,0 +1,83 @@
+---
+source: tm-driver-modes/reverse-cup/tests/simulation/main.rs
+expression: outcome.report
+---
+reverse-cup · seed 1
+settings {"allow_fast_forward_rounds":false,"complex_points_repartition":{},"disable_last_chance":false,"dnf_points_loss":10,"fast_forward_points_repartition":false,"finish_timeout":"disabled","last_chance_dnf_mode":"all_players","number_of_winners":1,"points_repartition":[5],"rounds_per_map":2,"starting_points":44,"warmup":{"duration_ms":21000,"rounds":1,"timeout_ms":10000}}
+maps m1 4 cp 0:32.773 · m2 4 cp 0:32.453
+players a Ant · b Bea · c Cid
+chances ties 100‰ · repeated holds 100‰ · missed starts 20‰ · playlist changes 20‰
+
+match 1
+map m1 · one try, no finish timeout · warmup 1 × 0:21.000
+round 1
+  races  a 0:30.961 · b 2cp · c 0:35.888
+  round  1 a -5 · 2 c -5 · 3 b -10
+  match  1 a 39 · 2 c 39 · 3 b 34
+  info   3 left, 1 / 2 rounds
+round 2
+  races  c 0:36.882 · b 3cp · a 0:30.895
+  round  1 a -5 · 2 c -5 · 3 b -10
+  match  1 a 34 · 2 c 34 · 3 b 24
+  info   3 left, 2 / 2 rounds
+  end map
+map end
+map m2 · one try, no finish timeout · warmup 1 × 0:21.000
+round 3
+  races  b 0:31.585 · c 0:30.313 · a 0:30.313
+  round  1 a -5 · 2 c -5 · 3 b -5
+  match  1 a 29 · 2 c 29 · 3 b 19
+  info   3 left, 1 / 2 rounds
+round 4
+  races  c 0:36.219 · a 0:31.941 · b 0:32.581
+  round  1 a -5 · 2 b -5 · 3 c -5
+  match  1 a 24 · 2 c 24 · 3 b 14
+  info   3 left, 2 / 2 rounds
+  end map
+map end
+map m1 · one try, no finish timeout · warmup 1 × 0:21.000
+round 5
+  races  a 0:31.242 · c 0:36.325 · b 0:34.356
+  round  1 a -5 · 2 b -5 · 3 c -5
+  match  1 a 19 · 2 c 19 · 3 b 9
+  info   3 left, 1 / 2 rounds
+round 6
+  races  a 0:32.887 · c 0:36.757 · b 0:32.117
+  round  1 b -5 · 2 a -5 · 3 c -5
+  match  1 a 14 · 2 c 14 · 3 b 4
+  info   3 left, 2 / 2 rounds
+  end map
+map end
+map m2 · one try, no finish timeout · warmup 1 × 0:21.000
+round 7
+  races  c 0:36.317 · b 1cp · a 0:31.248
+  round  1 a -5 · 2 c -5 · 3 b -10
+  match  1 a 9 · 2 c 9 · 3 b 0 (Last Chance)
+  info   3 left, 1 / 2 rounds
+round 8
+  races  a 0:33.259 · c 3cp · b 0:34.165
+  round  1 a -5 · 2 b -5 · 3 c -10
+  match  1 a 4 · 2 b 0 (Last Chance) · 3 c 0 (Last Chance)
+  info   3 left, 2 / 2 rounds
+  end map
+map end
+map m1 · one try, no finish timeout · warmup 1 × 0:21.000
+round 9
+  races  b 0:35.015 · c 0:36.286 · a 0:32.463
+  round  1 a -5 · 2 b -5 · 3 c -5
+  match  1 a 0 (Winner) · 2 b 0 out · 3 c 0 out
+  info   1 left, 1 / 2 rounds
+  chat   $f90$i$<Bea$> takes 2nd place!
+  chat   $f90$i$<Cid$> takes 3rd place!
+  chat   $<Ant$> wins the match!
+  end match
+  block  b c
+map end
+  end match
+match end
+
+end
+  1 a 0 (Winner)
+  2 b 0 out
+  3 c 0 out
+inputs 219

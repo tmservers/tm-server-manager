@@ -1,6 +1,5 @@
 # Nobody finishes. Everyone would lose their last life, so the player who got
 # the furthest keeps it and wins.
-mode knockout
 settings {"rounds_without_elimination": 0}
 players a b c
 round a dnf 1 | b dnf 2 | c idle

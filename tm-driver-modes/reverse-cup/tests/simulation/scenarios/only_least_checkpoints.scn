@@ -1,0 +1,9 @@
+# Giving up costs the dnf points. In last chance only the player who passed the
+# fewest checkpoints loses them, which eliminates c. s only watches.
+settings {"starting_points": 10, "last_chance_dnf_mode": "only_least_checkpoints"}
+maps m1:10/10/10
+players a b c
+watchers s
+round a 30 | b dnf 2 | c dnf 1
+round a 30 | b dnf 2 | c dnf 1
+round a 30 | b 32

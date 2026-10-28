@@ -1,10 +1,11 @@
-//! Runs the first-party rounds mode through the host as a real wasm module.
+//! Runs the host with the rounds mode as a real wasm module. The modes test
+//! their rules with simulations of their own.
 
 mod common;
 
 use common::{
     ROUNDS, SESSION, finish, forced_round_end, hold, match_start, no_warm_up, play, player,
-    player_info, publishes_standings, race, ranking, round_start, without_published,
+    player_info, publishes_standings, race, ranking, round_start, start_line, without_published,
 };
 use tm_server_types::{
     event::{
@@ -105,6 +106,43 @@ fn plays_a_match() {
     );
     assert_eq!(driver.standings().title, "Rounds");
     assert_eq!(driver.standings().maps_played, 1);
+}
+
+#[test]
+fn players_show_up_once_they_start_a_round() {
+    let mut driver = rounds("");
+    driver.handle(&match_start()).unwrap();
+    driver.handle(&hold(1, DriverSection::MapStart)).unwrap();
+    // Warmup races happen outside of rounds, even if a warmup round looked like one.
+    driver.handle(&Event::WarmupStart).unwrap();
+    driver.handle(&start_line("a")).unwrap();
+    driver.handle(&round_start(1)).unwrap();
+    driver.handle(&start_line("b")).unwrap();
+    driver.handle(&Event::WarmupEnd).unwrap();
+    assert!(driver.standings().entries.is_empty());
+
+    driver.handle(&round_start(1)).unwrap();
+    for player in ["a", "b"] {
+        driver.handle(&player_info(player, player)).unwrap();
+    }
+    assert!(publishes_standings(
+        &driver.handle(&start_line("b")).unwrap().commands
+    ));
+    driver.handle(&start_line("a")).unwrap();
+    // Starting again, e.g. in time attack rounds, changes nothing.
+    assert_eq!(
+        driver.handle(&start_line("b")).unwrap(),
+        DriverReply::default()
+    );
+
+    // Without a position until their first round, so the host lists them by name.
+    assert_eq!(
+        ranking(&driver),
+        [
+            ("a".into(), 0, DriverStatus::Playing, String::new(), 0, 0),
+            ("b".into(), 0, DriverStatus::Playing, String::new(), 0, 0),
+        ]
+    );
 }
 
 #[test]

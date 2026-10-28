@@ -1,9 +1,9 @@
 //! Scenarios: worlds written by hand, e.g. for a rule of a mode or a match that
-//! went wrong on a server.
+//! went wrong on a server. A mode keeps its scenarios with its tests and runs them
+//! with [`Simulator::scenario`](crate::Simulator::scenario).
 //!
 //! ```text
 //! # Two players finish in the same time, the account decides.
-//! mode knockout
 //! settings {"rounds_without_elimination": 0}
 //! maps m1:10/10/10
 //! players a b c=Cid
@@ -12,8 +12,7 @@
 //!
 //! One instruction per line, `#` starts a comment:
 //!
-//! - `mode <name>`: the mode, by its crate name without `tm-driver-mode-`.
-//! - `settings <json>`: its settings, `{}` by default.
+//! - `settings <json>`: the settings of the mode, `{}` by default.
 //! - `maps <uid>[:<sector>/<sector>/...] ...`: the map list of the server, with
 //!   the seconds the author needs for every sector, the last one ends at the
 //!   finish. `m1:10/10/10` by default. The first map runs when the driver loads.
@@ -45,12 +44,11 @@
 use std::collections::BTreeMap;
 
 use crate::{
-    Faults, Mode, Moment, PlayerSpec, RacePlan, Races, ScriptedRound, World,
+    Faults, Moment, PlayerSpec, RacePlan, Races, ScriptedRound, World,
     world::{Action, MapSpec},
 };
 
 pub fn parse(text: &str) -> Result<World, String> {
-    let mut mode = None;
     let mut settings = "{}".to_string();
     let mut maps = Vec::new();
     let mut playlist = Vec::new();
@@ -70,9 +68,6 @@ pub fn parse(text: &str) -> Result<World, String> {
         let words = || rest.split_whitespace();
 
         match instruction {
-            "mode" => {
-                mode = Some(Mode::from_name(rest).ok_or_else(|| error(format!("No mode {rest}")))?);
-            }
             "settings" => settings = rest.to_string(),
             "maps" => {
                 maps = words()
@@ -189,7 +184,6 @@ pub fn parse(text: &str) -> Result<World, String> {
 
     let max_rounds = rounds.len() as u32 + 1;
     Ok(World {
-        mode: mode.ok_or("A scenario needs a mode")?,
         settings,
         maps,
         playlist,
@@ -281,8 +275,7 @@ mod tests {
     #[test]
     fn a_scenario_becomes_a_world() {
         let world = parse(
-            "mode knockout
-             settings {\"lives\": 2}
+            "settings {\"lives\": 2}
              maps m1:10/20 m2
              players a b=Bea
              later c
@@ -293,7 +286,6 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(world.mode, Mode::Knockout);
         assert_eq!(world.maps[0].sectors, [10_000, 20_000]);
         assert_eq!(world.maps[1].sectors, [10_000, 10_000, 10_000]);
         assert_eq!(world.players[1].name, "Bea");
@@ -326,11 +318,11 @@ mod tests {
     #[test]
     fn mistakes_are_reported_with_their_line() {
         assert_eq!(
-            parse("mode knockout\nround x 30").err().as_deref(),
+            parse("players a\nround x 30").err().as_deref(),
             Some("Line 2: Nobody is called x")
         );
-        assert!(parse("players a").is_err());
-        assert!(parse("mode rounds\nplayers a\nround a dnf").is_err());
-        assert!(parse("mode rounds\nlater a\nround").is_err());
+        assert!(parse("mode knockout").is_err());
+        assert!(parse("players a\nround a dnf").is_err());
+        assert!(parse("later a\nround").is_err());
     }
 }

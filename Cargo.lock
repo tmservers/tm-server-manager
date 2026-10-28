@@ -4088,32 +4088,44 @@ checksum = "fd3ca314f692efd6c868f8408f53fe444634a845f96c028b97d35f6a1f79f0ee"
 name = "tm-driver-mode-knockout"
 version = "0.1.0-dev"
 dependencies = [
+ "insta",
  "serde",
+ "serde_json",
  "tm-driver-sdk",
+ "tm-driver-sim",
 ]
 
 [[package]]
 name = "tm-driver-mode-reverse-cup"
 version = "0.1.0-dev"
 dependencies = [
+ "insta",
  "serde",
+ "serde_json",
  "tm-driver-sdk",
+ "tm-driver-sim",
 ]
 
 [[package]]
 name = "tm-driver-mode-rounds"
 version = "0.1.0-dev"
 dependencies = [
+ "insta",
  "serde",
+ "serde_json",
  "tm-driver-sdk",
+ "tm-driver-sim",
 ]
 
 [[package]]
 name = "tm-driver-mode-time-attack"
 version = "0.1.0-dev"
 dependencies = [
+ "insta",
  "serde",
+ "serde_json",
  "tm-driver-sdk",
+ "tm-driver-sim",
 ]
 
 [[package]]
@@ -4129,13 +4141,8 @@ dependencies = [
 name = "tm-driver-sim"
 version = "0.1.0-dev"
 dependencies = [
- "insta",
  "serde",
  "serde_json",
- "tm-driver-mode-knockout",
- "tm-driver-mode-reverse-cup",
- "tm-driver-mode-rounds",
- "tm-driver-mode-time-attack",
  "tm-server-types",
  "tm-wasm-driver",
  "wasmtime",

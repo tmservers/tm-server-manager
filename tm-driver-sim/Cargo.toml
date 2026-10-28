@@ -1,6 +1,6 @@
 [package]
 name = "tm-driver-sim"
-description = "Deterministic simulation of a Trackmania server to test the wasm driver and its modes."
+description = "Deterministic simulation of a Trackmania server for the tests of wasm driver modes."
 publish = false
 
 version.workspace = true
@@ -18,12 +18,3 @@ serde.workspace = true
 serde_json.workspace = true
 # Names the compiled modes the driver engine returns.
 wasmtime.workspace = true
-
-# Natively, for the settings of the modes their checks follow.
-tm-driver-mode-rounds.workspace = true
-tm-driver-mode-time-attack.workspace = true
-tm-driver-mode-reverse-cup.workspace = true
-tm-driver-mode-knockout.workspace = true
-
-[dev-dependencies]
-insta = { workspace = true, features = ["glob"] }

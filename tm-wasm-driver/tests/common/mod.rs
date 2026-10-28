@@ -1,4 +1,5 @@
-//! Builds the first-party modes and the callbacks of the server for the integration tests.
+//! Builds the rounds mode the integration tests run the host with, and the
+//! callbacks of the server. The modes test their own rules with simulations.
 #![allow(dead_code)]
 
 use std::{collections::BTreeMap, path::PathBuf, process::Command, sync::Mutex};
@@ -16,9 +17,6 @@ use wasmtime::component::Component;
 pub const SESSION: i32 = 7;
 
 pub const ROUNDS: &str = "tm-driver-mode-rounds";
-pub const TIME_ATTACK: &str = "tm-driver-mode-time-attack";
-pub const REVERSE_CUP: &str = "tm-driver-mode-reverse-cup";
-pub const KNOCKOUT: &str = "tm-driver-mode-knockout";
 
 /// A mode crate of the workspace as a wasm module, built once per test binary.
 pub fn mode(package: &'static str) -> &'static [u8] {

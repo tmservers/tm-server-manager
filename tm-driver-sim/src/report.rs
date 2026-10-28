@@ -27,15 +27,12 @@ pub(crate) struct Report {
 }
 
 impl Report {
-    pub(crate) fn new(world: &World, seed: Option<u64>) -> Self {
+    pub(crate) fn new(header: String, world: &World) -> Self {
         let mut report = Self {
             text: String::new(),
             holds: BTreeSet::new(),
         };
-        match seed {
-            Some(seed) => report.line(format!("{} · seed {seed}", world.mode.name())),
-            None => report.line(format!("{} · scenario", world.mode.name())),
-        }
+        report.line(header);
         report.line(format!("settings {}", world.settings));
         let maps: Vec<String> = world
             .maps

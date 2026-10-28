@@ -1,0 +1,52 @@
+---
+source: tm-driver-modes/reverse-cup/tests/simulation/main.rs
+expression: outcome.report
+input_file: tm-driver-modes/reverse-cup/tests/simulation/scenarios/last_chance.scn
+---
+reverse-cup · scenario
+settings {"starting_points": 10, "points_repartition": [2, 4, 6], "complex_points_repartition": {}, "allow_fast_forward_rounds": false}
+maps m1 3 cp 0:30.000
+players a · b · c
+
+match 1
+map m1 · one try, automatic finish timeout · no warmup
+round 1
+  races  c 0:32.000 · b 0:31.000 · a 0:30.000
+  round  1 a -2 · 2 b -4 · 3 c -6
+  match  1 a 8 · 2 b 6 · 3 c 4
+  info   3 left, 1 / 5 rounds
+round 2
+  races  b 0:31.000 · a 0:30.000 · c 0:32.000
+  round  1 a -2 · 2 b -4 · 3 c -6
+  match  1 a 6 · 2 b 2 · 3 c 0 (Last Chance)
+  info   3 left, 2 / 5 rounds
+round 3
+  races  c 0:30.000 · b 1cp · a 0:31.000
+  round  1 c -2 · 2 a -4 · 3 b -20
+  match  1 a 2 · 2 c 0 (Last Chance) · 3 b 0 (Last Chance)
+  info   3 left, 3 / 5 rounds
+round 4
+  races  b 0:31.000 · a 0:30.000 · c 0:32.000
+  round  1 a -2 · 2 b -4 · 3 c -6
+  match  1 a 0 (Last Chance) · 2 b 0 (Last Chance) · 3 c 0 out
+  info   2 left, 4 / 5 rounds
+  chat   $f90$i$<c$> takes 3rd place!
+  block  c
+round 5
+  races  b 0:30.000 · a 0:31.000
+  round  1 b -2 · 2 a -4
+  match  1 b 0 (Winner) · 2 a 0 out · 3 c 0 out
+  info   1 left, 5 / 5 rounds
+  chat   $f90$i$<a$> takes 2nd place!
+  chat   $<b$> wins the match!
+  end match
+  block  a
+map end
+  end match
+match end
+
+end
+  1 b 0 (Winner)
+  2 a 0 out
+  3 c 0 out
+inputs 70

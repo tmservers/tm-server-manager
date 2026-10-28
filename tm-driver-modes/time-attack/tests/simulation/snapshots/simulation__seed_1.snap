@@ -1,0 +1,36 @@
+---
+source: tm-driver-modes/time-attack/tests/simulation/main.rs
+expression: outcome.report
+---
+time-attack · seed 1
+settings {"maps_per_match":2,"time_limit_ms":67000}
+maps m1 4 cp 0:32.773 · m2 4 cp 0:32.453
+players a Ant · b Bea · c Cid
+chances ties 100‰ · repeated holds 100‰ · missed starts 20‰ · playlist changes 20‰
+
+match 1
+map m1 · time attack 1:07.000 · no warmup
+round 1
+  races  a 0:30.961 0:32.978 · b 2cp 0:34.141 0cp · c 0:35.888 3cp
+  round  1 a 3 · 2 b 2 · 3 c 1
+  match  1 a 3 · 2 b 2 · 3 c 1
+  info   Map 1 / 2
+  end map
+map end
+map m2 · time attack 1:07.000 · no warmup
+round 2
+  ! start of a missed
+  races  c 0:36.526 2cp · b 3cp 0:33.977 · a 0:30.588 0:32.642
+  round  1 a 3 · 2 b 2 · 3 c 1
+  match  1 a 6 · 2 b 4 · 3 c 2
+  info   Map 2 / 2
+  end map
+map end
+  end match
+match end
+
+end
+  1 a 6 (Winner)
+  2 b 4
+  3 c 2
+inputs 67

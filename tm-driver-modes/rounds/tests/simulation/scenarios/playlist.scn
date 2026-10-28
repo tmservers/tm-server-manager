@@ -1,5 +1,4 @@
 # The driver plays its playlist in order and follows a new one.
-mode rounds
 settings {"rounds_per_map": 1, "maps_per_match": 3}
 maps m1 m2 m3
 playlist m1 m2 m3

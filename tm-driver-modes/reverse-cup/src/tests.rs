@@ -76,12 +76,11 @@ fn started(settings: &str) -> Harness<ReverseCup> {
     harness
 }
 
-/// A match whose participants already reached these standings. A map was played
-/// already, so registration is closed.
+/// A match whose participants already reached these standings. They lost points,
+/// so registration is closed.
 fn playing(settings: &str, players: Vec<Entry>) -> Harness<ReverseCup> {
     let mut harness = started(settings);
     harness.standings.entries = players;
-    harness.standings.maps_played = 1;
     harness
 }
 
@@ -209,6 +208,30 @@ fn players_take_part_from_their_first_race() {
     ]));
     assert_eq!(blocked(&commands), ["c"]);
     assert_eq!(harness.standing("c").status, Status::Spectator);
+}
+
+#[test]
+fn waits_for_more_players_than_winners() {
+    let mut harness = started(r#"{"number_of_winners": 2}"#);
+    harness.step(round_end(vec![finish("a", 30_000), finish("b", 31_000)]));
+    // Two winners would leave nobody to lose, so the round does not count.
+    assert_eq!(status(&harness, "a"), (Status::Playing, 100));
+    assert!(harness.round.is_empty());
+    assert_eq!(harness.standings.info, "Waiting for players, 2 / 3");
+
+    // The match waits on the next map too, e.g. after an admin skipped this one.
+    assert!(harness.step(Event::MapEnd).is_empty());
+    harness.step(Event::MapStart);
+    assert_eq!(harness.standings.info, "Waiting for players, 2 / 3");
+
+    // A third player starts the match. Three players lose 2, 6 and 9 points.
+    harness.step(round_end(vec![
+        finish("a", 30_000),
+        finish("b", 31_000),
+        finish("c", 32_000),
+    ]));
+    assert_eq!(status(&harness, "c"), (Status::Playing, 91));
+    assert_eq!(harness.standings.info, "3 left, 1 / 5 rounds");
 }
 
 #[test]

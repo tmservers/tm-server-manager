@@ -1,0 +1,44 @@
+---
+source: tm-driver-modes/reverse-cup/tests/simulation/main.rs
+expression: outcome.report
+input_file: tm-driver-modes/reverse-cup/tests/simulation/scenarios/only_least_checkpoints.scn
+---
+reverse-cup · scenario
+settings {"starting_points": 10, "last_chance_dnf_mode": "only_least_checkpoints"}
+maps m1 3 cp 0:30.000
+players a · b · c · s watches
+
+match 1
+map m1 · one try, automatic finish timeout · no warmup
+round 1
+  races  c 1cp · b 2cp · a 0:30.000
+  round  1 a -2 · 2 b -20 · 3 c -20
+  match  1 a 8 · 2 b 0 (Last Chance) · 3 c 0 (Last Chance) · - s spectator
+  info   3 left, 1 / 5 rounds
+  block  s
+round 2
+  races  b 2cp · a 0:30.000 · c 1cp
+  round  1 a -2 · 2 b 0 · 3 c -20
+  match  1 a 6 · 2 b 0 (Last Chance) · 3 c 0 out · - s spectator
+  info   2 left, 2 / 5 rounds
+  chat   $f90$i$<c$> takes 3rd place!
+  block  c
+round 3
+  races  b 0:32.000 · a 0:30.000
+  round  1 a -4 · 2 b -8
+  match  1 a 2 (Winner) · 2 b 0 out · 3 c 0 out · - s spectator
+  info   1 left, 3 / 5 rounds
+  chat   $f90$i$<b$> takes 2nd place!
+  chat   $<a$> wins the match!
+  end match
+  block  b
+map end
+  end match
+match end
+
+end
+  1 a 2 (Winner)
+  2 b 0 out
+  3 c 0 out
+  - s spectator
+inputs 38

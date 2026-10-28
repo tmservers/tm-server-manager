@@ -6,7 +6,9 @@
 //! round. The match ends once only the winners are left.
 //!
 //! The players who start a race before the first round counts take part in the
-//! match with their starting points. Everyone else cannot spawn anymore.
+//! match with their starting points. Everyone else cannot spawn anymore. A match
+//! needs more participants than winners: until then rounds do not count and the
+//! match waits for players. A single participant plays alone until eliminated.
 //!
 //! The original mode skips a round that would put everyone in last chance
 //! anyway. This mode does that right after the previous round, so the round is
@@ -189,8 +191,10 @@ impl ReverseCup {
         }
         if round_end.invalid
             || standings.participants().next().is_none()
+            || self.waits(standings)
             || self.match_over(standings)
         {
+            standings.info = self.info(standings);
             return self.block_late_players(standings, &round_end);
         }
         let mut commands = Vec::new();
@@ -272,9 +276,20 @@ impl ReverseCup {
         commands
     }
 
-    /// Players can take part until the first round counts.
+    /// Players can take part until the first round counts, which takes points from
+    /// someone. A map ending before does not close it.
     fn registration_open(&self, standings: &Standings) -> bool {
-        standings.rounds_on_map == 0 && standings.maps_played == 0
+        standings
+            .participants()
+            .all(|p| p.is_in_match() && p.score == self.settings.starting_points)
+    }
+
+    /// Too few players take part to have a loser, so the match waits for more.
+    fn waits(&self, standings: &Standings) -> bool {
+        let participants = standings.participants().count();
+        self.registration_open(standings)
+            && participants >= 2
+            && participants <= self.settings.number_of_winners as usize
     }
 
     /// Everyone who started a race takes part while registration is open.
@@ -386,17 +401,26 @@ impl ReverseCup {
         true
     }
 
-    /// Only the winners are left. A single participant plays until eliminated.
+    /// Only the winners are left. A single participant plays until eliminated, a
+    /// match waiting for players has not even started.
     fn match_over(&self, standings: &Standings) -> bool {
         let left = standings.in_match().count();
         match standings.participants().count() {
             0 => false,
             1 => left == 0,
+            _ if self.waits(standings) => false,
             _ => left <= self.settings.number_of_winners as usize,
         }
     }
 
     fn info(&self, standings: &Standings) -> String {
+        if self.waits(standings) {
+            return format!(
+                "Waiting for players, {} / {}",
+                standings.participants().count(),
+                self.settings.number_of_winners + 1
+            );
+        }
         let rounds = match self.settings.rounds_per_map {
             0 => format!("{} rounds", standings.rounds_on_map),
             limit => format!("{} / {limit} rounds", standings.rounds_on_map),

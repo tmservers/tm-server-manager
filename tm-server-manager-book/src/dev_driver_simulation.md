@@ -1,10 +1,11 @@
 # Simulation Testing
 
-`tm-driver-sim` tests the driver and its modes with deterministic simulations. The real host with
-the real wasm modes plays matches against a fake server, which plays the driver modescript and its
-players. The matches come from seeds or are written down as scenarios. Checks run after every input
-the driver gets, and a match has to replay and resume exactly. The reports of some matches are kept
-as snapshots, so changes to a mode or the driver show up in review.
+Every mode tests itself with deterministic simulations. `tm-driver-sim` runs the real host with the
+real wasm of a mode against a fake server, which plays the driver modescript and its players. The
+matches come from seeds or are written down as scenarios. Checks run after every input the driver
+gets, the rules of the mode at the end of every round and map, and a match has to replay and resume
+exactly. The reports of some matches are kept as snapshots, so changes to a mode or the driver show
+up in review.
 
 ## Why it works
 
@@ -25,6 +26,17 @@ The fake server sends `DriverInput`s and follows the `DriverCommand`s the driver
 the driver steers the match like on a real server: eliminated players stop racing, `EndMap` ends the
 map, `SetNextMap` picks the next one. Without that loop a generated stream would soon describe a
 match the driver never asked for.
+
+## Who tests what
+
+| Crate | Tests |
+|---|---|
+| `tm-driver-sim` | Nothing about modes. A library: the fake server, worlds, scenarios, the checks every mode has to keep and the `Rules` trait. |
+| `tm-driver-modes/<mode>` | Unit tests of its rules with the SDK's harness in `src/tests.rs`, and simulations in `tests/simulation`: its `Rules`, random settings, scenarios and snapshots. |
+| `tm-wasm-driver` | The host: holds, publishing, players, sessions, replays, the playlist, limits. It runs the rounds mode for that, but does not test its rules. |
+
+A new mode, also one from outside the repository, brings its own simulation without touching the
+simulator.
 
 ## The fake server
 
@@ -56,23 +68,26 @@ callbacks, so holds are answered at once.
 
 A random world varies everything with its seed, like swarm testing:
 
-- The settings of the mode, within the ranges it accepts and so that matches end.
+- The settings of the mode, from the random settings the mode hands to the simulator.
 - One to three maps with two to five checkpoints, and a playlist of some of them or none.
-- Up to sixteen players with a pace, how much their sectors vary and a chance to give up. Some join
-  later, leave, only watch, have colored names or the same name as someone else.
+- Mostly up to sixteen players, sometimes a crowd of up to 120, the most a server holds. Every
+  player has a pace, how much their sectors vary and a chance to give up. Some join later, leave,
+  only watch, have colored names or the same name as someone else.
 - Chances of ties, idle players, holds that come twice, rounds an admin forces to end, start lines
   that do not reach the driver, the bridge restarting (the driver resumes by replaying its inputs),
   the modescript restarting and the playlist changing. Most worlds are plain, some have every fault.
 - One or two matches.
 
-Every part of a simulation draws from its own random stream forked from the seed, e.g. the races of
-a player in a round. A change in one place does not reshuffle the whole match.
+A full server is a random world with 120 players. Crowded matches stop after 40 rounds, which shows
+enough of them and keeps the tests fast.
+
+Every part of a world draws from its own random stream forked from the seed, e.g. every player or
+the races of a player in a round. A change in one place does not reshuffle the whole match.
 
 A scenario writes a world down instead, e.g. for a rule of a mode or a match that went wrong:
 
 ```text
 # Two players drive exactly the same race. Accounts decide, not names.
-mode knockout
 settings {"rounds_without_elimination": 0}
 maps m1:10/10/10
 players x=bob y=Alice z
@@ -87,7 +102,7 @@ driver still steer the match, so a scenario only says how players race, not who 
 
 ## Checks
 
-After every input:
+After every input, for every mode:
 
 - Replies to holds end with their only `Continue`. A hold that comes again gets the same commands
   and no round result. `EndMap` and `EndMatch` only come at holds, round results only for rounds
@@ -99,7 +114,10 @@ After every input:
 - Nobody leaves the standings of a match, eliminated players and spectators stay what they are, and
   none of them can spawn. The driver knows the name of every player the server told it about.
 
-At the end of every round and map, the checks of the mode, against the races the simulation knows:
+The driver publishes whatever changes, so most of these run only after replies with commands. That
+keeps waypoints cheap, of which a full server sends thousands per round.
+
+At the end of every round and map, the `Rules` of the mode, against the races the simulation knows:
 
 - **Rounds:** finishers get the points of their place, in race order and with the time of their
   race. The points add up, ranks follow them, the points limit and the maps per match end the
@@ -108,58 +126,96 @@ At the end of every round and map, the checks of the mode, against the races the
   points of their place, the maps per match end the match.
 - **ReverseCup:** players only lose points, players without points are labeled `Last Chance`, a
   player in last chance is eliminated by losing the most of a round, and the match ends once only
-  the winners are left.
+  the winners are left. With no more participants than winners the match waits for players: no
+  round counts and `info` says so.
 - **Knockout:** the players who lose a life are the last ones of the race and exactly as many as the
   settings take, with players without a finish and the player who keeps the last life. Lives stay
   within the settings and the match ends once one player is left.
 
-The checks of a mode test properties of its rules. They do not compute the standings a second way,
-except for the number of lives a knockout round takes, the heart of that mode.
+Rules test properties against the races. They do not compute the standings a second way, except for
+the number of lives a knockout round takes, the heart of that mode.
 
 Once a match ended, replaying every input has to give the same driver, and a driver resumed at a
 random input has to answer the rest the same way.
 
-To make sure the checks catch something, bugs were planted one at a time: a knockout taking one life
-too many, points of the wrong place in rounds, the host stepping repeated holds again, the SDK
-counting the slowest race as the best, a reverse cup eliminating every loss in last chance, the host
-folding a restart into the finished race and a time attack playing one map too many. 200 seeds
-caught each of them. A planted bug in the host that kept the spawn permissions of an old modescript
-session went unnoticed, because every new session starts a new match, which clears them anyway.
+To make sure the checks catch something, bugs were planted one at a time and the simulation tests of
+the affected mode ran on 150 seeds: a knockout taking one life too many, rounds giving the points of
+the next place, the host stepping repeated holds again, the SDK counting the slowest race as the
+best, a reverse cup eliminating every loss in last chance, a reverse cup not waiting for players,
+the host folding a restart into the finished race and a time attack playing one map too many. All of
+them were caught. The first check of waiting missed its bug: it looked at the standings after the
+round, which the wrong round had already taken out of registration.
+
+## Testing a mode
+
+A mode keeps its simulation in `tests/simulation`:
+
+```text
+tests/simulation/main.rs        the simulator for the mode, its random settings and the tests
+tests/simulation/rules.rs       its Rules
+tests/simulation/scenarios/     scenarios, one per file
+tests/simulation/snapshots/     the reports insta keeps
+```
+
+`main.rs` builds the mode for wasm and hands the simulator what only the mode knows:
+
+```rust
+fn simulator() -> &'static Simulator {
+    static SIMULATOR: OnceLock<Simulator> = OnceLock::new();
+    SIMULATOR.get_or_init(|| {
+        Simulator::new("knockout", &tm_driver_sim::wasm!())
+            .settings(settings)
+            .rules(rules::Knockout::boxed)
+    })
+}
+
+#[test]
+fn random_matches_follow_the_rules() {
+    simulator().check(seeds("SIM_SEEDS", 100..125), Simulator::world);
+}
+```
+
+`tm_driver_sim::wasm!()` builds the crate whose tests call it for `wasm32-unknown-unknown` into
+`target/tmp/modes`, where the host tests build the rounds mode as well. Without random settings a
+mode plays its defaults, without `Rules` only the checks for every mode run. The modes so far test
+random matches, full servers, the matches of seeds 1 to 3 as snapshots and every scenario as a
+snapshot.
 
 ## Snapshots
 
 The report of a match has one block per round: the races as the driver saw them, the places of the
-round, the standings after it and what the driver did. `tests/seeds.rs` keeps the matches of seeds 1
-to 3 of every mode, `tests/scenarios.rs` every scenario in `tests/scenarios`. The snapshots are
-[insta](https://insta.rs) files in `tests/snapshots`, the same in debug and release builds.
+round, the standings after it and what the driver did. The snapshots are
+[insta](https://insta.rs) files in `tests/simulation/snapshots` of every mode, the same in debug and
+release builds. Reports of full servers are not kept, they are hundreds of kilobytes.
 
 When a mode or the driver changes on purpose, review the new reports with `cargo insta review` or
-accept them with `INSTA_UPDATE=always cargo test -p tm-driver-sim`. Changing the simulation itself
-changes the matches of the seeds as well.
+accept them with `INSTA_UPDATE=always`. Changing the simulator itself changes the matches of the
+seeds as well.
 
 ## Running
 
 ```sh
-cargo test -p tm-driver-sim                                       # 25 seeds per mode, snapshots
-SIM_SEEDS=2000 cargo test -p tm-driver-sim --release --test seeds # more seeds
-cargo run -p tm-driver-sim --release -- knockout 1..10000         # a sweep, prints failures
-cargo run -p tm-driver-sim -- knockout 42                         # the report of a seed
-cargo run -p tm-driver-sim -- knockout 42 inputs.json             # and its inputs
-cargo run -p tm-driver-sim -- tests/scenarios/<file>.scn          # the report of a scenario
+cargo test -p tm-driver-mode-knockout                     # unit tests and simulations
+SIM_SEEDS=5000 cargo test --release -p tm-driver-mode-knockout --test simulation
+SIM_FULL_SERVERS=50 cargo test --release -p tm-driver-mode-knockout --test simulation
+SIM_SEED=42 cargo test -p tm-driver-mode-knockout --test simulation random_matches_follow -- --nocapture
 ```
 
-The first run builds the modes for `wasm32-unknown-unknown` into `target/tm-driver-sim`. A sweep of
-300 matches per mode takes a few seconds in release.
+`SIM_SEEDS` and `SIM_FULL_SERVERS` set how many random matches and full servers run, `SIM_SEED`
+runs only that seed and prints its report. A failure prints the report of the first failing seed.
+To keep a case as a test, write the part that matters down as a scenario.
 
-A failing seed prints its report up to the failure. To keep it as a test, write the part that
-matters down as a scenario.
+The first run builds the mode for wasm. In debug the simulations of a mode take about 20 seconds, a
+full server about 13. A sweep of thousands of matches is a matter of minutes in release.
 
 ## Findings
 
-- A reverse cup with no more participants than `number_of_winners` never starts: rounds in which
-  nobody loses points do not count, so registration stays open and the match waits for more
-  players. On a server nothing tells the players. `reverse_cup_waits_for_more_players_than_winners`
-  keeps the behavior.
+- A reverse cup with no more participants than `number_of_winners` never started: rounds in which
+  nobody lost points did not count, so it waited for players without telling them. Waiting is now
+  the rule: `info` shows it, and registration stays open across maps until a round counts.
+- When many players join at once, e.g. in the first round on a full server, the host publishes the
+  standings after every one of them. With 120 players that is 120 times the standings of up to 120
+  entries within seconds. The netvars of a real server might need the host to publish less often.
 
 ## Limits
 

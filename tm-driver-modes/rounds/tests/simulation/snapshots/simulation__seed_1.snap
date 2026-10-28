@@ -1,0 +1,42 @@
+---
+source: tm-driver-modes/rounds/tests/simulation/main.rs
+expression: outcome.report
+---
+rounds · seed 1
+settings {"finish_timeout":"disabled","points_limit":0,"points_repartition":[1,0,0],"rounds_per_map":4}
+maps m1 4 cp 0:32.773 · m2 4 cp 0:32.453
+players a Ant · b Bea · c Cid
+chances ties 100‰ · repeated holds 100‰ · missed starts 20‰ · playlist changes 20‰
+
+match 1
+map m1 · one try, no finish timeout · no warmup
+round 1
+  races  a 0:30.961 · b 2cp · c 0:35.888
+  round  1 a 1 · 2 c 0 · 3 b 0
+  match  1 a 1 · 2 c 0 · 3 b 0
+  info   1 / 4 rounds
+round 2
+  races  c 0:36.882 · b 3cp · a 0:30.895
+  round  1 a 1 · 2 c 0 · 3 b 0
+  match  1 a 2 · 2 c 0 · 3 b 0
+  info   2 / 4 rounds
+round 3
+  races  b 0:31.910 · c 0:30.620 · a 0:30.620
+  round  1 a 1 · 2 c 0 · 3 b 0
+  match  1 a 3 · 2 c 0 · 3 b 0
+  info   3 / 4 rounds
+round 4
+  races  c 0:36.575 · a 0:32.248 · b 0:32.906
+  round  1 a 1 · 2 b 0 · 3 c 0
+  match  1 a 4 · 2 b 0 · 3 c 0
+  info   4 / 4 rounds
+  end map
+map end
+  end match
+match end
+
+end
+  1 a 4 (Winner)
+  2 b 0
+  3 c 0
+inputs 71

@@ -100,10 +100,7 @@ tm-server-types = { path = "./tm-server-types", version = "0.1.0-dev" }
 tm-server-controller = { path = "./tm-server-controller", version = "0.1.0-dev" }
 tm-driver-sdk = { path = "./tm-driver-sdk" }
 tm-wasm-driver = { path = "./tm-wasm-driver" }
-tm-driver-mode-rounds = { path = "./tm-driver-modes/rounds" }
-tm-driver-mode-time-attack = { path = "./tm-driver-modes/time-attack" }
-tm-driver-mode-reverse-cup = { path = "./tm-driver-modes/reverse-cup" }
-tm-driver-mode-knockout = { path = "./tm-driver-modes/knockout" }
+tm-driver-sim = { path = "./tm-driver-sim" }
 
 
 #=======

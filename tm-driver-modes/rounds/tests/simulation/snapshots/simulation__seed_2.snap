@@ -1,0 +1,37 @@
+---
+source: tm-driver-modes/rounds/tests/simulation/main.rs
+expression: outcome.report
+---
+rounds · seed 2
+settings {"finish_timeout":"automatic","maps_per_match":1,"points_limit":0,"points_repartition":[1,0],"rounds_per_map":3,"warmup":{"duration_ms":30000,"rounds":1,"timeout_ms":4000}}
+maps m1 2 cp 0:18.033
+players a Ant leaves during round 3 · b Bea
+chances ties 300‰ · repeated holds 400‰ · forced rounds 30‰ · bridge restarts 100‰ · script restarts 10‰
+
+match 1
+map m1 · one try, automatic finish timeout · warmup 1 × 0:30.000
+round 1
+  races  a 0:19.249 · b 0:20.007
+  round  1 a 1 · 2 b 0
+  match  1 a 1 · 2 b 0
+  info   1 / 3 rounds
+round 2
+  races  a 0:20.003 · b 0:20.003
+  round  1 a 1 · 2 b 0
+  match  1 a 2 · 2 b 0
+  info   2 / 3 rounds
+round 3
+  ! a leaves
+  races  a 0cp · b 0:19.995
+  round  1 b 1 · 2 a 0
+  match  1 a 2 · 2 b 1
+  info   3 / 3 rounds
+  end map
+map end
+  end match
+match end
+
+end
+  1 a 2 (Winner)
+  2 b 1
+inputs 39

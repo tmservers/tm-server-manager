@@ -1,6 +1,5 @@
 # Two players drive exactly the same race. Accounts decide, not names: x ranks
 # before y although Alice comes before bob.
-mode knockout
 settings {"rounds_without_elimination": 0}
 maps m1:10/10/10
 players x=bob y=Alice z

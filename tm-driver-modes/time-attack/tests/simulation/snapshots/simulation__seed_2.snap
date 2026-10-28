@@ -1,0 +1,26 @@
+---
+source: tm-driver-modes/time-attack/tests/simulation/main.rs
+expression: outcome.report
+---
+time-attack · seed 2
+settings {"maps_per_match":1,"time_limit_ms":90000}
+maps m1 2 cp 0:18.033
+players a Ant leaves during round 3 · b Bea
+chances ties 300‰ · repeated holds 400‰ · forced rounds 30‰ · bridge restarts 100‰ · script restarts 10‰
+
+match 1
+map m1 · time attack 1:30.000 · no warmup
+round 1
+  races  a 0:19.249 0:21.684 0:18.544 0:19.711 0cp · b 0:20.007 0:20.009 0:20.005 0:20.008 0cp
+  round  1 a 2 · 2 b 1
+  match  1 a 2 · 2 b 1
+  info   Map 1 / 1
+  end map
+map end
+  end match
+match end
+
+end
+  1 a 2 (Winner)
+  2 b 1
+inputs 34

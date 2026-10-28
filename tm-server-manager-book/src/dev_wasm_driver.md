@@ -405,7 +405,12 @@ A port of the community `TM_ReverseCup` script with the same settings and rules:
 
 - The players who start a race before the first round counts take part. They show up in the
   standings with their starting points from their first race on, so the scores table lists them
-  during the first round already. Once a round counted, everyone else cannot spawn anymore.
+  during the first round already. Once a round counted, everyone else cannot spawn anymore. A
+  round counts once it takes points from someone, a map ending before does not close the
+  registration.
+- A match needs more participants than `number_of_winners`, otherwise nobody could lose. Until
+  then rounds do not count, players can still join, a map ending does not end the match and
+  `info` shows `Waiting for players, 2 / 3`. A single participant plays alone until eliminated.
 - Every participant starts with `starting_points` and loses points by finish position. The
   repartition depends on the players left (`complex_points_repartition`, otherwise
   `points_repartition`). While more players are left than it has values, every eliminated player
@@ -436,8 +441,10 @@ Differences to the original:
   points. The checkpoints of `only_least_checkpoints` are counted over the race, not the lap.
 - Players eliminated in the same round share a rank in the original. Here their race decides, like
   every other tie (see [No ties](#no-ties)).
-- Not ported: waiting for `S_NbOfPlayers`, the live ranking, dossard colors, the podium and big
-  messages. Warmup is the modescript's.
+- The original waits for `S_NbOfPlayers` players before it starts. Here a match starts with more
+  participants than winners.
+- Not ported: the live ranking, dossard colors, the podium and big messages. Warmup is the
+  modescript's.
 
 ## Knockout
 
@@ -534,8 +541,9 @@ import host;  // log, find-user, map-count
 - `tm-driver-modes/time-attack`: TimeAttack (time limit, maps per match, points by rank).
 - `tm-driver-modes/reverse-cup`: ReverseCup (see [ReverseCup](#reversecup)).
 - `tm-driver-modes/knockout`: Knockout with lives (see [Knockout](#knockout)).
-- `tm-driver-sim`: whole matches of every mode against a fake server, checked after every input and
-  kept as snapshots (see [Simulation Testing](./dev_driver_simulation.md)).
+- `tm-driver-sim`: simulates whole matches of a mode against a fake server. Every mode tests its
+  rules with it in `tests/simulation` (see [Simulation Testing](./dev_driver_simulation.md)).
+  The integration tests of `tm-wasm-driver` test the host, with the rounds mode as the mode.
 
 ## Configuration
 

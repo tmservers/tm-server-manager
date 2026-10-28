@@ -1,0 +1,7 @@
+# With two lives the last player loses one and keeps racing with the last life
+# in danger. Losing it as well eliminates.
+settings {"lives": 2}
+players a b
+round a 30 | b 31
+round a 30 | b 31
+round a 30 | b 31

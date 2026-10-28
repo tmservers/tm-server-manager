@@ -1,0 +1,109 @@
+---
+source: tm-driver-modes/knockout/tests/simulation/main.rs
+expression: outcome.report
+---
+knockout · seed 3
+settings {"extra_losses":{"before_round":[]},"finish_timeout":"automatic","lives":2,"rounds_per_map":2,"rounds_without_elimination":0}
+maps m1 5 cp 0:33.727
+playlist m1
+players a Ant · b Bea · c Cid · d Eve joins before round 4 · e Eve joins during round 5
+chances ties 300‰ · idle 30‰ · repeated holds 100‰ · bridge restarts 100‰
+
+match 1
+map m1 · one try, automatic finish timeout · no warmup · next m1
+round 1
+  races  c 0:37.629 · b 0:35.688 · a 4cp
+  round  1 b 0 · 2 c 0 · 3 a -1
+  match  1 b 2 (\u{e96c}\u{e96c}) · 2 c 2 (\u{e96c}\u{e96c}) · 3 a 1 (\u{e96f}\u{e96c})
+  info   Round 2, 3 left, 1 loses a life
+round 2
+  races  b 0:39.529 · c 0:35.621 · a 0:37.492
+  round  1 c 0 · 2 a 0 · 3 b -1
+  match  1 c 2 (\u{e96c}\u{e96c}) · 2 a 1 (\u{e96f}\u{e96c}) · 3 b 1 (\u{e96f}\u{e96c})
+  info   Round 3, 3 left, 1 loses a life
+  end map
+map end · next m1
+map m1 · one try, automatic finish timeout · no warmup · next m1
+round 3
+  ! bridge restarts
+  races  a 0:38.721 · b 0:34.263 · c 0:37.484
+  round  1 b 0 · 2 c 0 · 3 a -1
+  match  1 c 2 (\u{e96c}\u{e96c}) · 2 b 1 (\u{e96f}\u{e96c}) · 3 a 0 out (K.O.)
+  info   Round 4, 2 left, 1 loses a life
+  chat   $f90$i$<Ant$> takes 3rd place!
+  block  a
+round 4
+  ! d joins
+  races  b 0:39.341 · d 0:34.356 · c 0:34.356
+  round  1 c 0 · 2 b -1
+  match  1 c 2 (Winner) · 2 b 0 out (K.O.) · 3 a 0 out (K.O.) · - d spectator
+  info   Match over
+  chat   $f90$i$<Bea$> takes 2nd place!
+  chat   $<Cid$> wins the match!
+  end match
+  block  b d
+map end · next m1
+  end match
+match end
+
+match 2
+map m1 · one try, automatic finish timeout · no warmup · next m1
+round 5
+  ! e joins
+  races  a 0:42.569 · d 0:34.327 · b 0:42.569 · c 0cp
+  round  1 d 0 · 2 a 0 · 3 b 0 · 4 c -1
+  match  1 d 2 (\u{e96c}\u{e96c}) · 2 a 2 (\u{e96c}\u{e96c}) · 3 b 2 (\u{e96c}\u{e96c}) · 4 c 1 (\u{e96f}\u{e96c}) · - e spectator
+  info   Round 2, 4 left, 1 loses a life
+  block  e
+round 6
+  ! bridge restarts
+  races  c 3cp · d 0:32.810 · b 0:39.237 · a 0:39.237
+  round  1 d 0 · 2 b 0 · 3 a 0 · 4 c -1
+  match  1 d 2 (\u{e96c}\u{e96c}) · 2 b 2 (\u{e96c}\u{e96c}) · 3 a 2 (\u{e96c}\u{e96c}) · 4 c 0 out (K.O.) · - e spectator
+  info   Round 3, 3 left, 1 loses a life
+  chat   $f90$i$<Cid$> takes 4th place!
+  end map
+  block  c
+map end · next m1
+map m1 · one try, automatic finish timeout · no warmup · next m1
+round 7
+  races  b 0:38.371 · a 0:38.382 · d 0:32.342
+  round  1 d 0 · 2 b 0 · 3 a -1
+  match  1 d 2 (\u{e96c}\u{e96c}) · 2 b 2 (\u{e96c}\u{e96c}) · 3 a 1 (\u{e96f}\u{e96c}) · 4 c 0 out (K.O.) · - e spectator
+  info   Round 4, 3 left, 1 loses a life
+round 8
+  races  a 4cp · b 0:33.261 · d 0:33.261
+  round  1 b 0 · 2 d 0 · 3 a -1
+  match  1 b 2 (\u{e96c}\u{e96c}) · 2 d 2 (\u{e96c}\u{e96c}) · 3 a 0 out (K.O.) · 4 c 0 out (K.O.) · - e spectator
+  info   Round 5, 2 left, 1 loses a life
+  chat   $f90$i$<Ant$> takes 3rd place!
+  end map
+  block  a
+map end · next m1
+map m1 · one try, automatic finish timeout · no warmup · next m1
+round 9
+  races  d 0cp · b 0cp
+  round  1 b -1 · 2 d -1
+  match  1 b 1 (\u{e96f}\u{e96c}) · 2 d 1 (\u{e96f}\u{e96c}) · 3 a 0 out (K.O.) · 4 c 0 out (K.O.) · - e spectator
+  info   Round 6, 2 left, 1 loses a life
+round 10
+  ! bridge restarts
+  races  d 0:33.290 · b 0:33.290
+  round  1 b 0 · 2 d -1
+  match  1 b 1 (Winner) · 2 d 0 out (K.O.) · 3 a 0 out (K.O.) · 4 c 0 out (K.O.) · - e spectator
+  info   Match over
+  chat   $f90$i$<Eve$> takes 2nd place!
+  chat   $<Bea$> wins the match!
+  end match
+  block  d
+map end · next m1
+  end match
+match end
+
+end
+  1 b 1 (Winner)
+  2 d 0 out (K.O.)
+  3 a 0 out (K.O.)
+  4 c 0 out (K.O.)
+  - e spectator
+inputs 206
