@@ -4,11 +4,11 @@
 //! The host keeps it in a sandbox: no WASI, a fuel and a wall clock budget for
 //! every call and a memory limit.
 //!
-//! Modes are fed from the standard callbacks of the server: the host builds the
-//! race results of a round from the waypoints and keeps the players it knows. On
-//! top of that the host handles the [`DriverHold`]s of the modescript: it steps
-//! the mode, lets the hold continue and answers repeated holds without stepping
-//! the mode twice.
+//! Modes are fed from the standard callbacks of the server: the host collects the
+//! races of a round from the start lines and waypoints and keeps the players it
+//! knows. On top of that the host handles the [`DriverHold`]s of the modescript:
+//! it steps the mode, lets the hold continue and answers repeated holds without
+//! stepping the mode twice.
 //!
 //! The scores of a match live in standings every mode shares. The host keeps
 //! them and hands them to the mode with every event, so modes keep nothing but
@@ -292,7 +292,7 @@ pub struct Driver {
     map: Option<Map>,
     /// The mode chose the next map since the current one started.
     next_map_chosen: bool,
-    /// Players on the server, who take part in round results without racing.
+    /// Players on the server, racing or not.
     connected: BTreeSet<String>,
     /// A round runs, from its start to its end hold. Warmup races are outside.
     in_round: bool,
@@ -445,7 +445,8 @@ impl Driver {
             DriverSection::MapStart => wit::Event::MapStart,
             DriverSection::RoundEnd => wit::Event::RoundEnd(wit::RoundEnd {
                 invalid: hold.forced || !in_round,
-                results: self.races.results(&self.connected),
+                racers: self.races.racers(),
+                present: self.connected.iter().cloned().collect(),
             }),
             DriverSection::MapEnd => wit::Event::MapEnd,
         };
@@ -456,7 +457,8 @@ impl Driver {
         Ok(reply)
     }
 
-    /// The standings of the match as the mode left them, ordered by position.
+    /// The standings of the match as the mode left them, ordered by position and
+    /// players without one by name.
     pub fn standings(&self) -> DriverStandings {
         let map_name = self.map.as_ref().map_or("", |map| map.name.as_str());
         convert::standings(
@@ -464,6 +466,7 @@ impl Driver {
             map_name,
             self.playlist.len() as u32,
             &self.standings,
+            &self.store.data().users,
         )
     }
 

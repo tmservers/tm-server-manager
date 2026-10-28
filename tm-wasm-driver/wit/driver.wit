@@ -6,33 +6,36 @@ package tmservers:driver@0.1.0;
 /// handles the transport details of the driver modescript: waiting holds and
 /// letting them continue.
 interface types {
-    /// The races of one player in the current round, from the standard waypoint
-    /// callbacks of the server.
-    record race-result {
-        account-id: string,
-        /// The player started a race in this round, so everyone with a time did.
-        /// False for spectators and players that could not spawn.
-        started: bool,
-        /// The race times at the checkpoints the player passed in the last race of the
-        /// round in milliseconds, the finish included. How many there are tells how far
-        /// the player got, the times tell players who got equally far apart.
-        round-checkpoints: list<u32>,
-        /// Time of the last finished race of the round in milliseconds. None without a
-        /// finish. In single attempt rounds this is the race of the round.
-        previous-time: option<u32>,
-        previous-checkpoints: list<u32>,
-        /// Best race time of the round in milliseconds. None without a finish.
-        /// In time attack rounds this is the race that counts.
-        best-time: option<u32>,
-        best-checkpoints: list<u32>,
+    /// A race of a player, from a start line to the finish, a give up, a restart or
+    /// the end of the round.
+    record race {
+        /// The race times at the checkpoints passed in milliseconds, the finish
+        /// included. How many there are tells how far the player got, the times
+        /// tell players who got equally far apart.
+        checkpoints: list<u32>,
+        /// The race reached the finish. Its race time is the last checkpoint time.
+        finished: bool,
     }
 
+    /// A player who started a race in the round.
+    record racer {
+        account-id: string,
+        /// Every race of the player in the round in the order they started them,
+        /// e.g. one per restart in time attack rounds.
+        races: list<race>,
+    }
+
+    /// The races of a round as they happened. Which race of a player counts is up
+    /// to the mode.
     record round-end {
         /// The round does not count: it was forced to end or skipped (e.g. after a
         /// pause), or the host did not see it start, e.g. after the bridge restarted.
         invalid: bool,
-        /// Every connected player and everyone else who started in the round.
-        results: list<race-result>,
+        /// Everyone who started a race in the round in the order of their first
+        /// start, also players who left since.
+        racers: list<racer>,
+        /// The players on the server when the round ended, racers or not.
+        present: list<string>,
     }
 
     /// Everything a mode gets told about.
@@ -224,7 +227,9 @@ interface host {
     }
 
     log: func(level: log-level, message: string);
-    /// What the host knows about a player, e.g. the name for a chat message.
+    /// What the host knows about a player, e.g. the name for a chat message. Only
+    /// for display: a replay may not know every user, so nothing a mode decides
+    /// may depend on it.
     find-user: func(account-id: string) -> option<user>;
     /// Maps in the playlist of the match, 0 without one.
     map-count: func() -> u32;
@@ -232,9 +237,9 @@ interface host {
 
 /// A game mode controlling the driver modescript.
 ///
-/// Modes run without WASI. Everything they know comes from their settings, the
-/// standings and the events, so replaying the events of a match rebuilds exactly
-/// the same standings. That is how a mode resumes, there are no snapshots.
+/// Modes run without WASI. Everything they decide on comes from their settings,
+/// the standings and the events, so replaying the events of a match rebuilds
+/// exactly the same standings. That is how a mode resumes, there are no snapshots.
 world mode {
     use types.{event, standings, decision};
 

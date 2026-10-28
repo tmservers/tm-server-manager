@@ -3,8 +3,8 @@
 mod common;
 
 use common::{
-    KNOCKOUT, finish, hold, match_start, no_warm_up, play, player_info, race, ranking, round_start,
-    start_line, way_point, without_published,
+    KNOCKOUT, finish, hold, match_start, no_warm_up, play, player, player_info, race, ranking,
+    round_start, start_line, way_point, without_published,
 };
 use tm_server_types::{
     event::{DriverPlayerResult, DriverRoundResult, DriverSection, Event},
@@ -303,4 +303,35 @@ fn resumes_by_replaying_the_events() {
     let reply = play(&mut resumed, &last_round);
     assert!(reply.commands.contains(&DriverCommand::EndMatch));
     assert_eq!(reply, play(&mut driver, &last_round));
+}
+
+#[test]
+fn replays_ties_without_the_names() {
+    let (engine, module) = common::compile(KNOCKOUT);
+
+    // x and y drive exactly the same race in the second round, which takes a life.
+    let mut events = vec![match_start(), hold(1, DriverSection::MapStart)];
+    events.extend(round(1, 2, &["x", "y", "z"]));
+    events.extend([
+        round_start(2),
+        start_line("x"),
+        start_line("y"),
+        start_line("z"),
+        finish("z", 0, 29_000),
+        finish("y", 0, 30_000),
+        finish("x", 0, 30_000),
+        hold(3, DriverSection::RoundEnd),
+    ]);
+
+    // x and y were on the server when the mode loaded, so no event has their names.
+    let mut driver = engine.instantiate(&module, "").unwrap();
+    driver.add_players([player("x", "bob"), player("y", "Alice")]);
+    let reply = play(&mut driver, &events);
+    let resumed = engine.replay(&module, "", &[], &events).unwrap();
+
+    // Names are only for display, so the replay eliminates the same player.
+    assert!(reply.commands.contains(&DriverCommand::ChatMessage(
+        "$f90$i$<Alice$> takes 3rd place!".into()
+    )));
+    assert_eq!(ranking(&resumed), ranking(&driver));
 }

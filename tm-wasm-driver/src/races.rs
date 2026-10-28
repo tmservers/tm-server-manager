@@ -1,132 +1,70 @@
-//! The races of the current round, built from the standard callbacks of the server.
+//! The races of the current round as they happened, from the standard callbacks of
+//! the server.
 
 use tm_server_types::event::WayPoint;
 
-use crate::bindings::tmservers::driver::types::RaceResult;
+use crate::bindings::tmservers::driver::types::{Race, Racer};
 
-/// A finished race: its time and the time at every checkpoint in milliseconds.
-#[derive(Debug, Clone)]
-struct Finish {
-    time: u32,
-    checkpoints: Vec<u32>,
-}
-
-#[derive(Debug, Default)]
-struct Race {
-    /// The race times at the checkpoints passed in the current race, the finish
-    /// included.
-    checkpoints: Vec<u32>,
-    /// The last finished race of the round.
-    previous: Option<Finish>,
-    /// The best finished race of the round.
-    best: Option<Finish>,
-}
-
-/// The players who started in the current round, in the order of their first start.
+/// The players who started in the current round with their races, in the order of
+/// their first start.
 #[derive(Debug, Default)]
 pub(crate) struct Races {
-    players: Vec<(String, Race)>,
+    racers: Vec<Racer>,
 }
 
 impl Races {
     pub(crate) fn clear(&mut self) {
-        self.players.clear();
+        self.racers.clear();
     }
 
     /// A player started a race. True for the first start of the player in the round.
     pub(crate) fn start(&mut self, account_id: &str) -> bool {
-        match self.race_mut(account_id) {
-            Some(race) => {
-                race.checkpoints.clear();
-                false
-            }
-            None => {
-                self.players.push((account_id.into(), Race::default()));
-                true
-            }
-        }
+        let first = !self.racers.iter().any(|r| r.account_id == account_id);
+        self.races_mut(account_id).push(new_race());
+        first
     }
 
-    /// A player passed a checkpoint or the finish. A player whose start the host
-    /// missed still raced.
+    /// A player passed a checkpoint or the finish. A race whose start the host
+    /// missed still counts.
     pub(crate) fn way_point(&mut self, way_point: &WayPoint) {
-        if self.race_mut(&way_point.account_id).is_none() {
-            self.players
-                .push((way_point.account_id.clone(), Race::default()));
+        let races = self.races_mut(&way_point.account_id);
+        // Only a new start comes after the finish.
+        if races.last().is_none_or(|race| race.finished) {
+            races.push(new_race());
         }
-        let Some(race) = self.race_mut(&way_point.account_id) else {
-            return;
-        };
-
-        // Every checkpoint of the race so far.
-        race.checkpoints = way_point.current_race_checkpoints.clone();
-        if way_point.is_end_race {
-            let finish = Finish {
-                time: way_point.racetime,
-                checkpoints: way_point.current_race_checkpoints.clone(),
-            };
-            if race
-                .best
-                .as_ref()
-                .is_none_or(|best| finish.time < best.time)
-            {
-                race.best = Some(finish.clone());
-            }
-            race.previous = Some(finish);
-        }
+        let race = races.last_mut().expect("The player has a race");
+        // Every checkpoint of the race so far, the finish included.
+        race.checkpoints
+            .clone_from(&way_point.current_race_checkpoints);
+        race.finished = way_point.is_end_race;
     }
 
-    /// Everyone who started in the round, then the connected players who did not.
-    pub(crate) fn results<'a>(
-        &self,
-        connected: impl IntoIterator<Item = &'a String>,
-    ) -> Vec<RaceResult> {
-        let mut results: Vec<RaceResult> = self
-            .players
-            .iter()
-            .map(|(account_id, race)| RaceResult {
-                account_id: account_id.clone(),
-                started: true,
-                round_checkpoints: race.checkpoints.clone(),
-                previous_time: race.previous.as_ref().map(|finish| finish.time),
-                previous_checkpoints: checkpoints(&race.previous),
-                best_time: race.best.as_ref().map(|finish| finish.time),
-                best_checkpoints: checkpoints(&race.best),
-            })
-            .collect();
+    /// Everyone who started in the round with their races.
+    pub(crate) fn racers(&self) -> Vec<Racer> {
+        self.racers.clone()
+    }
 
-        for account_id in connected {
-            if !self
-                .players
-                .iter()
-                .any(|(started, _)| started == account_id)
-            {
-                results.push(RaceResult {
-                    account_id: account_id.clone(),
-                    started: false,
-                    round_checkpoints: Vec::new(),
-                    previous_time: None,
-                    previous_checkpoints: Vec::new(),
-                    best_time: None,
-                    best_checkpoints: Vec::new(),
+    /// The races of a player, who becomes a racer of the round.
+    fn races_mut(&mut self, account_id: &str) -> &mut Vec<Race> {
+        let index = match self.racers.iter().position(|r| r.account_id == account_id) {
+            Some(index) => index,
+            None => {
+                self.racers.push(Racer {
+                    account_id: account_id.into(),
+                    races: Vec::new(),
                 });
+                self.racers.len() - 1
             }
-        }
-        results
-    }
-
-    fn race_mut(&mut self, account_id: &str) -> Option<&mut Race> {
-        self.players
-            .iter_mut()
-            .find(|(started, _)| started == account_id)
-            .map(|(_, race)| race)
+        };
+        &mut self.racers[index].races
     }
 }
 
-fn checkpoints(finish: &Option<Finish>) -> Vec<u32> {
-    finish
-        .as_ref()
-        .map_or_else(Vec::new, |finish| finish.checkpoints.clone())
+fn new_race() -> Race {
+    Race {
+        checkpoints: Vec::new(),
+        finished: false,
+    }
 }
 
 #[cfg(test)]
@@ -160,8 +98,22 @@ mod tests {
         }
     }
 
+    /// Every race by racer: the account, the checkpoint times and whether it finished.
+    fn summary(races: &Races) -> Vec<(String, Vec<u32>, bool)> {
+        races
+            .racers()
+            .into_iter()
+            .flat_map(|racer| {
+                racer
+                    .races
+                    .into_iter()
+                    .map(move |race| (racer.account_id.clone(), race.checkpoints, race.finished))
+            })
+            .collect()
+    }
+
     #[test]
-    fn the_last_and_the_best_race_count() {
+    fn every_race_is_kept() {
         let mut races = Races::default();
         assert!(races.start("a"));
         races.way_point(&way_point("a", 0, Some(31_000)));
@@ -170,12 +122,14 @@ mod tests {
         // Restarted and gave up at the start.
         races.start("a");
 
-        let results = races.results([]);
-        assert_eq!(results.len(), 1);
-        assert!(results[0].round_checkpoints.is_empty());
-        assert_eq!(results[0].previous_time, Some(30_000));
-        assert_eq!(results[0].best_time, Some(30_000));
-        assert_eq!(results[0].best_checkpoints, [30_000]);
+        assert_eq!(
+            summary(&races),
+            [
+                ("a".to_string(), vec![31_000], true),
+                ("a".to_string(), vec![30_000], true),
+                ("a".to_string(), vec![], false),
+            ]
+        );
     }
 
     #[test]
@@ -187,25 +141,31 @@ mod tests {
             ..way_point("a", 1, None)
         });
 
-        let results = races.results([]);
-        assert_eq!(results[0].round_checkpoints, [10_000, 21_000]);
-        assert_eq!(results[0].previous_time, None);
+        assert_eq!(
+            summary(&races),
+            [("a".to_string(), vec![10_000, 21_000], false)]
+        );
     }
 
     #[test]
-    fn connected_players_without_a_start_take_no_part() {
+    fn races_whose_start_was_missed_still_count() {
         let mut races = Races::default();
         races.start("a");
-        races.way_point(&way_point("a", 1, None));
-        // The start was missed but the race still counts.
-        races.way_point(&way_point("b", 0, None));
+        races.way_point(&way_point("a", 0, Some(30_000)));
+        // The starts of the next race of a and of the race of b were missed.
+        races.way_point(&way_point("b", 1, None));
+        races.way_point(&way_point("a", 0, None));
 
-        let connected = ["a".to_string(), "s".to_string()];
-        let results = races.results(&connected);
-        let summary: Vec<(&str, bool, usize)> = results
-            .iter()
-            .map(|r| (r.account_id.as_str(), r.started, r.round_checkpoints.len()))
-            .collect();
-        assert_eq!(summary, [("a", true, 2), ("b", true, 1), ("s", false, 0)]);
+        // In the order of the first starts.
+        assert_eq!(
+            summary(&races),
+            [
+                ("a".to_string(), vec![30_000], true),
+                ("a".to_string(), vec![10_000], false),
+                ("b".to_string(), vec![10_000, 20_000], false),
+            ]
+        );
+        // b started already.
+        assert!(!races.start("b"));
     }
 }

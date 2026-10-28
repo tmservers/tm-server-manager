@@ -6,7 +6,7 @@
 //!
 //! The points live in the standings the host keeps and hands over with every
 //! event. The mode only applies its rules to them. Nobody ties: equal races go to
-//! the better times at the checkpoints and finally to the name, players with the
+//! the better times at the checkpoints and finally by account, players with the
 //! same points by their race in the last round.
 
 use serde::Deserialize;
@@ -87,7 +87,6 @@ impl Mode for Rounds {
             // Everyone who races shows up in the standings before the first round ends.
             Event::RaceStart(account_id) => {
                 standings.join(&account_id);
-                standings.list_newcomers();
                 Vec::new()
             }
             Event::MatchStart | Event::RoundStart | Event::MatchEnd => Vec::new(),
@@ -103,17 +102,17 @@ impl Rounds {
         }
 
         // Everyone who raced shows up in the standings, with points or without.
-        for result in round_end.results.iter().filter(|r| r.started) {
-            standings.join(&result.account_id);
+        for racer in &round_end.racers {
+            standings.join(&racer.account_id);
         }
 
         let finishers = tm_driver_sdk::race_order(
             round_end
-                .results
+                .racers
                 .iter()
-                .filter(|r| r.previous_time.is_some())
+                .filter(|r| CountedRace::Last.time(r).is_some())
                 .map(|r| r.account_id.as_str()),
-            &round_end.results,
+            &round_end,
             CountedRace::Last,
         );
         for (rank, account_id) in finishers.iter().enumerate() {
@@ -121,8 +120,8 @@ impl Rounds {
         }
 
         standings.rounds_on_map += 1;
-        standings.rank(&round_end.results, CountedRace::Last);
-        standings.place_round(&round_end.results, CountedRace::Last);
+        standings.rank(&round_end, CountedRace::Last);
+        standings.place_round(&round_end, CountedRace::Last);
         standings.info = self.info(standings);
 
         if self.points_limit_reached(standings) {

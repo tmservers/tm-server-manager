@@ -15,14 +15,14 @@
 //! Participants, their points and statuses live in the standings the host keeps.
 //! Players with points are playing, players in last chance have 0 points and
 //! eliminated players keep the rank they were eliminated with. Nobody ties: equal
-//! races go to the better times at the checkpoints and finally to the name,
+//! races go to the better times at the checkpoints and finally by account,
 //! players with the same points by their race in the last round.
 
 use std::collections::BTreeMap;
 
 use serde::Deserialize;
 use tm_driver_sdk::{
-    CanSpawn, Command, CountedRace, Entry, Event, Label, Mode, RaceResult, RoundEnd, RoundFormat,
+    CanSpawn, Command, CountedRace, Entry, Event, Label, Mode, Racer, RoundEnd, RoundFormat,
     Standings, Status, Tone,
     settings::{FinishTimeoutSetting, WarmUpSetting},
 };
@@ -159,7 +159,6 @@ impl ReverseCup {
             Event::RaceStart(account_id) => {
                 if self.registration_open(standings) && standings.player(&account_id).is_none() {
                     standings.join(&account_id).score = self.settings.starting_points;
-                    standings.list_newcomers();
                     standings.info = self.info(standings);
                 }
                 Vec::new()
@@ -186,18 +185,17 @@ impl ReverseCup {
     fn round_end(&self, standings: &mut Standings, round_end: RoundEnd) -> Vec<Command> {
         // Starters the race starts did not bring in, e.g. after the driver restarted.
         if self.registration_open(standings) {
-            self.register(standings, &round_end.results);
+            self.register(standings, &round_end);
         }
         if round_end.invalid
             || standings.participants().next().is_none()
             || self.match_over(standings)
         {
-            standings.list_newcomers();
-            return self.block_late_players(standings, &round_end.results);
+            return self.block_late_players(standings, &round_end);
         }
         let mut commands = Vec::new();
 
-        let losses = self.losses(standings, &round_end.results);
+        let losses = self.losses(standings, &round_end);
         let max_loss = losses
             .iter()
             .map(|&(_, loss)| loss)
@@ -251,7 +249,7 @@ impl ReverseCup {
         if losses.iter().any(|&(_, loss)| loss < 0) {
             standings.rounds_on_map += 1;
         }
-        commands.extend(self.block_late_players(standings, &round_end.results));
+        commands.extend(self.block_late_players(standings, &round_end));
 
         let match_over = self.match_over(standings);
         if !match_over && self.fast_forward(standings) {
@@ -259,8 +257,8 @@ impl ReverseCup {
                 "$c00Fast forward: every remaining player is now in Last Chance.".into(),
             ));
         }
-        standings.rank(&round_end.results, CountedRace::Last);
-        standings.place_round(&round_end.results, CountedRace::Last);
+        standings.rank(&round_end, CountedRace::Last);
+        standings.place_round(&round_end, CountedRace::Last);
         standings.info = self.info(standings);
 
         if match_over {
@@ -280,49 +278,43 @@ impl ReverseCup {
     }
 
     /// Everyone who started a race takes part while registration is open.
-    fn register(&self, standings: &mut Standings, results: &[RaceResult]) {
-        for result in results.iter().filter(|r| r.started) {
-            if standings.player(&result.account_id).is_none() {
-                standings.join(&result.account_id).score = self.settings.starting_points;
+    fn register(&self, standings: &mut Standings, round_end: &RoundEnd) {
+        for racer in &round_end.racers {
+            if standings.player(&racer.account_id).is_none() {
+                standings.join(&racer.account_id).score = self.settings.starting_points;
             }
         }
     }
 
     /// Players who could still take part are not blocked.
-    fn block_late_players(
-        &self,
-        standings: &mut Standings,
-        results: &[RaceResult],
-    ) -> Vec<Command> {
+    fn block_late_players(&self, standings: &mut Standings, round_end: &RoundEnd) -> Vec<Command> {
         if self.registration_open(standings) {
             Vec::new()
         } else {
-            standings.block_others(results)
+            standings.block_others(round_end)
         }
     }
 
     /// Points lost by every player still in the match in the order of the race:
     /// finishers by their finish position, everyone without a finish the dnf points.
-    fn losses(&self, standings: &Standings, results: &[RaceResult]) -> Vec<(String, i32)> {
+    fn losses(&self, standings: &Standings, round_end: &RoundEnd) -> Vec<(String, i32)> {
         let order = tm_driver_sdk::race_order(
             standings.in_match().map(|p| p.account_id.as_str()),
-            results,
+            round_end,
             CountedRace::Last,
         );
-        // Players who did not start, for example because they left, have no race.
-        let race = |account_id: &str| {
-            results
-                .iter()
-                .find(|r| r.account_id == account_id && r.started)
-        };
+        let finished = |racer: &Racer| CountedRace::Last.time(racer).is_some();
+        // How far a player without a finish got.
+        let checkpoints =
+            |racer: &Racer| racer.races.last().map_or(0, |race| race.checkpoints.len());
         let last_chance =
             |account_id: &str| standings.player(account_id).is_some_and(in_last_chance);
         let least_checkpoints = order
             .iter()
             .filter(|account_id| last_chance(account_id))
-            .filter_map(|account_id| race(account_id))
-            .filter(|race| race.previous_time.is_none())
-            .map(|race| race.round_checkpoints.len())
+            .filter_map(|account_id| round_end.racer(account_id))
+            .filter(|racer| !finished(racer))
+            .map(checkpoints)
             .min();
 
         let repartition = self.repartition(standings);
@@ -330,8 +322,9 @@ impl ReverseCup {
         order
             .into_iter()
             .map(|account_id| {
-                let loss = match race(&account_id) {
-                    Some(race) if race.previous_time.is_some() => {
+                // Players who did not start, for example because they left, have no race.
+                let loss = match round_end.racer(&account_id) {
+                    Some(racer) if finished(racer) => {
                         let loss = repartition
                             .get(finishers)
                             .or(repartition.last())
@@ -340,10 +333,10 @@ impl ReverseCup {
                         finishers += 1;
                         loss
                     }
-                    race => match (self.settings.last_chance_dnf_mode, race) {
-                        (LastChanceDnfMode::OnlyLeastCheckpoints, Some(race))
+                    racer => match (self.settings.last_chance_dnf_mode, racer) {
+                        (LastChanceDnfMode::OnlyLeastCheckpoints, Some(racer))
                             if last_chance(&account_id)
-                                && Some(race.round_checkpoints.len()) != least_checkpoints =>
+                                && Some(checkpoints(racer)) != least_checkpoints =>
                         {
                             0
                         }

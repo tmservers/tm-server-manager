@@ -96,7 +96,21 @@ pub(crate) fn standings(
     map_name: &str,
     map_count: u32,
     standings: &Standings,
+    users: &BTreeMap<String, User>,
 ) -> DriverStandings {
+    let mut entries: Vec<DriverEntry> = standings.entries.iter().map(entry).collect();
+    // Players without a position follow by name, spectators last. Names are only
+    // for display, so the host orders by them instead of the modes.
+    entries.sort_by_cached_key(|entry| {
+        (
+            entry.position == 0,
+            entry.position,
+            entry.status == DriverStatus::Spectator,
+            name(users, &entry.account_id).to_lowercase(),
+            entry.account_id.clone(),
+        )
+    });
+
     DriverStandings {
         title: title.into(),
         info: standings.info.clone(),
@@ -104,8 +118,17 @@ pub(crate) fn standings(
         maps_played: standings.maps_played,
         map_name: map_name.into(),
         map_count,
-        entries: ordered(&standings.entries),
+        entries,
     }
+}
+
+/// The name of a player for display, the account while the host does not know it.
+fn name<'a>(users: &'a BTreeMap<String, User>, account_id: &'a str) -> &'a str {
+    users
+        .get(account_id)
+        .map(|user| user.name.as_str())
+        .filter(|name| !name.is_empty())
+        .unwrap_or(account_id)
 }
 
 /// The last round as the manialinks get it.
@@ -200,6 +223,15 @@ mod tests {
         }
     }
 
+    fn user(account_id: &str, name: &str) -> User {
+        User {
+            account_id: account_id.into(),
+            name: name.into(),
+            club_tag: String::new(),
+            zone: String::new(),
+        }
+    }
+
     fn positions(result: &DriverRoundResult) -> Vec<(&str, i32, u32)> {
         result
             .results
@@ -260,7 +292,7 @@ mod tests {
             player("out", 3, Status::Eliminated, 0),
         ];
 
-        let standings = super::standings("Rounds", "Map", 2, &standings);
+        let standings = super::standings("Rounds", "Map", 2, &standings, &BTreeMap::new());
         assert_eq!(
             serde_json::to_value(&standings).unwrap(),
             serde_json::json!({
@@ -278,6 +310,30 @@ mod tests {
                 ]
             })
         );
+    }
+
+    #[test]
+    fn players_without_a_position_follow_by_name() {
+        let users = BTreeMap::from([
+            ("y".to_string(), user("y", "bob")),
+            ("z".to_string(), user("z", "Alice")),
+        ]);
+        let mut standings = empty_standings();
+        standings.entries = vec![
+            player("s", 0, Status::Spectator, 0),
+            player("y", 0, Status::Playing, 0),
+            player("x", 0, Status::Playing, 0),
+            player("first", 1, Status::Playing, 0),
+            player("z", 0, Status::Playing, 0),
+        ];
+
+        let order: Vec<String> = super::standings("Rounds", "Map", 0, &standings, &users)
+            .entries
+            .into_iter()
+            .map(|entry| entry.account_id)
+            .collect();
+        // Whatever the case. The account stands in for an unknown name.
+        assert_eq!(order, ["first", "z", "y", "x", "s"]);
     }
 
     #[test]
@@ -300,12 +356,6 @@ mod tests {
 
     #[test]
     fn users_are_ordered_by_account() {
-        let user = |account_id: &str, name: &str| User {
-            account_id: account_id.into(),
-            name: name.into(),
-            club_tag: String::new(),
-            zone: String::new(),
-        };
         let users = BTreeMap::from([
             ("b".to_string(), user("b", "$f00B")),
             ("a".to_string(), user("a", "A")),

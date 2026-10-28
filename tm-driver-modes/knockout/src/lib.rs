@@ -16,12 +16,12 @@
 //! the points of a player are the lives they have left. Players still in the
 //! match are ranked by their lives and their last race, eliminated players keep
 //! the rank they were eliminated with. Nobody shares a rank: equal races go to the
-//! better times at the checkpoints and finally to the name.
+//! better times at the checkpoints and finally by account.
 
 use serde::Deserialize;
 use tm_driver_sdk::{
-    CanSpawn, Command, CountedRace, Event, Label, Mode, RaceResult, RoundEnd, RoundFormat,
-    Standings, Status, Tone,
+    CanSpawn, Command, CountedRace, Event, Label, Mode, RoundEnd, RoundFormat, Standings, Status,
+    Tone,
     settings::{FinishTimeoutSetting, WarmUpSetting},
 };
 
@@ -126,7 +126,6 @@ impl Knockout {
             Event::RaceStart(account_id) => {
                 if self.registration_open(standings) && standings.player(&account_id).is_none() {
                     standings.join(&account_id).score = self.settings.lives;
-                    standings.list_newcomers();
                 }
                 Vec::new()
             }
@@ -182,19 +181,18 @@ impl Knockout {
         if round <= self.settings.rounds_without_elimination + 1
             || standings.participants().next().is_none()
         {
-            self.register(standings, &round_end.results);
+            self.register(standings, &round_end);
         }
         if round_end.invalid || standings.participants().next().is_none() {
-            standings.list_newcomers();
-            return self.block_late_players(standings, &round_end.results);
+            return self.block_late_players(standings, &round_end);
         }
 
-        let mut commands = self.take_lives(standings, round, &round_end.results);
+        let mut commands = self.take_lives(standings, round, &round_end);
         standings.rounds_on_map += 1;
-        commands.extend(self.block_late_players(standings, &round_end.results));
+        commands.extend(self.block_late_players(standings, &round_end));
         // The points are the lives.
-        standings.rank(&round_end.results, CountedRace::Last);
-        standings.place_round(&round_end.results, CountedRace::Last);
+        standings.rank(&round_end, CountedRace::Last);
+        standings.place_round(&round_end, CountedRace::Last);
 
         if self.match_over(standings) {
             commands.extend(winner_message(standings).map(Command::ChatMessage));
@@ -215,18 +213,17 @@ impl Knockout {
         &self,
         standings: &mut Standings,
         round: u32,
-        results: &[RaceResult],
+        round_end: &RoundEnd,
     ) -> Vec<Command> {
         let order = tm_driver_sdk::race_order(
             standings.in_match().map(|p| p.account_id.as_str()),
-            results,
+            round_end,
             CountedRace::Last,
         );
         let time = |account_id: &str| {
-            results
-                .iter()
-                .find(|r| r.account_id == account_id && r.started)
-                .and_then(|r| r.previous_time)
+            round_end
+                .racer(account_id)
+                .and_then(|racer| CountedRace::Last.time(racer))
         };
         let without_finish = order
             .iter()
@@ -292,24 +289,20 @@ impl Knockout {
 
     /// Everyone who started a race takes part with all their lives while players
     /// can join.
-    fn register(&self, standings: &mut Standings, results: &[RaceResult]) {
-        for result in results.iter().filter(|r| r.started) {
-            if standings.player(&result.account_id).is_none() {
-                standings.join(&result.account_id).score = self.settings.lives;
+    fn register(&self, standings: &mut Standings, round_end: &RoundEnd) {
+        for racer in &round_end.racers {
+            if standings.player(&racer.account_id).is_none() {
+                standings.join(&racer.account_id).score = self.settings.lives;
             }
         }
     }
 
     /// Players who could still take part are not blocked.
-    fn block_late_players(
-        &self,
-        standings: &mut Standings,
-        results: &[RaceResult],
-    ) -> Vec<Command> {
+    fn block_late_players(&self, standings: &mut Standings, round_end: &RoundEnd) -> Vec<Command> {
         if self.registration_open(standings) {
             Vec::new()
         } else {
-            standings.block_others(results)
+            standings.block_others(round_end)
         }
     }
 

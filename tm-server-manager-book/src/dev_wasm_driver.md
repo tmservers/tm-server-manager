@@ -53,21 +53,23 @@ tm-server-bridge ── post_event (standard callbacks, as before) ──▶ tm-
 | `map-start` | `Driver.Hold` (`MapStart`) | yes |
 | `round-start` | `Maniaplanet.StartRound_Start` | no |
 | `race-start` | the first `Trackmania.Event.StartLine` of a player in a round (not in warmups) | no |
-| `round-end` | `Driver.Hold` (`RoundEnd`) with the races the host built from the waypoints of the round | yes |
+| `round-end` | `Driver.Hold` (`RoundEnd`) with every race of the round, from the start lines and waypoints | yes |
 | `map-end` | `Driver.Hold` (`MapEnd`) | yes |
 | `match-end` | `Maniaplanet.EndMatch_Start` | no |
 
-`round-end` carries everyone who started in the round and every other player on the server, with
-the time and checkpoints of their last finished race and of their best race of the round. Single
-attempt rounds count the last race, time attack rounds the best one. The host builds them from
-the standard callbacks: `Trackmania.Event.StartLine` starts a race and a
-`Trackmania.Event.WayPoint` with `isendrace` finishes it. The modescript sends no scores.
+`round-end` carries the races of the round as they happened. `racers` lists everyone who started a
+race in the order of their first start, with every race they started, e.g. one per restart in
+time attack rounds. A race holds the race times at the checkpoints passed (the finish included,
+from the `curracecheckpoints` of the waypoints) and whether it `finished`. How many checkpoints
+there are tells how far a player got, the times tell players who got equally far apart.
+`present` lists the players on the server when the round ended, racers or not. Players who left
+stay in the races of the round they started in.
 
-Every result also says whether the player `started` a race in the round and holds the race times
-at the checkpoints they passed in their last race (`round_checkpoints`, the finish included, from
-the `curracecheckpoints` of the waypoints). How many there are tells how far a player got, the
-times tell players who got equally far apart without a finish. Players who left stay in the
-results of the round they started in. The players on the server come from
+The host builds the races from the standard callbacks: `Trackmania.Event.StartLine` starts a race
+and every `Trackmania.Event.WayPoint` passes a checkpoint, with `isendrace` the finish. It does not
+interpret them, the modescript sends no scores either. Which race counts is up to the mode: with
+the SDK's `CountedRace::Last` the last finished race (single attempt rounds), with
+`CountedRace::Best` the fastest one (time attack rounds). The players on the server come from
 `ManiaPlanet.PlayerConnect`, `PlayerDisconnect` and `PlayerInfoChanged`. The runner hands the
 players that are on the server when a mode loads to `Driver::add_players`, which learns them
 like their `PlayerInfoChanged` callbacks but publishes them once.
@@ -146,8 +148,10 @@ same for the match and for a round:
 | `info` | Progress as text, e.g. `2 / 5 rounds`. |
 
 What the host knows itself is no mode state. A mode asks for it with the host functions
-`find-user` (name, club tag and zone of a player, e.g. for chat messages) and `map-count`. The
-title and the current map only go into what the host publishes.
+`find-user` (name, club tag and zone of a player, e.g. for chat messages) and `map-count`. Users
+are only for display: a replay may not know every user, e.g. not the players
+`Driver::add_players` learned, so nothing a mode decides may depend on them. The title and the
+current map only go into what the host publishes.
 
 Who does what:
 
@@ -181,9 +185,9 @@ Nobody ties in any mode. `race_order` of the SDK orders the races of a round: fi
 time of the race that counts (`CountedRace::Last` in single attempt rounds, `CountedRace::Best` in
 time attack rounds), then everyone else by the checkpoints they passed in their last race, and
 players who did not start last. Equal races go to the better race time at the last checkpoint,
-then at the one before and so on (`previous_checkpoints` or `best_checkpoints` of finishers,
-`round_checkpoints` of everyone else). Races that are equal all the way go by name, the case
-aside, then by account.
+then at the one before and so on (of the race that counts for finishers, of the last race for
+everyone else). Races that are equal all the way go by account. Not by name: names are only for
+display and a replay may not know them, so the order only depends on the races.
 
 - Points and losses of a round follow that order, so players with the same time get the points of
   different places.
@@ -194,8 +198,9 @@ aside, then by account.
 - A mode can break ties of points its own way first with `Standings::rank_with`, e.g. by the
   rounds a player won. The race of the round only decides the ties it leaves. The modes so far
   use none.
-- Players who joined since the last round have no position yet (0, shown as `-`) and follow the
-  ranked players by name (`Standings::list_newcomers`).
+- Players who joined since the last round have no position yet (0, shown as `-`). The host
+  publishes them after the ranked players by name, spectators last, so modes need no names for
+  that.
 - No match is played on because of a tie: leaders with the same points at the points limit or
   after the last map are told apart by the race like everyone else.
 
@@ -385,8 +390,8 @@ the same trick `TM_RoundsThenTimeattack` from the community modes uses:
    `EndTime = StartTime + time_limit` and shows the time limit and best times in the scores table.
 3. Players who finished or gave up are started again with `Race::Start`. The round only ends with
    the time limit (or when an admin forces it).
-4. At the end the scores carry everyone's best race of the round. The mode awards points by it
-   and ends the map.
+4. At the end the round end carries every race of the round. The mode counts the best one of
+   every player (`CountedRace::Best`), awards points by it and ends the map.
 
 Points exist so the standings and round results rank players like the other modes do. By
 default the best of N finishers gets N points, so the points keep the order of the times. Equal
@@ -463,8 +468,8 @@ settings and rules:
 - The points of a player are the lives they have left, a lost life is `-1` in the round. The round
   is placed in the order of the race. Players in the match are `playing`, ranked by their lives and
   then the order of their last race, so nobody shares a position. Players who joined since the last
-  round have no position yet and follow by name. With one life players in the match are
-  labeled with the time of their last race like in the scores table of the original, with more
+  round have no position yet and the host lists them by name. With one life players in the match
+  are labeled with the time of their last race like in the scores table of the original, with more
   lives with hearts for their lives (text above 5 lives) like in the multi lives script, the last
   life with a negative tone. Eliminated players are labeled `K.O.`, the last player `Winner`.
 - `info` shows the round that runs or comes next, the players left and how many lose a life in
@@ -514,9 +519,10 @@ import host;  // log, find-user, map-count
 
 - `tm-driver-sdk`: wit-bindgen bindings, the `Mode` trait (a mode names its `Settings` type and
   the SDK parses the json of the config into it, empty settings are `{}`), `export_mode!`, helpers on the
-  standings (`join`, `award`, `round_entry`, `rank`, `rank_with`, `list_newcomers`, `place_round`,
-  `crown_leaders`, `in_match`, `block_others`), `race_order` with `CountedRace` for the order of a
-  round without ties, the host functions (`user`, `name`, `map_count`), `ordinal` for chat
+  standings (`join`, `award`, `round_entry`, `rank`, `rank_with`, `place_round`, `crown_leaders`,
+  `in_match`, `block_others`), `RoundEnd::racer` and `CountedRace` for the race that counts,
+  `race_order` for the order of a round without ties, the host functions (`user`, `name`,
+  `map_count`), `ordinal` for chat
   messages and shared `settings`. Mode
   logic compiles natively too. `testing::Harness` runs a mode with the lifecycle of the host, so
   modes are unit tested without wasm.
@@ -641,9 +647,10 @@ script starts with `"lives": 3`.
    - The script compiles. `ServerShutdownRequested` and the raw `UIManager.UILayerCreate` API
      are not used by any script we checked.
    - Holds block and continue as expected, and a missing driver shows the waiting message.
-   - Every waypoint carries the race times of all checkpoints so far (`curracecheckpoints`),
-     because their count is how far a player got. Finish waypoints carry the race time, and
-     players already on the server when the mode loads show up with their names.
+   - Every waypoint carries the race times of all checkpoints so far (`curracecheckpoints`), the
+     finish included, because their count is how far a player got and the last one of a finish
+     is its race time. Players already on the server when the mode loads show up with their
+     names.
    - `NextMap` sent during the round end hold ends the map once the hold continues.
    - Time attack rounds start players again after a finish or give up and stop at the time limit.
    - A warmup set by a mode runs before the first round of every map with the warmup UI of the
@@ -658,8 +665,8 @@ script starts with `"lives": 3`.
    - A config change between driver modes applies the new round format on the next map.
    - The playlist runs in order: `SetNextMapIdent` sent while a map runs picks the map after it,
      and a new match starts with the first map of the playlist.
-   - The `StartLine` and `WayPoint` callbacks arrive, so round results know who started and how
-     far they got.
+   - The `StartLine` and `WayPoint` callbacks arrive, so round ends know every race and how far
+     it got.
    - `SetCanSpawn(false)` keeps eliminated players and spectators from spawning, also on the
      next map, and chat messages of the mode show up.
    - The standings manialink shows the labels of players in last chance and of the winners, and

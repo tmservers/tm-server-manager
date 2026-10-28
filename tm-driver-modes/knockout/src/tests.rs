@@ -1,56 +1,42 @@
-use tm_driver_sdk::{FinishTimeout, User, WarmUp, testing::Harness};
+use tm_driver_sdk::{FinishTimeout, Race, Racer, User, WarmUp, testing::Harness};
 
 use super::*;
 
-/// Finished with these race times at the checkpoints, the finish last.
-fn finish_at(account_id: &str, checkpoints: &[u32]) -> RaceResult {
-    let time = checkpoints.last().copied();
-    RaceResult {
+/// A player who raced once with these race times at the checkpoints.
+fn racer(account_id: &str, checkpoints: &[u32], finished: bool) -> Racer {
+    Racer {
         account_id: account_id.into(),
-        started: true,
-        round_checkpoints: checkpoints.to_vec(),
-        previous_time: time,
-        previous_checkpoints: checkpoints.to_vec(),
-        best_time: time,
-        best_checkpoints: checkpoints.to_vec(),
+        races: vec![Race {
+            checkpoints: checkpoints.to_vec(),
+            finished,
+        }],
     }
 }
 
-fn finish(account_id: &str, time: u32) -> RaceResult {
+/// Finished with these race times at the checkpoints, the finish last.
+fn finish_at(account_id: &str, checkpoints: &[u32]) -> Racer {
+    racer(account_id, checkpoints, true)
+}
+
+fn finish(account_id: &str, time: u32) -> Racer {
     finish_at(account_id, &[time / 3, time / 3 * 2, time])
 }
 
 /// Gave up after passing checkpoints at these race times.
-fn dnf_at(account_id: &str, checkpoints: &[u32]) -> RaceResult {
-    RaceResult {
-        account_id: account_id.into(),
-        started: true,
-        round_checkpoints: checkpoints.to_vec(),
-        previous_time: None,
-        previous_checkpoints: vec![],
-        best_time: None,
-        best_checkpoints: vec![],
-    }
+fn dnf_at(account_id: &str, checkpoints: &[u32]) -> Racer {
+    racer(account_id, checkpoints, false)
 }
 
 /// Gave up after passing a number of checkpoints.
-fn dnf(account_id: &str, progress: u32) -> RaceResult {
+fn dnf(account_id: &str, progress: u32) -> Racer {
     let checkpoints: Vec<u32> = (1..=progress)
         .map(|checkpoint| checkpoint * 10_000)
         .collect();
     dnf_at(account_id, &checkpoints)
 }
 
-/// Did not start in the round.
-fn spectator(account_id: &str) -> RaceResult {
-    RaceResult {
-        started: false,
-        ..dnf(account_id, 0)
-    }
-}
-
 /// The players finish in this order, one second apart.
-fn finishers(players: &[&str]) -> Vec<RaceResult> {
+fn finishers(players: &[&str]) -> Vec<Racer> {
     players
         .iter()
         .enumerate()
@@ -58,10 +44,16 @@ fn finishers(players: &[&str]) -> Vec<RaceResult> {
         .collect()
 }
 
-fn round_end(results: Vec<RaceResult>) -> Event {
+fn round_end(racers: Vec<Racer>) -> Event {
+    watched_round_end(racers, &[])
+}
+
+/// A round in which the players `watching` were on the server without racing.
+fn watched_round_end(racers: Vec<Racer>, watching: &[&str]) -> Event {
     Event::RoundEnd(RoundEnd {
         invalid: false,
-        results,
+        racers,
+        present: watching.iter().map(|&p| p.into()).collect(),
     })
 }
 
@@ -244,12 +236,13 @@ fn players_take_part_from_their_first_race() {
     assert_eq!(harness.standings.info, "Round 1 / 2, no K.O.");
     assert!(harness.step(race_start("b")).is_empty());
     harness.step(race_start("a"));
-    // Listed by name without a position until a round counted for them.
+    // Without a position until a round counted for them. The host shows them by
+    // name.
     assert_eq!(
         ranking(&harness),
-        [("a", 0, Status::Playing, ""), ("b", 0, Status::Playing, "")]
+        [("b", 0, Status::Playing, ""), ("a", 0, Status::Playing, "")]
     );
-    assert_eq!(lives(&harness), [("a", 1), ("b", 1)]);
+    assert_eq!(lives(&harness), [("b", 1), ("a", 1)]);
     assert_eq!(harness.standings.info, "Round 1 / 2, 2 left, no K.O.");
 
     // Players who join in the next round follow the ranked players.
@@ -261,8 +254,8 @@ fn players_take_part_from_their_first_race() {
         [
             ("b", 1, Status::Playing, "0:30.000"),
             ("a", 2, Status::Playing, "0:31.000"),
-            ("c", 0, Status::Playing, ""),
             ("d", 0, Status::Playing, ""),
+            ("c", 0, Status::Playing, ""),
         ]
     );
 }
@@ -270,12 +263,10 @@ fn players_take_part_from_their_first_race() {
 #[test]
 fn the_first_round_eliminates_nobody() {
     let mut harness = started("");
-    let commands = harness.step(round_end(vec![
-        finish("b", 31_000),
-        dnf("c", 2),
-        finish("a", 30_000),
-        spectator("s"),
-    ]));
+    let commands = harness.step(watched_round_end(
+        vec![finish("b", 31_000), dnf("c", 2), finish("a", 30_000)],
+        &["s"],
+    ));
     assert!(commands.is_empty());
     // Everyone who started takes part, ranked by the race.
     assert_eq!(
@@ -293,9 +284,9 @@ fn the_first_round_eliminates_nobody() {
 fn players_join_until_the_first_round_with_eliminations_ended() {
     let mut harness = playing("", &["a", "b", "c", "d"]);
     // e joins in time and takes part. Five players, two are eliminated.
-    let mut results = finishers(&["a", "b", "c", "d"]);
-    results.extend([finish("e", 29_000), spectator("s")]);
-    let commands = harness.step(round_end(results));
+    let mut racers = finishers(&["a", "b", "c", "d"]);
+    racers.push(finish("e", 29_000));
+    let commands = harness.step(watched_round_end(racers, &["s"]));
     assert_eq!(harness.standing("e").position, 1);
     assert_eq!(blocked(&commands), ["c", "d", "s"]);
     assert_eq!(harness.standing("s").status, Status::Spectator);
@@ -303,9 +294,9 @@ fn players_join_until_the_first_round_with_eliminations_ended() {
     // Too late, f does not take part and cannot spawn anymore.
     harness.step(race_start("f"));
     assert!(harness.standings.player("f").is_none());
-    let mut results = finishers(&["e", "a", "b"]);
-    results.push(finish("f", 28_000));
-    let commands = harness.step(round_end(results));
+    let mut racers = finishers(&["e", "a", "b"]);
+    racers.push(finish("f", 28_000));
+    let commands = harness.step(round_end(racers));
     assert_eq!(blocked(&commands), ["b", "f"]);
     assert_eq!(harness.standing("f").status, Status::Spectator);
     assert_eq!(harness.standing("f").position, 0);
@@ -479,18 +470,18 @@ fn equal_last_checkpoints_go_to_the_one_before() {
 }
 
 #[test]
-fn equal_races_go_by_name() {
+fn equal_races_go_by_account() {
     let mut harness = playing("", &["x", "y", "z"]);
+    // Names are only for display, a replay may not know them.
     named(&mut harness, "x", "bob");
     named(&mut harness, "y", "Alice");
     let race = [10_000, 20_000, 30_000];
     let commands = harness.step(round_end(vec![
-        finish_at("x", &race),
         finish_at("y", &race),
+        finish_at("x", &race),
         finish("z", 29_000),
     ]));
-    // Alice comes before bob, whatever the case.
-    assert_eq!(chat(&commands), ["$f90$i$<bob$> takes 3rd place!"]);
+    assert_eq!(chat(&commands), ["$f90$i$<Alice$> takes 3rd place!"]);
 }
 
 #[test]
@@ -715,10 +706,11 @@ fn many_lives_are_counted() {
 
 #[test]
 fn invalid_rounds_do_not_count() {
-    let invalid = |results| {
+    let invalid = |racers| {
         Event::RoundEnd(RoundEnd {
             invalid: true,
-            results,
+            racers,
+            present: Vec::new(),
         })
     };
     let mut harness = playing("", &["a", "b", "c"]);
@@ -735,7 +727,7 @@ fn invalid_rounds_do_not_count() {
 fn rounds_without_players_do_not_close_the_registration() {
     let mut harness = started("");
     for _ in 0..3 {
-        harness.step(round_end(vec![spectator("s")]));
+        harness.step(watched_round_end(Vec::new(), &["s"]));
     }
     assert!(harness.standings.entries.is_empty());
     assert_eq!(harness.standings.rounds_on_map, 0);

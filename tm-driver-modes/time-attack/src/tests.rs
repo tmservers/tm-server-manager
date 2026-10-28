@@ -1,36 +1,47 @@
-use tm_driver_sdk::{Label, RaceResult, WarmUp, testing::Harness};
+use tm_driver_sdk::{Label, Race, Racer, WarmUp, testing::Harness};
 
 use super::*;
 
-/// In time attack rounds the best race counts, not the last one.
-fn finish(account_id: &str, best_time: u32) -> RaceResult {
-    RaceResult {
+/// Drove the best race with these race times at the checkpoints, the finish last,
+/// and then a race a second slower. In time attack rounds the best race counts,
+/// not the last one.
+fn finish_at(account_id: &str, checkpoints: &[u32]) -> Racer {
+    let slower = checkpoints.iter().map(|time| time + 1_000).collect();
+    Racer {
         account_id: account_id.into(),
-        started: true,
-        round_checkpoints: vec![best_time + 1_000],
-        previous_time: Some(best_time + 1_000),
-        previous_checkpoints: vec![],
-        best_time: Some(best_time),
-        best_checkpoints: vec![best_time],
+        races: vec![
+            Race {
+                checkpoints: checkpoints.to_vec(),
+                finished: true,
+            },
+            Race {
+                checkpoints: slower,
+                finished: true,
+            },
+        ],
     }
 }
 
-fn dnf(account_id: &str) -> RaceResult {
-    RaceResult {
+fn finish(account_id: &str, best_time: u32) -> Racer {
+    finish_at(account_id, &[best_time])
+}
+
+/// Gave up after the first checkpoint and never finished.
+fn dnf(account_id: &str) -> Racer {
+    Racer {
         account_id: account_id.into(),
-        started: true,
-        round_checkpoints: vec![10_000],
-        previous_time: None,
-        previous_checkpoints: vec![],
-        best_time: None,
-        best_checkpoints: vec![],
+        races: vec![Race {
+            checkpoints: vec![10_000],
+            finished: false,
+        }],
     }
 }
 
-fn round_end(results: Vec<RaceResult>) -> Event {
+fn round_end(racers: Vec<Racer>) -> Event {
     Event::RoundEnd(RoundEnd {
         invalid: false,
-        results,
+        racers,
+        present: Vec::new(),
     })
 }
 
@@ -110,14 +121,8 @@ fn equal_best_times_go_to_the_better_checkpoints() {
     let mut harness = started("");
     // b passed the last checkpoint of the best race earlier.
     harness.step(round_end(vec![
-        RaceResult {
-            best_checkpoints: vec![20_500, 40_000],
-            ..finish("a", 40_000)
-        },
-        RaceResult {
-            best_checkpoints: vec![20_400, 40_000],
-            ..finish("b", 40_000)
-        },
+        finish_at("a", &[20_500, 40_000]),
+        finish_at("b", &[20_400, 40_000]),
     ]));
     assert_eq!(map_points(&harness), [("b", 1, 2), ("a", 2, 1)]);
 }
@@ -127,7 +132,8 @@ fn invalid_rounds_replay_the_map() {
     let mut harness = started("");
     let commands = harness.step(Event::RoundEnd(RoundEnd {
         invalid: true,
-        results: vec![finish("a", 40_000)],
+        racers: vec![finish("a", 40_000)],
+        present: Vec::new(),
     }));
     assert!(commands.is_empty());
     assert!(harness.standings.entries.is_empty());

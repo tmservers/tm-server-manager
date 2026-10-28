@@ -1,41 +1,37 @@
-use tm_driver_sdk::{FinishTimeout, Label, RaceResult, WarmUp, testing::Harness};
+use tm_driver_sdk::{FinishTimeout, Label, Race, Racer, WarmUp, testing::Harness};
 
 use super::*;
 
-fn finish(account_id: &str, time: u32) -> RaceResult {
+/// A player who raced once with these race times at the checkpoints.
+fn racer(account_id: &str, checkpoints: &[u32], finished: bool) -> Racer {
+    Racer {
+        account_id: account_id.into(),
+        races: vec![Race {
+            checkpoints: checkpoints.to_vec(),
+            finished,
+        }],
+    }
+}
+
+fn finish(account_id: &str, time: u32) -> Racer {
     finish_at(account_id, &[time])
 }
 
 /// Finished with these race times at the checkpoints, the finish last.
-fn finish_at(account_id: &str, checkpoints: &[u32]) -> RaceResult {
-    let time = checkpoints.last().copied();
-    RaceResult {
-        account_id: account_id.into(),
-        started: true,
-        round_checkpoints: checkpoints.to_vec(),
-        previous_time: time,
-        previous_checkpoints: checkpoints.to_vec(),
-        best_time: time,
-        best_checkpoints: checkpoints.to_vec(),
-    }
+fn finish_at(account_id: &str, checkpoints: &[u32]) -> Racer {
+    racer(account_id, checkpoints, true)
 }
 
-fn dnf(account_id: &str) -> RaceResult {
-    RaceResult {
-        account_id: account_id.into(),
-        started: true,
-        round_checkpoints: vec![10_000],
-        previous_time: None,
-        previous_checkpoints: vec![],
-        best_time: None,
-        best_checkpoints: vec![],
-    }
+/// Gave up after the first checkpoint.
+fn dnf(account_id: &str) -> Racer {
+    racer(account_id, &[10_000], false)
 }
 
-fn round_end(results: Vec<RaceResult>) -> Event {
+fn round_end(racers: Vec<Racer>) -> Event {
     Event::RoundEnd(RoundEnd {
         invalid: false,
-        results,
+        racers,
+        present: Vec::new(),
     })
 }
 
@@ -150,8 +146,8 @@ fn players_show_up_when_they_start() {
     let mut harness = started("");
     assert!(harness.step(Event::RaceStart("b".into())).is_empty());
     harness.step(Event::RaceStart("a".into()));
-    // By name, without a position until their first round.
-    assert_eq!(scores(&harness), [("a", 0, 0, 0), ("b", 0, 0, 0)]);
+    // Without a position until their first round. The host shows them by name.
+    assert_eq!(scores(&harness), [("b", 0, 0, 0), ("a", 0, 0, 0)]);
 }
 
 #[test]
@@ -159,7 +155,8 @@ fn invalid_rounds_do_not_count() {
     let mut harness = started("");
     let commands = harness.step(Event::RoundEnd(RoundEnd {
         invalid: true,
-        results: vec![finish("a", 30_000)],
+        racers: vec![finish("a", 30_000)],
+        present: Vec::new(),
     }));
     assert!(commands.is_empty());
     assert!(harness.standings.entries.is_empty());

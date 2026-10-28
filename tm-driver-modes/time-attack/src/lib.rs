@@ -7,7 +7,7 @@
 //! on, which keeps the order of the times.
 //!
 //! Nobody ties: equal best times go to the better times at the checkpoints of
-//! those races and finally to the name, players with the same points by their
+//! those races and finally by account, players with the same points by their
 //! race on the last map.
 
 use serde::Deserialize;
@@ -86,7 +86,6 @@ impl Mode for TimeAttack {
             // Everyone who races shows up in the standings before the first round ends.
             Event::RaceStart(account_id) => {
                 standings.join(&account_id);
-                standings.list_newcomers();
                 Vec::new()
             }
             Event::MatchStart | Event::RoundStart | Event::MatchEnd => Vec::new(),
@@ -103,17 +102,17 @@ impl TimeAttack {
         }
 
         // Everyone who raced shows up in the standings, with points or without.
-        for result in round_end.results.iter().filter(|r| r.started) {
-            standings.join(&result.account_id);
+        for racer in &round_end.racers {
+            standings.join(&racer.account_id);
         }
 
         let finishers = tm_driver_sdk::race_order(
             round_end
-                .results
+                .racers
                 .iter()
-                .filter(|r| r.best_time.is_some())
+                .filter(|r| CountedRace::Best.time(r).is_some())
                 .map(|r| r.account_id.as_str()),
-            &round_end.results,
+            &round_end,
             CountedRace::Best,
         );
         for (rank, account_id) in finishers.iter().enumerate() {
@@ -121,8 +120,8 @@ impl TimeAttack {
         }
 
         standings.rounds_on_map += 1;
-        standings.rank(&round_end.results, CountedRace::Best);
-        standings.place_round(&round_end.results, CountedRace::Best);
+        standings.rank(&round_end, CountedRace::Best);
+        standings.place_round(&round_end, CountedRace::Best);
         standings.info = self.info(standings);
         // Every map is a single time attack round.
         vec![Command::EndMap]
