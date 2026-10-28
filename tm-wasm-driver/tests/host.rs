@@ -180,6 +180,30 @@ fn repeated_holds_are_decided_once() {
 }
 
 #[test]
+fn a_resumed_driver_publishes_everything_again() {
+    let mut driver = rounds("");
+    driver
+        .apply(&DriverInput::Players(vec![player("a", "Ant")]))
+        .unwrap();
+    driver.handle(&hold(1, DriverSection::MapStart)).unwrap();
+
+    // Replies before the bridge restarted might not have reached the server.
+    let published: Vec<&str> = driver
+        .apply(&DriverInput::Resumed)
+        .unwrap()
+        .commands
+        .iter()
+        .map(|command| match command {
+            DriverCommand::SetUsers(_) => "users",
+            DriverCommand::SetStandings(_) => "standings",
+            DriverCommand::SetRound(_) => "round",
+            _ => "other",
+        })
+        .collect();
+    assert_eq!(published, ["users", "standings", "round"]);
+}
+
+#[test]
 fn a_hold_asked_again_after_its_reply_arrived_only_continues() {
     let mut driver = rounds(r#"{"rounds_per_map": 1}"#);
     driver.handle(&hold(1, DriverSection::MapStart)).unwrap();

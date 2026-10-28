@@ -132,6 +132,8 @@ pub(crate) struct Observer {
     // What the driver could know from its inputs.
     known: BTreeMap<String, String>,
     connected: BTreeSet<String>,
+    /// The driver got the players on the server once.
+    players_seen: bool,
     truth: RoundTruth,
     in_round: bool,
     session: Option<i32>,
@@ -159,6 +161,7 @@ impl Observer {
         Self {
             known: BTreeMap::new(),
             connected: BTreeSet::new(),
+            players_seen: false,
             truth: RoundTruth::default(),
             in_round: false,
             session: None,
@@ -231,13 +234,27 @@ impl Observer {
                 return Ok(None);
             }
             DriverInput::Players(players) => {
+                let connected: BTreeSet<String> = players
+                    .iter()
+                    .filter(|player| !player.is_server())
+                    .map(|player| player.account_id.clone())
+                    .collect();
+                if std::mem::replace(&mut self.players_seen, true) {
+                    for account_id in self.connected.difference(&connected) {
+                        self.notes.push(format!("{account_id} is gone"));
+                    }
+                    for account_id in connected.difference(&self.connected) {
+                        self.notes.push(format!("{account_id} is there"));
+                    }
+                }
+                self.connected = connected;
                 for player in players.iter().filter(|player| !player.is_server()) {
-                    self.connected.insert(player.account_id.clone());
                     self.known
                         .insert(player.account_id.clone(), player.nick_name.clone());
                 }
                 return Ok(None);
             }
+            DriverInput::Resumed => return Ok(None),
             DriverInput::Delivered => {
                 if let Some(answer) = self
                     .last_hold

@@ -29,6 +29,11 @@ round 2
 map end · next m1
 map m1 · one try, no finish timeout · warmup 2 × one try · next m1
 round 3
+  ! bridge goes down
+  ! missed a checkpoint of b
+  ! missed a checkpoint of c
+  ! missed a checkpoint of a
+  ! missed a checkpoint of b
   ! bridge restarts
   races  a 0cp · b 0:37.931 · c 0:35.769
   round  1 c -2 · 2 b -5 · 3 a -30
@@ -66,6 +71,7 @@ match end
 match 2
 map m1 · one try, no finish timeout · warmup 2 × one try · next m1
 round 6
+  ! bridge goes down
   ! bridge restarts
   races  c 2cp · a 0:40.589 · d 0cp · b 0:40.589 · e 0:31.199
   round  1 e -4 · 2 b -7 · 3 a -9 · 4 c -30 · 5 d -30
@@ -94,33 +100,31 @@ round 8
 map end · next m1
 map m1 · one try, no finish timeout · warmup 2 × one try · next m1
 round 9
+  ! bridge goes down
+  ! missed a checkpoint of d
+  ! missed a checkpoint of e
+  ! missed a checkpoint of c
+  ! missed a checkpoint of a
+  ! missed the finish of e
+  ! missed the finish of d
   ! bridge restarts
-  races  c 0:36.603 · e 0:34.598 · a 0:39.077 · d 0:35.265
-  round  1 e -4 · 2 d -7 · 3 c -9 · 4 a -13
-  match  1 e 0 (Last Chance) · 2 d 0 (Last Chance) · 3 c 0 (Last Chance) · 4 a 0 out · 5 b 0 out
-  info   3 left, 1 / 1 rounds
-  chat   $f90$i$<Ant$> takes 4th place!
+  races  c 0:36.603 · e 3cp · a 0:39.077 · d 3cp
+  round  1 c -4 · 2 a -7 · 3 d -30 · 4 e -30
+  match  1 c 0 (Last Chance) · 2 a 0 (Last Chance) · 3 d 0 out · 4 e 0 out · 5 b 0 out
+  info   2 left, 1 / 1 rounds
+  chat   $f90$i$<Eve$> takes 3rd place!
+  chat   $f90$i$<Eve$> takes 4th place!
   end map
-  block  a
+  block  d e
 map end · next m1
 map m1 · one try, no finish timeout · warmup 2 × one try · next m1
 round 10
-  races  e 3cp · d 0:35.148 · c 0:37.330
-  round  1 d -2 · 2 c -5 · 3 e -30
-  match  1 d 0 (Last Chance) · 2 c 0 (Last Chance) · 3 e 0 out · 4 a 0 out · 5 b 0 out
-  info   2 left, 1 / 1 rounds
-  chat   $f90$i$<Eve$> takes 3rd place!
-  end map
-  block  e
-map end · next m1
-map m1 · one try, no finish timeout · warmup 2 × one try · next m1
-round 11
-  races  c 4cp · d 0:31.773
-  round  1 d -5 · 2 c -30
-  match  1 d 0 (Winner) · 2 c 0 out · 3 e 0 out · 4 a 0 out · 5 b 0 out
+  races  a 0:37.330 · c 0:37.330
+  round  1 a -5 · 2 c -7
+  match  1 a 0 (Winner) · 2 c 0 out · 3 d 0 out · 4 e 0 out · 5 b 0 out
   info   1 left, 1 / 1 rounds
   chat   $f90$i$<Cid$> takes 2nd place!
-  chat   $<Eve$> wins the match!
+  chat   $<Ant$> wins the match!
   end match
   block  c
 map end · next m1
@@ -128,9 +132,9 @@ map end · next m1
 match end
 
 end
-  1 d 0 (Winner)
+  1 a 0 (Winner)
   2 c 0 out
-  3 e 0 out
-  4 a 0 out
+  3 d 0 out
+  4 e 0 out
   5 b 0 out
-inputs 743
+inputs 683

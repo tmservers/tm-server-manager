@@ -116,6 +116,8 @@ pub struct Outcome {
     pub report: String,
     /// Everything the driver got, e.g. to replay it.
     pub inputs: Vec<DriverInput>,
+    /// The inputs whose reply never reached the server, counted from 0.
+    pub lost: Vec<usize>,
     /// The first check that failed.
     pub failure: Option<Failure>,
 }
@@ -199,10 +201,11 @@ impl Simulator {
             run.notes.extend(server.take_notes());
             let done = match step {
                 Step::Input(input) => run.apply(&input).and_then(|(hold, reply)| {
-                    server.on_reply(&input, &reply);
-                    run.record(input, hold, reply, true)
+                    let reached = server.on_reply(&input, &reply);
+                    run.record(input, hold, reply, reached)
                 }),
                 Step::RestartBridge => run.restart(),
+                Step::Crash { .. } => unreachable!("The server keeps crashes to itself"),
             };
             if let Err(error) = done {
                 failure = Some(error);
@@ -222,10 +225,11 @@ impl Simulator {
             Err(outcome) => return outcome,
         };
         let mut failure = None;
-        for input in &log.inputs {
+        for (index, input) in log.inputs.iter().enumerate() {
+            let reached = !log.lost.contains(&index);
             let done = run
                 .apply(input)
-                .and_then(|(hold, reply)| run.record(input.clone(), hold, reply, true));
+                .and_then(|(hold, reply)| run.record(input.clone(), hold, reply, reached));
             if let Err(error) = done {
                 failure = Some(error);
                 break;
@@ -270,27 +274,35 @@ impl Simulator {
         let Some(target) = self.log("shrinking", log).failure else {
             return log.clone();
         };
-        let failing_at = |inputs: &[DriverInput]| {
-            let candidate = InputLog {
-                settings: log.settings.clone(),
-                inputs: inputs.to_vec(),
-                ..InputLog::default()
-            };
-            self.log("shrinking", &candidate)
+        // Every input with whether its reply got lost.
+        let to_log = |inputs: &[(DriverInput, bool)]| InputLog {
+            settings: log.settings.clone(),
+            inputs: inputs.iter().map(|(input, _)| input.clone()).collect(),
+            lost: (0..inputs.len()).filter(|&index| inputs[index].1).collect(),
+            ..InputLog::default()
+        };
+        let failing_at = |inputs: &[(DriverInput, bool)]| {
+            self.log("shrinking", &to_log(inputs))
                 .failure
                 .filter(|failure| failure.message == target.message)
                 .map(|failure| failure.input)
         };
 
         // Nothing after the failure matters.
-        let mut inputs = log.inputs[..(target.input + 1).min(log.inputs.len())].to_vec();
+        let mut inputs: Vec<(DriverInput, bool)> = log
+            .inputs
+            .iter()
+            .enumerate()
+            .take(target.input + 1)
+            .map(|(index, input)| (input.clone(), log.lost.contains(&index)))
+            .collect();
         let mut chunk = inputs.len().div_ceil(2).max(1);
         loop {
             let mut start = 0;
             let mut removed = false;
             while start < inputs.len() {
                 let end = (start + chunk).min(inputs.len());
-                let candidate: Vec<DriverInput> = inputs[..start]
+                let candidate: Vec<(DriverInput, bool)> = inputs[..start]
                     .iter()
                     .chain(&inputs[end..])
                     .cloned()
@@ -311,11 +323,7 @@ impl Simulator {
                 chunk = chunk.div_ceil(2);
             }
         }
-        InputLog {
-            settings: log.settings.clone(),
-            inputs,
-            ..InputLog::default()
-        }
+        to_log(&inputs)
     }
 
     /// Simulates the worlds of these seeds in parallel and panics with every failure
@@ -388,6 +396,7 @@ impl Simulator {
         let log = InputLog {
             settings: world(self, seed).settings,
             inputs: outcome.inputs.clone(),
+            lost: outcome.lost.clone(),
             ..InputLog::default()
         };
         let shrunk = self.shrink(&log);
@@ -419,6 +428,7 @@ impl Simulator {
             Outcome {
                 report: format!("PANICKED: {message}\n"),
                 inputs: Vec::new(),
+                lost: Vec::new(),
                 failure: Some(Failure {
                     input: 0,
                     message: format!("The simulation panicked: {message}"),
@@ -483,6 +493,8 @@ struct Run<'a> {
     report: Report,
     inputs: Vec<DriverInput>,
     replies: Vec<DriverReply>,
+    /// The inputs whose reply never reached the server.
+    lost: Vec<usize>,
     /// What happened around the inputs, for the report.
     notes: Vec<String>,
 }
@@ -503,6 +515,7 @@ impl<'a> Run<'a> {
         let (rules, driver) = started.map_err(|message| Outcome {
             report: format!("FAILED to start: {message}\n"),
             inputs: Vec::new(),
+            lost: Vec::new(),
             failure: Some(Failure { input: 0, message }),
         })?;
         let maps = world.map(|world| {
@@ -521,6 +534,7 @@ impl<'a> Run<'a> {
             report: Report::new(header, settings, world),
             inputs: Vec::new(),
             replies: Vec::new(),
+            lost: Vec::new(),
             notes: Vec::new(),
         })
     }
@@ -572,6 +586,9 @@ impl<'a> Run<'a> {
                 &self.observer,
             )
         });
+        if !reached {
+            self.lost.push(index);
+        }
         self.inputs.push(input);
         self.replies.push(reply);
         checked.map_err(|message| Failure {
@@ -608,6 +625,7 @@ impl<'a> Run<'a> {
         Outcome {
             report,
             inputs: self.inputs,
+            lost: self.lost,
             failure,
         }
     }

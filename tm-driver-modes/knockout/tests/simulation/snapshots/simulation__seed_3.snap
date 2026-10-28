@@ -26,6 +26,12 @@ round 2
 map end · next m1
 map m1 · one try, automatic finish timeout · no warmup · next m1
 round 3
+  ! bridge goes down
+  ! missed a checkpoint of b
+  ! missed a checkpoint of c
+  ! missed a checkpoint of c
+  ! missed a checkpoint of b
+  ! missed a checkpoint of c
   ! bridge restarts
   races  a 0cp · b 0:37.931 · c 0:35.769
   round  1 c 0 · 2 b 0 · 3 a -1
@@ -60,6 +66,8 @@ match end
 match 2
 map m1 · one try, automatic finish timeout · no warmup · next m1
 round 6
+  ! bridge goes down
+  ! missed a checkpoint of a
   ! bridge restarts
   races  c 2cp · a 0:40.589 · d 0cp · b 0:40.589 · e 0:31.199
   round  1 e 0 · 2 b 0 · 3 a 0 · 4 c -1 · 5 d -1
@@ -81,6 +89,7 @@ round 8
   chat   $f90$i$<Bea$> takes 5th place!
   block  b
 round 9
+  ! bridge goes down
   ! bridge restarts
   races  c 0:36.603 · e 0:34.598 · a 0:39.077 · d 0:35.265
   round  1 e 0 · 2 d 0 · 3 c 0 · 4 a -1

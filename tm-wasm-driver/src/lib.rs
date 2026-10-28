@@ -333,9 +333,10 @@ pub enum DriverInput {
     /// The uids of the maps the match plays from now on, e.g. the map pool of the
     /// config. The maps have to be in the map list of the server.
     Playlist(Vec<String>),
-    /// Players who are on the server already, e.g. when the driver starts during a
+    /// The players on the server, e.g. when the driver starts or resumes during a
     /// match, since they do not connect again. The same as their `PlayerInfoChanged`
-    /// callbacks, but publishes once for all of them.
+    /// callbacks, but publishes once for all of them. Players the driver thought on
+    /// the server but missing here left, e.g. while the bridge was down.
     Players(Vec<PlayerInfo>),
     /// The reply to the last hold reached the server. When the modescript asks
     /// again, e.g. because the reply came late, the hold only gets its `Continue`,
@@ -344,6 +345,10 @@ pub enum DriverInput {
     /// would show twice. Without it, e.g. when the reply got lost with the bridge,
     /// the hold gets every command again.
     Delivered,
+    /// The driver resumed, e.g. the bridge after a restart, and replies to the
+    /// last inputs may have been lost. Everything the driver set on the server goes
+    /// out again: the spawn permissions of the match and what the manialinks show.
+    Resumed,
 }
 
 /// What should happen after an input.
@@ -386,10 +391,29 @@ impl Driver {
                 Ok(self.published())
             }
             DriverInput::Players(players) => {
+                self.connected.clear();
                 for player in players {
                     self.learn(player);
                 }
                 Ok(self.published())
+            }
+            DriverInput::Resumed => {
+                let mut commands: Vec<DriverCommand> = self
+                    .spawn_permissions
+                    .iter()
+                    .map(|(account_id, &can_spawn)| {
+                        DriverCommand::SetCanSpawn(DriverCanSpawn {
+                            account_id: account_id.clone(),
+                            can_spawn,
+                        })
+                    })
+                    .collect();
+                self.published = Published::default();
+                commands.extend(self.publish());
+                Ok(DriverReply {
+                    commands,
+                    round_result: None,
+                })
             }
             DriverInput::Delivered => {
                 if let Some(last_hold) = &mut self.last_hold {

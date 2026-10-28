@@ -49,8 +49,11 @@ const DECISION_TIMEOUT: u32 = 10_000;
 #[allow(clippy::large_enum_variant)]
 pub(crate) enum Step {
     Input(DriverInput),
-    /// The bridge restarts, so the driver resumes by replaying its inputs.
+    /// The bridge is back up, so the driver resumes by replaying its inputs.
     RestartBridge,
+    /// The bridge goes down after the input before, maybe before its reply went
+    /// out. Only the server sees it.
+    Crash { lose_reply: bool },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -171,6 +174,8 @@ pub(crate) struct Server {
     /// The round whose actions happened already.
     prepared: u32,
     restart_after: Option<u32>,
+    /// The bridge is down and misses this many more callbacks it can miss.
+    down: Option<u32>,
     round: Option<RoundRun>,
     /// What happened that the driver cannot tell, e.g. a start that did not reach it.
     notes: Vec<String>,
@@ -204,6 +209,7 @@ impl Server {
             rounds: 0,
             prepared: 0,
             restart_after: None,
+            down: None,
             round: None,
             notes: Vec::new(),
         }
@@ -225,8 +231,18 @@ impl Server {
 
     pub(crate) fn next(&mut self) -> Option<Step> {
         loop {
-            if let Some(step) = self.out.pop_front() {
-                return Some(step);
+            match self.out.pop_front() {
+                Some(Step::Crash { .. }) => {
+                    let down = self
+                        .rng
+                        .fork(&format!("down/{}/{}", self.rounds, self.clock))
+                        .below(10);
+                    self.notes.push("bridge goes down".into());
+                    self.down = Some(down);
+                    continue;
+                }
+                Some(step) => return Some(step),
+                None => {}
             }
             if let Some(waiting) = &mut self.hold {
                 let hold = waiting.hold.clone();
@@ -263,8 +279,13 @@ impl Server {
     }
 
     /// Applies the commands of the driver like the modescript does. The bridge then
-    /// tells the driver that the reply to a hold reached the server.
-    pub(crate) fn on_reply(&mut self, input: &DriverInput, reply: &DriverReply) {
+    /// tells the driver that the reply to a hold reached the server. False when the
+    /// reply never reached it because the bridge went down first.
+    pub(crate) fn on_reply(&mut self, input: &DriverInput, reply: &DriverReply) -> bool {
+        if matches!(self.out.front(), Some(Step::Crash { lose_reply: true })) {
+            self.notes.push("the last reply is lost".into());
+            return false;
+        }
         if let DriverInput::Event(Event::DriverHold(_)) = input {
             self.out.push_front(Step::Input(DriverInput::Delivered));
         }
@@ -303,6 +324,7 @@ impl Server {
                 | DriverCommand::ChatMessage(_) => {}
             }
         }
+        true
     }
 
     fn stop(&mut self, reason: impl Into<String>) {
@@ -310,15 +332,36 @@ impl Server {
         self.phase = Phase::Done;
     }
 
-    /// Queues an input for the driver.
+    /// Queues an input for the driver. While the bridge is down, it misses race and
+    /// player callbacks. It is back before any other callback, resumes and learns
+    /// who is on the server.
     fn deliver(&mut self, input: DriverInput) {
+        if let Some(down) = &mut self.down {
+            if *down > 0 && missable(&input) {
+                *down -= 1;
+                self.notes.push(format!("missed {}", describe(&input)));
+                return;
+            }
+            self.down = None;
+            self.notes.push("bridge restarts".into());
+            self.out.push_back(Step::RestartBridge);
+            self.out.push_back(Step::Input(DriverInput::Resumed));
+            let mut players = vec![server_player()];
+            for account_id in &self.connected {
+                players.push(info(&self.world, account_id));
+            }
+            self.out.push_back(Step::Input(DriverInput::Players(players)));
+        }
         self.out.push_back(Step::Input(input));
 
         if let Some(after) = &mut self.restart_after {
             if *after == 0 {
                 self.restart_after = None;
-                self.notes.push("bridge restarts".into());
-                self.out.push_back(Step::RestartBridge);
+                let lose_reply = self
+                    .rng
+                    .fork(&format!("lose/{}/{}", self.rounds, self.clock))
+                    .chance(500);
+                self.out.push_back(Step::Crash { lose_reply });
             } else {
                 *after -= 1;
             }
@@ -956,6 +999,45 @@ impl Server {
         } else {
             Phase::StartMatch
         };
+    }
+}
+
+/// Callbacks a bridge that is down can miss without the match going wrong: races
+/// and players. The script asks again for holds, and the bridge is back before a
+/// round, map or match starts.
+fn missable(input: &DriverInput) -> bool {
+    matches!(
+        input,
+        DriverInput::Event(
+            Event::StartLine(_)
+                | Event::WayPoint(_)
+                | Event::PlayerConnect(_)
+                | Event::PlayerDisconnect(_)
+                | Event::PlayerInfoChanged(_)
+        )
+    )
+}
+
+/// A missed callback for the report.
+fn describe(input: &DriverInput) -> String {
+    match input {
+        DriverInput::Event(Event::StartLine(start)) => format!("the start of {}", start.account_id),
+        DriverInput::Event(Event::WayPoint(way_point)) if way_point.is_end_race => {
+            format!("the finish of {}", way_point.account_id)
+        }
+        DriverInput::Event(Event::WayPoint(way_point)) => {
+            format!("a checkpoint of {}", way_point.account_id)
+        }
+        DriverInput::Event(Event::PlayerConnect(connect)) => {
+            format!("{} joining", connect.account_id)
+        }
+        DriverInput::Event(Event::PlayerDisconnect(disconnect)) => {
+            format!("{} leaving", disconnect.account_id)
+        }
+        DriverInput::Event(Event::PlayerInfoChanged(player)) => {
+            format!("the name of {}", player.account_id)
+        }
+        _ => "a callback".into(),
     }
 }
 

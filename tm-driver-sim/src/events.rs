@@ -40,6 +40,10 @@ pub const SESSION: i32 = 7;
 pub struct InputLog {
     pub settings: String,
     pub inputs: Vec<DriverInput>,
+    /// The inputs whose reply never reached the server, counted from 0, e.g. when
+    /// the bridge went down before it went out.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub lost: Vec<usize>,
     /// The session of the holds the builder adds.
     #[serde(skip)]
     pub(crate) session: i32,
@@ -75,6 +79,7 @@ impl InputLog {
         Self {
             settings: settings.into(),
             inputs: Vec::new(),
+            lost: Vec::new(),
             session: SESSION,
         }
     }
@@ -196,6 +201,20 @@ impl InputLog {
             self.event(event);
         }
         self
+    }
+
+    /// The reply to the last input never reached the server, e.g. because the
+    /// bridge went down.
+    pub fn lose_reply(&mut self) -> &mut Self {
+        if let Some(last) = self.inputs.len().checked_sub(1) {
+            self.lost.push(last);
+        }
+        self
+    }
+
+    /// The driver resumed and sends everything it set on the server again.
+    pub fn resumed(&mut self) -> &mut Self {
+        self.push(DriverInput::Resumed)
     }
 
     /// The reply to the last hold reached the server, as the bridge tells it.
