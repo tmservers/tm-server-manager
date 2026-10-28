@@ -11,31 +11,31 @@ chances ties 100‰ · repeated holds 100‰ · missed starts 20‰ · playlist 
 match 1
 map m1 · one try, no finish timeout · no warmup
 round 1
-  races  a 0:30.961 · b 2cp · c 0:35.888
-  round  1 a 0 · 2 c -1 · 3 b -1
-  match  1 a 3 (\u{e96c}\u{e96c}\u{e96c}) · 2 c 2 (\u{e96f}\u{e96c}\u{e96c}) · 3 b 2 (\u{e96f}\u{e96c}\u{e96c})
+  races  b 0:32.807 · c 0:35.846 · a 0:31.347
+  round  1 a 0 · 2 b -1 · 3 c -1
+  match  1 a 3 (\u{e96c}\u{e96c}\u{e96c}) · 2 b 2 (\u{e96f}\u{e96c}\u{e96c}) · 3 c 2 (\u{e96f}\u{e96c}\u{e96c})
   info   Round 2, 3 left, 2 lose a life
 round 2
-  races  c 0:36.882 · b 3cp · a 0:30.895
-  round  1 a 0 · 2 c -1 · 3 b -1
-  match  1 a 3 (\u{e96c}\u{e96c}\u{e96c}) · 2 c 1 (\u{e96f}\u{e96f}\u{e96c}) · 3 b 1 (\u{e96f}\u{e96f}\u{e96c})
+  races  c 0:36.995 · a 0:31.861 · b 0:33.610
+  round  1 a 0 · 2 b -1 · 3 c -1
+  match  1 a 3 (\u{e96c}\u{e96c}\u{e96c}) · 2 b 1 (\u{e96f}\u{e96f}\u{e96c}) · 3 c 1 (\u{e96f}\u{e96f}\u{e96c})
   info   Round 3, 3 left, 2 lose a life
 round 3
-  races  b 0:31.910 · c 0:30.620 · a 0:30.620
-  round  1 a 0 · 2 c -1 · 3 b -1
-  match  1 a 3 (Winner) · 2 c 0 out (K.O.) · 3 b 0 out (K.O.)
+  races  b 0:33.518 · a 0:33.044 · c 0:36.463
+  round  1 a 0 · 2 b -1 · 3 c -1
+  match  1 a 3 (Winner) · 2 b 0 out (K.O.) · 3 c 0 out (K.O.)
   info   Match over
-  chat   $f90$i$<Cid$> takes 2nd place!
-  chat   $f90$i$<Bea$> takes 3rd place!
+  chat   $f90$i$<Bea$> takes 2nd place!
+  chat   $f90$i$<Cid$> takes 3rd place!
   chat   $<Ant$> wins the match!
   end match
-  block  c b
+  block  b c
 map end
   end match
 match end
 
 end
   1 a 3 (Winner)
-  2 c 0 out (K.O.)
-  3 b 0 out (K.O.)
-inputs 54
+  2 b 0 out (K.O.)
+  3 c 0 out (K.O.)
+inputs 57

@@ -12,26 +12,26 @@ chances ties 300‰ · idle 30‰ · repeated holds 100‰ · bridge restarts 10
 match 1
 map m1 · one try, no finish timeout · warmup 2 × one try · next m1
 round 1
-  races  c 0:37.629 · b 0:35.688 · a 4cp
-  round  1 b -2 · 2 c -5 · 3 a -30
-  match  1 b 7 · 2 c 4 · 3 a 0 (Last Chance)
+  races  c 0:36.567 · b 0:36.793 · a 0:36.962
+  round  1 c -2 · 2 b -5 · 3 a -7
+  match  1 c 7 · 2 b 4 · 3 a 2
   info   3 left, 1 / 1 rounds
   end map
 map end · next m1
 map m1 · one try, no finish timeout · warmup 2 × one try · next m1
 round 2
-  races  b 0:39.529 · c 0:35.621 · a 0:37.492
+  races  b 0:37.647 · a 0:37.481 · c 0:36.707
   round  1 c -2 · 2 a -5 · 3 b -7
-  match  1 c 2 · 2 a 0 (Last Chance) · 3 b 0 (Last Chance)
+  match  1 c 5 · 2 a 0 (Last Chance) · 3 b 0 (Last Chance)
   info   3 left, 1 / 1 rounds
   end map
 map end · next m1
 map m1 · one try, no finish timeout · warmup 2 × one try · next m1
 round 3
   ! bridge restarts
-  races  a 0:38.721 · b 0:34.263 · c 0:37.484
-  round  1 b -2 · 2 c -5 · 3 a -7
-  match  1 b 0 (Last Chance) · 2 c 0 (Last Chance) · 3 a 0 out
+  races  a 0cp · b 0:37.931 · c 0:35.769
+  round  1 c -2 · 2 b -5 · 3 a -30
+  match  1 c 3 · 2 b 0 (Last Chance) · 3 a 0 out
   info   2 left, 1 / 1 rounds
   chat   $f90$i$<Ant$> takes 3rd place!
   end map
@@ -40,69 +40,96 @@ map end · next m1
 map m1 · one try, no finish timeout · warmup 2 × one try · next m1
 round 4
   ! d joins
-  races  b 0:39.341 · d 0:34.356 · c 0:34.356
-  round  1 c -5 · 2 b -7
-  match  1 c 0 (Winner) · 2 b 0 out · 3 a 0 out · - d spectator
+  races  d 0:31.599 · b 0:34.870 · c 0:36.669
+  round  1 b -5 · 2 c -7
+  match  1 b 0 (Last Chance) · 2 c 0 (Last Chance) · 3 a 0 out · - d spectator
+  info   2 left, 1 / 1 rounds
+  end map
+  block  d
+map end · next m1
+map m1 · one try, no finish timeout · warmup 2 × one try · next m1
+round 5
+  ! e joins
+  races  b 0:37.896 · c 0:38.272
+  round  1 b -5 · 2 c -7
+  match  1 b 0 (Winner) · 2 c 0 out · 3 a 0 out · - d spectator · - e spectator
   info   1 left, 1 / 1 rounds
-  chat   $f90$i$<Bea$> takes 2nd place!
-  chat   $<Cid$> wins the match!
+  chat   $f90$i$<Cid$> takes 2nd place!
+  chat   $<Bea$> wins the match!
   end match
-  block  b d
+  block  c e
 map end · next m1
   end match
 match end
 
 match 2
 map m1 · one try, no finish timeout · warmup 2 × one try · next m1
-round 5
-  ! e joins
-  races  a 0:42.569 · d 0:34.327 · b 0:42.569 · c 0cp
-  round  1 d -4 · 2 a -7 · 3 b -9 · 4 c -30
-  match  1 d 5 · 2 a 2 · 3 b 0 (Last Chance) · 4 c 0 (Last Chance) · - e spectator
-  info   4 left, 1 / 1 rounds
-  end map
-  block  e
-map end · next m1
-map m1 · one try, no finish timeout · warmup 2 × one try · next m1
 round 6
   ! bridge restarts
-  races  c 3cp · d 0:32.810 · b 0:39.237 · a 0:39.237
-  round  1 d -4 · 2 b -7 · 3 a -9 · 4 c -30
-  match  1 d 1 · 2 b 0 (Last Chance) · 3 a 0 (Last Chance) · 4 c 0 out · - e spectator
-  info   3 left, 1 / 1 rounds
-  chat   $f90$i$<Cid$> takes 4th place!
+  races  c 2cp · a 0:40.589 · d 0cp · b 0:40.589 · e 0:31.199
+  round  1 e -4 · 2 b -7 · 3 a -9 · 4 c -30 · 5 d -30
+  match  1 e 5 · 2 b 2 · 3 a 0 (Last Chance) · 4 c 0 (Last Chance) · 5 d 0 (Last Chance)
+  info   5 left, 1 / 1 rounds
   end map
-  block  c
 map end · next m1
 map m1 · one try, no finish timeout · warmup 2 × one try · next m1
 round 7
-  races  b 0:38.371 · a 0:38.382 · d 0:32.342
-  round  1 d -2 · 2 b -5 · 3 a -7
-  match  1 d 0 (Last Chance) · 2 b 0 (Last Chance) · 3 a 0 out · 4 c 0 out · - e spectator
-  info   2 left, 1 / 1 rounds
-  chat   $f90$i$<Ant$> takes 3rd place!
+  races  c 0:35.695 · a 0:38.366 · e 0:33.008 · d 0:32.753 · b 3cp
+  round  1 d -4 · 2 e -7 · 3 c -9 · 4 a -13 · 5 b -30
+  match  1 d 0 (Last Chance) · 2 e 0 (Last Chance) · 3 c 0 (Last Chance) · 4 a 0 (Last Chance) · 5 b 0 (Last Chance)
+  info   5 left, 1 / 1 rounds
+  end map
+map end · next m1
+map m1 · one try, no finish timeout · warmup 2 × one try · next m1
+round 8
+  races  e 0:33.298 · b 0cp · a 0:37.482 · c 0:36.833 · d 0:33.298
+  round  1 d -4 · 2 e -7 · 3 c -9 · 4 a -13 · 5 b -30
+  match  1 d 0 (Last Chance) · 2 e 0 (Last Chance) · 3 c 0 (Last Chance) · 4 a 0 (Last Chance) · 5 b 0 out
+  info   4 left, 1 / 1 rounds
+  chat   $f90$i$<Bea$> takes 5th place!
+  end map
+  block  b
+  hold 23 again
+map end · next m1
+map m1 · one try, no finish timeout · warmup 2 × one try · next m1
+round 9
+  ! bridge restarts
+  races  c 0:36.603 · e 0:34.598 · a 0:39.077 · d 0:35.265
+  round  1 e -4 · 2 d -7 · 3 c -9 · 4 a -13
+  match  1 e 0 (Last Chance) · 2 d 0 (Last Chance) · 3 c 0 (Last Chance) · 4 a 0 out · 5 b 0 out
+  info   3 left, 1 / 1 rounds
+  chat   $f90$i$<Ant$> takes 4th place!
   end map
   block  a
 map end · next m1
 map m1 · one try, no finish timeout · warmup 2 × one try · next m1
-round 8
-  races  d 1cp · b 0:37.773
-  round  1 b -5 · 2 d -30
-  match  1 b 0 (Winner) · 2 d 0 out · 3 a 0 out · 4 c 0 out · - e spectator
+round 10
+  races  e 3cp · d 0:35.148 · c 0:37.330
+  round  1 d -2 · 2 c -5 · 3 e -30
+  match  1 d 0 (Last Chance) · 2 c 0 (Last Chance) · 3 e 0 out · 4 a 0 out · 5 b 0 out
+  info   2 left, 1 / 1 rounds
+  chat   $f90$i$<Eve$> takes 3rd place!
+  end map
+  block  e
+map end · next m1
+map m1 · one try, no finish timeout · warmup 2 × one try · next m1
+round 11
+  races  c 4cp · d 0:31.773
+  round  1 d -5 · 2 c -30
+  match  1 d 0 (Winner) · 2 c 0 out · 3 e 0 out · 4 a 0 out · 5 b 0 out
   info   1 left, 1 / 1 rounds
-  chat   $f90$i$<Eve$> takes 2nd place!
-  chat   $<Bea$> wins the match!
+  chat   $f90$i$<Cid$> takes 2nd place!
+  chat   $<Eve$> wins the match!
   end match
-  block  d
-  hold 23 again
+  block  c
 map end · next m1
   end match
 match end
 
 end
-  1 b 0 (Winner)
-  2 d 0 out
-  3 a 0 out
-  4 c 0 out
-  - e spectator
-inputs 470
+  1 d 0 (Winner)
+  2 c 0 out
+  3 e 0 out
+  4 a 0 out
+  5 b 0 out
+inputs 709

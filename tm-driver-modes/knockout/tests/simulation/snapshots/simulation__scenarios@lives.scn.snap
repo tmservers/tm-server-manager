@@ -16,7 +16,7 @@ round 1
   match  1 a 2 (\u{e96c}\u{e96c}) · 2 b 2 (\u{e96c}\u{e96c})
   info   Round 2, 2 left, 1 loses a life
 round 2
-  races  b 0:31.000 · a 0:30.000
+  races  a 0:30.000 · b 0:31.000
   round  1 a 0 · 2 b -1
   match  1 a 2 (\u{e96c}\u{e96c}) · 2 b 1 (\u{e96f}\u{e96c})
   info   Round 3, 2 left, 1 loses a life

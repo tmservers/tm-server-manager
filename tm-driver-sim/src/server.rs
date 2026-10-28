@@ -211,6 +211,8 @@ struct Racer {
 /// The round or warmup round that runs.
 struct RoundRun {
     kind: Kind,
+    /// Names the random streams of the round, e.g. `round/3/race/a/0`.
+    key: String,
     /// When the round ends at the latest, e.g. by its time limit.
     end: Option<u32>,
     /// Players start again after their races.
@@ -765,7 +767,9 @@ impl Server {
                 )
             }
         };
-        let mut rng = self.rng.fork(&key);
+        // The order and times of happenings. Races draw from streams of their own, so
+        // one racer more or less leaves the races of the others as they are.
+        let mut rng = self.rng.fork(&key).fork("happenings");
 
         let (time_limit, finish_timeout) = match kind {
             Kind::Round => match self.format {
@@ -792,6 +796,7 @@ impl Server {
 
         let mut run = RoundRun {
             kind,
+            key: key.clone(),
             end: time_limit.map(|limit| start + limit),
             restarts: time_limit.is_some(),
             finish_timeout,
@@ -809,7 +814,8 @@ impl Server {
             .collect();
         rng.shuffle(&mut racers);
         for player in &racers {
-            let plan = self.plan_race(kind, player, 0, &map, &mut rng.fork(player));
+            let mut races = self.rng.fork(&format!("{key}/race/{player}/0"));
+            let plan = self.plan_race(kind, player, 0, &map, &mut races);
             run.racers.insert(
                 player.clone(),
                 Racer {
@@ -988,8 +994,7 @@ impl Server {
             return;
         }
         let plan = racer.races[race].clone();
-        let key = format!("start/{}/{player}/{race}", self.rounds);
-        let mut rng = self.rng.fork(&key);
+        let mut rng = self.rng.fork(&format!("{}/start/{player}/{race}", run.key));
 
         let missed = run.kind == Kind::Round && rng.chance(self.world.faults.missed_starts);
         let give_up = match &plan {
@@ -1094,7 +1099,7 @@ impl Server {
             && run.end.is_some_and(|end| now + RESPAWN < end)
             && !run.racers[player].gone;
         let next = if again {
-            let key = format!("race/{}/{player}/{}", self.rounds, race + 1);
+            let key = format!("{}/race/{player}/{}", run.key, race + 1);
             self.plan_race(kind, player, race + 1, &map, &mut self.rng.fork(&key))
         } else {
             None
@@ -1105,9 +1110,7 @@ impl Server {
         match next {
             Some(plan) => {
                 racer.races.push(plan);
-                let mut rng = self
-                    .rng
-                    .fork(&format!("respawn/{}/{player}/{race}", self.rounds));
+                let mut rng = self.rng.fork(&format!("{}/respawn/{player}/{race}", run.key));
                 let happening = Happening::Start {
                     player: player.into(),
                     race: race + 1,
@@ -1260,5 +1263,67 @@ fn server_player() -> PlayerInfo {
         spectator_status: 0,
         ladder_ranking: 0,
         flags: 0b10_0000,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::world::{Faults, PlayerSpec};
+
+    fn player(account_id: &str) -> PlayerSpec {
+        PlayerSpec {
+            account_id: account_id.into(),
+            name: account_id.into(),
+            pace: 1_000,
+            spread: 1_000,
+            give_up: 100,
+            joins: None,
+            leaves: None,
+            watches: false,
+        }
+    }
+
+    /// The races the server plans for the first round of a world with these players.
+    fn first_round(accounts: &[&str]) -> BTreeMap<String, Vec<RacePlan>> {
+        let world = World {
+            settings: "{}".into(),
+            maps: vec![MapSpec {
+                uid: "m1".into(),
+                sectors: vec![10_000, 10_000, 10_000],
+            }],
+            playlist: Vec::new(),
+            players: accounts.iter().map(|account| player(account)).collect(),
+            races: Races::Random { ties: 0, idle: 0 },
+            faults: Faults::default(),
+            matches: 1,
+            max_rounds: 1,
+        };
+        let mut server = Server::new(&world, 9);
+        while server.phase != Phase::Racing {
+            let Some(Step::Input(input)) = server.next() else {
+                panic!("The first round never starts");
+            };
+            if let DriverInput::Event(Event::DriverHold(hold)) = &input {
+                let reply = DriverReply {
+                    commands: vec![DriverCommand::Continue(hold.seq)],
+                    round_result: None,
+                };
+                server.on_reply(&input, &reply);
+            }
+        }
+        let run = server.round.as_ref().expect("The round runs");
+        run.racers
+            .iter()
+            .map(|(account, racer)| (account.clone(), racer.races.clone()))
+            .collect()
+    }
+
+    #[test]
+    fn another_racer_leaves_the_races_of_the_others() {
+        let two = first_round(&["a", "b"]);
+        let three = first_round(&["a", "b", "c"]);
+        assert_eq!(two["a"], three["a"]);
+        assert_eq!(two["b"], three["b"]);
     }
 }

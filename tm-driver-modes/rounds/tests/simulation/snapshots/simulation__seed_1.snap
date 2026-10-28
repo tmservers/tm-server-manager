@@ -11,22 +11,22 @@ chances ties 100‰ · repeated holds 100‰ · missed starts 20‰ · playlist 
 match 1
 map m1 · one try, no finish timeout · no warmup
 round 1
-  races  a 0:30.961 · b 2cp · c 0:35.888
-  round  1 a 1 · 2 c 0 · 3 b 0
-  match  1 a 1 · 2 c 0 · 3 b 0
+  races  b 0:32.807 · c 0:35.846 · a 0:31.347
+  round  1 a 1 · 2 b 0 · 3 c 0
+  match  1 a 1 · 2 b 0 · 3 c 0
   info   1 / 4 rounds
 round 2
-  races  c 0:36.882 · b 3cp · a 0:30.895
-  round  1 a 1 · 2 c 0 · 3 b 0
-  match  1 a 2 · 2 c 0 · 3 b 0
+  races  c 0:36.995 · a 0:31.861 · b 0:33.610
+  round  1 a 1 · 2 b 0 · 3 c 0
+  match  1 a 2 · 2 b 0 · 3 c 0
   info   2 / 4 rounds
 round 3
-  races  b 0:31.910 · c 0:30.620 · a 0:30.620
-  round  1 a 1 · 2 c 0 · 3 b 0
-  match  1 a 3 · 2 c 0 · 3 b 0
+  races  b 0:33.518 · a 0:33.044 · c 0:36.463
+  round  1 a 1 · 2 b 0 · 3 c 0
+  match  1 a 3 · 2 b 0 · 3 c 0
   info   3 / 4 rounds
 round 4
-  races  c 0:36.575 · a 0:32.248 · b 0:32.906
+  races  b 0:33.664 · a 0:30.219 · c 0:36.252
   round  1 a 1 · 2 b 0 · 3 c 0
   match  1 a 4 · 2 b 0 · 3 c 0
   info   4 / 4 rounds
@@ -39,4 +39,4 @@ end
   1 a 4 (Winner)
   2 b 0
   3 c 0
-inputs 71
+inputs 74

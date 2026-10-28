@@ -13,8 +13,8 @@ match 1
 map m1 · time attack 0:20.000 · no warmup · next m1
 round 1
   races  c 3cp · b 3cp · a 3cp
-  round  1 b 0 · 2 c 0 · 3 a 0
-  match  1 b 0 · 2 c 0 · 3 a 0
+  round  1 c 0 · 2 a 0 · 3 b 0
+  match  1 c 0 · 2 a 0 · 3 b 0
   info   Map 1 / 1
   end map
 map end · next m1
@@ -24,9 +24,9 @@ match end
 match 2
 map m1 · time attack 0:20.000 · no warmup · next m1
 round 2
-  races  b 3cp · c 3cp · a 3cp
-  round  1 c 0 · 2 a 0 · 3 b 0
-  match  1 c 0 · 2 a 0 · 3 b 0
+  races  b 3cp · a 3cp · c 3cp
+  round  1 b 0 · 2 c 0 · 3 a 0
+  match  1 b 0 · 2 c 0 · 3 a 0
   info   Map 1 / 1
   end map
 map end · next m1
@@ -34,7 +34,7 @@ map end · next m1
 match end
 
 end
-  1 c 0 (Winner)
-  2 a 0
-  3 b 0
+  1 b 0 (Winner)
+  2 c 0
+  3 a 0
 inputs 40

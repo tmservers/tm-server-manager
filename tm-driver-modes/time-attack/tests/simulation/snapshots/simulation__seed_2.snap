@@ -11,7 +11,7 @@ chances ties 300‰ · repeated holds 400‰ · forced rounds 30‰ · bridge re
 match 1
 map m1 · time attack 1:30.000 · no warmup
 round 1
-  races  a 0:19.249 0:21.684 0:18.544 0:19.711 0cp · b 0:20.007 0:20.009 0:20.005 0:20.008 0cp
+  races  b 0:19.972 0:20.007 0:20.000 0:20.012 0cp · a 0:18.730 0:21.682 0:20.429 0:21.140
   round  1 a 2 · 2 b 1
   match  1 a 2 · 2 b 1
   info   Map 1 / 1
@@ -23,4 +23,4 @@ match end
 end
   1 a 2 (Winner)
   2 b 1
-inputs 34
+inputs 33

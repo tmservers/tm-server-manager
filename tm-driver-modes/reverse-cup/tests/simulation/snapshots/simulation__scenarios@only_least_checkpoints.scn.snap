@@ -11,13 +11,13 @@ players a · b · c · s watches
 match 1
 map m1 · one try, automatic finish timeout · no warmup
 round 1
-  races  c 1cp · b 2cp · a 0:30.000
+  races  a 0:30.000 · c 1cp · b 2cp
   round  1 a -2 · 2 b -20 · 3 c -20
   match  1 a 8 · 2 b 0 (Last Chance) · 3 c 0 (Last Chance) · - s spectator
   info   3 left, 1 / 5 rounds
   block  s
 round 2
-  races  b 2cp · a 0:30.000 · c 1cp
+  races  a 0:30.000 · c 1cp · b 2cp
   round  1 a -2 · 2 b 0 · 3 c -20
   match  1 a 6 · 2 b 0 (Last Chance) · 3 c 0 out · - s spectator
   info   2 left, 2 / 5 rounds

@@ -16,7 +16,7 @@ round 1
   match  1 a 5 · 2 b 5
   info   1 / 5 rounds
 round 2
-  races  b 0:30.000 · a 0:31.000
+  races  a 0:31.000 · b 0:30.000
   round  1 b 5 · 2 a 5
   match  1 b 10 (Winner) · 2 a 10
   info   2 / 5 rounds

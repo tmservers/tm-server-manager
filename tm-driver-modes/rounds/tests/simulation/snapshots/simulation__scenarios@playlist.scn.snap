@@ -21,7 +21,7 @@ map end · next m2
 map m2 · one try, automatic finish timeout · no warmup · next m3
 round 2
   ! playlist m3 m1
-  races  b 0:30.000 · a 0:31.000
+  races  a 0:31.000 · b 0:30.000
   round  1 b 10 · 2 a 6
   match  1 b 16 · 2 a 16
   info   Map 2 / 3, 1 / 1 rounds

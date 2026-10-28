@@ -11,12 +11,12 @@ players a · b · c
 match 1
 map m1 · one try, automatic finish timeout · no warmup
 round 1
-  races  c 0:32.000 · b 0:31.000 · a 0:30.000
+  races  a 0:30.000 · c 0:32.000 · b 0:31.000
   round  1 a -2 · 2 b -4 · 3 c -6
   match  1 a 8 · 2 b 6 · 3 c 4
   info   3 left, 1 / 5 rounds
 round 2
-  races  b 0:31.000 · a 0:30.000 · c 0:32.000
+  races  a 0:30.000 · c 0:32.000 · b 0:31.000
   round  1 a -2 · 2 b -4 · 3 c -6
   match  1 a 6 · 2 b 2 · 3 c 0 (Last Chance)
   info   3 left, 2 / 5 rounds
@@ -33,7 +33,7 @@ round 4
   chat   $f90$i$<c$> takes 3rd place!
   block  c
 round 5
-  races  b 0:30.000 · a 0:31.000
+  races  a 0:31.000 · b 0:30.000
   round  1 b -2 · 2 a -4
   match  1 b 0 (Winner) · 2 a 0 out · 3 c 0 out
   info   1 left, 5 / 5 rounds

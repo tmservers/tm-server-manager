@@ -16,7 +16,7 @@ round 1
   match  - a 100 · - b 100
   info   Waiting for players, 2 / 3
 round 2
-  races  b 0:31.000 · a 0:30.000
+  races  a 0:30.000 · b 0:31.000
   round  -
   match  - a 100 · - b 100
   info   Waiting for players, 2 / 3

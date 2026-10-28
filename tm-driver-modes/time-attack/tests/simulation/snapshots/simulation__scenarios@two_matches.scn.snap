@@ -23,7 +23,7 @@ match end
 match 2
 map m1 · time attack 1:00.000 · no warmup
 round 2
-  races  b 0:30.000 · a 0:31.000
+  races  a 0:31.000 · b 0:30.000
   round  1 b 2 · 2 a 1
   match  1 b 2 · 2 a 1
   info   Map 1 / 1
