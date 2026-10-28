@@ -219,6 +219,7 @@
 	Integer maps_played;
 	Text map_name;
 	Integer map_count;
+	Boolean paused;
 	K_Entry[] entries;
 }
 
@@ -421,7 +422,9 @@ Void Update(Text _Standings, Text _Round, Text _Users, Text _Watched) {
 	Frame_ScoresTable.Visible = True;
 	SetText(Frame_ScoresTable, "Label_Title", Standings.title);
 	SetText(Frame_ScoresTable, "Label_Map", Standings.map_name);
-	SetText(Frame_ScoresTable, "Label_Info", Standings.info);
+	declare Text Info = Standings.info;
+	if (Standings.paused) Info = "Paused";
+	SetText(Frame_ScoresTable, "Label_Info", Info);
 	SetVisible(Frame_ScoresTable, "Label_Empty", Standings.entries.count == 0);
 
 	declare Text Me = "";

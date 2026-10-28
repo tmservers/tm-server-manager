@@ -95,6 +95,7 @@ pub(crate) fn standings(
     title: &str,
     map_name: &str,
     map_count: u32,
+    paused: bool,
     standings: &Standings,
     users: &BTreeMap<String, User>,
 ) -> DriverStandings {
@@ -118,6 +119,7 @@ pub(crate) fn standings(
         maps_played: standings.maps_played,
         map_name: map_name.into(),
         map_count,
+        paused,
         entries,
     }
 }
@@ -292,7 +294,7 @@ mod tests {
             player("out", 3, Status::Eliminated, 0),
         ];
 
-        let standings = super::standings("Rounds", "Map", 2, &standings, &BTreeMap::new());
+        let standings = super::standings("Rounds", "Map", 2, false, &standings, &BTreeMap::new());
         assert_eq!(
             serde_json::to_value(&standings).unwrap(),
             serde_json::json!({
@@ -302,6 +304,7 @@ mod tests {
                 "maps_played": 0,
                 "map_name": "Map",
                 "map_count": 2,
+                "paused": false,
                 "entries": [
                     {"account_id": "first", "position": 1, "score": 10, "time": 30000, "status": "playing", "label": "", "label_tone": "neutral"},
                     {"account_id": "second", "position": 2, "score": 0, "time": -1, "status": "playing", "label": "Last Chance", "label_tone": "negative"},
@@ -327,7 +330,7 @@ mod tests {
             player("z", 0, Status::Playing, 0),
         ];
 
-        let order: Vec<String> = super::standings("Rounds", "Map", 0, &standings, &users)
+        let order: Vec<String> = super::standings("Rounds", "Map", 0, false, &standings, &users)
             .entries
             .into_iter()
             .map(|entry| entry.account_id)

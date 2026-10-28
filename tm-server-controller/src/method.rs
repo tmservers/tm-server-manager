@@ -6,6 +6,9 @@ use tm_server_types::{
 
 use crate::{ClientError, TrackmaniaServer};
 
+/// Tags the answers of the modescript to the pause methods.
+const PAUSE_RESPONSE_ID: &str = "tm-server-controller";
+
 #[allow(async_fn_in_trait)]
 pub trait ModeScriptMethodsXmlRpc {
     async fn enable_mode_script_callbacks(&self, enable: bool) -> Result<bool, ClientError>;
@@ -29,7 +32,12 @@ pub trait ModeScriptMethodsXmlRpc {
         match_points: u32,
     ) -> Result<bool, ClientError>;
 
+    /// Pauses the match or ends the pause, if the mode can pause. The modescript answers
+    /// with `Maniaplanet.Pause.Status`.
     async fn pause_set_active(&self, active: bool) -> Result<bool, ClientError>;
+
+    /// Asks the modescript for `Maniaplanet.Pause.Status`.
+    async fn pause_get_status(&self) -> Result<bool, ClientError>;
 
     /// Sends commands of the wasm driver in order.
     /// Stops at the first command that fails so later commands (like the `Continue`)
@@ -147,8 +155,16 @@ impl ModeScriptMethodsXmlRpc for TrackmaniaServer {
             "TriggerModeScriptEventArray",
             (
                 "Maniaplanet.Pause.SetActive",
-                [if active { "ture" } else { "false" }, "TODO Fix this"],
+                [if active { "true" } else { "false" }, PAUSE_RESPONSE_ID],
             ),
+        )
+        .await
+    }
+
+    async fn pause_get_status(&self) -> Result<bool, ClientError> {
+        self.call(
+            "TriggerModeScriptEventArray",
+            ("Maniaplanet.Pause.GetStatus", [PAUSE_RESPONSE_ID]),
         )
         .await
     }

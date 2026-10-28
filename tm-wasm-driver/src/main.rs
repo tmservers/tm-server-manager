@@ -20,6 +20,8 @@
 //!   uid or their file in the Maps folder of the server, which gets added to its map list.
 //! - `script` installs the driver modescript again, which starts a new match.
 //! - `next` ends the map.
+//! - `pause` pauses the match, `resume` ends the pause. The round a pause interrupts does
+//!   not count.
 //! - `quit`
 //!
 //! Environment:
@@ -48,7 +50,8 @@ use tm_wasm_driver::{Driver, DriverEngine, DriverInput, DriverLimits};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tracing_subscriber::{EnvFilter, filter::LevelFilter};
 
-const HELP: &str = "Commands: load <mode> [settings], reload, maps [map ...], script, next, quit";
+const HELP: &str =
+    "Commands: load <mode> [settings], reload, maps [map ...], script, next, pause, resume, quit";
 
 struct Active {
     /// The arguments of the `load` that started this mode.
@@ -145,6 +148,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 .await
                 .map(|_| ())
                 .map_err(|e| e.to_string()),
+            "pause" => pause(server, true).await,
+            "resume" => pause(server, false).await,
             "quit" | "exit" => break,
             _ => Err(format!("Unknown command {command}. {HELP}")),
         };
@@ -269,6 +274,21 @@ async fn load(
 
     // Ignored until the driver modescript runs, which shows them once it started.
     send(server, commands).await;
+    // The answer reaches the mode like every callback, e.g. to show a pause that runs.
+    if let Err(error) = server.pause_get_status().await {
+        tracing::warn!("Could not ask whether the match is paused: {error}");
+    }
+    Ok(())
+}
+
+/// Pauses the match or ends the pause. The modescript answers with its status, which
+/// the mode shows, and asking again makes sure it does.
+async fn pause(server: &TrackmaniaServer, active: bool) -> Result<(), String> {
+    server
+        .pause_set_active(active)
+        .await
+        .map_err(|e| e.to_string())?;
+    server.pause_get_status().await.map_err(|e| e.to_string())?;
     Ok(())
 }
 

@@ -255,6 +255,7 @@ impl DriverEngine {
             connected: BTreeSet::new(),
             in_round: false,
             in_warm_up: false,
+            paused: false,
             races: Races::default(),
             poisoned: false,
         })
@@ -300,6 +301,8 @@ pub struct Driver {
     in_round: bool,
     /// The built-in warmup runs.
     in_warm_up: bool,
+    /// The modescript is paused.
+    paused: bool,
     /// The races of the current round.
     races: Races,
     poisoned: bool,
@@ -377,6 +380,7 @@ impl Driver {
                 | Event::PlayerInfoChanged(_)
                 | Event::EndMatchStart(_)
                 | Event::DriverHold(_)
+                | Event::Pause(_)
         )
     }
 
@@ -492,6 +496,12 @@ impl Driver {
             }
             Event::EndMatchStart(_) => self.step(wit::Event::MatchEnd),
             Event::DriverHold(hold) => self.hold(hold),
+            // Only shown. The modescript ends a round a pause interrupts as skipped, so
+            // the mode gets it as invalid.
+            Event::Pause(pause) => {
+                self.paused = pause.available && pause.active;
+                Ok(self.published())
+            }
             _ => Ok(DriverReply::default()),
         }
     }
@@ -502,6 +512,7 @@ impl Driver {
             self.session = Some(hold.session);
             self.last_hold = None;
             self.spawn_permissions.clear();
+            self.paused = false;
         }
 
         if let Some(last_hold) = &self.last_hold {
@@ -559,6 +570,7 @@ impl Driver {
             &self.name,
             map_name,
             self.playlist.len() as u32,
+            self.paused,
             &self.standings,
             &self.store.data().users,
         )

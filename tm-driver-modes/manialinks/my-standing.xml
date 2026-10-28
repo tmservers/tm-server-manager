@@ -66,6 +66,7 @@
 	Integer maps_played;
 	Text map_name;
 	Integer map_count;
+	Boolean paused;
 	K_Entry[] entries;
 }
 
@@ -181,7 +182,10 @@ Void Update(Text _Standings, Text _Round) {
 	declare Integer[Text] LastRound = RoundScores(_Round);
 	declare Integer RoundScore = 0;
 	if (LastRound.existskey(Mine.account_id)) RoundScore = LastRound[Mine.account_id];
-	if (RoundScore > 0) {
+	if (Standings.paused) {
+		SetText("Label_Detail", "Paused");
+		SetTextColor("Label_Detail", C_Style_DetailColor);
+	} else if (RoundScore > 0) {
 		SetText("Label_Detail", "+"^TL::ToText(RoundScore)^" last round");
 		SetTextColor("Label_Detail", C_Style_GainedColor);
 	} else if (RoundScore < 0) {

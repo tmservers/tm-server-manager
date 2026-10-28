@@ -90,6 +90,7 @@
 	Integer maps_played;
 	Text map_name;
 	Integer map_count;
+	Boolean paused;
 	K_Entry[] entries;
 }
 
@@ -196,7 +197,9 @@ Void Update(Text _Standings, Text _Round, Text _Users) {
 
 	Frame_Standings.Visible = True;
 	SetText(Frame_Standings, "Label_Title", Standings.title);
-	SetText(Frame_Standings, "Label_Info", Standings.info);
+	declare Text Info = Standings.info;
+	if (Standings.paused) Info = "Paused";
+	SetText(Frame_Standings, "Label_Info", Info);
 
 	declare Text Me = "";
 	if (LocalUser != Null) Me = LocalUser.WebServicesUserId;

@@ -90,6 +90,7 @@ impl Report {
             ("bridge restarts", faults.bridge_restarts),
             ("script restarts", faults.script_restarts),
             ("playlist changes", faults.playlist_changes),
+            ("pauses", faults.pauses),
         ];
         let chances: Vec<String> = chances
             .iter()

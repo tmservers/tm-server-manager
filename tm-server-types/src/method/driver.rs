@@ -324,6 +324,8 @@ pub struct DriverStandings {
     pub map_name: String,
     /// Maps in the playlist of the match, 0 without one.
     pub map_count: u32,
+    /// The match is paused, e.g. by an admin.
+    pub paused: bool,
     /// Ordered by position, unranked players last.
     pub entries: Vec<DriverEntry>,
 }

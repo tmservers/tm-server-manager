@@ -110,6 +110,8 @@ pub struct Faults {
     pub script_restarts: u32,
     /// Rounds before which the driver gets another playlist.
     pub playlist_changes: u32,
+    /// Rounds an admin pauses.
+    pub pauses: u32,
 }
 
 const NAMES: [&str; 16] = [
@@ -184,6 +186,7 @@ impl World {
             bridge_restarts: *chances.pick(&[0, 30, 100]),
             script_restarts: *chances.pick(&[0, 0, 0, 10]),
             playlist_changes: *chances.pick(&[0, 0, 20]),
+            pauses: *rng.fork("pauses").pick(&[0, 0, 20, 60]),
         };
         // Plain matches show the rules of a mode without noise, and failures in them
         // are the easiest to read. A stream of its own leaves the rest of the world
@@ -317,6 +320,7 @@ mod tests {
                     faults.bridge_restarts,
                     faults.script_restarts,
                     faults.playlist_changes,
+                    faults.pauses,
                 ]
                 .iter()
                 .all(|&chance| chance > 0)

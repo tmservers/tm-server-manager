@@ -99,6 +99,13 @@ impl Checker {
         check_round(&round, &standings)?;
         check_statuses(&mut self.statuses, &standings)?;
         check_users(&users, observer)?;
+        if standings.paused != observer.paused() {
+            return Err(format!(
+                "The standings show the match paused: {}, but the modescript said: {}",
+                standings.paused,
+                observer.paused()
+            ));
+        }
         if reached {
             check_published(observer, &standings, &round, &users)?;
             check_spawns(&standings, observer)?;
@@ -177,6 +184,7 @@ fn may_change(input: &DriverInput) -> bool {
                 | Event::EndMatchStart(_)
                 | Event::DriverHold(_)
                 | Event::PlayerInfoChanged(_)
+                | Event::Pause(_)
         ),
         DriverInput::Playlist(_) | DriverInput::Players(_) | DriverInput::Resumed => true,
         DriverInput::Delivered => false,

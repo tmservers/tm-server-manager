@@ -143,6 +143,8 @@ pub(crate) struct Observer {
     last_hold: Option<(i32, u32)>,
     map: String,
     rounds: u32,
+    /// The modescript said it is paused.
+    paused: bool,
 
     // What the commands that reached the server set, like the globals of the
     // modescript and its netvars.
@@ -170,6 +172,7 @@ impl Observer {
             last_hold: None,
             map: String::new(),
             rounds: 0,
+            paused: false,
             can_spawn: BTreeMap::new(),
             format: default_format(),
             warm_up: DriverWarmUp::default(),
@@ -212,6 +215,10 @@ impl Observer {
 
     pub(crate) fn next_map(&self) -> Option<&str> {
         self.next_map.as_deref()
+    }
+
+    pub(crate) fn paused(&self) -> bool {
+        self.paused
     }
 
     /// Round ends that reached the driver, forced ones included.
@@ -310,6 +317,14 @@ impl Observer {
                 self.known
                     .insert(player.account_id.clone(), player.nick_name.clone());
             }
+            Event::Pause(pause) => {
+                let paused = pause.available && pause.active;
+                if paused != self.paused {
+                    self.notes
+                        .push(if paused { "paused" } else { "resumed" }.into());
+                }
+                self.paused = paused;
+            }
             Event::DriverHold(hold) => return self.hold(hold).map(Some),
             _ => {}
         }
@@ -321,6 +336,8 @@ impl Observer {
             if self.session.is_some() {
                 self.notes.push("modescript restarts".into());
             }
+            // A restarted modescript is not paused.
+            self.paused = false;
             self.session = Some(hold.session);
             self.seq = 0;
         }

@@ -24,8 +24,8 @@ use serde::{Deserialize, Serialize};
 use tm_server_types::{
     base::{Map, PlayerInfo},
     event::{
-        DriverHold, DriverSection, EndMatch, Event, PlayerConnect, PlayerDisconnect, StartLine,
-        StartMap, StartMatch, StartRound, WayPoint,
+        DriverHold, DriverSection, EndMatch, Event, Pause, PlayerConnect, PlayerDisconnect,
+        StartLine, StartMap, StartMatch, StartRound, WayPoint,
     },
     method::{DriverCommand, DriverStatus, DriverWarmUp},
 };
@@ -216,6 +216,14 @@ impl InputLog {
     /// The driver resumed and sends everything it set on the server again.
     pub fn resumed(&mut self) -> &mut Self {
         self.push(DriverInput::Resumed)
+    }
+
+    /// The modescript says whether it is paused, e.g. answering an admin.
+    pub fn pause(&mut self, active: bool) -> &mut Self {
+        self.event(Event::Pause(Pause {
+            available: true,
+            active,
+        }))
     }
 
     /// The reply to the last hold reached the server, as the bridge tells it.

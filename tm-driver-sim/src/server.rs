@@ -21,8 +21,8 @@ use std::{
 use tm_server_types::{
     base::{Map, PlayerInfo},
     event::{
-        DriverHold, DriverSection, EndMatch, Event, PlayerConnect, PlayerDisconnect, StartLine,
-        StartMap, StartMatch, StartRound, WayPoint,
+        DriverHold, DriverSection, EndMatch, Event, Pause, PlayerConnect, PlayerDisconnect,
+        StartLine, StartMap, StartMatch, StartRound, WayPoint,
     },
     method::{DriverCommand, DriverFinishTimeout, DriverRoundFormat, DriverWarmUp},
 };
@@ -95,6 +95,8 @@ enum Kind {
     WarmUp {
         left: u32,
     },
+    /// A pause, in which players drive without a round until it ends.
+    Pause,
 }
 
 /// Something that happens at a moment of a round.
@@ -121,6 +123,8 @@ enum Happening {
         player: String,
     },
     ForceEnd,
+    /// An admin pauses the match, which skips the round.
+    Pause,
     /// The modescript restarts, which ends the round without its end.
     RestartScript,
     /// The finish timeout after the first finish or the time limit ran out.
@@ -177,6 +181,7 @@ pub(crate) struct Server {
     end_map: bool,
     end_match: bool,
     next_map: Option<String>,
+    paused: bool,
 
     connected: BTreeSet<String>,
     map: Option<usize>,
@@ -220,6 +225,7 @@ impl Server {
             end_map: false,
             end_match: false,
             next_map: None,
+            paused: false,
             connected: BTreeSet::new(),
             map: None,
             matches_started: 0,
@@ -469,7 +475,10 @@ impl Server {
                     self.clock += END_ROUND;
                 }
                 if self.end_map || self.end_match {
+                    self.resume();
                     self.emit_hold(DriverSection::MapEnd, false);
+                } else if self.paused {
+                    self.plan_round(Kind::Pause);
                 } else {
                     self.phase = Phase::StartRound;
                 }
@@ -679,6 +688,7 @@ impl Server {
                     self.matches_started, self.maps_in_match
                 )
             }
+            Kind::Pause => format!("pause/{}", self.rounds),
         };
         // The order and times of happenings. Races draw from streams of their own, so
         // one racer more or less leaves the races of the others as they are.
@@ -705,6 +715,7 @@ impl Server {
                 ),
                 duration => (Some(duration), None),
             },
+            Kind::Pause => (Some(rng.between(20, 60) * 1_000), None),
         };
 
         let mut run = RoundRun {
@@ -763,6 +774,14 @@ impl Server {
         }
 
         if kind == Kind::Round {
+            if self
+                .rng
+                .fork(&format!("{key}/pause"))
+                .chance(self.world.faults.pauses)
+            {
+                let at = start + rng.below(map.author_time() * 3 / 2);
+                schedule(&mut run, &mut rng, at, Happening::Pause);
+            }
             if self.restart == Some(Restart::DuringRound) {
                 self.restart = None;
                 let at = start + rng.below(map.author_time());
@@ -855,6 +874,16 @@ impl Server {
             Happening::Join { player } => self.join(&player),
             Happening::Leave { player } => self.leave(&player),
             Happening::ForceEnd => {
+                self.end_round(true);
+                return;
+            }
+            Happening::Pause => {
+                // The modescript answers the admin with its status and skips the round.
+                self.paused = true;
+                self.event(Event::Pause(Pause {
+                    available: true,
+                    active: true,
+                }));
                 self.end_round(true);
                 return;
             }
@@ -1028,7 +1057,18 @@ impl Server {
         self.map = None;
         self.round = None;
         self.hold = None;
+        self.paused = false;
         self.phase = Phase::StartMatch;
+    }
+
+    /// The pause ends, if one runs. The modescript answers the admin with its status.
+    fn resume(&mut self) {
+        if std::mem::take(&mut self.paused) {
+            self.event(Event::Pause(Pause {
+                available: true,
+                active: false,
+            }));
+        }
     }
 
     fn end_round(&mut self, forced: bool) {
@@ -1042,6 +1082,10 @@ impl Server {
             Kind::WarmUp { left } => {
                 self.clock += END_ROUND;
                 self.plan_round(Kind::WarmUp { left: left - 1 });
+            }
+            Kind::Pause => {
+                self.resume();
+                self.phase = Phase::StartRound;
             }
         }
     }

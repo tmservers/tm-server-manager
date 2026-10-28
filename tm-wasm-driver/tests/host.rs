@@ -9,7 +9,8 @@ use common::{
 };
 use tm_server_types::{
     event::{
-        DriverHold, DriverPlayerResult, DriverRoundResult, DriverSection, Event, PlayLoopStart,
+        DriverHold, DriverPlayerResult, DriverRoundResult, DriverSection, Event, Pause,
+        PlayLoopStart,
     },
     method::{DriverCommand, DriverFinishTimeout, DriverRoundFormat, DriverStatus},
 };
@@ -448,4 +449,34 @@ fn rejects_non_wasm() {
         engine.compile(b"definitely not wasm"),
         Err(DriverError::InvalidModule(_))
     ));
+}
+
+#[test]
+fn a_pause_shows_in_the_standings() {
+    let pause = |active| {
+        Event::Pause(Pause {
+            available: true,
+            active,
+        })
+    };
+    let mut driver = rounds("");
+    driver.handle(&hold(1, DriverSection::MapStart)).unwrap();
+
+    let paused = driver.handle(&pause(true)).unwrap();
+    assert!(publishes_standings(&paused.commands));
+    assert!(driver.standings().paused);
+    driver.handle(&pause(false)).unwrap();
+    assert!(!driver.standings().paused);
+
+    // A restarted modescript is not paused.
+    driver.handle(&pause(true)).unwrap();
+    driver
+        .handle(&Event::DriverHold(DriverHold {
+            session: SESSION + 1,
+            seq: 1,
+            section: DriverSection::MapStart,
+            forced: false,
+        }))
+        .unwrap();
+    assert!(!driver.standings().paused);
 }

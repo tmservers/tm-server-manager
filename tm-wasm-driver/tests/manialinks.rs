@@ -53,6 +53,7 @@ fn netvars() -> [(&'static str, Vec<&'static str>, Value); 3] {
                 "Integer maps_played;",
                 "Text map_name;",
                 "Integer map_count;",
+                "Boolean paused;",
                 "K_Entry[] entries;",
             ]
             .into_iter()
