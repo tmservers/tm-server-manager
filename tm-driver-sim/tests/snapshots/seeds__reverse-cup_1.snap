@@ -1,0 +1,131 @@
+---
+source: tm-driver-sim/tests/seeds.rs
+expression: outcome.report
+---
+reverse-cup · seed 1
+settings {"allow_fast_forward_rounds":false,"disable_last_chance":false,"dnf_points_loss":10,"fast_forward_points_repartition":false,"finish_timeout":"automatic","last_chance_dnf_mode":"all_players","number_of_winners":1,"points_repartition":[5],"rounds_per_map":2,"starting_points":44,"warmup":{"duration_ms":21000,"rounds":1,"timeout_ms":10000}}
+maps m1 3 cp 0:28.689
+players a Ant · b Bea watches · c $f00Cid watches · d Dot · e Eve · f Fay · g Gus leaves during round 2 · h Hal · i Ivy · j Jo · k Kai joins before round 2 · l Lu leaves during round 3 · m Max · n Ned leaves during round 2
+chances idle 30‰ · repeated holds 100‰ · missed starts 20‰ · bridge restarts 30‰
+
+match 1
+map m1 · one try, automatic finish timeout · warmup 1 × 0:21.000
+round 1
+  races  g 0:29.674 · e 0:33.561 · j 0:28.628 · f 0:33.364 · i 0:30.103 · n 0:29.126 · l 0:27.052 · m 0:29.959 · a 0:29.163 · d 0:27.313 · h 0:29.319
+  round  1 l -5 · 2 d -5 · 3 j -5 · 4 n -5 · 5 a -5 · 6 h -5 · 7 g -5 · 8 m -5 · 9 i -5 · 10 f -5 · 11 e -5
+  match  1 l 39 · 2 d 39 · 3 j 39 · 4 n 39 · 5 a 39 · 6 h 39 · 7 g 39 · 8 m 39 · 9 i 39 · 10 f 39 · 11 e 39 · - c spectator · - b spectator
+  info   11 left, 1 / 2 rounds
+  block  b c
+round 2
+  ! k joins
+  ! start of f missed
+  ! n leaves
+  ! g leaves
+  races  l 0:27.646 · j 0:27.460 · n 0cp · a 0:29.296 · i 0:30.103 · m 0:29.917 · e 0:31.275 · d 0:27.356 · g 1cp · h 0:29.030 · k 0:28.852 · f 0:32.878
+  round  1 d -5 · 2 j -5 · 3 l -5 · 4 h -5 · 5 a -5 · 6 m -5 · 7 i -5 · 8 e -5 · 9 f -5 · 10 g -10 · 11 n -10
+  match  1 d 34 · 2 j 34 · 3 l 34 · 4 h 34 · 5 a 34 · 6 m 34 · 7 i 34 · 8 e 34 · 9 f 34 · 10 g 29 · 11 n 29 · - c spectator · - b spectator · - k spectator
+  info   11 left, 2 / 2 rounds
+  end map
+  block  k
+map end
+map m1 · one try, automatic finish timeout · warmup 1 × 0:21.000
+round 3
+  ! l leaves
+  races  i 0:29.753 · a 0:29.270 · f 0:32.892 · j 0:27.134 · m 0:29.896 · e 0:32.069 · d 0:27.173 · l 2cp · h 0:29.778
+  round  1 j -5 · 2 d -5 · 3 a -5 · 4 i -5 · 5 h -5 · 6 m -5 · 7 e -5 · 8 f -5 · 9 l -10 · 10 g -10 · 11 n -10
+  match  1 j 29 · 2 d 29 · 3 a 29 · 4 i 29 · 5 h 29 · 6 m 29 · 7 e 29 · 8 f 29 · 9 l 24 · 10 g 19 · 11 n 19 · - c spectator · - b spectator · - k spectator
+  info   11 left, 1 / 2 rounds
+round 4
+  races  j 0:28.421 · h 0:29.018 · a 0:29.322 · d 0:27.459 · m 0:29.946 · e 0:30.575 · f 0:31.600 · i 0:30.179
+  round  1 d -5 · 2 j -5 · 3 h -5 · 4 a -5 · 5 m -5 · 6 i -5 · 7 e -5 · 8 f -5 · 9 g -10 · 10 l -10 · 11 n -10
+  match  1 d 24 · 2 j 24 · 3 h 24 · 4 a 24 · 5 m 24 · 6 i 24 · 7 e 24 · 8 f 24 · 9 l 14 · 10 g 9 · 11 n 9 · - c spectator · - b spectator · - k spectator
+  info   11 left, 2 / 2 rounds
+  end map
+map end
+map m1 · one try, automatic finish timeout · warmup 1 × 0:21.000
+round 5
+  races  d 0:27.180 · h 0:28.042 · j 0:28.972 · e 0:32.188 · a 0:29.323 · f 0:32.610 · m 0cp · i 0:30.103
+  round  1 d -5 · 2 h -5 · 3 j -5 · 4 a -5 · 5 i -5 · 6 e -5 · 7 f -5 · 8 m -10 · 9 g -10 · 10 l -10 · 11 n -10
+  match  1 d 19 · 2 h 19 · 3 j 19 · 4 a 19 · 5 i 19 · 6 e 19 · 7 f 19 · 8 m 14 · 9 l 4 · 10 g 0 (Last Chance) · 11 n 0 (Last Chance) · - c spectator · - b spectator · - k spectator
+  info   11 left, 1 / 2 rounds
+round 6
+  races  a 0:29.255 · d 0:26.793 · f 0:33.386 · i 0:29.224 · h 0:28.113 · e 0:32.002 · j 0:29.354 · m 0:29.863
+  round  1 d -5 · 2 h -5 · 3 i -5 · 4 a -5 · 5 j -5 · 6 m -5 · 7 e -5 · 8 f -5 · 9 g -10 · 10 l -10 · 11 n -10
+  match  1 d 14 · 2 h 14 · 3 i 14 · 4 a 14 · 5 j 14 · 6 e 14 · 7 f 14 · 8 m 9 · 9 l 0 (Last Chance) · 10 g 0 out · 11 n 0 out · - c spectator · - b spectator · - k spectator
+  info   9 left, 2 / 2 rounds
+  chat   $f90$i$<Gus$> takes 10th place!
+  chat   $f90$i$<Ned$> takes 11th place!
+  end map
+  block  g n
+map end
+map m1 · one try, automatic finish timeout · warmup 1 × 0:21.000
+round 7
+  races  j 0:28.202 · f 0:33.280 · h 0:29.541 · a 0:29.324 · i 0:29.688 · d 0:27.381 · e 2cp · m 0:29.936
+  round  1 d -5 · 2 j -5 · 3 a -5 · 4 h -5 · 5 i -5 · 6 m -5 · 7 f -5 · 8 e -10 · 9 l -10
+  match  1 d 9 · 2 j 9 · 3 a 9 · 4 h 9 · 5 i 9 · 6 f 9 · 7 m 4 · 8 e 4 · 9 l 0 out · 10 g 0 out · 11 n 0 out · - c spectator · - b spectator · - k spectator
+  info   8 left, 1 / 2 rounds
+  chat   $f90$i$<Lu$> takes 9th place!
+  block  l
+round 8
+  races  a 2cp · d 0:26.232 · m 0:29.919 · f 0:32.739 · i 0:29.736 · h 0:29.733 · j 0:27.956 · e 0:31.276
+  round  1 d -5 · 2 j -5 · 3 h -5 · 4 i -5 · 5 m -5 · 6 e -5 · 7 f -5 · 8 a -10
+  match  1 d 4 · 2 j 4 · 3 h 4 · 4 i 4 · 5 f 4 · 6 m 0 (Last Chance) · 7 e 0 (Last Chance) · 8 a 0 (Last Chance) · 9 l 0 out · 10 g 0 out · 11 n 0 out · - c spectator · - b spectator · - k spectator
+  info   8 left, 2 / 2 rounds
+  end map
+map end
+map m1 · one try, automatic finish timeout · warmup 1 × 0:21.000
+round 9
+  races  f 0:33.351 · j 0cp · a 0:29.316 · e 0:31.334 · m 0:29.864 · i 0:29.406 · h 0:29.180 · d 0:28.428
+  round  1 d -5 · 2 h -5 · 3 a -5 · 4 i -5 · 5 m -5 · 6 e -5 · 7 f -5 · 8 j -10
+  match  1 d 0 (Last Chance) · 2 h 0 (Last Chance) · 3 a 0 (Last Chance) · 4 i 0 (Last Chance) · 5 m 0 (Last Chance) · 6 e 0 (Last Chance) · 7 f 0 (Last Chance) · 8 j 0 (Last Chance) · 9 l 0 out · 10 g 0 out · 11 n 0 out · - c spectator · - b spectator · - k spectator
+  info   8 left, 1 / 2 rounds
+round 10
+  races  e 0cp · a 0:29.352 · h 0:29.472 · j 0:27.730 · f 0:33.634 · i 0:30.236 · d 0:26.839 · m 0:29.913
+  round  1 d -5 · 2 j -5 · 3 a -5 · 4 h -5 · 5 m -5 · 6 i -5 · 7 f -5 · 8 e -10
+  match  1 d 0 (Last Chance) · 2 j 0 (Last Chance) · 3 a 0 (Last Chance) · 4 h 0 (Last Chance) · 5 m 0 (Last Chance) · 6 i 0 (Last Chance) · 7 f 0 (Last Chance) · 8 e 0 out · 9 l 0 out · 10 g 0 out · 11 n 0 out · - c spectator · - b spectator · - k spectator
+  info   7 left, 2 / 2 rounds
+  chat   $f90$i$<Eve$> takes 8th place!
+  end map
+  block  e
+map end
+map m1 · one try, automatic finish timeout · warmup 1 × 0:21.000
+round 11
+  races  f 1cp · a 0:29.302 · h 0:27.994 · i 0:29.863 · d 0:26.643 · m 0:29.962 · j 0:26.001
+  round  1 j -5 · 2 d -5 · 3 h -5 · 4 a -5 · 5 i -5 · 6 m -5 · 7 f -10
+  match  1 j 0 (Last Chance) · 2 d 0 (Last Chance) · 3 h 0 (Last Chance) · 4 a 0 (Last Chance) · 5 i 0 (Last Chance) · 6 m 0 (Last Chance) · 7 f 0 out · 8 e 0 out · 9 l 0 out · 10 g 0 out · 11 n 0 out · - c spectator · - b spectator · - k spectator
+  info   6 left, 1 / 2 rounds
+  chat   $f90$i$<Fay$> takes 7th place!
+  block  f
+round 12
+  races  h 0:28.481 · j 0:29.985 · m 0:29.901 · i 0:29.749 · d 0:26.720 · a 0:29.366
+  round  1 d -5 · 2 h -5 · 3 a -5 · 4 i -5 · 5 m -5 · 6 j -5
+  match  1 d 0 out · 2 h 0 out · 3 a 0 out · 4 i 0 out · 5 m 0 out · 6 j 0 out · 7 f 0 out · 8 e 0 out · 9 l 0 out · 10 g 0 out · 11 n 0 out · - c spectator · - b spectator · - k spectator
+  info   0 left, 2 / 2 rounds
+  chat   $f90$i$<Dot$> takes 1st place!
+  chat   $f90$i$<Hal$> takes 2nd place!
+  chat   $f90$i$<Ant$> takes 3rd place!
+  chat   $f90$i$<Ivy$> takes 4th place!
+  chat   $f90$i$<Max$> takes 5th place!
+  chat   $f90$i$<Jo$> takes 6th place!
+  end match
+  block  d h a i m j
+map end
+  end match
+match end
+
+end
+  1 d 0 out
+  2 h 0 out
+  3 a 0 out
+  4 i 0 out
+  5 m 0 out
+  6 j 0 out
+  7 f 0 out
+  8 e 0 out
+  9 l 0 out
+  10 g 0 out
+  11 n 0 out
+  - c spectator
+  - b spectator
+  - k spectator
+inputs 593

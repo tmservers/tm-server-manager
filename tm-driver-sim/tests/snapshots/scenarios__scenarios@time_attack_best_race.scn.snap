@@ -1,0 +1,26 @@
+---
+source: tm-driver-sim/tests/scenarios.rs
+expression: outcome.report
+input_file: tm-driver-sim/tests/scenarios/time_attack_best_race.scn
+---
+time-attack · scenario
+settings {"time_limit_ms": 100000}
+maps m1 3 cp 0:30.000
+players a · b
+
+match 1
+map m1 · time attack 1:40.000 · no warmup
+round 1
+  races  a 0:31.000 0:30.000 0:35.000 · b 0:30.500 0:31.000 2cp
+  round  1 a 2 · 2 b 1
+  match  1 a 2 · 2 b 1
+  info   Map 1 / 1
+  end map
+map end
+  end match
+match end
+
+end
+  1 a 2 (Winner)
+  2 b 1
+inputs 31

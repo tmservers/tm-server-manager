@@ -534,6 +534,8 @@ import host;  // log, find-user, map-count
 - `tm-driver-modes/time-attack`: TimeAttack (time limit, maps per match, points by rank).
 - `tm-driver-modes/reverse-cup`: ReverseCup (see [ReverseCup](#reversecup)).
 - `tm-driver-modes/knockout`: Knockout with lives (see [Knockout](#knockout)).
+- `tm-driver-sim`: whole matches of every mode against a fake server, checked after every input and
+  kept as snapshots (see [Simulation Testing](./dev_driver_simulation.md)).
 
 ## Configuration
 

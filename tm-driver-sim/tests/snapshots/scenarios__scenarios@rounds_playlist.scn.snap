@@ -1,0 +1,44 @@
+---
+source: tm-driver-sim/tests/scenarios.rs
+expression: outcome.report
+input_file: tm-driver-sim/tests/scenarios/rounds_playlist.scn
+---
+rounds · scenario
+settings {"rounds_per_map": 1, "maps_per_match": 3}
+maps m1 3 cp 0:30.000 · m2 3 cp 0:30.000 · m3 3 cp 0:30.000
+playlist m1 m2 m3
+players a · b
+
+match 1
+map m1 · one try, automatic finish timeout · no warmup · next m2
+round 1
+  races  a 0:30.000 · b 0:31.000
+  round  1 a 10 · 2 b 6
+  match  1 a 10 · 2 b 6
+  info   Map 1 / 3, 1 / 1 rounds
+  end map
+map end · next m2
+map m2 · one try, automatic finish timeout · no warmup · next m3
+round 2
+  ! playlist m3 m1
+  races  b 0:30.000 · a 0:31.000
+  round  1 b 10 · 2 a 6
+  match  1 b 16 · 2 a 16
+  info   Map 2 / 3, 1 / 1 rounds
+  end map
+map end · next m3
+map m3 · one try, automatic finish timeout · no warmup · next m1
+round 3
+  races  b 0:31.000 · a 0:30.000
+  round  1 a 10 · 2 b 6
+  match  1 a 26 · 2 b 22
+  info   Map 3 / 3, 1 / 1 rounds
+  end map
+map end · next m3
+  end match
+match end
+
+end
+  1 a 26 (Winner)
+  2 b 22
+inputs 44

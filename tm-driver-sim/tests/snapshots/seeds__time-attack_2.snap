@@ -1,0 +1,26 @@
+---
+source: tm-driver-sim/tests/seeds.rs
+expression: outcome.report
+---
+time-attack · seed 2
+settings {"maps_per_match":1,"time_limit_ms":90000}
+maps m1 2 cp 0:16.558 · m2 2 cp 0:18.410 · m3 5 cp 0:32.203
+playlist m1 m2 m3
+players a Ant
+chances ties 100‰ · bridge restarts 30‰ · script restarts 10‰
+
+match 1
+map m1 · time attack 1:30.000 · no warmup · next m2
+round 1
+  races  a 0:19.171 0:19.211 0:18.094 0:18.509 0cp
+  round  1 a 1
+  match  1 a 1
+  info   Map 1 / 1
+  end map
+map end · next m1
+  end match
+match end
+
+end
+  1 a 1 (Winner)
+inputs 22

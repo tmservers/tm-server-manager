@@ -1,0 +1,10 @@
+# Two players and two winners: rounds in which nobody loses points do not
+# count, so the match waits for more players.
+mode reverse-cup
+settings {"number_of_winners": 2}
+players a b
+later c
+round a 30 | b 31
+round a 30 | b 31
+join c
+round a 30 | b 31 | c 32

@@ -1,0 +1,31 @@
+---
+source: tm-driver-sim/tests/scenarios.rs
+expression: outcome.report
+input_file: tm-driver-sim/tests/scenarios/knockout_furthest_keeps_the_last_life.scn
+---
+knockout · scenario
+settings {"rounds_without_elimination": 0}
+maps m1 3 cp 0:30.000
+players a · b · c
+
+match 1
+map m1 · one try, finish timeout 0:05.000 · no warmup
+round 1
+  races  c 0cp · b 2cp · a 1cp
+  round  1 b 0 · 2 a -1 · 3 c -1
+  match  1 b 1 (Winner) · 2 a 0 out (K.O.) · 3 c 0 out (K.O.)
+  info   Match over
+  chat   $f90$i$<a$> takes 2nd place!
+  chat   $f90$i$<c$> takes 3rd place!
+  chat   $<b$> wins the match!
+  end match
+  block  a c
+map end
+  end match
+match end
+
+end
+  1 b 1 (Winner)
+  2 a 0 out (K.O.)
+  3 c 0 out (K.O.)
+inputs 14

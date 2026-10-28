@@ -1,0 +1,7 @@
+# A new match starts from scratch.
+mode time-attack
+settings {"time_limit_ms": 60000}
+matches 2
+players a b
+round a 30 | b 31
+round b 30 | a 31

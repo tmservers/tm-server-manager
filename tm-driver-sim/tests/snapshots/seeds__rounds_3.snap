@@ -1,0 +1,109 @@
+---
+source: tm-driver-sim/tests/seeds.rs
+expression: outcome.report
+---
+rounds · seed 3
+settings {"finish_timeout":"disabled","points_limit":36,"points_repartition":[1,1,0],"rounds_per_map":2,"warmup":{"duration_ms":19000,"rounds":1,"timeout_ms":2000}}
+maps m1 3 cp 0:27.416 · m2 3 cp 0:13.063 · m3 2 cp 0:14.337
+playlist m1 m2 m3
+players a Ant · b Bea · c Cid watches
+chances repeated holds 400‰ · forced rounds 30‰ · bridge restarts 30‰ · playlist changes 20‰
+
+match 1
+map m1 · one try, no finish timeout · warmup 1 × 0:19.000 · next m2
+round 1
+  races  a 0:30.148 · b 0:30.835
+  round  1 a 1 · 2 b 1
+  match  1 a 1 · 2 b 1
+  info   Map 1 / 3, 1 / 2 rounds
+round 2
+  races  a 0:31.036 · b 0:31.081
+  round  1 a 1 · 2 b 1
+  match  1 a 2 · 2 b 2
+  info   Map 1 / 3, 2 / 2 rounds
+  end map
+map end · next m2
+map m2 · one try, no finish timeout · warmup 1 × 0:19.000 · next m3
+round 3
+  races  b 0:14.805 · a 0:14.968
+  round  1 b 1 · 2 a 1
+  match  1 b 3 · 2 a 3
+  info   Map 2 / 3, 1 / 2 rounds
+  hold 6 again
+round 4
+  races  b 0:15.499 · a 0:14.467
+  round  1 a 1 · 2 b 1
+  match  1 a 4 · 2 b 4
+  info   Map 2 / 3, 2 / 2 rounds
+  end map
+  hold 7 again
+map end · next m3
+  hold 8 again
+map m3 · one try, no finish timeout · warmup 1 × 0:19.000 · next m1
+round 5
+  races  b 0:15.458 · a 0:16.355
+  round  1 b 1 · 2 a 1
+  match  1 b 5 · 2 a 5
+  info   Map 3 / 3, 1 / 2 rounds
+  hold 10 again
+round 6
+  races  b 0:16.052 · a 0:15.597
+  round  1 a 1 · 2 b 1
+  match  1 a 6 · 2 b 6
+  info   Map 3 / 3, 2 / 2 rounds
+  end map
+  hold 11 again
+map end · next m1
+  end match
+match end
+
+match 2
+map m1 · one try, no finish timeout · warmup 1 × 0:19.000 · next m2
+round 7
+  races  b 0:29.613 · a 0:31.331
+  round  1 b 1 · 2 a 1
+  match  1 b 1 · 2 a 1
+  info   Map 1 / 3, 1 / 2 rounds
+round 8
+  races  a 0:30.102 · b 0:31.125
+  round  1 a 1 · 2 b 1
+  match  1 a 2 · 2 b 2
+  info   Map 1 / 3, 2 / 2 rounds
+  end map
+map end · next m2
+map m2 · one try, no finish timeout · warmup 1 × 0:19.000 · next m3
+round 9
+  races  b 0:14.177 · a 0:14.402
+  round  1 b 1 · 2 a 1
+  match  1 b 3 · 2 a 3
+  info   Map 2 / 3, 1 / 2 rounds
+round 10
+  ! bridge restarts
+  races  a 0:15.539 · b 0:14.032
+  round  1 b 1 · 2 a 1
+  match  1 b 4 · 2 a 4
+  info   Map 2 / 3, 2 / 2 rounds
+  end map
+map end · next m3
+  hold 20 again
+map m3 · one try, no finish timeout · warmup 1 × 0:19.000 · next m1
+round 11
+  races  b 0:15.673 · a 0:16.687
+  round  1 b 1 · 2 a 1
+  match  1 b 5 · 2 a 5
+  info   Map 3 / 3, 1 / 2 rounds
+round 12
+  races  b 0:15.452 · a 0:16.783
+  round  1 b 1 · 2 a 1
+  match  1 b 6 · 2 a 6
+  info   Map 3 / 3, 2 / 2 rounds
+  end map
+  hold 23 again
+map end · next m1
+  end match
+match end
+
+end
+  1 b 6 (Winner)
+  2 a 6
+inputs 199

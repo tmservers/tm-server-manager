@@ -1,0 +1,10 @@
+# Players run out of points into last chance. In last chance a player survives
+# a round in which someone else loses more and is out after losing the most.
+mode reverse-cup
+settings {"starting_points": 10, "points_repartition": [2, 4, 6], "complex_points_repartition": {}, "allow_fast_forward_rounds": false}
+players a b c
+round a 30 | b 31 | c 32
+round a 30 | b 31 | c 32
+round c 30 | a 31 | b dnf 1
+round a 30 | b 31 | c 32
+round b 30 | a 31

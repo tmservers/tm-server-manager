@@ -1,0 +1,108 @@
+---
+source: tm-driver-sim/tests/seeds.rs
+expression: outcome.report
+---
+reverse-cup · seed 3
+settings {"allow_fast_forward_rounds":true,"complex_points_repartition":{},"disable_last_chance":false,"dnf_points_loss":30,"fast_forward_points_repartition":false,"finish_timeout":"disabled","last_chance_dnf_mode":"all_players","number_of_winners":1,"points_repartition":[4,7,9,13],"rounds_per_map":1,"starting_points":9,"warmup":{"duration_ms":18000,"rounds":2,"timeout_ms":5000}}
+maps m1 3 cp 0:27.416 · m2 3 cp 0:13.063 · m3 2 cp 0:14.337
+playlist m1 m2 m3
+players a Ant · b Bea · c Cid watches
+chances repeated holds 400‰ · forced rounds 30‰ · bridge restarts 30‰ · playlist changes 20‰
+
+match 1
+map m1 · one try, no finish timeout · warmup 2 × 0:18.000 · next m2
+round 1
+  races  a 0:30.148 · b 0:30.835
+  round  1 a -4 · 2 b -7
+  match  1 a 5 · 2 b 2 · - c spectator
+  info   2 left, 1 / 1 rounds
+  end map
+  block  c
+map end · next m2
+map m2 · one try, no finish timeout · warmup 2 × 0:18.000 · next m3
+round 2
+  races  a 0:14.917 · b 0:15.193
+  round  1 a -4 · 2 b -7
+  match  1 a 1 · 2 b 0 (Last Chance) · - c spectator
+  info   2 left, 1 / 1 rounds
+  end map
+map end · next m3
+  hold 6 again
+map m3 · one try, no finish timeout · warmup 2 × 0:18.000 · next m1
+  hold 7 again
+round 3
+  races  b 0:15.704 · a 0:16.140
+  round  1 b -4 · 2 a -7
+  match  1 b 0 (Last Chance) · 2 a 0 (Last Chance) · - c spectator
+  info   2 left, 1 / 1 rounds
+  end map
+  hold 8 again
+map end · next m1
+map m1 · one try, no finish timeout · warmup 2 × 0:18.000 · next m2
+  hold 10 again
+round 4
+  races  b 0:31.387 · a 0:30.586
+  round  1 a -4 · 2 b -7
+  match  1 a 0 (Winner) · 2 b 0 out · - c spectator
+  info   1 left, 1 / 1 rounds
+  chat   $f90$i$<Bea$> takes 2nd place!
+  chat   $<Ant$> wins the match!
+  end match
+  block  b
+  hold 11 again
+map end · next m1
+  end match
+match end
+
+match 2
+map m1 · one try, no finish timeout · warmup 2 × 0:18.000 · next m2
+round 5
+  races  b 0:29.310 · a 0:31.567
+  round  1 b -4 · 2 a -7
+  match  1 b 5 · 2 a 2 · - c spectator
+  info   2 left, 1 / 1 rounds
+  end map
+  block  c
+map end · next m2
+map m2 · one try, no finish timeout · warmup 2 × 0:18.000 · next m3
+round 6 · forced
+  ! forced to end
+  races  b 1cp · a 1cp
+  match  1 b 5 · 2 a 2 · - c spectator
+  info   2 left, 0 / 1 rounds
+round 7
+  races  b 0:13.725 · a 0:15.212
+  round  1 b -4 · 2 a -7
+  match  1 b 1 · 2 a 0 (Last Chance) · - c spectator
+  info   2 left, 1 / 1 rounds
+  end map
+map end · next m3
+map m3 · one try, no finish timeout · warmup 2 × 0:18.000 · next m1
+  hold 20 again
+round 8
+  races  a 0:15.347 · b 0:16.811
+  round  1 a -4 · 2 b -7
+  match  1 a 0 (Last Chance) · 2 b 0 (Last Chance) · - c spectator
+  info   2 left, 1 / 1 rounds
+  end map
+map end · next m1
+map m1 · one try, no finish timeout · warmup 2 × 0:18.000 · next m2
+  hold 23 again
+round 9
+  races  b 0:30.065 · a 0:30.521
+  round  1 b -4 · 2 a -7
+  match  1 b 0 (Winner) · 2 a 0 out · - c spectator
+  info   1 left, 1 / 1 rounds
+  chat   $f90$i$<Ant$> takes 2nd place!
+  chat   $<Bea$> wins the match!
+  end match
+  block  a
+map end · next m1
+  end match
+match end
+
+end
+  1 b 0 (Winner)
+  2 a 0 out
+  - c spectator
+inputs 235

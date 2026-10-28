@@ -1,0 +1,19 @@
+# Holds come twice, the bridge restarts, players come and go and the
+# modescript restarts. The driver decides nothing twice and goes on as if
+# nothing happened.
+mode knockout
+settings {"lives": 2, "rounds_without_elimination": 1}
+players a b c
+watchers s
+later d
+repeat-holds on
+round a 30 | b 31 | c dnf 1
+join d
+restart-bridge
+round a 30 | d 31 | b 32 | c 33
+leave c
+repeat-holds off
+round a 30 | b 31 | d 32
+restart-script
+round a 30 | b 31 | d 32
+round a 30 | b 31 | d 32
