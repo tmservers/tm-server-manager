@@ -72,7 +72,8 @@ the SDK's `CountedRace::Last` the last finished race (single attempt rounds), wi
 `CountedRace::Best` the fastest one (time attack rounds). The players on the server come from
 `ManiaPlanet.PlayerConnect`, `PlayerDisconnect` and `PlayerInfoChanged`. The runner hands the
 players that are on the server when a mode loads over as `DriverInput::Players`, which the host
-learns like their `PlayerInfoChanged` callbacks but publishes once.
+learns like their `PlayerInfoChanged` callbacks but publishes once. The list is complete: players
+the host thought on the server but missing from it left, e.g. while the bridge was down.
 
 A round end whose round start the host did not see is `invalid`, so it does not count. That happens
 when the driver restarted during the round and missed its races. A round the script forced to end
@@ -94,8 +95,13 @@ the mode decided to end the map. `Driver.Hold` makes the script wait:
 - `session` is random per script start, so a restarted script resets the host's tracking.
 - The script keeps yielding while it waits, so commands get applied. If `Driver.Continue` with the
   same `seq` doesn't arrive within `S_DriverDecisionTimeout`, it shows a waiting message and sends
-  the hold again periodically. The host answers a
-  repeated hold with the commands it already decided, so nothing is decided twice.
+  the hold again periodically. The host answers a repeated hold with the commands it already
+  decided, so nothing is decided twice.
+- Once the bridge tells the host that the reply reached the server (`DriverInput::Delivered`), a
+  repeated hold only gets its `Continue`. Running the commands twice would do harm: `EndMap` is the
+  `NextMap` of the server and would skip the next map, an `EndMatch` arriving after the next match
+  started would end it, chat messages would show twice. Without it, e.g. when the reply was lost
+  with the bridge, the hold gets every command again.
 
 ## Commands
 
@@ -312,12 +318,22 @@ NaNs are canonicalized and relaxed SIMD uses its deterministic lowering. Everyth
 is a `DriverInput`, applied with `Driver::apply`:
 
 - `Event`: a callback of the server. Only the ones `Driver::handles` matter: `StartMatch_Start`,
-  `StartRound_Start`, `Trackmania.Event.StartLine`, `Trackmania.Event.WayPoint`,
-  `PlayerConnect`, `PlayerDisconnect`, `PlayerInfoChanged`, `EndMatch_Start` and the holds.
-  `Driver::handle` takes a callback directly.
+  `StartMap_Start`, the start and end of the warmup, `StartRound_Start`,
+  `Trackmania.Event.StartLine`, `Trackmania.Event.WayPoint`, `PlayerConnect`, `PlayerDisconnect`,
+  `PlayerInfoChanged`, `EndMatch_Start` and the holds. `Driver::handle` takes a callback directly.
 - `Playlist`: the maps the match plays from now on, also when they change during the match.
-- `Players`: the players already on the server when a mode loads, since they do not connect
+- `Players`: the players on the server when a mode loads or resumes, since they do not connect
   again.
+- `Delivered`: the reply to the last hold reached the server (see above).
+- `Resumed`: the bridge resumed the driver after a restart. Replies to the last inputs before it
+  went down may never have reached the server, and the modescript may have changed meanwhile. So
+  the host sends everything it set again: the spawn permissions of the match and the standings,
+  the last round and the players for the manialinks.
+
+A bridge that restarts replays the inputs it stored, then applies `Resumed` and `Players` with
+who is on the server now. Callbacks sent while it was down are lost, e.g. the finish of a player
+in the round that runs. A hold is sent again by the modescript, and a round end without its round
+start does not count.
 
 Replaying the inputs of a match in order therefore rebuilds exactly the same driver, including
 its standings, the players it knows and the reply to the last hold.
@@ -335,8 +351,8 @@ the map list of the server and changes it with `maps`. Once the bridge integrate
 map pool of the server config (`MapPoolConfig`) becomes the playlist of a match.
 
 - The host remembers the current map from `Maniaplanet.StartMap_Start` and publishes its name
-  and the size of the playlist with the standings (`map_name`, `map_count`). Modes get the size
-  from `map-count`.
+  right away, and the size of the playlist, with the standings (`map_name`, `map_count`). Modes get
+  the size from `map-count`.
 - When a map starts, the host sets the next map of the playlist with the standard
   `SetNextMapIdent`, wrapping around at its end. Whenever a mode ends the match, the next map is
   the first one, so every match plays the playlist from the start. A map outside the playlist
@@ -541,9 +557,10 @@ import host;  // log, find-user, map-count
 - `tm-driver-modes/time-attack`: TimeAttack (time limit, maps per match, points by rank).
 - `tm-driver-modes/reverse-cup`: ReverseCup (see [ReverseCup](#reversecup)).
 - `tm-driver-modes/knockout`: Knockout with lives (see [Knockout](#knockout)).
-- `tm-driver-sim`: simulates whole matches of a mode against a fake server. Every mode tests its
-  rules with it in `tests/simulation` (see [Simulation Testing](./dev_driver_simulation.md)).
-  The integration tests of `tm-wasm-driver` test the host, with the rounds mode as the mode.
+- `tm-driver-sim`: simulates whole matches of a mode against a fake server and runs logs of
+  inputs with the same checks. Every mode tests its rules with it in `tests/simulation` (see
+  [Simulation Testing](./dev_driver_simulation.md)). The integration tests of `tm-wasm-driver` test
+  the host, with the rounds mode as the mode and the callbacks of `tm_driver_sim::events`.
 
 ## Configuration
 
