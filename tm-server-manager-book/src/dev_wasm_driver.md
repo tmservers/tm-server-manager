@@ -23,7 +23,7 @@ The mode decides what happens and sends commands back.
 | Topic | Decision |
 |---|---|
 | Where the logic runs | `wasmtime` inside the bridge (`tm-wasm-driver`). Decisions are local and fast. |
-| Durability | No snapshots. Modes only act on their settings and the event stream, so replaying the events of a match rebuilds the same driver (see [Resuming](#resuming)). |
+| Durability | No snapshots. Drivers only act on their settings and their inputs, so replaying the inputs of a match rebuilds the same driver (see [Resuming](#resuming)). |
 | Database | Untouched until the feature is fleshed out. The manager integration comes last. |
 | Who writes modes | First-party modes first (in-repo Rust crates). The host is sandboxed from day one (fuel, epoch deadline, memory cap, no WASI) so user uploads can be added later. |
 | ABI | WIT component model (`tm-wasm-driver/wit/driver.wit`). |
@@ -71,8 +71,8 @@ interpret them, the modescript sends no scores either. Which race counts is up t
 the SDK's `CountedRace::Last` the last finished race (single attempt rounds), with
 `CountedRace::Best` the fastest one (time attack rounds). The players on the server come from
 `ManiaPlanet.PlayerConnect`, `PlayerDisconnect` and `PlayerInfoChanged`. The runner hands the
-players that are on the server when a mode loads to `Driver::add_players`, which learns them
-like their `PlayerInfoChanged` callbacks but publishes them once.
+players that are on the server when a mode loads over as `DriverInput::Players`, which the host
+learns like their `PlayerInfoChanged` callbacks but publishes once.
 
 A round end whose round start the host did not see is `invalid`, so it does not count. That happens
 when the driver restarted during the round and missed its races. A round the script forced to end
@@ -148,10 +148,8 @@ same for the match and for a round:
 | `info` | Progress as text, e.g. `2 / 5 rounds`. |
 
 What the host knows itself is no mode state. A mode asks for it with the host functions
-`find-user` (name, club tag and zone of a player, e.g. for chat messages) and `map-count`. Users
-are only for display: a replay may not know every user, e.g. not the players
-`Driver::add_players` learned, so nothing a mode decides may depend on them. The title and the
-current map only go into what the host publishes.
+`find-user` (name, club tag and zone of a player, e.g. for chat messages) and `map-count`. The
+title and the current map only go into what the host publishes.
 
 Who does what:
 
@@ -186,8 +184,8 @@ time of the race that counts (`CountedRace::Last` in single attempt rounds, `Cou
 time attack rounds), then everyone else by the checkpoints they passed in their last race, and
 players who did not start last. Equal races go to the better race time at the last checkpoint,
 then at the one before and so on (of the race that counts for finishers, of the last race for
-everyone else). Races that are equal all the way go by account. Not by name: names are only for
-display and a replay may not know them, so the order only depends on the races.
+everyone else). Races that are equal all the way go by account rather than by name, which players
+can change during a match.
 
 - Points and losses of a round follow that order, so players with the same time get the points of
   different places.
@@ -310,25 +308,29 @@ results the host derives. `Event::DriverRoundResult` already exists for the inte
 ## Resuming
 
 There are no snapshots. The host and the modes are deterministic: modes run without WASI,
-NaNs are canonicalized and relaxed SIMD uses its deterministic lowering. Replaying the events a
-driver handled therefore rebuilds exactly the same driver, including its standings and the reply
-to the last hold.
-`DriverEngine::replay(module, settings, events)` does that.
+NaNs are canonicalized and relaxed SIMD uses its deterministic lowering. Everything a driver gets
+is a `DriverInput`, applied with `Driver::apply`:
 
-A replay needs:
+- `Event`: a callback of the server. Only the ones `Driver::handles` matter: `StartMatch_Start`,
+  `StartRound_Start`, `Trackmania.Event.StartLine`, `Trackmania.Event.WayPoint`,
+  `PlayerConnect`, `PlayerDisconnect`, `PlayerInfoChanged`, `EndMatch_Start` and the holds.
+  `Driver::handle` takes a callback directly.
+- `Playlist`: the maps the match plays from now on, also when they change during the match.
+- `Players`: the players already on the server when a mode loads, since they do not connect
+  again.
 
-- The same mode module and settings. Matches will pin the module by hash once the manager
-  stores modes.
-- Every event the driver handled (`Driver::handles`): `StartMatch_Start`, `StartRound_Start`,
-  `Trackmania.Event.StartLine`, `Trackmania.Event.WayPoint`, `PlayerConnect`,
-  `PlayerDisconnect`, `PlayerInfoChanged`, `EndMatch_Start` and the holds. The manager already
-  stores the standard callbacks. Holds have to be stored once per seq because the script repeats
-  them while it waits, and the players handed over when a mode loads are no callbacks. Storing
-  both is part of the database integration.
+Replaying the inputs of a match in order therefore rebuilds exactly the same driver, including
+its standings, the players it knows and the reply to the last hold.
+`DriverEngine::replay(module, settings, inputs)` does that. It needs the same mode module,
+settings and limits. Matches will pin the module by hash once the manager stores modes.
+
+`DriverInput` is serializable, so the database integration can store every input as it is
+applied. The manager already stores the standard callbacks, but no playlists and players, and
+holds only need to be stored once per seq although the script repeats them while it waits.
 
 ## Playlist
 
-The host plays the uids of a playlist it gets with `Driver::set_playlist`. The runner starts with
+The host plays the uids of the playlist it gets as `DriverInput::Playlist`. The runner starts with
 the map list of the server and changes it with `maps`. Once the bridge integrates the driver, the
 map pool of the server config (`MapPoolConfig`) becomes the playlist of a match.
 
@@ -504,16 +506,17 @@ export step: func(standings: standings, event: event) -> decision;  // standings
 import host;  // log, find-user, map-count
 ```
 
-- `Driver::handles(&Event)` tells the runner (later the bridge) which callbacks matter. `Driver::handle(&Event)`
-  returns a `DriverReply` with the commands for the server and the round result for the manager.
-  Replies to holds end with `Continue(seq)`. `Driver::standings()`, `Driver::last_round()` and
-  `Driver::users()` return what the host publishes.
-- `DriverEngine::replay` rebuilds a driver from the events it handled before.
+- `Driver::handles(&Event)` tells the runner (later the bridge) which callbacks matter. `Driver::apply(&DriverInput)`
+  (or `Driver::handle(&Event)` for a callback) returns a `DriverReply` with the commands for the
+  server and the round result for the manager. Replies to holds end with `Continue(seq)`.
+  `Driver::standings()`, `Driver::last_round()` and `Driver::users()` return what the host
+  publishes.
+- `DriverEngine::replay` rebuilds a driver from the inputs it got before.
 - Commands of a mode are converted with exhaustive matches, so both sides have to stay in sync.
 - The host accepts a component or a core module built for `wasm32-unknown-unknown` with the SDK
   (core modules are wrapped with `wit-component` on load).
 - Sandbox: no WASI imports, fuel per call, epoch deadline per call, memory limit. Time only comes
-  from events, so a mode replays identically from a recorded event log.
+  from events, so a mode replays identically from its recorded inputs.
 
 ## Guest SDK and modes
 
@@ -626,7 +629,7 @@ script starts with `"lives": 3`.
 2. ✅ `tm-wasm-driver` host, SDK and the Rounds mode with tests running the real wasm.
 3. Bridge integration behind `ModeSettingsV2::Driver`, after testing with the runner, which stands
    in for it until then.
-4. Database integration: store the events the driver handles (holds once per seq) and resume by
+4. Database integration: store the inputs of the driver (holds once per seq) and resume by
    replay, record round results, a `TmMode` for driver matches, pin modes by hash, team commands.
 5. Port the remaining modes: ✅ TimeAttack, ✅ ReverseCup, ✅ Knockout, Cup. Check parity with
    recorded matches.

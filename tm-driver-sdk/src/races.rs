@@ -53,8 +53,8 @@ impl CountedRace {
 /// finishers by the time of the race that counts, then everyone else by the
 /// checkpoints they passed in their last race, and players who did not start
 /// last. Equal races go to the better race time at the last checkpoint, then at
-/// the one before and so on. Races that are equal all the way go by account, not
-/// by name: names are only for display, a replay may not know them.
+/// the one before and so on. Races that are equal all the way go by account
+/// rather than by name, which players can change during a match.
 pub fn race_order<'a>(
     players: impl IntoIterator<Item = &'a str>,
     round_end: &RoundEnd,
@@ -232,7 +232,7 @@ mod tests {
 
     #[test]
     fn equal_races_go_by_account() {
-        // Names are only for display, a replay may not know them.
+        // Not by name, which players can change during a match.
         native::set(
             0,
             BTreeMap::from([

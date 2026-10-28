@@ -10,6 +10,7 @@ use tm_server_types::{
     event::{DriverPlayerResult, DriverRoundResult, DriverSection, Event},
     method::{DriverCanSpawn, DriverCommand, DriverFinishTimeout, DriverRoundFormat, DriverStatus},
 };
+use tm_wasm_driver::DriverInput;
 
 fn result(account_id: &str, position: u32, points: i32) -> DriverPlayerResult {
     DriverPlayerResult {
@@ -296,7 +297,9 @@ fn resumes_by_replaying_the_events() {
 
     let mut driver = engine.instantiate(&module, "").unwrap();
     play(&mut driver, &events);
-    let mut resumed = engine.replay(&module, "", &[], &events).unwrap();
+    let mut resumed = engine
+        .replay(&module, "", &common::inputs(&events))
+        .unwrap();
 
     // Both know who is left and end the match the same way.
     let last_round = round(3, 4, &["a", "b"]);
@@ -306,32 +309,31 @@ fn resumes_by_replaying_the_events() {
 }
 
 #[test]
-fn replays_ties_without_the_names() {
+fn resumes_with_the_players_already_on_the_server() {
     let (engine, module) = common::compile(KNOCKOUT);
 
-    // x and y drive exactly the same race in the second round, which takes a life.
-    let mut events = vec![match_start(), hold(1, DriverSection::MapStart)];
-    events.extend(round(1, 2, &["x", "y", "z"]));
-    events.extend([
-        round_start(2),
-        start_line("x"),
-        start_line("y"),
-        start_line("z"),
-        finish("z", 0, 29_000),
-        finish("y", 0, 30_000),
-        finish("x", 0, 30_000),
-        hold(3, DriverSection::RoundEnd),
-    ]);
+    // s was on the server before the mode loaded and only watches, so no event tells
+    // about s.
+    let mut inputs = vec![DriverInput::Players(vec![player("s", "s")])];
+    inputs.extend(common::inputs(&[
+        match_start(),
+        hold(1, DriverSection::MapStart),
+    ]));
+    inputs.extend(common::inputs(&round(1, 2, &["c", "a", "b"])));
+    inputs.extend(common::inputs(&round_with_a_give_up(2, 3)));
 
-    // x and y were on the server when the mode loaded, so no event has their names.
     let mut driver = engine.instantiate(&module, "").unwrap();
-    driver.add_players([player("x", "bob"), player("y", "Alice")]);
-    let reply = play(&mut driver, &events);
-    let resumed = engine.replay(&module, "", &[], &events).unwrap();
+    for input in &inputs {
+        driver.apply(input).unwrap();
+    }
+    let resumed = engine.replay(&module, "", &inputs).unwrap();
 
-    // Names are only for display, so the replay eliminates the same player.
-    assert!(reply.commands.contains(&DriverCommand::ChatMessage(
-        "$f90$i$<Alice$> takes 3rd place!".into()
-    )));
+    // s cannot spawn since the second round and watches, also after the replay.
+    let standings = resumed.standings();
+    let watcher = standings.entries.last().unwrap();
+    assert_eq!(
+        (watcher.account_id.as_str(), watcher.status),
+        ("s", DriverStatus::Spectator)
+    );
     assert_eq!(ranking(&resumed), ranking(&driver));
 }

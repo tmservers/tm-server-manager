@@ -11,10 +11,10 @@
 //! knows about the players and the match, e.g. names, comes from [`user`] and
 //! [`map_count`].
 //!
-//! Modes run without WASI. Everything they decide on comes from their settings,
-//! the standings and the [`Event`]s, so replaying the events of a match rebuilds
-//! the same standings. A mode must not depend on wall clock time, randomness or
-//! [`user`] to stay replayable.
+//! Modes run without WASI. Everything they know comes from their settings, the
+//! standings, the [`Event`]s and the host functions, which a replay of the match
+//! repeats exactly, so it rebuilds the same standings. A mode must not depend on
+//! wall clock time or randomness to stay replayable.
 
 // Lets the generated bindings and the export macro use the same paths inside
 // this crate and inside the mode crates.
@@ -91,9 +91,8 @@ pub fn log(level: LogLevel, message: &str) {
     eprintln!("[{level:?}] {message}");
 }
 
-/// What the host knows about a player. Only for display, e.g. in chat messages: a
-/// replay may not know every user, so nothing a mode decides may depend on it.
-/// Natively (e.g. in tests) the users of the [`testing::Harness`].
+/// What the host knows about a player. Natively (e.g. in tests) the users of the
+/// [`testing::Harness`].
 pub fn user(account_id: &str) -> Option<User> {
     #[cfg(target_arch = "wasm32")]
     let user = bindings::tmservers::driver::host::find_user(account_id);
@@ -102,8 +101,8 @@ pub fn user(account_id: &str) -> Option<User> {
     user
 }
 
-/// The name of a player for display, e.g. in chat messages (see [`user`]). The
-/// account id while the host does not know the name.
+/// The name of a player, e.g. for chat messages. The account id while the host
+/// does not know the name.
 pub fn name(account_id: &str) -> String {
     user(account_id)
         .map(|user| user.name)

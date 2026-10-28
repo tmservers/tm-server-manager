@@ -9,10 +9,15 @@ use tm_server_types::{
     event::DriverSection,
     method::{DriverCommand, DriverFinishTimeout, DriverRoundFormat},
 };
-use tm_wasm_driver::Driver;
+use tm_wasm_driver::{Driver, DriverInput};
 
 fn rounds(settings: &str) -> Driver {
     common::driver(ROUNDS, settings)
+}
+
+/// The maps a match plays from now on.
+fn playlist(uids: &[&str]) -> DriverInput {
+    DriverInput::Playlist(uids.iter().map(|&uid| uid.into()).collect())
 }
 
 fn next_map(uid: &str) -> DriverCommand {
@@ -40,7 +45,7 @@ fn play_map(driver: &mut Driver, uid: &str, seq: u32) -> (Vec<DriverCommand>, Ve
 #[test]
 fn plays_the_playlist_in_order_once() {
     let mut driver = rounds(r#"{"rounds_per_map": 1}"#);
-    driver.set_playlist(["m1", "m2", "m3"]);
+    driver.apply(&playlist(&["m1", "m2", "m3"])).unwrap();
     driver.handle(&match_start()).unwrap();
 
     let (map_start, map_end) = play_map(&mut driver, "m1", 1);
@@ -79,7 +84,7 @@ fn plays_the_playlist_in_order_once() {
 #[test]
 fn a_match_that_ends_early_starts_over_with_the_first_map() {
     let mut driver = rounds(r#"{"points_limit": 10}"#);
-    driver.set_playlist(["m1", "m2", "m3"]);
+    driver.apply(&playlist(&["m1", "m2", "m3"])).unwrap();
     driver.handle(&match_start()).unwrap();
     driver.handle(&map_start("m1")).unwrap();
     driver.handle(&hold(1, DriverSection::MapStart)).unwrap();
@@ -100,7 +105,7 @@ fn a_match_that_ends_early_starts_over_with_the_first_map() {
 #[test]
 fn maps_outside_the_playlist_continue_with_its_first_map() {
     let mut driver = rounds("");
-    driver.set_playlist(["m1", "m2"]);
+    driver.apply(&playlist(&["m1", "m2"])).unwrap();
     driver.handle(&match_start()).unwrap();
     driver.handle(&map_start("other")).unwrap();
     let map_start = driver.handle(&hold(1, DriverSection::MapStart)).unwrap();
@@ -120,4 +125,35 @@ fn without_a_playlist_the_server_decides() {
             .any(|c| matches!(c, DriverCommand::SetNextMap(_)))
     );
     assert_eq!(driver.standings().map_count, 0);
+}
+
+#[test]
+fn resumes_with_every_playlist_it_got() {
+    let (engine, module) = common::compile(ROUNDS);
+
+    // The playlist changes during the first map.
+    let mut inputs = vec![playlist(&["m1", "m2", "m3"])];
+    inputs.extend(common::inputs(&[
+        match_start(),
+        map_start("m1"),
+        hold(1, DriverSection::MapStart),
+    ]));
+    inputs.push(playlist(&["m4", "m5"]));
+
+    let mut driver = engine.instantiate(&module, "").unwrap();
+    for input in &inputs {
+        driver.apply(input).unwrap();
+    }
+    let mut resumed = engine.replay(&module, "", &inputs).unwrap();
+    assert_eq!(resumed.standings().map_count, 2);
+
+    // Both go on with the new playlist.
+    let next = [
+        hold(2, DriverSection::MapEnd),
+        map_start("m4"),
+        hold(3, DriverSection::MapStart),
+    ];
+    let reply = play(&mut resumed, &next);
+    assert!(reply.commands.contains(&next_map("m5")));
+    assert_eq!(reply, play(&mut driver, &next));
 }

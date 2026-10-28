@@ -10,7 +10,7 @@ use tm_server_types::{
     },
     method::{DriverCommand, DriverStatus, DriverWarmUp},
 };
-use tm_wasm_driver::{Driver, DriverEngine, DriverLimits, DriverReply};
+use tm_wasm_driver::{Driver, DriverEngine, DriverInput, DriverLimits, DriverReply};
 use wasmtime::component::Component;
 
 pub const SESSION: i32 = 7;
@@ -209,6 +209,15 @@ pub fn play<'a>(driver: &mut Driver, events: impl IntoIterator<Item = &'a Event>
         reply = driver.handle(event).unwrap();
     }
     reply
+}
+
+/// The events as inputs of a driver, e.g. to replay them.
+pub fn inputs<'a>(events: impl IntoIterator<Item = &'a Event>) -> Vec<DriverInput> {
+    events
+        .into_iter()
+        .cloned()
+        .map(DriverInput::Event)
+        .collect()
 }
 
 /// What modes send at map start without a warmup in their settings.

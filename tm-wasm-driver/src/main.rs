@@ -44,7 +44,7 @@ use tm_server_types::{
     event::Event,
     method::{DriverCommand, DriverLayer, DriverRound, DriverStandings, DriverStatus, DriverUsers},
 };
-use tm_wasm_driver::{Driver, DriverEngine, DriverLimits};
+use tm_wasm_driver::{Driver, DriverEngine, DriverInput, DriverLimits};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tracing_subscriber::{EnvFilter, filter::LevelFilter};
 
@@ -242,13 +242,16 @@ async fn load(
     let mut driver = engine
         .instantiate(&module, &settings)
         .map_err(|e| e.to_string())?;
-    driver.set_playlist(playlist.lock().unwrap().clone());
-
-    let mut commands = DriverCommand::show_layers(layers);
+    let mut inputs = vec![DriverInput::Playlist(playlist.lock().unwrap().clone())];
     // Players already on the server do not connect again.
     match server.get_player_list().await {
-        Ok(players) => commands.extend(driver.add_players(players)),
+        Ok(players) => inputs.push(DriverInput::Players(players)),
         Err(error) => tracing::warn!("Could not get the players of the server: {error}"),
+    }
+
+    let mut commands = DriverCommand::show_layers(layers);
+    for input in &inputs {
+        commands.extend(driver.apply(input).map_err(|e| e.to_string())?.commands);
     }
 
     *active.lock().unwrap() = Some(Active {
@@ -315,9 +318,11 @@ async fn maps(
     }
 
     *playlist.lock().unwrap() = uids.clone();
-    if let Some(active) = active.lock().unwrap().as_mut() {
-        active.driver.set_playlist(uids.clone());
-    }
+    let reply = match active.lock().unwrap().as_mut() {
+        Some(active) => active.driver.apply(&DriverInput::Playlist(uids.clone())),
+        None => Ok(Default::default()),
+    };
+    send(server, reply.map_err(|e| e.to_string())?.commands).await;
     // The playlist starts right away.
     let _: bool = server
         .call("JumpToMapIdent", uids[0].clone())

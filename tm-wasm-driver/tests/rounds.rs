@@ -12,7 +12,7 @@ use tm_server_types::{
     },
     method::{DriverCommand, DriverFinishTimeout, DriverRoundFormat, DriverStatus},
 };
-use tm_wasm_driver::{Driver, DriverEngine, DriverError, DriverLimits, DriverReply};
+use tm_wasm_driver::{Driver, DriverEngine, DriverError, DriverInput, DriverLimits, DriverReply};
 
 fn rounds(settings: &str) -> Driver {
     common::driver(ROUNDS, settings)
@@ -201,7 +201,8 @@ fn publishes_the_players_it_knows() {
 #[test]
 fn players_already_on_the_server_are_published_once() {
     let mut driver = rounds("");
-    let commands = driver.add_players([player("a", "A"), player("b", "B"), common::server()]);
+    let players = DriverInput::Players(vec![player("a", "A"), player("b", "B"), common::server()]);
+    let commands = driver.apply(&players).unwrap().commands;
     let users = commands
         .iter()
         .filter(|c| matches!(c, DriverCommand::SetUsers(_)))
@@ -209,7 +210,8 @@ fn players_already_on_the_server_are_published_once() {
     assert_eq!(users, 1);
     assert_eq!(driver.users().users.len(), 2);
     // Nothing changed, so nothing is published.
-    assert!(driver.add_players([player("a", "A")]).is_empty());
+    let again = DriverInput::Players(vec![player("a", "A")]);
+    assert!(driver.apply(&again).unwrap().commands.is_empty());
 }
 
 #[test]
@@ -270,7 +272,9 @@ fn resumes_by_replaying_the_events() {
 
     // The bridge went away before the server got the reply to the last hold.
     drop(driver);
-    let mut resumed = engine.replay(&module, POINTS_LIMIT, &[], &events).unwrap();
+    let mut resumed = engine
+        .replay(&module, POINTS_LIMIT, &common::inputs(&events))
+        .unwrap();
 
     // The modescript asks again and gets the same commands without deciding twice.
     let repeated = resumed.handle(&hold(2, DriverSection::RoundEnd)).unwrap();

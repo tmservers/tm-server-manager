@@ -472,7 +472,7 @@ fn equal_last_checkpoints_go_to_the_one_before() {
 #[test]
 fn equal_races_go_by_account() {
     let mut harness = playing("", &["x", "y", "z"]);
-    // Names are only for display, a replay may not know them.
+    // Not by name, which players can change during a match.
     named(&mut harness, "x", "bob");
     named(&mut harness, "y", "Alice");
     let race = [10_000, 20_000, 30_000];

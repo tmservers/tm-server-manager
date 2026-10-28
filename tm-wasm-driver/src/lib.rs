@@ -16,9 +16,10 @@
 //! the standings, the last round and the players for the manialinks whenever
 //! they change and reports every round the mode placed to the manager.
 //!
-//! Modes and the host are deterministic. Replaying the events of a match with
+//! Modes and the host are deterministic. Everything a driver gets is a
+//! [`DriverInput`], and replaying the inputs of a match with
 //! [`DriverEngine::replay`] rebuilds exactly the same driver, so a crashed bridge
-//! resumes from the event stream and nothing else has to be persisted.
+//! resumes from them and nothing else has to be persisted.
 
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -195,19 +196,18 @@ impl DriverEngine {
         Ok(driver)
     }
 
-    /// Rebuilds the driver of a match from the events it handled, e.g. after the
-    /// bridge restarted. Needs the settings and the playlist of the match.
+    /// Rebuilds the driver of a match from its settings and every input it got, in
+    /// order, e.g. after the bridge restarted. Needs the mode and the limits the
+    /// match ran with.
     pub fn replay<'a>(
         &self,
         component: &Component,
         settings: &str,
-        playlist: &[String],
-        events: impl IntoIterator<Item = &'a Event>,
+        inputs: impl IntoIterator<Item = &'a DriverInput>,
     ) -> Result<Driver, DriverError> {
         let mut driver = self.instantiate(component, settings)?;
-        driver.set_playlist(playlist.iter().cloned());
-        for event in events {
-            driver.handle(event)?;
+        for input in inputs {
+            driver.apply(input)?;
         }
         Ok(driver)
     }
@@ -311,7 +311,25 @@ struct Published {
     round: Option<DriverRound>,
 }
 
-/// What should happen after an event.
+/// What a driver gets: the callbacks of the server and what its caller knows
+/// besides them. A driver is the result of its settings and its inputs in order,
+/// so persisting every input is enough to resume a match by replaying them.
+// Nearly every input is an event, boxing them would only add allocations.
+#[allow(clippy::large_enum_variant)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub enum DriverInput {
+    /// A callback of the server. Only the ones [`Driver::handles`] matter.
+    Event(Event),
+    /// The uids of the maps the match plays from now on, e.g. the map pool of the
+    /// config. The maps have to be in the map list of the server.
+    Playlist(Vec<String>),
+    /// Players who are on the server already, e.g. when the driver starts during a
+    /// match, since they do not connect again. The same as their `PlayerInfoChanged`
+    /// callbacks, but publishes once for all of them.
+    Players(Vec<PlayerInfo>),
+}
+
+/// What should happen after an input.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct DriverReply {
     /// Commands for the server in order.
@@ -340,7 +358,27 @@ impl Driver {
         )
     }
 
-    /// Feeds a callback of the server into the mode.
+    /// Applies an input. Persist every input in order to resume the match by replay.
+    pub fn apply(&mut self, input: &DriverInput) -> Result<DriverReply, DriverError> {
+        match input {
+            DriverInput::Event(event) => self.handle(event),
+            DriverInput::Playlist(maps) => {
+                self.playlist.clone_from(maps);
+                // The mode reads it through the host functions.
+                self.store.data_mut().map_count = self.playlist.len() as u32;
+                Ok(self.published())
+            }
+            DriverInput::Players(players) => {
+                for player in players {
+                    self.learn(player);
+                }
+                Ok(self.published())
+            }
+        }
+    }
+
+    /// Feeds a callback of the server into the mode, the same as [`Driver::apply`]
+    /// with [`DriverInput::Event`].
     ///
     /// Holds always end with [`DriverCommand::Continue`]. A repeated hold gets the
     /// same commands without stepping the mode again so nothing is decided twice.
@@ -401,10 +439,7 @@ impl Driver {
                 if !self.learn(info) {
                     return Ok(DriverReply::default());
                 }
-                Ok(DriverReply {
-                    commands: self.publish(),
-                    round_result: None,
-                })
+                Ok(self.published())
             }
             Event::EndMatchStart(_) => self.step(wit::Event::MatchEnd),
             Event::DriverHold(hold) => self.hold(hold),
@@ -478,28 +513,6 @@ impl Driver {
     /// The players the host knows, e.g. for their names.
     pub fn users(&self) -> DriverUsers {
         convert::users(&self.store.data().users)
-    }
-
-    /// The uids of the maps the match plays, e.g. the map pool of the config. The maps
-    /// have to be in the map list of the server. Set it before the first event, a
-    /// replay needs the same playlist.
-    pub fn set_playlist(&mut self, maps: impl IntoIterator<Item = impl Into<String>>) {
-        self.playlist = maps.into_iter().map(Into::into).collect();
-        // The mode reads it through the host functions.
-        self.store.data_mut().map_count = self.playlist.len() as u32;
-    }
-
-    /// Learns the players who are on the server already, e.g. when the driver is
-    /// loaded during a match, since they do not connect again. The same as their
-    /// `PlayerInfoChanged` callbacks, but publishes once for all of them.
-    pub fn add_players(
-        &mut self,
-        players: impl IntoIterator<Item = PlayerInfo>,
-    ) -> Vec<DriverCommand> {
-        for player in players {
-            self.learn(&player);
-        }
-        self.publish()
     }
 
     /// Remembers a player on the server, e.g. for the names in the standings. False
@@ -619,6 +632,14 @@ impl Driver {
         match current {
             Some(index) => (index + 1) % self.playlist.len(),
             None => 0,
+        }
+    }
+
+    /// A reply that only publishes what changed.
+    fn published(&mut self) -> DriverReply {
+        DriverReply {
+            commands: self.publish(),
+            round_result: None,
         }
     }
 

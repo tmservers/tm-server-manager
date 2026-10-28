@@ -227,9 +227,7 @@ interface host {
     }
 
     log: func(level: log-level, message: string);
-    /// What the host knows about a player, e.g. the name for a chat message. Only
-    /// for display: a replay may not know every user, so nothing a mode decides
-    /// may depend on it.
+    /// What the host knows about a player, e.g. the name for a chat message.
     find-user: func(account-id: string) -> option<user>;
     /// Maps in the playlist of the match, 0 without one.
     map-count: func() -> u32;
@@ -237,9 +235,10 @@ interface host {
 
 /// A game mode controlling the driver modescript.
 ///
-/// Modes run without WASI. Everything they decide on comes from their settings,
-/// the standings and the events, so replaying the events of a match rebuilds
-/// exactly the same standings. That is how a mode resumes, there are no snapshots.
+/// Modes run without WASI. Everything they know comes from their settings, the
+/// standings, the events and the host functions, which a replay of the match
+/// repeats exactly, so it rebuilds the same standings. That is how a mode
+/// resumes, there are no snapshots.
 world mode {
     use types.{event, standings, decision};
 

@@ -99,8 +99,8 @@ pub(crate) fn standings(
     users: &BTreeMap<String, User>,
 ) -> DriverStandings {
     let mut entries: Vec<DriverEntry> = standings.entries.iter().map(entry).collect();
-    // Players without a position follow by name, spectators last. Names are only
-    // for display, so the host orders by them instead of the modes.
+    // Players without a position follow by name, spectators last. That order is
+    // only for display, so the host makes it instead of the modes.
     entries.sort_by_cached_key(|entry| {
         (
             entry.position == 0,
