@@ -168,8 +168,9 @@ impl Checker {
     }
 }
 
-/// A reply to a hold ends with its only `Continue`, and a hold that comes again
-/// gets the same commands.
+/// A reply to a hold ends with its only `Continue`. A hold that comes again gets
+/// the same commands, or only its `Continue` once the first reply reached the
+/// server.
 fn check_hold(hold: &SeenHold, reply: &DriverReply) -> Result<(), String> {
     let seq = hold.hold.seq;
     let continues = reply
@@ -183,7 +184,10 @@ fn check_hold(hold: &SeenHold, reply: &DriverReply) -> Result<(), String> {
         ));
     }
     match &hold.answered {
-        Some(commands) if *commands != reply.commands => {
+        Some(_) if hold.delivered && reply.commands != [DriverCommand::Continue(seq)] => Err(
+            format!("Hold {seq} came again after its reply reached the server, but got more than Continue"),
+        ),
+        Some(commands) if !hold.delivered && *commands != reply.commands => {
             Err(format!("Hold {seq} got other commands when it came again"))
         }
         _ => Ok(()),

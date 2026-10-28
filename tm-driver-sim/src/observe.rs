@@ -110,6 +110,14 @@ pub(crate) struct SeenHold {
     pub counts: bool,
     /// What the driver answered the first time, when the hold comes again.
     pub answered: Option<Vec<DriverCommand>>,
+    /// The first answer reached the server, see `DriverInput::Delivered`.
+    pub delivered: bool,
+}
+
+/// The first answer to a hold.
+struct Answer {
+    commands: Vec<DriverCommand>,
+    delivered: bool,
 }
 
 /// What the manialinks of the server show, the last json the driver published.
@@ -128,7 +136,9 @@ pub(crate) struct Observer {
     in_round: bool,
     session: Option<i32>,
     seq: u32,
-    answers: BTreeMap<(i32, u32), Vec<DriverCommand>>,
+    answers: BTreeMap<(i32, u32), Answer>,
+    /// The hold the driver answered last.
+    last_hold: Option<(i32, u32)>,
     map: String,
     rounds: u32,
 
@@ -154,6 +164,7 @@ impl Observer {
             session: None,
             seq: 0,
             answers: BTreeMap::new(),
+            last_hold: None,
             map: String::new(),
             rounds: 0,
             can_spawn: BTreeMap::new(),
@@ -227,6 +238,15 @@ impl Observer {
                 }
                 return Ok(None);
             }
+            DriverInput::Delivered => {
+                if let Some(answer) = self
+                    .last_hold
+                    .and_then(|hold| self.answers.get_mut(&hold))
+                {
+                    answer.delivered = true;
+                }
+                return Ok(None);
+            }
         };
 
         match event {
@@ -296,7 +316,9 @@ impl Observer {
                 hold.seq, self.seq
             ));
         }
-        let answered = self.answers.get(&(hold.session, hold.seq)).cloned();
+        let answer = self.answers.get(&(hold.session, hold.seq));
+        let answered = answer.map(|answer| answer.commands.clone());
+        let delivered = answer.is_some_and(|answer| answer.delivered);
         let first = answered.is_none();
         self.seq = hold.seq;
 
@@ -311,6 +333,7 @@ impl Observer {
             first,
             counts,
             answered,
+            delivered,
         })
     }
 
@@ -325,7 +348,11 @@ impl Observer {
         if let DriverInput::Event(Event::DriverHold(hold)) = input {
             self.answers
                 .entry((hold.session, hold.seq))
-                .or_insert_with(|| reply.commands.clone());
+                .or_insert_with(|| Answer {
+                    commands: reply.commands.clone(),
+                    delivered: false,
+                });
+            self.last_hold = Some((hold.session, hold.seq));
         }
         if !reached {
             return Ok(());

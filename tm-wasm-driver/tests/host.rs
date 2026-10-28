@@ -180,6 +180,21 @@ fn repeated_holds_are_decided_once() {
 }
 
 #[test]
+fn a_hold_asked_again_after_its_reply_arrived_only_continues() {
+    let mut driver = rounds(r#"{"rounds_per_map": 1}"#);
+    driver.handle(&hold(1, DriverSection::MapStart)).unwrap();
+    driver.handle(&round_start(1)).unwrap();
+    play(&mut driver, &race("a", 30_000));
+    let first = driver.handle(&hold(2, DriverSection::RoundEnd)).unwrap();
+    assert!(first.commands.contains(&DriverCommand::EndMap));
+
+    // The reply reached the server, so ending the map again would skip the next one.
+    driver.apply(&DriverInput::Delivered).unwrap();
+    let repeated = driver.handle(&hold(2, DriverSection::RoundEnd)).unwrap();
+    assert_eq!(repeated.commands, [DriverCommand::Continue(2)]);
+}
+
+#[test]
 fn forced_rounds_have_no_result() {
     let mut driver = rounds("");
     driver.handle(&hold(1, DriverSection::MapStart)).unwrap();

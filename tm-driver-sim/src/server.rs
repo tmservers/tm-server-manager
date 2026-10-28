@@ -262,8 +262,12 @@ impl Server {
         }
     }
 
-    /// Applies the commands of the driver like the modescript does.
+    /// Applies the commands of the driver like the modescript does. The bridge then
+    /// tells the driver that the reply to a hold reached the server.
     pub(crate) fn on_reply(&mut self, input: &DriverInput, reply: &DriverReply) {
+        if let DriverInput::Event(Event::DriverHold(_)) = input {
+            self.out.push_front(Step::Input(DriverInput::Delivered));
+        }
         for command in &reply.commands {
             match command {
                 DriverCommand::Continue(seq) => {

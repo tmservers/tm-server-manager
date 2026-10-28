@@ -214,7 +214,14 @@ fn drive(server: &'static TrackmaniaServer, active: Shared, layers: Vec<DriverLa
             if let Some(standings) = standings {
                 tracing::info!("Standings: {standings}");
             }
-            send(server, reply.commands).await;
+            let delivered = send(server, reply.commands).await;
+            // A hold the modescript asks again then only gets its Continue.
+            if delivered
+                && matches!(event, Event::DriverHold(_))
+                && let Some(active) = active.lock().unwrap().as_mut()
+            {
+                _ = active.driver.apply(&DriverInput::Delivered);
+            }
         }
     });
 }
@@ -457,14 +464,19 @@ fn load_layers() -> Result<Vec<DriverLayer>, String> {
     Ok(layers)
 }
 
-async fn send(server: &TrackmaniaServer, commands: Vec<DriverCommand>) {
+/// Sends commands to the server. False if they did not reach it.
+async fn send(server: &TrackmaniaServer, commands: Vec<DriverCommand>) -> bool {
     if commands.is_empty() {
-        return;
+        return true;
     }
     let described: Vec<String> = commands.iter().map(describe).collect();
     tracing::info!("-> {}", described.join(", "));
-    if let Err(error) = server.driver_commands(&commands).await {
-        tracing::error!("Could not send the commands: {error}");
+    match server.driver_commands(&commands).await {
+        Ok(_) => true,
+        Err(error) => {
+            tracing::error!("Could not send the commands: {error}");
+            false
+        }
     }
 }
 

@@ -287,8 +287,8 @@ pub struct Driver {
     /// Spawn permissions sent in this match, so repeated ones are left out.
     spawn_permissions: BTreeMap<String, bool>,
     session: Option<i32>,
-    /// Commands for the last hold in case the modescript asks again.
-    last_hold: Option<(u32, Vec<DriverCommand>)>,
+    /// The last hold, in case the modescript asks again.
+    last_hold: Option<LastHold>,
     /// Uids of the maps the match plays in order.
     playlist: Vec<String>,
     map: Option<Map>,
@@ -303,6 +303,14 @@ pub struct Driver {
     /// The races of the current round.
     races: Races,
     poisoned: bool,
+}
+
+/// The reply to the last hold.
+struct LastHold {
+    seq: u32,
+    commands: Vec<DriverCommand>,
+    /// The reply reached the server, see [`DriverInput::Delivered`].
+    delivered: bool,
 }
 
 /// What the manialinks got last, so only changes are sent.
@@ -329,6 +337,13 @@ pub enum DriverInput {
     /// match, since they do not connect again. The same as their `PlayerInfoChanged`
     /// callbacks, but publishes once for all of them.
     Players(Vec<PlayerInfo>),
+    /// The reply to the last hold reached the server. When the modescript asks
+    /// again, e.g. because the reply came late, the hold only gets its `Continue`,
+    /// so commands that are not idempotent do not run twice: `EndMap` is the
+    /// `NextMap` of the server, `EndMatch` could end the next match, chat messages
+    /// would show twice. Without it, e.g. when the reply got lost with the bridge,
+    /// the hold gets every command again.
+    Delivered,
 }
 
 /// What should happen after an input.
@@ -376,6 +391,12 @@ impl Driver {
                 }
                 Ok(self.published())
             }
+            DriverInput::Delivered => {
+                if let Some(last_hold) = &mut self.last_hold {
+                    last_hold.delivered = true;
+                }
+                Ok(DriverReply::default())
+            }
         }
     }
 
@@ -383,7 +404,8 @@ impl Driver {
     /// with [`DriverInput::Event`].
     ///
     /// Holds always end with [`DriverCommand::Continue`]. A repeated hold gets the
-    /// same commands without stepping the mode again so nothing is decided twice.
+    /// same commands without stepping the mode again so nothing is decided twice,
+    /// or only its `Continue` once the first reply was [`DriverInput::Delivered`].
     pub fn handle(&mut self, event: &Event) -> Result<DriverReply, DriverError> {
         if self.poisoned {
             return Err(DriverError::Poisoned);
@@ -457,18 +479,24 @@ impl Driver {
             self.spawn_permissions.clear();
         }
 
-        if let Some((seq, commands)) = &self.last_hold {
-            if *seq == hold.seq {
+        if let Some(last_hold) = &self.last_hold {
+            if last_hold.seq == hold.seq {
                 // The round result already went out with the first reply.
+                let commands = if last_hold.delivered {
+                    vec![DriverCommand::Continue(hold.seq)]
+                } else {
+                    last_hold.commands.clone()
+                };
                 return Ok(DriverReply {
-                    commands: commands.clone(),
+                    commands,
                     round_result: None,
                 });
             }
-            if *seq > hold.seq {
+            if last_hold.seq > hold.seq {
                 tracing::warn!(
-                    "Ignoring the hold with seq {} because seq {seq} already continued.",
-                    hold.seq
+                    "Ignoring the hold with seq {} because seq {} already continued.",
+                    hold.seq,
+                    last_hold.seq
                 );
                 return Ok(DriverReply::default());
             }
@@ -490,7 +518,11 @@ impl Driver {
 
         let mut reply = self.step(event)?;
         reply.commands.push(DriverCommand::Continue(hold.seq));
-        self.last_hold = Some((hold.seq, reply.commands.clone()));
+        self.last_hold = Some(LastHold {
+            seq: hold.seq,
+            commands: reply.commands.clone(),
+            delivered: false,
+        });
         Ok(reply)
     }
 

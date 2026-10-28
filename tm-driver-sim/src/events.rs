@@ -198,6 +198,11 @@ impl InputLog {
         self
     }
 
+    /// The reply to the last hold reached the server, as the bridge tells it.
+    pub fn delivered(&mut self) -> &mut Self {
+        self.push(DriverInput::Delivered)
+    }
+
     /// The last hold reaches the driver again, like when the modescript asks again.
     pub fn hold_again(&mut self) -> &mut Self {
         let hold = self
