@@ -259,6 +259,27 @@ impl Server {
                     self.down = Some(down);
                     continue;
                 }
+                // Whatever the server sends while the bridge is down, also what it
+                // queued before, misses the bridge or brings it back first.
+                Some(Step::Input(input)) if self.down.is_some() => {
+                    if let Some(down @ 1..) = &mut self.down
+                        && missable(&input)
+                    {
+                        *down -= 1;
+                        self.notes.push(format!("missed {}", describe(&input)));
+                        continue;
+                    }
+                    self.down = None;
+                    self.notes.push("bridge restarts".into());
+                    let mut players = vec![server_player()];
+                    for account_id in &self.connected {
+                        players.push(info(&self.world, account_id));
+                    }
+                    self.out.push_front(Step::Input(input));
+                    self.out.push_front(Step::Input(DriverInput::Players(players)));
+                    self.out.push_front(Step::Input(DriverInput::Resumed));
+                    return Some(Step::RestartBridge);
+                }
                 Some(step) => return Some(step),
                 None => {}
             }
@@ -368,22 +389,6 @@ impl Server {
     /// player callbacks. It is back before any other callback, resumes and learns
     /// who is on the server.
     fn deliver(&mut self, input: DriverInput) {
-        if let Some(down) = &mut self.down {
-            if *down > 0 && missable(&input) {
-                *down -= 1;
-                self.notes.push(format!("missed {}", describe(&input)));
-                return;
-            }
-            self.down = None;
-            self.notes.push("bridge restarts".into());
-            self.out.push_back(Step::RestartBridge);
-            self.out.push_back(Step::Input(DriverInput::Resumed));
-            let mut players = vec![server_player()];
-            for account_id in &self.connected {
-                players.push(info(&self.world, account_id));
-            }
-            self.out.push_back(Step::Input(DriverInput::Players(players)));
-        }
         self.out.push_back(Step::Input(input));
 
         if let Some(after) = &mut self.restart_after {
