@@ -30,9 +30,10 @@ pub fn warmup(rng: &mut Rng) -> Option<Value> {
     Some(warmup)
 }
 
-/// Points by place: one to six values up to `max`, each at most the one before.
+/// Points by place: one to six values up to `max`, at least 1, each at most the one
+/// before. The first value is never 0.
 pub fn falling_points(rng: &mut Rng, max: u32) -> Vec<u32> {
-    let mut points = rng.between(1, max);
+    let mut points = rng.between(1, max.max(1));
     (0..rng.between(1, 6))
         .map(|_| {
             let value = points;

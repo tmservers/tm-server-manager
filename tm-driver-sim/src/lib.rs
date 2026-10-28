@@ -44,13 +44,12 @@ mod server;
 mod wasm;
 mod world;
 
-use std::{ops::Range, sync::OnceLock};
+use std::{ops::Range, sync::OnceLock, time::Duration};
 
 pub use rng::Rng;
 pub use rules::Rules;
-use tm_wasm_driver::{Driver, DriverEngine, DriverInput, DriverLimits, DriverReply};
+use tm_wasm_driver::{Component, Driver, DriverEngine, DriverInput, DriverLimits, DriverReply};
 pub use wasm::build_wasm;
-use wasmtime::component::Component;
 pub use world::{
     Action, Faults, MAX_PLAYERS, MapSpec, Moment, PlayerSpec, RacePlan, Races, ScriptedRound, World,
 };
@@ -153,6 +152,18 @@ impl Simulator {
     /// Simulates the worlds of these seeds in parallel and panics with every failure
     /// and the report of the first one. A single seed prints its report.
     pub fn check(&self, seeds: Range<u64>, world: fn(&Simulator, u64) -> World) {
+        if seeds.end - seeds.start == 1 {
+            let outcome = self.simulate_caught(world, seeds.start);
+            println!("{}", outcome.report);
+            if let Some(failure) = &outcome.failure {
+                panic!(
+                    "seed {}: {} after input {}",
+                    seeds.start, failure.message, failure.input
+                );
+            }
+            return;
+        }
+
         let threads = std::thread::available_parallelism().map_or(4, |n| n.get());
         let mut failures: Vec<(u64, Outcome)> = std::thread::scope(|scope| {
             let runs: Vec<_> = (0..threads as u64)
@@ -161,22 +172,16 @@ impl Simulator {
                     scope.spawn(move || {
                         seeds
                             .filter(|seed| seed % threads as u64 == thread)
-                            .map(|seed| (seed, self.simulate(&world(self, seed), seed)))
+                            .map(|seed| (seed, self.simulate_caught(world, seed)))
                             .filter(|(_, outcome)| outcome.failure.is_some())
                             .collect::<Vec<_>>()
                     })
                 })
                 .collect();
             runs.into_iter()
-                .flat_map(|run| run.join().expect("A simulation panicked"))
+                .flat_map(|run| run.join().expect("Panics are caught for every seed"))
                 .collect()
         });
-        if seeds.end - seeds.start == 1 && failures.is_empty() {
-            println!(
-                "{}",
-                self.simulate(&world(self, seeds.start), seeds.start).report
-            );
-        }
         if failures.is_empty() {
             return;
         }
@@ -192,11 +197,31 @@ impl Simulator {
         }
         let (seed, outcome) = &failures[0];
         panic!(
-            "{} of {} simulations failed:\n{message}\n{}\nSIM_SEED={seed} runs only seed {seed}.",
+            "{} of the simulations of seeds {seeds:?} failed:\n{message}\n{}\nSIM_SEED={seed} runs only seed {seed}.",
             failures.len(),
-            seeds.end - seeds.start,
             outcome.report
         );
+    }
+
+    /// Simulates the world of a seed. A panic, e.g. in the rules of a mode, becomes
+    /// the failure of the seed instead of taking down every other seed.
+    fn simulate_caught(&self, world: fn(&Simulator, u64) -> World, seed: u64) -> Outcome {
+        let run = std::panic::AssertUnwindSafe(|| self.simulate(&world(self, seed), seed));
+        std::panic::catch_unwind(run).unwrap_or_else(|panic| {
+            let message = panic
+                .downcast_ref::<String>()
+                .map(String::as_str)
+                .or_else(|| panic.downcast_ref::<&str>().copied())
+                .unwrap_or("no message");
+            Outcome {
+                report: format!("PANICKED: {message}\n"),
+                inputs: Vec::new(),
+                failure: Some(Failure {
+                    input: 0,
+                    message: format!("The simulation panicked: {message}"),
+                }),
+            }
+        })
     }
 
     fn run(&self, world: &World, seed: u64, header: String) -> Outcome {
@@ -292,16 +317,17 @@ impl Simulator {
     ) -> Result<(), Failure> {
         let engine = engine();
         let failure = |input, message: String| Failure { input, message };
+        let last = inputs.len().saturating_sub(1);
 
         let replayed = engine
             .replay(&self.component, settings, inputs)
-            .map_err(|e| failure(inputs.len(), format!("The replay failed: {e}")))?;
+            .map_err(|e| failure(last, format!("The replay failed: {e}")))?;
         if replayed.standings() != driver.standings()
             || replayed.last_round() != driver.last_round()
             || replayed.users() != driver.users()
         {
             return Err(failure(
-                inputs.len(),
+                last,
                 "Replaying every input gives another driver".into(),
             ));
         }
@@ -326,20 +352,34 @@ impl Simulator {
 }
 
 /// The seeds a check runs: only `SIM_SEED` if it is set, otherwise as many as the
-/// environment variable `count` says from the start of `default`, or `default`.
+/// environment variable `count` says, or as many as `default` has. They start at
+/// `SIM_SEED_START`, e.g. a number that changes with every run of a CI job so it
+/// explores new worlds, or at the start of `default`.
 pub fn seeds(count: &str, default: Range<u64>) -> Range<u64> {
-    let number = |variable: &str| std::env::var(variable).ok()?.parse::<u64>().ok();
-    match (number("SIM_SEED"), number(count)) {
-        (Some(seed), _) => seed..seed + 1,
-        (None, Some(count)) => default.start..default.start + count,
-        (None, None) => default,
+    let number = |variable: &str| {
+        let value = std::env::var(variable).ok()?;
+        let number = value.parse::<u64>();
+        assert!(number.is_ok(), "{variable}={value} is no number");
+        number.ok()
+    };
+    if let Some(seed) = number("SIM_SEED") {
+        return seed..seed + 1;
     }
+    let start = number("SIM_SEED_START").unwrap_or(default.start);
+    let count = number(count).unwrap_or(default.end - default.start);
+    start..start + count
 }
 
 /// One engine for every simulation of a process.
 fn engine() -> &'static DriverEngine {
     static ENGINE: OnceLock<DriverEngine> = OnceLock::new();
     ENGINE.get_or_init(|| {
-        DriverEngine::new(DriverLimits::default()).expect("The driver engine could not start")
+        let limits = DriverLimits {
+            // Fuel limits every call the same way on every machine. A wall clock limit
+            // would let a busy machine fail seeds that pass on their own.
+            call_timeout: Duration::from_secs(24 * 60 * 60),
+            ..DriverLimits::default()
+        };
+        DriverEngine::new(limits).expect("The driver engine could not start")
     })
 }

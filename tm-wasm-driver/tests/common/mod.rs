@@ -11,8 +11,7 @@ use tm_server_types::{
     },
     method::{DriverCommand, DriverStatus, DriverWarmUp},
 };
-use tm_wasm_driver::{Driver, DriverEngine, DriverInput, DriverLimits, DriverReply};
-use wasmtime::component::Component;
+use tm_wasm_driver::{Component, Driver, DriverEngine, DriverInput, DriverLimits, DriverReply};
 
 pub const SESSION: i32 = 7;
 

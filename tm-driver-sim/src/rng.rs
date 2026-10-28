@@ -35,7 +35,10 @@ impl Rng {
 
     /// From `low` to `high`, both included.
     pub fn between(&mut self, low: u32, high: u32) -> u32 {
-        low + self.below(high - low + 1)
+        assert!(low <= high, "Nothing lies between {low} and {high}");
+        // In 64 bits, the whole range of u32 has one value more than u32 holds.
+        let values = u64::from(high - low) + 1;
+        low + (((self.next_u64() >> 32) * values) >> 32) as u32
     }
 
     /// True with a probability in per mille.
@@ -94,5 +97,13 @@ mod tests {
         }
         assert_eq!(rng.below(0), 0);
         assert!((0..1000).filter(|_| rng.chance(500)).count().abs_diff(500) < 60);
+        assert_eq!(rng.between(7, 7), 7);
+        let _ = rng.between(0, u32::MAX);
+    }
+
+    #[test]
+    #[should_panic(expected = "Nothing lies between 9 and 5")]
+    fn between_needs_a_range() {
+        Rng::new(1).between(9, 5);
     }
 }

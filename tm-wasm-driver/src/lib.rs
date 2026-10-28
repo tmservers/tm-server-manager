@@ -36,9 +36,11 @@ use tm_server_types::{
     event::{DriverHold, DriverRoundResult, DriverSection, Event},
     method::{DriverCanSpawn, DriverCommand, DriverRound, DriverStandings, DriverUsers},
 };
+/// A compiled mode, see [`DriverEngine::compile`].
+pub use wasmtime::component::Component;
 use wasmtime::{
     Config, Engine, Store, StoreLimits, StoreLimitsBuilder,
-    component::{Component, HasSelf, Linker},
+    component::{HasSelf, Linker},
 };
 
 mod convert;

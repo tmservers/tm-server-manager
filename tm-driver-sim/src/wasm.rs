@@ -21,11 +21,16 @@ macro_rules! wasm {
 /// Builds of all modes share it.
 pub fn build_wasm(package: &str, manifest_dir: &Path, target_dir: &Path) -> Vec<u8> {
     let target_dir = target_dir.join("modes");
-    let status = Command::new(std::env::var("CARGO").unwrap_or_else(|_| "cargo".into()))
+    let output = Command::new(std::env::var("CARGO").unwrap_or_else(|_| "cargo".into()))
         .current_dir(manifest_dir)
+        // Flags for the host the tests run on are no flags for wasm.
+        .env_remove("RUSTFLAGS")
+        .env_remove("CARGO_ENCODED_RUSTFLAGS")
         .args([
             "build",
             "--release",
+            // The tests build the crates of the lock file, never others.
+            "--locked",
             "-p",
             package,
             "--target",
@@ -33,9 +38,17 @@ pub fn build_wasm(package: &str, manifest_dir: &Path, target_dir: &Path) -> Vec<
             "--target-dir",
         ])
         .arg(&target_dir)
-        .status()
+        .output()
         .expect("cargo could not be started");
-    assert!(status.success(), "Building {package} failed");
+    if !output.status.success() {
+        let errors = String::from_utf8_lossy(&output.stderr);
+        let hint = if errors.contains("target may not be installed") {
+            "\nInstall the target with `rustup target add wasm32-unknown-unknown`."
+        } else {
+            ""
+        };
+        panic!("Building {package} for wasm failed:\n{errors}{hint}");
+    }
 
     let file = target_dir
         .join("wasm32-unknown-unknown/release")

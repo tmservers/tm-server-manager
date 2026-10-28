@@ -4145,7 +4145,6 @@ dependencies = [
  "serde_json",
  "tm-server-types",
  "tm-wasm-driver",
- "wasmtime",
 ]
 
 [[package]]
