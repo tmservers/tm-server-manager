@@ -213,6 +213,14 @@ impl Simulator {
             }
         }
         run.notes.extend(server.take_notes());
+        if failure.is_none()
+            && let Some(message) = server.failed()
+        {
+            failure = Some(Failure {
+                input: run.inputs.len().saturating_sub(1),
+                message: message.into(),
+            });
+        }
         run.finish(seed, server.stopped(), failure)
     }
 

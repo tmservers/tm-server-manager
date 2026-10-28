@@ -6,7 +6,7 @@ reverse-cup · seed 2
 settings {"allow_fast_forward_rounds":true,"complex_points_repartition":{"2":[6,7,8,12,15]},"disable_last_chance":true,"dnf_points_loss":10,"fast_forward_points_repartition":false,"finish_timeout":{"milliseconds":10000},"last_chance_dnf_mode":"all_players","number_of_winners":1,"points_repartition":[4],"rounds_per_map":2,"starting_points":60}
 maps m1 2 cp 0:18.033
 players a Ant leaves during round 3 · b Bea
-chances ties 300‰ · repeated holds 400‰ · forced rounds 30‰ · bridge restarts 100‰ · script restarts 10‰
+chances ties 300‰
 
 match 1
 map m1 · one try, finish timeout 0:10.000 · no warmup
@@ -30,37 +30,30 @@ round 3
   match  1 a 38 · 2 b 37
   info   2 left, 1 / 2 rounds
 round 4
-  ! bridge goes down
-  ! missed a checkpoint of b
-  ! missed the finish of b
-  ! bridge restarts
-  races  b 0cp
-  round  1 b -10 · 2 a -10
-  match  1 a 28 · 2 b 27
+  races  b 0:20.010
+  round  1 b -6 · 2 a -10
+  match  1 b 31 · 2 a 28
   info   2 left, 2 / 2 rounds
   end map
-  hold 7 again
 map end
-  hold 8 again
 map m1 · one try, finish timeout 0:10.000 · no warmup
 round 5
   races  b 0:19.992
   round  1 b -6 · 2 a -10
-  match  1 b 21 · 2 a 18
+  match  1 b 25 · 2 a 18
   info   2 left, 1 / 2 rounds
 round 6
   races  b 0:20.013
   round  1 b -6 · 2 a -10
-  match  1 b 15 · 2 a 8
+  match  1 b 19 · 2 a 8
   info   2 left, 2 / 2 rounds
   end map
-  hold 11 again
 map end
 map m1 · one try, finish timeout 0:10.000 · no warmup
 round 7
   races  b 0:19.988
   round  1 b -6 · 2 a -10
-  match  1 b 9 (Winner) · 2 a 0 out
+  match  1 b 13 (Winner) · 2 a 0 out
   info   1 left, 1 / 2 rounds
   chat   $f90$i$<Ant$> takes 2nd place!
   chat   $<Bea$> wins the match!
@@ -68,10 +61,9 @@ round 7
   block  a
 map end
   end match
-  hold 15 again
 match end
 
 end
-  1 b 9 (Winner)
+  1 b 13 (Winner)
   2 a 0 out
-inputs 80
+inputs 72

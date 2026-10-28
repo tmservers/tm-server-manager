@@ -96,7 +96,7 @@ pub enum Action {
 }
 
 /// How often things go wrong, all in per mille.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Faults {
     /// Holds that reach the driver twice.
     pub repeated_holds: u32,
@@ -173,22 +173,30 @@ impl World {
             .collect();
 
         let mut chances = rng.fork("chances");
+        let races = Races {
+            ties: *chances.pick(&[0, 100, 300]),
+            idle: *chances.pick(&[0, 10, 30]),
+        };
+        let mut faults = Faults {
+            repeated_holds: *chances.pick(&[0, 0, 100, 400]),
+            forced_rounds: *chances.pick(&[0, 0, 30, 100]),
+            missed_starts: *chances.pick(&[0, 0, 20]),
+            bridge_restarts: *chances.pick(&[0, 30, 100]),
+            script_restarts: *chances.pick(&[0, 0, 0, 10]),
+            playlist_changes: *chances.pick(&[0, 0, 20]),
+        };
+        // Plain matches show the rules of a mode without noise, and failures in them
+        // are the easiest to read. A stream of its own leaves the rest of the world
+        // as it is.
+        if rng.fork("plain").chance(400) {
+            faults = Faults::default();
+        }
         World {
             settings,
             maps,
             playlist,
-            races: Races {
-                ties: *chances.pick(&[0, 100, 300]),
-                idle: *chances.pick(&[0, 10, 30]),
-            },
-            faults: Faults {
-                repeated_holds: *chances.pick(&[0, 0, 100, 400]),
-                forced_rounds: *chances.pick(&[0, 0, 30, 100]),
-                missed_starts: *chances.pick(&[0, 0, 20]),
-                bridge_restarts: *chances.pick(&[0, 30, 100]),
-                script_restarts: *chances.pick(&[0, 0, 0, 10]),
-                playlist_changes: *chances.pick(&[0, 0, 20]),
-            },
+            races,
+            faults,
             matches: if chances.chance(200) { 2 } else { 1 },
             // Crowded matches take long, the rounds tell enough.
             max_rounds: if players.len() > 16 { 40 } else { 150 },
@@ -288,6 +296,34 @@ mod tests {
         let world = |seed| format!("{:?}", World::random(seed, String::new()));
         assert_eq!(world(5), world(5));
         assert_ne!(world(5), world(6));
+    }
+
+    #[test]
+    fn many_worlds_are_plain_and_some_have_every_fault() {
+        let worlds: Vec<Faults> = (0..1000)
+            .map(|seed| World::random(seed, String::new()).faults)
+            .collect();
+        let plain = worlds
+            .iter()
+            .filter(|faults| **faults == Faults::default())
+            .count();
+        let everything = worlds
+            .iter()
+            .filter(|faults| {
+                [
+                    faults.repeated_holds,
+                    faults.forced_rounds,
+                    faults.missed_starts,
+                    faults.bridge_restarts,
+                    faults.script_restarts,
+                    faults.playlist_changes,
+                ]
+                .iter()
+                .all(|&chance| chance > 0)
+            })
+            .count();
+        assert!((350..500).contains(&plain), "{plain} plain worlds");
+        assert!(everything > 0);
     }
 
     #[test]

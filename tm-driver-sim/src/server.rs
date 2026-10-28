@@ -162,6 +162,7 @@ pub(crate) struct Server {
     phase: Phase,
     out: VecDeque<Step>,
     stopped: Option<String>,
+    failed: Option<String>,
 
     session: i32,
     seq: u32,
@@ -208,6 +209,7 @@ impl Server {
             phase: Phase::Load,
             out: VecDeque::new(),
             stopped: None,
+            failed: None,
             seq: 0,
             hold: None,
             format: DriverRoundFormat::SingleAttempt(DriverFinishTimeout::Automatic),
@@ -236,6 +238,11 @@ impl Server {
     /// Why the simulation ended before the last match did, if it did.
     pub(crate) fn stopped(&self) -> Option<&str> {
         self.stopped.as_deref()
+    }
+
+    /// What went wrong that ended the simulation, e.g. a hold that never continued.
+    pub(crate) fn failed(&self) -> Option<&str> {
+        self.failed.as_deref()
     }
 
     /// What happened that the driver cannot tell, for the report.
@@ -294,7 +301,11 @@ impl Server {
                 }
                 if !waiting.continued {
                     if waiting.deliveries >= 3 {
-                        self.stop("The driver never let a hold continue");
+                        self.failed = Some(format!(
+                            "The driver never let hold {} continue",
+                            waiting.hold.seq
+                        ));
+                        self.phase = Phase::Done;
                         return None;
                     }
                     waiting.deliveries += 1;

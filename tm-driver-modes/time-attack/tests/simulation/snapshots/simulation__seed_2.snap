@@ -6,7 +6,7 @@ time-attack · seed 2
 settings {"maps_per_match":1,"time_limit_ms":90000}
 maps m1 2 cp 0:18.033
 players a Ant leaves during round 3 · b Bea
-chances ties 300‰ · repeated holds 400‰ · forced rounds 30‰ · bridge restarts 100‰ · script restarts 10‰
+chances ties 300‰
 
 match 1
 map m1 · time attack 1:30.000 · no warmup

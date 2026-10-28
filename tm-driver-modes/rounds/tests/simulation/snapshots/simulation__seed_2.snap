@@ -6,7 +6,7 @@ rounds · seed 2
 settings {"finish_timeout":"automatic","maps_per_match":1,"points_limit":0,"points_repartition":[1,0],"rounds_per_map":3,"warmup":{"duration_ms":30000,"rounds":1,"timeout_ms":4000}}
 maps m1 2 cp 0:18.033
 players a Ant leaves during round 3 · b Bea
-chances ties 300‰ · repeated holds 400‰ · forced rounds 30‰ · bridge restarts 100‰ · script restarts 10‰
+chances ties 300‰
 
 match 1
 map m1 · one try, automatic finish timeout · warmup 1 × 0:30.000
