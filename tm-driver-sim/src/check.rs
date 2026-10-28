@@ -22,6 +22,8 @@ pub(crate) struct Checker {
     standings: DriverStandings,
     /// The status of every player of the match.
     statuses: BTreeMap<String, DriverStatus>,
+    /// Rounds of the match that placed players.
+    placed: u32,
     playlist: u32,
 }
 
@@ -32,6 +34,7 @@ impl Checker {
             maps,
             standings: DriverStandings::default(),
             statuses: BTreeMap::new(),
+            placed: 0,
             playlist: 0,
         }
     }
@@ -50,6 +53,7 @@ impl Checker {
         match input {
             DriverInput::Event(Event::StartMatchStart(_)) => {
                 self.statuses.clear();
+                self.placed = 0;
                 self.rules.match_start();
             }
             DriverInput::Playlist(uids) => self.playlist = uids.len() as u32,
@@ -115,6 +119,7 @@ impl Checker {
                         truth: observer.truth(),
                     };
                     self.rules.round_end(&end)?;
+                    self.check_progress(&round, &standings)?;
                 }
                 DriverSection::RoundEnd => check_unchanged(&self.standings, &standings)?,
                 DriverSection::MapEnd => {
@@ -130,6 +135,25 @@ impl Checker {
         }
         self.standings = standings;
         Ok(())
+    }
+
+    /// The match ends within the rounds its rules allow.
+    fn check_progress(
+        &mut self,
+        round: &DriverRound,
+        standings: &DriverStandings,
+    ) -> Result<(), String> {
+        if round.entries.is_empty() {
+            return Ok(());
+        }
+        self.placed += 1;
+        match self.rules.round_limit(standings) {
+            Some(limit) if self.placed > limit => Err(format!(
+                "The match goes on after {} rounds, its rules end it within {limit}",
+                self.placed
+            )),
+            _ => Ok(()),
+        }
     }
 
     fn check_next_map(&self, commands: &[DriverCommand]) -> Result<(), String> {

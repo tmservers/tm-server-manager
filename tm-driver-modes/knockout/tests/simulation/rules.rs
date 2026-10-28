@@ -2,7 +2,10 @@
 //! the last player left wins.
 
 use tm_driver_mode_knockout::{ExtraLosses, Settings};
-use tm_driver_sim::rules::{DriverStatus, RoundEnd, Rules, ends_match, entry, playing};
+use tm_driver_sim::rules::{
+    Counted, DriverStandings, DriverStatus, RoundEnd, Rules, ends_map, ends_match, entry,
+    in_race_order, participants, playing, racers_placed, spectators_stay,
+};
 
 pub struct Knockout {
     settings: Settings,
@@ -81,6 +84,9 @@ impl Knockout {
 
 impl Rules for Knockout {
     fn round_end(&mut self, end: &RoundEnd) -> Result<(), String> {
+        in_race_order(end, Counted::Last)?;
+        racers_placed(end)?;
+        spectators_stay(end)?;
         let eliminations = end.round.number > self.settings.rounds_without_elimination;
 
         // The players who lost a life are the last ones of the race.
@@ -202,6 +208,26 @@ impl Rules for Knockout {
         } else if over {
             return Err("One player is left, but the match goes on".into());
         }
+
+        // Rounds that took lives count for the map.
+        let counted = end.after.rounds_on_map > end.before.rounds_on_map;
+        let limit = self.settings.rounds_per_map;
+        let map_done = counted && limit > 0 && end.after.rounds_on_map >= limit;
+        if ends_map(end.commands) != (map_done && !ends_match(end.commands)) {
+            return Err(format!(
+                "{} of {limit} rounds on the map, but the map ends: {}",
+                end.after.rounds_on_map,
+                ends_map(end.commands)
+            ));
+        }
         Ok(())
+    }
+
+    /// Every round with eliminations takes a life, until one player is left.
+    fn round_limit(&self, standings: &DriverStandings) -> Option<u32> {
+        let participants = participants(standings).count() as u32;
+        let lives = self.settings.lives.max(1) as u32;
+        (participants > 0)
+            .then(|| self.settings.rounds_without_elimination + lives * participants)
     }
 }

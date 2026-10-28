@@ -5,7 +5,8 @@ use std::collections::BTreeMap;
 
 use tm_driver_mode_time_attack::Settings;
 use tm_driver_sim::rules::{
-    MapEnd, RoundEnd, Rules, ends_map, ends_match, playing, ranked_by_points,
+    Counted, DriverStandings, MapEnd, RoundEnd, Rules, ends_map, ends_match, in_race_order,
+    playing, points, racers_placed, ranked_by_points,
 };
 
 pub struct TimeAttack {
@@ -34,35 +35,21 @@ impl Rules for TimeAttack {
             return Err("A time attack round does not end the map".into());
         }
 
+        in_race_order(end, Counted::Best)?;
+        racers_placed(end)?;
+
         let entries = &end.round.entries;
         let finishers = entries
             .iter()
             .filter(|entry| end.truth.best_finish(&entry.account_id).is_some())
             .count();
-        let mut previous = 0;
         for (place, entry) in entries.iter().enumerate() {
             let best = end.truth.best_finish(&entry.account_id);
-            if best.is_some() != (place < finishers) {
-                return Err(format!(
-                    "{} in place {} is out of order with the finishers",
-                    entry.account_id,
-                    place + 1
-                ));
-            }
             if entry.time != best.map_or(-1, |time| time as i32) {
                 return Err(format!(
                     "{} has the time {} instead of its best {best:?}",
                     entry.account_id, entry.time
                 ));
-            }
-            if let Some(best) = best {
-                if best < previous {
-                    return Err(format!(
-                        "{} is placed behind a slower best race",
-                        entry.account_id
-                    ));
-                }
-                previous = best;
             }
 
             let repartition = &self.settings.points_repartition;
@@ -81,11 +68,6 @@ impl Rules for TimeAttack {
             }
             *self.totals.entry(entry.account_id.clone()).or_default() += entry.score;
         }
-        for (account_id, _) in &end.truth.racers {
-            if !entries.iter().any(|entry| &entry.account_id == account_id) {
-                return Err(format!("{account_id} raced but has no place in the round"));
-            }
-        }
 
         for entry in playing(end.after) {
             let total = self.totals.get(&entry.account_id).copied().unwrap_or(0);
@@ -97,6 +79,16 @@ impl Rules for TimeAttack {
             }
         }
         ranked_by_points(end.after)
+    }
+
+    /// Every round ends its map, and the maps of the match end it. The current map
+    /// counts even when a new playlist has fewer maps.
+    fn round_limit(&self, standings: &DriverStandings) -> Option<u32> {
+        let maps = self
+            .settings
+            .maps_per_match
+            .unwrap_or(standings.map_count.max(1));
+        (maps > 0).then(|| maps.max(standings.maps_played + 1))
     }
 
     fn map_end(&mut self, end: &MapEnd) -> Result<(), String> {
@@ -111,13 +103,4 @@ impl Rules for TimeAttack {
         }
         Ok(())
     }
-}
-
-/// Points of a finisher by place: the value of the place, the last one beyond.
-fn points(repartition: &[i32], place: usize) -> i32 {
-    repartition
-        .get(place)
-        .or(repartition.last())
-        .copied()
-        .unwrap_or(0)
 }

@@ -1,11 +1,12 @@
-//! Finishers get points by their place, the points add up and a points limit
-//! or the maps end the match.
+//! Finishers get points by their place in the race, the points add up and a
+//! points limit or the maps end the match.
 
 use std::collections::BTreeMap;
 
 use tm_driver_mode_rounds::Settings;
 use tm_driver_sim::rules::{
-    MapEnd, RoundEnd, Rules, ends_map, ends_match, playing, ranked_by_points,
+    Counted, DriverStandings, MapEnd, RoundEnd, Rules, ends_map, ends_match, in_race_order,
+    playing, points, racers_placed, ranked_by_points,
 };
 
 pub struct Rounds {
@@ -36,6 +37,8 @@ impl Rules for Rounds {
     }
 
     fn round_end(&mut self, end: &RoundEnd) -> Result<(), String> {
+        in_race_order(end, Counted::Last)?;
+        racers_placed(end)?;
         check_places(end, &self.settings.points_repartition)?;
         for entry in &end.round.entries {
             *self.totals.entry(entry.account_id.clone()).or_default() += entry.score;
@@ -71,6 +74,19 @@ impl Rules for Rounds {
         Ok(())
     }
 
+    /// Every map ends after its rounds, and the maps of the match end it. The
+    /// current map counts even when a new playlist has fewer maps.
+    fn round_limit(&self, standings: &DriverStandings) -> Option<u32> {
+        let maps = self
+            .settings
+            .maps_per_match
+            .unwrap_or(standings.map_count.max(1));
+        match (self.settings.rounds_per_map, maps) {
+            (0, _) | (_, 0) => None,
+            (rounds, maps) => Some(maps.max(standings.maps_played + 1) * rounds),
+        }
+    }
+
     fn map_end(&mut self, end: &MapEnd) -> Result<(), String> {
         let maps = self.settings.maps_per_match.unwrap_or(end.playlist.max(1));
         let over = self.limit_reached(end.after.entries.iter().map(|entry| entry.score))
@@ -89,23 +105,11 @@ impl Rules for Rounds {
     }
 }
 
-/// Everyone who raced is placed, the finishers first with the points of their
-/// place and the time of their last race.
+/// The finishers get the points of their place and the time of their last race,
+/// everyone else nothing.
 fn check_places(end: &RoundEnd, repartition: &[i32]) -> Result<(), String> {
-    let entries = &end.round.entries;
-    let finishers = entries
-        .iter()
-        .filter(|entry| end.truth.last_finish(&entry.account_id).is_some())
-        .count();
-    for (place, entry) in entries.iter().enumerate() {
+    for (place, entry) in end.round.entries.iter().enumerate() {
         let finish = end.truth.last_finish(&entry.account_id);
-        if finish.is_some() != (place < finishers) {
-            return Err(format!(
-                "{} in place {} is out of order with the finishers",
-                entry.account_id,
-                place + 1
-            ));
-        }
         let expected = if finish.is_some() {
             points(repartition, place)
         } else {
@@ -126,19 +130,5 @@ fn check_places(end: &RoundEnd, repartition: &[i32]) -> Result<(), String> {
             ));
         }
     }
-    for (account_id, _) in &end.truth.racers {
-        if !entries.iter().any(|entry| &entry.account_id == account_id) {
-            return Err(format!("{account_id} raced but has no place in the round"));
-        }
-    }
     Ok(())
-}
-
-/// Points of a finisher by place: the value of the place, the last one beyond.
-fn points(repartition: &[i32], place: usize) -> i32 {
-    repartition
-        .get(place)
-        .or(repartition.last())
-        .copied()
-        .unwrap_or(0)
 }
