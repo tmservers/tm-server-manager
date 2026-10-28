@@ -447,7 +447,8 @@ impl Driver {
             Event::StartMapStart(start) => {
                 self.map = Some(start.map.clone());
                 self.next_map_chosen = false;
-                Ok(DriverReply::default())
+                // The standings show the name of the map.
+                Ok(self.published())
             }
             Event::WarmupStart => {
                 self.in_warm_up = true;

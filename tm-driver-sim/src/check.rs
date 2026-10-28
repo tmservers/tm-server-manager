@@ -85,13 +85,9 @@ impl Checker {
             });
         }
 
-        // The driver publishes whatever changes, so the rest only has to be checked
-        // after replies with commands. Most waypoints have none.
-        let learned = matches!(
-            input,
-            DriverInput::Players(_) | DriverInput::Event(Event::PlayerInfoChanged(_))
-        );
-        if reply.commands.is_empty() && !learned {
+        // Waypoints, of which a full server sends thousands per round, only collect
+        // races. Everything else is checked.
+        if !may_change(input) {
             return Ok(());
         }
 
@@ -165,6 +161,25 @@ impl Checker {
             }
         }
         Ok(())
+    }
+}
+
+/// Inputs that can change the standings, the last round or the players the driver
+/// knows: everything that steps the mode, starts a map or tells about players.
+fn may_change(input: &DriverInput) -> bool {
+    match input {
+        DriverInput::Event(event) => matches!(
+            event,
+            Event::StartMatchStart(_)
+                | Event::StartMapStart(_)
+                | Event::StartRoundStart(_)
+                | Event::StartLine(_)
+                | Event::EndMatchStart(_)
+                | Event::DriverHold(_)
+                | Event::PlayerInfoChanged(_)
+        ),
+        DriverInput::Playlist(_) | DriverInput::Players(_) | DriverInput::Resumed => true,
+        DriverInput::Delivered => false,
     }
 }
 
