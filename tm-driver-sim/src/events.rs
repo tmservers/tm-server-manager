@@ -94,7 +94,8 @@ impl InputLog {
     pub fn save(&self, path: impl AsRef<Path>) -> Result<(), String> {
         let path = path.as_ref();
         let json = serde_json::to_string_pretty(self).expect("Logs are json");
-        std::fs::write(path, json).map_err(|e| format!("{} could not be written: {e}", path.display()))
+        std::fs::write(path, json)
+            .map_err(|e| format!("{} could not be written: {e}", path.display()))
     }
 
     pub fn push(&mut self, input: DriverInput) -> &mut Self {
@@ -224,10 +225,7 @@ impl InputLog {
 
     /// The last hold reaches the driver again, like when the modescript asks again.
     pub fn hold_again(&mut self) -> &mut Self {
-        let hold = self
-            .last_hold()
-            .cloned()
-            .expect("A hold to repeat");
+        let hold = self.last_hold().cloned().expect("A hold to repeat");
         self.event(Event::DriverHold(hold))
     }
 
@@ -480,7 +478,10 @@ mod tests {
     fn logs_number_their_holds_and_order_their_races() {
         let mut log = InputLog::new("{}");
         log.match_start().map_start("m1");
-        log.round(&[("a", Race::finish(&[10_000, 30_000])), ("b", Race::dnf(&[9_000]))]);
+        log.round(&[
+            ("a", Race::finish(&[10_000, 30_000])),
+            ("b", Race::dnf(&[9_000])),
+        ]);
         log.hold_again().restart_script().map_start("m1");
 
         let summary: Vec<String> = log
@@ -490,7 +491,9 @@ mod tests {
                 DriverInput::Event(Event::DriverHold(hold)) => {
                     format!("hold {} {}", hold.session, hold.seq)
                 }
-                DriverInput::Event(Event::StartLine(start)) => format!("start {}", start.account_id),
+                DriverInput::Event(Event::StartLine(start)) => {
+                    format!("start {}", start.account_id)
+                }
                 DriverInput::Event(Event::WayPoint(way_point)) => {
                     format!("{} {}", way_point.account_id, way_point.racetime)
                 }

@@ -256,10 +256,7 @@ impl Observer {
             }
             DriverInput::Resumed => return Ok(None),
             DriverInput::Delivered => {
-                if let Some(answer) = self
-                    .last_hold
-                    .and_then(|hold| self.answers.get_mut(&hold))
-                {
+                if let Some(answer) = self.last_hold.and_then(|hold| self.answers.get_mut(&hold)) {
                     answer.delivered = true;
                 }
                 return Ok(None);

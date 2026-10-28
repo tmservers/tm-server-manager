@@ -53,7 +53,9 @@ pub(crate) enum Step {
     RestartBridge,
     /// The bridge goes down after the input before, maybe before its reply went
     /// out. Only the server sees it.
-    Crash { lose_reply: bool },
+    Crash {
+        lose_reply: bool,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -283,7 +285,8 @@ impl Server {
                         players.push(info(&self.world, account_id));
                     }
                     self.out.push_front(Step::Input(input));
-                    self.out.push_front(Step::Input(DriverInput::Players(players)));
+                    self.out
+                        .push_front(Step::Input(DriverInput::Players(players)));
                     self.out.push_front(Step::Input(DriverInput::Resumed));
                     return Some(Step::RestartBridge);
                 }
@@ -857,7 +860,8 @@ impl Server {
             }
             Happening::RestartScript => {
                 self.leave_round();
-                self.notes.push("the modescript restarts during the round".into());
+                self.notes
+                    .push("the modescript restarts during the round".into());
                 self.restart_script();
                 return;
             }
@@ -989,7 +993,9 @@ impl Server {
         match next {
             Some(plan) => {
                 racer.races.push(plan);
-                let mut rng = self.rng.fork(&format!("{}/respawn/{player}/{race}", run.key));
+                let mut rng = self
+                    .rng
+                    .fork(&format!("{}/respawn/{player}/{race}", run.key));
                 let happening = Happening::Start {
                     player: player.into(),
                     race: race + 1,

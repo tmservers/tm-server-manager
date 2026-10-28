@@ -68,8 +68,8 @@ impl Rules for BMustNotWin {
 
 #[test]
 fn shrinking_keeps_only_what_fails() {
-    let simulator = Simulator::new("rounds", &tm_driver_sim::wasm!())
-        .rules(|_| Ok(Box::new(BMustNotWin)));
+    let simulator =
+        Simulator::new("rounds", &tm_driver_sim::wasm!()).rules(|_| Ok(Box::new(BMustNotWin)));
     let mut log = InputLog::new("{}");
     log.players(&["a", "b", "c"]).match_start().map_start("m1");
     let a_wins = [

@@ -254,15 +254,18 @@ impl Simulator {
         };
         let mut paths: Vec<PathBuf> = entries
             .filter_map(|entry| Some(entry.ok()?.path()))
-            .filter(|path| path.extension().is_some_and(|extension| extension == "json"))
+            .filter(|path| {
+                path.extension()
+                    .is_some_and(|extension| extension == "json")
+            })
             .collect();
         paths.sort();
 
         let mut failures = String::new();
         for path in &paths {
-            let name = path.file_stem().map_or_else(String::new, |stem| {
-                stem.to_string_lossy().into_owned()
-            });
+            let name = path
+                .file_stem()
+                .map_or_else(String::new, |stem| stem.to_string_lossy().into_owned());
             let log = InputLog::load(path).unwrap_or_else(|error| panic!("{error}"));
             let outcome = self.log(&name, &log);
             if let Some(failure) = outcome.failure {
@@ -620,7 +623,13 @@ impl<'a> Run<'a> {
         if failure.is_none() {
             failure = self
                 .simulator
-                .check_replays(&self.settings, seed, &self.inputs, &self.replies, &self.driver)
+                .check_replays(
+                    &self.settings,
+                    seed,
+                    &self.inputs,
+                    &self.replies,
+                    &self.driver,
+                )
                 .err();
         }
         let report = self.report.finish(

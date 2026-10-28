@@ -227,7 +227,6 @@ impl Rules for Knockout {
     fn round_limit(&self, standings: &DriverStandings) -> Option<u32> {
         let participants = participants(standings).count() as u32;
         let lives = self.settings.lives.max(1) as u32;
-        (participants > 0)
-            .then(|| self.settings.rounds_without_elimination + lives * participants)
+        (participants > 0).then(|| self.settings.rounds_without_elimination + lives * participants)
     }
 }

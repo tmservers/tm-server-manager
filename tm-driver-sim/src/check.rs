@@ -199,9 +199,11 @@ fn check_hold(hold: &SeenHold, reply: &DriverReply) -> Result<(), String> {
         ));
     }
     match &hold.answered {
-        Some(_) if hold.delivered && reply.commands != [DriverCommand::Continue(seq)] => Err(
-            format!("Hold {seq} came again after its reply reached the server, but got more than Continue"),
-        ),
+        Some(_) if hold.delivered && reply.commands != [DriverCommand::Continue(seq)] => {
+            Err(format!(
+                "Hold {seq} came again after its reply reached the server, but got more than Continue"
+            ))
+        }
         Some(commands) if !hold.delivered && *commands != reply.commands => {
             Err(format!("Hold {seq} got other commands when it came again"))
         }
