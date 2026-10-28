@@ -1,0 +1,245 @@
+use tm_driver_sdk::{FinishTimeout, Label, RaceResult, WarmUp, testing::Harness};
+
+use super::*;
+
+fn finish(account_id: &str, time: u32) -> RaceResult {
+    finish_at(account_id, &[time])
+}
+
+/// Finished with these race times at the checkpoints, the finish last.
+fn finish_at(account_id: &str, checkpoints: &[u32]) -> RaceResult {
+    let time = checkpoints.last().copied();
+    RaceResult {
+        account_id: account_id.into(),
+        started: true,
+        round_checkpoints: checkpoints.to_vec(),
+        previous_time: time,
+        previous_checkpoints: checkpoints.to_vec(),
+        best_time: time,
+        best_checkpoints: checkpoints.to_vec(),
+    }
+}
+
+fn dnf(account_id: &str) -> RaceResult {
+    RaceResult {
+        account_id: account_id.into(),
+        started: true,
+        round_checkpoints: vec![10_000],
+        previous_time: None,
+        previous_checkpoints: vec![],
+        best_time: None,
+        best_checkpoints: vec![],
+    }
+}
+
+fn round_end(results: Vec<RaceResult>) -> Event {
+    Event::RoundEnd(RoundEnd {
+        invalid: false,
+        results,
+    })
+}
+
+fn started(settings: &str) -> Harness<Rounds> {
+    let mut harness = Harness::new(settings).unwrap();
+    harness.step(Event::MatchStart);
+    harness.step(Event::MapStart);
+    harness
+}
+
+/// Account, position, points and points of the last round of every player in the
+/// order of the standings.
+fn scores(harness: &Harness<Rounds>) -> Vec<(&str, u32, i32, i32)> {
+    harness
+        .standings
+        .entries
+        .iter()
+        .map(|p| {
+            let round = harness.round_entry(&p.account_id).map_or(0, |r| r.score);
+            (p.account_id.as_str(), p.position, p.score, round)
+        })
+        .collect()
+}
+
+#[test]
+fn sets_the_round_format_and_warmup_on_map_start() {
+    let mut harness = Harness::<Rounds>::new(
+        r#"{"finish_timeout": {"milliseconds": 7000}, "warmup": {"rounds": 1, "duration_ms": 60000}}"#,
+    )
+    .unwrap();
+    assert_eq!(
+        harness.step(Event::MapStart),
+        [
+            Command::SetRoundFormat(RoundFormat::SingleAttempt(FinishTimeout::Milliseconds(
+                7000
+            ))),
+            Command::SetWarmUp(WarmUp {
+                rounds: 1,
+                duration_ms: 60_000,
+                timeout_ms: None,
+            }),
+        ]
+    );
+}
+
+#[test]
+fn points_by_finish_order() {
+    let mut harness = started(r#"{"points_repartition": [10, 6, 4]}"#);
+    harness.step(round_end(vec![
+        finish("b", 31_000),
+        finish("a", 30_000),
+        dnf("d"),
+        finish("c", 32_000),
+        finish("e", 33_000),
+    ]));
+
+    assert_eq!(
+        scores(&harness),
+        [
+            ("a", 1, 10, 10),
+            ("b", 2, 6, 6),
+            // Beyond the repartition everyone gets the last value. The race tells
+            // them apart.
+            ("c", 3, 4, 4),
+            ("e", 4, 4, 4),
+            // Raced without a finish.
+            ("d", 5, 0, 0),
+        ]
+    );
+    assert_eq!(harness.standings.info, "1 / 5 rounds");
+
+    // Places follow the race, also for the finishers who got the same points.
+    let places: Vec<(&str, u32, Option<u32>)> = harness
+        .round
+        .iter()
+        .map(|p| (p.account_id.as_str(), p.position, p.time))
+        .collect();
+    assert_eq!(
+        places,
+        [
+            ("a", 1, Some(30_000)),
+            ("b", 2, Some(31_000)),
+            ("c", 3, Some(32_000)),
+            ("e", 4, Some(33_000)),
+            ("d", 5, None)
+        ]
+    );
+}
+
+#[test]
+fn points_add_up_and_round_points_start_over() {
+    let mut harness = started(r#"{"points_repartition": [10, 6]}"#);
+    harness.step(round_end(vec![finish("a", 30_000), finish("b", 31_000)]));
+    harness.step(round_end(vec![finish("b", 30_000), dnf("a")]));
+
+    assert_eq!(scores(&harness), [("b", 1, 16, 10), ("a", 2, 10, 0)]);
+}
+
+#[test]
+fn equal_times_go_to_the_better_checkpoints() {
+    let mut harness = started(r#"{"points_repartition": [10, 6]}"#);
+    // b passed the last checkpoint earlier.
+    harness.step(round_end(vec![
+        finish_at("a", &[10_000, 20_500, 30_000]),
+        finish_at("b", &[10_100, 20_400, 30_000]),
+    ]));
+    assert_eq!(scores(&harness), [("b", 1, 10, 10), ("a", 2, 6, 6)]);
+}
+
+#[test]
+fn players_show_up_when_they_start() {
+    let mut harness = started("");
+    assert!(harness.step(Event::RaceStart("b".into())).is_empty());
+    harness.step(Event::RaceStart("a".into()));
+    // By name, without a position until their first round.
+    assert_eq!(scores(&harness), [("a", 0, 0, 0), ("b", 0, 0, 0)]);
+}
+
+#[test]
+fn invalid_rounds_do_not_count() {
+    let mut harness = started("");
+    let commands = harness.step(Event::RoundEnd(RoundEnd {
+        invalid: true,
+        results: vec![finish("a", 30_000)],
+    }));
+    assert!(commands.is_empty());
+    assert!(harness.standings.entries.is_empty());
+    assert!(harness.round.is_empty());
+    assert_eq!(harness.standings.rounds_on_map, 0);
+}
+
+#[test]
+fn map_ends_after_rounds_per_map() {
+    let mut harness = started(r#"{"rounds_per_map": 2}"#);
+    assert!(
+        !harness
+            .step(round_end(vec![finish("a", 1), finish("b", 2)]))
+            .contains(&Command::EndMap)
+    );
+    assert!(
+        harness
+            .step(round_end(vec![finish("a", 1), finish("b", 2)]))
+            .contains(&Command::EndMap)
+    );
+
+    // One map per match by default. The leader wins.
+    assert_eq!(harness.step(Event::MapEnd), [Command::EndMatch]);
+    assert_eq!(harness.standing("a").label, Some(Label::winner()));
+    assert_eq!(harness.standing("b").label, None);
+}
+
+#[test]
+fn points_add_up_over_maps() {
+    let mut harness = started(r#"{"rounds_per_map": 1, "maps_per_match": 2}"#);
+    harness.step(round_end(vec![finish("a", 1)]));
+    assert!(harness.step(Event::MapEnd).is_empty());
+
+    harness.step(Event::MapStart);
+    harness.step(round_end(vec![finish("a", 1)]));
+    assert_eq!(harness.standing("a").score, 20);
+    assert_eq!(harness.step(Event::MapEnd), [Command::EndMatch]);
+}
+
+#[test]
+fn plays_the_playlist_once() {
+    let mut harness = Harness::<Rounds>::new(r#"{"rounds_per_map": 1}"#).unwrap();
+    harness.map_count = 2;
+    harness.step(Event::MatchStart);
+    harness.step(Event::MapStart);
+    assert_eq!(harness.standings.info, "Map 1 / 2, 0 / 1 rounds");
+    harness.step(round_end(vec![finish("a", 1)]));
+    assert!(harness.step(Event::MapEnd).is_empty());
+
+    harness.step(Event::MapStart);
+    harness.step(round_end(vec![finish("a", 1)]));
+    assert_eq!(harness.step(Event::MapEnd), [Command::EndMatch]);
+}
+
+#[test]
+fn points_limit_ends_the_match() {
+    let mut harness = started(r#"{"points_repartition": [5, 4], "points_limit": 10}"#);
+    let commands = harness.step(round_end(vec![finish("a", 1), finish("b", 2)]));
+    assert!(!commands.contains(&Command::EndMatch));
+
+    let commands = harness.step(round_end(vec![finish("a", 1), finish("b", 2)]));
+    assert!(commands.contains(&Command::EndMatch));
+    assert_eq!(harness.standing("a").label, Some(Label::winner()));
+}
+
+#[test]
+fn the_last_round_decides_a_tie_at_the_points_limit() {
+    let mut harness = started(r#"{"points_repartition": [5, 5], "points_limit": 10}"#);
+    harness.step(round_end(vec![finish("a", 1), finish("b", 2)]));
+    let commands = harness.step(round_end(vec![finish("b", 1), finish("a", 2)]));
+    // Both reached 10 points, b won the last round.
+    assert!(commands.contains(&Command::EndMatch));
+    assert_eq!(scores(&harness), [("b", 1, 10, 5), ("a", 2, 10, 5)]);
+    assert_eq!(harness.standing("b").label, Some(Label::winner()));
+    assert_eq!(harness.standing("a").label, None);
+}
+
+#[test]
+fn rejects_unknown_settings() {
+    assert!(Rounds::from_json(r#"{"rounds_per_mpa": 3}"#).is_err());
+    // Ties are always broken, so there is nothing to play on for.
+    assert!(Rounds::from_json(r#"{"use_tie_break": true}"#).is_err());
+}

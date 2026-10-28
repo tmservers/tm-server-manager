@@ -1,0 +1,589 @@
+use tm_driver_sdk::{FinishTimeout, WarmUp, testing::Harness};
+
+use super::*;
+
+fn finish(account_id: &str, time: u32) -> RaceResult {
+    RaceResult {
+        account_id: account_id.into(),
+        started: true,
+        round_checkpoints: vec![time / 2, time / 2, time],
+        previous_time: Some(time),
+        previous_checkpoints: vec![time / 2, time / 2, time],
+        best_time: Some(time),
+        best_checkpoints: vec![time / 2, time / 2, time],
+    }
+}
+
+/// Gave up after passing a number of checkpoints.
+fn dnf(account_id: &str, progress: u32) -> RaceResult {
+    RaceResult {
+        account_id: account_id.into(),
+        started: true,
+        round_checkpoints: (1..=progress)
+            .map(|checkpoint| checkpoint * 10_000)
+            .collect(),
+        previous_time: None,
+        previous_checkpoints: vec![],
+        best_time: None,
+        best_checkpoints: vec![],
+    }
+}
+
+/// Did not start in the round.
+fn spectator(account_id: &str) -> RaceResult {
+    RaceResult {
+        started: false,
+        ..dnf(account_id, 0)
+    }
+}
+
+fn round_end(results: Vec<RaceResult>) -> Event {
+    Event::RoundEnd(RoundEnd {
+        invalid: false,
+        results,
+    })
+}
+
+fn standing(account_id: &str, status: Status, points: i32, position: u32) -> Entry {
+    Entry {
+        account_id: account_id.into(),
+        position,
+        score: points,
+        time: None,
+        status,
+        label: None,
+    }
+}
+
+fn alive(account_id: &str, points: i32) -> Entry {
+    standing(account_id, Status::Playing, points, 0)
+}
+
+fn last_chance(account_id: &str) -> Entry {
+    standing(account_id, Status::Playing, 0, 0)
+}
+
+/// Players in last chance still play without points.
+const IN_LAST_CHANCE: (Status, i32) = (Status::Playing, 0);
+
+fn eliminated(account_id: &str, rank: u32) -> Entry {
+    standing(account_id, Status::Eliminated, 0, rank)
+}
+
+fn started(settings: &str) -> Harness<ReverseCup> {
+    let mut harness = Harness::new(settings).unwrap();
+    harness.step(Event::MatchStart);
+    harness.step(Event::MapStart);
+    harness
+}
+
+/// A match whose participants already reached these standings. A map was played
+/// already, so registration is closed.
+fn playing(settings: &str, players: Vec<Entry>) -> Harness<ReverseCup> {
+    let mut harness = started(settings);
+    harness.standings.entries = players;
+    harness.standings.maps_played = 1;
+    harness
+}
+
+fn race_start(account_id: &str) -> Event {
+    Event::RaceStart(account_id.into())
+}
+
+fn status(harness: &Harness<ReverseCup>, account_id: &str) -> (Status, i32) {
+    let player = harness.standing(account_id);
+    (player.status, player.score)
+}
+
+fn round_points<'a>(harness: &'a Harness<ReverseCup>, accounts: &[&'a str]) -> Vec<(&'a str, i32)> {
+    accounts
+        .iter()
+        .map(|&account_id| {
+            let round = harness.round_entry(account_id).map_or(0, |r| r.score);
+            (account_id, round)
+        })
+        .collect()
+}
+
+fn chat(commands: &[Command]) -> Vec<&str> {
+    commands
+        .iter()
+        .filter_map(|c| match c {
+            Command::ChatMessage(message) => Some(message.as_str()),
+            _ => None,
+        })
+        .collect()
+}
+
+/// Players who cannot spawn anymore.
+fn blocked(commands: &[Command]) -> Vec<&str> {
+    commands
+        .iter()
+        .filter_map(|c| match c {
+            Command::SetCanSpawn(CanSpawn {
+                account_id,
+                can_spawn: false,
+            }) => Some(account_id.as_str()),
+            _ => None,
+        })
+        .collect()
+}
+
+#[test]
+fn sets_the_round_format_and_warmup_on_map_start() {
+    let mut harness = Harness::<ReverseCup>::new(
+        r#"{"finish_timeout": {"milliseconds": 7000}, "warmup": {"rounds": 1, "duration_ms": 60000}}"#,
+    )
+    .unwrap();
+    assert_eq!(
+        harness.step(Event::MapStart),
+        [
+            Command::SetRoundFormat(RoundFormat::SingleAttempt(FinishTimeout::Milliseconds(
+                7000
+            ))),
+            Command::SetWarmUp(WarmUp {
+                rounds: 1,
+                duration_ms: 60_000,
+                timeout_ms: None,
+            }),
+        ]
+    );
+}
+
+#[test]
+fn players_who_start_the_first_round_take_part() {
+    let mut harness = started("");
+    let commands = harness.step(round_end(vec![
+        finish("a", 30_000),
+        dnf("b", 2),
+        spectator("s"),
+    ]));
+    let participants: Vec<&str> = harness
+        .standings
+        .participants()
+        .map(|p| p.account_id.as_str())
+        .collect();
+    assert_eq!(participants, ["a", "b"]);
+    assert_eq!(blocked(&commands), ["s"]);
+    assert_eq!(harness.standing("s").status, Status::Spectator);
+    // The first round counts already. Two players lose 4 and 8 points.
+    assert_eq!(round_points(&harness, &["a", "b"]), [("a", -4), ("b", -20)]);
+    assert_eq!(status(&harness, "a"), (Status::Playing, 96));
+    assert_eq!(status(&harness, "b"), (Status::Playing, 80));
+
+    // Late players cannot spawn anymore once they show up and their races do
+    // not count. The host leaves out s, who got blocked before.
+    let commands = harness.step(round_end(vec![
+        finish("c", 29_000),
+        finish("a", 30_000),
+        finish("b", 31_000),
+        spectator("s"),
+    ]));
+    assert_eq!(blocked(&commands), ["c", "s"]);
+    assert_eq!(round_points(&harness, &["a", "b"]), [("a", -4), ("b", -8)]);
+    assert_eq!(harness.standing("c").status, Status::Spectator);
+    assert_eq!(harness.standing("c").position, 0);
+    assert_eq!(harness.standings.info, "2 left, 2 / 5 rounds");
+}
+
+#[test]
+fn players_take_part_from_their_first_race() {
+    let mut harness = started("");
+    assert!(harness.step(race_start("a")).is_empty());
+    harness.step(race_start("b"));
+    assert_eq!(status(&harness, "a"), (Status::Playing, 100));
+    // Without a position until the first round.
+    assert_eq!(harness.standing("a").position, 0);
+    assert_eq!(harness.standings.info, "2 left, 0 / 5 rounds");
+
+    harness.step(round_end(vec![finish("a", 30_000), finish("b", 31_000)]));
+    assert_eq!(status(&harness, "b"), (Status::Playing, 92));
+
+    // The first round counted, so later players do not take part anymore.
+    harness.step(race_start("c"));
+    assert!(harness.standings.player("c").is_none());
+    let commands = harness.step(round_end(vec![
+        finish("c", 29_000),
+        finish("a", 30_000),
+        finish("b", 31_000),
+    ]));
+    assert_eq!(blocked(&commands), ["c"]);
+    assert_eq!(harness.standing("c").status, Status::Spectator);
+}
+
+#[test]
+fn invalid_rounds_do_not_count() {
+    let invalid = |results| {
+        Event::RoundEnd(RoundEnd {
+            invalid: true,
+            results,
+        })
+    };
+    // Players who started take part, but nobody loses points and nobody is blocked
+    // while registration is open.
+    let mut harness = started("");
+    assert!(
+        harness
+            .step(invalid(vec![finish("a", 30_000), spectator("s")]))
+            .is_empty()
+    );
+    assert_eq!(status(&harness, "a"), (Status::Playing, 100));
+    assert!(harness.standings.player("s").is_none());
+
+    let mut harness = playing("", vec![alive("a", 50)]);
+    let commands = harness.step(invalid(vec![finish("a", 30_000), finish("c", 31_000)]));
+    assert_eq!(blocked(&commands), ["c"]);
+    assert_eq!(status(&harness, "a"), (Status::Playing, 50));
+    assert_eq!(harness.standings.rounds_on_map, 0);
+}
+
+#[test]
+fn points_lost_by_finish_order() {
+    let mut harness = playing(
+        r#"{"points_repartition": [1, 2], "complex_points_repartition": {}}"#,
+        vec![
+            alive("a", 50),
+            alive("b", 50),
+            alive("c", 50),
+            alive("d", 50),
+        ],
+    );
+    harness.step(round_end(vec![
+        finish("b", 31_000),
+        finish("a", 30_000),
+        dnf("d", 1),
+        finish("c", 32_000),
+    ]));
+    assert_eq!(
+        round_points(&harness, &["a", "b", "c", "d"]),
+        [
+            ("a", -1),
+            ("b", -2),
+            // Beyond the repartition everyone loses the last value.
+            ("c", -2),
+            ("d", -20),
+        ]
+    );
+    assert_eq!(status(&harness, "d"), (Status::Playing, 30));
+}
+
+#[test]
+fn equal_times_go_to_the_better_checkpoints() {
+    let mut harness = playing(
+        r#"{"points_repartition": [1, 2], "complex_points_repartition": {}}"#,
+        vec![alive("a", 50), alive("b", 50)],
+    );
+    // b passed the last checkpoint earlier and loses less.
+    harness.step(round_end(vec![
+        RaceResult {
+            previous_checkpoints: vec![10_000, 20_500, 30_000],
+            ..finish("a", 30_000)
+        },
+        RaceResult {
+            previous_checkpoints: vec![10_100, 20_400, 30_000],
+            ..finish("b", 30_000)
+        },
+    ]));
+    assert_eq!(round_points(&harness, &["a", "b"]), [("a", -2), ("b", -1)]);
+    assert_eq!(harness.standing("b").position, 1);
+}
+
+#[test]
+fn repartition_by_players_left() {
+    let mode =
+        ReverseCup::from_json(r#"{"complex_points_repartition": {"2, 3": [5, 10]}}"#).unwrap();
+    let mut standings = Standings {
+        entries: vec![alive("a", 50), alive("b", 50), alive("c", 50)],
+        ..Default::default()
+    };
+    assert_eq!(mode.repartition(&standings), [5, 10]);
+
+    let mut mode = ReverseCup::from_json(
+        r#"{"points_repartition": [1, 2, 3], "complex_points_repartition": {}}"#,
+    )
+    .unwrap();
+    standings.entries = vec![
+        alive("a", 50),
+        alive("b", 50),
+        alive("c", 50),
+        alive("d", 50),
+        eliminated("e", 5),
+    ];
+    // More players left than values: the eliminated player removes the first value.
+    assert_eq!(mode.repartition(&standings), [2, 3]);
+    mode.settings.fast_forward_points_repartition = false;
+    assert_eq!(mode.repartition(&standings), [1, 2, 3]);
+
+    mode.settings.fast_forward_points_repartition = true;
+    standings.entries.remove(0);
+    assert_eq!(mode.repartition(&standings), [1, 2, 3]);
+}
+
+#[test]
+fn last_chance_ends_by_losing_the_most() {
+    let mut harness = playing(
+        r#"{"points_repartition": [5, 10], "complex_points_repartition": {}}"#,
+        vec![alive("a", 20), alive("b", 8), last_chance("c")],
+    );
+    let commands = harness.step(round_end(vec![
+        finish("a", 30_000),
+        finish("b", 31_000),
+        finish("c", 32_000),
+    ]));
+    assert_eq!(status(&harness, "a"), (Status::Playing, 15));
+    // Players with points get a last chance, even if they lost the most.
+    assert_eq!(status(&harness, "b"), IN_LAST_CHANCE);
+    assert_eq!(harness.standing("b").label, Some(last_chance_label()));
+    assert_eq!(status(&harness, "c"), (Status::Eliminated, 0));
+    assert_eq!(harness.standing("c").label, None);
+    assert_eq!(harness.standing("c").position, 3);
+    assert_eq!(blocked(&commands), ["c"]);
+    assert_eq!(chat(&commands), ["$f90$i$<c$> takes 3rd place!"]);
+    assert!(!commands.contains(&Command::EndMatch));
+}
+
+#[test]
+fn last_chance_survives_when_someone_else_lost_more() {
+    let mut harness = playing("", vec![alive("a", 50), last_chance("b"), last_chance("c")]);
+    let commands = harness.step(round_end(vec![
+        finish("b", 30_000),
+        finish("c", 31_000),
+        dnf("a", 2),
+    ]));
+    assert_eq!(
+        round_points(&harness, &["a", "b", "c"]),
+        [("a", -20), ("b", -2), ("c", -6)]
+    );
+    assert_eq!(status(&harness, "b"), IN_LAST_CHANCE);
+    assert_eq!(status(&harness, "c"), IN_LAST_CHANCE);
+    assert!(chat(&commands).is_empty());
+}
+
+#[test]
+fn only_the_least_checkpoints_lose_in_last_chance() {
+    let mut harness = playing(
+        r#"{"last_chance_dnf_mode": "only_least_checkpoints"}"#,
+        vec![
+            last_chance("a"),
+            last_chance("b"),
+            last_chance("c"),
+            last_chance("d"),
+            alive("e", 50),
+        ],
+    );
+    harness.step(round_end(vec![
+        finish("a", 30_000),
+        dnf("b", 3),
+        dnf("c", 1),
+        dnf("e", 2),
+        spectator("d"),
+    ]));
+    assert_eq!(
+        round_points(&harness, &["a", "b", "c", "d", "e"]),
+        [
+            // Five players lose 0, 4, 7, 10 and 13 points.
+            ("a", 0),
+            ("b", 0),
+            ("c", -20),
+            // Did not start, for example because they left.
+            ("d", -20),
+            ("e", -20),
+        ]
+    );
+    assert_eq!(status(&harness, "a"), IN_LAST_CHANCE);
+    assert_eq!(status(&harness, "b"), IN_LAST_CHANCE);
+    assert_eq!(status(&harness, "c"), (Status::Eliminated, 0));
+    assert_eq!(status(&harness, "d"), (Status::Eliminated, 0));
+    // c raced, d did not.
+    assert_eq!(harness.standing("c").position, 4);
+    assert_eq!(harness.standing("d").position, 5);
+    assert_eq!(status(&harness, "e"), (Status::Playing, 30));
+}
+
+#[test]
+fn every_dnf_loses_in_last_chance_by_default() {
+    let mut harness = playing(
+        "",
+        vec![last_chance("a"), last_chance("b"), last_chance("c")],
+    );
+    harness.step(round_end(vec![
+        finish("a", 30_000),
+        dnf("b", 3),
+        dnf("c", 1),
+    ]));
+    assert_eq!(harness.standing("b").status, Status::Eliminated);
+    // b got further than c.
+    assert_eq!(harness.standing("b").position, 2);
+    assert_eq!(harness.standing("c").position, 3);
+}
+
+#[test]
+fn eliminates_without_last_chance() {
+    let mut harness = playing(
+        r#"{"disable_last_chance": true, "points_repartition": [5, 10], "complex_points_repartition": {}}"#,
+        vec![alive("a", 20), alive("b", 8), alive("c", 30)],
+    );
+    harness.step(round_end(vec![
+        finish("a", 30_000),
+        finish("b", 31_000),
+        finish("c", 32_000),
+    ]));
+    assert_eq!(status(&harness, "a"), (Status::Playing, 15));
+    assert_eq!(status(&harness, "b"), (Status::Eliminated, 0));
+    assert_eq!(harness.standing("b").position, 3);
+    assert_eq!(status(&harness, "c"), (Status::Playing, 20));
+}
+
+#[test]
+fn match_ends_once_the_winners_are_left() {
+    let mut harness = playing("", vec![alive("a", 50), last_chance("b"), last_chance("c")]);
+    let commands = harness.step(round_end(vec![
+        finish("a", 30_000),
+        dnf("b", 2),
+        dnf("c", 2),
+    ]));
+    // Equal races go by name.
+    assert_eq!(harness.standing("b").position, 2);
+    assert_eq!(harness.standing("c").position, 3);
+    assert_eq!(status(&harness, "a"), (Status::Playing, 48));
+    assert_eq!(harness.standing("a").label, Some(Label::winner()));
+    assert_eq!(harness.standing("a").position, 1);
+    assert_eq!(
+        chat(&commands),
+        [
+            "$f90$i$<b$> takes 2nd place!",
+            "$f90$i$<c$> takes 3rd place!",
+            "$<a$> wins the match!",
+        ]
+    );
+    assert_eq!(commands.last(), Some(&Command::EndMatch));
+    assert_eq!(harness.step(Event::MapEnd), [Command::EndMatch]);
+}
+
+#[test]
+fn nobody_wins_while_players_can_join() {
+    let mut harness = started(r#"{"number_of_winners": 2}"#);
+    harness.step(race_start("a"));
+    harness.step(race_start("b"));
+    assert_eq!(harness.standing("a").label, None);
+    assert_eq!(harness.standing("b").label, None);
+}
+
+#[test]
+fn match_of_one_player_ends_with_the_elimination() {
+    // One player loses 1 point as the first place.
+    let mut harness = playing("", vec![alive("a", 3)]);
+    let commands = harness.step(round_end(vec![finish("a", 30_000)]));
+    assert_eq!(status(&harness, "a"), (Status::Playing, 2));
+    assert!(!commands.contains(&Command::EndMatch));
+
+    harness.step(round_end(vec![finish("a", 30_000)]));
+    assert_eq!(status(&harness, "a"), IN_LAST_CHANCE);
+    let commands = harness.step(round_end(vec![finish("a", 30_000)]));
+    assert_eq!(harness.standing("a").status, Status::Eliminated);
+    assert_eq!(harness.standing("a").position, 1);
+    assert_eq!(chat(&commands), ["$f90$i$<a$> takes 1st place!"]);
+    assert_eq!(commands.last(), Some(&Command::EndMatch));
+}
+
+#[test]
+fn fast_forwards_when_nobody_can_keep_points() {
+    let players = vec![alive("a", 6), alive("b", 12), eliminated("c", 3)];
+    let mut harness = playing("", players.clone());
+    let commands = harness.step(round_end(vec![finish("a", 30_000), finish("b", 31_000)]));
+    // a has 2 and b 4 points left. The next round costs the first place 4 points.
+    assert_eq!(status(&harness, "a"), IN_LAST_CHANCE);
+    assert_eq!(status(&harness, "b"), IN_LAST_CHANCE);
+    assert_eq!(harness.standing("b").label, Some(last_chance_label()));
+    assert_eq!(
+        chat(&commands),
+        ["$c00Fast forward: every remaining player is now in Last Chance."]
+    );
+
+    let mut harness = playing(r#"{"allow_fast_forward_rounds": false}"#, players);
+    harness.step(round_end(vec![finish("a", 30_000), finish("b", 31_000)]));
+    assert_eq!(status(&harness, "a"), (Status::Playing, 2));
+    assert_eq!(status(&harness, "b"), (Status::Playing, 4));
+}
+
+#[test]
+fn map_ends_after_rounds_with_lost_points() {
+    let mut harness = playing(
+        r#"{"rounds_per_map": 1, "complex_points_repartition": {"2": [0, 0]}}"#,
+        vec![alive("a", 50), alive("b", 50)],
+    );
+    // Nobody lost points, so the round does not count.
+    let commands = harness.step(round_end(vec![finish("a", 30_000), finish("b", 31_000)]));
+    assert!(!commands.contains(&Command::EndMap));
+
+    let commands = harness.step(round_end(vec![finish("a", 30_000), dnf("b", 0)]));
+    assert_eq!(commands.last(), Some(&Command::EndMap));
+    // Next map, the match goes on.
+    assert!(harness.step(Event::MapEnd).is_empty());
+}
+
+#[test]
+fn ranks_by_points_then_last_chance_then_elimination() {
+    let mut harness = playing(
+        r#"{"rounds_per_map": 5}"#,
+        vec![
+            alive("a", 50),
+            last_chance("b"),
+            eliminated("c", 5),
+            alive("d", 60),
+            alive("e", 5),
+        ],
+    );
+    // Four players lose 0, 4, 7 and 10 points.
+    harness.step(round_end(vec![
+        finish("d", 30_000),
+        finish("a", 31_000),
+        finish("e", 32_000),
+        finish("b", 33_000),
+    ]));
+
+    let standings: Vec<(&str, u32, Status, i32, i32)> = harness
+        .standings
+        .entries
+        .iter()
+        .map(|p| {
+            let round = harness.round_entry(&p.account_id).map_or(0, |r| r.score);
+            (p.account_id.as_str(), p.position, p.status, p.score, round)
+        })
+        .collect();
+    assert_eq!(
+        standings,
+        [
+            ("d", 1, Status::Playing, 60, 0),
+            ("a", 2, Status::Playing, 46, -4),
+            // In last chance.
+            ("e", 3, Status::Playing, 0, -7),
+            ("b", 4, Status::Eliminated, 0, -10),
+            ("c", 5, Status::Eliminated, 0, 0),
+        ]
+    );
+    assert_eq!(harness.standings.info, "3 left, 1 / 5 rounds");
+
+    // Places follow the race, c was eliminated before and did not race.
+    let places: Vec<(&str, u32, Status)> = harness
+        .round
+        .iter()
+        .map(|p| (p.account_id.as_str(), p.position, p.status))
+        .collect();
+    assert_eq!(
+        places,
+        [
+            ("d", 1, Status::Playing),
+            ("a", 2, Status::Playing),
+            ("e", 3, Status::Playing),
+            ("b", 4, Status::Eliminated)
+        ]
+    );
+}
+
+#[test]
+fn rejects_invalid_settings() {
+    assert!(ReverseCup::from_json(r#"{"starting_point": 100}"#).is_err());
+    assert!(ReverseCup::from_json(r#"{"complex_points_repartition": {"two": [4, 8]}}"#).is_err());
+    assert!(ReverseCup::from_json(r#"{"last_chance_dnf_mode": "only_least_checkpoints"}"#).is_ok());
+}
