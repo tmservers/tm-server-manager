@@ -84,6 +84,8 @@ A random world varies everything with its seed, like swarm testing:
     is down the bridge misses race and player callbacks. It is back before any other callback,
     replays its inputs, gets `DriverInput::Resumed` and the players on the server.
   - The modescript restarting before a round, during a round or while a hold waits for its reply.
+  - An admin pausing the match. The script answers with its status and skips the round, players
+    drive without a round for a while, and the pause ends with the next status.
 
   About 40 % of worlds are plain, without any fault. The others draw every fault on its own, so
   some have all of them.
@@ -152,6 +154,7 @@ That leaves out waypoints, of which a full server sends thousands per round.
   playing can spawn, everyone else cannot.
 - A round that did not count, forced or without its round start, changes nobody's points or status.
 - The driver knows the name of every player the server told it about.
+- The standings show the match paused exactly while the modescript said it is.
 
 After a reply that never reached the server, what the server shows is not compared, it still shows
 what it had.
@@ -203,6 +206,7 @@ Bugs were planted one at a time and the simulations of the affected modes ran on
 | The host forgets to publish after a race start | what the server shows |
 | A resumed host does not publish everything again | what the server shows, in 2 of 150 knockout seeds |
 | The host sends every command again for a hold whose reply arrived | holds that come again |
+| The host ignores the pause | the pause the standings show |
 | A resumed host does not send the spawn permissions again | nothing |
 
 The first three passed every seed before the race order and rounds that do not count were checked.

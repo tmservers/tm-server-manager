@@ -344,6 +344,26 @@ settings and limits. Matches will pin the module by hash once the manager stores
 applied. The manager already stores the standard callbacks, but no playlists and players, and
 holds only need to be stored once per seq although the script repeats them while it waits.
 
+## Pauses
+
+The pause is the one of the base script, `TrackmaniaRoundsBase`. An admin starts and ends it with
+`Maniaplanet.Pause.SetActive`, and the script answers with `Maniaplanet.Pause.Status`, as it does
+`Maniaplanet.Pause.GetStatus`.
+
+- The round a pause interrupts does not count. The base script skips it (`Round_SkipPauseRound`),
+  and the driver script sends its end as a forced hold, so the mode gets an `invalid` round end
+  like for a round an admin forced to end. Players drive during the pause outside of a round, so
+  their races count nowhere.
+- The host follows the status callback and publishes `paused` with the standings. The manialinks
+  show "Paused" instead of the info of the mode. Modes do not see the pause, they get nothing but
+  the invalid round. A restarted modescript is not paused.
+- The status is a callback like every other one, so a replay knows whether the match was paused.
+  The script only sends it as an answer, so whoever pauses asks for it: the runner does after
+  `pause` and `resume` and when it loads a mode.
+- `tm-server-controller` sent `"ture"` to pause, so pausing never worked through it, also not the
+  pause of the bridge when it loses the database. It sends `true` now and has
+  `pause_get_status`.
+
 ## Playlist
 
 The host plays the uids of the playlist it gets as `DriverInput::Playlist`. The runner starts with
@@ -667,7 +687,8 @@ script starts with `"lives": 3`.
 1. **Run the modescript and the manialink on a real server.** The runner in
    `tm-wasm-driver/src/main.rs` does that without the bridge and the manager: it installs the
    modescript, shows the manialinks and drives the server with a mode it builds from the
-   repository (`load <mode> [settings]`, `reload`, `maps [map ...]`, `script`, `next`).
+   repository (`load <mode> [settings]`, `reload`, `maps [map ...]`, `script`, `next`,
+   `pause`, `resume`).
 
    ```sh
    TM_SERVER_URL=127.0.0.1:5000 cargo run -p tm-wasm-driver -- reverse-cup '{"starting_points": 10}'
