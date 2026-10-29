@@ -798,8 +798,8 @@ on a map with laps of 40 seconds. On a desktop machine:
 
 Modes build with their own cargo profile `mode` (`--profile mode`, into
 `target/wasm32-unknown-unknown/mode`), so the manager module and the natives keep `release`. The
-simulations, the bench and the runner build with it, so the fuel they show is what a deployed mode
-costs. It inherits `release` (`opt-level = 3`) and adds `lto = "fat"`, `codegen-units = 1` and
+simulations, the bench and the runner build with it, so the fuel they show is at most what a
+published mode costs (see wasm-opt below). It inherits `release` (`opt-level = 3`) and adds `lto = "fat"`, `codegen-units = 1` and
 `strip = true`. Measured with the bench (endurance 30 minutes), against `release`:
 
 | Profile | Size of the modes | Fuel |
@@ -814,10 +814,8 @@ Most of the size goes with the symbols, LTO saves a bit more of both, it costs a
 rebuild a mode. Optimizing for size saves another 30–40 KB for a tenth more fuel or more, which is
 no good trade: a mode is compiled once per match, its calls run all the time.
 
-`wasm-opt` (binaryen) could run on the wasm after cargo, before the host turns it into a component.
-Cargo has no step after a build, so whatever builds the modes (`build_wasm` of the simulations, the
-runner, later what uploads a mode to the registry) has to run it, and all of them the same way,
-otherwise the fuel of the simulations is not what a deployed mode costs. Measured with binaryen 133
+`wasm-opt` (binaryen) runs on the wasm after cargo, before the host turns it into a component.
+Cargo has no step after a build, so what builds the modes has to run it. Measured with binaryen 133
 on top of the profile:
 
 - `-O3` saves another 10 % of the size (155–221 KB) and 3.5–4.5 % of the fuel, with full servers
@@ -829,13 +827,25 @@ on top of the profile:
   (`--enable-bulk-memory --enable-bulk-memory-opt --enable-nontrapping-float-to-int
   --enable-sign-ext --enable-mutable-globals --enable-reference-types --enable-multivalue
   --enable-call-indirect-overlong` with Rust 1.99). Or cargo keeps the symbols and wasm-opt strips
-  them with `--strip-debug --strip-producers --strip-target-features`, which then has to run on
-  every build.
+  them with `--strip-debug --strip-producers --strip-target-features`, see below.
 - The crate `wasm-opt` builds binaryen into every build that uses it, from C++, and its latest
   version still has binaryen 116 of 2023. Calling the program of a pinned binaryen is simpler.
 
-Not worth it for now: 4 % of fuel calls that use less than half a percent of their budget, for a
-tool every build of a mode depends on.
+The build that publishes the modes, e.g. a CI action once there is a registry, runs it: the size
+and the fuel come for free there. Cargo keeps the symbols, so wasm-opt finds the features by
+itself and strips them, which gives the same size as stripping first (within 100 bytes):
+
+```sh
+CARGO_PROFILE_MODE_STRIP=false cargo build --profile mode --target wasm32-unknown-unknown \
+  -p tm-driver-mode-rounds -p tm-driver-mode-time-attack -p tm-driver-mode-reverse-cup \
+  -p tm-driver-mode-knockout -p tm-driver-mode-endurance
+for wasm in target/wasm32-unknown-unknown/mode/tm_driver_mode_*.wasm; do
+  wasm-opt -O3 --strip-debug --strip-producers --strip-target-features "$wasm" -o "$wasm"
+done
+```
+
+The simulations, the bench and the runner keep building without it, so they need no binaryen.
+Their fuel is then an upper bound, about 4 % above what a published mode costs.
 
 ## WIT interface and host
 
