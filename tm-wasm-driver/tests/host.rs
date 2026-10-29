@@ -4,16 +4,16 @@
 mod common;
 
 use common::{
-    ROUNDS, SESSION, TIME_ATTACK, at, finish, forced_round_end, hold, match_start, no_warm_up,
-    play, player, player_info, publishes_standings, race, ranking, round_start, start_line,
-    way_point, without_published,
+    ROUNDS, SESSION, at, finish, forced_round_end, hold, match_start, no_warm_up, play, player,
+    player_info, publishes_standings, race, ranking, round_start, start_line, way_point,
+    without_published,
 };
 use tm_server_types::{
     event::{
         DriverHold, DriverPlayerResult, DriverRoundResult, DriverSection, Event, Pause,
         PlayLoopStart,
     },
-    method::{DriverCommand, DriverFinishTimeout, DriverLayer, DriverRoundFormat, DriverStatus},
+    method::{DriverCommand, DriverFinishTimeout, DriverRoundFormat, DriverStatus},
 };
 use tm_wasm_driver::{Driver, DriverEngine, DriverError, DriverInput, DriverLimits, DriverReply};
 
@@ -321,25 +321,6 @@ fn warmups_show_no_live_round() {
     driver.handle(&round_start(1)).unwrap();
     driver.handle(&at(start_line("a"), 1_000)).unwrap();
     assert!(!driver.round().live);
-}
-
-#[test]
-fn modes_bring_manialinks_in_place_of_selected_ones() {
-    let selected = [
-        DriverLayer::selected("standings", "<manialink/>"),
-        DriverLayer::selected("scores-table", "<manialink/>"),
-    ];
-    // The rounds mode brings none.
-    assert_eq!(rounds("").layers(&selected), selected);
-
-    let time_attack = common::driver(TIME_ATTACK, "");
-    let layers = time_attack.layers(&selected);
-    let names: Vec<&str> = layers.iter().map(|layer| layer.name.as_str()).collect();
-    assert_eq!(names, ["standings", "scores-table"]);
-    // Its standings show the live round.
-    assert!(layers[0].manialink.contains("Net_Driver_Round"));
-    assert_ne!(layers[0], selected[0]);
-    assert_eq!(layers[1], selected[1]);
 }
 
 #[test]

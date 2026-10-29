@@ -61,12 +61,6 @@ impl Mode for Endurance {
     /// Every setting, for the next race: a race that did not count or the next match.
     const RELOADABLE: &'static [&'static str] =
         &["laps", "time_limit_ms", "finish_timeout", "warmup"];
-    /// Players follow the race rather than the match, which only has a result once
-    /// the race ended.
-    const MANIALINKS: &'static [(&'static str, &'static str)] = &[(
-        "standings",
-        include_str!("../../manialinks/live/standings.xml"),
-    )];
 
     type Settings = Settings;
 

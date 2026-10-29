@@ -39,9 +39,7 @@ use std::{
 use tm_server_types::{
     base::{Map, PlayerInfo},
     event::{DriverHold, DriverRoundResult, DriverSection, Event},
-    method::{
-        DriverCanSpawn, DriverCommand, DriverLayer, DriverRound, DriverStandings, DriverUsers,
-    },
+    method::{DriverCanSpawn, DriverCommand, DriverRound, DriverStandings, DriverUsers},
 };
 /// A compiled mode, see [`DriverEngine::compile`].
 pub use wasmtime::component::Component;
@@ -212,14 +210,6 @@ impl DriverEngine {
             .bindings
             .call_reloadable_settings(&mut driver.store)
             .map_err(DriverError::Trap)?;
-        driver.prepare_call();
-        driver.manialinks = driver
-            .bindings
-            .call_manialinks(&mut driver.store)
-            .map_err(DriverError::Trap)?
-            .into_iter()
-            .map(|layer| DriverLayer::selected(layer.name, layer.manialink))
-            .collect();
         driver.settings = settings.into();
         Ok(driver)
     }
@@ -274,7 +264,6 @@ impl DriverEngine {
             settings: String::new(),
             pending_settings: None,
             reloadable: Vec::new(),
-            manialinks: Vec::new(),
             standings: convert::empty_standings(),
             last_round: Vec::new(),
             live_round: None,
@@ -322,8 +311,6 @@ pub struct Driver {
     pending_settings: Option<String>,
     /// The settings that can change during a match.
     reloadable: Vec<String>,
-    /// The manialinks the mode brings.
-    manialinks: Vec<DriverLayer>,
     /// The scores of the match, handed to the mode with every event.
     standings: wit::Standings,
     /// The last round that counted, as the mode placed it.
@@ -774,29 +761,6 @@ impl Driver {
             ),
             None => convert::round(self.standings.rounds_played, false, &self.last_round),
         }
-    }
-
-    /// The manialinks the mode brings.
-    pub fn manialinks(&self) -> &[DriverLayer] {
-        &self.manialinks
-    }
-
-    /// The layers to show: these selected manialinks, e.g. of the config, with the
-    /// ones the mode brings in place of the same names, then the other ones of the
-    /// mode.
-    pub fn layers(&self, selected: &[DriverLayer]) -> Vec<DriverLayer> {
-        let own = |name: &str| self.manialinks.iter().find(|layer| layer.name == name);
-        let mut layers: Vec<DriverLayer> = selected
-            .iter()
-            .map(|layer| own(&layer.name).unwrap_or(layer).clone())
-            .collect();
-        layers.extend(
-            self.manialinks
-                .iter()
-                .filter(|layer| !selected.iter().any(|other| other.name == layer.name))
-                .cloned(),
-        );
-        layers
     }
 
     /// The players the host knows, e.g. for their names.

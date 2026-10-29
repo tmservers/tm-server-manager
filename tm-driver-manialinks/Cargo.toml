@@ -1,0 +1,19 @@
+[package]
+name = "tm-driver-manialinks"
+description = "The default manialinks of driver matches."
+publish = false
+
+version.workspace = true
+authors.workspace = true
+keywords.workspace = true
+categories.workspace = true
+license.workspace = true
+edition.workspace = true
+repository.workspace = true
+
+[dependencies]
+
+[dev-dependencies]
+# The netvars of the driver modescript the manialinks read.
+tm-server-types.workspace = true
+serde_json.workspace = true

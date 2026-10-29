@@ -8,6 +8,7 @@ members = [
     "tm-server-manager-api-rs",
     "tm-wasm-driver",
     "tm-driver-sdk",
+    "tm-driver-manialinks",
     "tm-driver-modes/rounds",
     "tm-driver-modes/reverse-cup",
     "tm-driver-modes/time-attack",
@@ -100,6 +101,7 @@ tm-server-manager-api-rs = { path = "./tm-server-manager-api-rs", version = "0.1
 tm-server-types = { path = "./tm-server-types", version = "0.1.0-dev" }
 tm-server-controller = { path = "./tm-server-controller", version = "0.1.0-dev" }
 tm-driver-sdk = { path = "./tm-driver-sdk" }
+tm-driver-manialinks = { path = "./tm-driver-manialinks" }
 tm-wasm-driver = { path = "./tm-wasm-driver" }
 tm-driver-sim = { path = "./tm-driver-sim" }
 

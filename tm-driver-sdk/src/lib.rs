@@ -21,8 +21,8 @@
 //! [`Event::SettingsChanged`] once it took them.
 //!
 //! While a round runs, the host shows it live with what [`Mode::live_round`]
-//! places from the races so far. A mode can bring manialinks of its own,
-//! [`Mode::MANIALINKS`], e.g. a standings widget that shows the live round.
+//! places from the races so far. How it shows is up to the manialinks the config
+//! selects, a mode brings none.
 
 // Lets the generated bindings and the export macro use the same paths inside
 // this crate and inside the mode crates.
@@ -54,8 +54,8 @@ pub mod testing;
 
 pub use bindings::tmservers::driver::host::LogLevel;
 pub use bindings::tmservers::driver::types::{
-    CanSpawn, Command, Decision, Entry, Event, FinishTimeout, Label, Laps, Layer, Race, RaceRules,
-    Racer, RoundEnd, RoundFormat, Standings, Status, Tone, User, WarmUp,
+    CanSpawn, Command, Decision, Entry, Event, FinishTimeout, Label, Laps, Race, RaceRules, Racer,
+    RoundEnd, RoundFormat, Standings, Status, Tone, User, WarmUp,
 };
 pub use races::{CountedRace, race_order};
 
@@ -94,12 +94,6 @@ pub trait Mode: Sized + 'static {
     /// why a mode only gets `&self`: everything besides its settings belongs into the
     /// standings.
     fn step(&self, standings: &mut Standings, event: Event) -> Vec<Command>;
-
-    /// Manialinks the mode brings by name, e.g. `include_str!` of a manialink file.
-    /// They are shown in place of the manialinks of the config with the same name,
-    /// e.g. a `standings` that shows the live round. A name ending with
-    /// `scores-table` makes it the scores table. None by default.
-    const MANIALINKS: &'static [(&'static str, &'static str)] = &[];
 
     /// The round that runs as it stands, placed as if it ended now with the races so
     /// far, e.g. with the points finishers would get. The host shows it live. It
@@ -223,16 +217,6 @@ macro_rules! export_mode {
                     })
                 }
 
-                fn manialinks() -> ::std::vec::Vec<$crate::Layer> {
-                    <$mode as $crate::Mode>::MANIALINKS
-                        .iter()
-                        .map(|(name, manialink)| $crate::Layer {
-                            name: ::std::string::String::from(*name),
-                            manialink: ::std::string::String::from(*manialink),
-                        })
-                        .collect()
-                }
-
                 fn check_settings(
                     settings: ::std::string::String,
                 ) -> ::core::result::Result<(), ::std::string::String> {
@@ -270,7 +254,7 @@ macro_rules! export_mode {
                     <$mode as $crate::Mode>::RELOADABLE
                         .iter()
                         .map(|name| ::std::string::String::from(*name))
-                .collect()
+                        .collect()
                 }
             }
 

@@ -200,11 +200,6 @@ interface types {
         can-spawn: bool,
     }
 
-    record layer {
-        name: string,
-        manialink: string,
-    }
-
     variant command {
         /// Applies to the next round that starts. Send it in reply to map-start or round-end.
         set-round-format(round-format),
@@ -223,13 +218,10 @@ interface types {
         /// Plays this map of the playlist next, counted from 0. Without it the host
         /// plays the playlist in order and starts every match with its first map.
         set-next-map(u32),
-        /// Creates or replaces a manialink layer that is always shown. The scores table
-        /// is chosen with the manialinks of the config or of the mode (`manialinks`).
-        set-layer(layer),
-        remove-layer(string),
         /// Readable by manialinks through `netread Text Net_Driver_State for Teams[0]`.
         /// The host publishes the standings itself, this is for data of a mode the
-        /// standings can not hold.
+        /// standings can not hold. Which manialinks show it is up to the config, modes
+        /// bring none.
         set-net-state(string),
         /// A message for everyone in the chat.
         chat-message(string),
@@ -270,7 +262,7 @@ interface host {
 /// repeats exactly, so it rebuilds the same standings. That is how a mode
 /// resumes, there are no snapshots.
 world mode {
-    use types.{entry, event, layer, round-end, standings, decision};
+    use types.{entry, event, round-end, standings, decision};
 
     import host;
 
@@ -285,10 +277,6 @@ world mode {
     /// races changed, at most once per interval of server time, and shows it as the
     /// live round. It changes nothing, the round end still decides.
     export live-round: func(standings: standings, races: round-end) -> list<entry>;
-    /// Manialinks the mode brings, shown in place of the ones of the config with the
-    /// same name, e.g. a `standings` that shows the live round. A name ending with
-    /// `scores-table` makes it the scores table.
-    export manialinks: func() -> list<layer>;
     /// Whether new json settings could replace the ones of the match during it,
     /// without taking them. A mode rejects settings it cannot change during a
     /// match, e.g. the lives of a knockout, which players already hold.

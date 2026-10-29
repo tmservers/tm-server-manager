@@ -4,11 +4,14 @@
 //! TM_SERVER_URL=127.0.0.1:5000 cargo run -p tm-wasm-driver -- reverse-cup '{"starting_points": 10}'
 //! ```
 //!
-//! Installs the driver modescript, shows the manialinks of `tm-driver-modes/manialinks` and
-//! feeds the callbacks of the server into the mode. `scores-table` replaces the scores table
-//! of the game. Manialinks the mode brings replace the ones with the same name. A mode is the
-//! name of a crate in `tm-driver-modes`, which gets built first, or the path of a `.wasm`
-//! file. Settings are inline json or the path of a json file.
+//! Installs the driver modescript, shows the selected manialinks and feeds the callbacks of
+//! the server into the mode. A mode is the name of a crate in `tm-driver-modes`, which gets
+//! built first, or the path of a `.wasm` file. Settings are inline json or the path of a json
+//! file.
+//!
+//! Manialinks are selected by name, like the config of a match does: the defaults of
+//! `tm-driver-manialinks` or the ones of `TM_MANIALINKS_DIR`, which replace defaults with the
+//! same name. A name ending with `scores-table` replaces the scores table of the game.
 //!
 //! The playlist starts as the map list of the server. The driver plays it in order and
 //! starts every match with its first map.
@@ -25,6 +28,9 @@
 //! - `settings <settings>` gives the mode new settings during the match, from the next round
 //!   on. It rejects settings it cannot change during a match and tells which ones it can
 //!   when it loads.
+//! - `manialinks` shows which manialinks there are and which are shown. `manialinks
+//!   <name> ...` shows these from now on, read again from their files, e.g. after changing
+//!   their style.
 //! - `quit`
 //!
 //! Environment:
@@ -32,6 +38,10 @@
 //! - `TM_SUPERADMIN_PASSWORD` (default `SuperAdmin`).
 //! - `TM_FILES`: UserData directory of the server. With it the script is written there and
 //!   selected with `SetScriptName`, otherwise it is sent with `SetModeScriptText`.
+//! - `TM_MANIALINKS`: the manialinks shown when it starts, e.g. `live-standings,scores-table`.
+//!   The ones a config shows without a choice by default.
+//! - `TM_MANIALINKS_DIR`: a directory of manialinks of your own, named by their files, e.g.
+//!   `standings.xml` in place of the default `standings`.
 //! - `RUST_LOG`, e.g. `debug` to see every callback the mode handles.
 
 use std::{
@@ -53,17 +63,18 @@ use tm_wasm_driver::{Driver, DriverEngine, DriverInput, DriverLimits};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tracing_subscriber::{EnvFilter, filter::LevelFilter};
 
-const HELP: &str = "Commands: load <mode> [settings], reload, settings <settings>, maps [map ...], script, next, pause, resume, quit";
+const HELP: &str = "Commands: load <mode> [settings], reload, settings <settings>, maps [map ...], manialinks [name ...], script, next, pause, resume, quit";
 
 struct Active {
     /// The arguments of the `load` that started this mode.
     source: String,
     driver: Driver,
-    /// The manialinks shown with the mode.
-    layers: Vec<DriverLayer>,
 }
 
 type Shared = Arc<Mutex<Option<Active>>>;
+
+/// The manialinks shown with every mode.
+type Layers = Arc<Mutex<Vec<DriverLayer>>>;
 
 /// Uids of the maps every loaded mode plays.
 type Playlist = Arc<Mutex<Vec<String>>>;
@@ -99,7 +110,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     let engine: &'static DriverEngine =
         Box::leak(Box::new(DriverEngine::new(DriverLimits::default())?));
-    let layers = load_layers()?;
+    let selected = match std::env::var("TM_MANIALINKS") {
+        Ok(names) => names
+            .split([',', ' '])
+            .filter(|name| !name.is_empty())
+            .map(String::from)
+            .collect(),
+        Err(_) => DriverConfig::default().manialinks,
+    };
+    let layers = Layers::new(Mutex::new(resolve_manialinks(&selected)?));
     let active = Shared::default();
     drive(server, active.clone(), layers.clone());
 
@@ -146,6 +165,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 }
             }
             "maps" => maps(server, &active, &playlist, arguments).await,
+            "manialinks" => manialinks(server, &layers, arguments).await,
             "settings" => change_settings(server, &active, arguments).await,
             "script" => install_script(server).await,
             "next" => server
@@ -167,7 +187,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
 /// Feeds the callbacks into the active mode and sends its commands back, like the bridge
 /// will.
-fn drive(server: &'static TrackmaniaServer, active: Shared, layers: Vec<DriverLayer>) {
+fn drive(server: &'static TrackmaniaServer, active: Shared, layers: Layers) {
     let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel::<Event>();
     server.on_event(move |event| {
         if Driver::handles(event) || matches!(event, Event::StartServerEnd(_)) {
@@ -181,12 +201,8 @@ fn drive(server: &'static TrackmaniaServer, active: Shared, layers: Vec<DriverLa
             // A (re)started modescript lost the layers of the manialinks and shows the
             // scores table of the game again.
             if let Event::StartServerEnd(_) = event {
-                let shown = active.lock().unwrap().as_ref().map(|a| a.layers.clone());
-                send(
-                    server,
-                    DriverCommand::show_layers(&shown.unwrap_or(layers.clone())),
-                )
-                .await;
+                let shown = layers.lock().unwrap().clone();
+                send(server, DriverCommand::show_layers(&shown)).await;
                 continue;
             }
 
@@ -254,7 +270,7 @@ async fn load(
     engine: &DriverEngine,
     server: &TrackmaniaServer,
     active: &Shared,
-    layers: &[DriverLayer],
+    layers: &Layers,
     playlist: &Playlist,
     source: &str,
 ) -> Result<(), String> {
@@ -279,39 +295,17 @@ async fn load(
         Err(error) => tracing::warn!("Could not get the players of the server: {error}"),
     }
 
-    // Manialinks of the mode before that are gone, the ones of the new mode replace
-    // the selected ones with their names.
-    let shown = driver.layers(layers);
-    let mut commands: Vec<DriverCommand> = active
-        .lock()
-        .unwrap()
-        .as_ref()
-        .map(|before| before.layers.as_slice())
-        .unwrap_or_default()
-        .iter()
-        .filter(|layer| !shown.iter().any(|now| now.name == layer.name))
-        .map(|layer| DriverCommand::RemoveLayer(layer.name.clone()))
-        .collect();
-    commands.extend(DriverCommand::show_layers(&shown));
+    let mut commands = DriverCommand::show_layers(&layers.lock().unwrap());
     for input in &inputs {
         commands.extend(driver.apply(input).map_err(|e| e.to_string())?.commands);
     }
 
     let reloadable = driver.reloadable_settings().join(", ");
-    let own: Vec<String> = driver
-        .manialinks()
-        .iter()
-        .map(|layer| layer.name.clone())
-        .collect();
     *active.lock().unwrap() = Some(Active {
         source: source.into(),
         driver,
-        layers: shown,
     });
     tracing::info!("Loaded {mode}.");
-    if !own.is_empty() {
-        tracing::info!("Manialinks of the mode: {}", own.join(", "));
-    }
     if !reloadable.is_empty() {
         tracing::info!("Settings that can change during the match: {reloadable}");
     }
@@ -538,23 +532,83 @@ async fn install_script(server: &TrackmaniaServer) -> Result<(), String> {
     Ok(())
 }
 
-/// Every manialink of `tm-driver-modes/manialinks`, named by its file.
-fn load_layers() -> Result<Vec<DriverLayer>, String> {
-    let directory = workspace().join("tm-driver-modes/manialinks");
-    let mut layers = Vec::new();
-    for entry in std::fs::read_dir(&directory)
-        .map_err(|e| format!("Could not read {}: {e}", directory.display()))?
-    {
-        let path = entry.map_err(|e| e.to_string())?.path();
-        if path.extension().is_some_and(|extension| extension == "xml") {
-            layers.push(DriverLayer::selected(
-                path.file_stem().unwrap().to_string_lossy(),
-                std::fs::read_to_string(&path).map_err(|e| e.to_string())?,
-            ));
+/// Shows which manialinks there are and which are shown, or shows these from now on.
+/// The ones shown before and not anymore are removed.
+async fn manialinks(
+    server: &TrackmaniaServer,
+    layers: &Layers,
+    arguments: &str,
+) -> Result<(), String> {
+    let names: Vec<String> = arguments.split_whitespace().map(String::from).collect();
+    if names.is_empty() {
+        let shown: Vec<String> = layers
+            .lock()
+            .unwrap()
+            .iter()
+            .map(|layer| layer.name.clone())
+            .collect();
+        tracing::info!("Manialinks: {}", available_manialinks().join(", "));
+        tracing::info!("Shown: {}", shown.join(", "));
+        return Ok(());
+    }
+
+    let shown = resolve_manialinks(&names)?;
+    let mut commands: Vec<DriverCommand> = layers
+        .lock()
+        .unwrap()
+        .iter()
+        .filter(|before| !shown.iter().any(|now| now.name == before.name))
+        .map(|before| DriverCommand::RemoveLayer(before.name.clone()))
+        .collect();
+    commands.extend(DriverCommand::show_layers(&shown));
+    *layers.lock().unwrap() = shown;
+    send(server, commands).await;
+    tracing::info!("Showing {}.", names.join(", "));
+    Ok(())
+}
+
+/// The manialinks with these names: the ones of `TM_MANIALINKS_DIR`, then the defaults.
+fn resolve_manialinks(names: &[String]) -> Result<Vec<DriverLayer>, String> {
+    names
+        .iter()
+        .map(|name| {
+            let own = std::env::var("TM_MANIALINKS_DIR")
+                .ok()
+                .map(|directory| Path::new(&directory).join(format!("{name}.xml")))
+                .filter(|path| path.is_file());
+            let manialink = match own {
+                Some(path) => std::fs::read_to_string(&path)
+                    .map_err(|e| format!("Could not read {}: {e}", path.display()))?,
+                None => tm_driver_manialinks::default(name)
+                    .ok_or(format!(
+                        "There is no manialink {name}, there are {}",
+                        available_manialinks().join(", ")
+                    ))?
+                    .into(),
+            };
+            Ok(DriverLayer::selected(name.clone(), manialink))
+        })
+        .collect()
+}
+
+/// The names of the default manialinks and of the ones of `TM_MANIALINKS_DIR`.
+fn available_manialinks() -> Vec<String> {
+    let mut names: Vec<String> = tm_driver_manialinks::DEFAULTS
+        .iter()
+        .map(|default| default.name.to_string())
+        .collect();
+    if let Ok(Ok(entries)) = std::env::var("TM_MANIALINKS_DIR").map(std::fs::read_dir) {
+        for path in entries.flatten().map(|entry| entry.path()) {
+            if path.extension().is_some_and(|extension| extension == "xml")
+                && let Some(name) = path.file_stem()
+            {
+                names.push(name.to_string_lossy().into_owned());
+            }
         }
     }
-    layers.sort_by(|a, b| a.name.cmp(&b.name));
-    Ok(layers)
+    names.sort();
+    names.dedup();
+    names
 }
 
 /// Sends commands to the server. False if they did not reach it.
@@ -638,7 +692,7 @@ fn summary(standings: &DriverStandings, round: &DriverRound, users: &DriverUsers
     )
 }
 
-/// The repository, where the modescript, the modes and the manialinks live.
+/// The repository, where the modescript and the modes live.
 fn workspace() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("..")
 }

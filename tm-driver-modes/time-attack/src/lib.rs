@@ -58,11 +58,6 @@ impl Mode for TimeAttack {
         "points_repartition",
         "warmup",
     ];
-    /// Players follow the best times of the map rather than the points of the match.
-    const MANIALINKS: &'static [(&'static str, &'static str)] = &[(
-        "standings",
-        include_str!("../../manialinks/live/standings.xml"),
-    )];
 
     type Settings = Settings;
 

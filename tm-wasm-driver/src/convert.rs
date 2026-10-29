@@ -4,13 +4,13 @@ use tm_server_types::{
     event::{DriverPlayerResult, DriverRoundResult},
     method::{
         DriverCanSpawn, DriverCommand, DriverEntry, DriverFinishTimeout, DriverLabelTone,
-        DriverLaps, DriverLayer, DriverLayerKind, DriverRaceRules, DriverRound, DriverRoundFormat,
-        DriverStandings, DriverStatus, DriverUser, DriverUsers, DriverWarmUp,
+        DriverLaps, DriverRaceRules, DriverRound, DriverRoundFormat, DriverStandings, DriverStatus,
+        DriverUser, DriverUsers, DriverWarmUp,
     },
 };
 
 use crate::bindings::tmservers::driver::types::{
-    CanSpawn, Command, Entry, FinishTimeout, Label, Laps, Layer, RaceRules, RoundFormat, Standings,
+    CanSpawn, Command, Entry, FinishTimeout, Label, Laps, RaceRules, RoundFormat, Standings,
     Status, Tone, User, WarmUp,
 };
 
@@ -61,16 +61,6 @@ pub(crate) fn commands(commands: Vec<Command>, playlist: &[String]) -> Vec<Drive
                         return None;
                     }
                 },
-                // The scores table is chosen with the manialinks of the config or the ones
-                // the mode brings, not with commands.
-                Command::SetLayer(Layer { name, manialink }) => {
-                    DriverCommand::SetLayer(DriverLayer {
-                        name,
-                        manialink,
-                        kind: DriverLayerKind::Normal,
-                    })
-                }
-                Command::RemoveLayer(name) => DriverCommand::RemoveLayer(name),
                 Command::SetNetState(state) => DriverCommand::SetNetState(state),
                 Command::ChatMessage(message) => DriverCommand::ChatMessage(message),
             })
