@@ -794,6 +794,31 @@ on a map with laps of 40 seconds. On a desktop machine:
 - A race start costs up to 0.2M fuel with 120 players in a knockout: the mode gets the standings of
   every player with every event.
 
+### Build profile
+
+Modes build with their own cargo profile `mode` (`--profile mode`, into
+`target/wasm32-unknown-unknown/mode`), so the manager module and the natives keep `release`. The
+simulations, the bench and the runner build with it, so the fuel they show is what a deployed mode
+costs. It inherits `release` (`opt-level = 3`) and adds `lto = "fat"`, `codegen-units = 1` and
+`strip = true`. Measured with the bench (endurance 30 minutes), against `release`:
+
+| Profile | Size of the modes | Fuel |
+|---|---|---|
+| `release` | 223–325 KB | |
+| `strip = true` | -18 % | the same |
+| and `lto = "fat"`, `codegen-units = 1` | -24 % (173–246 KB) | -0.5 % with full servers, up to -10 % in small matches |
+| and `opt-level = "s"` | -34 % | +8–14 % |
+| and `opt-level = "z"` | -38 % | +25–40 % |
+
+Most of the size goes with the symbols, LTO saves a bit more of both, it costs a second more to
+rebuild a mode. Optimizing for size saves another 30–40 KB for a tenth more fuel or more, which is
+no good trade: a mode is compiled once per match, its calls run all the time.
+
+`wasm-opt` (binaryen) could run on the wasm after cargo, before the host turns it into a component.
+Cargo has no step after a build, so whatever builds the modes (`build_wasm` of the simulations, the
+runner, later what uploads a mode to the registry) has to run it, and all of them the same way,
+otherwise the fuel of the simulations is not what a deployed mode costs. Not measured yet.
+
 ## WIT interface and host
 
 `tm-wasm-driver/wit/driver.wit` defines world `mode`:
@@ -856,7 +881,7 @@ inline json or a json file (see [Next steps](#next-steps)). The modes build by h
 
 ```sh
 cargo build -p tm-driver-mode-rounds -p tm-driver-mode-time-attack -p tm-driver-mode-reverse-cup \
-  -p tm-driver-mode-knockout -p tm-driver-mode-endurance --target wasm32-unknown-unknown --release
+  -p tm-driver-mode-knockout -p tm-driver-mode-endurance --target wasm32-unknown-unknown --profile mode
 ```
 
 For the integration the config of a match already has

@@ -429,7 +429,8 @@ async fn maps(
     Ok(())
 }
 
-/// Reads a `.wasm` file or builds the mode crate `tm-driver-mode-<mode>`.
+/// Reads a `.wasm` file or builds the mode crate `tm-driver-mode-<mode>` with the `mode`
+/// profile, like the simulations.
 async fn build(mode: &str) -> Result<Vec<u8>, String> {
     if mode.ends_with(".wasm") {
         return std::fs::read(mode).map_err(|e| format!("Could not read {mode}: {e}"));
@@ -444,7 +445,8 @@ async fn build(mode: &str) -> Result<Vec<u8>, String> {
             &package,
             "--target",
             "wasm32-unknown-unknown",
-            "--release",
+            "--profile",
+            "mode",
         ])
         .status()
         .await
@@ -457,7 +459,7 @@ async fn build(mode: &str) -> Result<Vec<u8>, String> {
         .map(PathBuf::from)
         .unwrap_or(workspace().join("target"));
     let path = target
-        .join("wasm32-unknown-unknown/release")
+        .join("wasm32-unknown-unknown/mode")
         .join(format!("{}.wasm", package.replace('-', "_")));
     std::fs::read(&path).map_err(|e| format!("Could not read {}: {e}", path.display()))
 }

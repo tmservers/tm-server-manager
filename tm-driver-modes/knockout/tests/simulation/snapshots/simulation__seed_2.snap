@@ -27,5 +27,5 @@ match end
 end
   1 a 1 (Winner)
   2 b 0 out (K.O.)
-fuel init 16k · live-round 11k · map-end 5.2k · map-start 4.5k · match-end 4.6k · match-start 3.5k · race-start 8.5k · round-end 28k · round-start 3.8k
+fuel init 14k · live-round 11k · map-end 5.1k · map-start 4.4k · match-end 4.5k · match-start 3.4k · race-start 8.4k · round-end 27k · round-start 3.7k
 inputs 37

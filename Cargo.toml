@@ -113,3 +113,12 @@ tm-driver-sim = { path = "./tm-driver-sim" }
 # The bridge adds the blocking feature for its sync runner.
 testcontainers = "0"
 insta = { version = "1", features = ["yaml"] }
+
+# The wasm of the driver modes: `cargo build --profile mode --target wasm32-unknown-unknown`.
+# Its own profile so the manager module and the natives keep `release`.
+[profile.mode]
+inherits = "release"
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+strip = true

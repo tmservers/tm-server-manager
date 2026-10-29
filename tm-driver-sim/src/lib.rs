@@ -60,7 +60,7 @@ pub use rng::Rng;
 pub use rules::Rules;
 pub use tm_wasm_driver::DriverStats;
 use tm_wasm_driver::{Component, Driver, DriverEngine, DriverInput, DriverLimits, DriverReply};
-pub use wasm::build_wasm;
+pub use wasm::{MODE_PROFILE, build_wasm};
 pub use world::{
     Action, Faults, MAX_PLAYERS, MapSpec, Moment, PlayerSpec, RacePlan, Races, SettingsChange,
     World,

@@ -294,8 +294,9 @@ tm_driver_sim::simulation_tests!(simulator);
 
 `simulation_tests!` adds random matches, full servers, the matches of seeds 1 to 3 as snapshots
 and the saved logs. Tests of logs written by hand go next to it. `tm_driver_sim::wasm!()` builds the
-crate whose tests call it for `wasm32-unknown-unknown` into `target/tmp/modes`, where the host
-tests build the rounds mode as well. Without random settings a mode plays its defaults, without
+crate whose tests call it for `wasm32-unknown-unknown` with the `mode` profile (see
+[Build profile](./dev_wasm_driver.md#build-profile)) into `target/tmp/modes`, where the host tests
+build the rounds mode as well. Without random settings a mode plays its defaults, without
 `Rules` only the checks for every mode run.
 
 ## Snapshots

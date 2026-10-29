@@ -3,7 +3,7 @@
 use std::{path::Path, process::Command};
 
 /// The wasm of the mode crate whose tests call it, built for
-/// `wasm32-unknown-unknown` in release, see [`build_wasm`].
+/// `wasm32-unknown-unknown` with the `mode` profile, see [`build_wasm`].
 #[macro_export]
 macro_rules! wasm {
     () => {
@@ -15,8 +15,11 @@ macro_rules! wasm {
     };
 }
 
-/// Builds a crate of the workspace for `wasm32-unknown-unknown` in release and
-/// returns its wasm. The build goes to `modes` in `target_dir`, e.g. the
+/// The cargo profile of the modes, the one they are deployed with.
+pub const MODE_PROFILE: &str = "mode";
+
+/// Builds a crate of the workspace for `wasm32-unknown-unknown` with the
+/// [`MODE_PROFILE`] and returns its wasm. The build goes to `modes` in `target_dir`, e.g. the
 /// `CARGO_TARGET_TMPDIR` of the tests, which the cargo running them does not lock.
 /// Builds of all modes share it.
 pub fn build_wasm(package: &str, manifest_dir: &Path, target_dir: &Path) -> Vec<u8> {
@@ -28,7 +31,8 @@ pub fn build_wasm(package: &str, manifest_dir: &Path, target_dir: &Path) -> Vec<
         .env_remove("CARGO_ENCODED_RUSTFLAGS")
         .args([
             "build",
-            "--release",
+            "--profile",
+            MODE_PROFILE,
             // The tests build the crates of the lock file, never others.
             "--locked",
             "-p",
@@ -51,7 +55,8 @@ pub fn build_wasm(package: &str, manifest_dir: &Path, target_dir: &Path) -> Vec<
     }
 
     let file = target_dir
-        .join("wasm32-unknown-unknown/release")
+        .join("wasm32-unknown-unknown")
+        .join(MODE_PROFILE)
         .join(format!("{}.wasm", package.replace('-', "_")));
     std::fs::read(&file).unwrap_or_else(|_| panic!("{} was not built", file.display()))
 }
