@@ -11,7 +11,7 @@ use tm_wasm_driver::{Driver, DriverInput, DriverReply};
 
 use crate::{
     observe::{Observer, SeenHold},
-    rules::{MapEnd, RoundEnd, Rules},
+    rules::{LiveRound, MapEnd, RoundEnd, Rules},
 };
 
 pub(crate) struct Checker {
@@ -102,15 +102,16 @@ impl Checker {
                 "A result for the manager without a round that counted".into()
             });
         }
+        check_live_interval(input, reply, observer)?;
 
         // Waypoints, of which a full server sends thousands per round, only collect
-        // races. Everything else is checked.
-        if !may_change(input) && observer.changed_settings().is_none() {
+        // races until the live round is due. Everything else is checked.
+        if !may_change(input) && !observer.live_due() && observer.changed_settings().is_none() {
             return Ok(());
         }
 
         let standings = driver.standings();
-        let round = driver.last_round();
+        let round = driver.round();
         let users = driver.users();
         self.check_next_map(&reply.commands)?;
         check_standings(&standings)?;
@@ -127,6 +128,16 @@ impl Checker {
         if reached {
             check_published(observer, &standings, &round, &users)?;
             check_spawns(&standings, observer)?;
+        }
+        if observer.live_due() {
+            if !round.live {
+                return Err("The round runs but does not show live".into());
+            }
+            self.rules.live_round(&LiveRound {
+                standings: &standings,
+                round: &round,
+                truth: observer.truth(),
+            })?;
         }
 
         if let Some(hold) = hold.filter(|hold| hold.first) {
@@ -212,6 +223,27 @@ fn may_change(input: &DriverInput) -> bool {
     }
 }
 
+/// The round that runs only goes out live once the interval since the last time
+/// passed: starts and checkpoints publish it only when it is due.
+fn check_live_interval(
+    input: &DriverInput,
+    reply: &DriverReply,
+    observer: &Observer,
+) -> Result<(), String> {
+    let races_changed = matches!(
+        input,
+        DriverInput::Event(Event::StartLine(_) | Event::WayPoint(_))
+    );
+    let published = reply
+        .commands
+        .iter()
+        .any(|command| matches!(command, DriverCommand::SetRound(_)));
+    if races_changed && published && !observer.live_due() {
+        return Err("The live round went out before its interval passed".into());
+    }
+    Ok(())
+}
+
 /// A reply to a hold ends with its only `Continue`. A hold that comes again gets
 /// the same commands, or only its `Continue` once the first reply reached the
 /// server.
@@ -267,7 +299,7 @@ fn check_published(
     let stale = if published.standings.as_ref() != Some(standings) {
         "standings"
     } else if published.round.as_ref() != Some(round) {
-        "last round"
+        "round"
     } else if published.users.as_ref() != Some(users) {
         "players"
     } else {
@@ -399,7 +431,7 @@ fn check_standings(standings: &DriverStandings) -> Result<(), String> {
     Ok(())
 }
 
-/// The places of the last round go from 1 in order, for players taking part.
+/// The places of the round go from 1 in order, for players taking part.
 fn check_round(round: &DriverRound, standings: &DriverStandings) -> Result<(), String> {
     if !round
         .entries
@@ -407,7 +439,7 @@ fn check_round(round: &DriverRound, standings: &DriverStandings) -> Result<(), S
         .map(|entry| entry.position)
         .eq(1..=round.entries.len() as u32)
     {
-        return Err("The places of the last round are not 1 to n in order".into());
+        return Err("The places of the round are not 1 to n in order".into());
     }
     let statuses: BTreeMap<&str, DriverStatus> = standings
         .entries

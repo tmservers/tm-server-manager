@@ -1,7 +1,11 @@
 //! Manialinks parse what the host publishes with `fromjson`, so every manialink
-//! reading a netvar of the host declares a struct member for every field of its json.
+//! reading a netvar of the host declares a struct member for every field of its json:
+//! the ones of `tm-driver-modes/manialinks` and the ones modes bring from its folders.
 
-use std::{collections::BTreeSet, path::PathBuf};
+use std::{
+    collections::BTreeSet,
+    path::{Path, PathBuf},
+};
 
 use serde_json::Value;
 use tm_server_types::method::{
@@ -37,6 +41,7 @@ fn netvars() -> [(&'static str, Vec<&'static str>, Value); 3] {
     };
     let round = DriverRound {
         number: 1,
+        live: true,
         entries: vec![entry],
     };
     let users = DriverUsers {
@@ -63,7 +68,7 @@ fn netvars() -> [(&'static str, Vec<&'static str>, Value); 3] {
         ),
         (
             "Net_Driver_Round",
-            ["Integer number;", "K_Entry[] entries;"]
+            ["Integer number;", "Boolean live;", "K_Entry[] entries;"]
                 .into_iter()
                 .chain(ENTRY)
                 .collect(),
@@ -121,15 +126,25 @@ fn members_cover_the_json() {
     }
 }
 
+/// The manialinks of a directory and of the directories in it.
+fn manialinks(directory: &Path, found: &mut Vec<PathBuf>) {
+    for entry in std::fs::read_dir(directory).unwrap() {
+        let path = entry.unwrap().path();
+        if path.is_dir() {
+            manialinks(&path, found);
+        } else if path.extension().is_some_and(|extension| extension == "xml") {
+            found.push(path);
+        }
+    }
+}
+
 #[test]
 fn manialinks_declare_every_member() {
     let directory = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../tm-driver-modes/manialinks");
+    let mut paths = Vec::new();
+    manialinks(&directory, &mut paths);
     let mut checked = 0;
-    for entry in std::fs::read_dir(&directory).unwrap() {
-        let path = entry.unwrap().path();
-        if path.extension().is_none_or(|extension| extension != "xml") {
-            continue;
-        }
+    for path in paths {
         let manialink = std::fs::read_to_string(&path).unwrap();
         for (netvar, members, _) in netvars() {
             if !manialink.contains(&format!("Text {netvar} ")) {

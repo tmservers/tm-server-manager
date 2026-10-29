@@ -47,6 +47,9 @@ pub struct InputLog {
     /// The session of the holds the builder adds.
     #[serde(skip)]
     pub(crate) session: i32,
+    /// The server time of the callbacks the builder adds, in milliseconds.
+    #[serde(skip)]
+    pub(crate) clock: u32,
 }
 
 /// A race of a log: the race times at the checkpoints it passed.
@@ -54,6 +57,9 @@ pub struct InputLog {
 pub struct Race {
     pub checkpoints: Vec<u32>,
     pub finished: bool,
+    /// Checkpoints of a lap on a map with laps, the line that ends the lap included.
+    /// 0 on a map without laps.
+    pub per_lap: u32,
 }
 
 impl Race {
@@ -62,15 +68,33 @@ impl Race {
         Self {
             checkpoints: checkpoints.to_vec(),
             finished: true,
+            per_lap: 0,
         }
     }
 
-    /// A race given up after passing checkpoints at these race times.
+    /// A race given up after passing checkpoints at these race times. Also a race
+    /// the end of the round cuts off.
     pub fn dnf(checkpoints: &[u32]) -> Self {
         Self {
             checkpoints: checkpoints.to_vec(),
             finished: false,
+            per_lap: 0,
         }
+    }
+
+    /// The race on a map whose laps have this many checkpoints.
+    pub fn in_laps(self, per_lap: u32) -> Self {
+        Self { per_lap, ..self }
+    }
+
+    /// The waypoint at a checkpoint of the race, counting from 0.
+    fn way_point(&self, account_id: &str, checkpoint: usize) -> Event {
+        let so_far = &self.checkpoints[..=checkpoint];
+        let finished = self.finished && checkpoint + 1 == self.checkpoints.len();
+        if self.per_lap == 0 {
+            return way_point_at(account_id, so_far, finished);
+        }
+        lap_way_point(account_id, so_far, finished, self.per_lap)
     }
 }
 
@@ -81,6 +105,7 @@ impl InputLog {
             inputs: Vec::new(),
             lost: Vec::new(),
             session: SESSION,
+            clock: 0,
         }
     }
 
@@ -137,7 +162,8 @@ impl InputLog {
 
     pub fn match_start(&mut self) -> &mut Self {
         let count = self.count(|event| matches!(event, Event::StartMatchStart(_))) + 1;
-        self.event(Event::StartMatchStart(StartMatch { count, time: 0 }))
+        let time = self.clock;
+        self.event(Event::StartMatchStart(StartMatch { count, time }))
     }
 
     pub fn match_end(&mut self) -> &mut Self {
@@ -174,30 +200,34 @@ impl InputLog {
 
     pub fn round_start(&mut self) -> &mut Self {
         let count = self.count(|event| matches!(event, Event::StartRoundStart(_))) + 1;
-        self.event(round_start(count))
+        self.clock += 1_000;
+        let time = self.clock;
+        self.event(Event::StartRoundStart(StartRound { count, time }))
     }
 
-    /// The start lines and waypoints of these races in the order of their time.
-    /// Every player starts at 0, further races of a player 1.5 seconds after the
-    /// last one ended.
+    /// The start lines and waypoints of these races in the order of their time, in
+    /// the server time of the log. Every player starts 1.5 seconds after now,
+    /// further races of a player 1.5 seconds after the last one ended.
     pub fn races(&mut self, races: &[(&str, Race)]) -> &mut Self {
         let mut callbacks: Vec<(u32, usize, Event)> = Vec::new();
         let mut starts: std::collections::BTreeMap<&str, u32> = Default::default();
+        let spawn = self.clock + 1_500;
         for (account_id, race) in races {
-            let start = starts.entry(account_id).or_default();
-            callbacks.push((*start, callbacks.len(), start_line(account_id)));
-            for (index, &time) in race.checkpoints.iter().enumerate() {
-                let so_far = &race.checkpoints[..=index];
-                let finished = race.finished && index + 1 == race.checkpoints.len();
-                callbacks.push((
-                    *start + time,
-                    callbacks.len(),
-                    way_point_at(account_id, so_far, finished),
-                ));
+            let start = starts.entry(account_id).or_insert(spawn);
+            let mut started = start_line(account_id);
+            set_time(&mut started, *start);
+            callbacks.push((*start, callbacks.len(), started));
+            for (checkpoint, &time) in race.checkpoints.iter().enumerate() {
+                let mut passed = race.way_point(account_id, checkpoint);
+                set_time(&mut passed, *start + time);
+                callbacks.push((*start + time, callbacks.len(), passed));
             }
             *start += race.checkpoints.last().copied().unwrap_or(0) + 1_500;
         }
         callbacks.sort_by_key(|(time, order, _)| (*time, *order));
+        if let Some((last, _, _)) = callbacks.last() {
+            self.clock = self.clock.max(*last);
+        }
         for (_, _, event) in callbacks {
             self.event(event);
         }
@@ -370,6 +400,51 @@ pub fn way_point_at(account_id: &str, checkpoints: &[u32], finished: bool) -> Ev
     })
 }
 
+/// A player passed the last of these checkpoints of a race on a map with laps of
+/// this many checkpoints, or finished there.
+pub fn lap_way_point(account_id: &str, checkpoints: &[u32], finished: bool, per_lap: u32) -> Event {
+    let checkpoint = checkpoints.len().saturating_sub(1) as u32;
+    let lap_start = (checkpoint / per_lap * per_lap) as usize;
+    let lap_started = lap_start
+        .checked_sub(1)
+        .map_or(0, |before| checkpoints[before]);
+    let racetime = checkpoints.last().copied().unwrap_or(0);
+    Event::WayPoint(WayPoint {
+        account_id: account_id.into(),
+        time: 0,
+        racetime,
+        laptime: racetime - lap_started,
+        speed: 0.,
+        checkpoint_in_race: checkpoint,
+        checkpoint_in_lap: checkpoint - lap_start as u32,
+        is_end_race: finished,
+        is_end_lap: (checkpoint + 1).is_multiple_of(per_lap),
+        is_infinite_laps: false,
+        is_independent_laps: false,
+        current_race_checkpoints: checkpoints.to_vec(),
+        current_lap_checkpoints: checkpoints[lap_start..]
+            .iter()
+            .map(|time| time - lap_started)
+            .collect(),
+        block_id: String::new(),
+    })
+}
+
+/// A start line or waypoint at this server time.
+pub fn at(mut event: Event, time: u32) -> Event {
+    set_time(&mut event, time);
+    event
+}
+
+/// Gives a callback of the races of a round its server time.
+fn set_time(event: &mut Event, time: u32) {
+    match event {
+        Event::StartLine(start) => start.time = time,
+        Event::WayPoint(way_point) => way_point.time = time,
+        _ => {}
+    }
+}
+
 /// A player finished the race in this time at a checkpoint, counting from 0.
 pub fn finish(account_id: &str, checkpoint_in_race: u32, racetime: u32) -> Event {
     let mut checkpoints: Vec<u32> = (1..=checkpoint_in_race + 1)
@@ -460,7 +535,7 @@ pub fn publishes_standings(commands: &[DriverCommand]) -> bool {
 /// Account, position, status, label, points and points of the last round of every
 /// player in the order of the standings.
 pub fn ranking(driver: &Driver) -> Vec<(String, u32, DriverStatus, String, i32, i32)> {
-    let round = driver.last_round();
+    let round = driver.round();
     driver
         .standings()
         .entries

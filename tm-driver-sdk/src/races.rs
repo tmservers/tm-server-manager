@@ -3,12 +3,42 @@
 
 use std::cmp::Reverse;
 
-use crate::{Race, Racer, RoundEnd};
+use crate::{Laps, Race, RaceRules, Racer, RoundEnd, Standings, Status};
+
+impl Default for RaceRules {
+    /// The laps of the map and give ups, the rules every match starts with.
+    fn default() -> Self {
+        Self {
+            laps: Laps::Map,
+            give_up: true,
+        }
+    }
+}
 
 impl RoundEnd {
     /// The races of a player in the round, None if the player did not start.
     pub fn racer(&self, account_id: &str) -> Option<&Racer> {
         self.racers.iter().find(|r| r.account_id == account_id)
+    }
+
+    /// The races of the players who take part in the match, e.g. for a live round,
+    /// which only shows them. Others join the standings at the round end at the
+    /// earliest, e.g. a racer whose start the host missed.
+    pub fn taking_part(&self, standings: &Standings) -> RoundEnd {
+        RoundEnd {
+            invalid: self.invalid,
+            racers: self
+                .racers
+                .iter()
+                .filter(|racer| {
+                    standings
+                        .player(&racer.account_id)
+                        .is_some_and(|player| player.status != Status::Spectator)
+                })
+                .cloned()
+                .collect(),
+            present: self.present.clone(),
+        }
     }
 }
 
@@ -94,6 +124,7 @@ mod tests {
         Race {
             checkpoints: checkpoints.to_vec(),
             finished,
+            laps: u32::from(finished),
         }
     }
 

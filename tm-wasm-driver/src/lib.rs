@@ -13,8 +13,10 @@
 //! The scores of a match live in standings every mode shares. The host keeps
 //! them and hands them to the mode with every event, so modes keep nothing but
 //! their settings. The host clears what belongs to a new match or map, publishes
-//! the standings, the last round and the players for the manialinks whenever
-//! they change and reports every round the mode placed to the manager.
+//! the standings, the round and the players for the manialinks whenever they
+//! change and reports every round the mode placed to the manager. While a round
+//! runs, the mode places it as it stands whenever the races changed, at most once
+//! per [`DriverLimits::live_round_interval`], so the round shows live.
 //!
 //! Modes and the host are deterministic. Everything a driver gets is a
 //! [`DriverInput`], and replaying the inputs of a match with
@@ -37,7 +39,9 @@ use std::{
 use tm_server_types::{
     base::{Map, PlayerInfo},
     event::{DriverHold, DriverRoundResult, DriverSection, Event},
-    method::{DriverCanSpawn, DriverCommand, DriverRound, DriverStandings, DriverUsers},
+    method::{
+        DriverCanSpawn, DriverCommand, DriverLayer, DriverRound, DriverStandings, DriverUsers,
+    },
 };
 /// A compiled mode, see [`DriverEngine::compile`].
 pub use wasmtime::component::Component;
@@ -83,6 +87,10 @@ pub struct DriverLimits {
     pub call_timeout: Duration,
     /// Maximum linear memory of a mode in bytes.
     pub max_memory: usize,
+    /// The shortest time between two live rounds, in the server time of the
+    /// callbacks. What changes in between shows with the first start or checkpoint
+    /// after it, and the round end always shows the final round.
+    pub live_round_interval: Duration,
 }
 
 impl Default for DriverLimits {
@@ -91,6 +99,7 @@ impl Default for DriverLimits {
             fuel_per_call: 1_000_000_000,
             call_timeout: Duration::from_secs(1),
             max_memory: 64 << 20,
+            live_round_interval: Duration::from_secs(1),
         }
     }
 }
@@ -203,6 +212,14 @@ impl DriverEngine {
             .bindings
             .call_reloadable_settings(&mut driver.store)
             .map_err(DriverError::Trap)?;
+        driver.prepare_call();
+        driver.manialinks = driver
+            .bindings
+            .call_manialinks(&mut driver.store)
+            .map_err(DriverError::Trap)?
+            .into_iter()
+            .map(|layer| DriverLayer::selected(layer.name, layer.manialink))
+            .collect();
         driver.settings = settings.into();
         Ok(driver)
     }
@@ -251,12 +268,17 @@ impl DriverEngine {
             bindings,
             fuel_per_call: self.limits.fuel_per_call,
             epoch_deadline: self.epoch_deadline(),
+            live_round_interval: u32::try_from(self.limits.live_round_interval.as_millis())
+                .unwrap_or(u32::MAX),
             name: String::new(),
             settings: String::new(),
             pending_settings: None,
             reloadable: Vec::new(),
+            manialinks: Vec::new(),
             standings: convert::empty_standings(),
             last_round: Vec::new(),
+            live_round: None,
+            live_round_asked: None,
             published: Published::default(),
             spawn_permissions: BTreeMap::new(),
             session: None,
@@ -290,6 +312,8 @@ pub struct Driver {
     bindings: Mode,
     fuel_per_call: u64,
     epoch_deadline: u64,
+    /// See [`DriverLimits::live_round_interval`], in milliseconds.
+    live_round_interval: u32,
     /// Name of the mode, shown above the standings.
     name: String,
     /// The json settings the mode plays with.
@@ -298,10 +322,16 @@ pub struct Driver {
     pending_settings: Option<String>,
     /// The settings that can change during a match.
     reloadable: Vec<String>,
+    /// The manialinks the mode brings.
+    manialinks: Vec<DriverLayer>,
     /// The scores of the match, handed to the mode with every event.
     standings: wit::Standings,
     /// The last round that counted, as the mode placed it.
     last_round: Vec<wit::Entry>,
+    /// The round that runs as the mode placed it last, None between rounds.
+    live_round: Option<Vec<wit::Entry>>,
+    /// When the mode placed the round that runs last, in server time.
+    live_round_asked: Option<u32>,
     published: Published,
     /// Spawn permissions sent in this match, so repeated ones are left out.
     spawn_permissions: BTreeMap<String, bool>,
@@ -571,6 +601,7 @@ impl Driver {
                 // Every match starts with the defaults of the modescript.
                 self.spawn_permissions.clear();
                 self.last_round.clear();
+                self.live_round = None;
                 // Everything is published again, e.g. for a modescript that just started.
                 self.published = Published::default();
                 self.step(wit::Event::MatchStart)
@@ -592,19 +623,34 @@ impl Driver {
             Event::StartRoundStart(_) => {
                 self.races.clear();
                 self.in_round = true;
+                // The round shows live from its start on, empty until somebody races.
+                self.live_round = (!self.in_warm_up).then(Vec::new);
+                self.live_round_asked = None;
                 self.step(wit::Event::RoundStart)
             }
             Event::StartLine(start_line) => {
                 let first = self.races.start(&start_line.account_id);
-                // Time attack rounds start players again and again.
-                if !first || !self.in_round || self.in_warm_up {
+                if !self.in_round || self.in_warm_up {
                     return Ok(DriverReply::default());
                 }
-                self.step(wit::Event::RaceStart(start_line.account_id.clone()))
+                // Time attack rounds start players again and again.
+                let mut reply = if first {
+                    self.step(wit::Event::RaceStart(start_line.account_id.clone()))?
+                } else {
+                    DriverReply::default()
+                };
+                reply.commands.extend(self.live(start_line.time)?);
+                Ok(reply)
             }
             Event::WayPoint(way_point) => {
                 self.races.way_point(way_point);
-                Ok(DriverReply::default())
+                if !self.in_round || self.in_warm_up {
+                    return Ok(DriverReply::default());
+                }
+                Ok(DriverReply {
+                    commands: self.live(way_point.time)?,
+                    ..DriverReply::default()
+                })
             }
             Event::PlayerConnect(connect) => {
                 self.connected.insert(connect.account_id.clone());
@@ -682,6 +728,7 @@ impl Driver {
         // bridge restarted, missed races, so it is invalid like a round the script
         // forced to end or skipped.
         let in_round = std::mem::take(&mut self.in_round);
+        self.live_round = None;
         let event = match hold.section {
             DriverSection::MapStart => wit::Event::MapStart,
             DriverSection::RoundEnd => wit::Event::RoundEnd(wit::RoundEnd {
@@ -716,9 +763,40 @@ impl Driver {
         )
     }
 
-    /// The last round that counted, ordered by place.
-    pub fn last_round(&self) -> DriverRound {
-        convert::round(self.standings.rounds_played, &self.last_round)
+    /// The round that runs as it stands, otherwise the last round that counted,
+    /// ordered by place.
+    pub fn round(&self) -> DriverRound {
+        match &self.live_round {
+            Some(entries) => convert::round(
+                self.standings.rounds_played.saturating_add(1),
+                true,
+                entries,
+            ),
+            None => convert::round(self.standings.rounds_played, false, &self.last_round),
+        }
+    }
+
+    /// The manialinks the mode brings.
+    pub fn manialinks(&self) -> &[DriverLayer] {
+        &self.manialinks
+    }
+
+    /// The layers to show: these selected manialinks, e.g. of the config, with the
+    /// ones the mode brings in place of the same names, then the other ones of the
+    /// mode.
+    pub fn layers(&self, selected: &[DriverLayer]) -> Vec<DriverLayer> {
+        let own = |name: &str| self.manialinks.iter().find(|layer| layer.name == name);
+        let mut layers: Vec<DriverLayer> = selected
+            .iter()
+            .map(|layer| own(&layer.name).unwrap_or(layer).clone())
+            .collect();
+        layers.extend(
+            self.manialinks
+                .iter()
+                .filter(|layer| !selected.iter().any(|other| other.name == layer.name))
+                .cloned(),
+        );
+        layers
     }
 
     /// The players the host knows, e.g. for their names.
@@ -763,6 +841,37 @@ impl Driver {
             round_result,
             rejected: None,
         })
+    }
+
+    /// Lets the mode place the round that runs as it stands after its races changed,
+    /// at most once per interval of server time, and publishes it. Changes in between
+    /// show with the next change after the interval.
+    fn live(&mut self, time: u32) -> Result<Vec<DriverCommand>, DriverError> {
+        if self.live_round.is_none() {
+            return Ok(Vec::new());
+        }
+        if self
+            .live_round_asked
+            .is_some_and(|asked| time.wrapping_sub(asked) < self.live_round_interval)
+        {
+            return Ok(Vec::new());
+        }
+        let races = wit::RoundEnd {
+            invalid: false,
+            racers: self.races.racers(),
+            present: self.connected.iter().cloned().collect(),
+        };
+        self.prepare_call();
+        let round = self
+            .bindings
+            .call_live_round(&mut self.store, &self.standings, &races)
+            .map_err(|error| {
+                self.poisoned = true;
+                DriverError::Trap(error)
+            })?;
+        self.live_round = Some(round);
+        self.live_round_asked = Some(time);
+        Ok(self.publish())
     }
 
     /// A trap poisons the driver, the mode could be in any state afterwards.
@@ -865,7 +974,7 @@ impl Driver {
         if let Some(standings) = changed(self.standings(), &mut self.published.standings) {
             commands.push(DriverCommand::SetStandings(json(standings)));
         }
-        if let Some(round) = changed(self.last_round(), &mut self.published.round) {
+        if let Some(round) = changed(self.round(), &mut self.published.round) {
             commands.push(DriverCommand::SetRound(json(round)));
         }
         commands

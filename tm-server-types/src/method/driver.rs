@@ -16,6 +16,8 @@ pub enum DriverCommand {
     SetRoundFormat(DriverRoundFormat),
     /// The warmup of the built-in warmup before the first round of the map that starts.
     SetWarmUp(DriverWarmUp),
+    /// Laps and give ups of the races in the rounds starting from now on.
+    SetRaceRules(DriverRaceRules),
     /// Players that cannot spawn are out of the race (e.g. eliminated).
     SetCanSpawn(DriverCanSpawn),
     /// Ends the map once the current hold continues.
@@ -39,7 +41,8 @@ pub enum DriverCommand {
     SetStandings(String),
     /// [`DriverRound`] as json, readable by manialinks through
     /// `netread Text Net_Driver_Round for Teams[0]`. Sent by the driver host
-    /// whenever a round counted and never produced by a mode itself.
+    /// whenever the round changes, also while it runs, and never produced by a mode
+    /// itself.
     SetRound(String),
     /// [`DriverUsers`] as json, readable by manialinks through
     /// `netread Text Net_Driver_Users for Teams[0]`. Sent by the driver host
@@ -82,9 +85,10 @@ impl DriverCommand {
     pub const SET_ROUND: &str = "Driver.SetRound";
     pub const SET_USERS: &str = "Driver.SetUsers";
     pub const SET_WARM_UP: &str = "Driver.SetWarmUp";
+    pub const SET_RACE_RULES: &str = "Driver.SetRaceRules";
 
     /// Methods implemented by the driver modescript.
-    pub const MODESCRIPT_METHODS: [&str; 11] = [
+    pub const MODESCRIPT_METHODS: [&str; 12] = [
         Self::CONTINUE,
         Self::SET_ROUND_FORMAT,
         Self::SET_CAN_SPAWN,
@@ -96,6 +100,7 @@ impl DriverCommand {
         Self::SET_ROUND,
         Self::SET_USERS,
         Self::SET_WARM_UP,
+        Self::SET_RACE_RULES,
     ];
 
     pub fn call(&self) -> DriverCall {
@@ -126,6 +131,17 @@ impl DriverCommand {
                         Some(ms) => ms.to_string(),
                         None => "auto".to_string(),
                     },
+                ],
+            ),
+            DriverCommand::SetRaceRules(rules) => (
+                Self::SET_RACE_RULES,
+                vec![
+                    match rules.laps {
+                        DriverLaps::Map => "map".to_string(),
+                        DriverLaps::Count(laps) => laps.to_string(),
+                        DriverLaps::Infinite => "infinite".to_string(),
+                    },
+                    if rules.give_up { "1" } else { "0" }.to_string(),
                 ],
             ),
             DriverCommand::SetCanSpawn(can_spawn) => (
@@ -233,6 +249,42 @@ pub struct DriverWarmUp {
     pub timeout_ms: Option<u32>,
 }
 
+/// The rules of the races in a round. Every match starts with the default: the laps
+/// of the map and give ups.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
+#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
+pub struct DriverRaceRules {
+    pub laps: DriverLaps,
+    /// Players can give up their race. Without, a race only ends at the finish or
+    /// with the round.
+    pub give_up: bool,
+}
+
+impl Default for DriverRaceRules {
+    fn default() -> Self {
+        Self {
+            laps: DriverLaps::Map,
+            give_up: true,
+        }
+    }
+}
+
+/// How many laps a race has on maps with laps.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
+#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
+pub enum DriverLaps {
+    /// The laps of the map.
+    #[default]
+    Map,
+    Count(u32),
+    /// The race never finishes. On maps without laps the finish still ends it.
+    Infinite,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
@@ -330,15 +382,17 @@ pub struct DriverStandings {
     pub entries: Vec<DriverEntry>,
 }
 
-/// The last round of a driver match as the manialinks get it through
-/// `Net_Driver_Round`.
+/// The round of a driver match as the manialinks get it through `Net_Driver_Round`:
+/// the round that runs as it stands, otherwise the last round that counted.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub struct DriverRound {
-    /// Counted rounds of the match, from 1. 0 before the first round ended.
+    /// The number the round has if it counts, from 1. 0 before the first round.
     pub number: u32,
+    /// The round runs, the entries are the races so far as if it ended now.
+    pub live: bool,
     /// Ordered by place.
     pub entries: Vec<DriverEntry>,
 }
@@ -548,6 +602,30 @@ mod tests {
             }))
             .1,
             ["1", "0", "5000"]
+        );
+    }
+
+    #[test]
+    fn race_rules() {
+        assert_eq!(
+            modescript(DriverCommand::SetRaceRules(DriverRaceRules::default())),
+            ("Driver.SetRaceRules", vec!["map".into(), "1".into()])
+        );
+        assert_eq!(
+            modescript(DriverCommand::SetRaceRules(DriverRaceRules {
+                laps: DriverLaps::Count(50),
+                give_up: false,
+            }))
+            .1,
+            ["50", "0"]
+        );
+        assert_eq!(
+            modescript(DriverCommand::SetRaceRules(DriverRaceRules {
+                laps: DriverLaps::Infinite,
+                give_up: false,
+            }))
+            .1,
+            ["infinite", "0"]
         );
     }
 

@@ -4,27 +4,30 @@ expression: outcome.report
 ---
 rounds · seed 2
 settings {"finish_timeout":"automatic","maps_per_match":1,"points_limit":0,"points_repartition":[1,0],"rounds_per_map":3,"warmup":{"duration_ms":30000,"rounds":1,"timeout_ms":4000}}
-maps m1 2 cp 0:18.033
+maps m1 2 cp × 4 laps 1:12.132
 players a Ant leaves during round 3 · b Bea
 chances ties 300‰
 
 match 1
 map m1 · one try, automatic finish timeout · warmup 1 × 0:30.000
 round 1
-  races  b 0:19.972 · a 0:18.730
+  races  b 1:19.953 · a 1:18.218
+  live   4 updates
   round  1 a 1 · 2 b 0
   match  1 a 1 · 2 b 0
   info   1 / 3 rounds
 round 2
-  races  b 1cp · a 0:19.250
-  round  1 a 1 · 2 b 0
-  match  1 a 2 · 2 b 0
+  races  a 1:20.510 · b 1:20.013
+  live   3 updates
+  round  1 b 1 · 2 a 0
+  match  1 b 1 · 2 a 1
   info   2 / 3 rounds
 round 3
   ! a leaves
-  races  a 0cp · b 0:20.004
+  races  a 1cp · b 1:19.952
+  live   3 updates
   round  1 b 1 · 2 a 0
-  match  1 a 2 · 2 b 1
+  match  1 b 2 · 2 a 1
   info   3 / 3 rounds
   end map
 map end
@@ -32,6 +35,6 @@ map end
 match end
 
 end
-  1 a 2 (Winner)
-  2 b 1
-inputs 43
+  1 b 2 (Winner)
+  2 a 1
+inputs 73

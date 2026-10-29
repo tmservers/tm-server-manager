@@ -527,7 +527,7 @@ impl Simulator {
             .replay(&self.component, settings, inputs)
             .map_err(|e| failure(last, format!("The replay failed: {e}")))?;
         if replayed.standings() != driver.standings()
-            || replayed.last_round() != driver.last_round()
+            || replayed.round() != driver.round()
             || replayed.users() != driver.users()
         {
             return Err(failure(
@@ -728,6 +728,10 @@ pub fn seeds(count: &str, default: Range<u64>) -> Range<u64> {
     start..start + count
 }
 
+/// The shortest time between two live rounds of the drivers in milliseconds, as the
+/// observer expects them.
+pub(crate) const LIVE_ROUND_INTERVAL: u32 = 1_000;
+
 /// One engine for every simulation of a process.
 fn engine() -> &'static DriverEngine {
     static ENGINE: OnceLock<DriverEngine> = OnceLock::new();
@@ -736,6 +740,7 @@ fn engine() -> &'static DriverEngine {
             // Fuel limits every call the same way on every machine. A wall clock limit
             // would let a busy machine fail seeds that pass on their own.
             call_timeout: Duration::from_secs(24 * 60 * 60),
+            live_round_interval: Duration::from_millis(u64::from(LIVE_ROUND_INTERVAL)),
             ..DriverLimits::default()
         };
         DriverEngine::new(limits).expect("The driver engine could not start")

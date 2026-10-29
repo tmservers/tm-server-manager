@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 
 use serde_json::Value;
 
-use crate::{Command, Entry, Event, Mode, Standings, User, reload::Configured};
+use crate::{Command, Entry, Event, Mode, RoundEnd, Standings, User, reload::Configured};
 
 /// A mode together with the standings the host would keep for it.
 pub struct Harness<M> {
@@ -45,6 +45,14 @@ impl<M: Mode> Harness<M> {
             self.round = round;
         }
         commands
+    }
+
+    /// The round as it stands with the races so far, like the host shows it while
+    /// the round runs. Changes nothing.
+    pub fn live_round(&self, races: RoundEnd) -> Vec<Entry> {
+        #[cfg(not(target_arch = "wasm32"))]
+        native::set(self.map_count, self.users.clone());
+        self.configured.mode.live_round(&self.standings, &races)
     }
 
     /// The mode with the settings it runs with.

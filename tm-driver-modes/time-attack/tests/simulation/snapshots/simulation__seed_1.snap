@@ -12,6 +12,7 @@ match 1
 map m1 · time attack 1:07.000 · no warmup
 round 1
   races  b 0:32.807 1cp 1cp · c 0:35.846 3cp · a 0:31.347 0:31.134 0cp
+  live   6 updates
   round  1 a 3 · 2 b 2 · 3 c 1
   match  1 a 3 · 2 b 2 · 3 c 1
   info   Map 1 / 2
@@ -20,6 +21,7 @@ map end
 map m2 · time attack 1:07.000 · no warmup
 round 2
   races  c 0:36.639 2cp · a 0:31.554 0:31.812 · b 0:33.285 3cp
+  live   5 updates
   round  1 a 3 · 2 b 2 · 3 c 1
   match  1 a 6 · 2 b 4 · 3 c 2
   info   Map 2 / 2

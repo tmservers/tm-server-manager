@@ -6,9 +6,9 @@
 //!
 //! Installs the driver modescript, shows the manialinks of `tm-driver-modes/manialinks` and
 //! feeds the callbacks of the server into the mode. `scores-table` replaces the scores table
-//! of the game. A mode is the name of a crate in
-//! `tm-driver-modes`, which gets built first, or the path of a `.wasm` file. Settings are inline
-//! json or the path of a json file.
+//! of the game. Manialinks the mode brings replace the ones with the same name. A mode is the
+//! name of a crate in `tm-driver-modes`, which gets built first, or the path of a `.wasm`
+//! file. Settings are inline json or the path of a json file.
 //!
 //! The playlist starts as the map list of the server. The driver plays it in order and
 //! starts every match with its first map.
@@ -59,6 +59,8 @@ struct Active {
     /// The arguments of the `load` that started this mode.
     source: String,
     driver: Driver,
+    /// The manialinks shown with the mode.
+    layers: Vec<DriverLayer>,
 }
 
 type Shared = Arc<Mutex<Option<Active>>>;
@@ -179,7 +181,12 @@ fn drive(server: &'static TrackmaniaServer, active: Shared, layers: Vec<DriverLa
             // A (re)started modescript lost the layers of the manialinks and shows the
             // scores table of the game again.
             if let Event::StartServerEnd(_) = event {
-                send(server, DriverCommand::show_layers(&layers)).await;
+                let shown = active.lock().unwrap().as_ref().map(|a| a.layers.clone());
+                send(
+                    server,
+                    DriverCommand::show_layers(&shown.unwrap_or(layers.clone())),
+                )
+                .await;
                 continue;
             }
 
@@ -194,16 +201,17 @@ fn drive(server: &'static TrackmaniaServer, active: Shared, layers: Vec<DriverLa
                 };
                 match active.driver.handle(&event) {
                     Ok(reply) => {
-                        let changed = reply.commands.iter().any(|c| {
-                            matches!(
-                                c,
-                                DriverCommand::SetStandings(_) | DriverCommand::SetRound(_)
-                            )
-                        });
+                        // The round changes live while it runs, the summary follows the
+                        // match.
+                        let changed = reply.round_result.is_some()
+                            || reply
+                                .commands
+                                .iter()
+                                .any(|c| matches!(c, DriverCommand::SetStandings(_)));
                         let standings = changed.then(|| {
                             summary(
                                 &active.driver.standings(),
-                                &active.driver.last_round(),
+                                &active.driver.round(),
                                 &active.driver.users(),
                             )
                         });
@@ -271,17 +279,39 @@ async fn load(
         Err(error) => tracing::warn!("Could not get the players of the server: {error}"),
     }
 
-    let mut commands = DriverCommand::show_layers(layers);
+    // Manialinks of the mode before that are gone, the ones of the new mode replace
+    // the selected ones with their names.
+    let shown = driver.layers(layers);
+    let mut commands: Vec<DriverCommand> = active
+        .lock()
+        .unwrap()
+        .as_ref()
+        .map(|before| before.layers.as_slice())
+        .unwrap_or_default()
+        .iter()
+        .filter(|layer| !shown.iter().any(|now| now.name == layer.name))
+        .map(|layer| DriverCommand::RemoveLayer(layer.name.clone()))
+        .collect();
+    commands.extend(DriverCommand::show_layers(&shown));
     for input in &inputs {
         commands.extend(driver.apply(input).map_err(|e| e.to_string())?.commands);
     }
 
     let reloadable = driver.reloadable_settings().join(", ");
+    let own: Vec<String> = driver
+        .manialinks()
+        .iter()
+        .map(|layer| layer.name.clone())
+        .collect();
     *active.lock().unwrap() = Some(Active {
         source: source.into(),
         driver,
+        layers: shown,
     });
     tracing::info!("Loaded {mode}.");
+    if !own.is_empty() {
+        tracing::info!("Manialinks of the mode: {}", own.join(", "));
+    }
     if !reloadable.is_empty() {
         tracing::info!("Settings that can change during the match: {reloadable}");
     }
@@ -533,7 +563,15 @@ async fn send(server: &TrackmaniaServer, commands: Vec<DriverCommand>) -> bool {
         return true;
     }
     let described: Vec<String> = commands.iter().map(describe).collect();
-    tracing::info!("-> {}", described.join(", "));
+    // The round goes out live while it runs, about every second.
+    if commands
+        .iter()
+        .all(|command| matches!(command, DriverCommand::SetRound(_)))
+    {
+        tracing::debug!("-> {}", described.join(", "));
+    } else {
+        tracing::info!("-> {}", described.join(", "));
+    }
     match server.driver_commands(&commands).await {
         Ok(_) => true,
         Err(error) => {
@@ -550,6 +588,11 @@ fn describe(command: &DriverCommand) -> String {
             tracing::debug!("Standings json: {standings}");
             format!("SetStandings({} bytes)", standings.len())
         }
+        DriverCommand::SetRound(round) => {
+            tracing::debug!("Round json: {round}");
+            format!("SetRound({} bytes)", round.len())
+        }
+        DriverCommand::SetUsers(users) => format!("SetUsers({} bytes)", users.len()),
         DriverCommand::SetNetState(state) => {
             tracing::debug!("Net state: {state}");
             format!("SetNetState({} bytes)", state.len())

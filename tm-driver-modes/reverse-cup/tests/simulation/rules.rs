@@ -6,8 +6,9 @@ use std::collections::BTreeMap;
 
 use tm_driver_mode_reverse_cup::{LastChanceDnfMode, Settings};
 use tm_driver_sim::rules::{
-    Counted, DriverEntry, DriverStandings, DriverStatus, RoundEnd, Rules, ends_map, ends_match,
-    entry, in_race_order, playing, points, racers_placed, spectators_stay,
+    Counted, DriverEntry, DriverStandings, DriverStatus, LiveRound, RoundEnd, Rules, ends_map,
+    ends_match, entry, in_race_order, live_in_race_order, playing, points, racers_placed,
+    spectators_stay,
 };
 
 pub struct ReverseCup {
@@ -176,6 +177,30 @@ impl ReverseCup {
 impl Rules for ReverseCup {
     fn settings_changed(&mut self, settings: &str) -> Result<(), String> {
         *self = Self::new(settings)?;
+        Ok(())
+    }
+
+    /// The finishers so far lose the points of their place. Who loses the points
+    /// for giving up is only known at the end.
+    fn live_round(&mut self, live: &LiveRound) -> Result<(), String> {
+        live_in_race_order(live, Counted::Last)?;
+        let left = playing(live.standings).count();
+        let repartition = self.repartition(left, Self::participants(live.standings));
+        let mut finishers = 0;
+        for entry in &live.round.entries {
+            let expected = if live.truth.last_finish(&entry.account_id).is_some() {
+                finishers += 1;
+                -points(&repartition, finishers - 1)
+            } else {
+                0
+            };
+            if entry.score != expected {
+                return Err(format!(
+                    "{} would lose {} points instead of {}",
+                    entry.account_id, -entry.score, -expected
+                ));
+            }
+        }
         Ok(())
     }
 

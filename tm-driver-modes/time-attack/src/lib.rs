@@ -12,7 +12,7 @@
 
 use serde::{Deserialize, Serialize};
 use tm_driver_sdk::{
-    Command, CountedRace, Event, Mode, RoundEnd, RoundFormat, Standings,
+    Command, CountedRace, Entry, Event, Mode, RoundEnd, RoundFormat, Standings,
     settings::{WarmUpSetting, maps_per_match},
 };
 
@@ -58,6 +58,11 @@ impl Mode for TimeAttack {
         "points_repartition",
         "warmup",
     ];
+    /// Players follow the best times of the map rather than the points of the match.
+    const MANIALINKS: &'static [(&'static str, &'static str)] = &[(
+        "standings",
+        include_str!("../../manialinks/live/standings.xml"),
+    )];
 
     type Settings = Settings;
 
@@ -99,6 +104,19 @@ impl Mode for TimeAttack {
             Event::MatchStart | Event::RoundStart | Event::MatchEnd => Vec::new(),
         }
     }
+
+    /// The best times so far with the points they would get.
+    fn live_round(&self, standings: &Standings, races: &RoundEnd) -> Vec<Entry> {
+        // Everyone else who raced joins at the round end.
+        let races = races.taking_part(standings);
+        let points = self.points(&races);
+        standings.placed(&races, CountedRace::Best, |account_id| {
+            points
+                .iter()
+                .find(|(finisher, _)| finisher == account_id)
+                .map_or(0, |(_, points)| *points)
+        })
+    }
 }
 
 impl TimeAttack {
@@ -114,17 +132,8 @@ impl TimeAttack {
             standings.join(&racer.account_id);
         }
 
-        let finishers = tm_driver_sdk::race_order(
-            round_end
-                .racers
-                .iter()
-                .filter(|r| CountedRace::Best.time(r).is_some())
-                .map(|r| r.account_id.as_str()),
-            &round_end,
-            CountedRace::Best,
-        );
-        for (rank, account_id) in finishers.iter().enumerate() {
-            standings.award(account_id, self.points_for(rank, finishers.len()));
+        for (account_id, points) in self.points(&round_end) {
+            standings.award(&account_id, points);
         }
 
         standings.rounds_on_map += 1;
@@ -141,6 +150,25 @@ impl TimeAttack {
             0 => format!("Map {map}"),
             maps => format!("Map {map} / {maps}"),
         }
+    }
+
+    /// The finishers of a round by their best time with their points.
+    fn points(&self, round_end: &RoundEnd) -> Vec<(String, i32)> {
+        let finishers = tm_driver_sdk::race_order(
+            round_end
+                .racers
+                .iter()
+                .filter(|r| CountedRace::Best.time(r).is_some())
+                .map(|r| r.account_id.as_str()),
+            round_end,
+            CountedRace::Best,
+        );
+        let count = finishers.len();
+        finishers
+            .into_iter()
+            .enumerate()
+            .map(|(rank, account_id)| (account_id, self.points_for(rank, count)))
+            .collect()
     }
 
     fn points_for(&self, rank: usize, finishers: usize) -> i32 {

@@ -145,6 +145,44 @@ impl Mode for ReverseCup {
         self.label(standings);
         commands
     }
+
+    /// The finishers so far with the points they would lose. Who loses the points
+    /// for giving up and who is eliminated is only known once the round ended.
+    fn live_round(&self, standings: &Standings, races: &RoundEnd) -> Vec<Entry> {
+        // Like at the round end, nothing counts while the match waits or is over.
+        if standings.participants().next().is_none()
+            || self.waits(standings)
+            || self.match_over(standings)
+        {
+            return Vec::new();
+        }
+        let finished = |account_id: &str| {
+            races
+                .racer(account_id)
+                .is_some_and(|racer| CountedRace::Last.time(racer).is_some())
+        };
+        let finishers = tm_driver_sdk::race_order(
+            standings
+                .in_match()
+                .map(|p| p.account_id.as_str())
+                .filter(|account_id| finished(account_id)),
+            races,
+            CountedRace::Last,
+        );
+        let repartition = self.repartition(standings);
+        standings.placed(races, CountedRace::Last, |account_id| {
+            finishers
+                .iter()
+                .position(|finisher| finisher == account_id)
+                .map_or(0, |place| {
+                    -repartition
+                        .get(place)
+                        .or(repartition.last())
+                        .copied()
+                        .unwrap_or(0)
+                })
+        })
+    }
 }
 
 impl ReverseCup {

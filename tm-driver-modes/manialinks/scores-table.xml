@@ -169,7 +169,7 @@
 /**
  *	The scores table of driver matches, built from the standings the driver host
  *	publishes through Net_Driver_Standings, the players of Net_Driver_Users and the
- *	last round of Net_Driver_Round. The json is
+ *	round of Net_Driver_Round, as it stands while it runs. The json is
  *	tm_server_types::method::DriverStandings, DriverUsers and DriverRound.
  *
  *	The driver modescript makes this a layer of the type ScoresTable, so the game
@@ -225,6 +225,7 @@
 
 #Struct K_Round {
 	Integer number;
+	Boolean live;
 	K_Entry[] entries;
 }
 
@@ -285,7 +286,7 @@ Text PlayerName(K_User[Text] _Known, Text _AccountId) {
 	return _AccountId;
 }
 
-/// The points of every player in the last round by account id.
+/// The points of every player in the round by account id, as it stands while it runs.
 Integer[Text] RoundScores(Text _Round) {
 	declare Integer[Text] Result;
 	declare K_Round Parsed;

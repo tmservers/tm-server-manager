@@ -3,8 +3,9 @@
 
 use tm_driver_mode_knockout::{ExtraLosses, Settings};
 use tm_driver_sim::rules::{
-    Counted, DriverStandings, DriverStatus, RoundEnd, Rules, ends_map, ends_match, entry,
-    in_race_order, participants, playing, racers_placed, spectators_stay,
+    Counted, DriverStandings, DriverStatus, LiveRound, RoundEnd, Rules, ends_map, ends_match,
+    entry, in_race_order, live_in_race_order, participants, playing, racers_placed,
+    spectators_stay,
 };
 
 pub struct Knockout {
@@ -86,6 +87,18 @@ impl Rules for Knockout {
     fn settings_changed(&mut self, settings: &str) -> Result<(), String> {
         self.settings = tm_driver_sim::rules::settings(settings)?;
         Ok(())
+    }
+
+    /// The race so far, nobody loses a life before the end.
+    fn live_round(&mut self, live: &LiveRound) -> Result<(), String> {
+        live_in_race_order(live, Counted::Last)?;
+        match live.round.entries.iter().find(|entry| entry.score != 0) {
+            Some(entry) => Err(format!(
+                "{} has {} lives in the round before it ended",
+                entry.account_id, entry.score
+            )),
+            None => Ok(()),
+        }
     }
 
     fn round_end(&mut self, end: &RoundEnd) -> Result<(), String> {

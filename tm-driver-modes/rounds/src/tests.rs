@@ -9,6 +9,7 @@ fn racer(account_id: &str, checkpoints: &[u32], finished: bool) -> Racer {
         races: vec![Race {
             checkpoints: checkpoints.to_vec(),
             finished,
+            laps: u32::from(finished),
         }],
     }
 }
@@ -273,4 +274,45 @@ fn rejected_settings_change_nothing() {
     harness.step(Event::RoundStart);
     harness.step(round_end(vec![finish("a", 30_000)]));
     assert_eq!(scores(&harness), [("a", 1, 10, 10)]);
+}
+
+/// Account, place, points and time of everyone in a live round.
+fn live(entries: &[Entry]) -> Vec<(&str, u32, i32, Option<u32>)> {
+    entries
+        .iter()
+        .map(|p| (p.account_id.as_str(), p.position, p.score, p.time))
+        .collect()
+}
+
+#[test]
+fn the_live_round_gives_the_finishers_so_far_their_points() {
+    let mut harness = started(r#"{"points_repartition": [10, 6, 4]}"#);
+    harness.step(Event::RoundStart);
+    for player in ["a", "b", "c"] {
+        harness.step(Event::RaceStart(player.into()));
+    }
+
+    // c finished first, a is still racing and b has not passed a checkpoint yet.
+    let races = RoundEnd {
+        invalid: false,
+        racers: vec![
+            finish("c", 30_000),
+            racer("a", &[10_000], false),
+            racer("b", &[], false),
+        ],
+        present: Vec::new(),
+    };
+    assert_eq!(
+        live(&harness.live_round(races)),
+        [
+            ("c", 1, 10, Some(30_000)),
+            ("a", 2, 0, None),
+            ("b", 3, 0, None)
+        ]
+    );
+    // Only the round end awards points.
+    assert_eq!(
+        scores(&harness),
+        [("a", 0, 0, 0), ("b", 0, 0, 0), ("c", 0, 0, 0)]
+    );
 }

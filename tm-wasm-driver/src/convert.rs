@@ -4,14 +4,14 @@ use tm_server_types::{
     event::{DriverPlayerResult, DriverRoundResult},
     method::{
         DriverCanSpawn, DriverCommand, DriverEntry, DriverFinishTimeout, DriverLabelTone,
-        DriverLayer, DriverLayerKind, DriverRound, DriverRoundFormat, DriverStandings,
-        DriverStatus, DriverUser, DriverUsers, DriverWarmUp,
+        DriverLaps, DriverLayer, DriverLayerKind, DriverRaceRules, DriverRound, DriverRoundFormat,
+        DriverStandings, DriverStatus, DriverUser, DriverUsers, DriverWarmUp,
     },
 };
 
 use crate::bindings::tmservers::driver::types::{
-    CanSpawn, Command, Entry, FinishTimeout, Label, Layer, RoundFormat, Standings, Status, Tone,
-    User, WarmUp,
+    CanSpawn, Command, Entry, FinishTimeout, Label, Laps, Layer, RaceRules, RoundFormat, Standings,
+    Status, Tone, User, WarmUp,
 };
 
 /// The commands of a mode for the server. Maps are given by their place in the playlist.
@@ -32,6 +32,16 @@ pub(crate) fn commands(commands: Vec<Command>, playlist: &[String]) -> Vec<Drive
                     duration_ms,
                     timeout_ms,
                 }),
+                Command::SetRaceRules(RaceRules { laps, give_up }) => {
+                    DriverCommand::SetRaceRules(DriverRaceRules {
+                        laps: match laps {
+                            Laps::Map => DriverLaps::Map,
+                            Laps::Count(laps) => DriverLaps::Count(laps),
+                            Laps::Infinite => DriverLaps::Infinite,
+                        },
+                        give_up,
+                    })
+                }
                 Command::SetCanSpawn(CanSpawn {
                     account_id,
                     can_spawn,
@@ -51,7 +61,8 @@ pub(crate) fn commands(commands: Vec<Command>, playlist: &[String]) -> Vec<Drive
                         return None;
                     }
                 },
-                // The scores table is chosen with the manialinks of the config, not by modes.
+                // The scores table is chosen with the manialinks of the config or the ones
+                // the mode brings, not with commands.
                 Command::SetLayer(Layer { name, manialink }) => {
                     DriverCommand::SetLayer(DriverLayer {
                         name,
@@ -133,10 +144,11 @@ fn name<'a>(users: &'a BTreeMap<String, User>, account_id: &'a str) -> &'a str {
         .unwrap_or(account_id)
 }
 
-/// The last round as the manialinks get it.
-pub(crate) fn round(number: u32, entries: &[Entry]) -> DriverRound {
+/// The round as the manialinks get it.
+pub(crate) fn round(number: u32, live: bool, entries: &[Entry]) -> DriverRound {
     DriverRound {
         number,
+        live,
         entries: ordered(entries),
     }
 }
@@ -276,6 +288,23 @@ mod tests {
     }
 
     #[test]
+    fn race_rules_keep_their_values() {
+        assert_eq!(
+            commands(
+                vec![Command::SetRaceRules(RaceRules {
+                    laps: Laps::Count(50),
+                    give_up: false,
+                })],
+                &[]
+            ),
+            [DriverCommand::SetRaceRules(DriverRaceRules {
+                laps: DriverLaps::Count(50),
+                give_up: false,
+            })]
+        );
+    }
+
+    #[test]
     fn standings_are_ordered_by_position() {
         let mut standings = empty_standings();
         standings.info = "1 / 5 rounds".into();
@@ -354,7 +383,10 @@ mod tests {
             positions(&round_result(&round)),
             [("first", -2, 1), ("second", -6, 2), ("third", 0, 3)]
         );
-        assert_eq!(super::round(4, &round).entries[0].account_id, "first");
+        assert_eq!(
+            super::round(4, false, &round).entries[0].account_id,
+            "first"
+        );
     }
 
     #[test]

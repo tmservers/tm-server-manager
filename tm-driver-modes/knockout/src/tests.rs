@@ -9,6 +9,7 @@ fn racer(account_id: &str, checkpoints: &[u32], finished: bool) -> Racer {
         races: vec![Race {
             checkpoints: checkpoints.to_vec(),
             finished,
+            laps: u32::from(finished),
         }],
     }
 }
@@ -820,4 +821,24 @@ fn registration_stays_closed_once_lives_were_taken() {
     harness.step(round_end(finishers(&["a", "b", "d"])));
     assert_eq!(harness.standing("d").status, Status::Spectator);
     assert_eq!(harness.standing("b").score, 1);
+}
+
+#[test]
+fn the_live_round_shows_the_race_so_far() {
+    let harness = playing("{}", &["a", "b", "c"]);
+    let races = RoundEnd {
+        invalid: false,
+        racers: vec![dnf("a", 2), finish("c", 30_000), dnf("b", 1)],
+        present: Vec::new(),
+    };
+    let live: Vec<(String, u32, i32)> = harness
+        .live_round(races)
+        .into_iter()
+        .map(|p| (p.account_id, p.position, p.score))
+        .collect();
+    // Nobody lost a life yet.
+    assert_eq!(
+        live,
+        [("c".into(), 1, 0), ("a".into(), 2, 0), ("b".into(), 3, 0)]
+    );
 }

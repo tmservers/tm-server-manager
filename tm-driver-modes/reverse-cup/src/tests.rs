@@ -9,6 +9,7 @@ fn racer(account_id: &str, checkpoints: &[u32], finished: bool) -> Racer {
         races: vec![Race {
             checkpoints: checkpoints.to_vec(),
             finished,
+            laps: u32::from(finished),
         }],
     }
 }
@@ -638,4 +639,46 @@ fn more_winners_end_the_match_with_the_next_round() {
     assert_eq!(chat(&commands), ["$<a$>, $<b$>, $<c$> win the match!"]);
     // The round that ended it took no points.
     assert_eq!(status(&harness, "c"), (Status::Playing, 30));
+}
+
+#[test]
+fn the_live_round_shows_what_the_finishers_so_far_would_lose() {
+    let mut harness = playing(
+        r#"{"points_repartition": [2, 5, 9], "complex_points_repartition": {}}"#,
+        vec![
+            alive("a", 50),
+            alive("b", 50),
+            alive("c", 50),
+            alive("d", 50),
+        ],
+    );
+    let races = RoundEnd {
+        invalid: false,
+        racers: vec![finish("b", 31_000), dnf("a", 1), finish("c", 30_000)],
+        present: Vec::new(),
+    };
+    let live: Vec<(String, u32, i32)> = harness
+        .live_round(races)
+        .into_iter()
+        .map(|p| (p.account_id, p.position, p.score))
+        .collect();
+    // a still races and d did not start, whether they lose the dnf points is open.
+    assert_eq!(
+        live,
+        [("c".into(), 1, -2), ("b".into(), 2, -5), ("a".into(), 3, 0)]
+    );
+    assert_eq!(status(&harness, "b"), (Status::Playing, 50));
+
+    // Nothing counts while the match waits for players.
+    harness.standings.entries = vec![alive("a", 100)];
+    let waiting = RoundEnd {
+        invalid: false,
+        racers: vec![finish("a", 30_000)],
+        present: Vec::new(),
+    };
+    assert_eq!(harness.live_round(waiting.clone()).len(), 1);
+    let mut harness = started(r#"{"number_of_winners": 2}"#);
+    harness.step(race_start("a"));
+    harness.step(race_start("b"));
+    assert!(harness.live_round(waiting).is_empty());
 }

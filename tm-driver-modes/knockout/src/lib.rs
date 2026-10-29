@@ -20,8 +20,8 @@
 
 use serde::{Deserialize, Serialize};
 use tm_driver_sdk::{
-    CanSpawn, Command, CountedRace, Event, Label, Mode, RoundEnd, RoundFormat, Standings, Status,
-    Tone,
+    CanSpawn, Command, CountedRace, Entry, Event, Label, Mode, RoundEnd, RoundFormat, Standings,
+    Status, Tone,
     settings::{FinishTimeoutSetting, WarmUpSetting},
 };
 
@@ -107,6 +107,12 @@ impl Mode for Knockout {
         self.label(standings);
         standings.info = self.info(standings);
         commands
+    }
+
+    /// The race so far. Who loses a life is only known once the round ended, also
+    /// players without a finish do.
+    fn live_round(&self, standings: &Standings, races: &RoundEnd) -> Vec<Entry> {
+        standings.placed(races, CountedRace::Last, |_| 0)
     }
 }
 

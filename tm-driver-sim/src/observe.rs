@@ -9,13 +9,15 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use tm_server_types::{
-    event::{DriverHold, DriverSection, Event},
+    event::{DriverHold, DriverSection, Event, WayPoint},
     method::{
-        DriverCommand, DriverFinishTimeout, DriverRound, DriverRoundFormat, DriverStandings,
-        DriverUsers, DriverWarmUp,
+        DriverCommand, DriverFinishTimeout, DriverRaceRules, DriverRound, DriverRoundFormat,
+        DriverStandings, DriverUsers, DriverWarmUp,
     },
 };
 use tm_wasm_driver::{DriverInput, DriverReply};
+
+use crate::LIVE_ROUND_INTERVAL;
 
 /// The races of the round that runs or ended last, as the callbacks that reached
 /// the driver tell them.
@@ -29,6 +31,8 @@ pub struct RoundTruth {
 pub struct SeenRace {
     pub checkpoints: Vec<u32>,
     pub finished: bool,
+    /// Laps completed, from the waypoints that ended a lap.
+    pub laps: u32,
 }
 
 impl SeenRace {
@@ -67,21 +71,27 @@ impl RoundTruth {
         self.races_mut(account_id).push(SeenRace {
             checkpoints: Vec::new(),
             finished: false,
+            laps: 0,
         });
     }
 
     /// Like the host, a waypoint without a start still belongs to a race.
-    fn way_point(&mut self, account_id: &str, checkpoints: &[u32], finished: bool) {
-        let races = self.races_mut(account_id);
+    fn way_point(&mut self, way_point: &WayPoint) {
+        let races = self.races_mut(&way_point.account_id);
         if races.last().is_none_or(|race| race.finished) {
             races.push(SeenRace {
                 checkpoints: Vec::new(),
                 finished: false,
+                laps: 0,
             });
         }
         let race = races.last_mut().expect("The player has a race");
-        race.checkpoints = checkpoints.to_vec();
-        race.finished = finished;
+        race.checkpoints
+            .clone_from(&way_point.current_race_checkpoints);
+        race.finished = way_point.is_end_race;
+        if way_point.is_end_lap {
+            race.laps = (way_point.checkpoint_in_race + 1) / (way_point.checkpoint_in_lap + 1);
+        }
     }
 
     fn races_mut(&mut self, account_id: &str) -> &mut Vec<SeenRace> {
@@ -136,6 +146,15 @@ pub(crate) struct Observer {
     players_seen: bool,
     truth: RoundTruth,
     in_round: bool,
+    in_warm_up: bool,
+    /// The round that runs shows live, from its start to the next hold.
+    live: bool,
+    /// When the host placed the live round last, in server time.
+    live_asked: Option<u32>,
+    /// The last input made the host place the live round.
+    live_due: bool,
+    /// Live rounds that reached the server in the round that runs or ended last.
+    live_updates: u32,
     session: Option<i32>,
     seq: u32,
     answers: BTreeMap<(i32, u32), Answer>,
@@ -157,6 +176,7 @@ pub(crate) struct Observer {
     can_spawn: BTreeMap<String, bool>,
     format: DriverRoundFormat,
     warm_up: DriverWarmUp,
+    race_rules: DriverRaceRules,
     next_map: Option<String>,
     match_ended: bool,
     published: Published,
@@ -175,6 +195,11 @@ impl Observer {
             players_seen: false,
             truth: RoundTruth::default(),
             in_round: false,
+            in_warm_up: false,
+            live: false,
+            live_asked: None,
+            live_due: false,
+            live_updates: 0,
             session: None,
             seq: 0,
             answers: BTreeMap::new(),
@@ -185,6 +210,7 @@ impl Observer {
             can_spawn: BTreeMap::new(),
             format: default_format(),
             warm_up: DriverWarmUp::default(),
+            race_rules: DriverRaceRules::default(),
             next_map: None,
             match_ended: false,
             published: Published::default(),
@@ -220,6 +246,21 @@ impl Observer {
 
     pub(crate) fn warm_up(&self) -> DriverWarmUp {
         self.warm_up
+    }
+
+    pub(crate) fn race_rules(&self) -> DriverRaceRules {
+        self.race_rules
+    }
+
+    /// The last input made the host place the round that runs as it stands: the
+    /// races changed and the interval since the last time passed.
+    pub(crate) fn live_due(&self) -> bool {
+        self.live_due
+    }
+
+    /// Live rounds that reached the server in the round that runs or ended last.
+    pub(crate) fn live_updates(&self) -> u32 {
+        self.live_updates
     }
 
     pub(crate) fn next_map(&self) -> Option<&str> {
@@ -272,6 +313,7 @@ impl Observer {
     /// could not have sent.
     pub(crate) fn input(&mut self, input: &DriverInput) -> Result<Option<SeenHold>, String> {
         self.changed_settings = None;
+        self.live_due = false;
         // Like the host, settings that waited apply with the first input after the
         // round, before the mode gets it.
         if !self.in_round {
@@ -320,6 +362,8 @@ impl Observer {
                 self.can_spawn.clear();
                 self.format = default_format();
                 self.warm_up = DriverWarmUp::default();
+                self.race_rules = DriverRaceRules::default();
+                self.live = false;
             }
             Event::StartMapStart(start) => {
                 self.map.clone_from(&start.map.uid);
@@ -331,7 +375,12 @@ impl Observer {
                 }
                 self.truth = RoundTruth::default();
                 self.in_round = true;
+                self.live = !self.in_warm_up;
+                self.live_asked = None;
+                self.live_updates = 0;
             }
+            Event::WarmupStart => self.in_warm_up = true,
+            Event::WarmupEnd => self.in_warm_up = false,
             Event::StartLine(start) => {
                 if !self.can_spawn(&start.account_id) {
                     return Err(format!(
@@ -340,12 +389,12 @@ impl Observer {
                     ));
                 }
                 self.truth.start(&start.account_id);
+                self.races_changed(start.time);
             }
-            Event::WayPoint(way_point) => self.truth.way_point(
-                &way_point.account_id,
-                &way_point.current_race_checkpoints,
-                way_point.is_end_race,
-            ),
+            Event::WayPoint(way_point) => {
+                self.truth.way_point(way_point);
+                self.races_changed(way_point.time);
+            }
             Event::PlayerConnect(connect) => {
                 if self.connected.insert(connect.account_id.clone()) {
                     self.notes.push(format!("{} joins", connect.account_id));
@@ -374,6 +423,22 @@ impl Observer {
         Ok(None)
     }
 
+    /// Like the host, the races of the round that runs changed: the host places the
+    /// round anew once the interval passed since the last time.
+    fn races_changed(&mut self, time: u32) {
+        if !self.in_round || self.in_warm_up || !self.live {
+            return;
+        }
+        if self
+            .live_asked
+            .is_some_and(|asked| time.wrapping_sub(asked) < LIVE_ROUND_INTERVAL)
+        {
+            return;
+        }
+        self.live_asked = Some(time);
+        self.live_due = true;
+    }
+
     fn hold(&mut self, hold: &DriverHold) -> Result<SeenHold, String> {
         if self.session != Some(hold.session) {
             if self.session.is_some() {
@@ -398,6 +463,9 @@ impl Observer {
 
         // Like the host, every new hold ends the round that ran.
         let in_round = first && std::mem::take(&mut self.in_round);
+        if first {
+            self.live = false;
+        }
         let counts = first && hold.section == DriverSection::RoundEnd && !hold.forced && in_round;
         if first && hold.section == DriverSection::RoundEnd {
             self.rounds += 1;
@@ -452,10 +520,17 @@ impl Observer {
                 }
                 DriverCommand::SetRoundFormat(format) => self.format = *format,
                 DriverCommand::SetWarmUp(warm_up) => self.warm_up = *warm_up,
+                DriverCommand::SetRaceRules(rules) => self.race_rules = *rules,
                 DriverCommand::SetNextMap(uid) => self.next_map = Some(uid.clone()),
                 DriverCommand::EndMatch => self.match_ended = true,
                 DriverCommand::SetStandings(json) => self.published.standings = Some(parse(json)?),
-                DriverCommand::SetRound(json) => self.published.round = Some(parse(json)?),
+                DriverCommand::SetRound(json) => {
+                    let round: DriverRound = parse(json)?;
+                    if round.live && self.live_due {
+                        self.live_updates += 1;
+                    }
+                    self.published.round = Some(round);
+                }
                 DriverCommand::SetUsers(json) => self.published.users = Some(parse(json)?),
                 DriverCommand::Continue(_)
                 | DriverCommand::EndMap

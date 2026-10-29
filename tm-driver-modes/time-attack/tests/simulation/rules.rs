@@ -5,8 +5,9 @@ use std::collections::BTreeMap;
 
 use tm_driver_mode_time_attack::Settings;
 use tm_driver_sim::rules::{
-    Counted, DriverStandings, MapEnd, RoundEnd, Rules, ends_map, ends_match, in_race_order,
-    playing, points, racers_placed, ranked_by_points,
+    Counted, DriverRound, DriverStandings, LiveRound, MapEnd, RoundEnd, RoundTruth, Rules,
+    ends_map, ends_match, in_race_order, live_in_race_order, playing, points, racers_placed,
+    ranked_by_points,
 };
 
 pub struct TimeAttack {
@@ -25,31 +26,17 @@ impl TimeAttack {
     }
 }
 
-impl Rules for TimeAttack {
-    fn match_start(&mut self) {
-        self.totals.clear();
-    }
-
-    fn settings_changed(&mut self, settings: &str) -> Result<(), String> {
-        self.settings = tm_driver_sim::rules::settings(settings)?;
-        Ok(())
-    }
-
-    fn round_end(&mut self, end: &RoundEnd) -> Result<(), String> {
-        if !ends_map(end.commands) {
-            return Err("A time attack round does not end the map".into());
-        }
-
-        in_race_order(end, Counted::Best)?;
-        racers_placed(end)?;
-
-        let entries = &end.round.entries;
-        let finishers = entries
+impl TimeAttack {
+    /// Every player has the time of their best race and the finishers the points of
+    /// its rank.
+    fn check_places(&self, round: &DriverRound, truth: &RoundTruth) -> Result<(), String> {
+        let finishers = round
+            .entries
             .iter()
-            .filter(|entry| end.truth.best_finish(&entry.account_id).is_some())
+            .filter(|entry| truth.best_finish(&entry.account_id).is_some())
             .count();
-        for (place, entry) in entries.iter().enumerate() {
-            let best = end.truth.best_finish(&entry.account_id);
+        for (place, entry) in round.entries.iter().enumerate() {
+            let best = truth.best_finish(&entry.account_id);
             if entry.time != best.map_or(-1, |time| time as i32) {
                 return Err(format!(
                     "{} has the time {} instead of its best {best:?}",
@@ -71,6 +58,30 @@ impl Rules for TimeAttack {
                     place + 1
                 ));
             }
+        }
+        Ok(())
+    }
+}
+
+impl Rules for TimeAttack {
+    fn match_start(&mut self) {
+        self.totals.clear();
+    }
+
+    fn settings_changed(&mut self, settings: &str) -> Result<(), String> {
+        self.settings = tm_driver_sim::rules::settings(settings)?;
+        Ok(())
+    }
+
+    fn round_end(&mut self, end: &RoundEnd) -> Result<(), String> {
+        if !ends_map(end.commands) {
+            return Err("A time attack round does not end the map".into());
+        }
+
+        in_race_order(end, Counted::Best)?;
+        racers_placed(end)?;
+        self.check_places(end.round, end.truth)?;
+        for entry in &end.round.entries {
             *self.totals.entry(entry.account_id.clone()).or_default() += entry.score;
         }
 
@@ -84,6 +95,12 @@ impl Rules for TimeAttack {
             }
         }
         ranked_by_points(end.after)
+    }
+
+    /// The best times so far have the points of their rank.
+    fn live_round(&mut self, live: &LiveRound) -> Result<(), String> {
+        live_in_race_order(live, Counted::Best)?;
+        self.check_places(live.round, live.truth)
     }
 
     /// Every round ends its map, and the maps of the match end it. The current map

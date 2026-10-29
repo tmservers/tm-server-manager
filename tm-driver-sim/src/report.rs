@@ -9,8 +9,8 @@ use std::fmt::Write;
 use tm_server_types::{
     event::{DriverSection, Event},
     method::{
-        DriverCommand, DriverEntry, DriverFinishTimeout, DriverRoundFormat, DriverStatus,
-        DriverWarmUp,
+        DriverCommand, DriverEntry, DriverFinishTimeout, DriverLaps, DriverRaceRules,
+        DriverRoundFormat, DriverStatus, DriverWarmUp,
     },
 };
 use tm_wasm_driver::{Driver, DriverInput, DriverReply};
@@ -44,8 +44,13 @@ impl Report {
             .maps
             .iter()
             .map(|map| {
+                let laps = if map.has_laps() {
+                    format!(" × {} laps", map.laps)
+                } else {
+                    String::new()
+                };
                 format!(
-                    "{} {} cp {}",
+                    "{} {} cp{laps} {}",
                     map.uid,
                     map.sectors.len(),
                     time(map.author_time())
@@ -151,6 +156,9 @@ impl Report {
                             format(observer.format()),
                             warm_up(observer.warm_up())
                         );
+                        if observer.race_rules() != DriverRaceRules::default() {
+                            write!(line, " · {}", race_rules(observer.race_rules())).unwrap();
+                        }
                         if let Some(next) = observer.next_map() {
                             write!(line, " · next {next}").unwrap();
                         }
@@ -204,9 +212,12 @@ impl Report {
             })
             .collect();
         self.line(format!("  races  {}", or_none(&races)));
+        if observer.live_updates() > 0 {
+            self.line(format!("  live   {} updates", observer.live_updates()));
+        }
         if reply.round_result.is_some() {
             let round: Vec<String> = driver
-                .last_round()
+                .round()
                 .entries
                 .iter()
                 .map(|entry| format!("{} {} {}", entry.position, entry.account_id, entry.score))
@@ -336,6 +347,19 @@ fn format(format: DriverRoundFormat) -> String {
             format!("one try, finish timeout {}", time(ms))
         }
         DriverRoundFormat::TimeAttack(limit) => format!("time attack {}", time(limit)),
+    }
+}
+
+fn race_rules(rules: DriverRaceRules) -> String {
+    let laps = match rules.laps {
+        DriverLaps::Map => "laps of the map".to_string(),
+        DriverLaps::Count(laps) => format!("{laps} laps"),
+        DriverLaps::Infinite => "infinite laps".to_string(),
+    };
+    if rules.give_up {
+        laps
+    } else {
+        format!("{laps}, no give up")
     }
 }
 

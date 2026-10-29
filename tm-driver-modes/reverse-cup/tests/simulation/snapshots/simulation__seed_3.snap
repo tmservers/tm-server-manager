@@ -14,6 +14,7 @@ match 1
 map m1 · one try, no finish timeout · warmup 2 × one try · next m1
 round 1
   races  c 0:36.567 · b 0:36.793 · a 0:36.962
+  live   5 updates
   round  1 c -2 · 2 b -5 · 3 a -7
   match  1 c 7 · 2 b 4 · 3 a 2
   info   3 left, 1 / 1 rounds
@@ -22,6 +23,7 @@ map end · next m1
 map m1 · one try, no finish timeout · warmup 2 × one try · next m1
 round 2
   races  b 0:37.647 · a 0:37.481 · c 0:36.707
+  live   6 updates
   round  1 c -2 · 2 a -5 · 3 b -7
   match  1 c 5 · 2 a 0 (Last Chance) · 3 b 0 (Last Chance)
   info   3 left, 1 / 1 rounds
@@ -30,6 +32,7 @@ map end · next m1
 map m1 · one try, no finish timeout · warmup 2 × one try · next m1
 round 3
   races  a 0cp · b 0:37.931 · c 0:35.769
+  live   6 updates
   round  1 c -2 · 2 b -5 · 3 a -30
   match  1 c 3 · 2 b 0 (Last Chance) · 3 a 0 out
   info   2 left, 1 / 1 rounds
@@ -41,6 +44,7 @@ map m1 · one try, no finish timeout · warmup 2 × one try · next m1
 round 4
   ! d joins
   races  d 0:31.599 · b 0:34.870 · c 0:36.669
+  live   3 updates
   round  1 b -5 · 2 c -7
   match  1 b 0 (Last Chance) · 2 c 0 (Last Chance) · 3 a 0 out · - d spectator
   info   2 left, 1 / 1 rounds
@@ -51,6 +55,7 @@ map m1 · one try, no finish timeout · warmup 2 × one try · next m1
 round 5
   ! e joins
   races  b 0:37.896 · c 0:38.272
+  live   5 updates
   round  1 b -5 · 2 c -7
   match  1 b 0 (Winner) · 2 c 0 out · 3 a 0 out · - d spectator · - e spectator
   info   1 left, 1 / 1 rounds
@@ -66,6 +71,7 @@ match 2
 map m1 · one try, no finish timeout · warmup 2 × one try · next m1
 round 6
   races  c 2cp · a 0:40.589 · d 0cp · b 0:40.589 · e 0:31.199
+  live   5 updates
   round  1 e -4 · 2 b -7 · 3 a -9 · 4 c -30 · 5 d -30
   match  1 e 5 · 2 b 2 · 3 a 0 (Last Chance) · 4 c 0 (Last Chance) · 5 d 0 (Last Chance)
   info   5 left, 1 / 1 rounds
@@ -74,6 +80,7 @@ map end · next m1
 map m1 · one try, no finish timeout · warmup 2 × one try · next m1
 round 7
   races  c 0:35.695 · a 0:38.366 · e 0:33.008 · d 0:32.753 · b 3cp
+  live   11 updates
   round  1 d -4 · 2 e -7 · 3 c -9 · 4 a -13 · 5 b -30
   match  1 d 0 (Last Chance) · 2 e 0 (Last Chance) · 3 c 0 (Last Chance) · 4 a 0 (Last Chance) · 5 b 0 (Last Chance)
   info   5 left, 1 / 1 rounds
@@ -82,6 +89,7 @@ map end · next m1
 map m1 · one try, no finish timeout · warmup 2 × one try · next m1
 round 8
   races  e 0:33.298 · b 0cp · a 0:37.482 · c 0:36.833 · d 0:33.298
+  live   8 updates
   round  1 d -4 · 2 e -7 · 3 c -9 · 4 a -13 · 5 b -30
   match  1 d 0 (Last Chance) · 2 e 0 (Last Chance) · 3 c 0 (Last Chance) · 4 a 0 (Last Chance) · 5 b 0 out
   info   4 left, 1 / 1 rounds
@@ -92,6 +100,7 @@ map end · next m1
 map m1 · one try, no finish timeout · warmup 2 × one try · next m1
 round 9
   races  c 0:36.603 · e 0:34.598 · a 0:39.077 · d 0:35.265
+  live   7 updates
   round  1 e -4 · 2 d -7 · 3 c -9 · 4 a -13
   match  1 e 0 (Last Chance) · 2 d 0 (Last Chance) · 3 c 0 (Last Chance) · 4 a 0 out · 5 b 0 out
   info   3 left, 1 / 1 rounds
@@ -102,6 +111,7 @@ map end · next m1
 map m1 · one try, no finish timeout · warmup 2 × one try · next m1
 round 10
   races  e 3cp · d 0:35.148 · c 0:37.330
+  live   8 updates
   round  1 d -2 · 2 c -5 · 3 e -30
   match  1 d 0 (Last Chance) · 2 c 0 (Last Chance) · 3 e 0 out · 4 a 0 out · 5 b 0 out
   info   2 left, 1 / 1 rounds
@@ -112,6 +122,7 @@ map end · next m1
 map m1 · one try, no finish timeout · warmup 2 × one try · next m1
 round 11
   races  c 4cp · d 0:31.773
+  live   3 updates
   round  1 d -5 · 2 c -30
   match  1 d 0 (Winner) · 2 c 0 out · 3 e 0 out · 4 a 0 out · 5 b 0 out
   info   1 left, 1 / 1 rounds

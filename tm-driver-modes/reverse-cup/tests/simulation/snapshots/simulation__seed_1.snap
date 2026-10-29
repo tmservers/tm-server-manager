@@ -12,11 +12,13 @@ match 1
 map m1 · one try, no finish timeout · warmup 1 × 0:21.000
 round 1
   races  b 0:32.807 · c 0:35.846 · a 0:31.347
+  live   5 updates
   round  1 a -5 · 2 b -5 · 3 c -5
   match  1 a 39 · 2 b 39 · 3 c 39
   info   3 left, 1 / 2 rounds
 round 2
   races  c 0:36.995 · a 0:31.861 · b 0:33.610
+  live   5 updates
   round  1 a -5 · 2 b -5 · 3 c -5
   match  1 a 34 · 2 b 34 · 3 c 34
   info   3 left, 2 / 2 rounds
@@ -25,11 +27,13 @@ map end
 map m2 · one try, no finish timeout · warmup 1 × 0:21.000
 round 3
   races  b 0:33.193 · a 0:32.737 · c 0:36.107
+  live   4 updates
   round  1 a -5 · 2 b -5 · 3 c -5
   match  1 a 29 · 2 b 29 · 3 c 29
   info   3 left, 1 / 2 rounds
 round 4
   races  b 0:33.339 · a 0:29.912 · c 0:35.896
+  live   5 updates
   round  1 a -5 · 2 b -5 · 3 c -5
   match  1 a 24 · 2 b 24 · 3 c 24
   info   3 left, 2 / 2 rounds
@@ -38,11 +42,13 @@ map end
 map m1 · one try, no finish timeout · warmup 1 × 0:21.000
 round 5
   races  b 0:33.273 · a 0:30.510 · c 0:36.097
+  live   6 updates
   round  1 a -5 · 2 b -5 · 3 c -5
   match  1 a 19 · 2 b 19 · 3 c 19
   info   3 left, 1 / 2 rounds
 round 6
   races  b 0:32.908 · a 0:30.782 · c 0:35.782
+  live   6 updates
   round  1 a -5 · 2 b -5 · 3 c -5
   match  1 a 14 · 2 b 14 · 3 c 14
   info   3 left, 2 / 2 rounds
@@ -51,11 +57,13 @@ map end
 map m2 · one try, no finish timeout · warmup 1 × 0:21.000
 round 7
   races  c 0:36.190 · b 0:35.918 · a 0:30.850
+  live   5 updates
   round  1 a -5 · 2 b -5 · 3 c -5
   match  1 a 9 · 2 b 9 · 3 c 9
   info   3 left, 1 / 2 rounds
 round 8
   races  b 0:33.577 · a 0:30.554 · c 0:35.848
+  live   5 updates
   round  1 a -5 · 2 b -5 · 3 c -5
   match  1 a 4 · 2 b 4 · 3 c 4
   info   3 left, 2 / 2 rounds
@@ -64,11 +72,13 @@ map end
 map m1 · one try, no finish timeout · warmup 1 × 0:21.000
 round 9
   races  c 0:36.249 · b 0:35.974 · a 0:29.393
+  live   5 updates
   round  1 a -5 · 2 b -5 · 3 c -5
   match  1 a 0 (Last Chance) · 2 b 0 (Last Chance) · 3 c 0 (Last Chance)
   info   3 left, 1 / 2 rounds
 round 10
   races  a 0:32.673 · b 0:33.046 · c 0:36.416
+  live   4 updates
   round  1 a -5 · 2 b -5 · 3 c -5
   match  1 a 0 out · 2 b 0 out · 3 c 0 out
   info   0 left, 2 / 2 rounds

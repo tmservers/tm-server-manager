@@ -38,14 +38,26 @@ pub struct SettingsChange {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MapSpec {
     pub uid: String,
-    /// The race time of every sector at the pace of the author in milliseconds. The
-    /// last sector ends at the finish.
+    /// The race time of every sector of a lap at the pace of the author in
+    /// milliseconds. The last sector ends at the finish or the end of the lap.
     pub sectors: Vec<u32>,
+    /// Laps of a race on the map, 1 for a map without laps.
+    pub laps: u32,
 }
 
 impl MapSpec {
+    /// The race time of the author over every lap of the map.
     pub fn author_time(&self) -> u32 {
+        self.lap_time() * self.laps
+    }
+
+    /// The race time of the author for one lap.
+    pub fn lap_time(&self) -> u32 {
         self.sectors.iter().sum()
+    }
+
+    pub fn has_laps(&self) -> bool {
+        self.laps > 1
     }
 }
 
@@ -91,8 +103,22 @@ pub enum RacePlan {
     Finish(Vec<u32>),
     /// Gives up after passing checkpoints at these race times.
     GiveUp(Vec<u32>),
+    /// Passes these checkpoints and goes on until the round ends, e.g. with
+    /// infinite laps.
+    Endless(Vec<u32>),
     /// Spawns but does not move.
     Idle,
+}
+
+/// What a race on a map is like under the rules of the driver.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Course {
+    /// Laps to the finish, None for a race that never finishes.
+    pub laps: Option<u32>,
+    /// Players can give up.
+    pub give_up: bool,
+    /// How long a race that never finishes goes on at most, in milliseconds.
+    pub longest: u32,
 }
 
 /// Something that happens before a round.
@@ -154,12 +180,18 @@ impl World {
         let rng = Rng::new(seed).fork("world");
 
         let mut maps = rng.fork("maps");
+        let mut laps = rng.fork("laps");
         let maps: Vec<MapSpec> = (1..=maps.between(1, 3))
             .map(|n| MapSpec {
                 uid: format!("m{n}"),
                 sectors: (0..maps.between(2, 5))
                     .map(|_| maps.between(3_000, 12_000))
                     .collect(),
+                laps: if laps.chance(250) {
+                    laps.between(2, 4)
+                } else {
+                    1
+                },
             })
             .collect();
 
@@ -271,25 +303,37 @@ impl PlayerSpec {
     }
 
     /// A race on a map at the pace of the player.
-    pub(crate) fn random_race(&self, map: &MapSpec, rng: &mut Rng, idle: u32) -> RacePlan {
+    pub(crate) fn random_race(
+        &self,
+        map: &MapSpec,
+        course: Course,
+        rng: &mut Rng,
+        idle: u32,
+    ) -> RacePlan {
         if rng.chance(idle) {
             return RacePlan::Idle;
         }
         let mut time = 0;
-        let checkpoints: Vec<u32> = map
-            .sectors
-            .iter()
-            .map(|&sector| {
+        let mut checkpoints = Vec::new();
+        let mut lap = 0;
+        while course.laps.is_none_or(|laps| lap < laps) {
+            for &sector in &map.sectors {
                 let pace = sector * self.pace / 1000;
                 let spread = rng.below(2 * self.spread + 1);
                 // At least a second per sector, so checkpoints never come at once.
                 time += (pace + spread).saturating_sub(self.spread).max(1_000);
-                time
-            })
-            .collect();
-        if rng.chance(self.give_up) {
+                checkpoints.push(time);
+            }
+            lap += 1;
+            if course.laps.is_none() && time >= course.longest {
+                break;
+            }
+        }
+        if course.give_up && rng.chance(self.give_up) {
             let passed = rng.below(checkpoints.len() as u32) as usize;
             RacePlan::GiveUp(checkpoints[..passed].to_vec())
+        } else if course.laps.is_none() {
+            RacePlan::Endless(checkpoints)
         } else {
             RacePlan::Finish(checkpoints)
         }

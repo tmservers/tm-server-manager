@@ -15,6 +15,9 @@ interface types {
         checkpoints: list<u32>,
         /// The race reached the finish. Its race time is the last checkpoint time.
         finished: bool,
+        /// Laps the race completed. On maps without laps the finish completes the
+        /// only lap.
+        laps: u32,
     }
 
     /// A player who started a race in the round.
@@ -26,7 +29,7 @@ interface types {
     }
 
     /// The races of a round as they happened. Which race of a player counts is up
-    /// to the mode.
+    /// to the mode. While the round runs, `live-round` gets the races so far.
     record round-end {
         /// The round does not count: it was forced to end or skipped (e.g. after a
         /// pause), or the host did not see it start, e.g. after the bridge restarted.
@@ -126,7 +129,8 @@ interface types {
         entries: list<entry>,
         /// The round that ended with this event, filled by the mode at round-end.
         /// The host takes it out after every event: it shows it as the last round
-        /// and reports it to the manager. Ignored for invalid rounds.
+        /// and reports it to the manager. Ignored for invalid rounds. The round that
+        /// runs comes from `live-round`.
         round: list<entry>,
         /// Rounds of the current map that counted, as the mode counts them. The host
         /// clears them when a map starts.
@@ -170,6 +174,27 @@ interface types {
         timeout-ms: option<u32>,
     }
 
+    /// How many laps a race has on maps with laps.
+    variant laps {
+        /// The laps of the map. Every match starts with them.
+        %map,
+        /// This many laps.
+        count(u32),
+        /// The race never finishes, e.g. for an endurance race in time attack rounds,
+        /// which end with their time limit. On maps without laps the finish still
+        /// ends the race.
+        infinite,
+    }
+
+    /// The rules of the races in the rounds that start from now on.
+    record race-rules {
+        laps: laps,
+        /// Players can give up their race. Without, a race only ends at the finish or
+        /// with the round, respawning at a checkpoint is still possible. Every match
+        /// starts with give ups.
+        give-up: bool,
+    }
+
     record can-spawn {
         account-id: string,
         can-spawn: bool,
@@ -186,6 +211,8 @@ interface types {
         /// The warmup before the first round of the map. Send it in reply to map-start,
         /// warmup races are no rounds and never reach the mode.
         set-warm-up(warm-up),
+        /// Applies to the next round that starts, like the round format.
+        set-race-rules(race-rules),
         /// Players that cannot spawn are out of the race (e.g. eliminated).
         /// The host leaves out permissions it already sent in this match.
         set-can-spawn(can-spawn),
@@ -197,7 +224,7 @@ interface types {
         /// plays the playlist in order and starts every match with its first map.
         set-next-map(u32),
         /// Creates or replaces a manialink layer that is always shown. The scores table
-        /// is chosen with the manialinks of the config.
+        /// is chosen with the manialinks of the config or of the mode (`manialinks`).
         set-layer(layer),
         remove-layer(string),
         /// Readable by manialinks through `netread Text Net_Driver_State for Teams[0]`.
@@ -243,7 +270,7 @@ interface host {
 /// repeats exactly, so it rebuilds the same standings. That is how a mode
 /// resumes, there are no snapshots.
 world mode {
-    use types.{event, standings, decision};
+    use types.{entry, event, layer, round-end, standings, decision};
 
     import host;
 
@@ -253,6 +280,15 @@ world mode {
     export name: func() -> string;
     /// Called for every event with the standings the mode returned last.
     export step: func(standings: standings, event: event) -> decision;
+    /// The round as it stands while it runs, placed as if it ended now with the
+    /// races so far, e.g. the best times of a time attack round. The host asks once
+    /// races changed, at most once per interval of server time, and shows it as the
+    /// live round. It changes nothing, the round end still decides.
+    export live-round: func(standings: standings, races: round-end) -> list<entry>;
+    /// Manialinks the mode brings, shown in place of the ones of the config with the
+    /// same name, e.g. a `standings` that shows the live round. A name ending with
+    /// `scores-table` makes it the scores table.
+    export manialinks: func() -> list<layer>;
     /// Whether new json settings could replace the ones of the match during it,
     /// without taking them. A mode rejects settings it cannot change during a
     /// match, e.g. the lives of a knockout, which players already hold.

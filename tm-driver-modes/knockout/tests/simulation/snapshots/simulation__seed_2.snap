@@ -4,14 +4,15 @@ expression: outcome.report
 ---
 knockout · seed 2
 settings {"extra_losses":{"before_round":[9,0,4]},"finish_timeout":"automatic","lives":1,"rounds_per_map":1,"rounds_without_elimination":0,"warmup":{"duration_ms":30000,"rounds":1,"timeout_ms":4000}}
-maps m1 2 cp 0:18.033
+maps m1 2 cp × 4 laps 1:12.132
 players a Ant leaves during round 3 · b Bea
 chances ties 300‰
 
 match 1
 map m1 · one try, automatic finish timeout · warmup 1 × 0:30.000
 round 1
-  races  b 0:19.972 · a 0:18.730
+  races  b 1:19.953 · a 1:18.218
+  live   4 updates
   round  1 a 0 · 2 b -1
   match  1 a 1 (Winner) · 2 b 0 out (K.O.)
   info   Match over
@@ -26,4 +27,4 @@ match end
 end
   1 a 1 (Winner)
   2 b 0 out (K.O.)
-inputs 27
+inputs 37

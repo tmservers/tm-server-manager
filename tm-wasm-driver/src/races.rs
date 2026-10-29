@@ -37,6 +37,11 @@ impl Races {
         race.checkpoints
             .clone_from(&way_point.current_race_checkpoints);
         race.finished = way_point.is_end_race;
+        // Counted from the checkpoints rather than by lap, so a missed waypoint loses
+        // no lap.
+        if way_point.is_end_lap {
+            race.laps = (way_point.checkpoint_in_race + 1) / (way_point.checkpoint_in_lap + 1);
+        }
     }
 
     /// Everyone who started in the round with their races.
@@ -64,6 +69,7 @@ fn new_race() -> Race {
     Race {
         checkpoints: Vec::new(),
         finished: false,
+        laps: 0,
     }
 }
 
@@ -145,6 +151,28 @@ mod tests {
             summary(&races),
             [("a".to_string(), vec![10_000, 21_000], false)]
         );
+    }
+
+    #[test]
+    fn laps_count_once_they_end() {
+        // Two checkpoints and the line that ends a lap.
+        let lap_point = |checkpoint_in_race: u32| WayPoint {
+            checkpoint_in_lap: checkpoint_in_race % 3,
+            is_end_lap: checkpoint_in_race % 3 == 2,
+            ..way_point("a", checkpoint_in_race, None)
+        };
+        let laps = |races: &Races| races.racers()[0].races[0].laps;
+        let mut races = Races::default();
+        races.start("a");
+        races.way_point(&lap_point(1));
+        assert_eq!(laps(&races), 0);
+        races.way_point(&lap_point(2));
+        assert_eq!(laps(&races), 1);
+        races.way_point(&lap_point(4));
+        assert_eq!(laps(&races), 1);
+        // The end of the second lap got lost, the third one still counts all three.
+        races.way_point(&lap_point(8));
+        assert_eq!(laps(&races), 3);
     }
 
     #[test]

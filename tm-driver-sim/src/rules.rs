@@ -23,6 +23,12 @@ pub trait Rules {
     /// A round counted.
     fn round_end(&mut self, end: &RoundEnd) -> Result<(), String>;
 
+    /// The round that runs as the host shows it live, e.g. in the order of the
+    /// races so far. Checked whenever the host places it anew.
+    fn live_round(&mut self, _live: &LiveRound) -> Result<(), String> {
+        Ok(())
+    }
+
     fn map_end(&mut self, _end: &MapEnd) -> Result<(), String> {
         Ok(())
     }
@@ -60,6 +66,15 @@ pub struct RoundEnd<'a> {
     /// What the driver answered the round end with.
     pub commands: &'a [DriverCommand],
     /// The races of the round as the driver saw them.
+    pub truth: &'a RoundTruth,
+}
+
+/// The round that runs, as it stands.
+pub struct LiveRound<'a> {
+    /// The standings of the match, which a live round does not change.
+    pub standings: &'a DriverStandings,
+    pub round: &'a DriverRound,
+    /// The races so far as the driver saw them.
     pub truth: &'a RoundTruth,
 }
 
@@ -147,9 +162,22 @@ pub fn ranked_by_points(standings: &DriverStandings) -> Result<(), String> {
 /// go to the better time at the last checkpoint, then the one before and so on,
 /// and finally to the account. Nobody ties.
 pub fn in_race_order(end: &RoundEnd, counted: Counted) -> Result<(), String> {
-    for pair in end.round.entries.windows(2) {
+    places_in_race_order(end.round, end.truth, counted)
+}
+
+/// Like [`in_race_order`], for a round as it stands with the races so far.
+pub fn live_in_race_order(live: &LiveRound, counted: Counted) -> Result<(), String> {
+    places_in_race_order(live.round, live.truth, counted)
+}
+
+fn places_in_race_order(
+    round: &DriverRound,
+    truth: &RoundTruth,
+    counted: Counted,
+) -> Result<(), String> {
+    for pair in round.entries.windows(2) {
         let (a, b) = (&pair[0].account_id, &pair[1].account_id);
-        if race_key(end.truth, a, counted) > race_key(end.truth, b, counted) {
+        if race_key(truth, a, counted) > race_key(truth, b, counted) {
             return Err(format!("{a} is placed before {b}, who raced better"));
         }
     }

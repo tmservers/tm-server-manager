@@ -4,15 +4,16 @@
 mod common;
 
 use common::{
-    ROUNDS, SESSION, finish, forced_round_end, hold, match_start, no_warm_up, play, player,
-    player_info, publishes_standings, race, ranking, round_start, start_line, without_published,
+    ROUNDS, SESSION, TIME_ATTACK, at, finish, forced_round_end, hold, match_start, no_warm_up,
+    play, player, player_info, publishes_standings, race, ranking, round_start, start_line,
+    way_point, without_published,
 };
 use tm_server_types::{
     event::{
         DriverHold, DriverPlayerResult, DriverRoundResult, DriverSection, Event, Pause,
         PlayLoopStart,
     },
-    method::{DriverCommand, DriverFinishTimeout, DriverRoundFormat, DriverStatus},
+    method::{DriverCommand, DriverFinishTimeout, DriverLayer, DriverRoundFormat, DriverStatus},
 };
 use tm_wasm_driver::{Driver, DriverEngine, DriverError, DriverInput, DriverLimits, DriverReply};
 
@@ -55,10 +56,10 @@ fn plays_a_match() {
             DriverCommand::Continue(1)
         ]
     );
-    assert_eq!(
-        driver.handle(&round_start(1)).unwrap(),
-        DriverReply::default()
-    );
+    // The round shows live from its start on.
+    let started = driver.handle(&round_start(1)).unwrap();
+    assert!(without_published(&started.commands).is_empty());
+    assert!(driver.round().live);
 
     // b has the better best time but rounds only count the last race. c is on the
     // server without racing.
@@ -78,7 +79,7 @@ fn plays_a_match() {
             results: vec![result("a", 10, 1), result("b", 6, 2)]
         })
     );
-    assert_eq!(driver.last_round().number, 1);
+    assert_eq!(driver.round().number, 1);
 
     assert_eq!(
         without_published(
@@ -232,9 +233,113 @@ fn forced_rounds_have_no_result() {
     play(&mut driver, &race("a", 30_000));
 
     let reply = driver.handle(&forced_round_end(2)).unwrap();
-    assert_eq!(reply.commands, [DriverCommand::Continue(2)]);
+    assert_eq!(
+        without_published(&reply.commands),
+        [DriverCommand::Continue(2)]
+    );
     assert_eq!(reply.round_result, None);
-    assert_eq!(driver.last_round().number, 0);
+    // The round shows the last one that counted again, none yet.
+    assert_eq!(driver.round().number, 0);
+    assert!(!driver.round().live);
+    assert!(driver.round().entries.is_empty());
+}
+
+/// Whether a reply publishes the round.
+fn publishes_round(reply: &DriverReply) -> bool {
+    reply
+        .commands
+        .iter()
+        .any(|command| matches!(command, DriverCommand::SetRound(_)))
+}
+
+#[test]
+fn the_round_shows_live_once_a_second_at_most() {
+    let mut driver = rounds(r#"{"points_repartition": [10, 6]}"#);
+    driver.handle(&hold(1, DriverSection::MapStart)).unwrap();
+    driver.handle(&round_start(1)).unwrap();
+    let places = |driver: &Driver| -> Vec<(String, i32)> {
+        driver
+            .round()
+            .entries
+            .into_iter()
+            .map(|entry| (entry.account_id, entry.score))
+            .collect()
+    };
+
+    // The first start of the round shows right away.
+    assert!(publishes_round(
+        &driver.handle(&at(start_line("a"), 1_000)).unwrap()
+    ));
+    assert_eq!(places(&driver), [("a".to_string(), 0)]);
+    // b starts within the second, which shows with the next change after it.
+    assert!(!publishes_round(
+        &driver.handle(&at(start_line("b"), 1_500)).unwrap()
+    ));
+    assert_eq!(places(&driver), [("a".to_string(), 0)]);
+    let reply = driver.handle(&at(finish("b", 0, 30_000), 31_500)).unwrap();
+    assert!(publishes_round(&reply));
+    assert_eq!(
+        places(&driver),
+        [("b".to_string(), 10), ("a".to_string(), 0)]
+    );
+    assert!(!publishes_round(
+        &driver.handle(&at(way_point("a", 0), 32_000)).unwrap()
+    ));
+
+    // The round end decides and shows the final round.
+    let end = driver.handle(&hold(2, DriverSection::RoundEnd)).unwrap();
+    assert!(publishes_round(&end));
+    assert!(!driver.round().live);
+    assert_eq!(driver.round().number, 1);
+    assert_eq!(
+        places(&driver),
+        [("b".to_string(), 10), ("a".to_string(), 0)]
+    );
+    // Only the round end awarded points.
+    assert_eq!(driver.standings().entries[0].score, 10);
+
+    // The next round starts empty, and a round that does not count shows the last
+    // one again.
+    driver.handle(&round_start(2)).unwrap();
+    assert_eq!(driver.round().number, 2);
+    assert!(driver.round().entries.is_empty());
+    driver.handle(&at(start_line("a"), 40_000)).unwrap();
+    assert_eq!(places(&driver), [("a".to_string(), 0)]);
+    driver.handle(&forced_round_end(3)).unwrap();
+    assert_eq!(driver.round().number, 1);
+    assert_eq!(
+        places(&driver),
+        [("b".to_string(), 10), ("a".to_string(), 0)]
+    );
+}
+
+#[test]
+fn warmups_show_no_live_round() {
+    let mut driver = rounds("");
+    driver.handle(&hold(1, DriverSection::MapStart)).unwrap();
+    driver.handle(&Event::WarmupStart).unwrap();
+    driver.handle(&round_start(1)).unwrap();
+    driver.handle(&at(start_line("a"), 1_000)).unwrap();
+    assert!(!driver.round().live);
+}
+
+#[test]
+fn modes_bring_manialinks_in_place_of_selected_ones() {
+    let selected = [
+        DriverLayer::selected("standings", "<manialink/>"),
+        DriverLayer::selected("scores-table", "<manialink/>"),
+    ];
+    // The rounds mode brings none.
+    assert_eq!(rounds("").layers(&selected), selected);
+
+    let time_attack = common::driver(TIME_ATTACK, "");
+    let layers = time_attack.layers(&selected);
+    let names: Vec<&str> = layers.iter().map(|layer| layer.name.as_str()).collect();
+    assert_eq!(names, ["standings", "scores-table"]);
+    // Its standings show the live round.
+    assert!(layers[0].manialink.contains("Net_Driver_Round"));
+    assert_ne!(layers[0], selected[0]);
+    assert_eq!(layers[1], selected[1]);
 }
 
 #[test]
@@ -247,7 +352,7 @@ fn rounds_without_their_start_do_not_count() {
     let reply = driver.handle(&hold(2, DriverSection::RoundEnd)).unwrap();
     assert_eq!(reply.round_result, None);
     assert!(driver.standings().entries.is_empty());
-    assert_eq!(driver.last_round().number, 0);
+    assert_eq!(driver.round().number, 0);
 }
 
 #[test]

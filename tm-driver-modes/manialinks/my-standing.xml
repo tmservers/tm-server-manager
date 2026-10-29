@@ -29,7 +29,8 @@
 <script><!--
 /**
  *	Shows where the local player stands, from the standings the driver host
- *	publishes through Net_Driver_Standings and the last round of Net_Driver_Round.
+ *	publishes through Net_Driver_Standings and the round of Net_Driver_Round, as it
+ *	stands while it runs.
  *	Works with every driver mode. The json is tm_server_types::method::DriverStandings
  *	and DriverRound.
  */
@@ -72,6 +73,7 @@
 
 #Struct K_Round {
 	Integer number;
+	Boolean live;
 	K_Entry[] entries;
 }
 
@@ -98,7 +100,7 @@ Void SetQuadColor(Text _ControlId, Text _Color) {
 	if (_Color != "") Quad.BgColor = CL::Hex6ToRgb(_Color);
 }
 
-/// The points of every player in the last round by account id.
+/// The points of every player in the round by account id, as it stands while it runs.
 Integer[Text] RoundScores(Text _Round) {
 	declare Integer[Text] Result;
 	declare K_Round Parsed;
@@ -182,14 +184,17 @@ Void Update(Text _Standings, Text _Round) {
 	declare Integer[Text] LastRound = RoundScores(_Round);
 	declare Integer RoundScore = 0;
 	if (LastRound.existskey(Mine.account_id)) RoundScore = LastRound[Mine.account_id];
+	declare K_Round Round;
+	declare Text Which = " last round";
+	if (_Round != "" && Round.fromjson(_Round) && Round.live) Which = " this round";
 	if (Standings.paused) {
 		SetText("Label_Detail", "Paused");
 		SetTextColor("Label_Detail", C_Style_DetailColor);
 	} else if (RoundScore > 0) {
-		SetText("Label_Detail", "+"^TL::ToText(RoundScore)^" last round");
+		SetText("Label_Detail", "+"^TL::ToText(RoundScore)^Which);
 		SetTextColor("Label_Detail", C_Style_GainedColor);
 	} else if (RoundScore < 0) {
-		SetText("Label_Detail", TL::ToText(RoundScore)^" last round");
+		SetText("Label_Detail", TL::ToText(RoundScore)^Which);
 		SetTextColor("Label_Detail", C_Style_LostColor);
 	} else {
 		SetText("Label_Detail", Standings.info);

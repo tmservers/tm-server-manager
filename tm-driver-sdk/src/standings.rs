@@ -167,22 +167,33 @@ impl Standings {
     ///
     /// Call it at the round end once the points are awarded.
     pub fn place_round(&mut self, round_end: &RoundEnd, counted: CountedRace) {
+        self.round = self.placed(round_end, counted, |account_id| {
+            self.round_score(account_id)
+        });
+    }
+
+    /// The round of [`Standings::place_round`] with these points of the round,
+    /// without changing the standings, e.g. for [`Mode::live_round`](crate::Mode::live_round):
+    /// the participants who raced or got points, placed by their race.
+    pub fn placed(
+        &self,
+        round_end: &RoundEnd,
+        counted: CountedRace,
+        points: impl Fn(&str) -> i32,
+    ) -> Vec<Entry> {
         let placed: Vec<&str> = self
             .participants()
             .filter(|player| {
-                round_end.racer(&player.account_id).is_some()
-                    || self.round_score(&player.account_id) != 0
+                round_end.racer(&player.account_id).is_some() || points(&player.account_id) != 0
             })
             .map(|player| player.account_id.as_str())
             .collect();
-        let order = race_order(placed, round_end, counted);
-
-        self.round = order
+        race_order(placed, round_end, counted)
             .into_iter()
             .enumerate()
             .map(|(index, account_id)| Entry {
                 position: index as u32 + 1,
-                score: self.round_score(&account_id),
+                score: points(&account_id),
                 time: round_end
                     .racer(&account_id)
                     .and_then(|racer| counted.time(racer)),
@@ -192,7 +203,7 @@ impl Standings {
                 label: None,
                 account_id,
             })
-            .collect();
+            .collect()
     }
 
     /// The points of a player in the round that ends.
@@ -282,6 +293,7 @@ mod tests {
         Race {
             checkpoints: vec![time / 2, time],
             finished: true,
+            laps: 1,
         }
     }
 
@@ -306,6 +318,7 @@ mod tests {
             vec![Race {
                 checkpoints,
                 finished: false,
+                laps: 0,
             }],
         )
     }
@@ -536,5 +549,26 @@ mod tests {
         standings.place_round(&round_end, CountedRace::Last);
         assert_eq!(places(&standings), [("a", 1, 0), ("b", 2, 0)]);
         assert_eq!(standings.round[1].time, Some(45_000));
+    }
+
+    #[test]
+    fn a_live_round_is_placed_without_changing_the_standings() {
+        let standings = standings(&[
+            ("a", Status::Playing, 10, 1),
+            ("b", Status::Playing, 6, 2),
+            ("c", Status::Playing, 0, 3),
+        ]);
+        let before = standings.clone();
+        // b finished, a is still racing, c did not start yet.
+        let races = round_end(vec![finish("b", 30_000), dnf("a", 2)], &[]);
+        let points = |account_id: &str| if account_id == "b" { 10 } else { 0 };
+
+        let live = standings.placed(&races, CountedRace::Last, points);
+        let live: Vec<(&str, u32, i32, Option<u32>)> = live
+            .iter()
+            .map(|p| (p.account_id.as_str(), p.position, p.score, p.time))
+            .collect();
+        assert_eq!(live, [("b", 1, 10, Some(30_000)), ("a", 2, 0, None)]);
+        assert_eq!(standings, before);
     }
 }

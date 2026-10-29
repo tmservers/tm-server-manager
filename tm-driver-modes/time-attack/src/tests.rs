@@ -13,10 +13,12 @@ fn finish_at(account_id: &str, checkpoints: &[u32]) -> Racer {
             Race {
                 checkpoints: checkpoints.to_vec(),
                 finished: true,
+                laps: 1,
             },
             Race {
                 checkpoints: slower,
                 finished: true,
+                laps: 1,
             },
         ],
     }
@@ -33,6 +35,7 @@ fn dnf(account_id: &str) -> Racer {
         races: vec![Race {
             checkpoints: vec![10_000],
             finished: false,
+            laps: 0,
         }],
     }
 }
@@ -198,4 +201,34 @@ fn a_new_time_limit_applies_from_the_next_map() {
     );
     // Like at the start of the match, it has to be at least one millisecond.
     assert!(harness.change_settings(r#"{"time_limit_ms": 0}"#).is_err());
+}
+
+#[test]
+fn the_live_round_shows_the_best_times_so_far() {
+    let mut harness = started("{}");
+    harness.step(Event::RoundStart);
+    for player in ["a", "b", "c"] {
+        harness.step(Event::RaceStart(player.into()));
+    }
+
+    let races = RoundEnd {
+        invalid: false,
+        racers: vec![finish("a", 31_000), dnf("b"), finish("c", 30_000)],
+        present: Vec::new(),
+    };
+    let live: Vec<(String, u32, i32, Option<u32>)> = harness
+        .live_round(races)
+        .into_iter()
+        .map(|p| (p.account_id, p.position, p.score, p.time))
+        .collect();
+    // The best of two finishers would get 2 points.
+    assert_eq!(
+        live,
+        [
+            ("c".into(), 1, 2, Some(30_000)),
+            ("a".into(), 2, 1, Some(31_000)),
+            ("b".into(), 3, 0, None)
+        ]
+    );
+    assert!(harness.standings.entries.iter().all(|p| p.score == 0));
 }

@@ -9,6 +9,7 @@ pub use tm_driver_sim::events::*;
 use tm_wasm_driver::{Component, Driver, DriverEngine, DriverLimits};
 
 pub const ROUNDS: &str = "tm-driver-mode-rounds";
+pub const TIME_ATTACK: &str = "tm-driver-mode-time-attack";
 
 /// A mode crate of the workspace as a wasm module, built once per test binary.
 pub fn mode(package: &'static str) -> &'static [u8] {

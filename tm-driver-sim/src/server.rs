@@ -11,7 +11,9 @@
 //! and its checkpoints happen at their race times, so the callbacks of all players
 //! interleave like on a server. Callbacks at the same moment come in a random
 //! order. The finish timeout and the time limit of time attack rounds cut off the
-//! races still running.
+//! races still running. On maps with laps, races go over the laps the race rules
+//! of the driver set, infinite laps never finish, and without give ups nobody
+//! gives up.
 
 use std::{
     cmp::Reverse,
@@ -24,13 +26,16 @@ use tm_server_types::{
         DriverHold, DriverSection, EndMatch, Event, Pause, PlayerConnect, PlayerDisconnect,
         StartLine, StartMap, StartMatch, StartRound, WayPoint,
     },
-    method::{DriverCommand, DriverFinishTimeout, DriverRoundFormat, DriverWarmUp},
+    method::{
+        DriverCommand, DriverFinishTimeout, DriverLaps, DriverRaceRules, DriverRoundFormat,
+        DriverWarmUp,
+    },
 };
 use tm_wasm_driver::{DriverInput, DriverReply};
 
 use crate::{
     Rng,
-    world::{Action, MapSpec, Moment, RacePlan, World},
+    world::{Action, Course, MapSpec, Moment, RacePlan, World},
 };
 
 /// From the start of a round until the players start racing.
@@ -43,6 +48,9 @@ const IDLE: u32 = 30_000;
 const END_ROUND: u32 = 3_000;
 /// The modescript asks again after a hold went unanswered this long.
 const DECISION_TIMEOUT: u32 = 10_000;
+/// Laps of a race that never finishes in a round without a time limit, before the
+/// player stops.
+const ENDLESS_LAPS: u32 = 20;
 
 /// What the simulation does next.
 // Nearly every step is an input, boxing them would only add allocations.
@@ -155,6 +163,8 @@ struct RoundRun {
     key: String,
     /// When the round ends at the latest, e.g. by its time limit.
     end: Option<u32>,
+    /// What the races of the round are like.
+    course: Course,
     /// Players start again after their races.
     restarts: bool,
     finish_timeout: Option<u32>,
@@ -179,6 +189,7 @@ pub(crate) struct Server {
     // What the commands of the driver set, like the globals of the modescript.
     format: DriverRoundFormat,
     warm_up: DriverWarmUp,
+    race_rules: DriverRaceRules,
     can_spawn: BTreeMap<String, bool>,
     end_map: bool,
     end_match: bool,
@@ -229,6 +240,7 @@ impl Server {
             hold: None,
             format: DriverRoundFormat::SingleAttempt(DriverFinishTimeout::Automatic),
             warm_up: DriverWarmUp::default(),
+            race_rules: DriverRaceRules::default(),
             can_spawn: BTreeMap::new(),
             end_map: false,
             end_match: false,
@@ -397,6 +409,7 @@ impl Server {
                 }
                 DriverCommand::SetRoundFormat(format) => self.format = *format,
                 DriverCommand::SetWarmUp(warm_up) => self.warm_up = *warm_up,
+                DriverCommand::SetRaceRules(rules) => self.race_rules = *rules,
                 DriverCommand::SetCanSpawn(can_spawn) => {
                     self.can_spawn
                         .insert(can_spawn.account_id.clone(), can_spawn.can_spawn);
@@ -537,6 +550,7 @@ impl Server {
         // Every match starts with the defaults of the modescript.
         self.format = DriverRoundFormat::SingleAttempt(DriverFinishTimeout::Automatic);
         self.warm_up = DriverWarmUp::default();
+        self.race_rules = DriverRaceRules::default();
         self.can_spawn.clear();
         self.end_map = false;
         self.end_match = false;
@@ -725,14 +739,20 @@ impl Server {
         // one racer more or less leaves the races of the others as they are.
         let mut rng = self.rng.fork(&key).fork("happenings");
 
+        // Warmups and pauses race the laps of the map like the modescript, whose race
+        // rules only apply to rounds.
+        let laps = match kind {
+            Kind::Round => self.laps(&map),
+            Kind::WarmUp { .. } | Kind::Pause => Some(map.laps),
+        };
         let (time_limit, finish_timeout) = match kind {
             Kind::Round => match self.format {
                 DriverRoundFormat::TimeAttack(limit) if limit > 0 => (Some(limit), None),
                 DriverRoundFormat::TimeAttack(_) => {
-                    (None, timeout(DriverFinishTimeout::Automatic, &map))
+                    (None, timeout(DriverFinishTimeout::Automatic, &map, laps))
                 }
                 DriverRoundFormat::SingleAttempt(finish_timeout) => {
-                    (None, timeout(finish_timeout, &map))
+                    (None, timeout(finish_timeout, &map, laps))
                 }
             },
             Kind::WarmUp { .. } => match self.warm_up.duration_ms {
@@ -741,18 +761,24 @@ impl Server {
                     Some(
                         self.warm_up
                             .timeout_ms
-                            .unwrap_or_else(|| automatic_timeout(&map)),
+                            .unwrap_or_else(|| automatic_timeout(&map, laps)),
                     ),
                 ),
                 duration => (Some(duration), None),
             },
             Kind::Pause => (Some(rng.between(20, 60) * 1_000), None),
         };
+        let course = Course {
+            laps,
+            give_up: kind != Kind::Round || self.race_rules.give_up,
+            longest: time_limit.unwrap_or(map.lap_time() * ENDLESS_LAPS),
+        };
 
         let mut run = RoundRun {
             kind,
             key: key.clone(),
             end: time_limit.map(|limit| start + limit),
+            course,
             restarts: time_limit.is_some(),
             finish_timeout,
             first_finish: false,
@@ -769,7 +795,7 @@ impl Server {
         rng.shuffle(&mut racers);
         for player in &racers {
             let mut races = self.rng.fork(&format!("{key}/race/{player}/0"));
-            let plan = self.plan_race(player, &map, &mut races);
+            let plan = self.plan_race(player, &map, course, &mut races);
             run.racers.insert(
                 player.clone(),
                 Racer {
@@ -850,9 +876,27 @@ impl Server {
     }
 
     /// The next race of a player at the pace of the player.
-    fn plan_race(&self, player: &str, map: &MapSpec, rng: &mut Rng) -> Option<RacePlan> {
+    fn plan_race(
+        &self,
+        player: &str,
+        map: &MapSpec,
+        course: Course,
+        rng: &mut Rng,
+    ) -> Option<RacePlan> {
         let spec = self.world.player(player)?;
-        Some(spec.random_race(map, rng, self.world.races.idle))
+        Some(spec.random_race(map, course, rng, self.world.races.idle))
+    }
+
+    /// The laps of a round on a map by the race rules of the driver, None for races
+    /// that never finish. The rules only change maps with laps, and like
+    /// `LapCountOverride` of the game 0 laps are the laps of the map.
+    fn laps(&self, map: &MapSpec) -> Option<u32> {
+        match self.race_rules.laps {
+            _ if !map.has_laps() => Some(1),
+            DriverLaps::Map | DriverLaps::Count(0) => Some(map.laps),
+            DriverLaps::Count(laps) => Some(laps),
+            DriverLaps::Infinite => None,
+        }
     }
 
     /// Now and then two players drive the same race, or races with the same time,
@@ -954,7 +998,9 @@ impl Server {
 
         let missed = run.kind == Kind::Round && rng.chance(self.world.faults.missed_starts);
         let give_up = match &plan {
-            RacePlan::Finish(checkpoints) | RacePlan::GiveUp(checkpoints) => {
+            RacePlan::Finish(checkpoints)
+            | RacePlan::GiveUp(checkpoints)
+            | RacePlan::Endless(checkpoints) => {
                 for (checkpoint, &time) in checkpoints.iter().enumerate() {
                     let happening = Happening::WayPoint {
                         player: player.into(),
@@ -970,7 +1016,8 @@ impl Server {
                     _ => None,
                 }
             }
-            RacePlan::Idle => Some(IDLE),
+            // Without give ups, idle players stay until the round ends.
+            RacePlan::Idle => run.course.give_up.then_some(IDLE),
         };
         if let Some(after) = give_up {
             let happening = Happening::GiveUp {
@@ -992,6 +1039,8 @@ impl Server {
 
     fn pass(&mut self, player: &str, race: usize, checkpoint: usize) {
         let now = self.clock;
+        let map = self.current_map();
+        let infinite = self.race_rules.laps == DriverLaps::Infinite && map.has_laps();
         let run = self.round.as_mut().expect("A round runs");
         let racer = &run.racers[player];
         if racer.gone {
@@ -1001,11 +1050,21 @@ impl Server {
             RacePlan::Finish(checkpoints) => {
                 (checkpoints.clone(), checkpoint + 1 == checkpoints.len())
             }
-            RacePlan::GiveUp(checkpoints) => (checkpoints.clone(), false),
+            RacePlan::GiveUp(checkpoints) | RacePlan::Endless(checkpoints) => {
+                (checkpoints.clone(), false)
+            }
             RacePlan::Idle => return,
         };
         let so_far = checkpoints[..=checkpoint].to_vec();
         let racetime = so_far[checkpoint];
+        // The checkpoints of the lap so far as lap times, the line that ends it last.
+        let per_lap = map.sectors.len();
+        let lap_start = checkpoint / per_lap * per_lap;
+        let lap_started = lap_start.checked_sub(1).map_or(0, |before| so_far[before]);
+        let lap: Vec<u32> = so_far[lap_start..]
+            .iter()
+            .map(|time| time - lap_started)
+            .collect();
 
         if finished && !run.first_finish && !run.restarts {
             run.first_finish = true;
@@ -1021,16 +1080,16 @@ impl Server {
             account_id: player.into(),
             time: now,
             racetime,
-            laptime: racetime,
+            laptime: racetime - lap_started,
             speed: 0.,
             checkpoint_in_race: checkpoint as u32,
-            checkpoint_in_lap: checkpoint as u32,
+            checkpoint_in_lap: (checkpoint - lap_start) as u32,
             is_end_race: finished,
-            is_end_lap: finished,
-            is_infinite_laps: false,
+            is_end_lap: (checkpoint + 1).is_multiple_of(per_lap),
+            is_infinite_laps: infinite,
             is_independent_laps: false,
-            current_race_checkpoints: so_far.clone(),
-            current_lap_checkpoints: so_far,
+            current_race_checkpoints: so_far,
+            current_lap_checkpoints: lap,
             block_id: String::new(),
         }));
         if finished {
@@ -1049,7 +1108,7 @@ impl Server {
             && !run.racers[player].gone;
         let next = if again {
             let key = format!("{}/race/{player}/{}", run.key, race + 1);
-            self.plan_race(player, &map, &mut self.rng.fork(&key))
+            self.plan_race(player, &map, run.course, &mut self.rng.fork(&key))
         } else {
             None
         };
@@ -1234,14 +1293,15 @@ fn session(rng: &Rng, start: u32) -> i32 {
         .between(1, i32::MAX as u32 - 1) as i32
 }
 
-/// 5 seconds plus a sixth of the author time like the modescript.
-fn automatic_timeout(map: &MapSpec) -> u32 {
-    5_000 + map.author_time() / 6
+/// 5 seconds plus a sixth of the author time over the laps of the race like the
+/// modescript.
+fn automatic_timeout(map: &MapSpec, laps: Option<u32>) -> u32 {
+    5_000 + map.lap_time() * laps.unwrap_or(map.laps) / 6
 }
 
-fn timeout(finish_timeout: DriverFinishTimeout, map: &MapSpec) -> Option<u32> {
+fn timeout(finish_timeout: DriverFinishTimeout, map: &MapSpec, laps: Option<u32>) -> Option<u32> {
     match finish_timeout {
-        DriverFinishTimeout::Automatic => Some(automatic_timeout(map)),
+        DriverFinishTimeout::Automatic => Some(automatic_timeout(map, laps)),
         DriverFinishTimeout::Disabled => None,
         DriverFinishTimeout::Milliseconds(ms) => Some(ms),
     }
@@ -1261,8 +1321,8 @@ fn map(spec: &MapSpec) -> Map {
         gold_time: 0,
         author_time: spec.author_time(),
         copperprice: 0,
-        lap_race: false,
-        number_laps: 0,
+        lap_race: spec.has_laps(),
+        number_laps: spec.laps,
         map_type: r"TrackMania\TM_Race".into(),
         map_style: String::new(),
     }
@@ -1319,6 +1379,7 @@ mod tests {
             maps: vec![MapSpec {
                 uid: "m1".into(),
                 sectors: vec![10_000, 10_000, 10_000],
+                laps: 1,
             }],
             playlist: Vec::new(),
             players: accounts.iter().map(|account| player(account)).collect(),

@@ -4,14 +4,15 @@ expression: outcome.report
 ---
 time-attack · seed 2
 settings {"maps_per_match":1,"time_limit_ms":90000}
-maps m1 2 cp 0:18.033
+maps m1 2 cp × 4 laps 1:12.132
 players a Ant leaves during round 3 · b Bea
 chances ties 300‰
 
 match 1
 map m1 · time attack 1:30.000 · no warmup
 round 1
-  races  b 0:19.972 0:20.007 0:20.000 0:20.012 0cp · a 0:18.730 0:21.682 0:20.429 0:21.140
+  races  b 1:19.953 0cp · a 1:18.218 0cp
+  live   4 updates
   round  1 a 2 · 2 b 1
   match  1 a 2 · 2 b 1
   info   Map 1 / 1
@@ -23,4 +24,4 @@ match end
 end
   1 a 2 (Winner)
   2 b 1
-inputs 36
+inputs 31

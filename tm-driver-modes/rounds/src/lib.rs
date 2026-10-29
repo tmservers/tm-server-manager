@@ -11,7 +11,7 @@
 
 use serde::{Deserialize, Serialize};
 use tm_driver_sdk::{
-    Command, CountedRace, Event, Mode, RoundEnd, RoundFormat, Standings,
+    Command, CountedRace, Entry, Event, Mode, RoundEnd, RoundFormat, Standings,
     settings::{FinishTimeoutSetting, WarmUpSetting, maps_per_match},
 };
 
@@ -102,6 +102,19 @@ impl Mode for Rounds {
             Event::MatchStart | Event::RoundStart | Event::MatchEnd => Vec::new(),
         }
     }
+
+    /// The finishers so far with the points they would get.
+    fn live_round(&self, standings: &Standings, races: &RoundEnd) -> Vec<Entry> {
+        // Everyone else who raced joins at the round end.
+        let races = races.taking_part(standings);
+        let points = self.points(&races);
+        standings.placed(&races, CountedRace::Last, |account_id| {
+            points
+                .iter()
+                .find(|(finisher, _)| finisher == account_id)
+                .map_or(0, |(_, points)| *points)
+        })
+    }
 }
 
 impl Rounds {
@@ -116,17 +129,8 @@ impl Rounds {
             standings.join(&racer.account_id);
         }
 
-        let finishers = tm_driver_sdk::race_order(
-            round_end
-                .racers
-                .iter()
-                .filter(|r| CountedRace::Last.time(r).is_some())
-                .map(|r| r.account_id.as_str()),
-            &round_end,
-            CountedRace::Last,
-        );
-        for (rank, account_id) in finishers.iter().enumerate() {
-            standings.award(account_id, self.points_for(rank));
+        for (account_id, points) in self.points(&round_end) {
+            standings.award(&account_id, points);
         }
 
         standings.rounds_on_map += 1;
@@ -157,6 +161,24 @@ impl Rounds {
             0 => format!("Map {map}, {rounds}"),
             maps => format!("Map {map} / {maps}, {rounds}"),
         }
+    }
+
+    /// The finishers of a round in the order of the race with their points.
+    fn points(&self, round_end: &RoundEnd) -> Vec<(String, i32)> {
+        let finishers = tm_driver_sdk::race_order(
+            round_end
+                .racers
+                .iter()
+                .filter(|r| CountedRace::Last.time(r).is_some())
+                .map(|r| r.account_id.as_str()),
+            round_end,
+            CountedRace::Last,
+        );
+        finishers
+            .into_iter()
+            .enumerate()
+            .map(|(rank, account_id)| (account_id, self.points_for(rank)))
+            .collect()
     }
 
     fn points_for(&self, rank: usize) -> i32 {

@@ -5,8 +5,9 @@ use std::collections::BTreeMap;
 
 use tm_driver_mode_rounds::Settings;
 use tm_driver_sim::rules::{
-    Counted, DriverStandings, MapEnd, RoundEnd, Rules, ends_map, ends_match, in_race_order,
-    playing, points, racers_placed, ranked_by_points,
+    Counted, DriverRound, DriverStandings, LiveRound, MapEnd, RoundEnd, RoundTruth, Rules,
+    ends_map, ends_match, in_race_order, live_in_race_order, playing, points, racers_placed,
+    ranked_by_points,
 };
 
 pub struct Rounds {
@@ -44,7 +45,7 @@ impl Rules for Rounds {
     fn round_end(&mut self, end: &RoundEnd) -> Result<(), String> {
         in_race_order(end, Counted::Last)?;
         racers_placed(end)?;
-        check_places(end, &self.settings.points_repartition)?;
+        check_places(end.round, end.truth, &self.settings.points_repartition)?;
         for entry in &end.round.entries {
             *self.totals.entry(entry.account_id.clone()).or_default() += entry.score;
         }
@@ -77,6 +78,12 @@ impl Rules for Rounds {
             ));
         }
         Ok(())
+    }
+
+    /// The finishers so far have the points they would get.
+    fn live_round(&mut self, live: &LiveRound) -> Result<(), String> {
+        live_in_race_order(live, Counted::Last)?;
+        check_places(live.round, live.truth, &self.settings.points_repartition)
     }
 
     /// Every map ends after its rounds, and the maps of the match end it. The
@@ -112,9 +119,13 @@ impl Rules for Rounds {
 
 /// The finishers get the points of their place and the time of their last race,
 /// everyone else nothing.
-fn check_places(end: &RoundEnd, repartition: &[i32]) -> Result<(), String> {
-    for (place, entry) in end.round.entries.iter().enumerate() {
-        let finish = end.truth.last_finish(&entry.account_id);
+fn check_places(
+    round: &DriverRound,
+    truth: &RoundTruth,
+    repartition: &[i32],
+) -> Result<(), String> {
+    for (place, entry) in round.entries.iter().enumerate() {
+        let finish = truth.last_finish(&entry.account_id);
         let expected = if finish.is_some() {
             points(repartition, place)
         } else {
