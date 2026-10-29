@@ -8,10 +8,10 @@
  *	Driver.Continue.
  *
  *	The script keeps no points. The driver keeps them in standings every mode
- *	shares and publishes them for the manialinks through Net_Driver_Standings,
- *	together with the round, live while it runs (Net_Driver_Round), and the players
- *	it knows (Net_Driver_Users). Race times reach the driver through the standard
- *	waypoint callbacks.
+ *	shares and publishes them for the manialinks together with the round, live while
+ *	it runs, and the players it knows. The script writes them into typed netvars
+ *	(tm_server_types::method::DRIVER_NETVARS), players by their index. Race times
+ *	reach the driver through the standard waypoint callbacks.
  *
  *	Only what is not available through the standard XML-RPC methods is added
  *	here. It mirrors tm_server_types::event::DriverHold and
@@ -88,6 +88,44 @@
 	Integer seq;
 	Text section;
 	Boolean forced;
+}
+
+/// What the driver publishes, tm_server_types::method::DriverNetEntries and the
+/// others.
+#Struct K_Driver_Entries {
+	Integer[] players;
+	Integer[] positions;
+	Integer[] scores;
+	Integer[] times;
+	Integer[] statuses;
+	Integer[] labeled;
+	Text[] labels;
+	Integer[] label_tones;
+}
+
+#Struct K_Driver_Standings {
+	Text title;
+	Text info;
+	Text map_name;
+	Integer map_count;
+	Integer maps_played;
+	Integer rounds_on_map;
+	Boolean paused;
+	K_Driver_Entries entries;
+}
+
+#Struct K_Driver_Round {
+	Integer number;
+	Boolean live;
+	K_Driver_Entries entries;
+}
+
+#Struct K_Driver_Users {
+	Integer[] indices;
+	Text[] account_ids;
+	Text[] names;
+	Text[] club_tags;
+	Text[] zones;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
@@ -523,6 +561,127 @@ Void Driver_RemoveLayer(Text _Name) {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
+/// Every column has a value for every entry.
+Boolean Driver_ValidEntries(K_Driver_Entries _Entries) {
+	declare Integer Count = _Entries.players.count;
+	return _Entries.positions.count == Count
+		&& _Entries.scores.count == Count
+		&& _Entries.times.count == Count
+		&& _Entries.statuses.count == Count
+		&& _Entries.labels.count == _Entries.labeled.count
+		&& _Entries.label_tones.count == _Entries.labeled.count;
+}
+
+/// The labels of the entries by player.
+Text[Integer] Driver_Labels(K_Driver_Entries _Entries) {
+	declare Text[Integer] Labels;
+	foreach (Index => Player in _Entries.labeled) {
+		Labels[Player] = _Entries.labels[Index];
+	}
+	return Labels;
+}
+
+/// The tones of the labels by player.
+Integer[Integer] Driver_LabelTones(K_Driver_Entries _Entries) {
+	declare Integer[Integer] Tones;
+	foreach (Index => Player in _Entries.labeled) {
+		Tones[Player] = _Entries.label_tones[Index];
+	}
+	return Tones;
+}
+
+/// Writes the standings the driver published into their netvars.
+Void Driver_SetStandings(Text _Json) {
+	declare K_Driver_Standings Standings;
+	if (!Standings.fromjson(_Json) || !Driver_ValidEntries(Standings.entries)) return;
+	declare netwrite Text Net_Driver_Title for Teams[0] = "";
+	declare netwrite Text Net_Driver_Info for Teams[0] = "";
+	declare netwrite Text Net_Driver_MapName for Teams[0] = "";
+	declare netwrite Integer Net_Driver_MapCount for Teams[0] = 0;
+	declare netwrite Integer Net_Driver_MapsPlayed for Teams[0] = 0;
+	declare netwrite Integer Net_Driver_RoundsOnMap for Teams[0] = 0;
+	declare netwrite Boolean Net_Driver_Paused for Teams[0] = False;
+	declare netwrite Integer[] Net_Driver_StandingsPlayers for Teams[0] = [];
+	declare netwrite Integer[] Net_Driver_StandingsPositions for Teams[0] = [];
+	declare netwrite Integer[] Net_Driver_StandingsScores for Teams[0] = [];
+	declare netwrite Integer[] Net_Driver_StandingsTimes for Teams[0] = [];
+	declare netwrite Integer[] Net_Driver_StandingsStatuses for Teams[0] = [];
+	declare netwrite Text[Integer] Net_Driver_StandingsLabels for Teams[0] = [];
+	declare netwrite Integer[Integer] Net_Driver_StandingsLabelTones for Teams[0] = [];
+	declare netwrite Integer Net_Driver_StandingsSerial for Teams[0] = 0;
+	Net_Driver_Title = Standings.title;
+	Net_Driver_Info = Standings.info;
+	Net_Driver_MapName = Standings.map_name;
+	Net_Driver_MapCount = Standings.map_count;
+	Net_Driver_MapsPlayed = Standings.maps_played;
+	Net_Driver_RoundsOnMap = Standings.rounds_on_map;
+	Net_Driver_Paused = Standings.paused;
+	Net_Driver_StandingsPlayers = Standings.entries.players;
+	Net_Driver_StandingsPositions = Standings.entries.positions;
+	Net_Driver_StandingsScores = Standings.entries.scores;
+	Net_Driver_StandingsTimes = Standings.entries.times;
+	Net_Driver_StandingsStatuses = Standings.entries.statuses;
+	Net_Driver_StandingsLabels = Driver_Labels(Standings.entries);
+	Net_Driver_StandingsLabelTones = Driver_LabelTones(Standings.entries);
+	Net_Driver_StandingsSerial += 1;
+}
+
+/// Writes the round the driver published into its netvars.
+Void Driver_SetRound(Text _Json) {
+	declare K_Driver_Round Round;
+	if (!Round.fromjson(_Json) || !Driver_ValidEntries(Round.entries)) return;
+	declare netwrite Integer Net_Driver_RoundNumber for Teams[0] = 0;
+	declare netwrite Boolean Net_Driver_RoundLive for Teams[0] = False;
+	declare netwrite Integer[] Net_Driver_RoundPlayers for Teams[0] = [];
+	declare netwrite Integer[] Net_Driver_RoundPositions for Teams[0] = [];
+	declare netwrite Integer[] Net_Driver_RoundScores for Teams[0] = [];
+	declare netwrite Integer[] Net_Driver_RoundTimes for Teams[0] = [];
+	declare netwrite Integer[] Net_Driver_RoundStatuses for Teams[0] = [];
+	declare netwrite Text[Integer] Net_Driver_RoundLabels for Teams[0] = [];
+	declare netwrite Integer[Integer] Net_Driver_RoundLabelTones for Teams[0] = [];
+	declare netwrite Integer Net_Driver_RoundSerial for Teams[0] = 0;
+	Net_Driver_RoundNumber = Round.number;
+	Net_Driver_RoundLive = Round.live;
+	Net_Driver_RoundPlayers = Round.entries.players;
+	Net_Driver_RoundPositions = Round.entries.positions;
+	Net_Driver_RoundScores = Round.entries.scores;
+	Net_Driver_RoundTimes = Round.entries.times;
+	Net_Driver_RoundStatuses = Round.entries.statuses;
+	Net_Driver_RoundLabels = Driver_Labels(Round.entries);
+	Net_Driver_RoundLabelTones = Driver_LabelTones(Round.entries);
+	Net_Driver_RoundSerial += 1;
+}
+
+/// Writes the players the driver published into their netvars by index.
+Void Driver_SetUsers(Text _Json) {
+	declare K_Driver_Users Users;
+	if (!Users.fromjson(_Json)) return;
+	declare Integer Count = Users.indices.count;
+	if (Users.account_ids.count != Count || Users.names.count != Count) return;
+	if (Users.club_tags.count != Count || Users.zones.count != Count) return;
+	declare netwrite Text[Integer] Net_Driver_UserAccountIds for Teams[0] = [];
+	declare netwrite Text[Integer] Net_Driver_UserNames for Teams[0] = [];
+	declare netwrite Text[Integer] Net_Driver_UserClubTags for Teams[0] = [];
+	declare netwrite Text[Integer] Net_Driver_UserZones for Teams[0] = [];
+	declare netwrite Integer Net_Driver_UsersSerial for Teams[0] = 0;
+	declare Text[Integer] AccountIds;
+	declare Text[Integer] Names;
+	declare Text[Integer] ClubTags;
+	declare Text[Integer] Zones;
+	foreach (Index => Player in Users.indices) {
+		AccountIds[Player] = Users.account_ids[Index];
+		Names[Player] = Users.names[Index];
+		ClubTags[Player] = Users.club_tags[Index];
+		Zones[Player] = Users.zones[Index];
+	}
+	Net_Driver_UserAccountIds = AccountIds;
+	Net_Driver_UserNames = Names;
+	Net_Driver_UserClubTags = ClubTags;
+	Net_Driver_UserZones = Zones;
+	Net_Driver_UsersSerial += 1;
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
 /** Applies a command sent by the driver.
  *
  *	@param	_Method			Name of the command (Driver.*)
@@ -581,23 +740,11 @@ Void Driver_ApplyCommand(Text _Method, Text[] _Params) {
 		Net_Driver_State = _Params[0];
 		Net_Driver_StateSerial += 1;
 	} else if (_Method == C_Method_SetStandings) {
-		if (_Params.count < 1) return;
-		declare netwrite Text Net_Driver_Standings for Teams[0] = "";
-		declare netwrite Integer Net_Driver_StandingsSerial for Teams[0] = 0;
-		Net_Driver_Standings = _Params[0];
-		Net_Driver_StandingsSerial += 1;
+		if (_Params.count >= 1) Driver_SetStandings(_Params[0]);
 	} else if (_Method == C_Method_SetRound) {
-		if (_Params.count < 1) return;
-		declare netwrite Text Net_Driver_Round for Teams[0] = "";
-		declare netwrite Integer Net_Driver_RoundSerial for Teams[0] = 0;
-		Net_Driver_Round = _Params[0];
-		Net_Driver_RoundSerial += 1;
+		if (_Params.count >= 1) Driver_SetRound(_Params[0]);
 	} else if (_Method == C_Method_SetUsers) {
-		if (_Params.count < 1) return;
-		declare netwrite Text Net_Driver_Users for Teams[0] = "";
-		declare netwrite Integer Net_Driver_UsersSerial for Teams[0] = 0;
-		Net_Driver_Users = _Params[0];
-		Net_Driver_UsersSerial += 1;
+		if (_Params.count >= 1) Driver_SetUsers(_Params[0]);
 	}
 }
 

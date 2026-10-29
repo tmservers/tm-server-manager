@@ -56,12 +56,12 @@
 
 <script><!--
 /**
- *	Shows the round instead of the match: Net_Driver_Round as it stands while the
- *	round runs and the last round that counted otherwise, with the title and the info
- *	of Net_Driver_Standings and the names of Net_Driver_Users. Modes whose round is
- *	what players follow, e.g. the best times of a time attack map or an endurance
- *	race, bring it in place of the standings. The json is
- *	tm_server_types::method::DriverStandings, DriverRound and DriverUsers.
+ *	Shows the round instead of the match: the round as it stands while it runs and
+ *	the last round that counted otherwise, with the title and the info of the
+ *	standings and the names of the players, all from the netvars the driver
+ *	modescript writes (tm_server_types::method::DRIVER_NETVARS). A config selects it
+ *	in place of the standings for modes whose round players follow, e.g. the best
+ *	times of a time attack map or an endurance race.
  *
  *	Every row shows the place, the name, the label of the mode (e.g. the lap of an
  *	endurance race), the time and the points of the round.
@@ -73,44 +73,6 @@
 #Const C_Style_OwnColor "1e5f99"
 
 #Const C_MaxRows 10
-
-#Struct K_Entry {
-	Text account_id;
-	Integer position;
-	Integer score;
-	Integer time;
-	Text status;
-	Text label;
-	Text label_tone;
-}
-
-#Struct K_Standings {
-	Text title;
-	Text info;
-	Integer rounds_on_map;
-	Integer maps_played;
-	Text map_name;
-	Integer map_count;
-	Boolean paused;
-	K_Entry[] entries;
-}
-
-#Struct K_Round {
-	Integer number;
-	Boolean live;
-	K_Entry[] entries;
-}
-
-#Struct K_User {
-	Text account_id;
-	Text name;
-	Text club_tag;
-	Text zone;
-}
-
-#Struct K_Users {
-	K_User[] users;
-}
 
 Void SetText(CMlFrame _Frame, Text _ControlId, Text _Value) {
 	declare CMlLabel Label <=> (_Frame.GetFirstChild(_ControlId) as CMlLabel);
@@ -125,21 +87,23 @@ Void SetQuadColor(CMlFrame _Frame, Text _ControlId, Text _Color) {
 	if (_Color != "") Quad.BgColor = CL::Hex6ToRgb(_Color);
 }
 
-/// The players the host knows by account id.
-K_User[Text] KnownUsers(Text _Users) {
-	declare K_User[Text] Known;
-	declare K_Users Parsed;
-	if (_Users == "" || !Parsed.fromjson(_Users)) return Known;
-	foreach (Known_User in Parsed.users) {
-		Known[Known_User.account_id] = Known_User;
+/// The name of a player of the netvars, the account while the host does not know it.
+Text PlayerName(Integer _Player) {
+	declare netread Text[Integer] Net_Driver_UserAccountIds for Teams[0];
+	declare netread Text[Integer] Net_Driver_UserNames for Teams[0];
+	if (Net_Driver_UserNames.existskey(_Player) && Net_Driver_UserNames[_Player] != "") {
+		return Net_Driver_UserNames[_Player];
 	}
-	return Known;
+	if (Net_Driver_UserAccountIds.existskey(_Player)) return Net_Driver_UserAccountIds[_Player];
+	return "";
 }
 
-/// The name the host knows, the account id until then.
-Text PlayerName(K_User[Text] _Known, Text _AccountId) {
-	if (_Known.existskey(_AccountId) && _Known[_AccountId].name != "") return _Known[_AccountId].name;
-	return _AccountId;
+/// Whether a player of the netvars is the local player.
+Boolean IsLocal(Integer _Player) {
+	declare netread Text[Integer] Net_Driver_UserAccountIds for Teams[0];
+	return LocalUser != Null
+		&& Net_Driver_UserAccountIds.existskey(_Player)
+		&& Net_Driver_UserAccountIds[_Player] == LocalUser.WebServicesUserId;
 }
 
 /// A race time like the game shows it, e.g. 1:02.345, with hours for long races.
@@ -152,37 +116,35 @@ Text TimeText(Integer _Time) {
 	return TL::ToText(Minutes)^":"^Rest;
 }
 
-Void Update(Text _Standings, Text _Round, Text _Users) {
+Void Update() {
+	declare netread Text Net_Driver_Title for Teams[0];
+	declare netread Text Net_Driver_Info for Teams[0];
+	declare netread Boolean Net_Driver_Paused for Teams[0];
+	declare netread Boolean Net_Driver_RoundLive for Teams[0];
+	declare netread Integer[] Net_Driver_RoundPlayers for Teams[0];
+	declare netread Integer[] Net_Driver_RoundPositions for Teams[0];
+	declare netread Integer[] Net_Driver_RoundScores for Teams[0];
+	declare netread Integer[] Net_Driver_RoundTimes for Teams[0];
+	declare netread Text[Integer] Net_Driver_RoundLabels for Teams[0];
 	declare CMlFrame Frame_Standings <=> (Page.GetFirstChild("Frame_Standings") as CMlFrame);
-	declare K_Standings Standings;
-	if (_Standings == "" || !Standings.fromjson(_Standings)) {
-		Frame_Standings.Visible = False;
-		return;
-	}
-	// No round before the first one.
-	declare K_Round Round;
-	declare K_Round Parsed;
-	if (_Round != "" && Parsed.fromjson(_Round)) Round = Parsed;
 
-	Frame_Standings.Visible = True;
-	SetText(Frame_Standings, "Label_Title", Standings.title);
-	declare Text Info = Standings.info;
-	if (Standings.paused) Info = "Paused";
+	// Nothing until the driver published the standings.
+	Frame_Standings.Visible = Net_Driver_Title != "";
+	if (!Frame_Standings.Visible) return;
+	SetText(Frame_Standings, "Label_Title", Net_Driver_Title);
+	declare Text Info = Net_Driver_Info;
+	if (Net_Driver_Paused) Info = "Paused";
 	SetText(Frame_Standings, "Label_Info", Info);
 	declare CMlFrame Frame_Live <=> (Frame_Standings.GetFirstChild("Frame_Live") as CMlFrame);
-	if (Frame_Live != Null) Frame_Live.Visible = Round.live;
-
-	declare Text Me = "";
-	if (LocalUser != Null) Me = LocalUser.WebServicesUserId;
-	declare K_User[Text] Known = KnownUsers(_Users);
+	if (Frame_Live != Null) Frame_Live.Visible = Net_Driver_RoundLive;
 
 	// The round is ordered by place. The local player always gets a row, the last
 	// one if needed.
 	declare Integer[] Shown;
 	declare Integer Own = -1;
-	foreach (Index => Entry in Round.entries) {
-		if (Shown.count < C_MaxRows) Shown.add(Index);
-		if (Entry.account_id == Me) Own = Index;
+	foreach (Entry => Player in Net_Driver_RoundPlayers) {
+		if (Shown.count < C_MaxRows) Shown.add(Entry);
+		if (IsLocal(Player)) Own = Entry;
 	}
 	if (Own >= 0 && !Shown.exists(Own) && Shown.count == C_MaxRows) Shown[C_MaxRows - 1] = Own;
 
@@ -194,14 +156,17 @@ Void Update(Text _Standings, Text _Round, Text _Users) {
 			continue;
 		}
 
-		declare K_Entry Entry = Round.entries[Shown[RowIndex]];
+		declare Integer Entry = Shown[RowIndex];
+		declare Integer Player = Net_Driver_RoundPlayers[Entry];
+		declare Text Label = "";
+		if (Net_Driver_RoundLabels.existskey(Player)) Label = Net_Driver_RoundLabels[Player];
 		Row.Visible = True;
-		SetText(Row, "Label_Rank", TL::ToText(Entry.position));
-		SetText(Row, "Label_Name", PlayerName(Known, Entry.account_id));
-		SetText(Row, "Label_Detail", Entry.label);
-		SetText(Row, "Label_Time", TimeText(Entry.time));
-		SetText(Row, "Label_Score", TL::ToText(Entry.score));
-		if (Entry.account_id == Me) {
+		SetText(Row, "Label_Rank", TL::ToText(Net_Driver_RoundPositions[Entry]));
+		SetText(Row, "Label_Name", PlayerName(Player));
+		SetText(Row, "Label_Detail", Label);
+		SetText(Row, "Label_Time", TimeText(Net_Driver_RoundTimes[Entry]));
+		SetText(Row, "Label_Score", TL::ToText(Net_Driver_RoundScores[Entry]));
+		if (IsLocal(Player)) {
 			SetQuadColor(Row, "Quad_Highlight", C_Style_OwnColor);
 		} else {
 			SetQuadColor(Row, "Quad_Highlight", "");
@@ -210,11 +175,8 @@ Void Update(Text _Standings, Text _Round, Text _Users) {
 }
 
 main() {
-	declare netread Text Net_Driver_Standings for Teams[0];
 	declare netread Integer Net_Driver_StandingsSerial for Teams[0];
-	declare netread Text Net_Driver_Round for Teams[0];
 	declare netread Integer Net_Driver_RoundSerial for Teams[0];
-	declare netread Text Net_Driver_Users for Teams[0];
 	declare netread Integer Net_Driver_UsersSerial for Teams[0];
 	declare Integer LastSerial = -1;
 	declare Integer LastRoundSerial = -1;
@@ -230,7 +192,7 @@ main() {
 		LastSerial = Net_Driver_StandingsSerial;
 		LastRoundSerial = Net_Driver_RoundSerial;
 		LastUsersSerial = Net_Driver_UsersSerial;
-		Update(Net_Driver_Standings, Net_Driver_Round, Net_Driver_Users);
+		Update();
 	}
 }
 --></script>

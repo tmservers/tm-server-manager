@@ -4054,7 +4054,6 @@ checksum = "fd3ca314f692efd6c868f8408f53fe444634a845f96c028b97d35f6a1f79f0ee"
 name = "tm-driver-manialinks"
 version = "0.1.0-dev"
 dependencies = [
- "serde_json",
  "tm-server-types",
 ]
 
@@ -4198,6 +4197,7 @@ dependencies = [
  "base64 0.23.1",
  "dxr",
  "serde",
+ "serde_json",
  "simd-json",
  "spacetimedb-lib",
  "uuid",

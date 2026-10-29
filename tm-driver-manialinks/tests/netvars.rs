@@ -1,145 +1,75 @@
-//! Manialinks parse what the host publishes with `fromjson`, so every default
-//! manialink reading a netvar of the host declares a struct member for every field
-//! of its json.
+//! The default manialinks read nothing but the netvars of the driver modescript,
+//! each with the type it has (`DRIVER_NETVARS`), so a typo or another type shows up
+//! here rather than as an empty widget on a server.
 
-use std::collections::BTreeSet;
+use tm_server_types::method::DRIVER_NETVARS;
 
-use serde_json::Value;
-use tm_server_types::method::{
-    DriverEntry, DriverLabelTone, DriverRound, DriverStandings, DriverStatus, DriverUser,
-    DriverUsers,
-};
-
-/// How the structs of a manialink declare the members of an entry.
-const ENTRY: [&str; 7] = [
-    "Text account_id;",
-    "Integer position;",
-    "Integer score;",
-    "Integer time;",
-    "Text status;",
-    "Text label;",
-    "Text label_tone;",
-];
-
-/// The netvars of the host and how the structs of a manialink declare their members.
-fn netvars() -> [(&'static str, Vec<&'static str>, Value); 3] {
-    let entry = DriverEntry {
-        account_id: "a".into(),
-        position: 1,
-        score: 0,
-        time: -1,
-        status: DriverStatus::Playing,
-        label: String::new(),
-        label_tone: DriverLabelTone::Neutral,
-    };
-    let standings = DriverStandings {
-        entries: vec![entry.clone()],
-        ..Default::default()
-    };
-    let round = DriverRound {
-        number: 1,
-        live: true,
-        entries: vec![entry],
-    };
-    let users = DriverUsers {
-        users: vec![DriverUser::default()],
-    };
-
-    [
-        (
-            "Net_Driver_Standings",
-            [
-                "Text title;",
-                "Text info;",
-                "Integer rounds_on_map;",
-                "Integer maps_played;",
-                "Text map_name;",
-                "Integer map_count;",
-                "Boolean paused;",
-                "K_Entry[] entries;",
-            ]
-            .into_iter()
-            .chain(ENTRY)
-            .collect(),
-            serde_json::to_value(standings).unwrap(),
-        ),
-        (
-            "Net_Driver_Round",
-            ["Integer number;", "Boolean live;", "K_Entry[] entries;"]
-                .into_iter()
-                .chain(ENTRY)
-                .collect(),
-            serde_json::to_value(round).unwrap(),
-        ),
-        (
-            "Net_Driver_Users",
-            vec![
-                "K_User[] users;",
-                "Text account_id;",
-                "Text name;",
-                "Text club_tag;",
-                "Text zone;",
-            ],
-            serde_json::to_value(users).unwrap(),
-        ),
-    ]
-}
-
-/// The keys of an object and of the objects in its arrays.
-fn keys(json: &Value, keys: &mut BTreeSet<String>) {
-    match json {
-        Value::Object(object) => {
-            for (key, value) in object {
-                keys.insert(key.clone());
-                self::keys(value, keys);
-            }
-        }
-        Value::Array(array) => {
-            for value in array {
-                self::keys(value, keys);
-            }
-        }
-        _ => {}
-    }
+/// The netvars a manialink reads, by name and type.
+fn netreads(manialink: &str) -> Vec<(&str, &str)> {
+    manialink
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix("declare netread "))
+        .map(|declaration| {
+            let declaration = declaration
+                .strip_suffix(" for Teams[0];")
+                .unwrap_or_else(|| panic!("{declaration} is not declared for Teams[0]"));
+            let (kind, name) = declaration
+                .rsplit_once(' ')
+                .unwrap_or_else(|| panic!("{declaration} has no type"));
+            (name, kind)
+        })
+        .collect()
 }
 
 #[test]
-fn members_cover_the_json() {
-    for (netvar, members, json) in netvars() {
-        let mut fields = BTreeSet::new();
-        keys(&json, &mut fields);
-        let members: BTreeSet<String> = members
-            .iter()
-            .map(|member| {
-                member
-                    .trim_end_matches(';')
-                    .rsplit(' ')
-                    .next()
-                    .unwrap()
-                    .to_string()
-            })
-            .collect();
-        assert_eq!(fields, members, "{netvar}");
-    }
-}
-
-#[test]
-fn manialinks_declare_every_member() {
-    let mut checked = 0;
+fn manialinks_read_the_netvars_of_the_driver() {
     for default in tm_driver_manialinks::DEFAULTS {
-        for (netvar, members, _) in netvars() {
-            if !default.manialink.contains(&format!("Text {netvar} ")) {
-                continue;
-            }
-            for member in members {
-                assert!(
-                    default.manialink.contains(member),
-                    "{member} of {netvar} is missing in {}",
-                    default.name
-                );
-            }
-            checked += 1;
+        let reads = netreads(default.manialink);
+        assert!(!reads.is_empty(), "{} reads no netvar", default.name);
+        for (name, kind) in reads {
+            let contract = DRIVER_NETVARS.iter().find(|(netvar, _)| *netvar == name);
+            assert_eq!(
+                contract.map(|(_, kind)| *kind),
+                Some(kind),
+                "{} reads {kind} {name}",
+                default.name
+            );
         }
     }
-    assert!(checked > 0, "No manialink reads the netvars of the host");
+}
+
+/// The netvars of every group, which change together with its serial.
+fn group(name: &str) -> &'static str {
+    match name {
+        _ if name.starts_with("Net_Driver_User") => "Users",
+        _ if name.starts_with("Net_Driver_Round") && name != "Net_Driver_RoundsOnMap" => "Round",
+        _ if name.starts_with("Net_Driver_State") => "State",
+        _ => "Standings",
+    }
+}
+
+#[test]
+fn manialinks_watch_the_serials_of_what_they_read() {
+    for default in tm_driver_manialinks::DEFAULTS {
+        let reads = netreads(default.manialink);
+        for (name, _) in &reads {
+            let serial = format!("Net_Driver_{}Serial", group(name));
+            assert!(
+                reads.iter().any(|(read, _)| *read == serial),
+                "{} reads {name} without watching {serial}",
+                default.name
+            );
+        }
+    }
+}
+
+#[test]
+fn every_netvar_has_a_serial() {
+    for (name, _) in DRIVER_NETVARS {
+        let serial = format!("Net_Driver_{}Serial", group(name));
+        assert!(
+            DRIVER_NETVARS.iter().any(|(netvar, _)| *netvar == serial),
+            "{name} has no serial"
+        );
+    }
 }

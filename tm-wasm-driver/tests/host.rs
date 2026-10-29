@@ -699,3 +699,33 @@ fn a_replay_takes_the_new_settings_again() {
     assert_eq!(replayed.standings(), driver.standings());
     assert_eq!(replayed.settings(), points("[3]"));
 }
+
+#[test]
+fn every_player_shown_has_an_index() {
+    let mut driver = rounds("");
+    driver
+        .apply(&DriverInput::Players(vec![player("b", "Bea")]))
+        .unwrap();
+    driver.handle(&hold(1, DriverSection::MapStart)).unwrap();
+    driver.handle(&round_start(1)).unwrap();
+    // a races before the host knows their name.
+    play(&mut driver, &race("a", 30_000));
+    let users = |driver: &Driver| -> Vec<(u32, String, String)> {
+        driver
+            .users()
+            .users
+            .into_iter()
+            .map(|user| (user.index, user.account_id, user.name))
+            .collect()
+    };
+    assert_eq!(
+        users(&driver),
+        [
+            (0, "b".to_string(), "Bea".to_string()),
+            (1, "a".to_string(), String::new())
+        ]
+    );
+    // The index stays once the name arrives.
+    driver.handle(&player_info("a", "Ant")).unwrap();
+    assert_eq!(users(&driver)[1], (1, "a".to_string(), "Ant".to_string()));
+}

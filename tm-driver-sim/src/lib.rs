@@ -41,6 +41,7 @@ mod report;
 mod rng;
 pub mod rules;
 mod server;
+mod shown;
 mod wasm;
 mod world;
 

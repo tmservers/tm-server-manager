@@ -35,18 +35,16 @@ pub enum DriverCommand {
     /// Text readable by manialinks through `netread Text Net_Driver_State for Teams[0]`.
     /// For data of a mode the standings can not hold.
     SetNetState(String),
-    /// [`DriverStandings`] as json, readable by manialinks through
-    /// `netread Text Net_Driver_Standings for Teams[0]`. Sent by the driver host
-    /// whenever the standings change and never produced by a mode itself.
+    /// [`DriverNetStandings`] as json, which the driver modescript writes into the
+    /// typed netvars of the standings (see [`DRIVER_NETVARS`]). Sent by the driver
+    /// host whenever the standings change and never produced by a mode itself.
     SetStandings(String),
-    /// [`DriverRound`] as json, readable by manialinks through
-    /// `netread Text Net_Driver_Round for Teams[0]`. Sent by the driver host
-    /// whenever the round changes, also while it runs, and never produced by a mode
-    /// itself.
+    /// [`DriverNetRound`] as json for the netvars of the round. Sent by the driver
+    /// host whenever the round changes, also while it runs, and never produced by a
+    /// mode itself.
     SetRound(String),
-    /// [`DriverUsers`] as json, readable by manialinks through
-    /// `netread Text Net_Driver_Users for Teams[0]`. Sent by the driver host
-    /// whenever it learns about a player and never produced by a mode itself.
+    /// [`DriverNetUsers`] as json for the netvars of the players. Sent by the driver
+    /// host whenever it learns about a player and never produced by a mode itself.
     SetUsers(String),
     /// A message for everyone in the chat.
     ChatMessage(String),
@@ -355,10 +353,9 @@ impl DriverUiModule {
     pub const SCORES_TABLE: &str = "Race_ScoresTable";
 }
 
-/// The standings of a driver match as the manialinks get them through
-/// `Net_Driver_Standings`. Every driver mode works on these: the driver host keeps
-/// them, hands them to the mode with every event and shows what the mode returns
-/// to the players. Manialinks parse them as json, so the field names must not change.
+/// The standings of a driver match as the driver host keeps them. Every driver mode
+/// works on these: the host hands them to the mode with every event, shows what the
+/// mode returns to the players ([`DriverNetStandings`]) and reports it to the manager.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
@@ -382,8 +379,8 @@ pub struct DriverStandings {
     pub entries: Vec<DriverEntry>,
 }
 
-/// The round of a driver match as the manialinks get it through `Net_Driver_Round`:
-/// the round that runs as it stands, otherwise the last round that counted.
+/// The round of a driver match as the driver host shows it ([`DriverNetRound`]): the
+/// round that runs as it stands, otherwise the last round that counted.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
@@ -417,8 +414,8 @@ pub struct DriverEntry {
     pub label_tone: DriverLabelTone,
 }
 
-/// The players a driver host knows as the manialinks get them through
-/// `Net_Driver_Users`, so the standings do not repeat the names.
+/// The players the manialinks know, by the index the standings and the round refer to
+/// them with ([`DriverNetUsers`]), so they do not repeat accounts and names.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
@@ -432,6 +429,8 @@ pub struct DriverUsers {
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub struct DriverUser {
+    /// How the netvars refer to the player, unique while the driver runs.
+    pub index: u32,
     pub account_id: String,
     /// Empty until the host got the name from the server.
     pub name: String,
@@ -471,6 +470,154 @@ pub enum DriverLabelTone {
     Positive,
     /// Something bad, e.g. being one round from elimination.
     Negative,
+}
+
+impl DriverStatus {
+    /// How the netvars tell it: 0 playing, 1 eliminated, 2 spectator.
+    pub fn code(self) -> i32 {
+        match self {
+            Self::Playing => 0,
+            Self::Eliminated => 1,
+            Self::Spectator => 2,
+        }
+    }
+
+    pub fn from_code(code: i32) -> Option<Self> {
+        [Self::Playing, Self::Eliminated, Self::Spectator]
+            .into_iter()
+            .find(|status| status.code() == code)
+    }
+}
+
+impl DriverLabelTone {
+    /// How the netvars tell it: 0 neutral, 1 positive, 2 negative.
+    pub fn code(self) -> i32 {
+        match self {
+            Self::Neutral => 0,
+            Self::Positive => 1,
+            Self::Negative => 2,
+        }
+    }
+
+    pub fn from_code(code: i32) -> Option<Self> {
+        [Self::Neutral, Self::Positive, Self::Negative]
+            .into_iter()
+            .find(|tone| tone.code() == code)
+    }
+}
+
+/// The netvars the driver modescript writes for the manialinks, by name and
+/// ManiaScript type, all `for Teams[0]`, e.g.
+/// `declare netread Integer[] Net_Driver_StandingsPlayers for Teams[0];`.
+///
+/// They are typed, so a client only gets what changed, mostly integers, and new
+/// netvars do not break manialinks that do not read them. Players are their index
+/// in the netvars of the players, an opaque key: the accounts and names only go out
+/// when players change. The columns of entries hold one value per entry in the order
+/// of the entries: standings ordered by position, unranked players last, the round
+/// by place. Labels and their tones are maps by player, for the players with one.
+/// Statuses and tones are [`DriverStatus::code`] and [`DriverLabelTone::code`],
+/// times -1 without a time.
+///
+/// Every group (players, standings, round, state of the mode) has a serial that
+/// increases once all its netvars changed together, which manialinks watch.
+pub const DRIVER_NETVARS: [(&str, &str); 32] = [
+    ("Net_Driver_UsersSerial", "Integer"),
+    ("Net_Driver_UserAccountIds", "Text[Integer]"),
+    ("Net_Driver_UserNames", "Text[Integer]"),
+    ("Net_Driver_UserClubTags", "Text[Integer]"),
+    ("Net_Driver_UserZones", "Text[Integer]"),
+    ("Net_Driver_StandingsSerial", "Integer"),
+    ("Net_Driver_Title", "Text"),
+    ("Net_Driver_Info", "Text"),
+    ("Net_Driver_MapName", "Text"),
+    ("Net_Driver_MapCount", "Integer"),
+    ("Net_Driver_MapsPlayed", "Integer"),
+    ("Net_Driver_RoundsOnMap", "Integer"),
+    ("Net_Driver_Paused", "Boolean"),
+    ("Net_Driver_StandingsPlayers", "Integer[]"),
+    ("Net_Driver_StandingsPositions", "Integer[]"),
+    ("Net_Driver_StandingsScores", "Integer[]"),
+    ("Net_Driver_StandingsTimes", "Integer[]"),
+    ("Net_Driver_StandingsStatuses", "Integer[]"),
+    ("Net_Driver_StandingsLabels", "Text[Integer]"),
+    ("Net_Driver_StandingsLabelTones", "Integer[Integer]"),
+    ("Net_Driver_RoundSerial", "Integer"),
+    ("Net_Driver_RoundNumber", "Integer"),
+    ("Net_Driver_RoundLive", "Boolean"),
+    ("Net_Driver_RoundPlayers", "Integer[]"),
+    ("Net_Driver_RoundPositions", "Integer[]"),
+    ("Net_Driver_RoundScores", "Integer[]"),
+    ("Net_Driver_RoundTimes", "Integer[]"),
+    ("Net_Driver_RoundStatuses", "Integer[]"),
+    ("Net_Driver_RoundLabels", "Text[Integer]"),
+    ("Net_Driver_RoundLabelTones", "Integer[Integer]"),
+    ("Net_Driver_StateSerial", "Integer"),
+    ("Net_Driver_State", "Text"),
+];
+
+/// The standings the driver modescript writes into the netvars of the standings,
+/// sent as json with [`DriverCommand::SetStandings`].
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
+#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
+pub struct DriverNetStandings {
+    pub title: String,
+    pub info: String,
+    pub map_name: String,
+    pub map_count: u32,
+    pub maps_played: u32,
+    pub rounds_on_map: u32,
+    pub paused: bool,
+    pub entries: DriverNetEntries,
+}
+
+/// The round the driver modescript writes into the netvars of the round, sent as
+/// json with [`DriverCommand::SetRound`].
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
+#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
+pub struct DriverNetRound {
+    pub number: u32,
+    pub live: bool,
+    pub entries: DriverNetEntries,
+}
+
+/// Entries as columns, one value per entry in the order of the entries.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
+#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
+pub struct DriverNetEntries {
+    /// The index of the player of every entry ([`DriverUser::index`]).
+    pub players: Vec<u32>,
+    pub positions: Vec<u32>,
+    pub scores: Vec<i32>,
+    /// -1 without a time.
+    pub times: Vec<i32>,
+    /// [`DriverStatus::code`].
+    pub statuses: Vec<i32>,
+    /// The players with a label, their labels and the tones of these
+    /// ([`DriverLabelTone::code`]).
+    pub labeled: Vec<u32>,
+    pub labels: Vec<String>,
+    pub label_tones: Vec<i32>,
+}
+
+/// The players the driver modescript writes into the netvars of the players by
+/// index, sent as json with [`DriverCommand::SetUsers`].
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
+#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
+pub struct DriverNetUsers {
+    pub indices: Vec<u32>,
+    pub account_ids: Vec<String>,
+    pub names: Vec<String>,
+    pub club_tags: Vec<String>,
+    pub zones: Vec<String>,
 }
 
 #[cfg(test)]
@@ -627,6 +774,25 @@ mod tests {
             .1,
             ["infinite", "0"]
         );
+    }
+
+    #[test]
+    fn codes_go_both_ways() {
+        for status in [
+            DriverStatus::Playing,
+            DriverStatus::Eliminated,
+            DriverStatus::Spectator,
+        ] {
+            assert_eq!(DriverStatus::from_code(status.code()), Some(status));
+        }
+        for tone in [
+            DriverLabelTone::Neutral,
+            DriverLabelTone::Positive,
+            DriverLabelTone::Negative,
+        ] {
+            assert_eq!(DriverLabelTone::from_code(tone.code()), Some(tone));
+        }
+        assert_eq!(DriverStatus::from_code(3), None);
     }
 
     #[test]

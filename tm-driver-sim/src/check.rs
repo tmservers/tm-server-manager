@@ -12,6 +12,7 @@ use tm_wasm_driver::{Driver, DriverInput, DriverReply};
 use crate::{
     observe::{Observer, SeenHold},
     rules::{LiveRound, MapEnd, RoundEnd, Rules},
+    shown,
 };
 
 pub(crate) struct Checker {
@@ -288,7 +289,8 @@ fn decisions(commands: &[DriverCommand]) -> Vec<&DriverCommand> {
         .collect()
 }
 
-/// The server shows what the driver has: the driver published every change.
+/// The server shows what the driver has: the driver published every change, and
+/// what the netvars hold reads back as the driver has it, players by their index.
 fn check_published(
     observer: &Observer,
     standings: &DriverStandings,
@@ -296,18 +298,23 @@ fn check_published(
     users: &DriverUsers,
 ) -> Result<(), String> {
     let published = observer.published();
-    let stale = if published.standings.as_ref() != Some(standings) {
-        "standings"
-    } else if published.round.as_ref() != Some(round) {
-        "round"
-    } else if published.users.as_ref() != Some(users) {
-        "players"
-    } else {
-        return Ok(());
+    let stale = |what: &str| Err(format!("The server shows other {what} than the driver has"));
+    let Some(shown_users) = published.users.as_ref() else {
+        return stale("players");
     };
-    Err(format!(
-        "The server shows other {stale} than the driver has"
-    ))
+    let shown_users = shown::users(shown_users)?;
+    if shown_users != *users {
+        return stale("players");
+    }
+    match &published.standings {
+        Some(shown) if shown::standings(shown, &shown_users)? == *standings => {}
+        _ => return stale("standings"),
+    }
+    match &published.round {
+        Some(shown) if shown::round(shown, &shown_users)? == *round => {}
+        _ => return stale("round"),
+    }
+    Ok(())
 }
 
 /// Nobody leaves the standings of a match and eliminated players stay eliminated.

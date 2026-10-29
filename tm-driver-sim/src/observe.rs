@@ -11,8 +11,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use tm_server_types::{
     event::{DriverHold, DriverSection, Event, WayPoint},
     method::{
-        DriverCommand, DriverFinishTimeout, DriverRaceRules, DriverRound, DriverRoundFormat,
-        DriverStandings, DriverUsers, DriverWarmUp,
+        DriverCommand, DriverFinishTimeout, DriverNetRound, DriverNetStandings, DriverNetUsers,
+        DriverRaceRules, DriverRoundFormat, DriverWarmUp,
     },
 };
 use tm_wasm_driver::{DriverInput, DriverReply};
@@ -130,12 +130,12 @@ struct Answer {
     delivered: bool,
 }
 
-/// What the manialinks of the server show, the last json the driver published.
+/// What the netvars of the server hold, the last the driver published for them.
 #[derive(Debug, Default)]
 pub(crate) struct Published {
-    pub standings: Option<DriverStandings>,
-    pub round: Option<DriverRound>,
-    pub users: Option<DriverUsers>,
+    pub standings: Option<DriverNetStandings>,
+    pub round: Option<DriverNetRound>,
+    pub users: Option<DriverNetUsers>,
 }
 
 pub(crate) struct Observer {
@@ -525,7 +525,7 @@ impl Observer {
                 DriverCommand::EndMatch => self.match_ended = true,
                 DriverCommand::SetStandings(json) => self.published.standings = Some(parse(json)?),
                 DriverCommand::SetRound(json) => {
-                    let round: DriverRound = parse(json)?;
+                    let round: DriverNetRound = parse(json)?;
                     if round.live && self.live_due {
                         self.live_updates += 1;
                     }

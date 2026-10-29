@@ -28,11 +28,10 @@
 
 <script><!--
 /**
- *	Shows where the local player stands, from the standings the driver host
- *	publishes through Net_Driver_Standings and the round of Net_Driver_Round, as it
- *	stands while it runs.
- *	Works with every driver mode. The json is tm_server_types::method::DriverStandings
- *	and DriverRound.
+ *	Shows where the local player stands, from the netvars of the standings, the
+ *	round (as it stands while it runs) and the players the driver modescript
+ *	writes. Works with every driver mode. The netvars are
+ *	tm_server_types::method::DRIVER_NETVARS.
  */
 #Include "TextLib" as TL
 #Include "ColorLib" as CL
@@ -50,32 +49,11 @@
 #Const C_Style_SpectatorText "Spectator"
 #Const C_Style_PointsSuffix " pts"
 
-#Struct K_Entry {
-	Text account_id;
-	Integer position;
-	Integer score;
-	Integer time;
-	Text status;
-	Text label;
-	Text label_tone;
-}
-
-#Struct K_Standings {
-	Text title;
-	Text info;
-	Integer rounds_on_map;
-	Integer maps_played;
-	Text map_name;
-	Integer map_count;
-	Boolean paused;
-	K_Entry[] entries;
-}
-
-#Struct K_Round {
-	Integer number;
-	Boolean live;
-	K_Entry[] entries;
-}
+// Statuses and tones as the netvars tell them.
+#Const C_Status_Eliminated 1
+#Const C_Status_Spectator 2
+#Const C_Tone_Positive 1
+#Const C_Tone_Negative 2
 
 Void SetText(Text _ControlId, Text _Value) {
 	declare CMlLabel Label <=> (Page.GetFirstChild(_ControlId) as CMlLabel);
@@ -100,40 +78,31 @@ Void SetQuadColor(Text _ControlId, Text _Color) {
 	if (_Color != "") Quad.BgColor = CL::Hex6ToRgb(_Color);
 }
 
-/// The points of every player in the round by account id, as it stands while it runs.
-Integer[Text] RoundScores(Text _Round) {
-	declare Integer[Text] Result;
-	declare K_Round Parsed;
-	if (_Round == "" || !Parsed.fromjson(_Round)) return Result;
-	foreach (Round_Entry in Parsed.entries) {
-		Result[Round_Entry.account_id] = Round_Entry.score;
-	}
-	return Result;
+/// Whether a player of the netvars is the local player.
+Boolean IsLocal(Integer _Player) {
+	declare netread Text[Integer] Net_Driver_UserAccountIds for Teams[0];
+	return LocalUser != Null
+		&& Net_Driver_UserAccountIds.existskey(_Player)
+		&& Net_Driver_UserAccountIds[_Player] == LocalUser.WebServicesUserId;
 }
 
 /// Shown instead of the points like in the original modes: the label of the mode, e.g.
 /// Last Chance, or the status. Empty for players who are still playing without a label.
-Text StatusText(Text _Status, Text _Label) {
+Text StatusText(Integer _Status, Text _Label) {
 	if (_Label != "") return _Label;
-	switch (_Status) {
-		case "eliminated": return C_Style_EliminatedText;
-		case "spectator": return C_Style_SpectatorText;
-	}
+	if (_Status == C_Status_Eliminated) return C_Style_EliminatedText;
+	if (_Status == C_Status_Spectator) return C_Style_SpectatorText;
 	return "";
 }
 
-Text StatusColor(Text _Status, Text _Label, Text _LabelTone) {
+Text StatusColor(Integer _Status, Text _Label, Integer _Tone) {
 	if (_Label != "") {
-		switch (_LabelTone) {
-			case "positive": return C_Style_PositiveColor;
-			case "negative": return C_Style_NegativeColor;
-		}
+		if (_Tone == C_Tone_Positive) return C_Style_PositiveColor;
+		if (_Tone == C_Tone_Negative) return C_Style_NegativeColor;
 		return C_Style_NeutralColor;
 	}
-	switch (_Status) {
-		case "eliminated": return C_Style_EliminatedColor;
-		case "spectator": return C_Style_SpectatorColor;
-	}
+	if (_Status == C_Status_Eliminated) return C_Style_EliminatedColor;
+	if (_Status == C_Status_Spectator) return C_Style_SpectatorColor;
 	return "";
 }
 
@@ -149,45 +118,54 @@ Text Ordinal(Integer _Rank) {
 	return Rank^"th";
 }
 
-Void Update(Text _Standings, Text _Round) {
+Void Update() {
+	declare netread Text Net_Driver_Info for Teams[0];
+	declare netread Boolean Net_Driver_Paused for Teams[0];
+	declare netread Integer[] Net_Driver_StandingsPlayers for Teams[0];
+	declare netread Integer[] Net_Driver_StandingsPositions for Teams[0];
+	declare netread Integer[] Net_Driver_StandingsScores for Teams[0];
+	declare netread Integer[] Net_Driver_StandingsStatuses for Teams[0];
+	declare netread Text[Integer] Net_Driver_StandingsLabels for Teams[0];
+	declare netread Integer[Integer] Net_Driver_StandingsLabelTones for Teams[0];
+	declare netread Boolean Net_Driver_RoundLive for Teams[0];
+	declare netread Integer[] Net_Driver_RoundPlayers for Teams[0];
+	declare netread Integer[] Net_Driver_RoundScores for Teams[0];
 	declare CMlFrame Frame_MyStanding <=> (Page.GetFirstChild("Frame_MyStanding") as CMlFrame);
-	declare K_Standings Standings;
-	declare K_Entry Mine;
-	declare Boolean Found = False;
-	if (LocalUser != Null && _Standings != "" && Standings.fromjson(_Standings)) {
-		foreach (Standing in Standings.entries) {
-			if (Standing.account_id == LocalUser.WebServicesUserId) {
-				Mine = Standing;
-				Found = True;
-			}
-		}
+
+	declare Integer Mine = -1;
+	foreach (Entry => Player in Net_Driver_StandingsPlayers) {
+		if (IsLocal(Player)) Mine = Entry;
 	}
-
 	// Players who are not part of the standings see nothing.
-	Frame_MyStanding.Visible = Found;
-	if (!Found) return;
+	Frame_MyStanding.Visible = Mine >= 0;
+	if (Mine < 0) return;
 
-	if (Mine.position > 0) {
-		SetText("Label_Rank", Ordinal(Mine.position));
+	declare Integer Me = Net_Driver_StandingsPlayers[Mine];
+	if (Net_Driver_StandingsPositions[Mine] > 0) {
+		SetText("Label_Rank", Ordinal(Net_Driver_StandingsPositions[Mine]));
 	} else {
 		SetText("Label_Rank", "-");
 	}
 
 	// A status like Last Chance replaces the points in a colored cell.
-	declare Text Status = StatusText(Mine.status, Mine.label);
+	declare Text Label = "";
+	declare Integer Tone = 0;
+	if (Net_Driver_StandingsLabels.existskey(Me)) Label = Net_Driver_StandingsLabels[Me];
+	if (Net_Driver_StandingsLabelTones.existskey(Me)) Tone = Net_Driver_StandingsLabelTones[Me];
+	declare Text Status = StatusText(Net_Driver_StandingsStatuses[Mine], Label);
 	SetText("Label_Status", Status);
-	SetText("Label_Score", TL::ToText(Mine.score)^C_Style_PointsSuffix);
+	SetText("Label_Score", TL::ToText(Net_Driver_StandingsScores[Mine])^C_Style_PointsSuffix);
 	SetVisible("Label_Status", Status != "");
 	SetVisible("Label_Score", Status == "");
-	SetQuadColor("Quad_State", StatusColor(Mine.status, Mine.label, Mine.label_tone));
+	SetQuadColor("Quad_State", StatusColor(Net_Driver_StandingsStatuses[Mine], Label, Tone));
 
-	declare Integer[Text] LastRound = RoundScores(_Round);
 	declare Integer RoundScore = 0;
-	if (LastRound.existskey(Mine.account_id)) RoundScore = LastRound[Mine.account_id];
-	declare K_Round Round;
+	foreach (Entry => Player in Net_Driver_RoundPlayers) {
+		if (Player == Me) RoundScore = Net_Driver_RoundScores[Entry];
+	}
 	declare Text Which = " last round";
-	if (_Round != "" && Round.fromjson(_Round) && Round.live) Which = " this round";
-	if (Standings.paused) {
+	if (Net_Driver_RoundLive) Which = " this round";
+	if (Net_Driver_Paused) {
 		SetText("Label_Detail", "Paused");
 		SetTextColor("Label_Detail", C_Style_DetailColor);
 	} else if (RoundScore > 0) {
@@ -197,25 +175,30 @@ Void Update(Text _Standings, Text _Round) {
 		SetText("Label_Detail", TL::ToText(RoundScore)^Which);
 		SetTextColor("Label_Detail", C_Style_LostColor);
 	} else {
-		SetText("Label_Detail", Standings.info);
+		SetText("Label_Detail", Net_Driver_Info);
 		SetTextColor("Label_Detail", C_Style_DetailColor);
 	}
 }
 
 main() {
-	declare netread Text Net_Driver_Standings for Teams[0];
 	declare netread Integer Net_Driver_StandingsSerial for Teams[0];
-	declare netread Text Net_Driver_Round for Teams[0];
 	declare netread Integer Net_Driver_RoundSerial for Teams[0];
+	declare netread Integer Net_Driver_UsersSerial for Teams[0];
 	declare Integer LastSerial = -1;
 	declare Integer LastRoundSerial = -1;
+	declare Integer LastUsersSerial = -1;
 
 	while (True) {
 		yield;
-		if (LastSerial == Net_Driver_StandingsSerial && LastRoundSerial == Net_Driver_RoundSerial) continue;
+		if (
+			LastSerial == Net_Driver_StandingsSerial &&
+			LastRoundSerial == Net_Driver_RoundSerial &&
+			LastUsersSerial == Net_Driver_UsersSerial
+		) continue;
 		LastSerial = Net_Driver_StandingsSerial;
 		LastRoundSerial = Net_Driver_RoundSerial;
-		Update(Net_Driver_Standings, Net_Driver_Round);
+		LastUsersSerial = Net_Driver_UsersSerial;
+		Update();
 	}
 }
 --></script>

@@ -14,7 +14,9 @@
 //! them and hands them to the mode with every event, so modes keep nothing but
 //! their settings. The host clears what belongs to a new match or map, publishes
 //! the standings, the round and the players for the manialinks whenever they
-//! change and reports every round the mode placed to the manager. While a round
+//! change and reports every round the mode placed to the manager. The modescript
+//! writes what it publishes into typed netvars, players by an index the host gives
+//! them. While a round
 //! runs, the mode places it as it stands whenever the races changed, at most once
 //! per [`DriverLimits::live_round_interval`], so the round shows live.
 //!
@@ -39,7 +41,10 @@ use std::{
 use tm_server_types::{
     base::{Map, PlayerInfo},
     event::{DriverHold, DriverRoundResult, DriverSection, Event},
-    method::{DriverCanSpawn, DriverCommand, DriverRound, DriverStandings, DriverUsers},
+    method::{
+        DriverCanSpawn, DriverCommand, DriverNetRound, DriverNetStandings, DriverNetUsers,
+        DriverRound, DriverStandings, DriverUsers,
+    },
 };
 /// A compiled mode, see [`DriverEngine::compile`].
 pub use wasmtime::component::Component;
@@ -269,6 +274,7 @@ impl DriverEngine {
             live_round: None,
             live_round_asked: None,
             published: Published::default(),
+            indices: BTreeMap::new(),
             spawn_permissions: BTreeMap::new(),
             session: None,
             last_hold: None,
@@ -320,6 +326,9 @@ pub struct Driver {
     /// When the mode placed the round that runs last, in server time.
     live_round_asked: Option<u32>,
     published: Published,
+    /// How the netvars refer to every player the manialinks know, in the order the
+    /// host first published them. Never reused while the driver runs.
+    indices: BTreeMap<String, u32>,
     /// Spawn permissions sent in this match, so repeated ones are left out.
     spawn_permissions: BTreeMap<String, bool>,
     session: Option<i32>,
@@ -354,9 +363,9 @@ struct LastHold {
 /// What the manialinks got last, so only changes are sent.
 #[derive(Default)]
 struct Published {
-    users: Option<DriverUsers>,
-    standings: Option<DriverStandings>,
-    round: Option<DriverRound>,
+    users: Option<DriverNetUsers>,
+    standings: Option<DriverNetStandings>,
+    round: Option<DriverNetRound>,
 }
 
 /// What a driver gets: the callbacks of the server and what its caller knows
@@ -763,9 +772,17 @@ impl Driver {
         }
     }
 
-    /// The players the host knows, e.g. for their names.
+    /// Every player the manialinks know, ordered by index: the players the host
+    /// learned about and everyone else the standings or the round show, without a
+    /// name.
     pub fn users(&self) -> DriverUsers {
-        convert::users(&self.store.data().users)
+        convert::users(&self.indices, &self.store.data().users)
+    }
+
+    /// The index of a player, a new one for a player new to the manialinks.
+    fn index(&mut self, account_id: &str) -> u32 {
+        let next = self.indices.len() as u32;
+        *self.indices.entry(account_id.into()).or_insert(next)
     }
 
     /// Remembers a player on the server, e.g. for the names in the standings. False
@@ -787,6 +804,7 @@ impl Driver {
                 zone: String::new(),
             });
         user.name = info.nick_name.clone();
+        self.index(&info.account_id);
         true
     }
 
@@ -928,17 +946,26 @@ impl Driver {
         }
     }
 
-    /// Publishes what changed for the manialinks. The players come first so the
-    /// standings can show their names right away.
+    /// Publishes what changed for the manialinks. The players come first, so the
+    /// standings and the round only refer to players the manialinks know.
     fn publish(&mut self) -> Vec<DriverCommand> {
+        let standings = self.standings();
+        let round = self.round();
+        for entry in standings.entries.iter().chain(&round.entries) {
+            self.index(&entry.account_id);
+        }
+
         let mut commands = Vec::new();
-        if let Some(users) = changed(self.users(), &mut self.published.users) {
+        let users = convert::net_users(&self.users());
+        if let Some(users) = changed(users, &mut self.published.users) {
             commands.push(DriverCommand::SetUsers(json(users)));
         }
-        if let Some(standings) = changed(self.standings(), &mut self.published.standings) {
+        let standings = convert::net_standings(&standings, &self.indices);
+        if let Some(standings) = changed(standings, &mut self.published.standings) {
             commands.push(DriverCommand::SetStandings(json(standings)));
         }
-        if let Some(round) = changed(self.round(), &mut self.published.round) {
+        let round = convert::net_round(&round, &self.indices);
+        if let Some(round) = changed(round, &mut self.published.round) {
             commands.push(DriverCommand::SetRound(json(round)));
         }
         commands

@@ -82,6 +82,53 @@ mod tests {
         assert!(Driver::SCRIPT.contains("CUILayer::EUILayerType::ScoresTable"));
     }
 
+    /// The manialinks rely on the netvars and their types.
+    #[test]
+    fn script_writes_every_netvar() {
+        for (name, kind) in crate::method::DRIVER_NETVARS {
+            assert!(
+                Driver::SCRIPT.contains(&format!("declare netwrite {kind} {name} for Teams[0]")),
+                "{kind} {name} is missing in TM_Driver.Script.txt"
+            );
+        }
+    }
+
+    /// The script parses what the host publishes with `fromjson`, so its structs
+    /// declare a member for every key of the json.
+    #[cfg(feature = "serde")]
+    #[test]
+    fn script_parses_what_the_host_publishes() {
+        use crate::method::{DriverNetRound, DriverNetStandings, DriverNetUsers};
+
+        fn keys(json: &serde_json::Value, found: &mut Vec<String>) {
+            if let serde_json::Value::Object(object) = json {
+                for (key, value) in object {
+                    found.push(key.clone());
+                    keys(value, found);
+                }
+            }
+        }
+        let mut found = Vec::new();
+        keys(
+            &serde_json::to_value(DriverNetStandings::default()).unwrap(),
+            &mut found,
+        );
+        keys(
+            &serde_json::to_value(DriverNetRound::default()).unwrap(),
+            &mut found,
+        );
+        keys(
+            &serde_json::to_value(DriverNetUsers::default()).unwrap(),
+            &mut found,
+        );
+        for key in found {
+            assert!(
+                Driver::SCRIPT.contains(&format!(" {key};")),
+                "No struct of TM_Driver.Script.txt has a member {key}"
+            );
+        }
+    }
+
     /// Everything else reaches the driver through the standard callbacks.
     #[test]
     fn script_only_sends_holds() {

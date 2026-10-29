@@ -4,8 +4,9 @@ use tm_server_types::{
     event::{DriverPlayerResult, DriverRoundResult},
     method::{
         DriverCanSpawn, DriverCommand, DriverEntry, DriverFinishTimeout, DriverLabelTone,
-        DriverLaps, DriverRaceRules, DriverRound, DriverRoundFormat, DriverStandings, DriverStatus,
-        DriverUser, DriverUsers, DriverWarmUp,
+        DriverLaps, DriverNetEntries, DriverNetRound, DriverNetStandings, DriverNetUsers,
+        DriverRaceRules, DriverRound, DriverRoundFormat, DriverStandings, DriverStatus, DriverUser,
+        DriverUsers, DriverWarmUp,
     },
 };
 
@@ -143,18 +144,89 @@ pub(crate) fn round(number: u32, live: bool, entries: &[Entry]) -> DriverRound {
     }
 }
 
-/// The players the host knows as the manialinks get them.
-pub(crate) fn users(users: &BTreeMap<String, User>) -> DriverUsers {
+/// The players with an index, ordered by it, with what the host knows about them.
+pub(crate) fn users(
+    indices: &BTreeMap<String, u32>,
+    users: &BTreeMap<String, User>,
+) -> DriverUsers {
+    let mut indexed: Vec<(&String, u32)> = indices
+        .iter()
+        .map(|(account_id, &index)| (account_id, index))
+        .collect();
+    indexed.sort_by_key(|&(_, index)| index);
     DriverUsers {
-        users: users
-            .values()
-            .map(|user| DriverUser {
-                account_id: user.account_id.clone(),
-                name: user.name.clone(),
-                club_tag: user.club_tag.clone(),
-                zone: user.zone.clone(),
+        users: indexed
+            .into_iter()
+            .map(|(account_id, index)| {
+                let user = users.get(account_id);
+                let text = |field: fn(&User) -> &String| {
+                    user.map_or_else(String::new, |u| field(u).clone())
+                };
+                DriverUser {
+                    index,
+                    account_id: account_id.clone(),
+                    name: text(|u| &u.name),
+                    club_tag: text(|u| &u.club_tag),
+                    zone: text(|u| &u.zone),
+                }
             })
             .collect(),
+    }
+}
+
+/// The players as the netvars get them, by index.
+pub(crate) fn net_users(users: &DriverUsers) -> DriverNetUsers {
+    let column = |field: fn(&DriverUser) -> &String| -> Vec<String> {
+        users.users.iter().map(|user| field(user).clone()).collect()
+    };
+    DriverNetUsers {
+        indices: users.users.iter().map(|user| user.index).collect(),
+        account_ids: column(|user| &user.account_id),
+        names: column(|user| &user.name),
+        club_tags: column(|user| &user.club_tag),
+        zones: column(|user| &user.zone),
+    }
+}
+
+/// The standings as the netvars get them.
+pub(crate) fn net_standings(
+    standings: &DriverStandings,
+    indices: &BTreeMap<String, u32>,
+) -> DriverNetStandings {
+    DriverNetStandings {
+        title: standings.title.clone(),
+        info: standings.info.clone(),
+        map_name: standings.map_name.clone(),
+        map_count: standings.map_count,
+        maps_played: standings.maps_played,
+        rounds_on_map: standings.rounds_on_map,
+        paused: standings.paused,
+        entries: net_entries(&standings.entries, indices),
+    }
+}
+
+/// The round as the netvars get it.
+pub(crate) fn net_round(round: &DriverRound, indices: &BTreeMap<String, u32>) -> DriverNetRound {
+    DriverNetRound {
+        number: round.number,
+        live: round.live,
+        entries: net_entries(&round.entries, indices),
+    }
+}
+
+/// Entries as columns, players by their index, which everyone published has.
+fn net_entries(entries: &[DriverEntry], indices: &BTreeMap<String, u32>) -> DriverNetEntries {
+    let index = |entry: &DriverEntry| indices[&entry.account_id];
+    let labeled: Vec<&DriverEntry> = entries.iter().filter(|e| !e.label.is_empty()).collect();
+    DriverNetEntries {
+        players: entries.iter().map(index).collect(),
+        positions: entries.iter().map(|e| e.position).collect(),
+        scores: entries.iter().map(|e| e.score).collect(),
+        times: entries.iter().map(|e| e.time).collect(),
+        statuses: entries.iter().map(|e| e.status.code()).collect(),
+        labeled: labeled.iter().map(|e| index(e)).collect(),
+        labels: labeled.iter().map(|e| e.label.clone()).collect(),
+        label_tones: labeled.iter().map(|e| e.label_tone.code()).collect(),
     }
 }
 
@@ -182,7 +254,7 @@ fn ordered(entries: &[Entry]) -> Vec<DriverEntry> {
 }
 
 fn entry(entry: &Entry) -> DriverEntry {
-    // The manialinks parse the json into structs, so missing values have defaults.
+    // The netvars have no empty values, so missing ones have defaults.
     let (label, label_tone) = match &entry.label {
         Some(Label { text, tone }) => (
             text.clone(),
@@ -380,17 +452,57 @@ mod tests {
     }
 
     #[test]
-    fn users_are_ordered_by_account() {
+    fn users_are_ordered_by_index() {
         let users = BTreeMap::from([
             ("b".to_string(), user("b", "$f00B")),
             ("a".to_string(), user("a", "A")),
         ]);
+        // c is in the standings without the host knowing their name.
+        let indices = BTreeMap::from([
+            ("a".to_string(), 2),
+            ("b".to_string(), 0),
+            ("c".to_string(), 1),
+        ]);
         assert_eq!(
-            serde_json::to_value(super::users(&users)).unwrap(),
-            serde_json::json!({"users": [
-                {"account_id": "a", "name": "A", "club_tag": "", "zone": ""},
-                {"account_id": "b", "name": "$f00B", "club_tag": "", "zone": ""},
-            ]})
+            serde_json::to_value(net_users(&super::users(&indices, &users))).unwrap(),
+            serde_json::json!({
+                "indices": [0, 1, 2],
+                "account_ids": ["b", "c", "a"],
+                "names": ["$f00B", "", "A"],
+                "club_tags": ["", "", ""],
+                "zones": ["", "", ""],
+            })
+        );
+    }
+
+    #[test]
+    fn entries_go_out_as_columns_of_indices() {
+        let mut out = player("out", 2, Status::Eliminated, 0);
+        out.label = Some(Label {
+            text: "K.O.".into(),
+            tone: Tone::Negative,
+        });
+        let mut first = player("first", 1, Status::Playing, 10);
+        first.time = Some(30_000);
+        let round = super::round(3, true, &[out, first]);
+        let indices = BTreeMap::from([("first".to_string(), 7), ("out".to_string(), 4)]);
+
+        assert_eq!(
+            serde_json::to_value(net_round(&round, &indices)).unwrap(),
+            serde_json::json!({
+                "number": 3,
+                "live": true,
+                "entries": {
+                    "players": [7, 4],
+                    "positions": [1, 2],
+                    "scores": [10, 0],
+                    "times": [30000, -1],
+                    "statuses": [0, 1],
+                    "labeled": [4],
+                    "labels": ["K.O."],
+                    "label_tones": [2],
+                },
+            })
         );
     }
 }
