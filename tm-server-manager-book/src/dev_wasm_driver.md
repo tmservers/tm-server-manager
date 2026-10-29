@@ -368,8 +368,10 @@ Until then the host numbers them, which is all the netvars of a server need.
   - `scores-table`: replaces the scores table of the game, see below.
   - `live-standings`: the round instead of the match, the top 10 of the round as it stands while
     it runs and of the last round otherwise, with their labels (e.g. the lap of an endurance race),
-    times and points, and `Live` while the round runs. For modes whose round players follow, e.g.
-    time attack and endurance, in place of `standings`.
+    times and points, and `Live` while the round runs. Once a player has points in the match,
+    e.g. from earlier maps of a time attack match, a column with the points of the match follows
+    and the header widens for it. For modes whose round players follow, e.g. time attack and
+    endurance, in place of `standings`.
 - The config selects manialinks by name (`Driver.manialinks`, `["standings", "scores-table"]` by
   default). A tournament can bring its own, e.g. with another style, which replace defaults with
   the same name. A name ending with `scores-table` makes a manialink the scores table.
@@ -1068,7 +1070,8 @@ script starts with `"lives": 3`.
    - The live round reaches the manialinks about once a second, e.g. of an endurance race
      (`load endurance {"time_limit_ms": 600000}` on a map with laps, then
      `manialinks live-standings scores-table`): `live-standings` shows it with the laps, the times
-     and `Live`, and the round points of `standings` change while it runs.
+     and `Live`, and the round points of `standings` change while it runs. On the second map of a
+     time attack match `live-standings` shows the column of the match points with a wider header.
 2. **Database integration (phase 4)** once the feature is fleshed out.
 
 ## Risks

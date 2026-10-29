@@ -12,6 +12,7 @@
 	<style class="detail" textfont="GameFontSemiBold" textprefix="$i" textcolor="ffffffbb" textsize="0.9"/>
 	<style class="number" textfont="OswaldMono" textcolor="ffffff" textsize="1.5"/>
 	<style class="time" textfont="OswaldMono" textcolor="ffffff" textsize="1.2"/>
+	<style class="match" textfont="OswaldMono" textcolor="ffffffbb" textsize="1.2"/>
 	<style class="header" bgcolor="000000" opacity="0.85"/>
 	<style class="accent" bgcolor="009b5f" opacity="1"/>
 	<style class="row" bgcolor="000000" opacity="0.5"/>
@@ -31,13 +32,15 @@
 	<label id="Label_Time" class="time" pos="44.5 -2.25" z-index="2" size="10 4" halign="right" valign="center2"/>
 	<quad class="cell" pos="45.5 0" size="6.5 4.5"/>
 	<label id="Label_Score" class="number" pos="51.5 -2.25" z-index="2" size="6 4" halign="right" valign="center2"/>
+	<quad id="Quad_Match" class="row" pos="52.5 0" size="7.5 4.5" hidden="1"/>
+	<label id="Label_Match" class="match" pos="59 -2.25" z-index="2" size="7 4" halign="right" valign="center2" hidden="1"/>
 </framemodel>
 
 <frame id="Frame_Standings" pos="-158 62" hidden="1">
-	<quad class="header" size="52 6"/>
+	<quad id="Quad_Header" class="header" size="52 6"/>
 	<label id="Label_Title" class="title" pos="2 -3" size="30 5" valign="center2"/>
 	<label id="Label_Info" class="info" pos="50.5 -3" size="20 5" halign="right" valign="center2"/>
-	<quad class="accent" pos="0 -6" size="52 0.4"/>
+	<quad id="Quad_Accent" class="accent" pos="0 -6" size="52 0.4"/>
 	<frame id="Frame_Live" pos="42 -6" z-index="3" hidden="1">
 		<quad class="tag" size="10 2.6" valign="center"/>
 		<label class="live" pos="5 0" size="10 2.6" halign="center" valign="center2" text="Live"/>
@@ -64,7 +67,9 @@
  *	times of a time attack map or an endurance race.
  *
  *	Every row shows the place, the name, the label of the mode (e.g. the lap of an
- *	endurance race), the time and the points of the round.
+ *	endurance race), the time and the points of the round. Once a player has points
+ *	in the match, e.g. from earlier maps of a time attack match, a column with the
+ *	points of the match follows.
  */
 #Include "TextLib" as TL
 #Include "ColorLib" as CL
@@ -73,6 +78,9 @@
 #Const C_Style_OwnColor "1e5f99"
 
 #Const C_MaxRows 10
+// The width of the standings without and with the column of the match.
+#Const C_Width 52.
+#Const C_MatchWidth 60.
 
 Void SetText(CMlFrame _Frame, Text _ControlId, Text _Value) {
 	declare CMlLabel Label <=> (_Frame.GetFirstChild(_ControlId) as CMlLabel);
@@ -85,6 +93,37 @@ Void SetQuadColor(CMlFrame _Frame, Text _ControlId, Text _Color) {
 	if (Quad == Null) return;
 	Quad.Visible = _Color != "";
 	if (_Color != "") Quad.BgColor = CL::Hex6ToRgb(_Color);
+}
+
+Void SetVisible(CMlFrame _Frame, Text _ControlId, Boolean _Visible) {
+	declare CMlControl Control <=> _Frame.GetFirstChild(_ControlId);
+	if (Control != Null) Control.Visible = _Visible;
+}
+
+/// The points of every player in the match by player, empty while nobody has any.
+Integer[Integer] MatchScores() {
+	declare netread Integer[] Net_Driver_StandingsPlayers for Teams[0];
+	declare netread Integer[] Net_Driver_StandingsScores for Teams[0];
+	declare Integer[Integer] Scores;
+	declare Boolean Any = False;
+	foreach (Entry => Player in Net_Driver_StandingsPlayers) {
+		Scores[Player] = Net_Driver_StandingsScores[Entry];
+		if (Scores[Player] != 0) Any = True;
+	}
+	if (!Any) Scores.clear();
+	return Scores;
+}
+
+/// Widens the header for the column of the match or narrows it again.
+Void SetWidth(CMlFrame _Frame, Real _Width) {
+	declare CMlControl Header <=> _Frame.GetFirstChild("Quad_Header");
+	declare CMlControl Accent <=> _Frame.GetFirstChild("Quad_Accent");
+	declare CMlControl Info <=> _Frame.GetFirstChild("Label_Info");
+	declare CMlControl Live <=> _Frame.GetFirstChild("Frame_Live");
+	if (Header != Null) Header.Size = <_Width, 6.>;
+	if (Accent != Null) Accent.Size = <_Width, 0.4>;
+	if (Info != Null) Info.RelativePosition_V3 = <_Width - 1.5, -3.>;
+	if (Live != Null) Live.RelativePosition_V3 = <_Width - 10., -6.>;
 }
 
 /// The name of a player of the netvars, the account while the host does not know it.
@@ -137,6 +176,13 @@ Void Update() {
 	SetText(Frame_Standings, "Label_Info", Info);
 	declare CMlFrame Frame_Live <=> (Frame_Standings.GetFirstChild("Frame_Live") as CMlFrame);
 	if (Frame_Live != Null) Frame_Live.Visible = Net_Driver_RoundLive;
+	declare Integer[Integer] MatchScore = MatchScores();
+	declare Boolean WithMatch = MatchScore.count > 0;
+	if (WithMatch) {
+		SetWidth(Frame_Standings, C_MatchWidth);
+	} else {
+		SetWidth(Frame_Standings, C_Width);
+	}
 
 	// The round is ordered by place. The local player always gets a row, the last
 	// one if needed.
@@ -166,6 +212,13 @@ Void Update() {
 		SetText(Row, "Label_Detail", Label);
 		SetText(Row, "Label_Time", TimeText(Net_Driver_RoundTimes[Entry]));
 		SetText(Row, "Label_Score", TL::ToText(Net_Driver_RoundScores[Entry]));
+		SetVisible(Row, "Quad_Match", WithMatch);
+		SetVisible(Row, "Label_Match", WithMatch);
+		if (MatchScore.existskey(Player)) {
+			SetText(Row, "Label_Match", TL::ToText(MatchScore[Player]));
+		} else {
+			SetText(Row, "Label_Match", "");
+		}
 		if (IsLocal(Player)) {
 			SetQuadColor(Row, "Quad_Highlight", C_Style_OwnColor);
 		} else {
