@@ -729,3 +729,28 @@ fn every_player_shown_has_an_index() {
     driver.handle(&player_info("a", "Ant")).unwrap();
     assert_eq!(users(&driver)[1], (1, "a".to_string(), "Ant".to_string()));
 }
+
+#[test]
+fn calls_report_what_they_cost() {
+    let play_a_round = || {
+        let mut driver = rounds("");
+        driver.handle(&hold(1, DriverSection::MapStart)).unwrap();
+        driver.handle(&round_start(1)).unwrap();
+        play(&mut driver, &race("a", 30_000));
+        driver.handle(&hold(2, DriverSection::RoundEnd)).unwrap();
+        driver.stats().clone()
+    };
+    let stats = play_a_round();
+    let round_end = &stats.calls["round-end"];
+    assert_eq!(round_end.count, 1);
+    assert!(round_end.max_fuel > 0);
+    assert_eq!((round_end.max_racers, round_end.max_checkpoints), (1, 1));
+    assert!(stats.calls["init"].max_fuel > 0);
+    assert_eq!(stats.calls["live-round"].count, 1);
+
+    // Fuel does not depend on the machine or the run, unlike the times.
+    let again = play_a_round();
+    for (kind, calls) in &stats.calls {
+        assert_eq!(again.calls[kind].fuel, calls.fuel, "{kind}");
+    }
+}

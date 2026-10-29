@@ -35,7 +35,7 @@ use std::{
         atomic::{AtomicBool, Ordering},
     },
     thread,
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 use tm_server_types::{
@@ -55,6 +55,9 @@ use wasmtime::{
 
 mod convert;
 mod races;
+mod stats;
+
+pub use stats::{CallStats, DriverStats};
 
 // In its own module because the world defines its own `Event`.
 mod bindings {
@@ -65,6 +68,7 @@ mod bindings {
 }
 
 use races::Races;
+use stats::Measured;
 
 use bindings::{
     Mode,
@@ -200,11 +204,13 @@ impl DriverEngine {
     ) -> Result<Driver, DriverError> {
         let mut driver = self.instantiate_raw(component)?;
         driver.prepare_call();
-        driver
+        let started = Instant::now();
+        let initialized = driver
             .bindings
             .call_init(&mut driver.store, settings)
-            .map_err(DriverError::Trap)?
-            .map_err(DriverError::Rejected)?;
+            .map_err(DriverError::Trap)?;
+        driver.record("init", started, Measured::default());
+        initialized.map_err(DriverError::Rejected)?;
         driver.prepare_call();
         driver.name = driver
             .bindings
@@ -275,6 +281,7 @@ impl DriverEngine {
             live_round_asked: None,
             published: Published::default(),
             indices: BTreeMap::new(),
+            stats: DriverStats::default(),
             spawn_permissions: BTreeMap::new(),
             session: None,
             last_hold: None,
@@ -329,6 +336,8 @@ pub struct Driver {
     /// How the netvars refer to every player the manialinks know, in the order the
     /// host first published them. Never reused while the driver runs.
     indices: BTreeMap<String, u32>,
+    /// What the calls into the mode cost so far.
+    stats: DriverStats,
     /// Spawn permissions sent in this match, so repeated ones are left out.
     spawn_permissions: BTreeMap<String, bool>,
     session: Option<i32>,
@@ -515,6 +524,7 @@ impl Driver {
         }
         // The round that runs ends with the settings it started with.
         self.prepare_call();
+        let started = Instant::now();
         let checked = self
             .bindings
             .call_check_settings(&mut self.store, settings)
@@ -522,6 +532,7 @@ impl Driver {
                 self.poisoned = true;
                 DriverError::Trap(error)
             })?;
+        self.record("check-settings", started, Measured::default());
         match checked {
             Ok(()) => {
                 self.pending_settings = Some(settings.into());
@@ -538,6 +549,7 @@ impl Driver {
     /// format again.
     fn change_settings(&mut self, settings: &str) -> Result<DriverReply, DriverError> {
         self.prepare_call();
+        let started = Instant::now();
         let changed = self
             .bindings
             .call_change_settings(&mut self.store, settings)
@@ -545,6 +557,7 @@ impl Driver {
                 self.poisoned = true;
                 DriverError::Trap(error)
             })?;
+        self.record("change-settings", started, Measured::default());
         if let Err(reason) = changed {
             return Ok(DriverReply {
                 rejected: Some(reason),
@@ -725,6 +738,7 @@ impl Driver {
         // forced to end or skipped.
         let in_round = std::mem::take(&mut self.in_round);
         self.live_round = None;
+        let prepared = Instant::now();
         let event = match hold.section {
             DriverSection::MapStart => wit::Event::MapStart,
             DriverSection::RoundEnd => wit::Event::RoundEnd(wit::RoundEnd {
@@ -734,8 +748,9 @@ impl Driver {
             }),
             DriverSection::MapEnd => wit::Event::MapEnd,
         };
+        let prepare = prepared.elapsed();
 
-        let mut reply = self.step(event)?;
+        let mut reply = self.step_prepared(event, prepare)?;
         reply.commands.push(DriverCommand::Continue(hold.seq));
         self.last_hold = Some(LastHold {
             seq: hold.seq,
@@ -809,14 +824,42 @@ impl Driver {
     }
 
     fn step(&mut self, event: wit::Event) -> Result<DriverReply, DriverError> {
+        self.step_prepared(event, Duration::ZERO)
+    }
+
+    /// Steps the mode with an event whose arguments took this long to build.
+    fn step_prepared(
+        &mut self,
+        event: wit::Event,
+        prepare: Duration,
+    ) -> Result<DriverReply, DriverError> {
         clear(&mut self.standings, &event);
+        let started = Instant::now();
         let decision = self.call_step(&event)?;
+        let call = started.elapsed();
+        let fuel = self.fuel_used();
         self.standings = decision.standings;
 
         let round_result = self.take_round(&event);
         let mut commands = self.commands(decision.commands);
         commands.extend(self.default_next_map(&event, &commands));
+        let publishing = Instant::now();
         commands.extend(self.publish());
+        let (racers, checkpoints) = match &event {
+            wit::Event::RoundEnd(round_end) => size(&round_end.racers),
+            _ => (0, 0),
+        };
+        self.stats.record(
+            kind(&event),
+            Measured {
+                fuel,
+                prepare,
+                call,
+                publish: publishing.elapsed(),
+                racers,
+                checkpoints,
+            },
+        );
 
         Ok(DriverReply {
             commands,
@@ -838,12 +881,15 @@ impl Driver {
         {
             return Ok(Vec::new());
         }
+        let prepared = Instant::now();
         let races = wit::RoundEnd {
             invalid: false,
             racers: self.races.racers(),
             present: self.connected.iter().cloned().collect(),
         };
+        let prepare = prepared.elapsed();
         self.prepare_call();
+        let started = Instant::now();
         let round = self
             .bindings
             .call_live_round(&mut self.store, &self.standings, &races)
@@ -851,9 +897,48 @@ impl Driver {
                 self.poisoned = true;
                 DriverError::Trap(error)
             })?;
+        let call = started.elapsed();
+        let fuel = self.fuel_used();
         self.live_round = Some(round);
         self.live_round_asked = Some(time);
-        Ok(self.publish())
+        let publishing = Instant::now();
+        let commands = self.publish();
+        let (racers, checkpoints) = size(&races.racers);
+        self.stats.record(
+            "live-round",
+            Measured {
+                fuel,
+                prepare,
+                call,
+                publish: publishing.elapsed(),
+                racers,
+                checkpoints,
+            },
+        );
+        Ok(commands)
+    }
+
+    /// What the calls into the mode cost so far, by kind: `init`, every event, e.g.
+    /// `round-end`, `live-round`, `check-settings` and `change-settings`.
+    pub fn stats(&self) -> &DriverStats {
+        &self.stats
+    }
+
+    /// The fuel the last call used.
+    fn fuel_used(&self) -> u64 {
+        // Fuel is always enabled, so it can be read.
+        self.fuel_per_call
+            .saturating_sub(self.store.get_fuel().unwrap_or(0))
+    }
+
+    /// Records a call that started then and used the fuel it left.
+    fn record(&mut self, kind: &'static str, started: Instant, measured: Measured) {
+        let measured = Measured {
+            fuel: self.fuel_used(),
+            call: started.elapsed(),
+            ..measured
+        };
+        self.stats.record(kind, measured);
     }
 
     /// A trap poisons the driver, the mode could be in any state afterwards.
@@ -997,6 +1082,30 @@ fn clear(standings: &mut wit::Standings, event: &wit::Event) {
         | wit::Event::MatchEnd
         | wit::Event::SettingsChanged => {}
     }
+}
+
+/// What a step is counted as in the stats.
+fn kind(event: &wit::Event) -> &'static str {
+    match event {
+        wit::Event::MatchStart => "match-start",
+        wit::Event::MapStart => "map-start",
+        wit::Event::RoundStart => "round-start",
+        wit::Event::RaceStart(_) => "race-start",
+        wit::Event::RoundEnd(_) => "round-end",
+        wit::Event::MapEnd => "map-end",
+        wit::Event::MatchEnd => "match-end",
+        wit::Event::SettingsChanged => "settings-changed",
+    }
+}
+
+/// The racers and the checkpoints of all their races.
+fn size(racers: &[wit::Racer]) -> (u64, u64) {
+    let checkpoints = racers
+        .iter()
+        .flat_map(|racer| &racer.races)
+        .map(|race| race.checkpoints.len() as u64)
+        .sum();
+    (racers.len() as u64, checkpoints)
 }
 
 /// What the host publishes for the manialinks, as opposed to what a mode decided.

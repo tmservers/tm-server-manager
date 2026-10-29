@@ -58,6 +58,7 @@ use serde_json::Value;
 pub use events::InputLog;
 pub use rng::Rng;
 pub use rules::Rules;
+pub use tm_wasm_driver::DriverStats;
 use tm_wasm_driver::{Component, Driver, DriverEngine, DriverInput, DriverLimits, DriverReply};
 pub use wasm::build_wasm;
 pub use world::{
@@ -126,6 +127,8 @@ pub struct Outcome {
     pub lost: Vec<usize>,
     /// The first check that failed.
     pub failure: Option<Failure>,
+    /// What the calls into the mode cost, of the driver at the end.
+    pub stats: DriverStats,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -255,7 +258,7 @@ impl Simulator {
         let header = format!("{} · seed {seed}", self.name);
         let mut run = match Run::start(self, header, &world.settings, Some(world)) {
             Ok(run) => run,
-            Err(outcome) => return outcome,
+            Err(outcome) => return *outcome,
         };
         let mut server = Server::new(world, seed);
         let mut failure = None;
@@ -292,7 +295,7 @@ impl Simulator {
         let header = format!("{} · {name}", self.name);
         let mut run = match Run::start(self, header, &log.settings, None) {
             Ok(run) => run,
-            Err(outcome) => return outcome,
+            Err(outcome) => return *outcome,
         };
         let mut failure = None;
         for (index, input) in log.inputs.iter().enumerate() {
@@ -506,8 +509,17 @@ impl Simulator {
                     input: 0,
                     message: format!("The simulation panicked: {message}"),
                 }),
+                stats: DriverStats::default(),
             }
         })
+    }
+
+    /// The driver of these inputs, rebuilt by replaying them like a bridge resumes,
+    /// e.g. to measure what that costs.
+    pub fn replay(&self, settings: &str, inputs: &[DriverInput]) -> Result<Driver, String> {
+        engine()
+            .replay(&self.component, settings, inputs)
+            .map_err(|e| e.to_string())
     }
 
     /// The driver is the result of its inputs: replaying all of them gives the same
@@ -578,18 +590,21 @@ impl<'a> Run<'a> {
         header: String,
         settings: &str,
         world: Option<&World>,
-    ) -> Result<Self, Outcome> {
+    ) -> Result<Self, Box<Outcome>> {
         let started = (simulator.rules)(settings).and_then(|rules| {
             let driver = engine()
                 .instantiate(&simulator.component, settings)
                 .map_err(|e| e.to_string())?;
             Ok((rules, driver))
         });
-        let (rules, driver) = started.map_err(|message| Outcome {
-            report: format!("FAILED to start: {message}\n"),
-            inputs: Vec::new(),
-            lost: Vec::new(),
-            failure: Some(Failure { input: 0, message }),
+        let (rules, driver) = started.map_err(|message| {
+            Box::new(Outcome {
+                report: format!("FAILED to start: {message}\n"),
+                inputs: Vec::new(),
+                lost: Vec::new(),
+                failure: Some(Failure { input: 0, message }),
+                stats: DriverStats::default(),
+            })
         })?;
         let maps = world.map(|world| {
             world
@@ -694,6 +709,12 @@ impl<'a> Run<'a> {
                 )
                 .err();
         }
+        if failure.is_none() {
+            failure = check_fuel(&self.driver).err().map(|message| Failure {
+                input: self.inputs.len().saturating_sub(1),
+                message,
+            });
+        }
         let report = self.report.finish(
             &self.driver,
             &mut self.notes,
@@ -706,7 +727,26 @@ impl<'a> Run<'a> {
             inputs: self.inputs,
             lost: self.lost,
             failure,
+            stats: self.driver.stats().clone(),
         }
+    }
+}
+
+/// No call uses more than a tenth of the fuel it may, so modes keep room for more
+/// players and longer matches than the simulations have.
+fn check_fuel(driver: &Driver) -> Result<(), String> {
+    let limit = DriverLimits::default().fuel_per_call / 10;
+    match driver
+        .stats()
+        .calls
+        .iter()
+        .find(|(_, calls)| calls.max_fuel > limit)
+    {
+        Some((kind, calls)) => Err(format!(
+            "A {kind} call used {} fuel, more than a tenth of its budget",
+            calls.max_fuel
+        )),
+        None => Ok(()),
     }
 }
 

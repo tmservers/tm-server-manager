@@ -279,6 +279,13 @@ impl Report {
         for entry in &standings.entries {
             self.line(format!("  {}", self::entry(entry)));
         }
+        let fuel: Vec<String> = driver
+            .stats()
+            .calls
+            .iter()
+            .map(|(kind, calls)| format!("{kind} {}", fuel(calls.max_fuel)))
+            .collect();
+        self.line(format!("fuel {}", or_none(&fuel)));
         self.line(format!("inputs {inputs}"));
         self.text
     }
@@ -304,6 +311,21 @@ fn entry(entry: &DriverEntry) -> String {
         write!(text, " ({})", escape(&entry.label)).unwrap();
     }
     text
+}
+
+/// Fuel with two or three figures, e.g. `950`, `3.4k`, `120k` or `1.2M`, so reports
+/// only change when what a call costs does.
+fn fuel(fuel: u64) -> String {
+    let (value, unit) = match fuel {
+        0..1_000 => return fuel.to_string(),
+        1_000..1_000_000 => (fuel as f64 / 1e3, "k"),
+        _ => (fuel as f64 / 1e6, "M"),
+    };
+    if value < 10. {
+        format!("{value:.1}{unit}")
+    } else {
+        format!("{value:.0}{unit}")
+    }
 }
 
 fn or_none(items: &[String]) -> String {
