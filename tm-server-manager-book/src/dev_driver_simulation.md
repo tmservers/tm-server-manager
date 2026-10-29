@@ -86,6 +86,9 @@ A random world varies everything with its seed, like swarm testing:
   - The modescript restarting before a round, during a round or while a hold waits for its reply.
   - An admin pausing the match. The script answers with its status and skips the round, players
     drive without a round for a while, and the pause ends with the next status.
+  - An admin changing the settings before or during a round. The simulator draws the settings
+    that can change from other random settings of the mode and keeps the rest. Now and then it
+    also changes one that cannot change, and the mode has to reject that.
 
   About 40 % of worlds are plain, without any fault. The others draw every fault on its own, so
   some have all of them.
@@ -155,6 +158,8 @@ That leaves out waypoints, of which a full server sends thousands per round.
 - A round that did not count, forced or without its round start, changes nobody's points or status.
 - The driver knows the name of every player the server told it about.
 - The standings show the match paused exactly while the modescript said it is.
+- The driver plays with the settings it took and waits with the ones it checked, and takes them
+  exactly when the round ended. The `Rules` follow the new settings from there on.
 
 After a reply that never reached the server, what the server shows is not compared, it still shows
 what it had.
@@ -207,6 +212,9 @@ Bugs were planted one at a time and the simulations of the affected modes ran on
 | A resumed host does not publish everything again | what the server shows, in 2 of 150 knockout seeds |
 | The host sends every command again for a hold whose reply arrived | holds that come again |
 | The host ignores the pause | the pause the standings show |
+| The host applies new settings during a round | the settings the driver plays with |
+| The SDK takes a change of every setting | the fake server, which expects the mode to reject it |
+| The host never takes settings that waited | the settings the driver plays with |
 | A resumed host does not send the spawn permissions again | nothing |
 
 The first three passed every seed before the race order and rounds that do not count were checked.
@@ -300,6 +308,15 @@ sweep of thousands of matches is a matter of seconds in release.
   left meanwhile.
 - The standings show the name of the map, but the host only published it at the hold after the map
   started. It publishes at `StartMap_Start` now.
+- More rounds without elimination set during a knockout opened its registration again after
+  players were eliminated, and two players shared a position. The registration stays closed once
+  lives were taken.
+- A hold asked again after its reply got lost sent the standings as they were back then, also when
+  they had changed since, e.g. by new settings. A repeated hold now sends what the manialinks show
+  as it is now, with the decisions of the first reply.
+- A first idea applied settings that waited with the end hold of the round. Then the rules of the
+  round saw standings that already followed the new settings, e.g. the info of a reverse cup that
+  waits for players. Settings now apply with the first input after the round end.
 
 ## Limits
 

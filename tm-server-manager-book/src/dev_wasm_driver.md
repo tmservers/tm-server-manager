@@ -364,6 +364,41 @@ The pause is the one of the base script, `TrackmaniaRoundsBase`. An admin starts
   pause of the bridge when it loses the database. It sends `true` now and has
   `pause_get_status`.
 
+## Changing settings during a match
+
+Modes keep nothing but their settings, the scores live in the standings the host keeps. So new
+settings can replace the ones of a match while it runs, without losing anything:
+`DriverInput::Settings(json)`, from the runner with `settings <settings>`.
+
+- New settings apply from the next round on. When no round runs, the mode takes them right away.
+  During a round the mode only checks them (`check-settings`), so the caller learns at once when
+  it rejects them, and takes them with the first input after the round ended, e.g. the
+  `Delivered` of its end hold. The round that runs ends with the settings it started with, and a
+  round end and new settings never come with the same input. Later settings replace ones that
+  still wait.
+- The mode takes them with `change-settings` and gets `settings-changed`, e.g. to show them in its
+  info and send the round format and the warmup again. The standings stay as they are: the points
+  of past rounds count as they were. Limits apply from the next round or map end on, e.g. a lower
+  points limit ends the match after the next round.
+- A mode lists the settings that can change during a match (`reloadable-settings`), with the SDK
+  as `Mode::RELOADABLE`. The SDK compares new settings with the ones of the match, every default
+  filled in, and rejects a change of anything else, e.g. `lives cannot change during a match`.
+  Rejected settings change nothing, `DriverReply::rejected` tells why. The runner prints the list
+  when it loads a mode, a manager can show which settings can be edited during a match.
+- The settings are inputs like every other, so a replay takes them again at the same moment.
+  `Driver::settings` and `Driver::pending_settings` tell what the mode plays with and what waits.
+
+| Mode | Can change during a match | Cannot |
+|---|---|---|
+| Rounds | every setting | |
+| TimeAttack | every setting, the time limit and the warmup apply from the next map | |
+| ReverseCup | everything but the points players start with | `starting_points` |
+| Knockout | everything but the lives, which players already hold | `lives` |
+
+More rounds without elimination take no lives for a while, but they do not open the registration
+of a knockout again once lives were taken. More winners than players left end a reverse cup with
+the next round.
+
 ## Playlist
 
 The host plays the uids of the playlist it gets as `DriverInput::Playlist`. The runner starts with
@@ -546,6 +581,9 @@ Differences to the originals:
 export init: func(settings: string) -> result<_, string>;
 export name: func() -> string;  // shown above the standings
 export step: func(standings: standings, event: event) -> decision;  // standings + commands
+export check-settings: func(settings: string) -> result<_, string>;  // new settings during a match
+export change-settings: func(settings: string) -> result<_, string>;
+export reloadable-settings: func() -> list<string>;
 import host;  // log, find-user, map-count
 ```
 
@@ -564,14 +602,16 @@ import host;  // log, find-user, map-count
 ## Guest SDK and modes
 
 - `tm-driver-sdk`: wit-bindgen bindings, the `Mode` trait (a mode names its `Settings` type and
-  the SDK parses the json of the config into it, empty settings are `{}`), `export_mode!`, helpers on the
+  the SDK parses the json of the config into it, empty settings are `{}`, and lists the settings
+  that can change during a match in `RELOADABLE`), `export_mode!`, helpers on the
   standings (`join`, `award`, `round_entry`, `rank`, `rank_with`, `place_round`, `crown_leaders`,
   `in_match`, `block_others`), `RoundEnd::racer` and `CountedRace` for the race that counts,
   `race_order` for the order of a round without ties, the host functions (`user`, `name`,
   `map_count`), `ordinal` for chat
   messages and shared `settings`. Mode
   logic compiles natively too. `testing::Harness` runs a mode with the lifecycle of the host, so
-  modes are unit tested without wasm.
+  modes are unit tested without wasm, `Harness::change_settings` included.
+  `testing::assert_reloadable_settings_exist` makes sure `RELOADABLE` only names settings.
 - `tm-driver-modes/rounds`: Rounds (points repartition, rounds per map, maps per match, points
   limit, finish timeout).
 - `tm-driver-modes/time-attack`: TimeAttack (time limit, maps per match, points by rank).
@@ -687,8 +727,8 @@ script starts with `"lives": 3`.
 1. **Run the modescript and the manialink on a real server.** The runner in
    `tm-wasm-driver/src/main.rs` does that without the bridge and the manager: it installs the
    modescript, shows the manialinks and drives the server with a mode it builds from the
-   repository (`load <mode> [settings]`, `reload`, `maps [map ...]`, `script`, `next`,
-   `pause`, `resume`).
+   repository (`load <mode> [settings]`, `reload`, `settings <settings>`, `maps [map ...]`,
+   `script`, `next`, `pause`, `resume`).
 
    ```sh
    TM_SERVER_URL=127.0.0.1:5000 cargo run -p tm-wasm-driver -- reverse-cup '{"starting_points": 10}'
