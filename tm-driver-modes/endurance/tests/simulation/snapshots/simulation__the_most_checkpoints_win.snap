@@ -1,0 +1,22 @@
+---
+source: tm-driver-modes/endurance/tests/simulation/main.rs
+expression: outcome.report
+---
+endurance · the most checkpoints win
+settings {"time_limit_ms": 60000}
+
+match 1
+map m1 · time attack 1:00.000 · no warmup · infinite laps, no give up
+round 1
+  races  a 7cp · b 7cp · c 5cp
+  live   19 updates
+  round  1 b 7 · 2 a 7 · 3 c 5
+  match  1 b 7 (Winner) · 2 a 7 · 3 c 5
+  info   1:00
+  end match
+
+end
+  1 b 7 (Winner)
+  2 a 7
+  3 c 5
+inputs 28

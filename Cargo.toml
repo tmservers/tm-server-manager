@@ -12,6 +12,7 @@ members = [
     "tm-driver-modes/reverse-cup",
     "tm-driver-modes/time-attack",
     "tm-driver-modes/knockout",
+    "tm-driver-modes/endurance",
     "tm-driver-sim",
 ]
 resolver = "3"
