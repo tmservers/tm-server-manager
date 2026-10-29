@@ -60,6 +60,24 @@ impl Checker {
             _ => {}
         }
 
+        if driver.settings() != observer.settings()
+            || driver.pending_settings() != observer.pending_settings()
+        {
+            return Err(format!(
+                "The driver plays with {} and waits with {:?}, not with {} and {:?}",
+                driver.settings(),
+                driver.pending_settings(),
+                observer.settings(),
+                observer.pending_settings()
+            ));
+        }
+        // The mode took them before it got the input, never with a round end.
+        if let Some(settings) = observer.changed_settings() {
+            self.rules.settings_changed(settings)?;
+            // The rounds a match can take count from the new settings on.
+            self.placed = 0;
+        }
+
         match hold {
             Some(hold) => check_hold(hold, reply)?,
             None => {
@@ -87,7 +105,7 @@ impl Checker {
 
         // Waypoints, of which a full server sends thousands per round, only collect
         // races. Everything else is checked.
-        if !may_change(input) {
+        if !may_change(input) && observer.changed_settings().is_none() {
             return Ok(());
         }
 
@@ -186,7 +204,10 @@ fn may_change(input: &DriverInput) -> bool {
                 | Event::PlayerInfoChanged(_)
                 | Event::Pause(_)
         ),
-        DriverInput::Playlist(_) | DriverInput::Players(_) | DriverInput::Resumed => true,
+        DriverInput::Playlist(_)
+        | DriverInput::Players(_)
+        | DriverInput::Resumed
+        | DriverInput::Settings(_) => true,
         DriverInput::Delivered => false,
     }
 }
@@ -212,11 +233,27 @@ fn check_hold(hold: &SeenHold, reply: &DriverReply) -> Result<(), String> {
                 "Hold {seq} came again after its reply reached the server, but got more than Continue"
             ))
         }
-        Some(commands) if !hold.delivered && *commands != reply.commands => {
-            Err(format!("Hold {seq} got other commands when it came again"))
+        // What the host publishes may have changed since, it is checked on its own.
+        Some(commands) if !hold.delivered && decisions(commands) != decisions(&reply.commands) => {
+            Err(format!("Hold {seq} got other decisions when it came again"))
         }
         _ => Ok(()),
     }
+}
+
+/// The commands of a reply without what the host publishes for the manialinks.
+fn decisions(commands: &[DriverCommand]) -> Vec<&DriverCommand> {
+    commands
+        .iter()
+        .filter(|command| {
+            !matches!(
+                command,
+                DriverCommand::SetStandings(_)
+                    | DriverCommand::SetRound(_)
+                    | DriverCommand::SetUsers(_)
+            )
+        })
+        .collect()
 }
 
 /// The server shows what the driver has: the driver published every change.

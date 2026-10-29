@@ -10,7 +10,7 @@
 //! those races and finally by account, players with the same points by their
 //! race on the last map.
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tm_driver_sdk::{
     Command, CountedRace, Event, Mode, RoundEnd, RoundFormat, Standings,
     settings::{WarmUpSetting, maps_per_match},
@@ -18,7 +18,7 @@ use tm_driver_sdk::{
 
 tm_driver_sdk::export_mode!(TimeAttack);
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Settings {
     /// How long every map is played in milliseconds.
@@ -51,6 +51,13 @@ pub struct TimeAttack {
 
 impl Mode for TimeAttack {
     const NAME: &'static str = "Time Attack";
+    /// The time limit and the warmup apply from the next map on.
+    const RELOADABLE: &'static [&'static str] = &[
+        "time_limit_ms",
+        "maps_per_match",
+        "points_repartition",
+        "warmup",
+    ];
 
     type Settings = Settings;
 
@@ -65,8 +72,9 @@ impl Mode for TimeAttack {
         match event {
             // The script waits here, so this is where the rules for the map are set.
             // A config change keeps the match of the modescript going, so the rules
-            // of the previous mode might still be active.
-            Event::MapStart => {
+            // of the previous mode might still be active. New settings send them
+            // again, the round format applies from the next round on.
+            Event::MapStart | Event::SettingsChanged => {
                 standings.info = self.info(standings);
                 vec![
                     Command::SetRoundFormat(RoundFormat::TimeAttack(self.settings.time_limit_ms)),

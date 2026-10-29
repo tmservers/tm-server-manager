@@ -2,11 +2,13 @@
 
 use std::collections::BTreeMap;
 
-use crate::{Command, Entry, Event, Mode, Standings, User};
+use serde_json::Value;
+
+use crate::{Command, Entry, Event, Mode, Standings, User, reload::Configured};
 
 /// A mode together with the standings the host would keep for it.
 pub struct Harness<M> {
-    pub mode: M,
+    configured: Configured<M>,
     pub standings: Standings,
     /// The last round that counted, as the mode placed it.
     pub round: Vec<Entry>,
@@ -19,7 +21,7 @@ pub struct Harness<M> {
 impl<M: Mode> Harness<M> {
     pub fn new(settings: &str) -> Result<Self, String> {
         Ok(Self {
-            mode: M::from_json(settings)?,
+            configured: Configured::new(settings)?,
             standings: Standings::default(),
             round: Vec::new(),
             map_count: 0,
@@ -37,12 +39,25 @@ impl<M: Mode> Harness<M> {
         native::set(self.map_count, self.users.clone());
 
         let counts = matches!(&event, Event::RoundEnd(round_end) if !round_end.invalid);
-        let commands = self.mode.step(&mut self.standings, event);
+        let commands = self.configured.mode.step(&mut self.standings, event);
         let round = std::mem::take(&mut self.standings.round);
         if counts {
             self.round = round;
         }
         commands
+    }
+
+    /// The mode with the settings it runs with.
+    pub fn mode(&self) -> &M {
+        &self.configured.mode
+    }
+
+    /// New settings during the match, like the host gives them to the mode once no
+    /// round runs: the mode takes them and gets [`Event::SettingsChanged`]. Settings
+    /// the mode cannot change during a match are rejected and change nothing.
+    pub fn change_settings(&mut self, settings: &str) -> Result<Vec<Command>, String> {
+        self.configured = self.configured.change(settings)?;
+        Ok(self.step(Event::SettingsChanged))
     }
 
     /// Panics if the player is not part of the standings.
@@ -70,7 +85,27 @@ fn clear(standings: &mut Standings, event: &Event) {
             standings.rounds_played = standings.rounds_played.saturating_add(1);
         }
         Event::MapEnd => standings.maps_played = standings.maps_played.saturating_add(1),
-        Event::RoundStart | Event::RaceStart(_) | Event::RoundEnd(_) | Event::MatchEnd => {}
+        Event::RoundStart
+        | Event::RaceStart(_)
+        | Event::RoundEnd(_)
+        | Event::MatchEnd
+        | Event::SettingsChanged => {}
+    }
+}
+
+/// Panics unless every name [`Mode::RELOADABLE`] lists is a setting of the mode,
+/// e.g. after one was renamed.
+pub fn assert_reloadable_settings_exist<M: Mode>() {
+    let configured = Configured::<M>::new("{}").expect("The default settings are valid");
+    let Value::Object(settings) = &configured.settings else {
+        panic!("The settings of {} are no json object", M::NAME);
+    };
+    for name in M::RELOADABLE {
+        assert!(
+            settings.contains_key(*name),
+            "{name} is no setting of {}",
+            M::NAME
+        );
     }
 }
 

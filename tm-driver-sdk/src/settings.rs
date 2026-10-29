@@ -1,12 +1,12 @@
 //! Settings shared by modes.
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::{FinishTimeout, WarmUp};
 
 /// A finish timeout in the json settings of a mode:
 /// `"automatic"`, `"disabled"` or `{"milliseconds": 5000}`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum FinishTimeoutSetting {
     Automatic,
@@ -16,7 +16,7 @@ pub enum FinishTimeoutSetting {
 
 /// The warmup before the first round of every map in the json settings of a mode,
 /// e.g. `{"rounds": 1, "duration_ms": 60000}`. No warmup by default.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct WarmUpSetting {
     /// Warmup rounds, 0 for none.

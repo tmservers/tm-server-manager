@@ -20,6 +20,9 @@
 //! [`DriverInput`], and replaying the inputs of a match with
 //! [`DriverEngine::replay`] rebuilds exactly the same driver, so a crashed bridge
 //! resumes from them and nothing else has to be persisted.
+//!
+//! Settings can change during a match ([`DriverInput::Settings`]). The mode keeps
+//! its standings and takes the new settings from the next round on.
 
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -195,6 +198,12 @@ impl DriverEngine {
             .bindings
             .call_name(&mut driver.store)
             .map_err(DriverError::Trap)?;
+        driver.prepare_call();
+        driver.reloadable = driver
+            .bindings
+            .call_reloadable_settings(&mut driver.store)
+            .map_err(DriverError::Trap)?;
+        driver.settings = settings.into();
         Ok(driver)
     }
 
@@ -243,6 +252,9 @@ impl DriverEngine {
             fuel_per_call: self.limits.fuel_per_call,
             epoch_deadline: self.epoch_deadline(),
             name: String::new(),
+            settings: String::new(),
+            pending_settings: None,
+            reloadable: Vec::new(),
             standings: convert::empty_standings(),
             last_round: Vec::new(),
             published: Published::default(),
@@ -280,6 +292,12 @@ pub struct Driver {
     epoch_deadline: u64,
     /// Name of the mode, shown above the standings.
     name: String,
+    /// The json settings the mode plays with.
+    settings: String,
+    /// Settings that wait for the round that runs to end.
+    pending_settings: Option<String>,
+    /// The settings that can change during a match.
+    reloadable: Vec<String>,
     /// The scores of the match, handed to the mode with every event.
     standings: wit::Standings,
     /// The last round that counted, as the mode placed it.
@@ -346,12 +364,20 @@ pub enum DriverInput {
     /// so commands that are not idempotent do not run twice: `EndMap` is the
     /// `NextMap` of the server, `EndMatch` could end the next match, chat messages
     /// would show twice. Without it, e.g. when the reply got lost with the bridge,
-    /// the hold gets every command again.
+    /// the hold gets every command again. Like the reply to every input, its reply
+    /// can have commands, e.g. of settings that waited for the round to end.
     Delivered,
     /// The driver resumed, e.g. the bridge after a restart, and replies to the
     /// last inputs may have been lost. Everything the driver set on the server goes
     /// out again: the spawn permissions of the match and what the manialinks show.
     Resumed,
+    /// New json settings for the match, e.g. another points repartition. The mode
+    /// keeps its standings and takes them from the next round on: right away when
+    /// no round runs, otherwise with the first input after the round ended. A mode
+    /// rejects settings it cannot change during a match
+    /// ([`Driver::reloadable_settings`]), which then change nothing
+    /// ([`DriverReply::rejected`]). Later settings replace ones that still wait.
+    Settings(String),
 }
 
 /// What should happen after an input.
@@ -361,6 +387,9 @@ pub struct DriverReply {
     pub commands: Vec<DriverCommand>,
     /// Results of the current round for the manager.
     pub round_result: Option<DriverRoundResult>,
+    /// Why the mode rejected new settings ([`DriverInput::Settings`]), which then
+    /// change nothing.
+    pub rejected: Option<String>,
 }
 
 impl Driver {
@@ -386,20 +415,24 @@ impl Driver {
 
     /// Applies an input. Persist every input in order to resume the match by replay.
     pub fn apply(&mut self, input: &DriverInput) -> Result<DriverReply, DriverError> {
-        match input {
-            DriverInput::Event(event) => self.handle(event),
+        if let DriverInput::Event(event) = input {
+            return self.handle(event);
+        }
+        let settings = self.due_settings()?;
+        let reply = match input {
+            DriverInput::Event(_) => unreachable!("Events are handled above"),
             DriverInput::Playlist(maps) => {
                 self.playlist.clone_from(maps);
                 // The mode reads it through the host functions.
                 self.store.data_mut().map_count = self.playlist.len() as u32;
-                Ok(self.published())
+                self.published()
             }
             DriverInput::Players(players) => {
                 self.connected.clear();
                 for player in players {
                     self.learn(player);
                 }
-                Ok(self.published())
+                self.published()
             }
             DriverInput::Resumed => {
                 let mut commands: Vec<DriverCommand> = self
@@ -414,31 +447,125 @@ impl Driver {
                     .collect();
                 self.published = Published::default();
                 commands.extend(self.publish());
-                Ok(DriverReply {
+                DriverReply {
                     commands,
-                    round_result: None,
-                })
+                    ..DriverReply::default()
+                }
             }
             DriverInput::Delivered => {
                 if let Some(last_hold) = &mut self.last_hold {
                     last_hold.delivered = true;
                 }
+                DriverReply::default()
+            }
+            DriverInput::Settings(new) => self.new_settings(new)?,
+        };
+        Ok(after_settings(settings, reply))
+    }
+
+    /// The json settings the mode plays with, the last ones it took.
+    pub fn settings(&self) -> &str {
+        &self.settings
+    }
+
+    /// Settings that wait for the round that runs to end.
+    pub fn pending_settings(&self) -> Option<&str> {
+        self.pending_settings.as_deref()
+    }
+
+    /// The settings that can change during a match, by their name in the json.
+    pub fn reloadable_settings(&self) -> &[String] {
+        &self.reloadable
+    }
+
+    /// Takes new settings once no round runs. The mode checks them right away, so
+    /// the caller learns at once when it rejects them.
+    fn new_settings(&mut self, settings: &str) -> Result<DriverReply, DriverError> {
+        if self.poisoned {
+            return Err(DriverError::Poisoned);
+        }
+        if !self.in_round {
+            return self.change_settings(settings);
+        }
+        // The round that runs ends with the settings it started with.
+        self.prepare_call();
+        let checked = self
+            .bindings
+            .call_check_settings(&mut self.store, settings)
+            .map_err(|error| {
+                self.poisoned = true;
+                DriverError::Trap(error)
+            })?;
+        match checked {
+            Ok(()) => {
+                self.pending_settings = Some(settings.into());
                 Ok(DriverReply::default())
             }
+            Err(reason) => Ok(DriverReply {
+                rejected: Some(reason),
+                ..DriverReply::default()
+            }),
         }
+    }
+
+    /// Gives the mode new settings and lets it react, e.g. by sending the round
+    /// format again.
+    fn change_settings(&mut self, settings: &str) -> Result<DriverReply, DriverError> {
+        self.prepare_call();
+        let changed = self
+            .bindings
+            .call_change_settings(&mut self.store, settings)
+            .map_err(|error| {
+                self.poisoned = true;
+                DriverError::Trap(error)
+            })?;
+        if let Err(reason) = changed {
+            return Ok(DriverReply {
+                rejected: Some(reason),
+                ..DriverReply::default()
+            });
+        }
+        self.settings = settings.into();
+        self.step(wit::Event::SettingsChanged)
+    }
+
+    /// Settings that waited for the round to end apply with the first input after
+    /// it, before the mode gets the input. So a round end and new settings never
+    /// come with the same input.
+    fn due_settings(&mut self) -> Result<Vec<DriverCommand>, DriverError> {
+        if self.in_round {
+            return Ok(Vec::new());
+        }
+        let Some(settings) = self.pending_settings.take() else {
+            return Ok(Vec::new());
+        };
+        if self.poisoned {
+            return Err(DriverError::Poisoned);
+        }
+        let reply = self.change_settings(&settings)?;
+        if let Some(reason) = reply.rejected {
+            tracing::warn!("The mode rejected settings it accepted during the round: {reason}");
+        }
+        Ok(reply.commands)
     }
 
     /// Feeds a callback of the server into the mode, the same as [`Driver::apply`]
     /// with [`DriverInput::Event`].
     ///
     /// Holds always end with [`DriverCommand::Continue`]. A repeated hold gets the
-    /// same commands without stepping the mode again so nothing is decided twice,
-    /// or only its `Continue` once the first reply was [`DriverInput::Delivered`].
+    /// decisions of the first reply again without stepping the mode, so nothing is
+    /// decided twice, and what the manialinks show as it is now. Once the first reply
+    /// was [`DriverInput::Delivered`], it only gets its `Continue`.
     pub fn handle(&mut self, event: &Event) -> Result<DriverReply, DriverError> {
         if self.poisoned {
             return Err(DriverError::Poisoned);
         }
+        let settings = self.due_settings()?;
+        let reply = self.event(event)?;
+        Ok(after_settings(settings, reply))
+    }
 
+    fn event(&mut self, event: &Event) -> Result<DriverReply, DriverError> {
         match event {
             Event::StartMatchStart(_) => {
                 // Every match starts with the defaults of the modescript.
@@ -518,14 +645,27 @@ impl Driver {
         if let Some(last_hold) = &self.last_hold {
             if last_hold.seq == hold.seq {
                 // The round result already went out with the first reply.
-                let commands = if last_hold.delivered {
-                    vec![DriverCommand::Continue(hold.seq)]
+                let mut commands = if last_hold.delivered {
+                    Vec::new()
                 } else {
-                    last_hold.commands.clone()
+                    // The first reply might not have arrived. Its decisions go out again,
+                    // what the manialinks show as it is now, which can be newer.
+                    let mut decisions: Vec<DriverCommand> = last_hold
+                        .commands
+                        .iter()
+                        .filter(|command| {
+                            !is_published(command) && !matches!(command, DriverCommand::Continue(_))
+                        })
+                        .cloned()
+                        .collect();
+                    self.published = Published::default();
+                    decisions.extend(self.publish());
+                    decisions
                 };
+                commands.push(DriverCommand::Continue(hold.seq));
                 return Ok(DriverReply {
                     commands,
-                    round_result: None,
+                    ..DriverReply::default()
                 });
             }
             if last_hold.seq > hold.seq {
@@ -621,6 +761,7 @@ impl Driver {
         Ok(DriverReply {
             commands,
             round_result,
+            rejected: None,
         })
     }
 
@@ -710,7 +851,7 @@ impl Driver {
     fn published(&mut self) -> DriverReply {
         DriverReply {
             commands: self.publish(),
-            round_result: None,
+            ..DriverReply::default()
         }
     }
 
@@ -753,8 +894,26 @@ fn clear(standings: &mut wit::Standings, event: &wit::Event) {
         wit::Event::RoundStart
         | wit::Event::RaceStart(_)
         | wit::Event::RoundEnd(_)
-        | wit::Event::MatchEnd => {}
+        | wit::Event::MatchEnd
+        | wit::Event::SettingsChanged => {}
     }
+}
+
+/// What the host publishes for the manialinks, as opposed to what a mode decided.
+fn is_published(command: &DriverCommand) -> bool {
+    matches!(
+        command,
+        DriverCommand::SetStandings(_) | DriverCommand::SetRound(_) | DriverCommand::SetUsers(_)
+    )
+}
+
+/// The commands of settings the driver took before an input go out first.
+fn after_settings(mut settings: Vec<DriverCommand>, mut reply: DriverReply) -> DriverReply {
+    if !settings.is_empty() {
+        settings.append(&mut reply.commands);
+        reply.commands = settings;
+    }
+    reply
 }
 
 /// The value if it differs from what was published last, which it replaces then.

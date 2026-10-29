@@ -145,6 +145,12 @@ pub(crate) struct Observer {
     rounds: u32,
     /// The modescript said it is paused.
     paused: bool,
+    /// The settings the mode plays with.
+    settings: String,
+    /// Settings that wait for the round that runs to end.
+    pending_settings: Option<String>,
+    /// The settings the mode took with the last input.
+    changed_settings: Option<String>,
 
     // What the commands that reached the server set, like the globals of the
     // modescript and its netvars.
@@ -159,8 +165,11 @@ pub(crate) struct Observer {
 }
 
 impl Observer {
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(settings: &str) -> Self {
         Self {
+            settings: settings.into(),
+            pending_settings: None,
+            changed_settings: None,
             known: BTreeMap::new(),
             connected: BTreeSet::new(),
             players_seen: false,
@@ -221,6 +230,34 @@ impl Observer {
         self.paused
     }
 
+    /// The settings the mode plays with.
+    pub(crate) fn settings(&self) -> &str {
+        &self.settings
+    }
+
+    /// Settings that wait for the round that runs to end.
+    pub(crate) fn pending_settings(&self) -> Option<&str> {
+        self.pending_settings.as_deref()
+    }
+
+    /// The settings the mode took with the last input, before it got the input or
+    /// with it, when the input were the settings.
+    pub(crate) fn changed_settings(&self) -> Option<&str> {
+        self.changed_settings.as_deref()
+    }
+
+    fn take_pending_settings(&mut self) {
+        if let Some(settings) = self.pending_settings.take() {
+            self.take_settings(settings);
+        }
+    }
+
+    fn take_settings(&mut self, settings: String) {
+        self.notes.push(format!("settings {settings}"));
+        self.settings.clone_from(&settings);
+        self.changed_settings = Some(settings);
+    }
+
     /// Round ends that reached the driver, forced ones included.
     pub(crate) fn rounds(&self) -> u32 {
         self.rounds
@@ -234,6 +271,12 @@ impl Observer {
     /// Takes in an input before the driver gets it. Fails for an input the server
     /// could not have sent.
     pub(crate) fn input(&mut self, input: &DriverInput) -> Result<Option<SeenHold>, String> {
+        self.changed_settings = None;
+        // Like the host, settings that waited apply with the first input after the
+        // round, before the mode gets it.
+        if !self.in_round {
+            self.take_pending_settings();
+        }
         let event = match input {
             DriverInput::Event(event) => event,
             DriverInput::Playlist(uids) => {
@@ -261,7 +304,7 @@ impl Observer {
                 }
                 return Ok(None);
             }
-            DriverInput::Resumed => return Ok(None),
+            DriverInput::Resumed | DriverInput::Settings(_) => return Ok(None),
             DriverInput::Delivered => {
                 if let Some(answer) = self.last_hold.and_then(|hold| self.answers.get_mut(&hold)) {
                     answer.delivered = true;
@@ -359,6 +402,7 @@ impl Observer {
         if first && hold.section == DriverSection::RoundEnd {
             self.rounds += 1;
         }
+
         Ok(SeenHold {
             hold: hold.clone(),
             first,
@@ -376,6 +420,18 @@ impl Observer {
         reply: &DriverReply,
         reached: bool,
     ) -> Result<(), String> {
+        // The driver decided about new settings, whether its reply arrived or not.
+        if let DriverInput::Settings(settings) = input {
+            match &reply.rejected {
+                Some(reason) => self.notes.push(format!("settings rejected: {reason}")),
+                None if self.in_round => {
+                    self.notes
+                        .push("new settings wait for the round to end".into());
+                    self.pending_settings = Some(settings.clone());
+                }
+                None => self.take_settings(settings.clone()),
+            }
+        }
         if let DriverInput::Event(Event::DriverHold(hold)) = input {
             self.answers
                 .entry((hold.session, hold.seq))

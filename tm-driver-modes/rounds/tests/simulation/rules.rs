@@ -36,6 +36,11 @@ impl Rules for Rounds {
         self.totals.clear();
     }
 
+    fn settings_changed(&mut self, settings: &str) -> Result<(), String> {
+        self.settings = tm_driver_sim::rules::settings(settings)?;
+        Ok(())
+    }
+
     fn round_end(&mut self, end: &RoundEnd) -> Result<(), String> {
         in_race_order(end, Counted::Last)?;
         racers_placed(end)?;

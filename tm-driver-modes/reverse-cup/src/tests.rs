@@ -607,3 +607,35 @@ fn rejects_invalid_settings() {
     assert!(ReverseCup::from_json(r#"{"complex_points_repartition": {"two": [4, 8]}}"#).is_err());
     assert!(ReverseCup::from_json(r#"{"last_chance_dnf_mode": "only_least_checkpoints"}"#).is_ok());
 }
+
+#[test]
+fn starting_points_cannot_change_during_a_match() {
+    tm_driver_sdk::testing::assert_reloadable_settings_exist::<ReverseCup>();
+    let mut harness = started(r#"{"starting_points": 50}"#);
+    assert_eq!(
+        harness.change_settings(r#"{"starting_points": 60}"#),
+        Err("starting_points cannot change during a match".into())
+    );
+    assert!(
+        harness
+            .change_settings(r#"{"starting_points": 50, "points_repartition": [5, 10]}"#)
+            .is_ok()
+    );
+}
+
+#[test]
+fn more_winners_end_the_match_with_the_next_round() {
+    let mut harness = playing("", vec![alive("a", 50), alive("b", 40), alive("c", 30)]);
+    harness
+        .change_settings(r#"{"number_of_winners": 3}"#)
+        .unwrap();
+    let commands = harness.step(round_end(vec![
+        finish("a", 30_000),
+        finish("b", 31_000),
+        finish("c", 32_000),
+    ]));
+    assert_eq!(commands.last(), Some(&Command::EndMatch));
+    assert_eq!(chat(&commands), ["$<a$>, $<b$>, $<c$> win the match!"]);
+    // The round that ended it took no points.
+    assert_eq!(status(&harness, "c"), (Status::Playing, 30));
+}

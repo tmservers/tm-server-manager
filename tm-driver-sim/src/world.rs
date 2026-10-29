@@ -22,6 +22,17 @@ pub struct World {
     pub matches: u32,
     /// Rounds after which the simulation ends anyway, e.g. for a match without an end.
     pub max_rounds: u32,
+    /// New settings an admin gives the match in this order, see
+    /// [`Faults::settings_changes`].
+    pub settings_changes: Vec<SettingsChange>,
+}
+
+/// New settings during a match.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SettingsChange {
+    pub settings: String,
+    /// Only what can change during a match changes, so the mode takes them.
+    pub reloadable: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -93,6 +104,8 @@ pub enum Action {
     RestartScript,
     /// The driver gets a new playlist.
     Playlist(Vec<String>),
+    /// An admin gives the match the next new settings of the world.
+    ChangeSettings,
 }
 
 /// How often things go wrong, all in per mille.
@@ -112,6 +125,8 @@ pub struct Faults {
     pub playlist_changes: u32,
     /// Rounds an admin pauses.
     pub pauses: u32,
+    /// Rounds before or during which an admin changes the settings.
+    pub settings_changes: u32,
 }
 
 const NAMES: [&str; 16] = [
@@ -187,6 +202,7 @@ impl World {
             script_restarts: *chances.pick(&[0, 0, 0, 10]),
             playlist_changes: *chances.pick(&[0, 0, 20]),
             pauses: *rng.fork("pauses").pick(&[0, 0, 20, 60]),
+            settings_changes: *rng.fork("settings changes").pick(&[0, 0, 30, 100]),
         };
         // Plain matches show the rules of a mode without noise, and failures in them
         // are the easiest to read. A stream of its own leaves the rest of the world
@@ -204,6 +220,8 @@ impl World {
             // Crowded matches take long, the rounds tell enough.
             max_rounds: if players.len() > 16 { 40 } else { 150 },
             players,
+            // The simulator plans them, it knows the settings of the mode.
+            settings_changes: Vec::new(),
         }
     }
 
@@ -321,6 +339,7 @@ mod tests {
                     faults.script_restarts,
                     faults.playlist_changes,
                     faults.pauses,
+                    faults.settings_changes,
                 ]
                 .iter()
                 .all(|&chance| chance > 0)

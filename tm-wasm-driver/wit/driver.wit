@@ -54,6 +54,9 @@ interface types {
         round-end(round-end),
         map-end,
         match-end,
+        /// The mode took new settings during the match (see `change-settings`), e.g.
+        /// to show them in the info and send the round format again. No round runs.
+        settings-changed,
     }
 
     /// What the host knows about a player. Read only metadata, a mode asks for it
@@ -250,4 +253,14 @@ world mode {
     export name: func() -> string;
     /// Called for every event with the standings the mode returned last.
     export step: func(standings: standings, event: event) -> decision;
+    /// Whether new json settings could replace the ones of the match during it,
+    /// without taking them. A mode rejects settings it cannot change during a
+    /// match, e.g. the lives of a knockout, which players already hold.
+    export check-settings: func(settings: string) -> result<_, string>;
+    /// Replaces the settings of the match during it if `check-settings` accepts
+    /// them, and keeps the ones it has otherwise. The standings stay as they are.
+    /// The host tells the mode with `settings-changed` afterwards.
+    export change-settings: func(settings: string) -> result<_, string>;
+    /// The settings that can change during a match, by their name in the json.
+    export reloadable-settings: func() -> list<string>;
 }

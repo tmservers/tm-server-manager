@@ -9,7 +9,7 @@
 //! the better times at the checkpoints and finally by account, players with the
 //! same points by their race in the last round.
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tm_driver_sdk::{
     Command, CountedRace, Event, Mode, RoundEnd, RoundFormat, Standings,
     settings::{FinishTimeoutSetting, WarmUpSetting, maps_per_match},
@@ -17,7 +17,7 @@ use tm_driver_sdk::{
 
 tm_driver_sdk::export_mode!(Rounds);
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Settings {
     /// Points by finish position. Finishers beyond the list get the last value.
@@ -54,6 +54,15 @@ pub struct Rounds {
 
 impl Mode for Rounds {
     const NAME: &'static str = "Rounds";
+    /// Points apply to the rounds to come, limits at the next round or map end.
+    const RELOADABLE: &'static [&'static str] = &[
+        "points_repartition",
+        "rounds_per_map",
+        "maps_per_match",
+        "points_limit",
+        "finish_timeout",
+        "warmup",
+    ];
 
     type Settings = Settings;
 
@@ -65,8 +74,9 @@ impl Mode for Rounds {
         match event {
             // The script waits here, so this is where the rules for the map are set.
             // A config change keeps the match of the modescript going, so the rules
-            // of the previous mode might still be active.
-            Event::MapStart => {
+            // of the previous mode might still be active. New settings send them
+            // again, the round format applies from the next round on.
+            Event::MapStart | Event::SettingsChanged => {
                 standings.info = self.info(standings);
                 vec![
                     Command::SetRoundFormat(RoundFormat::SingleAttempt(

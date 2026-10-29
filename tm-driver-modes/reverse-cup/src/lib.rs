@@ -22,7 +22,7 @@
 
 use std::collections::BTreeMap;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tm_driver_sdk::{
     CanSpawn, Command, CountedRace, Entry, Event, Label, Mode, Racer, RoundEnd, RoundFormat,
     Standings, Status, Tone,
@@ -31,7 +31,7 @@ use tm_driver_sdk::{
 
 tm_driver_sdk::export_mode!(ReverseCup);
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Settings {
     /// Points every participant starts with.
@@ -84,7 +84,7 @@ impl Default for Settings {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum LastChanceDnfMode {
     /// Every player in last chance without a finish loses the dnf points.
@@ -104,6 +104,20 @@ pub struct ReverseCup {
 
 impl Mode for ReverseCup {
     const NAME: &'static str = "Reverse Cup";
+    /// Everything but the points players start with, which participants have.
+    const RELOADABLE: &'static [&'static str] = &[
+        "points_repartition",
+        "complex_points_repartition",
+        "fast_forward_points_repartition",
+        "dnf_points_loss",
+        "disable_last_chance",
+        "last_chance_dnf_mode",
+        "allow_fast_forward_rounds",
+        "number_of_winners",
+        "rounds_per_map",
+        "finish_timeout",
+        "warmup",
+    ];
 
     type Settings = Settings;
 
@@ -138,8 +152,9 @@ impl ReverseCup {
         match event {
             // The script waits here, so this is where the rules for the map are set.
             // A config change keeps the match of the modescript going, so the rules
-            // of the previous mode might still be active.
-            Event::MapStart => {
+            // of the previous mode might still be active. New settings send them
+            // again, the round format applies from the next round on.
+            Event::MapStart | Event::SettingsChanged => {
                 standings.info = self.info(standings);
                 vec![
                     Command::SetRoundFormat(RoundFormat::SingleAttempt(
@@ -189,13 +204,17 @@ impl ReverseCup {
         if self.registration_open(standings) {
             self.register(standings, &round_end);
         }
-        if round_end.invalid
-            || standings.participants().next().is_none()
-            || self.waits(standings)
-            || self.match_over(standings)
-        {
+        if round_end.invalid || standings.participants().next().is_none() || self.waits(standings) {
             standings.info = self.info(standings);
             return self.block_late_players(standings, &round_end);
+        }
+        // Over before the round, e.g. after more winners were set during the match.
+        if self.match_over(standings) {
+            standings.info = self.info(standings);
+            let mut commands = self.block_late_players(standings, &round_end);
+            commands.extend(winners_message(standings).map(Command::ChatMessage));
+            commands.push(Command::EndMatch);
+            return commands;
         }
         let mut commands = Vec::new();
 

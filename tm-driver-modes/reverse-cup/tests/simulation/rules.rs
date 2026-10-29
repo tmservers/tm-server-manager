@@ -19,6 +19,10 @@ pub struct ReverseCup {
 impl ReverseCup {
     /// The rules for a match with these settings.
     pub fn boxed(settings: &str) -> Result<Box<dyn Rules>, String> {
+        Ok(Box::new(Self::new(settings)?))
+    }
+
+    fn new(settings: &str) -> Result<Self, String> {
         let settings: Settings = tm_driver_sim::rules::settings(settings)?;
         let mut complex = BTreeMap::new();
         for (counts, repartition) in &settings.complex_points_repartition {
@@ -30,7 +34,7 @@ impl ReverseCup {
                 complex.insert(count, repartition.clone());
             }
         }
-        Ok(Box::new(Self { settings, complex }))
+        Ok(Self { settings, complex })
     }
 
     /// The points lost by place with this many players left of the participants:
@@ -170,6 +174,11 @@ impl ReverseCup {
 }
 
 impl Rules for ReverseCup {
+    fn settings_changed(&mut self, settings: &str) -> Result<(), String> {
+        *self = Self::new(settings)?;
+        Ok(())
+    }
+
     fn round_end(&mut self, end: &RoundEnd) -> Result<(), String> {
         // Registration was still open when the round ended, and with the players who
         // registered in it there are still no more participants than winners.

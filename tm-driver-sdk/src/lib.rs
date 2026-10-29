@@ -15,6 +15,10 @@
 //! standings, the [`Event`]s and the host functions, which a replay of the match
 //! repeats exactly, so it rebuilds the same standings. A mode must not depend on
 //! wall clock time or randomness to stay replayable.
+//!
+//! Settings can change during a match, the ones [`Mode::RELOADABLE`] lists. The
+//! SDK rejects new settings that change any other one, and the mode gets
+//! [`Event::SettingsChanged`] once it took them.
 
 // Lets the generated bindings and the export macro use the same paths inside
 // this crate and inside the mode crates.
@@ -38,6 +42,8 @@ pub mod bindings {
 }
 
 mod races;
+#[doc(hidden)]
+pub mod reload;
 pub mod settings;
 mod standings;
 pub mod testing;
@@ -56,8 +62,17 @@ pub trait Mode: Sized + 'static {
 
     /// The settings of the match as json. Give the struct `#[serde(default)]` so
     /// every field is optional and `#[serde(deny_unknown_fields)]` so typos are
-    /// rejected.
-    type Settings: serde::de::DeserializeOwned;
+    /// rejected. It serializes too, so the SDK can tell what new settings change.
+    type Settings: serde::de::DeserializeOwned + serde::Serialize;
+
+    /// The settings that can change during a match, by their name in the json, e.g.
+    /// a points repartition. New settings that change any other one are rejected,
+    /// e.g. the lives players already hold. None by default.
+    ///
+    /// New settings apply from the next round on, the mode gets
+    /// [`Event::SettingsChanged`] once it took them. What happened before stays,
+    /// e.g. the points of past rounds.
+    const RELOADABLE: &'static [&'static str] = &[];
 
     /// Creates the mode from the parsed settings of the match. Only validates them
     /// and derives what the mode needs, the parsing is [`Mode::from_json`].
@@ -65,13 +80,7 @@ pub trait Mode: Sized + 'static {
 
     /// Creates the mode from the json settings of the match. Empty settings are `{}`.
     fn from_json(settings: &str) -> Result<Self, String> {
-        let json = if settings.trim().is_empty() {
-            "{}"
-        } else {
-            settings
-        };
-        let settings = serde_json::from_str(json).map_err(|e| format!("Invalid settings: {e}"))?;
-        Self::init(settings)
+        reload::Configured::<Self>::new(settings).map(|configured| configured.mode)
     }
 
     /// Applies the rules of the mode to an event and returns the commands for the
@@ -141,8 +150,9 @@ macro_rules! export_mode {
         #[cfg(target_arch = "wasm32")]
         const _: () = {
             ::std::thread_local! {
-                static MODE: ::core::cell::RefCell<::core::option::Option<$mode>> =
-                    const { ::core::cell::RefCell::new(::core::option::Option::None) };
+                static MODE: ::core::cell::RefCell<
+                    ::core::option::Option<$crate::reload::Configured<$mode>>,
+                > = const { ::core::cell::RefCell::new(::core::option::Option::None) };
             }
 
             struct Export;
@@ -151,8 +161,8 @@ macro_rules! export_mode {
                 fn init(
                     settings: ::std::string::String,
                 ) -> ::core::result::Result<(), ::std::string::String> {
-                    let mode = <$mode as $crate::Mode>::from_json(&settings)?;
-                    MODE.with(|m| *m.borrow_mut() = ::core::option::Option::Some(mode));
+                    let configured = $crate::reload::Configured::<$mode>::new(&settings)?;
+                    MODE.with(|m| *m.borrow_mut() = ::core::option::Option::Some(configured));
                     ::core::result::Result::Ok(())
                 }
 
@@ -165,8 +175,8 @@ macro_rules! export_mode {
                     event: $crate::Event,
                 ) -> $crate::Decision {
                     let commands = MODE.with(|m| match m.borrow().as_ref() {
-                        ::core::option::Option::Some(mode) => {
-                            <$mode as $crate::Mode>::step(mode, &mut standings, event)
+                        ::core::option::Option::Some(configured) => {
+                            <$mode as $crate::Mode>::step(&configured.mode, &mut standings, event)
                         }
                         ::core::option::Option::None => {
                             $crate::log($crate::LogLevel::Error, "step was called before init");
@@ -177,6 +187,46 @@ macro_rules! export_mode {
                         standings,
                         commands,
                     }
+                }
+
+                fn check_settings(
+                    settings: ::std::string::String,
+                ) -> ::core::result::Result<(), ::std::string::String> {
+                    MODE.with(|m| match m.borrow().as_ref() {
+                        ::core::option::Option::Some(configured) => {
+                            configured.change(&settings).map(|_| ())
+                        }
+                        ::core::option::Option::None => ::core::result::Result::Err(
+                            "check-settings was called before init".into(),
+                        ),
+                    })
+                }
+
+                fn change_settings(
+                    settings: ::std::string::String,
+                ) -> ::core::result::Result<(), ::std::string::String> {
+                    MODE.with(|m| {
+                        let mut m = m.borrow_mut();
+                        let next = match m.as_ref() {
+                            ::core::option::Option::Some(configured) => {
+                                configured.change(&settings)?
+                            }
+                            ::core::option::Option::None => {
+                                return ::core::result::Result::Err(
+                                    "change-settings was called before init".into(),
+                                );
+                            }
+                        };
+                        *m = ::core::option::Option::Some(next);
+                        ::core::result::Result::Ok(())
+                    })
+                }
+
+                fn reloadable_settings() -> ::std::vec::Vec<::std::string::String> {
+                    <$mode as $crate::Mode>::RELOADABLE
+                        .iter()
+                        .map(|name| ::std::string::String::from(*name))
+                        .collect()
                 }
             }
 

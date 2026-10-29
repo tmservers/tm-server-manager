@@ -27,6 +27,12 @@ pub trait Rules {
         Ok(())
     }
 
+    /// The mode took new settings during the match, from the next round on. Rules
+    /// keep what they counted, e.g. the points of past rounds.
+    fn settings_changed(&mut self, _settings: &str) -> Result<(), String> {
+        Ok(())
+    }
+
     /// The most rounds that place players a match with these standings can take
     /// before it ends, e.g. the lives of every participant in a knockout. A match
     /// that goes on longer fails, so a mode that stops making progress shows up.

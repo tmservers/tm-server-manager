@@ -786,3 +786,38 @@ fn race_times() {
         .collect();
     assert_eq!(times, ["0:00.000", "0:42.123", "1:02.005", "62:03.456"]);
 }
+
+#[test]
+fn lives_cannot_change_during_a_match() {
+    tm_driver_sdk::testing::assert_reloadable_settings_exist::<Knockout>();
+    let mut harness = Harness::<Knockout>::new(r#"{"lives": 2}"#).unwrap();
+    assert_eq!(
+        harness.change_settings(r#"{"lives": 3}"#),
+        Err("lives cannot change during a match".into())
+    );
+    assert!(
+        harness
+            .change_settings(r#"{"lives": 2, "rounds_per_map": 3}"#)
+            .is_ok()
+    );
+}
+
+#[test]
+fn registration_stays_closed_once_lives_were_taken() {
+    let mut harness = Harness::<Knockout>::new(r#"{"rounds_without_elimination": 0}"#).unwrap();
+    harness.step(Event::MatchStart);
+    harness.step(Event::MapStart);
+    harness.step(Event::RoundStart);
+    harness.step(round_end(finishers(&["a", "b", "c"])));
+    assert_eq!(harness.standing("c").status, Status::Eliminated);
+
+    // More rounds without elimination take no lives for now, but d came too late.
+    harness
+        .change_settings(r#"{"rounds_without_elimination": 5}"#)
+        .unwrap();
+    harness.step(Event::RoundStart);
+    harness.step(race_start("d"));
+    harness.step(round_end(finishers(&["a", "b", "d"])));
+    assert_eq!(harness.standing("d").status, Status::Spectator);
+    assert_eq!(harness.standing("b").score, 1);
+}

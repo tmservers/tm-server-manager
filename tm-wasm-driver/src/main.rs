@@ -22,6 +22,9 @@
 //! - `next` ends the map.
 //! - `pause` pauses the match, `resume` ends the pause. The round a pause interrupts does
 //!   not count.
+//! - `settings <settings>` gives the mode new settings during the match, from the next round
+//!   on. It rejects settings it cannot change during a match and tells which ones it can
+//!   when it loads.
 //! - `quit`
 //!
 //! Environment:
@@ -50,8 +53,7 @@ use tm_wasm_driver::{Driver, DriverEngine, DriverInput, DriverLimits};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tracing_subscriber::{EnvFilter, filter::LevelFilter};
 
-const HELP: &str =
-    "Commands: load <mode> [settings], reload, maps [map ...], script, next, pause, resume, quit";
+const HELP: &str = "Commands: load <mode> [settings], reload, settings <settings>, maps [map ...], script, next, pause, resume, quit";
 
 struct Active {
     /// The arguments of the `load` that started this mode.
@@ -142,6 +144,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 }
             }
             "maps" => maps(server, &active, &playlist, arguments).await,
+            "settings" => change_settings(server, &active, arguments).await,
             "script" => install_script(server).await,
             "next" => server
                 .next_map()
@@ -220,12 +223,19 @@ fn drive(server: &'static TrackmaniaServer, active: Shared, layers: Vec<DriverLa
                 tracing::info!("Standings: {standings}");
             }
             let delivered = send(server, reply.commands).await;
-            // A hold the modescript asks again then only gets its Continue.
-            if delivered
-                && matches!(event, Event::DriverHold(_))
-                && let Some(active) = active.lock().unwrap().as_mut()
-            {
-                _ = active.driver.apply(&DriverInput::Delivered);
+            // A hold the modescript asks again then only gets its Continue. The reply
+            // can have commands, e.g. of settings that waited for the round to end.
+            if delivered && matches!(event, Event::DriverHold(_)) {
+                let reply = active
+                    .lock()
+                    .unwrap()
+                    .as_mut()
+                    .map(|active| active.driver.apply(&DriverInput::Delivered));
+                match reply {
+                    Some(Ok(reply)) => _ = send(server, reply.commands).await,
+                    Some(Err(error)) => tracing::error!("The mode failed: {error}"),
+                    None => {}
+                }
             }
         }
     });
@@ -266,11 +276,15 @@ async fn load(
         commands.extend(driver.apply(input).map_err(|e| e.to_string())?.commands);
     }
 
+    let reloadable = driver.reloadable_settings().join(", ");
     *active.lock().unwrap() = Some(Active {
         source: source.into(),
         driver,
     });
     tracing::info!("Loaded {mode}.");
+    if !reloadable.is_empty() {
+        tracing::info!("Settings that can change during the match: {reloadable}");
+    }
 
     // Ignored until the driver modescript runs, which shows them once it started.
     send(server, commands).await;
@@ -278,6 +292,35 @@ async fn load(
     if let Err(error) = server.pause_get_status().await {
         tracing::warn!("Could not ask whether the match is paused: {error}");
     }
+    Ok(())
+}
+
+/// Gives the mode new settings during the match, inline json or a file. They apply
+/// from the next round on.
+async fn change_settings(
+    server: &TrackmaniaServer,
+    active: &Shared,
+    settings: &str,
+) -> Result<(), String> {
+    let settings = read_settings(settings.trim())?;
+    let reply = {
+        let mut active = active.lock().unwrap();
+        let active = active.as_mut().ok_or("No mode was loaded yet.")?;
+        let reply = active
+            .driver
+            .apply(&DriverInput::Settings(settings))
+            .map_err(|e| e.to_string())?;
+        if let Some(reason) = reply.rejected {
+            return Err(format!("The mode rejected the settings: {reason}"));
+        }
+        if active.driver.pending_settings().is_some() {
+            tracing::info!("The settings apply once the round ends.");
+        } else {
+            tracing::info!("The settings apply from the next round on.");
+        }
+        reply
+    };
+    send(server, reply.commands).await;
     Ok(())
 }
 

@@ -91,6 +91,7 @@ impl Report {
             ("script restarts", faults.script_restarts),
             ("playlist changes", faults.playlist_changes),
             ("pauses", faults.pauses),
+            ("settings changes", faults.settings_changes),
         ];
         let chances: Vec<String> = chances
             .iter()

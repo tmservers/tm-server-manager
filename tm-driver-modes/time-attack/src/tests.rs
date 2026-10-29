@@ -184,3 +184,18 @@ fn rejects_invalid_settings() {
     assert!(TimeAttack::from_json(r#"{"time_limit": 300}"#).is_err());
     assert!(TimeAttack::from_json(r#"{"time_limit_ms": 0}"#).is_err());
 }
+
+#[test]
+fn a_new_time_limit_applies_from_the_next_map() {
+    tm_driver_sdk::testing::assert_reloadable_settings_exist::<TimeAttack>();
+    let mut harness = started(r#"{"time_limit_ms": 60000}"#);
+    let commands = harness
+        .change_settings(r#"{"time_limit_ms": 30000}"#)
+        .unwrap();
+    assert_eq!(
+        commands.first(),
+        Some(&Command::SetRoundFormat(RoundFormat::TimeAttack(30_000)))
+    );
+    // Like at the start of the match, it has to be at least one millisecond.
+    assert!(harness.change_settings(r#"{"time_limit_ms": 0}"#).is_err());
+}

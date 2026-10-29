@@ -125,6 +125,8 @@ enum Happening {
     ForceEnd,
     /// An admin pauses the match, which skips the round.
     Pause,
+    /// An admin gives the match the next new settings.
+    ChangeSettings,
     /// The modescript restarts, which ends the round without its end.
     RestartScript,
     /// The finish timeout after the first finish or the time limit ran out.
@@ -198,6 +200,12 @@ pub(crate) struct Server {
     restart: Option<Restart>,
     /// Restarts of the modescript so far.
     restarts: u32,
+    /// The next settings change of the world.
+    settings_change: usize,
+    /// The next settings change comes during the round that starts next.
+    settings_during_round: bool,
+    /// Whether the mode has to take the settings the server sent last.
+    settings_reloadable: Option<bool>,
     /// The bridge is down and misses this many more callbacks it can miss.
     down: Option<u32>,
     round: Option<RoundRun>,
@@ -237,6 +245,9 @@ impl Server {
             restart_after: None,
             restart: None,
             restarts: 0,
+            settings_change: 0,
+            settings_during_round: false,
+            settings_reloadable: None,
             down: None,
             round: None,
             notes: Vec::new(),
@@ -263,6 +274,9 @@ impl Server {
     }
 
     pub(crate) fn next(&mut self) -> Option<Step> {
+        if self.failed.is_some() {
+            return None;
+        }
         loop {
             match self.out.pop_front() {
                 Some(Step::Crash { .. }) => {
@@ -361,6 +375,14 @@ impl Server {
         }
         if let DriverInput::Event(Event::DriverHold(_)) = input {
             self.out.push_front(Step::Input(DriverInput::Delivered));
+        }
+        if let DriverInput::Settings(settings) = input
+            && let Some(reloadable) = self.settings_reloadable.take()
+            && reply.rejected.is_none() != reloadable
+        {
+            let decided = if reloadable { "rejected" } else { "took" };
+            self.failed = Some(format!("The mode {decided} the settings {settings}"));
+            self.phase = Phase::Done;
         }
         for command in &reply.commands {
             match command {
@@ -596,6 +618,7 @@ impl Server {
                 Action::Leave(player) => self.leave(&player),
                 Action::RestartScript => self.restart_script(),
                 Action::Playlist(uids) => self.deliver(DriverInput::Playlist(uids)),
+                Action::ChangeSettings => self.change_settings(),
             }
         }
     }
@@ -633,6 +656,14 @@ impl Server {
         if rng.chance(faults.bridge_restarts) {
             // Somewhere in the round.
             self.restart_after = Some(rng.below(40));
+        }
+        let mut settings = self.rng.fork(&format!("settings/{number}"));
+        if settings.chance(faults.settings_changes) {
+            if settings.chance(500) {
+                actions.push(Action::ChangeSettings);
+            } else {
+                self.settings_during_round = true;
+            }
         }
         actions
     }
@@ -774,6 +805,11 @@ impl Server {
         }
 
         if kind == Kind::Round {
+            if std::mem::take(&mut self.settings_during_round) {
+                let mut settings = self.rng.fork(&format!("{key}/settings"));
+                let at = start + settings.below(map.author_time());
+                schedule(&mut run, &mut settings, at, Happening::ChangeSettings);
+            }
             if self
                 .rng
                 .fork(&format!("{key}/pause"))
@@ -877,6 +913,7 @@ impl Server {
                 self.end_round(true);
                 return;
             }
+            Happening::ChangeSettings => self.change_settings(),
             Happening::Pause => {
                 // The modescript answers the admin with its status and skips the round.
                 self.paused = true;
@@ -1059,6 +1096,21 @@ impl Server {
         self.hold = None;
         self.paused = false;
         self.phase = Phase::StartMatch;
+    }
+
+    /// An admin gives the match the next new settings of the world, if any are left.
+    fn change_settings(&mut self) {
+        let Some(change) = self
+            .world
+            .settings_changes
+            .get(self.settings_change)
+            .cloned()
+        else {
+            return;
+        };
+        self.settings_change += 1;
+        self.settings_reloadable = Some(change.reloadable);
+        self.deliver(DriverInput::Settings(change.settings));
     }
 
     /// The pause ends, if one runs. The modescript answers the admin with its status.
@@ -1274,6 +1326,7 @@ mod tests {
             faults: Faults::default(),
             matches: 1,
             max_rounds: 1,
+            settings_changes: Vec::new(),
         };
         let mut server = Server::new(&world, 9);
         while server.phase != Phase::Racing {
@@ -1283,7 +1336,7 @@ mod tests {
             if let DriverInput::Event(Event::DriverHold(hold)) = &input {
                 let reply = DriverReply {
                     commands: vec![DriverCommand::Continue(hold.seq)],
-                    round_result: None,
+                    ..DriverReply::default()
                 };
                 server.on_reply(&input, &reply);
             }

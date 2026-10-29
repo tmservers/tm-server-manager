@@ -240,3 +240,37 @@ fn rejects_unknown_settings() {
     // Ties are always broken, so there is nothing to play on for.
     assert!(Rounds::from_json(r#"{"use_tie_break": true}"#).is_err());
 }
+
+#[test]
+fn every_setting_can_change_during_a_match() {
+    tm_driver_sdk::testing::assert_reloadable_settings_exist::<Rounds>();
+    assert_eq!(Rounds::RELOADABLE.len(), 6);
+}
+
+#[test]
+fn new_points_count_from_the_next_round() {
+    let mut harness = started(r#"{"points_repartition": [10, 6]}"#);
+    harness.step(Event::RoundStart);
+    harness.step(round_end(vec![finish("a", 30_000), finish("b", 31_000)]));
+
+    // The new settings send the round format again and show in the info.
+    let commands = harness
+        .change_settings(r#"{"points_repartition": [3, 1], "rounds_per_map": 2}"#)
+        .unwrap();
+    assert!(matches!(commands.first(), Some(Command::SetRoundFormat(_))));
+    assert_eq!(harness.standings.info, "1 / 2 rounds");
+
+    harness.step(Event::RoundStart);
+    harness.step(round_end(vec![finish("b", 30_000), finish("a", 31_000)]));
+    // The points of the first round stay.
+    assert_eq!(scores(&harness), [("a", 1, 11, 1), ("b", 2, 9, 3)]);
+}
+
+#[test]
+fn rejected_settings_change_nothing() {
+    let mut harness = started(r#"{"points_repartition": [10, 6]}"#);
+    assert!(harness.change_settings(r#"{"points": [3]}"#).is_err());
+    harness.step(Event::RoundStart);
+    harness.step(round_end(vec![finish("a", 30_000)]));
+    assert_eq!(scores(&harness), [("a", 1, 10, 10)]);
+}

@@ -52,12 +52,17 @@ use std::{
     time::Duration,
 };
 
+use serde_json::Value;
+
 pub use events::InputLog;
 pub use rng::Rng;
 pub use rules::Rules;
 use tm_wasm_driver::{Component, Driver, DriverEngine, DriverInput, DriverLimits, DriverReply};
 pub use wasm::build_wasm;
-pub use world::{Action, Faults, MAX_PLAYERS, MapSpec, Moment, PlayerSpec, RacePlan, Races, World};
+pub use world::{
+    Action, Faults, MAX_PLAYERS, MapSpec, Moment, PlayerSpec, RacePlan, Races, SettingsChange,
+    World,
+};
 
 use crate::{
     check::Checker,
@@ -135,6 +140,8 @@ pub struct Simulator {
     component: Component,
     settings: fn(&mut Rng) -> String,
     rules: fn(&str) -> Result<Box<dyn Rules>, String>,
+    /// The settings that can change during a match.
+    reloadable: Vec<String>,
 }
 
 impl Simulator {
@@ -146,11 +153,16 @@ impl Simulator {
         let component = engine()
             .compile(wasm)
             .unwrap_or_else(|e| panic!("{name} could not be compiled: {e}"));
+        let reloadable = engine()
+            .instantiate(&component, "{}")
+            .map(|driver| driver.reloadable_settings().to_vec())
+            .unwrap_or_default();
         Self {
             name,
             component,
             settings: |_| "{}".into(),
             rules: |_| Ok(Box::new(NoRules)),
+            reloadable,
         }
     }
 
@@ -170,16 +182,65 @@ impl Simulator {
 
     /// The random world of a seed.
     pub fn world(&self, seed: u64) -> World {
-        World::random(seed, self.random_settings(seed))
+        let mut world = World::random(seed, self.random_settings(seed));
+        world.settings_changes = self.settings_changes(seed, &world.settings);
+        world
     }
 
     /// The random world of a seed on a full server.
     pub fn full_server(&self, seed: u64) -> World {
-        World::full_server(seed, self.random_settings(seed))
+        let mut world = World::full_server(seed, self.random_settings(seed));
+        world.settings_changes = self.settings_changes(seed, &world.settings);
+        world
     }
 
     fn random_settings(&self, seed: u64) -> String {
         (self.settings)(&mut Rng::new(seed).fork("settings"))
+    }
+
+    /// New settings an admin could give the match, in order: the settings that can
+    /// change from other random settings, the rest as it is. Now and then one also
+    /// changes a setting that cannot change, which the mode has to reject.
+    fn settings_changes(&self, seed: u64, first: &str) -> Vec<SettingsChange> {
+        let Ok(Value::Object(mut current)) = serde_json::from_str::<Value>(first) else {
+            return Vec::new();
+        };
+        let rng = Rng::new(seed).fork("settings changes");
+        let mut changes = Vec::new();
+        for change in 0..4 {
+            let random = (self.settings)(&mut rng.fork(&change.to_string()));
+            let Ok(Value::Object(random)) = serde_json::from_str::<Value>(&random) else {
+                break;
+            };
+            let mut next = current.clone();
+            for name in &self.reloadable {
+                match random.get(name) {
+                    Some(value) => next.insert(name.clone(), value.clone()),
+                    None => next.remove(name),
+                };
+            }
+            let fixed = random.iter().find(|(name, value)| {
+                !self.reloadable.contains(name)
+                    && current.get(*name).is_some_and(|old| old != *value)
+            });
+            if let Some((name, value)) = fixed
+                && rng.fork(&format!("{change}/fixed")).chance(250)
+            {
+                let mut rejected = next;
+                rejected.insert(name.clone(), value.clone());
+                changes.push(SettingsChange {
+                    settings: Value::Object(rejected).to_string(),
+                    reloadable: false,
+                });
+                continue;
+            }
+            current = next.clone();
+            changes.push(SettingsChange {
+                settings: Value::Object(next).to_string(),
+                reloadable: true,
+            });
+        }
+        changes
     }
 
     /// Simulates the random world of a seed.
@@ -540,7 +601,7 @@ impl<'a> Run<'a> {
             simulator,
             settings: settings.into(),
             driver,
-            observer: Observer::new(),
+            observer: Observer::new(settings),
             checker: Checker::new(rules, maps),
             report: Report::new(header, settings, world),
             inputs: Vec::new(),

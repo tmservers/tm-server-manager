@@ -18,7 +18,7 @@
 //! the rank they were eliminated with. Nobody shares a rank: equal races go to the
 //! better times at the checkpoints and finally by account.
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tm_driver_sdk::{
     CanSpawn, Command, CountedRace, Event, Label, Mode, RoundEnd, RoundFormat, Standings, Status,
     Tone,
@@ -31,7 +31,7 @@ tm_driver_sdk::export_mode!(Knockout);
 const LIFE: &str = "\u{e96c}";
 const LOST_LIFE: &str = "\u{e96f}";
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Settings {
     /// Lives every participant starts with, at least 1. Players who lose their last
@@ -62,7 +62,7 @@ impl Default for Settings {
 }
 
 /// The milestones of `extra_losses`. They count in any order.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ExtraLosses {
     /// Numbers of players left: `[4, 16, 16]` takes a life from 4 players per round
@@ -82,6 +82,15 @@ pub struct Knockout {
 
 impl Mode for Knockout {
     const NAME: &'static str = "Knockout";
+    /// Everything but the lives, which players already hold. More rounds without
+    /// elimination open the registration again.
+    const RELOADABLE: &'static [&'static str] = &[
+        "rounds_without_elimination",
+        "extra_losses",
+        "rounds_per_map",
+        "finish_timeout",
+        "warmup",
+    ];
 
     type Settings = Settings;
 
@@ -106,8 +115,9 @@ impl Knockout {
         match event {
             // The script waits here, so this is where the rules for the map are set.
             // A config change keeps the match of the modescript going, so the rules
-            // of the previous mode might still be active.
-            Event::MapStart => vec![
+            // of the previous mode might still be active. New settings send them
+            // again, the round format applies from the next round on.
+            Event::MapStart | Event::SettingsChanged => vec![
                 Command::SetRoundFormat(RoundFormat::SingleAttempt(
                     self.settings.finish_timeout.into(),
                 )),
@@ -178,7 +188,7 @@ impl Knockout {
         let round = standings.rounds_played + u32::from(round_end.invalid);
         // Players can join until the first round that takes lives ended. Their race
         // starts brought them in already, unless e.g. the driver restarted.
-        if round <= self.settings.rounds_without_elimination + 1
+        if (round <= self.settings.rounds_without_elimination + 1 && !self.lives_taken(standings))
             || standings.participants().next().is_none()
         {
             self.register(standings, &round_end);
@@ -307,10 +317,19 @@ impl Knockout {
     }
 
     /// Players can join until the first round that takes lives ended, and as long
-    /// as nobody takes part.
+    /// as nobody takes part. Once lives were taken, it stays closed, also when more
+    /// rounds without elimination are set during the match.
     fn registration_open(&self, standings: &Standings) -> bool {
-        standings.rounds_played <= self.settings.rounds_without_elimination
+        (standings.rounds_played <= self.settings.rounds_without_elimination
+            && !self.lives_taken(standings))
             || standings.participants().next().is_none()
+    }
+
+    /// A round took lives in this match. The lives can not change during a match.
+    fn lives_taken(&self, standings: &Standings) -> bool {
+        standings
+            .participants()
+            .any(|p| p.status == Status::Eliminated || p.score < self.settings.lives)
     }
 
     /// One player is left and nobody can join anymore.

@@ -156,7 +156,12 @@ fn repeated_holds_are_decided_once() {
     play(&mut driver, &race("a", 30_000));
     let first = driver.handle(&hold(2, DriverSection::RoundEnd)).unwrap();
     let repeated = driver.handle(&hold(2, DriverSection::RoundEnd)).unwrap();
-    assert_eq!(repeated.commands, first.commands);
+    assert_eq!(
+        without_published(&repeated.commands),
+        without_published(&first.commands)
+    );
+    // The first reply might not have arrived, so everything is published again.
+    assert!(publishes_standings(&repeated.commands));
     // The result was already reported with the first reply.
     assert_eq!(repeated.round_result, None);
 
@@ -354,9 +359,14 @@ fn resumes_by_replaying_the_events() {
         .replay(&module, POINTS_LIMIT, &common::inputs(&events))
         .unwrap();
 
-    // The modescript asks again and gets the same commands without deciding twice.
+    // The modescript asks again and gets the same decisions without deciding twice,
+    // and everything published again.
     let repeated = resumed.handle(&hold(2, DriverSection::RoundEnd)).unwrap();
-    assert_eq!(repeated.commands, decided.commands);
+    assert_eq!(
+        without_published(&repeated.commands),
+        without_published(&decided.commands)
+    );
+    assert!(publishes_standings(&repeated.commands));
     assert_eq!(repeated.round_result, None);
 
     // The points of the first round are back: 10 + 10 + 10 reaches the limit in the third round.
@@ -479,4 +489,127 @@ fn a_pause_shows_in_the_standings() {
         }))
         .unwrap();
     assert!(!driver.standings().paused);
+}
+
+/// Rounds mode settings with this points repartition and maps without end.
+fn points(repartition: &str) -> String {
+    format!(r#"{{"points_repartition": {repartition}, "rounds_per_map": 0}}"#)
+}
+
+#[test]
+fn rounds_can_change_every_setting() {
+    assert_eq!(
+        rounds("").reloadable_settings(),
+        [
+            "points_repartition",
+            "rounds_per_map",
+            "maps_per_match",
+            "points_limit",
+            "finish_timeout",
+            "warmup",
+        ]
+    );
+}
+
+#[test]
+fn new_settings_wait_for_the_round_to_end() {
+    let mut driver = rounds(&points("[10, 6]"));
+    driver.handle(&hold(1, DriverSection::MapStart)).unwrap();
+    driver.handle(&round_start(1)).unwrap();
+    play(&mut driver, &race("a", 30_000));
+
+    let new = points("[3]");
+    let reply = driver.apply(&DriverInput::Settings(new.clone())).unwrap();
+    assert_eq!(reply, DriverReply::default());
+    assert_eq!(driver.pending_settings(), Some(new.as_str()));
+
+    // The round counts with the points it started with.
+    let end = driver.handle(&hold(2, DriverSection::RoundEnd)).unwrap();
+    assert_eq!(
+        end.round_result,
+        Some(DriverRoundResult {
+            results: vec![result("a", 10, 1)]
+        })
+    );
+    assert_eq!(
+        without_published(&end.commands),
+        [DriverCommand::Continue(2)]
+    );
+    // The first input after the round takes the new ones, e.g. the bridge telling
+    // that the reply arrived, and sends the round format again.
+    let delivered = driver.apply(&DriverInput::Delivered).unwrap();
+    assert!(matches!(
+        without_published(&delivered.commands).first(),
+        Some(DriverCommand::SetRoundFormat(_))
+    ));
+    assert_eq!(driver.settings(), new);
+    assert_eq!(driver.pending_settings(), None);
+
+    driver.handle(&round_start(2)).unwrap();
+    play(&mut driver, &race("a", 30_000));
+    let next = driver.handle(&hold(3, DriverSection::RoundEnd)).unwrap();
+    assert_eq!(
+        next.round_result,
+        Some(DriverRoundResult {
+            results: vec![result("a", 3, 1)]
+        })
+    );
+}
+
+#[test]
+fn new_settings_between_rounds_apply_at_once() {
+    let mut driver = rounds(&points("[10]"));
+    driver.handle(&hold(1, DriverSection::MapStart)).unwrap();
+    let reply = driver.apply(&DriverInput::Settings(points("[4]"))).unwrap();
+    assert!(matches!(
+        without_published(&reply.commands).first(),
+        Some(DriverCommand::SetRoundFormat(_))
+    ));
+    assert_eq!(driver.settings(), points("[4]"));
+
+    driver.handle(&round_start(1)).unwrap();
+    play(&mut driver, &race("a", 30_000));
+    let end = driver.handle(&hold(2, DriverSection::RoundEnd)).unwrap();
+    assert_eq!(
+        end.round_result,
+        Some(DriverRoundResult {
+            results: vec![result("a", 4, 1)]
+        })
+    );
+}
+
+#[test]
+fn rejected_settings_change_nothing() {
+    let mut driver = rounds(&points("[10]"));
+    driver.handle(&hold(1, DriverSection::MapStart)).unwrap();
+    // Between rounds and during one.
+    let unknown = DriverInput::Settings(r#"{"points": [3]}"#.into());
+    assert!(driver.apply(&unknown).unwrap().rejected.is_some());
+    driver.handle(&round_start(1)).unwrap();
+    assert!(driver.apply(&unknown).unwrap().rejected.is_some());
+    assert_eq!(driver.settings(), points("[10]"));
+    assert_eq!(driver.pending_settings(), None);
+}
+
+#[test]
+fn a_replay_takes_the_new_settings_again() {
+    let (engine, module) = common::compile(ROUNDS);
+    let settings = points("[10]");
+    let mut inputs = common::inputs(&[hold(1, DriverSection::MapStart), round_start(1)]);
+    inputs.extend(common::inputs(&race("a", 30_000)));
+    inputs.push(DriverInput::Settings(points("[3]")));
+    inputs.extend(common::inputs(&[
+        hold(2, DriverSection::RoundEnd),
+        round_start(2),
+    ]));
+    inputs.extend(common::inputs(&race("b", 30_000)));
+    inputs.extend(common::inputs(&[hold(3, DriverSection::RoundEnd)]));
+
+    let mut driver = engine.instantiate(&module, &settings).unwrap();
+    for input in &inputs {
+        driver.apply(input).unwrap();
+    }
+    let replayed = engine.replay(&module, &settings, &inputs).unwrap();
+    assert_eq!(replayed.standings(), driver.standings());
+    assert_eq!(replayed.settings(), points("[3]"));
 }

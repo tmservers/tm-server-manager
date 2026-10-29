@@ -218,6 +218,11 @@ impl InputLog {
         self.push(DriverInput::Resumed)
     }
 
+    /// New settings for the match, e.g. from an admin.
+    pub fn settings(&mut self, settings: &str) -> &mut Self {
+        self.push(DriverInput::Settings(settings.into()))
+    }
+
     /// The modescript says whether it is paused, e.g. answering an admin.
     pub fn pause(&mut self, active: bool) -> &mut Self {
         self.event(Event::Pause(Pause {
