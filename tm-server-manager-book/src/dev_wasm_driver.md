@@ -817,7 +817,25 @@ no good trade: a mode is compiled once per match, its calls run all the time.
 `wasm-opt` (binaryen) could run on the wasm after cargo, before the host turns it into a component.
 Cargo has no step after a build, so whatever builds the modes (`build_wasm` of the simulations, the
 runner, later what uploads a mode to the registry) has to run it, and all of them the same way,
-otherwise the fuel of the simulations is not what a deployed mode costs. Not measured yet.
+otherwise the fuel of the simulations is not what a deployed mode costs. Measured with binaryen 133
+on top of the profile:
+
+- `-O3` saves another 10 % of the size (155–221 KB) and 3.5–4.5 % of the fuel, with full servers
+  and in small matches. `-O2`, `-O4`, `-Os` and three times `-O3` are within 0.3 % of it.
+- It takes about 0.8 s per mode. All simulations pass with it (300 seeds of every mode), only the
+  fuel lines of the snapshots change.
+- `strip = true` also removes the section that tells wasm-opt the features of the wasm, so it
+  rejects the `memory.copy` of bulk memory unless the features of rustc are passed by hand
+  (`--enable-bulk-memory --enable-bulk-memory-opt --enable-nontrapping-float-to-int
+  --enable-sign-ext --enable-mutable-globals --enable-reference-types --enable-multivalue
+  --enable-call-indirect-overlong` with Rust 1.99). Or cargo keeps the symbols and wasm-opt strips
+  them with `--strip-debug --strip-producers --strip-target-features`, which then has to run on
+  every build.
+- The crate `wasm-opt` builds binaryen into every build that uses it, from C++, and its latest
+  version still has binaryen 116 of 2023. Calling the program of a pinned binaryen is simpler.
+
+Not worth it for now: 4 % of fuel calls that use less than half a percent of their budget, for a
+tool every build of a mode depends on.
 
 ## WIT interface and host
 
