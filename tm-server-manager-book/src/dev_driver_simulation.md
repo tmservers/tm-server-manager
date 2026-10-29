@@ -221,7 +221,9 @@ for the order of a race, which every mode shares, the number of lives a knockout
 the points a reverse cup place loses, the heart of those modes.
 
 Once a match ended, replaying every input has to give the same driver, and a driver resumed at a
-random input has to answer the rest the same way.
+random input has to answer the rest the same way. No call into the mode may have used more than a
+tenth of its fuel, so modes keep room for more players and longer matches than the simulations
+have (see [Costs](./dev_wasm_driver.md#costs)).
 
 ## Do the checks catch bugs?
 
@@ -299,7 +301,9 @@ tests build the rounds mode as well. Without random settings a mode plays its de
 ## Snapshots
 
 The report of a match has one block per round: the races as the driver saw them, how often the live
-round changed, the places of the round, the standings after it and what the driver did. Maps show
+round changed, the places of the round, the standings after it and what the driver did. At its end,
+the most fuel every kind of call used, with two or three figures, so it only changes when what a
+call costs does, e.g. with a change to a mode or a new compiler. Maps show
 their laps, map starts the race rules a mode set. Notes tell what happened around it, e.g.
 players joining, the bridge going down or callbacks it missed. The snapshots are
 [insta](https://insta.rs) files in `tests/simulation/snapshots` of every mode, the same in debug and

@@ -276,8 +276,8 @@ endurance race shows laps. The host publishes the whole state, the match and the
   `standings` (see [UI](#ui)), which shows the round instead of the match.
 
 A live round costs a call with every race so far and, when it changed, the netvars of the round,
-mostly integers, at most once a second. Benchmarks are still to show what that costs (see
-[Next steps](#next-steps)).
+mostly integers, at most once a second. On a full server that is a fraction of a millisecond, also
+late in a long endurance race (see [Costs](#costs)).
 
 ## UI
 
@@ -753,6 +753,47 @@ Limits:
 - The default `standings` and `scores-table` show the checkpoints as the points of the match and of
   the round and no laps. A scores table for endurance would show the race like `live-standings`.
 
+## Costs
+
+The host measures every call into a mode (`Driver::stats()`, by kind: `init`, every event,
+`live-round`, `check-settings`, `change-settings`):
+
+- the fuel the mode used, roughly its instructions: the same on every machine, so it shows how far
+  a call stays below its budget (`fuel_per_call`, 10⁹ by default);
+- the wall clock time of building the arguments (e.g. the races of a round), of the call itself
+  with copying the arguments into the mode and the result back, and of publishing afterwards;
+- the most racers and checkpoints a call got.
+
+The stats are no part of what a replay rebuilds. The simulation reports show the most fuel of every
+kind of call, so a change in what a mode costs shows up in the snapshots, and every simulation fails
+when a call uses more than a tenth of its budget.
+
+`cargo run --release -p tm-driver-sim --bin bench [scenario ...]` simulates a full server of 120
+players for every mode with its default settings and prints the stats, and how long replaying the
+match takes. The endurance race lasts `BENCH_ENDURANCE_MINUTES` (120 by default) with infinite laps
+on a map with laps of 40 seconds. On a desktop machine:
+
+| Scenario | Most expensive call | Fuel (of the budget) | Host time | Replay of the match |
+|---|---|---|---|---|
+| Rounds, 5 rounds | `round-end` | 4.1M (0.41 %) | 0.4 ms | 0.06 s |
+| TimeAttack, a map of 5 minutes | `round-end`, 3060 checkpoints | 3.3M (0.33 %) | 0.4 ms | 0.09 s |
+| ReverseCup, 34 rounds | `round-end` | 4.4M (0.44 %) | 0.5 ms | 0.16 s |
+| Knockout, 15 rounds | `round-end` | 4.2M (0.42 %) | 0.8 ms | 0.07 s |
+| Endurance, 2 hours | `live-round`, 82445 checkpoints | 1.9M (0.19 %) | 0.3 ms | 1.9 s |
+
+- A live round of a full server late in a two hour race costs about 0.2 ms of host time. The 6618
+  live rounds of the race took 1.3 s of calls, 0.14 s of building the races and 0.56 s of
+  publishing, together less than the time between two of them.
+- Fuel barely grows with the checkpoints: a list of numbers goes into the mode as one copy, the
+  calls cost what the modes do with the players. A live round late in the race costs about what it
+  costs early.
+- Replaying the whole race, like a bridge that resumes, takes 1.9 s with every live round.
+- Every call stays below half a percent of its budget, so there is no need yet for modes to tell
+  what they need live, for summaries of the races instead of every checkpoint or for replays that
+  skip live rounds.
+- A race start costs up to 0.2M fuel with 120 players in a knockout: the mode gets the standings of
+  every player with every event.
+
 ## WIT interface and host
 
 `tm-wasm-driver/wit/driver.wit` defines world `mode`:
@@ -975,11 +1016,7 @@ script starts with `"lives": 3`.
      (`load endurance {"time_limit_ms": 600000}` on a map with laps, then
      `manialinks live-standings scores-table`): `live-standings` shows it with the laps, the times
      and `Live`, and the round points of `standings` change while it runs.
-2. **Benchmarks.** Measure the fuel of a call and the time the host spends around it, e.g.
-   converting the races, for a live round of a full server late in a long endurance race and for
-   replaying such a match. They decide whether modes should tell what they need live or the host
-   should hand over less, e.g. a summary of every race instead of every checkpoint.
-3. **Database integration (phase 4)** once the feature is fleshed out.
+2. **Database integration (phase 4)** once the feature is fleshed out.
 
 ## Risks
 
@@ -989,8 +1026,8 @@ script starts with `"lives": 3`.
   and the round when they change, the live round at most once a second, and the round history
   stays with the host and the manager. Whether the game sends a whole array or only what changed in
   it is unknown, a full server needs a check.
-- Replaying a match asks for every live round again. Two hours of an endurance race at one live
-  round a second are 7200 calls with every checkpoint so far, which delays resuming by seconds. The
-  benchmarks are going to tell, the host could ask only for the last one while replaying.
+- Replaying a match asks for every live round again. Two hours of an endurance race with 120
+  players replay in about 2 seconds (see [Costs](#costs)). Longer races or slower machines could
+  ask only for the last live round while replaying.
 - The epoch deadline (wall clock limit per call) is configured but not covered by a test,
   because none of the test modes runs long enough to hit it.
