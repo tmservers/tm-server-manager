@@ -58,6 +58,10 @@ It follows `TM_Driver.Script.txt` at the level of the callbacks the driver handl
   every race. Warmups with a duration work like time attack rounds, warmups without one like rounds
   of one try. Players who do not move give up after 30 seconds, like idle players being kicked to
   spectators.
+- On maps with laps, races go over the laps of the map or the ones the race rules of the driver
+  set. Infinite laps never finish, in a round of one try a player stops after 20 laps. Without give
+  ups nobody gives up and idle players stay until the round ends. Waypoints carry the checkpoint in
+  the lap, the lap time and whether they end a lap, like the ones of the game.
 
 ## Time
 
@@ -73,7 +77,8 @@ callbacks, so holds are answered at once.
 A random world varies everything with its seed, like swarm testing:
 
 - The settings of the mode, from the random settings the mode hands to the simulator.
-- One to three maps with two to five checkpoints, and a playlist of some of them or none.
+- One to three maps with two to five checkpoints, a quarter of them with two to four laps, and a
+  playlist of some of them or none.
 - Mostly up to sixteen players, sometimes a crowd of up to 120, the most a server holds. Every
   player has a pace, how much their sectors vary and a chance to give up. Some join later, leave,
   only watch, have colored names or the same name as someone else.
@@ -119,7 +124,9 @@ let outcome = simulator().log("the best race counts", &log);
 ```
 
 A player named twice drives two races one after the other. The builder numbers the holds and
-orders the callbacks of all races by their time. `hold_again`, `delivered`, `lose_reply`,
+orders the callbacks of all races by their time, which they carry as server time: a round starts a
+second after the last callback, its players start 1.5 seconds later. `Race::in_laps(n)` drives a
+race on a map whose laps have `n` checkpoints. `hold_again`, `delivered`, `lose_reply`,
 `resumed`, `restart_script`, `join` and `leave` put in what the fake server does not do on its own.
 
 Unlike a simulation, a log does not follow the driver: who races and when maps end are written
@@ -142,17 +149,23 @@ log written by hand and later for a match recorded on a server.
 
 ## Checks
 
-After every input that can change the standings, the last round or the players, for every mode.
-That leaves out waypoints, of which a full server sends thousands per round.
+After every input that can change the standings, the round or the players, for every mode. That
+leaves out waypoints, of which a full server sends thousands per round, unless the live round is
+due.
 
 - Replies to holds end with their only `Continue`. A hold that comes again gets the same commands
   and no round result, or only its `Continue` once its reply reached the server. `EndMap` and
   `EndMatch` only come at holds, round results only for rounds that counted, and the next map is
   on the server.
-- The server shows what the driver has: the standings, the last round and the players it got last
-  equal `standings()`, `last_round()` and `users()`. So every change was published.
+- The server shows what the driver has: the standings, the round and the players it got last equal
+  `standings()`, `round()` and `users()`. So every change was published.
+- While a round runs, the round goes out live exactly when the host has to place it anew: once the
+  races changed and the interval passed since the last time. Like the host, the observer counts the
+  interval in the server time of the start lines and waypoints. A start or waypoint that publishes
+  the round at any other time fails. When it is due, the round shows live, is the one the server
+  shows and keeps the `Rules` of the live round.
 - The standings have every player once, positions from 1 without gaps, players still playing before
-  eliminated ones and spectators without a position. The last round places participants from 1.
+  eliminated ones and spectators without a position. The round places participants from 1.
 - Nobody leaves the standings of a match and eliminated players stay eliminated. Players still
   playing can spawn, everyone else cannot.
 - A round that did not count, forced or without its round start, changes nobody's points or status.
@@ -186,9 +199,21 @@ At the end of every round and map, the `Rules` of the mode, against the races th
   within the settings, the rounds per map end maps and the match ends once one player is left.
   Spectators stay spectators.
 
+- **Endurance:** players rank by the checkpoints of all their races, equal ones by the race times
+  at their last checkpoints added up, with the checkpoints as points and their lap as label. The
+  race ends the match with its order.
+
+While a round runs, `Rules::live_round` checks the round as it stands against the races so far:
+
+- **Every mode but Endurance:** the order of the races so far (`rules::live_in_race_order`).
+- **Rounds** and **TimeAttack:** finishers have the points of their place, everyone else none.
+- **ReverseCup:** finishers lose the points of their place, everyone else nothing yet.
+- **Knockout:** nobody has lost a life yet.
+- **Endurance:** the same order, points and labels as at the end.
+
 Every mode also tells within how many rounds a match ends (`Rules::round_limit`): the lives of every
-participant in a knockout, the points of every participant in a reverse cup, the maps and their
-rounds otherwise. A match that goes on longer fails, so a mode that stops making progress shows up.
+participant in a knockout, the points of every participant in a reverse cup, one race in endurance,
+the maps and their rounds otherwise. A match that goes on longer fails, so a mode that stops making progress shows up.
 
 Rules test properties against the races. They do not compute the standings a second way, except
 for the order of a race, which every mode shares, the number of lives a knockout round takes and
@@ -215,6 +240,14 @@ Bugs were planted one at a time and the simulations of the affected modes ran on
 | The host applies new settings during a round | the settings the driver plays with |
 | The SDK takes a change of every setting | the fake server, which expects the mode to reject it |
 | The host never takes settings that waited | the settings the driver plays with |
+| The host asks for the live round with every change | the interval of the live round |
+| The host does not publish the live round | what the server shows |
+| The host keeps the live round after the round end | the rules of the round end |
+| A time attack places the live round by the last race | the race order of the live round |
+| Rounds give a point live without a finish | the points of the live round |
+| An endurance race ties to who got there last | the order of the race |
+| An endurance race counts only the last race | the checkpoints of the race, in 59 of 150 seeds |
+| The host counts a lap too few | the labels of an endurance race |
 | A resumed host does not send the spawn permissions again | nothing |
 
 The first three passed every seed before the race order and rounds that do not count were checked.
@@ -261,8 +294,9 @@ tests build the rounds mode as well. Without random settings a mode plays its de
 
 ## Snapshots
 
-The report of a match has one block per round: the races as the driver saw them, the places of the
-round, the standings after it and what the driver did. Notes tell what happened around it, e.g.
+The report of a match has one block per round: the races as the driver saw them, how often the live
+round changed, the places of the round, the standings after it and what the driver did. Maps show
+their laps, map starts the race rules a mode set. Notes tell what happened around it, e.g.
 players joining, the bridge going down or callbacks it missed. The snapshots are
 [insta](https://insta.rs) files in `tests/simulation/snapshots` of every mode, the same in debug and
 release builds. Reports of full servers are not kept, they are hundreds of kilobytes.
@@ -317,6 +351,9 @@ sweep of thousands of matches is a matter of seconds in release.
 - A first idea applied settings that waited with the end hold of the round. Then the rules of the
   round saw standings that already followed the new settings, e.g. the info of a reverse cup that
   waits for players. Settings now apply with the first input after the round end.
+- The live points of a time attack counted finishers who did not take part yet, e.g. after the
+  host missed their start, which the live round did not show, so the others got points for a place
+  nobody saw. Live rounds now only count who takes part (found by the full servers).
 
 ## Limits
 
@@ -325,4 +362,6 @@ sweep of thousands of matches is a matter of seconds in release.
   checks run on them like on any log.
 - A bridge that is down only misses race and player callbacks. It is back before a round, map or
   match starts, which a real bridge might not be.
-- No laps, teams or Cup mode yet. Failing seeds are shrunk as logs, not to smaller worlds.
+- No teams, independent laps or Cup mode yet. Failing seeds are shrunk as logs, not to smaller
+  worlds.
+- How the engine applies the race rules is modeled after the script API, not seen on a server yet.

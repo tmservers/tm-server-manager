@@ -1,7 +1,7 @@
 # WASM Mode Driver
 
-Status: phases 0–2 and the TimeAttack, ReverseCup and Knockout modes are implemented on the
-`wasm-driver/*` branches. The bridge integration (phase 3) comes later, until then the runner in
+Status: phases 0–2 and the TimeAttack, ReverseCup, Knockout and Endurance modes are implemented on
+the `wasm-driver/*` branches. The bridge integration (phase 3) comes later, until then the runner in
 `tm-wasm-driver/src/main.rs` drives a server with a mode.
 Everything except the modescript and the manialinks is covered by tests. The modescript runs on a
 real server with the runner, the rest still needs a real match. The manager (and its database) stays untouched until the feature is
@@ -29,7 +29,8 @@ The mode decides what happens and sends commands back.
 | ABI | WIT component model (`tm-wasm-driver/wit/driver.wit`). |
 | Scoring | One `standings` structure every mode shares (see [Standings](#standings)). The host keeps it and hands it to the mode with every event, the mode applies its rules and returns it. Points never exist in the modescript and modes keep nothing but their settings. |
 | What the modescript adds | Only what the standard XML-RPC protocol lacks. Everything else uses the standard callbacks and methods. |
-| UI | The host publishes the standings, the last round and the players it knows to `Net_Driver_Standings`, `Net_Driver_Round` and `Net_Driver_Users`. Manialinks selected next to the mode render them, so every manialink works with every mode (see [UI](#ui)). |
+| UI | The host publishes the standings, the round and the players it knows to `Net_Driver_Standings`, `Net_Driver_Round` and `Net_Driver_Users`. Manialinks selected next to the mode render them, so every manialink works with every mode, and a mode can bring its own (see [UI](#ui)). |
+| Live leaderboards | While a round runs, the host lets the mode place it as it stands once the races changed, at most once a second of server time, and publishes it like the rest (see [Live rounds](#live-rounds)). Which leaderboard shows is up to the manialinks. |
 | Boundary typing | No `Event::Custom` and no hand-built JSON. Every callback and command is a Rust type in `tm-server-types`. |
 
 ## Architecture
@@ -60,7 +61,9 @@ tm-server-bridge ── post_event (standard callbacks, as before) ──▶ tm-
 `round-end` carries the races of the round as they happened. `racers` lists everyone who started a
 race in the order of their first start, with every race they started, e.g. one per restart in
 time attack rounds. A race holds the race times at the checkpoints passed (the finish included,
-from the `curracecheckpoints` of the waypoints) and whether it `finished`. How many checkpoints
+from the `curracecheckpoints` of the waypoints), whether it `finished` and the `laps` it completed
+(counted from the checkpoints at every waypoint with `isendlap`, so a missed waypoint loses no
+lap). How many checkpoints
 there are tells how far a player got, the times tell players who got equally far apart.
 `present` lists the players on the server when the round ended, racers or not. Players who left
 stay in the races of the round they started in.
@@ -78,6 +81,9 @@ the host thought on the server but missing from it left, e.g. while the bridge w
 A round end whose round start the host did not see is `invalid`, so it does not count. That happens
 when the driver restarted during the round and missed its races. A round the script forced to end
 or skipped is invalid as well.
+
+While a round runs, the host also asks the mode for the round as it stands, with the races so far
+(`live-round`, see [Live rounds](#live-rounds)). That is no event: the mode changes nothing with it.
 
 ### `Driver.Hold`, the only custom callback
 
@@ -113,6 +119,7 @@ the only place that knows how each command reaches the server.
 | `Continue` | `Driver.Continue [seq]` | Holds don't exist in the standard protocol. Only sent by the host. |
 | `SetRoundFormat` | `Driver.SetRoundFormat [single_attempt, auto\|off\|ms]` or `[time_attack, ms]` | Round shape and finish timeout. |
 | `SetWarmUp` | `Driver.SetWarmUp [rounds, duration_ms, auto\|timeout_ms]` | The built-in warmup only takes its settings from the script. |
+| `SetRaceRules` | `Driver.SetRaceRules [map\|infinite\|laps, 1\|0]` | Laps and give ups, which the script sets in the engine (see [Race rules](#race-rules)). |
 | `SetCanSpawn` | `Driver.SetCanSpawn [account_id, 1\|0]` | Eliminations without forcing spectators, which the allowlist sync manages. The host leaves out permissions it sent before in the match. |
 | `EndMap` | standard `NextMap` | – |
 | `SetNextMap` | standard `SetNextMapIdent [uid]` | – |
@@ -125,7 +132,8 @@ the only place that knows how each command reaches the server.
 | `SetNetState` | `Driver.SetNetState [json]` | Writes `Net_Driver_State` and bumps `Net_Driver_StateSerial`. For data of a mode the standings can not hold. |
 | `ChatMessage` | standard `ChatSendServerMessage` | – |
 
-Round format, finish timeout and spawn permissions reset to their defaults when a match starts.
+Round format, finish timeout, race rules and spawn permissions reset to their defaults when a match
+starts.
 A config change does **not** start a new match: NextMap only ends the map, so the modescript keeps
 its match and its state. Modes therefore set their round rules on `map-start`.
 
@@ -147,7 +155,7 @@ same for the match and for a round:
 | Standings field | Meaning |
 |---|---|
 | `entries` | The match: one entry for every player taking part. |
-| `round` | The round that ended with the event, filled by the mode at `round-end`. Output only: the host takes it out after every event, keeps it as the last round and reports it to the manager. |
+| `round` | The round that ended with the event, filled by the mode at `round-end`. Output only: the host takes it out after every event, keeps it as the last round and reports it to the manager. The round that runs comes from `live-round` (see [Live rounds](#live-rounds)). |
 | `rounds_on_map` | Rounds of the current map that counted, as the mode counts them. |
 | `rounds_played` | Valid rounds of the match, counted by the host. |
 | `maps_played` | Maps that ended in this match. |
@@ -170,8 +178,8 @@ Who does what:
   | `round-end` | `rounds_played` counts the ending round unless it is invalid |
   | `map-end` | `maps_played` counts the ending map |
 
-  It publishes the standings, the last round and the players whenever they change, and everything
-  again when a match starts. It reports every round that counted to the manager: the points and
+  It publishes the standings, the round (live while it runs) and the players whenever they change,
+  and everything again when a match starts. It reports every round that counted to the manager: the points and
   places of everyone the mode placed. Spawn permissions it sent before in the match are left out,
   so modes can simply repeat them. The host knows nothing about how a mode scores or ranks.
 - **Mode:** applies its rules and returns the standings: points, statuses, labels, positions,
@@ -212,6 +220,65 @@ Modes become small functions of their settings, the standings and an event, whic
 easy to test. The manager and the manialinks read one format for every mode, and admin
 corrections can later edit the standings without the mode knowing about it.
 
+## Live rounds
+
+Some modes are followed live: the best times of a time attack map change with every finish, an
+endurance race with every checkpoint, without a round ending in between. While a round runs, the
+host lets the mode place it as it stands and shows it like a round that ended.
+
+- `live-round(standings, races)` is an export of its own, not an event. The mode gets the races so
+  far as a round end that counts and returns the places, points, times and labels it would give if
+  the round ended now, with the SDK e.g. `Standings::placed`, the round of `place_round` without
+  changing the standings. The standings are read only, so a live round never changes the match and
+  the round end still decides. Modes reuse the code of their round end for it.
+- The host asks once the races changed, with a start line or a waypoint of a round (not in
+  warmups), at most once per `DriverLimits::live_round_interval`, 1 second of the server time of
+  the callbacks. A change within the interval shows with the next start or checkpoint after it, and
+  the round end always shows the final round, so the live round is eventually consistent. No wall
+  clock is involved, so a replay asks at the same inputs and rebuilds the same live round.
+- The round that runs goes out as `Net_Driver_Round` with `live: true` whenever it changed: the
+  number it gets if it counts and the places so far, empty when the round starts. Once the round
+  ended, `Net_Driver_Round` shows the last round that counted again, also after a round that did
+  not count.
+- Live rounds only show players who take part (`RoundEnd::taking_part`). Everyone else who raced
+  joins at the round end at the earliest, e.g. a racer whose start the host missed.
+
+| Mode | Live round |
+|---|---|
+| Rounds | finishers so far with the points they would get, everyone else by how far they got |
+| TimeAttack | the best times so far with the points of their rank |
+| ReverseCup | finishers so far with the points they would lose. Who loses the dnf points and who is eliminated is only known at the end. |
+| Knockout | the race so far, nobody loses a life before the end |
+| Endurance | everyone by the checkpoints they collected, with their lap |
+
+How it was decided:
+
+| Option | Verdict |
+|---|---|
+| Only Nadeo's scores table, which shows best times live | Native, but only its own columns, not the standings every mode shares and invisible to the manager. |
+| An event stream of changes the manialinks apply | Netvars hold state, not streams: a late joiner needs a snapshot and every change since, with sequence numbers in ManiaScript. |
+| Every waypoint as an event for the mode | A call per checkpoint, and modes would need incremental logic. |
+| The host ranks live without the mode | Cannot know how a mode scores, e.g. checkpoint sums or provisional points. |
+| A `race-update` event the mode handles in `step` | The mode could change the match during a round, the host would throw away all but the round. |
+| **`live-round` at most once per interval, published like the rest** | Chosen. The code of the round end, the inputs decide the cadence, the match cannot change. |
+
+Changes are streamed where the transport streams anyway: the manager is going to get the live round
+with the replies like the standings, and SpacetimeDB subscriptions push its rows to web UIs.
+
+Which leaderboard shows is up to the manialinks. A `focus` in the standings telling manialinks
+whether to show the match or the round was considered and dropped: it would put a decision of the
+UI into the data every mode shares, and one leaderboard cannot fit every mode anyway, e.g. an
+endurance race shows laps. The host publishes the whole state, the match and the round:
+
+- The default manialinks always show the match, with the points of the round next to it, which now
+  change while the round runs, like in Nadeo's modes.
+- A mode whose round players follow brings a manialink of its own (see [UI](#ui)), e.g.
+  `live/standings`, which shows the round instead of the match.
+
+A live round costs a call with every race so far and, when it changed, a netvar of the size of the
+round, at most once a second. Benchmarks are still to show what that costs (see
+[Next steps](#next-steps)).
+
 ## UI
 
 | Approach | Verdict |
@@ -228,7 +295,7 @@ corrections can later edit the standings without the mode knowing about it.
   | Netvar | Command | Json |
   |---|---|---|
   | `Net_Driver_Standings` | `SetStandings` | `DriverStandings`: title, info, map and the match entries |
-  | `Net_Driver_Round` | `SetRound` | `DriverRound`: the number and the entries of the last round that counted |
+  | `Net_Driver_Round` | `SetRound` | `DriverRound`: the number, `live` and the entries of the round as it stands while it runs, otherwise of the last round that counted |
   | `Net_Driver_Users` | `SetUsers` | `DriverUsers`: every player the host knows with name, club tag and zone |
 
   ```json
@@ -236,7 +303,7 @@ corrections can later edit the standings without the mode knowing about it.
    "map_name": "...", "map_count": 3,
    "entries": [{"account_id": "...", "position": 1, "score": 16, "time": -1, "status": "playing",
                 "label": "", "label_tone": "neutral"}]}
-  {"number": 2, "entries": [{"account_id": "...", "position": 1, "score": 10, "time": 30123, ...}]}
+  {"number": 2, "live": false, "entries": [{"account_id": "...", "position": 1, "score": 10, "time": 30123, ...}]}
   {"users": [{"account_id": "...", "name": "...", "club_tag": "", "zone": ""}]}
   ```
 
@@ -249,10 +316,19 @@ corrections can later edit the standings without the mode knowing about it.
   (`Driver.manialinks`).
   `tm-driver-modes/manialinks` has:
   - `standings`: the top 10 of the match with positions (ties included), names, points, points
-    of the last round and statuses, spectators left out. It highlights the local player and
-    always shows them, in the last row if needed.
-  - `my-standing`: place, points or status and the last round of the local player.
+    of the round (live while it runs) and statuses, spectators left out. It highlights the local
+    player and always shows them, in the last row if needed.
+  - `my-standing`: place, points or status and the round of the local player.
   - `scores-table`: replaces the scores table of the game, see below.
+  - `live/standings`: the round instead of the match, the top 10 of the round as it stands while it
+    runs and of the last round otherwise, with their labels (e.g. the lap of an endurance race),
+    times and points, and `Live` while the round runs. Not installed by itself, modes bring it.
+- A mode can bring manialinks of its own (`manialinks` export, with the SDK `Mode::MANIALINKS`),
+  e.g. TimeAttack and Endurance bring `live/standings` as their `standings`. They are shown in place
+  of the selected manialinks with the same name and in addition to the others, also as the scores
+  table with a name ending with `scores-table`. `Driver::layers(selected)` merges them. The runner
+  shows them when it loads a mode and removes the ones of the mode before. The wasm of a mode is all
+  a manager has to store.
 - Data of a mode the standings can not hold goes through `SetNetState` (`Net_Driver_State`) to
   manialinks of that mode.
 
@@ -328,7 +404,7 @@ is a `DriverInput`, applied with `Driver::apply`:
 - `Resumed`: the bridge resumed the driver after a restart. Replies to the last inputs before it
   went down may never have reached the server, and the modescript may have changed meanwhile. So
   the host sends everything it set again: the spawn permissions of the match and the standings,
-  the last round and the players for the manialinks.
+  the round and the players for the manialinks.
 
 A bridge that restarts replays the inputs it stored, then applies `Resumed` and `Players` with
 who is on the server now. Callbacks sent while it was down are lost, e.g. the finish of a player
@@ -429,7 +505,8 @@ map pool of the server config (`MapPoolConfig`) becomes the playlist of a match.
 - Runs the built-in warmup after the map start hold, see [Warmup](#warmup).
 - Keeps race times in Nadeo's `Scores` library only for the scores table of the game. The host
   gets them from the waypoint callbacks.
-- Implements the eleven `Driver.*` methods above and nothing else.
+- Implements the twelve `Driver.*` methods above and nothing else.
+- Applies the race rules when a round starts, see [Race rules](#race-rules).
 
 ## Warmup
 
@@ -453,6 +530,24 @@ rebuild all of that for nothing.
 - The host follows `Trackmania.WarmUp.Start` and `End` and never sends `race-start` for warmup
   races, so a reverse cup or a knockout does not register players because they warmed up.
 
+## Race rules
+
+`SetRaceRules` sets the laps and the give ups of the races in the rounds that start, like the round
+format. Every match starts with the laps of the map and give ups.
+
+- `laps` is `map`, `count(n)` or `infinite`. When a round starts, the script sets
+  `LapCountOverride` of the engine to a count and `CheckpointBehaviour` to `InfiniteLaps` for
+  infinite laps. On maps without laps the finish still ends the race. The automatic finish timeout
+  counts the laps of the race.
+- Without `give-up`, the script sets `GiveUpBehaviour` to `DoNothing` and `RespawnBehaviour` to
+  `AlwaysRespawn`: respawning goes back to the last checkpoint and nobody gives up.
+- The script only changes what the driver asked for. What the base script had set comes back once
+  the driver wants the defaults again.
+- The members come from the script API of the game (`doc.h` of Trackmania 3.3.0). Nadeo's modes take
+  the laps and the respawn behaviour from the settings `S_ForceLapsNb`, `S_InfiniteLaps` and
+  `S_RespawnBehaviour`, but settings outlive a match, while the script keeps its state per match
+  like the round format.
+
 ## TimeAttack
 
 There is no separate TimeAttack script. TimeAttack is a round format of the generic modescript,
@@ -469,6 +564,10 @@ the same trick `TM_RoundsThenTimeattack` from the community modes uses:
 Points exist so the standings and round results rank players like the other modes do. By
 default the best of N finishers gets N points, so the points keep the order of the times. Equal
 best times go by the checkpoints of those races (see [No ties](#no-ties)).
+
+While the round runs, the live round shows the best times so far with the points of their rank.
+The mode brings `live/standings` as its standings, so players follow the times of the map rather
+than the points of the match, which the scores table shows with the points of the map so far.
 
 ## ReverseCup
 
@@ -573,6 +672,36 @@ Differences to the originals:
   callbacks, `S_MatchName` and `S_AlternativeMatchInfosPosition` of the multi lives script and
   `S_MatchPosition` of the Cup of the Day. Warmup is the modescript's.
 
+## Endurance
+
+A long race on a map with laps, the player who collects the most checkpoints wins. The race is the
+match.
+
+- With infinite laps (without `laps`), the race is a time attack round of `time_limit_ms` with
+  infinite laps: nobody finishes, so nobody starts again, and the time limit ends it. Players who
+  join during the race start at the start line.
+- With `laps`, it is a round of one try over that many laps. It ends once everyone finished or the
+  `finish_timeout` after the first finish ran out.
+- Nobody can give up, respawning at a checkpoint stays possible.
+- Players count the checkpoints of every race of the round, e.g. also of the race before they left
+  and came back. Equal ones go to whoever got there first: the race times at their last checkpoints
+  added up, for a single race the race time at its last checkpoint, then the account.
+- The round shows live: places, the checkpoints as points, the time and the lap as a label
+  (`Lap 3 / 50`, `Lap 12` with infinite laps, `Finished` after the last lap). The mode brings
+  `live/standings` as its standings.
+- Once the race ended, its order is the result of the match: positions, the checkpoints as points
+  and `Winner` for the first. A race that does not count, e.g. after a pause, is driven again.
+
+Limits:
+
+- A number of laps needs a map with laps, on other maps the finish ends the race after one lap. With
+  infinite laps on a map without laps, players start again after every finish, which counts as a
+  lap, so the time limit still decides.
+- A number of laps with a time limit on top would need a time limit for rounds of one try, which
+  the modescript does not have yet.
+- The default `standings` and `scores-table` show the checkpoints as the points of the match and of
+  the round and no laps. A scores table of its own would show the race like `live/standings`.
+
 ## WIT interface and host
 
 `tm-wasm-driver/wit/driver.wit` defines world `mode`:
@@ -581,6 +710,8 @@ Differences to the originals:
 export init: func(settings: string) -> result<_, string>;
 export name: func() -> string;  // shown above the standings
 export step: func(standings: standings, event: event) -> decision;  // standings + commands
+export live-round: func(standings: standings, races: round-end) -> list<entry>;  // the round so far
+export manialinks: func() -> list<layer>;  // in place of the ones of the config with their names
 export check-settings: func(settings: string) -> result<_, string>;  // new settings during a match
 export change-settings: func(settings: string) -> result<_, string>;
 export reloadable-settings: func() -> list<string>;
@@ -590,8 +721,8 @@ import host;  // log, find-user, map-count
 - `Driver::handles(&Event)` tells the runner (later the bridge) which callbacks matter. `Driver::apply(&DriverInput)`
   (or `Driver::handle(&Event)` for a callback) returns a `DriverReply` with the commands for the
   server and the round result for the manager. Replies to holds end with `Continue(seq)`.
-  `Driver::standings()`, `Driver::last_round()` and `Driver::users()` return what the host
-  publishes.
+  `Driver::standings()`, `Driver::round()` and `Driver::users()` return what the host publishes,
+  `Driver::layers(selected)` the manialinks to show with the ones the mode brings.
 - `DriverEngine::replay` rebuilds a driver from the inputs it got before.
 - Commands of a mode are converted with exhaustive matches, so both sides have to stay in sync.
 - The host accepts a component or a core module built for `wasm32-unknown-unknown` with the SDK
@@ -602,21 +733,25 @@ import host;  // log, find-user, map-count
 ## Guest SDK and modes
 
 - `tm-driver-sdk`: wit-bindgen bindings, the `Mode` trait (a mode names its `Settings` type and
-  the SDK parses the json of the config into it, empty settings are `{}`, and lists the settings
-  that can change during a match in `RELOADABLE`), `export_mode!`, helpers on the
-  standings (`join`, `award`, `round_entry`, `rank`, `rank_with`, `place_round`, `crown_leaders`,
-  `in_match`, `block_others`), `RoundEnd::racer` and `CountedRace` for the race that counts,
+  the SDK parses the json of the config into it, empty settings are `{}`, lists the settings
+  that can change during a match in `RELOADABLE`, places the live round in `live_round` and
+  brings manialinks in `MANIALINKS`), `export_mode!`, helpers on the
+  standings (`join`, `award`, `round_entry`, `rank`, `rank_with`, `place_round`, `placed`,
+  `crown_leaders`, `in_match`, `block_others`), `RoundEnd::racer`, `RoundEnd::taking_part` and
+  `CountedRace` for the race that counts,
   `race_order` for the order of a round without ties, the host functions (`user`, `name`,
   `map_count`), `ordinal` for chat
   messages and shared `settings`. Mode
   logic compiles natively too. `testing::Harness` runs a mode with the lifecycle of the host, so
-  modes are unit tested without wasm, `Harness::change_settings` included.
+  modes are unit tested without wasm, `Harness::change_settings` and `Harness::live_round`
+  included.
   `testing::assert_reloadable_settings_exist` makes sure `RELOADABLE` only names settings.
 - `tm-driver-modes/rounds`: Rounds (points repartition, rounds per map, maps per match, points
   limit, finish timeout).
 - `tm-driver-modes/time-attack`: TimeAttack (time limit, maps per match, points by rank).
 - `tm-driver-modes/reverse-cup`: ReverseCup (see [ReverseCup](#reversecup)).
 - `tm-driver-modes/knockout`: Knockout with lives (see [Knockout](#knockout)).
+- `tm-driver-modes/endurance`: Endurance (see [Endurance](#endurance)).
 - `tm-driver-sim`: simulates whole matches of a mode against a fake server and runs logs of
   inputs with the same checks. Every mode tests its rules with it in `tests/simulation` (see
   [Simulation Testing](./dev_driver_simulation.md)). The integration tests of `tm-wasm-driver` test
@@ -630,7 +765,7 @@ inline json or a json file (see [Next steps](#next-steps)). The modes build by h
 
 ```sh
 cargo build -p tm-driver-mode-rounds -p tm-driver-mode-time-attack -p tm-driver-mode-reverse-cup \
-  -p tm-driver-mode-knockout --target wasm32-unknown-unknown --release
+  -p tm-driver-mode-knockout -p tm-driver-mode-endurance --target wasm32-unknown-unknown --release
 ```
 
 For the integration the config of a match already has
@@ -703,6 +838,20 @@ Knockout):
 }
 ```
 
+Settings of the endurance mode (every field is optional):
+
+```json
+{
+  "laps": null,
+  "time_limit_ms": 3600000,
+  "finish_timeout": "automatic",
+  "warmup": {"rounds": 0, "duration_ms": 0, "timeout_ms": null}
+}
+```
+
+Without `laps` (or with `null`) the race has infinite laps and ends with `time_limit_ms`, with a
+number of laps it ends once everyone finished or the `finish_timeout` ran out.
+
 `extra_losses` is `{"above_players_left": [...]}`, `{"above_lives_left": [...]}` or
 `{"before_round": [...]}`. `rounds_per_map` 0 means no limit. The Cup of the Day eliminates with
 `"extra_losses": {"above_players_left": [8, 16, 16]}` (4 players per round above 16 players, 2
@@ -719,8 +868,9 @@ script starts with `"lives": 3`.
 4. Database integration: store the inputs of the driver (holds once per seq) and resume by
    replay, record round results, a `TmMode` for driver matches, pin modes by hash, team commands.
 5. Port the remaining modes: ✅ TimeAttack, ✅ ReverseCup, ✅ Knockout, Cup. Check parity with
-   recorded matches.
-6. More manialinks on top of the standings; remove the legacy script swapping; user uploads.
+   recorded matches. New ones: ✅ Endurance.
+6. More manialinks on top of the standings (✅ live rounds, manialinks of the modes); remove the
+   legacy script swapping; user uploads.
 
 ## Next steps
 
@@ -764,15 +914,29 @@ script starts with `"lives": 3`.
      the status of eliminated players.
    - The race times and hearts a knockout shows as labels fit into the status cells of the
      manialinks, and the hearts (icons of the game font) render in `GameFontBlack`.
-2. **Database integration (phase 4)** once the feature is fleshed out.
+   - The race rules on a map with laps: `LapCountOverride` sets the laps of the race,
+     `InfiniteLaps` never finishes it, `GiveUpBehaviour` and `RespawnBehaviour` stop give ups but
+     keep respawns, and the base script does not set them back during the round. The waypoints
+     carry `isendlap` and `checkpointinlap`, so the laps count.
+   - The live round reaches the manialinks about once a second, e.g. of an endurance race
+     (`load endurance {"time_limit_ms": 600000}` on a map with laps): `live/standings` shows it with
+     the laps, the times and `Live`, and the round points of `standings` change while it runs.
+2. **Benchmarks.** Measure the fuel of a call and the time the host spends around it, e.g.
+   converting the races, for a live round of a full server late in a long endurance race and for
+   replaying such a match. They decide whether modes should tell what they need live or the host
+   should hand over less, e.g. a summary of every race instead of every checkpoint.
+3. **Database integration (phase 4)** once the feature is fleshed out.
 
 ## Risks
 
 - `TrackmaniaRoundsBase` ships in the game's title pack and can change with game updates. Keep the
   script small.
-- Large JSON in netvars costs bandwidth. The standings, the last round and the players are only
-  published when they change, and the round history stays with the host and the manager. The
-  size limit of a netvar text is unknown, a big lobby (about 150 bytes per player in the
-  standings) needs a check.
+- Large JSON in netvars costs bandwidth. The standings, the round and the players are only
+  published when they change, the live round at most once a second, and the round history stays
+  with the host and the manager. The size limit of a netvar text is unknown, a big lobby (about
+  150 bytes per player in the standings and in the round) needs a check.
+- Replaying a match asks for every live round again. Two hours of an endurance race at one live
+  round a second are 7200 calls with every checkpoint so far, which delays resuming by seconds. The
+  benchmarks are going to tell, the host could ask only for the last one while replaying.
 - The epoch deadline (wall clock limit per call) is configured but not covered by a test,
   because none of the test modes runs long enough to hit it.
