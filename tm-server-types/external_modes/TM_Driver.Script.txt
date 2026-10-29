@@ -2,7 +2,7 @@
  *	Driver mode
  *
  *	Generic mode without any mode logic. The match flow reaches the driver
- *	(tm-wasm-driver, run by its runner until tm-server-bridge integrates it)
+ *	(tm-mode-driver, run by its runner until tm-server-bridge integrates it)
  *	through the standard callbacks of the base script. At a few points the
  *	script waits with the Driver.Hold callback until the driver answers with
  *	Driver.Continue.

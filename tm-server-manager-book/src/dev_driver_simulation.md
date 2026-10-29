@@ -1,6 +1,6 @@
 # Simulation Testing
 
-Every mode tests itself with deterministic simulations. `tm-driver-sim` runs the real host with the
+Every mode tests itself with deterministic simulations. `tm-mode-driver-sim` runs the real host with the
 real wasm of a mode against a fake server, which plays the driver modescript and its players. The
 matches come from seeds. Inputs can also be written down directly as logs, e.g. for a callback
 order the fake server does not produce. Checks run after every input the driver gets, the rules of
@@ -34,9 +34,9 @@ match the driver never asked for.
 
 | Crate | Tests |
 |---|---|
-| `tm-driver-sim` | Nothing about modes. A library: the fake server, worlds, input logs, the checks every mode has to keep, the `Rules` trait and the tests every mode runs. |
-| `tm-driver-modes/<mode>` | Unit tests of its rules with the SDK's harness in `src/tests.rs`, and simulations in `tests/simulation`: its `Rules`, random settings, logs and snapshots. |
-| `tm-wasm-driver` | The host: holds, publishing, players, sessions, replays, resuming, the playlist, limits. It runs the rounds mode for that, with the callbacks of `tm_driver_sim::events`, but does not test its rules. |
+| `tm-mode-driver-sim` | Nothing about modes. A library: the fake server, worlds, input logs, the checks every mode has to keep, the `Rules` trait and the tests every mode runs. |
+| `tm-mode-driver/modes/<mode>` | Unit tests of its rules with the SDK's harness in `src/tests.rs`, and simulations in `tests/simulation`: its `Rules`, random settings, logs and snapshots. |
+| `tm-mode-driver` | The host: holds, publishing, players, sessions, replays, resuming, the playlist, limits. It runs the rounds mode for that, with the callbacks of `tm_mode_driver_sim::events`, but does not test its rules. |
 
 A new mode, also one from outside the repository, brings its own simulation without touching the
 simulator.
@@ -109,7 +109,7 @@ racer more or less leaves the races of the others as they are.
 ## Input logs
 
 An `InputLog` is the settings of a match and the inputs of its driver, with the replies that got
-lost. It is json, so logs can be saved and loaded. `tm_driver_sim::events` writes them:
+lost. It is json, so logs can be saved and loaded. `tm_mode_driver_sim::events` writes them:
 
 ```rust
 let mut log = InputLog::new(r#"{"time_limit_ms": 100000}"#);
@@ -283,17 +283,17 @@ every mode runs:
 fn simulator() -> &'static Simulator {
     static SIMULATOR: OnceLock<Simulator> = OnceLock::new();
     SIMULATOR.get_or_init(|| {
-        Simulator::new("knockout", &tm_driver_sim::wasm!())
+        Simulator::new("knockout", &tm_mode_driver_sim::wasm!())
             .settings(settings)
             .rules(rules::Knockout::boxed)
     })
 }
 
-tm_driver_sim::simulation_tests!(simulator);
+tm_mode_driver_sim::simulation_tests!(simulator);
 ```
 
 `simulation_tests!` adds random matches, full servers, the matches of seeds 1 to 3 as snapshots
-and the saved logs. Tests of logs written by hand go next to it. `tm_driver_sim::wasm!()` builds the
+and the saved logs. Tests of logs written by hand go next to it. `tm_mode_driver_sim::wasm!()` builds the
 crate whose tests call it for `wasm32-unknown-unknown` with the `mode` profile (see
 [Build profile](./dev_wasm_driver.md#build-profile)) into `target/tmp/modes`, where the host tests
 build the rounds mode as well. Without random settings a mode plays its defaults, without
@@ -317,12 +317,12 @@ seeds as well.
 ## Running
 
 ```sh
-cargo test -p tm-driver-mode-knockout                     # unit tests and simulations
-SIM_SEEDS=5000 cargo test --release -p tm-driver-mode-knockout --test simulation
-SIM_FULL_SERVERS=50 cargo test --release -p tm-driver-mode-knockout --test simulation
-SIM_SEED_START=90000 cargo test --release -p tm-driver-mode-knockout --test simulation
-SIM_SEED=42 cargo test -p tm-driver-mode-knockout --test simulation random_matches_follow -- --nocapture
-SIM_SAVE=tests/simulation/logs cargo test -p tm-driver-mode-knockout --test simulation
+cargo test -p tm-mode-knockout                     # unit tests and simulations
+SIM_SEEDS=5000 cargo test --release -p tm-mode-knockout --test simulation
+SIM_FULL_SERVERS=50 cargo test --release -p tm-mode-knockout --test simulation
+SIM_SEED_START=90000 cargo test --release -p tm-mode-knockout --test simulation
+SIM_SEED=42 cargo test -p tm-mode-knockout --test simulation random_matches_follow -- --nocapture
+SIM_SAVE=tests/simulation/logs cargo test -p tm-mode-knockout --test simulation
 ```
 
 `SIM_SEEDS` and `SIM_FULL_SERVERS` set how many random matches and full servers run,

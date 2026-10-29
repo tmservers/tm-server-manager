@@ -1,0 +1,27 @@
+---
+source: tm-mode-driver/modes/endurance/tests/simulation/main.rs
+expression: outcome.report
+---
+endurance · seed 2
+settings {"finish_timeout":"automatic","laps":3,"warmup":{"duration_ms":0,"rounds":2,"timeout_ms":5000}}
+maps m1 2 cp × 4 laps 1:12.132
+players a Ant leaves during round 3 · b Bea
+chances ties 300‰
+
+match 1
+map m1 · one try, automatic finish timeout · warmup 2 × one try · 3 laps, no give up
+round 1
+  races  b 0:59.956 · a 0:57.876
+  live   12 updates
+  round  1 a 6 · 2 b 6
+  match  1 a 6 (Winner) · 2 b 6
+  info   3 laps
+  end match
+map end
+match end
+
+end
+  1 a 6 (Winner)
+  2 b 6
+fuel init 8.3k · live-round 16k · map-end 3.0k · map-start 2.2k · match-end 3.0k · match-start 577 · race-start 3.1k · round-end 16k · round-start 780
+inputs 63

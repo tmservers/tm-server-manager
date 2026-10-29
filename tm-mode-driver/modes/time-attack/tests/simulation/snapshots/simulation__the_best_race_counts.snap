@@ -1,0 +1,22 @@
+---
+source: tm-mode-driver/modes/time-attack/tests/simulation/main.rs
+expression: outcome.report
+---
+time-attack · the best race counts
+settings {"time_limit_ms": 100000}
+
+match 1
+map m1 · time attack 1:40.000 · no warmup
+round 1
+  races  a 0:31.000 0:30.000 0:35.000 · b 0:30.500 0:31.000 1cp
+  live   5 updates
+  round  1 a 2 · 2 b 1
+  match  1 a 2 · 2 b 1
+  info   Map 1 / 1
+  end map
+
+end
+  1 a 2
+  2 b 1
+fuel init 5.2k · live-round 23k · map-start 2.6k · match-start 581 · race-start 3.1k · round-end 26k · round-start 814
+inputs 23

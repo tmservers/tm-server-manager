@@ -1,0 +1,31 @@
+[package]
+name = "tm-mode-driver"
+description = "Runs wasm modes that drive the generic driver modescript of a Trackmania server."
+publish = false
+
+version.workspace = true
+authors.workspace = true
+keywords.workspace = true
+categories.workspace = true
+license.workspace = true
+edition.workspace = true
+repository.workspace = true
+
+[dependencies]
+tm-server-types.workspace = true
+wasmtime.workspace = true
+wit-component.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+
+# Only used by the runner in main.rs.
+tm-server-controller.workspace = true
+tm-mode-driver-manialinks.workspace = true
+tokio.workspace = true
+tracing-subscriber.workspace = true
+
+[dev-dependencies]
+# Builds the rounds mode the tests run, and the callbacks of the server.
+tm-mode-driver-sim.workspace = true

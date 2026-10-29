@@ -1,0 +1,18 @@
+[package]
+name = "tm-mode-driver-sim"
+description = "Deterministic simulation of a Trackmania server for the tests of wasm driver modes."
+publish = false
+
+version.workspace = true
+authors.workspace = true
+keywords.workspace = true
+categories.workspace = true
+license.workspace = true
+edition.workspace = true
+repository.workspace = true
+
+[dependencies]
+tm-mode-driver.workspace = true
+tm-server-types.workspace = true
+serde.workspace = true
+serde_json.workspace = true

@@ -2,7 +2,7 @@
 
 Status: phases 0–2 and the TimeAttack, ReverseCup, Knockout and Endurance modes are implemented on
 the `wasm-driver/*` branches. The bridge integration (phase 3) comes later, until then the runner in
-`tm-wasm-driver/src/main.rs` drives a server with a mode.
+`tm-mode-driver/core/src/main.rs` drives a server with a mode.
 Everything except the modescript and the manialinks is covered by tests. The modescript runs on a
 real server with the runner, the rest still needs a real match. The manager (and its database) stays untouched until the feature is
 fleshed out. See [Next steps](#next-steps).
@@ -15,18 +15,18 @@ convoluted and can crash when swapping between incompatible modes.
 
 Instead, one **generic driver modescript** stays loaded on every server. It keeps no mode state:
 no points, no elimination rules, no end conditions. The match flow reaches a **WASM mode**,
-executed by `tm-wasm-driver` inside the bridge, through the standard callbacks of the base script.
+executed by `tm-mode-driver` inside the bridge, through the standard callbacks of the base script.
 The mode decides what happens and sends commands back.
 
 ## Decisions
 
 | Topic | Decision |
 |---|---|
-| Where the logic runs | `wasmtime` inside the bridge (`tm-wasm-driver`). Decisions are local and fast. |
+| Where the logic runs | `wasmtime` inside the bridge (`tm-mode-driver`). Decisions are local and fast. |
 | Durability | No snapshots. Drivers only act on their settings and their inputs, so replaying the inputs of a match rebuilds the same driver (see [Resuming](#resuming)). |
 | Database | Untouched until the feature is fleshed out. The manager integration comes last. |
 | Who writes modes | First-party modes first (in-repo Rust crates). The host is sandboxed from day one (fuel, epoch deadline, memory cap, no WASI) so user uploads can be added later. |
-| ABI | WIT component model (`tm-wasm-driver/wit/driver.wit`). |
+| ABI | WIT component model (`tm-mode-driver/core/wit/driver.wit`). |
 | Scoring | One `standings` structure every mode shares (see [Standings](#standings)). The host keeps it and hands it to the mode with every event, the mode applies its rules and returns it. Points never exist in the modescript and modes keep nothing but their settings. |
 | What the modescript adds | Only what the standard XML-RPC protocol lacks. Everything else uses the standard callbacks and methods. |
 | UI | The host publishes the standings, the round and the players it knows, which the modescript writes into typed netvars, players by an index. Manialinks the config selects render them, defaults or a tournament's own, so every manialink works with every mode. Modes bring none (see [UI](#ui)). |
@@ -41,7 +41,7 @@ TM server ── TM_Driver.Script.txt (#Extends TrackmaniaRoundsBase, loaded onc
    ▼                                         │
 tm-server-controller   Event                 /  driver_commands(&[DriverCommand])
    ▼                                         │
-tm-wasm-driver         one wasm instance per match, standings, hold dedup, Continue, replay
+tm-mode-driver         one wasm instance per match, standings, hold dedup, Continue, replay
    ▼                                         ▲
 tm-server-bridge ── post_event (standard callbacks, as before) ──▶ tm-server-manager
 ```
@@ -360,7 +360,7 @@ Until then the host numbers them, which is all the netvars of a server need.
 
 ### Manialinks
 
-- `tm-driver-manialinks` has the defaults, by name:
+- `tm-mode-driver-manialinks` has the defaults, by name:
   - `standings`: the top 10 of the match with positions (ties included), names, points, points
     of the round (live while it runs) and statuses, spectators left out. It highlights the local
     player and always shows them, in the last row if needed.
@@ -567,7 +567,7 @@ The driver uses the built-in warmup instead of emulating one. The base script al
 script, so warmup races are never scored. Emulating it with rounds that do not count would
 rebuild all of that for nothing.
 
-- Every mode has a `warmup` setting (`tm_driver_sdk::settings::WarmUpSetting`) and sends it with
+- Every mode has a `warmup` setting (`tm_mode_driver_sdk::settings::WarmUpSetting`) and sends it with
   `set-warm-up` in reply to `map-start`, so it applies to every map, the first one included.
   The script hands it to `MB_WarmUp` right after the hold. Without a driver command the script
   uses its `S_WarmUpNb`, `S_WarmUpDuration` and `S_WarmUpTimeout` settings, which are reset when
@@ -768,7 +768,7 @@ The stats are no part of what a replay rebuilds. The simulation reports show the
 kind of call, so a change in what a mode costs shows up in the snapshots, and every simulation fails
 when a call uses more than a tenth of its budget.
 
-`cargo run --release -p tm-driver-sim --bin bench [scenario ...]` simulates a full server of 120
+`cargo run --release -p tm-mode-driver-sim --bin bench [scenario ...]` simulates a full server of 120
 players for every mode with its default settings and prints the stats, and how long replaying the
 match takes. The endurance race lasts `BENCH_ENDURANCE_MINUTES` (120 by default) with infinite laps
 on a map with laps of 40 seconds. On a desktop machine:
@@ -837,9 +837,9 @@ itself and strips them, which gives the same size as stripping first (within 100
 
 ```sh
 CARGO_PROFILE_MODE_STRIP=false cargo build --profile mode --target wasm32-unknown-unknown \
-  -p tm-driver-mode-rounds -p tm-driver-mode-time-attack -p tm-driver-mode-reverse-cup \
-  -p tm-driver-mode-knockout -p tm-driver-mode-endurance
-for wasm in target/wasm32-unknown-unknown/mode/tm_driver_mode_*.wasm; do
+  -p tm-mode-rounds -p tm-mode-time-attack -p tm-mode-reverse-cup \
+  -p tm-mode-knockout -p tm-mode-endurance
+for wasm in target/wasm32-unknown-unknown/mode/tm_mode_*.wasm; do
   wasm-opt -O3 --strip-debug --strip-producers --strip-target-features "$wasm" -o "$wasm"
 done
 ```
@@ -849,7 +849,7 @@ Their fuel is then an upper bound, about 4 % above what a published mode costs.
 
 ## WIT interface and host
 
-`tm-wasm-driver/wit/driver.wit` defines world `mode`:
+`tm-mode-driver/core/wit/driver.wit` defines world `mode`:
 
 ```wit
 export init: func(settings: string) -> result<_, string>;
@@ -876,7 +876,7 @@ import host;  // log, find-user, map-count
 
 ## Guest SDK and modes
 
-- `tm-driver-sdk`: wit-bindgen bindings, the `Mode` trait (a mode names its `Settings` type and
+- `tm-mode-driver-sdk`: wit-bindgen bindings, the `Mode` trait (a mode names its `Settings` type and
   the SDK parses the json of the config into it, empty settings are `{}`, lists the settings
   that can change during a match in `RELOADABLE` and places the live round in `live_round`),
   `export_mode!`, helpers on the
@@ -890,26 +890,26 @@ import host;  // log, find-user, map-count
   modes are unit tested without wasm, `Harness::change_settings` and `Harness::live_round`
   included.
   `testing::assert_reloadable_settings_exist` makes sure `RELOADABLE` only names settings.
-- `tm-driver-modes/rounds`: Rounds (points repartition, rounds per map, maps per match, points
+- `tm-mode-driver/modes/rounds`: Rounds (points repartition, rounds per map, maps per match, points
   limit, finish timeout).
-- `tm-driver-modes/time-attack`: TimeAttack (time limit, maps per match, points by rank).
-- `tm-driver-modes/reverse-cup`: ReverseCup (see [ReverseCup](#reversecup)).
-- `tm-driver-modes/knockout`: Knockout with lives (see [Knockout](#knockout)).
-- `tm-driver-modes/endurance`: Endurance (see [Endurance](#endurance)).
-- `tm-driver-sim`: simulates whole matches of a mode against a fake server and runs logs of
+- `tm-mode-driver/modes/time-attack`: TimeAttack (time limit, maps per match, points by rank).
+- `tm-mode-driver/modes/reverse-cup`: ReverseCup (see [ReverseCup](#reversecup)).
+- `tm-mode-driver/modes/knockout`: Knockout with lives (see [Knockout](#knockout)).
+- `tm-mode-driver/modes/endurance`: Endurance (see [Endurance](#endurance)).
+- `tm-mode-driver-sim`: simulates whole matches of a mode against a fake server and runs logs of
   inputs with the same checks. Every mode tests its rules with it in `tests/simulation` (see
-  [Simulation Testing](./dev_driver_simulation.md)). The integration tests of `tm-wasm-driver` test
-  the host, with the rounds mode as the mode and the callbacks of `tm_driver_sim::events`.
+  [Simulation Testing](./dev_driver_simulation.md)). The integration tests of `tm-mode-driver` test
+  the host, with the rounds mode as the mode and the callbacks of `tm_mode_driver_sim::events`.
 
 ## Configuration
 
 Until the bridge integrates the driver, the runner loads a mode by the name of its crate in
-`tm-driver-modes`, which it builds first, or by the path of a `.wasm` file, with settings as
+`tm-mode-driver/modes`, which it builds first, or by the path of a `.wasm` file, with settings as
 inline json or a json file (see [Next steps](#next-steps)). The modes build by hand with:
 
 ```sh
-cargo build -p tm-driver-mode-rounds -p tm-driver-mode-time-attack -p tm-driver-mode-reverse-cup \
-  -p tm-driver-mode-knockout -p tm-driver-mode-endurance --target wasm32-unknown-unknown --profile mode
+cargo build -p tm-mode-rounds -p tm-mode-time-attack -p tm-mode-reverse-cup \
+  -p tm-mode-knockout -p tm-mode-endurance --target wasm32-unknown-unknown --profile mode
 ```
 
 For the integration the config of a match already has
@@ -917,7 +917,7 @@ For the integration the config of a match already has
 the driver script. `mode` names the wasm module, `settings` is the JSON passed to `init` and
 `manialinks` names the manialinks shown next to the mode (`["standings", "scores-table"]` by
 default, e.g. `["live-standings", "my-standing", "scores-table"]` for an endurance race), the
-defaults of `tm-driver-manialinks` or ones the manager stores for a tournament. A registry in the manager
+defaults of `tm-mode-driver-manialinks` or ones the manager stores for a tournament. A registry in the manager
 (pinned by hash per match) is going to provide the modes.
 
 Settings of the rounds mode (every field is optional):
@@ -1007,7 +1007,7 @@ script starts with `"lives": 3`.
 
 0. ✅ Typed boundary in `tm-server-types` and the controller.
 1. ✅ Generic modescript (not run on a server yet).
-2. ✅ `tm-wasm-driver` host, SDK and the Rounds mode with tests running the real wasm.
+2. ✅ `tm-mode-driver` host, SDK and the Rounds mode with tests running the real wasm.
 3. Bridge integration behind `ModeSettingsV2::Driver`, after testing with the runner, which stands
    in for it until then.
 4. Database integration: store the inputs of the driver (holds once per seq) and resume by
@@ -1020,13 +1020,13 @@ script starts with `"lives": 3`.
 ## Next steps
 
 1. **Run the modescript and the manialink on a real server.** The runner in
-   `tm-wasm-driver/src/main.rs` does that without the bridge and the manager: it installs the
+   `tm-mode-driver/core/src/main.rs` does that without the bridge and the manager: it installs the
    modescript, shows the manialinks and drives the server with a mode it builds from the
    repository (`load <mode> [settings]`, `reload`, `settings <settings>`, `maps [map ...]`,
    `manialinks [name ...]`, `script`, `next`, `pause`, `resume`).
 
    ```sh
-   TM_SERVER_URL=127.0.0.1:5000 cargo run -p tm-wasm-driver -- reverse-cup '{"starting_points": 10}'
+   TM_SERVER_URL=127.0.0.1:5000 cargo run -p tm-mode-driver -- reverse-cup '{"starting_points": 10}'
    ```
 
    Check:

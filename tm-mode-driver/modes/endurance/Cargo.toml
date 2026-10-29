@@ -1,0 +1,25 @@
+[package]
+name = "tm-mode-endurance"
+description = "Endurance mode for the wasm driver."
+publish = false
+
+version.workspace = true
+authors.workspace = true
+keywords.workspace = true
+categories.workspace = true
+license.workspace = true
+edition.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+tm-mode-driver-sdk.workspace = true
+serde = { workspace = true, features = ["derive"] }
+
+[dev-dependencies]
+# Simulated matches of the mode, see tests/simulation.
+tm-mode-driver-sim.workspace = true
+insta.workspace = true
+serde_json.workspace = true

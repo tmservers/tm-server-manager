@@ -4051,69 +4051,32 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fd3ca314f692efd6c868f8408f53fe444634a845f96c028b97d35f6a1f79f0ee"
 
 [[package]]
-name = "tm-driver-manialinks"
+name = "tm-mode-driver"
+version = "0.1.0-dev"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "tm-mode-driver-manialinks",
+ "tm-mode-driver-sim",
+ "tm-server-controller",
+ "tm-server-types",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "wasmtime",
+ "wit-component 0.262.0",
+]
+
+[[package]]
+name = "tm-mode-driver-manialinks"
 version = "0.1.0-dev"
 dependencies = [
  "tm-server-types",
 ]
 
 [[package]]
-name = "tm-driver-mode-endurance"
-version = "0.1.0-dev"
-dependencies = [
- "insta",
- "serde",
- "serde_json",
- "tm-driver-sdk",
- "tm-driver-sim",
-]
-
-[[package]]
-name = "tm-driver-mode-knockout"
-version = "0.1.0-dev"
-dependencies = [
- "insta",
- "serde",
- "serde_json",
- "tm-driver-sdk",
- "tm-driver-sim",
-]
-
-[[package]]
-name = "tm-driver-mode-reverse-cup"
-version = "0.1.0-dev"
-dependencies = [
- "insta",
- "serde",
- "serde_json",
- "tm-driver-sdk",
- "tm-driver-sim",
-]
-
-[[package]]
-name = "tm-driver-mode-rounds"
-version = "0.1.0-dev"
-dependencies = [
- "insta",
- "serde",
- "serde_json",
- "tm-driver-sdk",
- "tm-driver-sim",
-]
-
-[[package]]
-name = "tm-driver-mode-time-attack"
-version = "0.1.0-dev"
-dependencies = [
- "insta",
- "serde",
- "serde_json",
- "tm-driver-sdk",
- "tm-driver-sim",
-]
-
-[[package]]
-name = "tm-driver-sdk"
+name = "tm-mode-driver-sdk"
 version = "0.1.0-dev"
 dependencies = [
  "serde",
@@ -4122,13 +4085,68 @@ dependencies = [
 ]
 
 [[package]]
-name = "tm-driver-sim"
+name = "tm-mode-driver-sim"
 version = "0.1.0-dev"
 dependencies = [
  "serde",
  "serde_json",
+ "tm-mode-driver",
  "tm-server-types",
- "tm-wasm-driver",
+]
+
+[[package]]
+name = "tm-mode-endurance"
+version = "0.1.0-dev"
+dependencies = [
+ "insta",
+ "serde",
+ "serde_json",
+ "tm-mode-driver-sdk",
+ "tm-mode-driver-sim",
+]
+
+[[package]]
+name = "tm-mode-knockout"
+version = "0.1.0-dev"
+dependencies = [
+ "insta",
+ "serde",
+ "serde_json",
+ "tm-mode-driver-sdk",
+ "tm-mode-driver-sim",
+]
+
+[[package]]
+name = "tm-mode-reverse-cup"
+version = "0.1.0-dev"
+dependencies = [
+ "insta",
+ "serde",
+ "serde_json",
+ "tm-mode-driver-sdk",
+ "tm-mode-driver-sim",
+]
+
+[[package]]
+name = "tm-mode-rounds"
+version = "0.1.0-dev"
+dependencies = [
+ "insta",
+ "serde",
+ "serde_json",
+ "tm-mode-driver-sdk",
+ "tm-mode-driver-sim",
+]
+
+[[package]]
+name = "tm-mode-time-attack"
+version = "0.1.0-dev"
+dependencies = [
+ "insta",
+ "serde",
+ "serde_json",
+ "tm-mode-driver-sdk",
+ "tm-mode-driver-sim",
 ]
 
 [[package]]
@@ -4201,24 +4219,6 @@ dependencies = [
  "simd-json",
  "spacetimedb-lib",
  "uuid",
-]
-
-[[package]]
-name = "tm-wasm-driver"
-version = "0.1.0-dev"
-dependencies = [
- "serde",
- "serde_json",
- "thiserror 2.0.21",
- "tm-driver-manialinks",
- "tm-driver-sim",
- "tm-server-controller",
- "tm-server-types",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "wasmtime",
- "wit-component 0.262.0",
 ]
 
 [[package]]
