@@ -157,8 +157,9 @@ due.
   and no round result, or only its `Continue` once its reply reached the server. `EndMap` and
   `EndMatch` only come at holds, round results only for rounds that counted, and the next map is
   on the server.
-- The server shows what the driver has: the standings, the round and the players it got last equal
-  `standings()`, `round()` and `users()`. So every change was published.
+- The server shows what the driver has: what it got last for the netvars, read back like a
+  manialink reads them, columns and players by their index, equals `standings()`, `round()` and
+  `users()`. So every change was published, and an entry only refers to a published player.
 - While a round runs, the round goes out live exactly when the host has to place it anew: once the
   races changed and the interval passed since the last time. Like the host, the observer counts the
   interval in the server time of the start lines and waypoints. A start or waypoint that publishes
@@ -248,6 +249,9 @@ Bugs were planted one at a time and the simulations of the affected modes ran on
 | An endurance race ties to who got there last | the order of the race |
 | An endurance race counts only the last race | the checkpoints of the race, in 59 of 150 seeds |
 | The host counts a lap too few | the labels of an endurance race |
+| The host swaps the scores and times of the netvars | what the server shows |
+| The host keys labels by entry rather than by player | what the server shows |
+| The host publishes the players one index off | what the server shows |
 | A resumed host does not send the spawn permissions again | nothing |
 
 The first three passed every seed before the race order and rounds that do not count were checked.

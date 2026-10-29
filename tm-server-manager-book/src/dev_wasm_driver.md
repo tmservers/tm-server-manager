@@ -29,7 +29,7 @@ The mode decides what happens and sends commands back.
 | ABI | WIT component model (`tm-wasm-driver/wit/driver.wit`). |
 | Scoring | One `standings` structure every mode shares (see [Standings](#standings)). The host keeps it and hands it to the mode with every event, the mode applies its rules and returns it. Points never exist in the modescript and modes keep nothing but their settings. |
 | What the modescript adds | Only what the standard XML-RPC protocol lacks. Everything else uses the standard callbacks and methods. |
-| UI | The host publishes the standings, the round and the players it knows to `Net_Driver_Standings`, `Net_Driver_Round` and `Net_Driver_Users`. Manialinks selected next to the mode render them, so every manialink works with every mode, and a mode can bring its own (see [UI](#ui)). |
+| UI | The host publishes the standings, the round and the players it knows, which the modescript writes into typed netvars, players by an index. Manialinks the config selects render them, defaults or a tournament's own, so every manialink works with every mode. Modes bring none (see [UI](#ui)). |
 | Live leaderboards | While a round runs, the host lets the mode place it as it stands once the races changed, at most once a second of server time, and publishes it like the rest (see [Live rounds](#live-rounds)). Which leaderboard shows is up to the manialinks. |
 | Boundary typing | No `Event::Custom` and no hand-built JSON. Every callback and command is a Rust type in `tm-server-types`. |
 
@@ -124,11 +124,11 @@ the only place that knows how each command reaches the server.
 | `EndMap` | standard `NextMap` | – |
 | `SetNextMap` | standard `SetNextMapIdent [uid]` | – |
 | `EndMatch` | `Driver.EndMatch` | NextMap only ends the map. |
-| `SetLayer` / `RemoveLayer` | `Driver.SetLayer [name, manialink, normal\|scores_table]` / `Driver.RemoveLayer [name]` | Only layers created by the script can read its netvars. `scores_table` layers become the scores table, see [Scores table](#scores-table). |
+| `SetLayer` / `RemoveLayer` | `Driver.SetLayer [name, manialink, normal\|scores_table]` / `Driver.RemoveLayer [name]` | Only layers created by the script can read its netvars. `scores_table` layers become the scores table, see [Scores table](#scores-table). Sent by the runner or the bridge for the manialinks of the config, not by modes. |
 | `SetUiModuleVisible` | standard `Common.UIModules.SetProperties` | – |
-| `SetStandings` | `Driver.SetStandings [json]` | Writes `Net_Driver_Standings` and bumps `Net_Driver_StandingsSerial`. Only sent by the host. |
-| `SetRound` | `Driver.SetRound [json]` | Writes `Net_Driver_Round` and bumps `Net_Driver_RoundSerial`. Only sent by the host. |
-| `SetUsers` | `Driver.SetUsers [json]` | Writes `Net_Driver_Users` and bumps `Net_Driver_UsersSerial`. Only sent by the host. |
+| `SetStandings` | `Driver.SetStandings [json]` | Writes the netvars of the standings and bumps `Net_Driver_StandingsSerial` (see [UI](#ui)). Only sent by the host. |
+| `SetRound` | `Driver.SetRound [json]` | Writes the netvars of the round and bumps `Net_Driver_RoundSerial`. Only sent by the host. |
+| `SetUsers` | `Driver.SetUsers [json]` | Writes the netvars of the players and bumps `Net_Driver_UsersSerial`. Only sent by the host. |
 | `SetNetState` | `Driver.SetNetState [json]` | Writes `Net_Driver_State` and bumps `Net_Driver_StateSerial`. For data of a mode the standings can not hold. |
 | `ChatMessage` | standard `ChatSendServerMessage` | – |
 
@@ -236,9 +236,9 @@ host lets the mode place it as it stands and shows it like a round that ended.
   the callbacks. A change within the interval shows with the next start or checkpoint after it, and
   the round end always shows the final round, so the live round is eventually consistent. No wall
   clock is involved, so a replay asks at the same inputs and rebuilds the same live round.
-- The round that runs goes out as `Net_Driver_Round` with `live: true` whenever it changed: the
-  number it gets if it counts and the places so far, empty when the round starts. Once the round
-  ended, `Net_Driver_Round` shows the last round that counted again, also after a round that did
+- The round that runs goes out in the netvars of the round with `Net_Driver_RoundLive` whenever it
+  changed: the number it gets if it counts and the places so far, empty when the round starts.
+  Once the round ended, they show the last round that counted again, also after a round that did
   not count.
 - Live rounds only show players who take part (`RoundEnd::taking_part`). Everyone else who raced
   joins at the round end at the earliest, e.g. a racer whose start the host missed.
@@ -272,11 +272,11 @@ endurance race shows laps. The host publishes the whole state, the match and the
 
 - The default manialinks always show the match, with the points of the round next to it, which now
   change while the round runs, like in Nadeo's modes.
-- A mode whose round players follow brings a manialink of its own (see [UI](#ui)), e.g.
-  `live/standings`, which shows the round instead of the match.
+- For a mode whose round players follow, the config selects `live-standings` in place of
+  `standings` (see [UI](#ui)), which shows the round instead of the match.
 
-A live round costs a call with every race so far and, when it changed, a netvar of the size of the
-round, at most once a second. Benchmarks are still to show what that costs (see
+A live round costs a call with every race so far and, when it changed, the netvars of the round,
+mostly integers, at most once a second. Benchmarks are still to show what that costs (see
 [Next steps](#next-steps)).
 
 ## UI
@@ -286,51 +286,100 @@ round, at most once a second. Benchmarks are still to show what that costs (see
 | Every mode writes its own json for its own manialinks | Each mode reinvents its UI and depends on it. |
 | The modescript mirrors the points into Nadeo's scores table | Native look, but points would live in the script again. |
 | The bridge renders manialinks and sends them with `SendDisplayManialinkPage` | No netvars, but every update resends whole pages and those manialinks cannot read the netvars of the script. |
-| **The host publishes the shared standings, selectable manialinks render them** | Chosen. Any manialink works with any mode. |
+| **The host publishes the shared standings, manialinks the config selects render them** | Chosen. Any manialink works with any mode, a tournament can bring its own. |
 
-- The host sends three json texts, each to a netvar of its own with a serial the manialinks
-  watch, so a manialink parses only what it needs and the players are not repeated with every
-  update of the standings:
+Modes produce data, the standings, the round and `set-net-state`, and bring no manialinks. Which
+manialinks show and how they look is up to the config of a match, like the mode and its settings.
 
-  | Netvar | Command | Json |
-  |---|---|---|
-  | `Net_Driver_Standings` | `SetStandings` | `DriverStandings`: title, info, map and the match entries |
-  | `Net_Driver_Round` | `SetRound` | `DriverRound`: the number, `live` and the entries of the round as it stands while it runs, otherwise of the last round that counted |
-  | `Net_Driver_Users` | `SetUsers` | `DriverUsers`: every player the host knows with name, club tag and zone |
+### Netvars
 
-  ```json
-  {"title": "Rounds", "info": "2 / 5 rounds", "rounds_on_map": 2, "maps_played": 0,
-   "map_name": "...", "map_count": 3,
-   "entries": [{"account_id": "...", "position": 1, "score": 16, "time": -1, "status": "playing",
-                "label": "", "label_tone": "neutral"}]}
-  {"number": 2, "live": false, "entries": [{"account_id": "...", "position": 1, "score": 10, "time": 30123, ...}]}
-  {"users": [{"account_id": "...", "name": "...", "club_tag": "", "zone": ""}]}
-  ```
+The netvars are the interface of every manialink, so they are typed and small rather than json:
 
-  Missing values have defaults (`-1` for a time, empty texts) because the manialinks parse into
-  structs.
-- Manialinks parse them with `fromjson`. A test checks that every manialink reading one of the
-  netvars declares a struct member for every field of its json.
-- The runner installs every manialink of `tm-driver-modes/manialinks` as a layer when it starts and
-  whenever the modescript (re)starts. Later the config selects them next to the mode
-  (`Driver.manialinks`).
-  `tm-driver-modes/manialinks` has:
+- A client only gets what changed, mostly integers: a typical entry is five integers instead of
+  about 140 bytes of json with the account in it. A live round of a full server is a few kilobytes
+  instead of about 17 per update and player.
+- A new netvar does not break manialinks that do not read it, unlike a new field of json that
+  `fromjson` may refuse.
+- Players are an index. The accounts, names, club tags and zones only go out when players change,
+  the standings and the round only carry the index.
+
+`tm_server_types::method::DRIVER_NETVARS` lists them by name and ManiaScript type, all
+`for Teams[0]`. Every group has a serial that increases once all its netvars changed together:
+
+| Group | Netvars |
+|---|---|
+| Players (`Net_Driver_UsersSerial`) | `Net_Driver_UserAccountIds`, `Net_Driver_UserNames`, `Net_Driver_UserClubTags`, `Net_Driver_UserZones`: `Text[Integer]` by index |
+| Standings (`Net_Driver_StandingsSerial`) | `Net_Driver_Title`, `Net_Driver_Info`, `Net_Driver_MapName` (`Text`), `Net_Driver_MapCount`, `Net_Driver_MapsPlayed`, `Net_Driver_RoundsOnMap` (`Integer`), `Net_Driver_Paused` (`Boolean`) and the entries of the match |
+| Round (`Net_Driver_RoundSerial`) | `Net_Driver_RoundNumber` (`Integer`), `Net_Driver_RoundLive` (`Boolean`) and the entries of the round as it stands while it runs, otherwise of the last round that counted |
+| State of the mode (`Net_Driver_StateSerial`) | `Net_Driver_State` (`Text`), whatever a mode sends with `set-net-state` |
+
+The entries are columns with one value per entry, standings ordered by position (unranked players
+last), the round by place: `…Players` (the index), `…Positions`, `…Scores`, `…Times` (-1 without a
+time) and `…Statuses` (0 playing, 1 eliminated, 2 spectator) are `Integer[]`, e.g.
+`Net_Driver_StandingsScores`. `…Labels` (`Text[Integer]`) and `…LabelTones` (`Integer[Integer]`,
+0 neutral, 1 positive, 2 negative) are maps by player, for the players with a label.
+
+```maniascript
+declare netread Integer[] Net_Driver_StandingsPlayers for Teams[0];
+declare netread Integer[] Net_Driver_StandingsScores for Teams[0];
+declare netread Text[Integer] Net_Driver_UserNames for Teams[0];
+foreach (Entry => Player in Net_Driver_StandingsPlayers) {
+	log(Net_Driver_UserNames[Player]^" "^Net_Driver_StandingsScores[Entry]);
+}
+```
+
+- The host sends what changed as json (`DriverNetStandings`, `DriverNetRound`, `DriverNetUsers`)
+  over XML-RPC, the modescript parses it with `fromjson` and writes the netvars. That json stays
+  between the host and the script, which change together, and never reaches a client. Tests check
+  that the script writes every netvar with its type and parses every field.
+- The netvars are global state, sent to every client once per change however many manialinks read
+  them, which compute the view of the local player themselves, e.g. its row. Every manialink reads
+  the columns directly, there is no json to parse on the client. A hidden manialink that prepares
+  the data once for the others would add a dependency between manialinks and save next to nothing.
+- A test checks that every default manialink only reads netvars of the list with their types and
+  watches the serials of what it reads.
+
+### Player indices
+
+The host gives every player the manialinks show an index, a `u32`: the players it learns about and
+everyone else in the standings or the round, in the order it first publishes them, from 0. An index
+is never reused while the driver runs and the players go out before the standings, so an entry
+always refers to a known player. Replays give the same indices.
+
+The manager numbers its players with `u32` too, so it could dictate the indices later:
+
+- The bridge would hand the host the manager's index of a player with an input, e.g.
+  `DriverInput::PlayerIndex(account, index)`, before the player shows up, so replays stay exact.
+  The host would only number players itself without one, from a range the manager does not use.
+- The same index would then name a player in the netvars, in the tables of the manager and in its
+  web UIs, across matches and servers, and external UIs could join them without accounts.
+- Manialinks do not change: an index is an opaque key of the maps of the players. ManiaScript only
+  has signed 32 bit integers, so indices from 2³¹ on would arrive negative but stay unique keys.
+
+Until then the host numbers them, which is all the netvars of a server need.
+
+### Manialinks
+
+- `tm-driver-manialinks` has the defaults, by name:
   - `standings`: the top 10 of the match with positions (ties included), names, points, points
     of the round (live while it runs) and statuses, spectators left out. It highlights the local
     player and always shows them, in the last row if needed.
   - `my-standing`: place, points or status and the round of the local player.
   - `scores-table`: replaces the scores table of the game, see below.
-  - `live/standings`: the round instead of the match, the top 10 of the round as it stands while it
-    runs and of the last round otherwise, with their labels (e.g. the lap of an endurance race),
-    times and points, and `Live` while the round runs. Not installed by itself, modes bring it.
-- A mode can bring manialinks of its own (`manialinks` export, with the SDK `Mode::MANIALINKS`),
-  e.g. TimeAttack and Endurance bring `live/standings` as their `standings`. They are shown in place
-  of the selected manialinks with the same name and in addition to the others, also as the scores
-  table with a name ending with `scores-table`. `Driver::layers(selected)` merges them. The runner
-  shows them when it loads a mode and removes the ones of the mode before. The wasm of a mode is all
-  a manager has to store.
+  - `live-standings`: the round instead of the match, the top 10 of the round as it stands while
+    it runs and of the last round otherwise, with their labels (e.g. the lap of an endurance race),
+    times and points, and `Live` while the round runs. For modes whose round players follow, e.g.
+    time attack and endurance, in place of `standings`.
+- The config selects manialinks by name (`Driver.manialinks`, `["standings", "scores-table"]` by
+  default). A tournament can bring its own, e.g. with another style, which replace defaults with
+  the same name. A name ending with `scores-table` makes a manialink the scores table.
+- The runner shows the ones of `TM_MANIALINKS` (the defaults of the config without it), from
+  `TM_MANIALINKS_DIR` or the defaults, when it starts and whenever the modescript (re)starts.
+  `manialinks <name> ...` switches them while it runs and reads them again from their files, e.g.
+  after changing a style. Once the manager stores manialinks, the bridge does the same with the
+  names of the config.
 - Data of a mode the standings can not hold goes through `SetNetState` (`Net_Driver_State`) to
-  manialinks of that mode.
+  manialinks that know the mode.
 
 ### Styling
 
@@ -375,7 +424,8 @@ scores table is the UI module `Race_ScoresTable`, a manialink in such a layer.
   through the rest (a frame with `scroll="1"`). The local player is highlighted and gets an extra
   row below the list while the visible rows do not show them, the spectated player is
   highlighted too.
-- Names and club tags come from `Net_Driver_Users`, so they stay known after a player left.
+- Names and club tags come from the netvars of the players, so they stay known after a player
+  left.
   Nothing fills in club tags and zones yet, so the table falls back to the club tags of the
   connected players from `Scores` on the client. Logins for spectating always come from there.
 - While a player watches someone else (`InputPlayer != GUIPlayer`, as a spectator or after
@@ -505,7 +555,8 @@ map pool of the server config (`MapPoolConfig`) becomes the playlist of a match.
 - Runs the built-in warmup after the map start hold, see [Warmup](#warmup).
 - Keeps race times in Nadeo's `Scores` library only for the scores table of the game. The host
   gets them from the waypoint callbacks.
-- Implements the twelve `Driver.*` methods above and nothing else.
+- Implements the twelve `Driver.*` methods above and nothing else, and writes what the host
+  publishes into the typed netvars.
 - Applies the race rules when a round starts, see [Race rules](#race-rules).
 
 ## Warmup
@@ -566,8 +617,8 @@ default the best of N finishers gets N points, so the points keep the order of t
 best times go by the checkpoints of those races (see [No ties](#no-ties)).
 
 While the round runs, the live round shows the best times so far with the points of their rank.
-The mode brings `live/standings` as its standings, so players follow the times of the map rather
-than the points of the match, which the scores table shows with the points of the map so far.
+With `live-standings` in place of `standings`, players follow the times of the map rather than the
+points of the match, which the scores table shows with the points of the map so far.
 
 ## ReverseCup
 
@@ -687,8 +738,8 @@ match.
   and came back. Equal ones go to whoever got there first: the race times at their last checkpoints
   added up, for a single race the race time at its last checkpoint, then the account.
 - The round shows live: places, the checkpoints as points, the time and the lap as a label
-  (`Lap 3 / 50`, `Lap 12` with infinite laps, `Finished` after the last lap). The mode brings
-  `live/standings` as its standings.
+  (`Lap 3 / 50`, `Lap 12` with infinite laps, `Finished` after the last lap). A config for an
+  endurance race selects `live-standings` in place of `standings`.
 - Once the race ended, its order is the result of the match: positions, the checkpoints as points
   and `Winner` for the first. A race that does not count, e.g. after a pause, is driven again.
 
@@ -700,7 +751,7 @@ Limits:
 - A number of laps with a time limit on top would need a time limit for rounds of one try, which
   the modescript does not have yet.
 - The default `standings` and `scores-table` show the checkpoints as the points of the match and of
-  the round and no laps. A scores table of its own would show the race like `live/standings`.
+  the round and no laps. A scores table for endurance would show the race like `live-standings`.
 
 ## WIT interface and host
 
@@ -711,7 +762,6 @@ export init: func(settings: string) -> result<_, string>;
 export name: func() -> string;  // shown above the standings
 export step: func(standings: standings, event: event) -> decision;  // standings + commands
 export live-round: func(standings: standings, races: round-end) -> list<entry>;  // the round so far
-export manialinks: func() -> list<layer>;  // in place of the ones of the config with their names
 export check-settings: func(settings: string) -> result<_, string>;  // new settings during a match
 export change-settings: func(settings: string) -> result<_, string>;
 export reloadable-settings: func() -> list<string>;
@@ -722,7 +772,7 @@ import host;  // log, find-user, map-count
   (or `Driver::handle(&Event)` for a callback) returns a `DriverReply` with the commands for the
   server and the round result for the manager. Replies to holds end with `Continue(seq)`.
   `Driver::standings()`, `Driver::round()` and `Driver::users()` return what the host publishes,
-  `Driver::layers(selected)` the manialinks to show with the ones the mode brings.
+  with accounts and the index of every player.
 - `DriverEngine::replay` rebuilds a driver from the inputs it got before.
 - Commands of a mode are converted with exhaustive matches, so both sides have to stay in sync.
 - The host accepts a component or a core module built for `wasm32-unknown-unknown` with the SDK
@@ -734,8 +784,8 @@ import host;  // log, find-user, map-count
 
 - `tm-driver-sdk`: wit-bindgen bindings, the `Mode` trait (a mode names its `Settings` type and
   the SDK parses the json of the config into it, empty settings are `{}`, lists the settings
-  that can change during a match in `RELOADABLE`, places the live round in `live_round` and
-  brings manialinks in `MANIALINKS`), `export_mode!`, helpers on the
+  that can change during a match in `RELOADABLE` and places the live round in `live_round`),
+  `export_mode!`, helpers on the
   standings (`join`, `award`, `round_entry`, `rank`, `rank_with`, `place_round`, `placed`,
   `crown_leaders`, `in_match`, `block_others`), `RoundEnd::racer`, `RoundEnd::taking_part` and
   `CountedRace` for the race that counts,
@@ -772,7 +822,8 @@ For the integration the config of a match already has
 `ModeSettingsV2::Driver(Driver { mode, settings, decision_timeout, manialinks })`, which selects
 the driver script. `mode` names the wasm module, `settings` is the JSON passed to `init` and
 `manialinks` names the manialinks shown next to the mode (`["standings", "scores-table"]` by
-default, e.g. `["standings", "my-standing", "scores-table"]`). A registry in the manager
+default, e.g. `["live-standings", "my-standing", "scores-table"]` for an endurance race), the
+defaults of `tm-driver-manialinks` or ones the manager stores for a tournament. A registry in the manager
 (pinned by hash per match) is going to provide the modes.
 
 Settings of the rounds mode (every field is optional):
@@ -878,7 +929,7 @@ script starts with `"lives": 3`.
    `tm-wasm-driver/src/main.rs` does that without the bridge and the manager: it installs the
    modescript, shows the manialinks and drives the server with a mode it builds from the
    repository (`load <mode> [settings]`, `reload`, `settings <settings>`, `maps [map ...]`,
-   `script`, `next`, `pause`, `resume`).
+   `manialinks [name ...]`, `script`, `next`, `pause`, `resume`).
 
    ```sh
    TM_SERVER_URL=127.0.0.1:5000 cargo run -p tm-wasm-driver -- reverse-cup '{"starting_points": 10}'
@@ -896,8 +947,10 @@ script starts with `"lives": 3`.
    - Time attack rounds start players again after a finish or give up and stop at the time limit.
    - A warmup set by a mode runs before the first round of every map with the warmup UI of the
      game, `duration_ms: 0` gives every player one try, and eliminated players can not warm up.
-   - The manialinks parse the standings with `fromjson`, `LocalUser.WebServicesUserId` matches
-     the account ids and their positions do not cover Nadeo's UI.
+   - The script parses what the host publishes with `fromjson` and writes the typed netvars,
+     including the maps by index (`Text[Integer]`, `Integer[Integer]`), the manialinks read them,
+     `LocalUser.WebServicesUserId` matches the account ids and their positions do not cover
+     Nadeo's UI. How much a live round of a full server costs on the network.
    - The scores table key opens `scores-table` instead of Nadeo's table, also for spectators, it
      opens by itself for 3 seconds after every round and on the podium, and Nadeo's table comes
      back with a config without it.
@@ -919,8 +972,9 @@ script starts with `"lives": 3`.
      keep respawns, and the base script does not set them back during the round. The waypoints
      carry `isendlap` and `checkpointinlap`, so the laps count.
    - The live round reaches the manialinks about once a second, e.g. of an endurance race
-     (`load endurance {"time_limit_ms": 600000}` on a map with laps): `live/standings` shows it with
-     the laps, the times and `Live`, and the round points of `standings` change while it runs.
+     (`load endurance {"time_limit_ms": 600000}` on a map with laps, then
+     `manialinks live-standings scores-table`): `live-standings` shows it with the laps, the times
+     and `Live`, and the round points of `standings` change while it runs.
 2. **Benchmarks.** Measure the fuel of a call and the time the host spends around it, e.g.
    converting the races, for a live round of a full server late in a long endurance race and for
    replaying such a match. They decide whether modes should tell what they need live or the host
@@ -931,10 +985,10 @@ script starts with `"lives": 3`.
 
 - `TrackmaniaRoundsBase` ships in the game's title pack and can change with game updates. Keep the
   script small.
-- Large JSON in netvars costs bandwidth. The standings, the round and the players are only
-  published when they change, the live round at most once a second, and the round history stays
-  with the host and the manager. The size limit of a netvar text is unknown, a big lobby (about
-  150 bytes per player in the standings and in the round) needs a check.
+- Netvars cost bandwidth. They are typed, the players only go out when they change, the standings
+  and the round when they change, the live round at most once a second, and the round history
+  stays with the host and the manager. Whether the game sends a whole array or only what changed in
+  it is unknown, a full server needs a check.
 - Replaying a match asks for every live round again. Two hours of an endurance race at one live
   round a second are 7200 calls with every checkpoint so far, which delays resuming by seconds. The
   benchmarks are going to tell, the host could ask only for the last one while replaying.
