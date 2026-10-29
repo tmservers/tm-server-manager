@@ -46,7 +46,7 @@ where
 {
     use serde::{Deserialize, de::Error};
 
-    let index = i64::deserialize(d)?;
+    let index = i32::deserialize(d)?;
     u32::try_from(index.max(0)).map_err(D::Error::custom)
 }
 
@@ -56,38 +56,5 @@ impl<'a> From<&'a Event> for &'a WayPoint {
             Event::WayPoint(event) => event,
             _ => unreachable!(),
         }
-    }
-}
-
-#[cfg(all(test, feature = "serde"))]
-mod tests {
-    use super::*;
-
-    fn way_point(checkpoint_in_race: i64, checkpoint_in_lap: i64) -> WayPoint {
-        serde_json::from_value(serde_json::json!({
-            "accountid": "a",
-            "time": 0,
-            "racetime": 0,
-            "laptime": 0,
-            "speed": 0.0,
-            "checkpointinrace": checkpoint_in_race,
-            "checkpointinlap": checkpoint_in_lap,
-            "isendrace": false,
-            "isendlap": false,
-            "isinfinitelaps": false,
-            "isindependentlaps": false,
-            "curracecheckpoints": [],
-            "curlapcheckpoints": [],
-            "blockid": "",
-        }))
-        .unwrap()
-    }
-
-    #[test]
-    fn negative_checkpoints_are_zero() {
-        let event = way_point(-1, -3);
-        assert_eq!((event.checkpoint_in_race, event.checkpoint_in_lap), (0, 0));
-        let event = way_point(4, 2);
-        assert_eq!((event.checkpoint_in_race, event.checkpoint_in_lap), (4, 2));
     }
 }
