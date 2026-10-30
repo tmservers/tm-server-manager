@@ -126,6 +126,8 @@ pub enum Event {
 
     /// The driver modescript waits for the driver.
     DriverHold(DriverHold),
+    /// The driver modescript saved a finished race as a replay.
+    DriverGhost(DriverGhost),
     /// Results decided by the driver. Never sent by the server. Posting them from the
     /// bridge comes with the database integration of the manager.
     DriverRoundResult(DriverRoundResult),
@@ -268,6 +270,9 @@ impl Event {
                 ),
 
                 DriverHold::CALLBACK => Event::DriverHold(
+                    json::from_str(&mut body).map_err(|e| (name.to_string(), e, body))?,
+                ),
+                DriverGhost::CALLBACK => Event::DriverGhost(
                     json::from_str(&mut body).map_err(|e| (name.to_string(), e, body))?,
                 ),
                 // The driver callbacks are ours so an unknown one means the modescript

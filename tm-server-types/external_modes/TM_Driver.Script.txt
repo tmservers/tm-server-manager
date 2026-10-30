@@ -13,14 +13,19 @@
  *	(tm_server_types::method::DRIVER_NETVARS), players by their index. Race times
  *	reach the driver through the standard waypoint callbacks.
  *
+ *	Every finished race is saved as a replay of its own and announced with the
+ *	Driver.Ghost callback, so the bridge can pick up the ghosts of a round. They are
+ *	no input of the driver.
+ *
  *	Only what is not available through the standard XML-RPC methods is added
- *	here. It mirrors tm_server_types::event::DriverHold and
- *	tm_server_types::method::DriverCommand. Keep them in sync.
+ *	here. It mirrors tm_server_types::event::DriverHold,
+ *	tm_server_types::event::DriverGhost and tm_server_types::method::DriverCommand.
+ *	Keep them in sync.
  */
 #Extends "Modes/Nadeo/Trackmania/Base/TrackmaniaRoundsBase.Script.txt"
 
 #Const	CompatibleMapTypes	"TrackMania\\TM_Race,TM_Race"
-#Const	Version							"0.5.0"
+#Const	Version							"0.6.0"
 #Const	ScriptName					"Modes/Trackmania/TM_Driver.Script.txt"
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
@@ -42,6 +47,7 @@
 #Setting S_WarmUpDuration 0 as _("Duration of one warm up")
 #Setting S_WarmUpTimeout -1 as _("Warm up timeout")
 #Setting S_DriverDecisionTimeout 10000 as "Milliseconds to wait for the driver before showing a waiting message and asking again"
+#Setting S_DriverSaveGhosts True as "Save every finished race as a replay and announce it with Driver.Ghost"
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
 // Constants
@@ -61,8 +67,13 @@
 
 /// How often a hold is sent again once S_DriverDecisionTimeout passed.
 #Const C_Driver_ResendInterval 5000
+/// Folder of the ghost replays, as Replay_Save takes paths.
+#Const C_Driver_GhostFolder "Driver/"
+/// How long the end of a round waits for the replays of its ghosts.
+#Const C_Driver_GhostSaveTimeout 5000
 
 #Const C_Callback_Hold "Driver.Hold"
+#Const C_Callback_Ghost "Driver.Ghost"
 #Const C_Section_MapStart "MapStart"
 #Const C_Section_RoundEnd "RoundEnd"
 #Const C_Section_MapEnd "MapEnd"
@@ -88,6 +99,16 @@
 	Integer seq;
 	Text section;
 	Boolean forced;
+}
+
+/// A finished race saved as a replay, tm_server_types::event::DriverGhost.
+#Struct K_Driver_Ghost {
+	Integer session;
+	Integer round;
+	Text map_uid;
+	Text account_id;
+	Integer time;
+	Text path;
 }
 
 /// What the driver publishes, tm_server_types::method::DriverNetEntries and the
@@ -161,6 +182,11 @@ declare Integer G_Driver_BaseLapCountOverride;
 declare CSmMode::EGiveUpBehaviour G_Driver_BaseGiveUpBehaviour;
 declare CSmMode::ERespawnBehaviour G_Driver_BaseRespawnBehaviour;
 declare Ident[Text] G_Driver_Layers;
+/// Rounds started in this session, so every ghost replay gets its own path.
+declare Integer G_Driver_GhostRound;
+/// The ghosts being saved by the id of their task, and the ids of the ghosts by task.
+declare K_Driver_Ghost[Ident] G_Driver_GhostSaves;
+declare Ident[Ident] G_Driver_GhostIds;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
 // Extends
@@ -192,6 +218,25 @@ XmlRpc::RegisterCallback(C_Callback_Hold, """
 	]
 	```
 """);
+XmlRpc::RegisterCallback(C_Callback_Ghost, """
+* Name: {{{C_Callback_Ghost}}}
+* Type: CallbackArray
+* Description: A finished race was saved as a replay of its own. See tm_server_types::event::DriverGhost.
+* Data:
+	- Version >=3.0.0:
+	```
+	[
+		"{
+			"session": 123, //< Same as in Driver.Hold
+			"round": 5, //< Rounds started in this session, warmups not counted
+			"map_uid": "XXXXXXXXXXXXXXXXXXXXXXXXXXX",
+			"account_id": "00000000-0000-0000-0000-000000000000",
+			"time": 23450, //< Race time in milliseconds
+			"path": "Driver/123/5/00000000-0000-0000-0000-000000000000_123456" //< As given to Replay_Save
+		}"
+	]
+	```
+""");
 foreach (Method in [C_Method_Continue, C_Method_SetRoundFormat, C_Method_SetCanSpawn, C_Method_EndMatch, C_Method_SetLayer, C_Method_RemoveLayer, C_Method_SetNetState, C_Method_SetStandings, C_Method_SetRound, C_Method_SetUsers, C_Method_SetWarmUp, C_Method_SetRaceRules]) {
 	XmlRpc::RegisterMethod(Method, """
 * Name: {{{Method}}}
@@ -206,6 +251,7 @@ foreach (Method in [C_Method_Continue, C_Method_SetRoundFormat, C_Method_SetCanS
 StateMgr::Unload();
 
 XmlRpc::UnregisterCallback(C_Callback_Hold);
+XmlRpc::UnregisterCallback(C_Callback_Ghost);
 foreach (Method in [C_Method_Continue, C_Method_SetRoundFormat, C_Method_SetCanSpawn, C_Method_EndMatch, C_Method_SetLayer, C_Method_RemoveLayer, C_Method_SetNetState, C_Method_SetStandings, C_Method_SetRound, C_Method_SetUsers, C_Method_SetWarmUp, C_Method_SetRaceRules]) {
 	XmlRpc::UnregisterMethod(Method);
 }
@@ -292,6 +338,10 @@ G_Driver_Session = ML::Rand(1, 2147483646);
 G_Driver_Seq = 0;
 G_Driver_PendingSeq = 0;
 G_Driver_FinishTimeout = "auto";
+
+G_Driver_GhostRound = 0;
+EnableGhostRecording = True;
+if (DataFileMgr == Null) log("[Driver] DataFileMgr is not available, finished races are not saved as replays.");
 ***
 
 ***Match_StartMatch***
@@ -343,6 +393,7 @@ if (Driver_SpawnPermissions.existskey(Driver_AccountId) && !Driver_SpawnPermissi
 Driver_ApplyCommands();
 Driver_ApplyRaceRules();
 StateMgr::ForcePlayersStates([StateMgr::C_State_Playing]);
+G_Driver_GhostRound += 1;
 
 G_Driver_RoundIsTimeAttack = G_Driver_TimeAttackLimit > 0;
 if (G_Driver_RoundIsTimeAttack) {
@@ -377,6 +428,8 @@ foreach (Event in Race::GetPendingEvents()) {
 		CarRank::ThrottleUpdate(CarRank::C_SortCriteria_CurrentRace);
 		if (Event.Player != Null && Event.Player.Score != Null) {
 			if (Event.IsEndRace) {
+				// Before time attack rounds start the player again below.
+				Driver_SaveGhost(Event.Player);
 				Scores::UpdatePlayerBestRaceIfBetter(Event.Player);
 				Scores::UpdatePlayerBestLapIfBetter(Event.Player);
 				Scores::UpdatePlayerPrevRace(Event.Player);
@@ -394,6 +447,7 @@ foreach (Event in Race::GetPendingEvents()) {
 		}
 	}
 }
+Driver_UpdateGhostSaves();
 
 // Time attack rounds start players again once they finished or gave up.
 if (G_Driver_RoundIsTimeAttack && PlayersNbDead > 0) {
@@ -438,6 +492,8 @@ StateMgr::ForcePlayersStates([StateMgr::C_State_Waiting]);
 CarRank::Update(CarRank::C_SortCriteria_CurrentRace);
 
 declare Boolean Forced = Round_ForceEndRound || Round_SkipPauseRound || Round_Skipped;
+// The ghosts of the round arrive before the driver decides on it.
+Driver_WaitForGhostSaves();
 Driver_Hold(C_Section_RoundEnd, Forced);
 
 if (Forced) {
@@ -762,6 +818,75 @@ Void Driver_ApplyCommands() {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
+/** Saves the race the player just finished as a replay of its own.
+ *	Driver_UpdateGhostSaves announces it once it is written.
+ *
+ *	@param	_Player			The player who finished
+ */
+Void Driver_SaveGhost(CSmPlayer _Player) {
+	if (!S_DriverSaveGhosts || DataFileMgr == Null || _Player.User == Null) return;
+	declare CGhost Ghost = Ghost_RetrieveFromPlayer(_Player);
+	if (Ghost == Null) return;
+
+	declare Text AccountId = _Player.User.WebServicesUserId;
+	// Now keeps the paths of several races in the same time attack round apart.
+	declare Text Path = C_Driver_GhostFolder^G_Driver_Session^"/"^G_Driver_GhostRound^"/"^AccountId^"_"^Now;
+	declare CTaskResult Task = DataFileMgr.Replay_Save(Path, Map, Ghost);
+	if (Task == Null) {
+		log("[Driver] Replay_Save did not start for "^Path);
+		Ghost_Release(Ghost.Id);
+		return;
+	}
+
+	G_Driver_GhostSaves[Task.Id] = K_Driver_Ghost {
+		session = G_Driver_Session,
+		round = G_Driver_GhostRound,
+		map_uid = Map.MapInfo.MapUid,
+		account_id = AccountId,
+		time = Ghost.Result.Time,
+		path = Path
+	};
+	G_Driver_GhostIds[Task.Id] = Ghost.Id;
+}
+
+/// Announces the replays that were written and releases what they no longer need.
+Void Driver_UpdateGhostSaves() {
+	if (DataFileMgr == Null || G_Driver_GhostSaves.count == 0) return;
+	declare Ident[] Done;
+	foreach (TaskId => Saved in G_Driver_GhostSaves) {
+		if (!DataFileMgr.TaskResults.existskey(TaskId)) {
+			log("[Driver] The task saving "^Saved.path^" disappeared.");
+			Done.add(TaskId);
+			continue;
+		}
+		declare CTaskResult Task = DataFileMgr.TaskResults[TaskId];
+		if (Task.IsProcessing) continue;
+		if (Task.HasSucceeded) {
+			XmlRpc::SendCallback(C_Callback_Ghost, [Saved.tojson()]);
+		} else {
+			log("[Driver] Saving "^Saved.path^" failed: "^Task.ErrorDescription);
+		}
+		DataFileMgr.TaskResult_Release(TaskId);
+		Done.add(TaskId);
+	}
+	foreach (TaskId in Done) {
+		Ghost_Release(G_Driver_GhostIds[TaskId]);
+		declare Boolean SaveForgotten = G_Driver_GhostSaves.removekey(TaskId);
+		declare Boolean GhostForgotten = G_Driver_GhostIds.removekey(TaskId);
+	}
+}
+
+/// Waits a moment for the replays still being written, so the ghosts of a round reach
+/// the bridge before its hold.
+Void Driver_WaitForGhostSaves() {
+	declare Integer Deadline = Now + C_Driver_GhostSaveTimeout;
+	while (G_Driver_GhostSaves.count > 0 && Now < Deadline && !ServerShutdownRequested) {
+		MB_Yield();
+		Driver_UpdateGhostSaves();
+	}
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
 /** Waits until the driver continues the hold.
  *	Commands keep being applied while waiting. The hold is sent again
  *	periodically because the driver answers repeated holds without
@@ -786,6 +911,7 @@ Void Driver_Hold(Text _Section, Boolean _Forced) {
 	while (G_Driver_PendingSeq == Hold.seq && !ServerShutdownRequested) {
 		MB_Yield();
 		Driver_ApplyCommands();
+		Driver_UpdateGhostSaves();
 		if (G_Driver_PendingSeq == Hold.seq && Now >= ResendTime) {
 			if (!Waiting) {
 				Waiting = True;

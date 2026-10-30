@@ -1,8 +1,9 @@
 //! Driver specific events.
 //!
 //! The driver modescript reports the match flow through the standard callbacks
-//! of the base script. The only callback it adds is [`DriverHold`] because the
-//! standard protocol has no way to make the script wait for a decision.
+//! of the base script. It adds [`DriverHold`] because the standard protocol has no
+//! way to make the script wait for a decision, and [`DriverGhost`] because it has no
+//! way to get the ghost of a single race.
 
 use crate::event::Event;
 
@@ -44,6 +45,31 @@ pub enum DriverSection {
     MapEnd,
 }
 
+/// Sent by the driver modescript once it saved a finished race as a replay of its own.
+///
+/// The ghosts of a round arrive before its [`DriverSection::RoundEnd`] hold. They are
+/// no input of the driver, so replaying the inputs of a match stays the same.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
+#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
+pub struct DriverGhost {
+    /// Same as [`DriverHold::session`].
+    pub session: i32,
+    /// Rounds the modescript started in this session, warmups not counted.
+    pub round: u32,
+    pub map_uid: String,
+    pub account_id: String,
+    /// Race time in milliseconds.
+    pub time: i32,
+    /// The path the modescript gave `Replay_Save`.
+    pub path: String,
+}
+
+impl DriverGhost {
+    pub const CALLBACK: &str = "Driver.Ghost";
+}
+
 /// Points and positions the driver decided for the current round.
 ///
 /// This is no callback of the server. Recording it in the manager comes with its
@@ -77,6 +103,16 @@ impl<'a> From<&'a Event> for &'a DriverHold {
     }
 }
 
+impl<'a> From<&'a Event> for &'a DriverGhost {
+    #[inline]
+    fn from(value: &'a Event) -> Self {
+        match value {
+            Event::DriverGhost(event) => event,
+            _ => unreachable!(),
+        }
+    }
+}
+
 impl<'a> From<&'a Event> for &'a DriverRoundResult {
     #[inline]
     fn from(value: &'a Event) -> Self {
@@ -104,6 +140,29 @@ mod tests {
         assert_eq!(hold.seq, 7);
         assert_eq!(hold.section, DriverSection::RoundEnd);
         assert!(hold.forced);
+    }
+
+    #[test]
+    fn parses_ghosts() {
+        let event = Event::from_modescript(
+            DriverGhost::CALLBACK,
+            r#"{"session":42,"round":3,"map_uid":"uid","account_id":"account","time":23450,"path":"Driver/42/3/account_100"}"#
+                .to_string(),
+        );
+        let Ok(Some(Event::DriverGhost(ghost))) = event else {
+            panic!("Expected a ghost but got {event:?}");
+        };
+        assert_eq!(
+            ghost,
+            DriverGhost {
+                session: 42,
+                round: 3,
+                map_uid: "uid".to_string(),
+                account_id: "account".to_string(),
+                time: 23450,
+                path: "Driver/42/3/account_100".to_string(),
+            }
+        );
     }
 
     #[test]

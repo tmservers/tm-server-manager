@@ -62,12 +62,18 @@ impl Default for Driver {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{event::DriverHold, method::DriverCommand};
+    use crate::{
+        event::{DriverGhost, DriverHold},
+        method::DriverCommand,
+    };
 
     /// The modescript and the Rust types have to agree on every name.
     #[test]
     fn script_knows_every_callback_and_method() {
-        for name in std::iter::once(DriverHold::CALLBACK).chain(DriverCommand::MODESCRIPT_METHODS) {
+        for name in [DriverHold::CALLBACK, DriverGhost::CALLBACK]
+            .into_iter()
+            .chain(DriverCommand::MODESCRIPT_METHODS)
+        {
             assert!(
                 Driver::SCRIPT.contains(&format!("\"{name}\"")),
                 "{name} is missing in TM_Driver.Script.txt"
@@ -131,8 +137,39 @@ mod tests {
 
     /// Everything else reaches the driver through the standard callbacks.
     #[test]
-    fn script_only_sends_holds() {
-        assert_eq!(Driver::SCRIPT.matches("XmlRpc::SendCallback(").count(), 1);
+    fn script_only_sends_holds_and_ghosts() {
+        assert_eq!(Driver::SCRIPT.matches("XmlRpc::SendCallback(").count(), 2);
+        assert!(Driver::SCRIPT.contains("XmlRpc::SendCallback(C_Callback_Hold,"));
+        assert!(Driver::SCRIPT.contains("XmlRpc::SendCallback(C_Callback_Ghost,"));
+    }
+
+    /// The script sends ghosts with `tojson`, so its struct has a member for every
+    /// field of [`DriverGhost`].
+    #[cfg(feature = "serde")]
+    #[test]
+    fn script_sends_what_the_ghost_parses() {
+        let ghost = DriverGhost {
+            session: 0,
+            round: 0,
+            map_uid: String::new(),
+            account_id: String::new(),
+            time: 0,
+            path: String::new(),
+        };
+        let serde_json::Value::Object(fields) = serde_json::to_value(ghost).unwrap() else {
+            unreachable!("A struct serializes to an object");
+        };
+        let script_struct = Driver::SCRIPT
+            .split("#Struct K_Driver_Ghost {")
+            .nth(1)
+            .and_then(|rest| rest.split('}').next())
+            .expect("TM_Driver.Script.txt declares K_Driver_Ghost");
+        for key in fields.keys() {
+            assert!(
+                script_struct.contains(&format!(" {key};")),
+                "K_Driver_Ghost of TM_Driver.Script.txt has no member {key}"
+            );
+        }
     }
 
     #[test]
