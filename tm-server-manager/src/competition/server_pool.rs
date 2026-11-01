@@ -88,11 +88,7 @@ fn raw_server_remove(
 
 /// The Raw server pool are all servers of an account which are verified.
 #[view(accessor= competition_available_server_pool, public)]
-fn competition_available_server_pool(
-    ctx: &ViewContext, /* competition_id: u32 */
-) -> Vec<RawServerV1> {
-    let competition_id = 1u32; //TODO replace with arg
-
+fn competition_available_server_pool(ctx: &ViewContext, competition_id: u32) -> Vec<RawServerV1> {
     //TODO which permission should we use for this??
     if ctx
         .auth_builder(competition_id)
