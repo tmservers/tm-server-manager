@@ -1,4 +1,7 @@
-use spacetimedb::{CtxDbRead, ProcedureContext, ReducerContext, Table, procedure, reducer, table};
+use spacetimedb::{
+    AnonymousViewContext, CtxDbRead, ProcedureContext, Query, ReducerContext, Table, procedure, reducer,
+    table, view,
+};
 use tm_server_types::config::{ServerConfig, ServerConfigV2};
 
 use crate::{
@@ -323,6 +326,16 @@ fn unstable_raw_server_config_update_maps(
     ctx.db.tab_raw_server_config_v2().id().update(raw_config);
 
     Ok(())
+}
+
+#[view(accessor = competition_shared_configs, public)]
+fn competition_shared_configs(
+    ctx: &AnonymousViewContext,
+    competition_id: u32,
+) -> impl Query<RawServerConfigV2> {
+    ctx.from
+        .tab_raw_server_config_v2()
+        .filter(|r| r.competition_id.eq(competition_id))
 }
 
 //TODO also handle upwards nesting because shared configs should be inherited.

@@ -1,4 +1,4 @@
-use spacetimedb::{ReducerContext, SpacetimeType, Table, reducer, table};
+use spacetimedb::{AnonymousViewContext, Query, ReducerContext, SpacetimeType, Table, reducer, table, view};
 use tm_server_types::config::ServerConfigV2;
 
 use crate::{
@@ -362,3 +362,10 @@ impl<Db: spacetimedb::CtxDbWrite> ServerWrite for Db {
 // Problem: what if there are matches in progress for a config update?
 // -> does the update just fail?
 // -> or does the update go through and override for live and finished matches?
+
+#[view(accessor = competition_servers, public)]
+fn competition_servers(ctx: &AnonymousViewContext, competition_id: u32) -> impl Query<ServerV1> {
+    ctx.from
+        .tab_server()
+        .filter(|r| r.parent_id.eq(competition_id))
+}
