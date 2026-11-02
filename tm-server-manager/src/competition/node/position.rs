@@ -9,7 +9,7 @@ use crate::{
 };
 
 #[spacetimedb::table(
-    accessor= tab_competition_node_position,
+    accessor= tab_competition_node_position, vis_private,
     index(accessor=node_position,hash(columns=[node_variant,node_id])),
 )]
 #[derive(Debug, Clone, Copy)]

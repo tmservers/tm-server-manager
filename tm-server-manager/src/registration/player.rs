@@ -14,7 +14,7 @@ use crate::{
 
 //TODO make this table private again.
 #[table(
-    accessor=tab_registeration_player,
+    accessor=tab_registeration_player, vis_private,
     index(accessor=user_registered, hash(columns=[user_id,registration_id])),
     public
 )]
@@ -93,6 +93,7 @@ fn unregister_player(ctx: &ReducerContext, registration_id: u32) -> Result<(), S
 pub(crate) trait RegistrationPlayerRead {
     //fn registration_player(&self, registration_id: u32) -> Vec<RegisterationPlayer>;
     fn registration_lb(&self, registration_id: u32) -> Vec<LbEntry>;
+    fn registration_player_count(&self, registration_id: u32) -> usize;
 }
 impl<Db: spacetimedb::CtxDbRead> RegistrationPlayerRead for Db {
     /* fn registration_player(&self, registration_id: u32) -> Vec<RegisterationPlayer> {
@@ -129,6 +130,14 @@ impl<Db: spacetimedb::CtxDbRead> RegistrationPlayerRead for Db {
                 )
             })
             .collect()
+    }
+
+    fn registration_player_count(&self, registration_id: u32) -> usize {
+        self.db_read_only()
+            .tab_registeration_player()
+            .registration_id()
+            .filter(registration_id)
+            .count()
     }
 }
 

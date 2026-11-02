@@ -10,10 +10,10 @@ use crate::{
     competition::{
         CompetitionPermissionsV1,
         connection::{
-            action::{TabConnectionAction, tab_connection_action, try_exec_action},
-            data::{ConnectionData, tab_connection_data, tab_connection_data__view},
+            action::{ConnectionActionWrite, try_exec_action},
+            data::{ConnectionData, ConnectionDataRead, ConnectionDataWrite},
         },
-        node::{NodeHandle, NodeRead, NodeWrite},
+        node::{NodeHandle, NodeRead},
     },
     input::InputRead,
     leaderboard::LbEntry,
@@ -25,7 +25,7 @@ use crate::{
 pub(super) mod action;
 pub(super) mod data;
 
-#[spacetimedb::table(accessor= tab_connection,
+#[spacetimedb::table(accessor= tab_connection, vis_private,
     index(accessor=connection_exists,hash(columns=[origin_variant,target_variant,origin_id,target_id])),
     index(accessor=targets_of,hash(columns=[origin_variant,origin_id])),
     index(accessor=origins_of,hash(columns=[target_variant,target_id]))
@@ -277,10 +277,11 @@ fn connection_create(
         match connection.kind {
             ConnectionKind::Wait => (),
             ConnectionKind::Data => {
-                ctx.db
-                    .tab_connection_data()
-                    .try_insert(ConnectionData::new(connection.id, connection.parent_id))
-                    .map_err(|e| ConnectionError::InternalError(e.to_string()))?;
+                ctx.connection_data_insert(ConnectionData::new(
+                    connection.id,
+                    connection.parent_id,
+                ))
+                .map_err(|e| ConnectionError::InternalError(e.to_string()))?;
             }
             ConnectionKind::Action => {
                 todo!()
@@ -492,6 +493,11 @@ pub(crate) trait ConnectionRead {
         connection: TabConnection,
         data: Vec<LbEntry>,
     ) -> Vec<LbEntry>;
+
+    /// The connections inside of a competition.
+    fn connections_in_competition(&self, competition_id: u32) -> Vec<TabConnection>;
+    /// The connections which have the node as their target.
+    fn connection_origins_of(&self, node: NodeHandle) -> Vec<TabConnection>;
 }
 impl<Db: spacetimedb::CtxDbRead> ConnectionRead for Db {
     fn connection_resolve_leaderboard(
@@ -505,21 +511,99 @@ impl<Db: spacetimedb::CtxDbRead> ConnectionRead for Db {
             return Vec::new();
         }
 
-        let rules = self
-            .db_read_only()
-            .tab_connection_data()
-            .connection_id()
-            .find(connection.id)
-            .unwrap();
+        let rules = self.connection_data_find(connection.id).unwrap();
 
         //let players = self.node_resolve_input_data(connection.origin());
 
         let players = rules.apply_filter(data, self);
         players
     }
+
+    fn connections_in_competition(&self, competition_id: u32) -> Vec<TabConnection> {
+        self.db_read_only()
+            .tab_connection()
+            .parent_id()
+            .filter(competition_id)
+            .collect()
+    }
+
+    fn connection_origins_of(&self, node: NodeHandle) -> Vec<TabConnection> {
+        self.db_read_only()
+            .tab_connection()
+            .origins_of()
+            .filter(node.split())
+            .collect()
+    }
 }
-/* pub(crate) trait ConnectionWrite: ConnectionRead {}
-impl<Db: spacetimedb::CtxDbWrite<DbView = Local>> ConnectionWrite for Db {} */
+
+pub(crate) trait ConnectionWrite: ConnectionRead {
+    fn connection_insert(&self, connection: TabConnection) -> Result<TabConnection, String>;
+    /// Copies the data of a connection over to its instantiated one.
+    fn connection_data_instantiate(
+        &self,
+        old_connection: &TabConnection,
+        new_connection: &TabConnection,
+    ) -> Result<(), String>;
+    fn connection_delete(&self, connection_id: u32) -> Result<(), String>;
+    /// Deletes all connections involving the node.
+    fn node_connections_delete(&self, node: NodeHandle);
+}
+impl<Db: spacetimedb::CtxDbWrite> ConnectionWrite for Db {
+    fn connection_insert(&self, connection: TabConnection) -> Result<TabConnection, String> {
+        Ok(self.db().tab_connection().try_insert(connection)?)
+    }
+
+    fn connection_data_instantiate(
+        &self,
+        old_connection: &TabConnection,
+        new_connection: &TabConnection,
+    ) -> Result<(), String> {
+        let Some(old_connection_data) = self.connection_data_find(old_connection.id) else {
+            return Err("Connection data could not be found.".into());
+        };
+        self.connection_data_insert(
+            old_connection_data.instantiate(new_connection.id, new_connection.parent_id),
+        )
+    }
+
+    fn connection_delete(&self, connection_id: u32) -> Result<(), String> {
+        let Some(connection) = self.db().tab_connection().id().find(connection_id) else {
+            return Err("Connection not found".into());
+        };
+
+        if connection.is_action() {
+            self.connection_action_delete(connection.id);
+        }
+        if connection.is_data() {
+            self.connection_data_delete(connection.id);
+        }
+
+        self.db().tab_connection().id().delete(connection.id);
+
+        Ok(())
+    }
+
+    fn node_connections_delete(&self, node: NodeHandle) {
+        let connections = self
+            .db()
+            .tab_connection()
+            .origins_of()
+            .filter(node.split())
+            .chain(self.db().tab_connection().targets_of().filter(node.split()));
+        for connection in connections {
+            if connection.is_action() {
+                self.connection_action_delete(connection.id);
+                continue;
+            }
+            if connection.is_data() {
+                self.connection_data_delete(connection.id);
+                continue;
+            }
+        }
+        self.db().tab_connection().origins_of().delete(node.split());
+        self.db().tab_connection().targets_of().delete(node.split());
+    }
+}
 
 // Connection Rules
 // Schedule:

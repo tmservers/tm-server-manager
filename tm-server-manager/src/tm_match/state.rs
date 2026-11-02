@@ -1,10 +1,10 @@
-use spacetimedb::{AnonymousViewContext, table, view};
+use spacetimedb::{AnonymousViewContext, Table, table, view};
 use tm_server_types::config::TmMode;
 
 use crate::tm_match::MatchStatus;
 
 #[derive(Debug, Copy, Clone)]
-#[table(accessor=tab_match_state)]
+#[table(accessor=tab_match_state, vis_private)]
 pub struct MatchState {
     #[primary_key]
     pub(crate) match_id: u32,
@@ -123,4 +123,31 @@ pub fn match_state(ctx: &AnonymousViewContext /* match_id:u32 */) -> Option<Matc
     //TODO map the internal map id to string.
     ctx.db.tab_match_state().match_id().find(match_id)
     //.map(|a| a)
+}
+
+pub(crate) trait MatchStateRead {
+    fn match_state_find(&self, match_id: u32) -> Option<MatchState>;
+}
+impl<Db: spacetimedb::CtxDbRead> MatchStateRead for Db {
+    fn match_state_find(&self, match_id: u32) -> Option<MatchState> {
+        self.db_read_only()
+            .tab_match_state()
+            .match_id()
+            .find(match_id)
+    }
+}
+
+pub(crate) trait MatchStateWrite: MatchStateRead {
+    fn match_state_insert(&self, state: MatchState) -> Result<(), String>;
+    fn match_state_update(&self, state: MatchState);
+}
+impl<Db: spacetimedb::CtxDbWrite> MatchStateWrite for Db {
+    fn match_state_insert(&self, state: MatchState) -> Result<(), String> {
+        self.db().tab_match_state().try_insert(state)?;
+        Ok(())
+    }
+
+    fn match_state_update(&self, state: MatchState) {
+        self.db().tab_match_state().match_id().update(state);
+    }
 }

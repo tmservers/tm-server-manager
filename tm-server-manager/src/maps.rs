@@ -1,6 +1,6 @@
-use spacetimedb::table;
+use spacetimedb::{Table, table};
 
-#[table(accessor=tab_tm_map)]
+#[table(accessor=tab_tm_map, vis_private)]
 pub struct TabTmMap {
     name: String,
     #[unique]
@@ -38,5 +38,23 @@ impl TabTmMap {
             //TODO
             internal: false,
         }
+    }
+}
+
+pub(crate) trait TmMapRead {
+    fn tm_map_find_uid(&self, uid: &String) -> Option<TabTmMap>;
+}
+impl<Db: spacetimedb::CtxDbRead> TmMapRead for Db {
+    fn tm_map_find_uid(&self, uid: &String) -> Option<TabTmMap> {
+        self.db_read_only().tab_tm_map().uid().find(uid)
+    }
+}
+
+pub(crate) trait TmMapWrite: TmMapRead {
+    fn tm_map_insert(&self, map: TabTmMap) -> Result<TabTmMap, String>;
+}
+impl<Db: spacetimedb::CtxDbWrite> TmMapWrite for Db {
+    fn tm_map_insert(&self, map: TabTmMap) -> Result<TabTmMap, String> {
+        Ok(self.db().tab_tm_map().try_insert(map)?)
     }
 }

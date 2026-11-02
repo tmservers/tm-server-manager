@@ -3,7 +3,7 @@ use spacetimedb::{ReducerContext, ScheduleAt, Table, TimeDuration, Timestamp, re
 use crate::tm_match::{MatchWrite, tab_match};
 
 // Responsible of redistributing the match if the old server does not come back.
-#[table(accessor= tab_match_auto_recovery, scheduled(on_match_auto_recovery))]
+#[table(accessor= tab_match_auto_recovery, vis_private, scheduled(on_match_auto_recovery))]
 pub struct TabMatchAutoRecovery {
     #[auto_inc]
     #[primary_key]

@@ -11,7 +11,7 @@ use crate::{
     tm_match::MatchWrite,
 };
 
-#[table(accessor=tab_connection_action)]
+#[table(accessor=tab_connection_action, vis_private)]
 pub struct TabConnectionAction {
     #[index(hash)]
     competition_id: u32,
@@ -191,5 +191,17 @@ pub(super) fn try_exec_action(connection: u32, target: NodeHandle, ctx: &Reducer
         }
         NodeHandle::InputV1(_) => unreachable!(),
         NodeHandle::OutputV1(_) => unreachable!(),
+    }
+}
+
+pub(crate) trait ConnectionActionWrite {
+    fn connection_action_delete(&self, connection_id: u32);
+}
+impl<Db: spacetimedb::CtxDbWrite> ConnectionActionWrite for Db {
+    fn connection_action_delete(&self, connection_id: u32) {
+        self.db()
+            .tab_connection_action()
+            .connection_id()
+            .delete(connection_id);
     }
 }

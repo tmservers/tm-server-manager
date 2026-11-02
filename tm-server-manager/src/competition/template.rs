@@ -6,7 +6,7 @@ use crate::{
     authorization::Authorization,
     competition::{
         CompetitionPermissionsV1,
-        connection::{data::tab_connection_data, tab_connection},
+        connection::{ConnectionRead, ConnectionWrite},
         node::{CompetitionNodePosition, NodeHandle, NodePositionRead, NodeWrite, Vec2},
         tab_competition,
     },
@@ -63,11 +63,7 @@ pub(super) fn competition_template_instantiate(
         .authorize()?;
 
     // Collect all node types which are inside the template.
-    let connections = ctx
-        .db
-        .tab_connection()
-        .parent_id()
-        .filter(competition_template.id);
+    let connections = ctx.connections_in_competition(competition_template.id);
 
     let matches = ctx
         .matches_in_competition(competition_template.id)
@@ -321,20 +317,10 @@ pub(super) fn competition_template_instantiate(
         let mut new_connection = old_connection.instantiate(new_comp.id);
         new_connection.update_origin(new_origin);
         new_connection.update_target(new_target);
-        let new_connection = ctx.db.tab_connection().try_insert(new_connection)?;
+        let new_connection = ctx.connection_insert(new_connection)?;
 
         if old_connection.is_data() {
-            let old_connection_data = ctx
-                .db
-                .tab_connection_data()
-                .connection_id()
-                .find(old_connection.id)
-                .unwrap();
-            let new_connection_data =
-                old_connection_data.instantiate(new_connection.id, new_comp.id);
-            ctx.db
-                .tab_connection_data()
-                .try_insert(new_connection_data)?;
+            ctx.connection_data_instantiate(&old_connection, &new_connection)?;
         }
         //TODO also instantiate action connections
     }

@@ -8,7 +8,7 @@ use crate::{
     user::UserRead,
 };
 
-#[table(accessor= tab_competition_role)]
+#[table(accessor= tab_competition_role, vis_private)]
 pub struct CompetitionRole {
     name: String,
 
@@ -28,7 +28,7 @@ impl CompetitionRole {
     }
 }
 
-#[table(accessor= tab_competition_role_member,index(accessor= user_roles , hash(columns= [role_id,user_id])))]
+#[table(accessor= tab_competition_role_member, vis_private,index(accessor= user_roles , hash(columns= [role_id,user_id])))]
 pub struct CompetitionRoleMember {
     #[index(hash)]
     role_id: u32,
@@ -43,7 +43,7 @@ impl CompetitionRoleMember {
     }
 }
 
-#[table(accessor= tab_competition_member,index(accessor= user_member , hash(columns= [competition_id,user_id])))]
+#[table(accessor= tab_competition_member, vis_private,index(accessor= user_member , hash(columns= [competition_id,user_id])))]
 pub struct CompetitionMember {
     permissions: u64,
 
@@ -155,6 +155,30 @@ impl<Db: CtxDbRead> CompetitionPermissionRead for Db {
         } else {
             Err("You can only grant or revoke permissions you have yourself.".into())
         }
+    }
+}
+
+pub(crate) trait CompetitionMemberRead {
+    /// The direct members of the competition, the ones of the competitions above are not included.
+    fn competition_members(&self, competition_id: u32) -> Vec<CompetitionMember>;
+}
+impl<Db: CtxDbRead> CompetitionMemberRead for Db {
+    fn competition_members(&self, competition_id: u32) -> Vec<CompetitionMember> {
+        self.db_read_only()
+            .tab_competition_member()
+            .competition_id()
+            .filter(competition_id)
+            .collect()
+    }
+}
+
+pub(crate) trait CompetitionMemberWrite: CompetitionMemberRead {
+    fn competition_member_insert(&self, member: CompetitionMember) -> Result<(), String>;
+}
+impl<Db: spacetimedb::CtxDbWrite> CompetitionMemberWrite for Db {
+    fn competition_member_insert(&self, member: CompetitionMember) -> Result<(), String> {
+        self.db().tab_competition_member().try_insert(member)?;
+        Ok(())
     }
 }
 

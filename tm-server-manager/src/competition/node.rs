@@ -7,11 +7,8 @@ use crate::{
     authorization::Authorization,
     competition::{
         CompetitionPermissionsV1, CompetitionRead, CompetitionWrite,
-        connection::{
-            ConnectionRead, action::tab_connection_action, data::tab_connection_data,
-            tab_connection, tab_connection__view,
-        },
-        roles::tab_competition_member__view,
+        connection::{ConnectionRead, ConnectionWrite},
+        roles::CompetitionMemberRead,
         tab_competition__view,
     },
     input::{InputRead, InputWrite},
@@ -192,24 +189,15 @@ impl<Db: spacetimedb::CtxDbRead> NodeRead for Db {
 
         let tree = self.competition_ancestors(parent);
         for comp in tree {
-            map.extend(
-                self.db_read_only()
-                    .tab_competition_member()
-                    .competition_id()
-                    .filter(comp)
-                    .filter_map(|m| {
-                        if m.get_permissions()
-                            .has(CompetitionPermissionsV1::TRACKMANIA_SPECTATE_MATCHES)
-                        {
-                            let account_id = self.user_account_from_id(m.user());
-                            return Some((
-                                account_id,
-                                PermittedPlayer::new(account_id, false, true),
-                            ));
-                        }
-                        None
-                    }),
-            )
+            map.extend(self.competition_members(comp).into_iter().filter_map(|m| {
+                if m.get_permissions()
+                    .has(CompetitionPermissionsV1::TRACKMANIA_SPECTATE_MATCHES)
+                {
+                    let account_id = self.user_account_from_id(m.user());
+                    return Some((account_id, PermittedPlayer::new(account_id, false, true)));
+                }
+                None
+            }))
         }
         /* let depending_connections = self
             .db_read_only()
@@ -359,10 +347,8 @@ fn node_resolve_input_data_inner(
     let mut player_entries = Vec::new();
 
     let depending_connections = ctx
-        .db_read_only()
-        .tab_connection()
-        .origins_of()
-        .filter(node.split())
+        .connection_origins_of(node)
+        .into_iter()
         .filter(|c| c.is_data());
 
     for depending_connection in depending_connections {
@@ -380,7 +366,6 @@ fn node_resolve_input_data_inner(
 pub(crate) trait NodeWrite: NodeRead {
     fn node_create(&self, node: NodeHandle, position: Vec2) -> Result<(), String>;
     fn node_delete(&self, node: NodeHandle) -> Result<(), String>;
-    fn connection_delete(&self, connection_id: u32) -> Result<(), String>;
     fn node_name_edit(&self, node: NodeHandle, name: String) -> Result<(), String>;
 }
 impl<Db: spacetimedb::CtxDbWrite> NodeWrite for Db {
@@ -407,53 +392,7 @@ impl<Db: spacetimedb::CtxDbWrite> NodeWrite for Db {
         self.node_position_delete(node);
 
         // Delete all associated connection tables involving the node.
-        let connections = self
-            .db()
-            .tab_connection()
-            .origins_of()
-            .filter(node.split())
-            .chain(self.db().tab_connection().targets_of().filter(node.split()));
-        for connection in connections {
-            if connection.is_action() {
-                self.db()
-                    .tab_connection_action()
-                    .connection_id()
-                    .delete(connection.id);
-                continue;
-            }
-            if connection.is_data() {
-                self.db()
-                    .tab_connection_data()
-                    .connection_id()
-                    .delete(connection.id);
-                continue;
-            }
-        }
-        self.db().tab_connection().origins_of().delete(node.split());
-        self.db().tab_connection().targets_of().delete(node.split());
-
-        Ok(())
-    }
-
-    fn connection_delete(&self, connection_id: u32) -> Result<(), String> {
-        let Some(connection) = self.db().tab_connection().id().find(connection_id) else {
-            return Err("Connection not found".into());
-        };
-
-        if connection.is_action() {
-            self.db()
-                .tab_connection_action()
-                .connection_id()
-                .delete(connection.id);
-        }
-        if connection.is_data() {
-            self.db()
-                .tab_connection_data()
-                .connection_id()
-                .delete(connection.id);
-        }
-
-        self.db().tab_connection().id().delete(connection.id);
+        self.node_connections_delete(node);
 
         Ok(())
     }

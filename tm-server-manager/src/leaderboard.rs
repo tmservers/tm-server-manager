@@ -18,7 +18,7 @@ mod filter;
 mod merge;
 mod remap;
 
-#[table(accessor= tab_leaderboard)]
+#[table(accessor= tab_leaderboard, vis_private)]
 struct LeaderboardV1 {
     name: String,
     settings: Vec<LbSettings>,

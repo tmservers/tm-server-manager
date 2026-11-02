@@ -10,7 +10,7 @@ use crate::{
     raw_server::{tab_raw_server, tab_raw_server__view},
 };
 
-#[table(accessor=tab_raw_server_method)]
+#[table(accessor=tab_raw_server_method, vis_private)]
 struct RawServerMethod {
     call_time: Timestamp,
     response_time: Timestamp,
@@ -27,7 +27,7 @@ struct RawServerMethod {
     resposne: MethodResponse,
 }
 
-#[table(accessor=event_raw_server_method,public,event)]
+#[table(accessor=event_raw_server_method, vis_private,public,event)]
 struct EventRawServerMethod {
     #[primary_key]
     id: u32,

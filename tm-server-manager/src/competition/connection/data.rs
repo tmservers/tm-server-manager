@@ -1,5 +1,5 @@
 use spacetimedb::{
-    AnonymousViewContext, ProcedureContext, Query, ReducerContext, SpacetimeType, procedure,
+    AnonymousViewContext, ProcedureContext, Query, ReducerContext, SpacetimeType, Table, procedure,
     reducer, table, view,
 };
 
@@ -14,7 +14,7 @@ use crate::{
 };
 
 #[derive(Debug)]
-#[table(accessor=tab_connection_data)]
+#[table(accessor=tab_connection_data, vis_private)]
 pub struct ConnectionData {
     #[index(hash)]
     competition_id: u32,
@@ -204,4 +204,34 @@ fn competition_connections_data(
     ctx.from
         .tab_connection_data()
         .filter(|r| r.competition_id.eq(competition_id))
+}
+
+pub(crate) trait ConnectionDataRead {
+    fn connection_data_find(&self, connection_id: u32) -> Option<ConnectionData>;
+}
+impl<Db: spacetimedb::CtxDbRead> ConnectionDataRead for Db {
+    fn connection_data_find(&self, connection_id: u32) -> Option<ConnectionData> {
+        self.db_read_only()
+            .tab_connection_data()
+            .connection_id()
+            .find(connection_id)
+    }
+}
+
+pub(crate) trait ConnectionDataWrite: ConnectionDataRead {
+    fn connection_data_insert(&self, data: ConnectionData) -> Result<(), String>;
+    fn connection_data_delete(&self, connection_id: u32);
+}
+impl<Db: spacetimedb::CtxDbWrite> ConnectionDataWrite for Db {
+    fn connection_data_insert(&self, data: ConnectionData) -> Result<(), String> {
+        self.db().tab_connection_data().try_insert(data)?;
+        Ok(())
+    }
+
+    fn connection_data_delete(&self, connection_id: u32) {
+        self.db()
+            .tab_connection_data()
+            .connection_id()
+            .delete(connection_id);
+    }
 }

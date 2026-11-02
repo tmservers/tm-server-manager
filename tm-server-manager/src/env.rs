@@ -1,6 +1,6 @@
 use spacetimedb::{ReducerContext, Table, reducer, table};
 
-#[table(accessor=env,private)]
+#[table(accessor=env, vis_private,private)]
 pub(crate) struct Env {
     #[primary_key]
     pub(crate) key: String,

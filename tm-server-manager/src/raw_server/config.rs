@@ -62,7 +62,7 @@ impl RawServerConfigV2 {
     }
 }
 
-#[table(accessor=event_raw_server_state,event,public)]
+#[table(accessor=event_raw_server_state, vis_private,event,public)]
 struct EventRawServerState {
     #[primary_key]
     server_id: u32,
