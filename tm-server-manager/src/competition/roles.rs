@@ -1,4 +1,6 @@
-use spacetimedb::{CtxDbRead, ReducerContext, SpacetimeType, Table, Uuid, ViewContext, reducer, table, view};
+use spacetimedb::{
+    CtxDbRead, ReducerContext, SpacetimeType, Table, Uuid, ViewContext, reducer, table, view,
+};
 
 use crate::{
     authorization::Authorization,
@@ -77,17 +79,33 @@ impl CompetitionMember {
 
 pub(crate) trait CompetitionPermissionRead {
     /// The permissions of a user in a competition, given directly or through roles, including the competitions above.
-    fn competition_permissions(&self, competition_id: u32, user_id: u32) -> CompetitionPermissionsV1;
+    fn competition_permissions(
+        &self,
+        competition_id: u32,
+        user_id: u32,
+    ) -> CompetitionPermissionsV1;
     /// Whether the user is a member of the competition or of one above it, with or without permissions.
     fn competition_is_member(&self, competition_id: u32, user_id: u32) -> bool;
+
+    fn check_grant(
+        &self,
+        competition_id: u32,
+        user_id: u32,
+        old: u64,
+        new: u64,
+    ) -> Result<(), String>;
 }
 
 impl<Db: CtxDbRead> CompetitionPermissionRead for Db {
-    fn competition_permissions(&self, competition_id: u32, user_id: u32) -> CompetitionPermissionsV1 {
+    fn competition_permissions(
+        &self,
+        competition_id: u32,
+        user_id: u32,
+    ) -> CompetitionPermissionsV1 {
         let db = self.db_read_only();
-        self.competition_ancestors(competition_id)
-            .into_iter()
-            .fold(CompetitionPermissionsV1::NONE, |acc, id| {
+        self.competition_ancestors(competition_id).into_iter().fold(
+            CompetitionPermissionsV1::NONE,
+            |acc, id| {
                 let direct = db
                     .tab_competition_member()
                     .user_member()
@@ -104,43 +122,39 @@ impl<Db: CtxDbRead> CompetitionPermissionRead for Db {
                             .is_some()
                     })
                     .fold(direct, |acc, role| acc | role.get_permissions1())
-            })
+            },
+        )
     }
 
     fn competition_is_member(&self, competition_id: u32, user_id: u32) -> bool {
-        self.competition_ancestors(competition_id).into_iter().any(|id| {
-            self.db_read_only()
-                .tab_competition_member()
-                .user_member()
-                .filter((id, user_id))
-                .next()
-                .is_some()
-        })
+        self.competition_ancestors(competition_id)
+            .into_iter()
+            .any(|id| {
+                self.db_read_only()
+                    .tab_competition_member()
+                    .user_member()
+                    .filter((id, user_id))
+                    .next()
+                    .is_some()
+            })
     }
-}
 
-fn user_of_account(ctx: &ReducerContext, account_id: Uuid) -> Result<u32, String> {
-    if !ctx.has_user(account_id) {
-        return Err("No user with this account has logged in yet.".into());
-    }
-    Ok(ctx.user_id_from_account(account_id))
-}
-
-/// Only the bits a user holds can be granted or revoked by them, owners can change everything.
-fn check_grant(
-    ctx: &ReducerContext,
-    competition_id: u32,
-    user_id: u32,
-    old: u64,
-    new: u64,
-) -> Result<(), String> {
-    if ctx
-        .competition_permissions(competition_id, user_id)
-        .has(CompetitionPermissionsV1(old ^ new))
-    {
-        Ok(())
-    } else {
-        Err("You can only grant or revoke permissions you have yourself.".into())
+    /// Only the bits a user holds can be granted or revoked by them, owners can change everything.
+    fn check_grant(
+        &self,
+        competition_id: u32,
+        user_id: u32,
+        old: u64,
+        new: u64,
+    ) -> Result<(), String> {
+        if self
+            .competition_permissions(competition_id, user_id)
+            .has(CompetitionPermissionsV1(old ^ new))
+        {
+            Ok(())
+        } else {
+            Err("You can only grant or revoke permissions you have yourself.".into())
+        }
     }
 }
 
@@ -150,7 +164,7 @@ fn member_add(ctx: &ReducerContext, competition_id: u32, account_id: Uuid) -> Re
         .permission(CompetitionPermissionsV1::PERMISSION_MEMBER_ADD)
         .authorize()?;
 
-    let user_id = user_of_account(ctx, account_id)?;
+    let user_id = ctx.user_id_from_account(account_id);
     if ctx
         .db
         .tab_competition_member()
@@ -248,7 +262,7 @@ fn role_member_assign(ctx: &ReducerContext, role_id: u32, account_id: Uuid) -> R
         .permission(CompetitionPermissionsV1::PERMISSION_ROLE_MEMBER_ASSIGN)
         .authorize()?;
 
-    let user_id = user_of_account(ctx, account_id)?;
+    let user_id = ctx.user_id_from_account(account_id);
     if !ctx.competition_is_member(role.competition_id, user_id) {
         return Err("Only members of the competition can be given a role.".into());
     }
@@ -280,7 +294,7 @@ fn role_member_remove(ctx: &ReducerContext, role_id: u32, account_id: Uuid) -> R
         .permission(CompetitionPermissionsV1::PERMISSION_ROLE_MEMBER_REMOVE)
         .authorize()?;
 
-    let user_id = user_of_account(ctx, account_id)?;
+    let user_id = ctx.user_id_from_account(account_id);
     ctx.db
         .tab_competition_role_member()
         .user_roles()
@@ -303,7 +317,12 @@ fn role_assign_permission(
         .auth_builder(role.competition_id)
         .permission(CompetitionPermissionsV1::PERMISSION_ROLE_EDIT_PERMISSION)
         .authorize()?;
-    check_grant(ctx, role.competition_id, user_id, role.permissions, new_permissions)?;
+    ctx.check_grant(
+        role.competition_id,
+        user_id,
+        role.permissions,
+        new_permissions,
+    )?;
 
     role.permissions = new_permissions;
 
@@ -326,7 +345,12 @@ fn member_assign_permission(
         .auth_builder(member.competition_id)
         .permission(CompetitionPermissionsV1::PERMISSION_MEMBER_EDIT_PERMISSION)
         .authorize()?;
-    check_grant(ctx, member.competition_id, user_id, member.permissions, new_permissions)?;
+    ctx.check_grant(
+        member.competition_id,
+        user_id,
+        member.permissions,
+        new_permissions,
+    )?;
 
     member.permissions = new_permissions;
 
@@ -374,7 +398,12 @@ fn competition_role_members(ctx: &ViewContext, competition_id: u32) -> Vec<Compe
         .tab_competition_role()
         .competition_id()
         .filter(competition_id)
-        .flat_map(|role| ctx.db.tab_competition_role_member().role_id().filter(role.id))
+        .flat_map(|role| {
+            ctx.db
+                .tab_competition_role_member()
+                .role_id()
+                .filter(role.id)
+        })
         .collect()
 }
 
