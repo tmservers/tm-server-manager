@@ -357,25 +357,6 @@ pub fn competition_connections(
         .collect()
 }
 
-/* #[view(accessor=my_connections,public)]
-fn my_connections(
-    ctx: &ViewContext, /* competition_id: u32 */
-) -> impl Query<CompetitionConnection> {
-    /* let Ok(user) = ctx.user_id() else {
-        log::warn!(
-            "Non user account has tried to call protected view: {}",
-            ctx.sender()
-        );
-        return Vec::new();
-    }; */
-
-    let competition_id = 1u32;
-
-    //TODO access control for only permitted users. e.g. walk competition tree for permission.
-
-    ctx.from.tab_connection()
-} */
-
 pub(crate) fn internal_graph_resolution_node_finished(
     ctx: &ReducerContext,
     trigger: NodeHandle,
@@ -495,9 +476,12 @@ pub(crate) trait ConnectionRead {
     ) -> Vec<LbEntry>;
 
     /// The connections inside of a competition.
-    fn connections_in_competition(&self, competition_id: u32) -> Vec<TabConnection>;
+    fn connections_in_competition(
+        &self,
+        competition_id: u32,
+    ) -> impl Iterator<Item = TabConnection>;
     /// The connections which have the node as their target.
-    fn connection_origins_of(&self, node: NodeHandle) -> Vec<TabConnection>;
+    fn connection_origins_of(&self, node: NodeHandle) -> impl Iterator<Item = TabConnection>;
 }
 impl<Db: spacetimedb::CtxDbRead> ConnectionRead for Db {
     fn connection_resolve_leaderboard(
@@ -515,24 +499,24 @@ impl<Db: spacetimedb::CtxDbRead> ConnectionRead for Db {
 
         //let players = self.node_resolve_input_data(connection.origin());
 
-        let players = rules.apply_filter(data, self);
-        players
+        rules.apply_filter(data, self)
     }
 
-    fn connections_in_competition(&self, competition_id: u32) -> Vec<TabConnection> {
+    fn connections_in_competition(
+        &self,
+        competition_id: u32,
+    ) -> impl Iterator<Item = TabConnection> {
         self.db_read_only()
             .tab_connection()
             .parent_id()
             .filter(competition_id)
-            .collect()
     }
 
-    fn connection_origins_of(&self, node: NodeHandle) -> Vec<TabConnection> {
+    fn connection_origins_of(&self, node: NodeHandle) -> impl Iterator<Item = TabConnection> {
         self.db_read_only()
             .tab_connection()
             .origins_of()
             .filter(node.split())
-            .collect()
     }
 }
 
