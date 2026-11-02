@@ -3,10 +3,11 @@ use spacetimedb::{ReducerContext, Table, ViewContext, reducer, table, view};
 use crate::{
     authorization::Authorization,
     competition::{CompetitionPermissionsV1, CompetitionRead},
-    raw_server::{RawServerV1, TabRawServerRead, occupation::TabRawServerOccupationRead},
+    raw_server::{
+        CompetitionRawServer, RawServerV1, TabRawServerRead, occupation::TabRawServerOccupationRead,
+    },
 };
 
-//TODO make private again
 #[table(accessor=tab_competition_raw_server)]
 pub struct CompetitionServer {
     #[index(hash)]
@@ -100,6 +101,35 @@ fn competition_available_server_pool(ctx: &ViewContext, competition_id: u32) -> 
     };
 
     ctx.server_pool_available(competition_id)
+}
+
+/// The servers lent directly to a competition, the ones of the competitions above are not included.
+#[view(accessor = competition_raw_servers, public)]
+fn competition_raw_servers(ctx: &ViewContext, competition_id: u32) -> Vec<CompetitionRawServer> {
+    if ctx.auth_builder(competition_id).authorize().is_err() {
+        return Vec::new();
+    }
+
+    ctx.db
+        .tab_competition_raw_server()
+        .competition_id()
+        .filter(competition_id)
+        .filter_map(|s| ctx.raw_server_find(s.server_id).ok())
+        .map(|server| server.seen_from(ctx))
+        .collect()
+}
+
+/// The competitions the servers of the user are lent to.
+#[view(accessor = my_raw_server_lendings, public)]
+fn my_raw_server_lendings(ctx: &ViewContext) -> Vec<CompetitionServer> {
+    let Ok(user_id) = ctx.user_id() else {
+        return Vec::new();
+    };
+
+    ctx.raw_servers_of_user(user_id)
+        .into_iter()
+        .flat_map(|server| ctx.db.tab_competition_raw_server().server_id().filter(server.id))
+        .collect()
 }
 
 /* #[view(accessor= competition_occupied_server_pool, public)]

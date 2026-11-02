@@ -4,7 +4,8 @@ use serde::Deserialize;
 use spacetimedb::ProcedureContext;
 use spacetimedb::http::Request;
 use spacetimedb::{
-    CtxDbRead, CtxDbWrite, Identity, ReducerContext, Table, Timestamp, Uuid, reducer, table,
+    CtxDbRead, CtxDbWrite, Identity, ReducerContext, SpacetimeType, Table, Timestamp, Uuid,
+    ViewContext, reducer, table, view,
 };
 
 use crate::authorization::Authorization;
@@ -12,7 +13,8 @@ use crate::competition::node::{NodeHandle, NodeRead};
 use crate::competition::server_pool::TabCompetitionServerPoolRead;
 use crate::raw_server::occupation::{TabRawServerOccupationRead, TabRawServerOccupationWrite};
 use crate::raw_server::player::RawServerPlayerWrite;
-use crate::tm_match::MatchWrite;
+use crate::tm_match::{MatchRead, MatchWrite};
+use crate::tm_server::ServerRead;
 use crate::user::UserRead;
 
 pub mod config;
@@ -74,6 +76,51 @@ impl RawServerV1 {
     pub fn is_online(&self) -> bool {
         self.online
     }
+
+    pub(crate) fn seen_from<Db: CtxDbRead>(self, ctx: &Db) -> CompetitionRawServer {
+        CompetitionRawServer {
+            occupied_by: ctx.raw_server_occupation(self.id),
+            server_id: self.id,
+            server_login: self.server_login,
+            online: self.online,
+        }
+    }
+}
+
+/// A raw server as competitions see it, without the account details of its owner.
+#[derive(Debug, SpacetimeType)]
+pub struct CompetitionRawServer {
+    pub server_id: u32,
+    pub server_login: String,
+    pub online: bool,
+    /// The node which currently runs on the server.
+    pub occupied_by: Option<NodeHandle>,
+}
+
+#[view(accessor = my_raw_servers, public)]
+fn my_raw_servers(ctx: &ViewContext) -> Vec<RawServerV1> {
+    let Ok(user_id) = ctx.user_id() else {
+        return Vec::new();
+    };
+    ctx.raw_servers_of_user(user_id)
+}
+
+/// The servers occupied by the nodes of a competition.
+#[view(accessor = competition_occupied_servers, public)]
+fn competition_occupied_servers(ctx: &ViewContext, competition_id: u32) -> Vec<CompetitionRawServer> {
+    if ctx.auth_builder(competition_id).authorize().is_err() {
+        return Vec::new();
+    }
+
+    // Matches and servers are the only nodes which occupy a raw server.
+    let matches = ctx.matches_in_competition(competition_id).map(|m| NodeHandle::MatchV1(m.id));
+    let servers = ctx.servers_with_competition(competition_id).map(|s| NodeHandle::ServerV1(s.id));
+    matches
+        .chain(servers)
+        .filter_map(|node| ctx.occupation_with_occupier(node))
+        .filter_map(|server_id| ctx.raw_server_find(server_id).ok())
+        .map(|server| server.seen_from(ctx))
+        .collect()
 }
 
 #[table(accessor= tab_raw_server_identity)]
@@ -250,6 +297,7 @@ pub(crate) trait TabRawServerRead {
     fn get_raw_server_id(&self, identity: Identity) -> Result<u32, String>;
 
     fn raw_server_find(&self, server_id: u32) -> Result<RawServerV1, String>;
+    fn raw_servers_of_user(&self, user_id: u32) -> Vec<RawServerV1>;
 }
 pub(crate) trait TabRawServerWrite: TabRawServerRead {
     fn raw_server_pool_assign(&self, node_handle: NodeHandle) -> Result<u32, String>;
@@ -283,6 +331,10 @@ impl<Db: CtxDbRead> TabRawServerRead for Db {
             return Err("Could not find server corresponding to that id".into());
         };
         Ok(server)
+    }
+
+    fn raw_servers_of_user(&self, user_id: u32) -> Vec<RawServerV1> {
+        self.db_read_only().tab_raw_server().user_id().filter(user_id).collect()
     }
 }
 
