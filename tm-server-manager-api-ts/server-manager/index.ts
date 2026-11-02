@@ -131,7 +131,9 @@ import CompetitionInputsRow from "./competition_inputs_table";
 import CompetitionLeaderboardsRow from "./competition_leaderboards_table";
 import CompetitionMatchesRow from "./competition_matches_table";
 import CompetitionNodePositionsRow from "./competition_node_positions_table";
+import CompetitionOccupiedServersRow from "./competition_occupied_servers_table";
 import CompetitionOutputRow from "./competition_output_table";
+import CompetitionRawServersRow from "./competition_raw_servers_table";
 import CompetitionRegistrationsRow from "./competition_registrations_table";
 import CompetitionServersRow from "./competition_servers_table";
 import CompetitionSharedConfigsRow from "./competition_shared_configs_table";
@@ -139,6 +141,8 @@ import EventRawServerMethodRow from "./event_raw_server_method_table";
 import EventRawServerStateRow from "./event_raw_server_state_table";
 import MatchStateRow from "./match_state_table";
 import MyProjectsRow from "./my_projects_table";
+import MyRawServerLendingsRow from "./my_raw_server_lendings_table";
+import MyRawServersRow from "./my_raw_servers_table";
 import MyUserRow from "./my_user_table";
 import ProjectCompetitionDescendantsRow from "./project_competition_descendants_table";
 import RawServerPermittedPlayersRow from "./raw_server_permitted_players_table";
@@ -434,6 +438,15 @@ const tablesSchema = __schema({
   }, CompetitionNodePositionsRow), {
     competitionId: __t.u32(),
   }),
+  competitionOccupiedServers: __withViewParams(__table({
+    name: 'competition_occupied_servers',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, CompetitionOccupiedServersRow), {
+    competitionId: __t.u32(),
+  }),
   competitionOutput: __withViewParams(__table({
     name: 'competition_output',
     indexes: [
@@ -441,6 +454,15 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, CompetitionOutputRow), {
+    competitionId: __t.u32(),
+  }),
+  competitionRawServers: __withViewParams(__table({
+    name: 'competition_raw_servers',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, CompetitionRawServersRow), {
     competitionId: __t.u32(),
   }),
   competitionRegistrations: __withViewParams(__table({
@@ -484,6 +506,20 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, MyProjectsRow),
+  myRawServerLendings: __table({
+    name: 'my_raw_server_lendings',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyRawServerLendingsRow),
+  myRawServers: __table({
+    name: 'my_raw_servers',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyRawServersRow),
   myUser: __table({
     name: 'my_user',
     indexes: [
@@ -645,8 +681,12 @@ type __SchemaWithTableAccessorAliases = Omit<typeof tablesSchema.schemaType, "ta
     readonly "competition_matches": Omit<typeof tablesSchema.schemaType.tables["competitionMatches"], "accessorName"> & { readonly accessorName: "competition_matches" };
     /** @deprecated Use `competitionNodePositions` instead. This alias will be removed in the next major version. */
     readonly "competition_node_positions": Omit<typeof tablesSchema.schemaType.tables["competitionNodePositions"], "accessorName"> & { readonly accessorName: "competition_node_positions" };
+    /** @deprecated Use `competitionOccupiedServers` instead. This alias will be removed in the next major version. */
+    readonly "competition_occupied_servers": Omit<typeof tablesSchema.schemaType.tables["competitionOccupiedServers"], "accessorName"> & { readonly accessorName: "competition_occupied_servers" };
     /** @deprecated Use `competitionOutput` instead. This alias will be removed in the next major version. */
     readonly "competition_output": Omit<typeof tablesSchema.schemaType.tables["competitionOutput"], "accessorName"> & { readonly accessorName: "competition_output" };
+    /** @deprecated Use `competitionRawServers` instead. This alias will be removed in the next major version. */
+    readonly "competition_raw_servers": Omit<typeof tablesSchema.schemaType.tables["competitionRawServers"], "accessorName"> & { readonly accessorName: "competition_raw_servers" };
     /** @deprecated Use `competitionRegistrations` instead. This alias will be removed in the next major version. */
     readonly "competition_registrations": Omit<typeof tablesSchema.schemaType.tables["competitionRegistrations"], "accessorName"> & { readonly accessorName: "competition_registrations" };
     /** @deprecated Use `competitionServers` instead. This alias will be removed in the next major version. */
@@ -657,6 +697,10 @@ type __SchemaWithTableAccessorAliases = Omit<typeof tablesSchema.schemaType, "ta
     readonly "match_state": Omit<typeof tablesSchema.schemaType.tables["matchState"], "accessorName"> & { readonly accessorName: "match_state" };
     /** @deprecated Use `myProjects` instead. This alias will be removed in the next major version. */
     readonly "my_projects": Omit<typeof tablesSchema.schemaType.tables["myProjects"], "accessorName"> & { readonly accessorName: "my_projects" };
+    /** @deprecated Use `myRawServerLendings` instead. This alias will be removed in the next major version. */
+    readonly "my_raw_server_lendings": Omit<typeof tablesSchema.schemaType.tables["myRawServerLendings"], "accessorName"> & { readonly accessorName: "my_raw_server_lendings" };
+    /** @deprecated Use `myRawServers` instead. This alias will be removed in the next major version. */
+    readonly "my_raw_servers": Omit<typeof tablesSchema.schemaType.tables["myRawServers"], "accessorName"> & { readonly accessorName: "my_raw_servers" };
     /** @deprecated Use `myUser` instead. This alias will be removed in the next major version. */
     readonly "my_user": Omit<typeof tablesSchema.schemaType.tables["myUser"], "accessorName"> & { readonly accessorName: "my_user" };
     /** @deprecated Use `projectCompetitionDescendants` instead. This alias will be removed in the next major version. */
@@ -674,7 +718,7 @@ const REMOTE_MODULE = {
     cliVersion: "2.13.0" as const,
   },
   tables: tablesSchema.schemaType.tables as __SchemaWithTableAccessorAliases["tables"],
-  viewsWithArgs: ["competition", "competition_available_server_pool", "competition_competitions", "competition_connections", "competition_connections_data", "competition_inputs", "competition_leaderboards", "competition_matches", "competition_node_positions", "competition_output", "competition_registrations", "competition_servers", "competition_shared_configs"],
+  viewsWithArgs: ["competition", "competition_available_server_pool", "competition_competitions", "competition_connections", "competition_connections_data", "competition_inputs", "competition_leaderboards", "competition_matches", "competition_node_positions", "competition_occupied_servers", "competition_output", "competition_raw_servers", "competition_registrations", "competition_servers", "competition_shared_configs"],
   reducers: reducersSchema.reducersType.reducers,
   ...proceduresSchema,
 } satisfies __RemoteModule<
@@ -703,12 +747,16 @@ const tableAccessorAliases = {
   "competition_leaderboards": "competitionLeaderboards",
   "competition_matches": "competitionMatches",
   "competition_node_positions": "competitionNodePositions",
+  "competition_occupied_servers": "competitionOccupiedServers",
   "competition_output": "competitionOutput",
+  "competition_raw_servers": "competitionRawServers",
   "competition_registrations": "competitionRegistrations",
   "competition_servers": "competitionServers",
   "competition_shared_configs": "competitionSharedConfigs",
   "match_state": "matchState",
   "my_projects": "myProjects",
+  "my_raw_server_lendings": "myRawServerLendings",
+  "my_raw_servers": "myRawServers",
   "my_user": "myUser",
   "project_competition_descendants": "projectCompetitionDescendants",
   "raw_server_permitted_players": "rawServerPermittedPlayers",
@@ -771,8 +819,12 @@ export type DbView = __DbViewBase & {
   readonly "competition_matches": __DbViewBase["competitionMatches"];
   /** @deprecated Use `competitionNodePositions` instead. This alias will be removed in the next major version. */
   readonly "competition_node_positions": __DbViewBase["competitionNodePositions"];
+  /** @deprecated Use `competitionOccupiedServers` instead. This alias will be removed in the next major version. */
+  readonly "competition_occupied_servers": __DbViewBase["competitionOccupiedServers"];
   /** @deprecated Use `competitionOutput` instead. This alias will be removed in the next major version. */
   readonly "competition_output": __DbViewBase["competitionOutput"];
+  /** @deprecated Use `competitionRawServers` instead. This alias will be removed in the next major version. */
+  readonly "competition_raw_servers": __DbViewBase["competitionRawServers"];
   /** @deprecated Use `competitionRegistrations` instead. This alias will be removed in the next major version. */
   readonly "competition_registrations": __DbViewBase["competitionRegistrations"];
   /** @deprecated Use `competitionServers` instead. This alias will be removed in the next major version. */
@@ -783,6 +835,10 @@ export type DbView = __DbViewBase & {
   readonly "match_state": __DbViewBase["matchState"];
   /** @deprecated Use `myProjects` instead. This alias will be removed in the next major version. */
   readonly "my_projects": __DbViewBase["myProjects"];
+  /** @deprecated Use `myRawServerLendings` instead. This alias will be removed in the next major version. */
+  readonly "my_raw_server_lendings": __DbViewBase["myRawServerLendings"];
+  /** @deprecated Use `myRawServers` instead. This alias will be removed in the next major version. */
+  readonly "my_raw_servers": __DbViewBase["myRawServers"];
   /** @deprecated Use `myUser` instead. This alias will be removed in the next major version. */
   readonly "my_user": __DbViewBase["myUser"];
   /** @deprecated Use `projectCompetitionDescendants` instead. This alias will be removed in the next major version. */
@@ -833,8 +889,12 @@ export type Tables = __TablesBase & {
   readonly "competition_matches": __TablesBase["competitionMatches"];
   /** @deprecated Use `competitionNodePositions` instead. This alias will be removed in the next major version. */
   readonly "competition_node_positions": __TablesBase["competitionNodePositions"];
+  /** @deprecated Use `competitionOccupiedServers` instead. This alias will be removed in the next major version. */
+  readonly "competition_occupied_servers": __TablesBase["competitionOccupiedServers"];
   /** @deprecated Use `competitionOutput` instead. This alias will be removed in the next major version. */
   readonly "competition_output": __TablesBase["competitionOutput"];
+  /** @deprecated Use `competitionRawServers` instead. This alias will be removed in the next major version. */
+  readonly "competition_raw_servers": __TablesBase["competitionRawServers"];
   /** @deprecated Use `competitionRegistrations` instead. This alias will be removed in the next major version. */
   readonly "competition_registrations": __TablesBase["competitionRegistrations"];
   /** @deprecated Use `competitionServers` instead. This alias will be removed in the next major version. */
@@ -845,6 +905,10 @@ export type Tables = __TablesBase & {
   readonly "match_state": __TablesBase["matchState"];
   /** @deprecated Use `myProjects` instead. This alias will be removed in the next major version. */
   readonly "my_projects": __TablesBase["myProjects"];
+  /** @deprecated Use `myRawServerLendings` instead. This alias will be removed in the next major version. */
+  readonly "my_raw_server_lendings": __TablesBase["myRawServerLendings"];
+  /** @deprecated Use `myRawServers` instead. This alias will be removed in the next major version. */
+  readonly "my_raw_servers": __TablesBase["myRawServers"];
   /** @deprecated Use `myUser` instead. This alias will be removed in the next major version. */
   readonly "my_user": __TablesBase["myUser"];
   /** @deprecated Use `projectCompetitionDescendants` instead. This alias will be removed in the next major version. */
