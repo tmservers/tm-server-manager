@@ -123,7 +123,7 @@ fn competition_occupied_servers(ctx: &ViewContext, competition_id: u32) -> Vec<C
         .collect()
 }
 
-#[table(accessor= tab_raw_server_identity)]
+#[table(accessor= tab_raw_server_identity, vis_private)]
 struct RawServerIdentity {
     #[unique]
     identity: Identity,

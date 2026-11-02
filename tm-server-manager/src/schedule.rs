@@ -79,7 +79,7 @@ impl ScheduleStatus {
     }
 }
 
-#[table(accessor= tab_schedule_exec, scheduled(on_schedule_exec))]
+#[table(accessor= tab_schedule_exec, vis_private, scheduled(on_schedule_exec))]
 struct ScheduleExecV1 {
     #[auto_inc]
     #[primary_key]

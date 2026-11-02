@@ -22,9 +22,9 @@ use crate::{
     },
     tm_match::{
         auto_recovery::RecoveryWrite,
-        leaderboard::{tab_match_round_player, tab_match_round_player_ext},
-        replay::tab_match_round_replay,
-        state::{MatchState, tab_match_state},
+        leaderboard::MatchLeaderboardWrite,
+        replay::MatchReplayWrite,
+        state::{MatchState, MatchStateRead, MatchStateWrite},
     },
 };
 
@@ -638,26 +638,14 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
             self.db().tab_match().id().update(tm_match);
 
             //SAFETY: Match is live so have to have a state.
-            let mut state = self
-                .db()
-                .tab_match_state()
-                .match_id()
-                .find(match_id)
-                .unwrap();
+            let mut state = self.match_state_find(match_id).unwrap();
 
             state.set_pause(true);
             state.set_recovery();
 
-            self.db()
-                .tab_match_round_player()
-                .match_round()
-                .delete((match_id, state.get_round()));
-            self.db()
-                .tab_match_round_player_ext()
-                .match_round()
-                .delete((match_id, state.get_round()));
+            self.match_round_delete(match_id, state.get_round());
 
-            self.db().tab_match_state().match_id().update(state);
+            self.match_state_update(state);
 
             let raw_server = self
                 .occupation_with_occupier(NodeHandle::MatchV1(match_id))
@@ -692,16 +680,11 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
             tm_match.status = MatchStatus::Live;
             self.db().tab_match().id().update(tm_match);
 
-            let mut state = self
-                .db()
-                .tab_match_state()
-                .match_id()
-                .find(match_id)
-                .unwrap();
+            let mut state = self.match_state_find(match_id).unwrap();
 
             state.set_live();
 
-            self.db().tab_match_state().match_id().update(state);
+            self.match_state_update(state);
         } else {
             log::error!(
                 "MATCH {} WANTED TO EXIT RECOVERY SEAMLESSLY BUT WAS NOT IN RECOVERY MODE.",
@@ -760,14 +743,9 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
         tm_match.status = MatchStatus::Live;
         self.db().tab_match().id().update(tm_match);
 
-        let mut state = self
-            .db()
-            .tab_match_state()
-            .match_id()
-            .find(match_id)
-            .unwrap();
+        let mut state = self.match_state_find(match_id).unwrap();
         state.set_live();
-        self.db().tab_match_state().match_id().update(state);
+        self.match_state_update(state);
 
         self.emit_raw_server_config(server_id, false)?;
 
@@ -809,9 +787,7 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
         let config = self.raw_server_config(tm_match.config)?;
         self.db().tab_match().id().update(tm_match);
 
-        self.db()
-            .tab_match_state()
-            .try_insert(MatchState::new(match_id, config.get_mode().get_mode()))?;
+        self.match_state_insert(MatchState::new(match_id, config.get_mode().get_mode()))?;
 
         self.destination_claim(NodeHandle::MatchV1(match_id))?;
 
@@ -841,30 +817,15 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
             return Err("Match has to be in recovery in order to restart it.".into());
         }
 
-        let mut state = self
-            .db()
-            .tab_match_state()
-            .match_id()
-            .find(match_id)
-            .unwrap();
+        let mut state = self.match_state_find(match_id).unwrap();
 
         state.restart();
 
-        self.db().tab_match_state().match_id().update(state);
+        self.match_state_update(state);
 
-        self.db()
-            .tab_match_round_player()
-            .match_id()
-            .delete(match_id);
-        self.db()
-            .tab_match_round_player_ext()
-            .match_id()
-            .delete(match_id);
+        self.match_rounds_delete(match_id);
 
-        self.db()
-            .tab_match_round_replay()
-            .match_id()
-            .delete(match_id);
+        self.match_round_replays_delete(match_id);
 
         let occu = self
             .occupation_with_occupier(NodeHandle::MatchV1(match_id))
@@ -881,9 +842,9 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
         };
         tm_match.end_match();
 
-        if let Some(mut state) = self.db().tab_match_state().match_id().find(match_id) {
+        if let Some(mut state) = self.match_state_find(match_id) {
             state.end_match();
-            self.db().tab_match_state().match_id().update(state);
+            self.match_state_update(state);
         }
         self.db().tab_match().id().update(tm_match);
 

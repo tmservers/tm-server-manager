@@ -1,6 +1,6 @@
 use spacetimedb::{CtxDbRead, ProcedureContext, Table, procedure, table};
 
-#[table(accessor= tab_match_round_replay,index(accessor=match_round,hash(columns=[match_id,round])))]
+#[table(accessor= tab_match_round_replay, vis_private,index(accessor=match_round,hash(columns=[match_id,round])))]
 pub struct MatchRoundReplay {
     replay: Vec<u8>,
 
@@ -26,7 +26,7 @@ pub struct MatchRoundReplay {
 // This is necessary in case the MatchState tables increments the rounds value before
 // the post_replay could be processed on the server.
 // With this we verify the correct server timestamp for the replay.
-#[table(accessor= tab_match_round_replay_time)]
+#[table(accessor= tab_match_round_replay_time, vis_private)]
 struct MatchRoundReplayTime {
     #[primary_key]
     match_id: u32,
@@ -56,6 +56,8 @@ pub(crate) trait MatchReplayWrite: MatchReplayRead {
         ending_round_timestamp: u32,
         replay: Vec<u8>,
     ) -> Result<(), String>;
+
+    fn match_round_replays_delete(&self, match_id: u32);
 }
 impl<Db: spacetimedb::CtxDbWrite> MatchReplayWrite for Db {
     fn insert_match_round_replay(
@@ -128,6 +130,13 @@ impl<Db: spacetimedb::CtxDbWrite> MatchReplayWrite for Db {
         }
 
         Ok(())
+    }
+
+    fn match_round_replays_delete(&self, match_id: u32) {
+        self.db()
+            .tab_match_round_replay()
+            .match_id()
+            .delete(match_id);
     }
 }
 

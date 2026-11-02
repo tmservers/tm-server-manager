@@ -8,7 +8,7 @@ use crate::{
     },
 };
 
-#[table(accessor=tab_competition_raw_server)]
+#[table(accessor=tab_competition_raw_server, vis_private)]
 pub struct CompetitionServer {
     #[index(hash)]
     pub competition_id: u32,

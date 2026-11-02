@@ -10,7 +10,7 @@ use crate::{
 
 //TODO make private again
 #[table(
-    accessor= tab_match_chat,
+    accessor= tab_match_chat, vis_private,
     public
 )]
 pub struct MatchChat {
@@ -73,4 +73,14 @@ fn unstable_match_chat_message(
     ctx.send_raw_server_message(server_id, user_id, ctx.timestamp, ingame_message)?;
 
     Ok(())
+}
+
+pub(crate) trait MatchChatWrite {
+    fn match_chat_insert(&self, message: MatchChat) -> Result<(), String>;
+}
+impl<Db: spacetimedb::CtxDbWrite> MatchChatWrite for Db {
+    fn match_chat_insert(&self, message: MatchChat) -> Result<(), String> {
+        self.db().tab_match_chat().try_insert(message)?;
+        Ok(())
+    }
 }

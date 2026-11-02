@@ -7,7 +7,7 @@ use crate::{
     authorization::Authorization,
     competition::{
         node::{NodeHandle, NodeWrite, Vec2},
-        roles::{CompetitionMember, tab_competition_member},
+        roles::{CompetitionMember, CompetitionMemberWrite},
         template::competition_template_instantiate,
     },
 };
@@ -293,9 +293,7 @@ impl<Db: spacetimedb::CtxDbWrite> CompetitionWrite for Db {
             .db()
             .tab_competition()
             .try_insert(CompetitionV1::new(name, 0))?;
-        self.db()
-            .tab_competition_member()
-            .try_insert(CompetitionMember::new_owner(user_id, comp.id))?;
+        self.competition_member_insert(CompetitionMember::new_owner(user_id, comp.id))?;
         Ok(comp.id)
     }
 

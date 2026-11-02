@@ -9,7 +9,7 @@ use crate::{
         CompetitionPermissionsV1, CompetitionRead,
         node::{NodeHandle, NodeWrite, Vec2},
     },
-    registration::player::tab_registeration_player,
+    registration::player::RegistrationPlayerRead,
 };
 
 pub mod player;
@@ -74,12 +74,7 @@ impl Registration {
         }
         match &self.settings {
             RegistrationSettings::Player(registration_settings_player) => {
-                if ctx
-                    .db
-                    .tab_registeration_player()
-                    .registration_id()
-                    .filter(self.id)
-                    .count()
+                if ctx.registration_player_count(self.id)
                     < registration_settings_player.player_limit as usize
                 {
                     Ok(())

@@ -1,10 +1,10 @@
-use spacetimedb::{ReducerContext, SpacetimeType, reducer, table};
+use spacetimedb::{ReducerContext, SpacetimeType, Table, reducer, table};
 
 use crate::{
     authorization::Authorization,
     competition::{CompetitionPermissionsV1, node::NodeHandle},
     leaderboard::LbEntry,
-    tm_match::{state::tab_match_state__view, tab_match},
+    tm_match::{state::MatchStateRead, tab_match},
 };
 
 #[derive(Debug, SpacetimeType, Clone, Copy)]
@@ -30,7 +30,7 @@ pub(super) struct PlayerActionCheckpoint {
 }
 
 // TODO change back to private
-#[table(accessor= tab_match_round_player,
+#[table(accessor= tab_match_round_player, vis_private,
     index(accessor=match_round, hash(columns=[match_id,round])),
     index(accessor=match_round_range, btree(columns=[match_id,round])),
     index(accessor=match_round_player, hash(columns=[match_id,round,user_id])),
@@ -99,7 +99,7 @@ impl MatchRoundPlayer {
 }
 
 //TODO change back to private
-#[table(accessor= tab_match_round_player_ext,
+#[table(accessor= tab_match_round_player_ext, vis_private,
     index(accessor=match_round, hash(columns=[match_id,round])),
     index(accessor=match_round_range, btree(columns=[match_id,round])),
     index(accessor=match_round_player, hash(columns=[match_id,round,user_id])),
@@ -187,15 +187,24 @@ pub(crate) trait MatchLeadearboardRead {
     //fn match_leaderboard(&self, match_id: u32, round: u16) -> Vec<MatchRoundPlayer>;
     fn match_rounds(&self, match_id: u32) -> Vec<LbEntry>;
     //fn match_leaderboard(&self, match_id: u32) -> Vec<LbEntry>;
+    fn match_round_player_find(&self, id: u32) -> Option<MatchRoundPlayer>;
+    fn match_round_player_of_user(
+        &self,
+        match_id: u32,
+        round: u16,
+        user_id: u32,
+    ) -> Option<MatchRoundPlayer>;
+    fn match_round_player_ext_of_user(
+        &self,
+        match_id: u32,
+        round: u16,
+        user_id: u32,
+    ) -> Option<MatchRoundPlayerExt>;
+    fn match_round_players(&self, match_id: u32, round: u16) -> Vec<MatchRoundPlayer>;
 }
 impl<Db: spacetimedb::CtxDbRead> MatchLeadearboardRead for Db {
     fn match_rounds(&self, match_id: u32) -> Vec<LbEntry> {
-        let Some(state) = self
-            .db_read_only()
-            .tab_match_state()
-            .match_id()
-            .find(match_id)
-        else {
+        let Some(state) = self.match_state_find(match_id) else {
             return Vec::new();
         };
         self.db_read_only()
@@ -215,6 +224,101 @@ impl<Db: spacetimedb::CtxDbRead> MatchLeadearboardRead for Db {
                 //.set_map(/* map */) //TODO get the map id in there. this is pretty painful tho so defer until i know approach is good.
             })
             .collect()
+    }
+
+    fn match_round_player_find(&self, id: u32) -> Option<MatchRoundPlayer> {
+        self.db_read_only().tab_match_round_player().id().find(id)
+    }
+
+    fn match_round_player_of_user(
+        &self,
+        match_id: u32,
+        round: u16,
+        user_id: u32,
+    ) -> Option<MatchRoundPlayer> {
+        self.db_read_only()
+            .tab_match_round_player()
+            .match_round_player()
+            .filter((match_id, round, user_id))
+            .next()
+    }
+
+    fn match_round_player_ext_of_user(
+        &self,
+        match_id: u32,
+        round: u16,
+        user_id: u32,
+    ) -> Option<MatchRoundPlayerExt> {
+        self.db_read_only()
+            .tab_match_round_player_ext()
+            .match_round_player()
+            .filter((match_id, round, user_id))
+            .next()
+    }
+
+    fn match_round_players(&self, match_id: u32, round: u16) -> Vec<MatchRoundPlayer> {
+        self.db_read_only()
+            .tab_match_round_player()
+            .match_round()
+            .filter((match_id, round))
+            .collect()
+    }
+}
+
+pub(crate) trait MatchLeaderboardWrite: MatchLeadearboardRead {
+    fn match_round_player_insert(
+        &self,
+        player: MatchRoundPlayer,
+    ) -> Result<MatchRoundPlayer, String>;
+    fn match_round_player_update(&self, player: MatchRoundPlayer);
+    fn match_round_player_ext_insert(&self, player: MatchRoundPlayerExt) -> Result<(), String>;
+    fn match_round_player_ext_update(&self, player: MatchRoundPlayerExt);
+    /// Deletes the entries of all players in a round of the match.
+    fn match_round_delete(&self, match_id: u32, round: u16);
+    /// Deletes the entries of all players in all rounds of the match.
+    fn match_rounds_delete(&self, match_id: u32);
+}
+impl<Db: spacetimedb::CtxDbWrite> MatchLeaderboardWrite for Db {
+    fn match_round_player_insert(
+        &self,
+        player: MatchRoundPlayer,
+    ) -> Result<MatchRoundPlayer, String> {
+        Ok(self.db().tab_match_round_player().try_insert(player)?)
+    }
+
+    fn match_round_player_update(&self, player: MatchRoundPlayer) {
+        self.db().tab_match_round_player().id().update(player);
+    }
+
+    fn match_round_player_ext_insert(&self, player: MatchRoundPlayerExt) -> Result<(), String> {
+        self.db().tab_match_round_player_ext().try_insert(player)?;
+        Ok(())
+    }
+
+    fn match_round_player_ext_update(&self, player: MatchRoundPlayerExt) {
+        self.db().tab_match_round_player_ext().id().update(player);
+    }
+
+    fn match_round_delete(&self, match_id: u32, round: u16) {
+        self.db()
+            .tab_match_round_player()
+            .match_round()
+            .delete((match_id, round));
+        self.db()
+            .tab_match_round_player_ext()
+            .match_round()
+            .delete((match_id, round));
+    }
+
+    fn match_rounds_delete(&self, match_id: u32) {
+        self.db()
+            .tab_match_round_player()
+            .match_id()
+            .delete(match_id);
+        self.db()
+            .tab_match_round_player_ext()
+            .match_id()
+            .delete(match_id);
     }
 }
 

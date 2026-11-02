@@ -10,7 +10,7 @@ use crate::{
 
 /// A project is a logical grouping of competitions and also the only way to obtain a competition in the first place.
 /// It does not provide functionality in of itself but is responsible for all the metadata.
-#[table(accessor= tab_project)]
+#[table(accessor= tab_project, vis_private)]
 pub struct ProjectV1 {
     #[unique]
     name: String,
