@@ -4,11 +4,7 @@ use spacetimedb::{CtxDbRead, CtxWithSender, Identity};
 
 use crate::{
     competition::{
-        CompetitionPermissionsV1, CompetitionRead,
-        roles::{
-            tab_competition_member__view, tab_competition_role__view,
-            tab_competition_role_member__view,
-        },
+        CompetitionPermissionsV1, roles::CompetitionPermissionRead,
     },
     raw_server::TabRawServerRead,
     user::UserRead,
@@ -75,44 +71,10 @@ impl<'a, Db: CtxDbRead> AuthBuilder<'a, CompetitionPermissionsV1, Db> {
     pub(crate) fn authorize(self) -> Result<u32, String> {
         let user_id = self.ctx.get_user_id(self.sender)?;
 
-        let tree = self.ctx.competition_ancestors(self.competition_id);
-        let mut permissions = Vec::new();
-        for competition_id in tree {
-            permissions.push(
-                self.ctx
-                    .db_read_only()
-                    .tab_competition_role_member()
-                    .user_roles()
-                    .filter((competition_id, user_id))
-                    .fold(CompetitionPermissionsV1::default(), |acc, member| {
-                        if let Some(role) = self
-                            .ctx
-                            .db_read_only()
-                            .tab_competition_role()
-                            .id()
-                            .find(member.get_role_id())
-                        {
-                            return acc | role.get_permissions1();
-                        }
-                        acc
-                    }),
-            );
-            permissions.push(
-                self.ctx
-                    .db_read_only()
-                    .tab_competition_member()
-                    .user_member()
-                    .filter((competition_id, user_id))
-                    .fold(CompetitionPermissionsV1::default(), |acc, member| {
-                        acc | member.get_permissions()
-                    }),
-            );
-        }
-        let permissions = permissions
-            .into_iter()
-            .fold(CompetitionPermissionsV1::default(), |acc, acc2| acc | acc2);
-
-        if permissions.bypass() || (self.expected & !permissions) == CompetitionPermissionsV1::NONE
+        if self
+            .ctx
+            .competition_permissions(self.competition_id, user_id)
+            .has(self.expected)
         {
             Ok(user_id)
         } else {
