@@ -7,7 +7,7 @@ use crate::{
 };
 
 //TODO make private again
-#[table(accessor=tab_competition_raw_server,public)]
+#[table(accessor=tab_competition_raw_server)]
 pub struct CompetitionServer {
     #[index(hash)]
     pub competition_id: u32,
