@@ -164,6 +164,10 @@ impl MatchV1 {
         self.template
     }
 
+    pub fn config_ids(&self) -> [u32; 2] {
+        [self.pre_config, self.config]
+    }
+
     fn end_match(&mut self) {
         self.status = MatchStatus::Ended;
     }
@@ -378,8 +382,7 @@ fn match_override_pre_config(
             .permission(CompetitionPermissionsV1::MATCH_CONFIGURE)
             .authorize()?;
 
-        let configs = ctx.raw_server_config_references(tm_match.pre_config);
-        if configs.len() == 1 {
+        if ctx.raw_server_config_is_owned_inline(tm_match.pre_config) {
             ctx.raw_server_config_update(tm_match.pre_config, config)?;
         } else {
             let config = ctx.raw_server_config_create(config, 0, String::new())?;
@@ -412,8 +415,7 @@ fn match_override_config(
         return Err("Too late to set configuration".into());
     }
 
-    let configs = ctx.raw_server_config_references(tm_match.config);
-    if configs.len() == 1 {
+    if ctx.raw_server_config_is_owned_inline(tm_match.config) {
         ctx.raw_server_config_update(tm_match.config, config)?;
     } else {
         let config = ctx.raw_server_config_create(config, 0, String::new())?;

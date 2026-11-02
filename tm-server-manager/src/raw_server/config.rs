@@ -1,5 +1,5 @@
 use spacetimedb::{
-    AnonymousViewContext, CtxDbRead, ProcedureContext, Query, ReducerContext, Table, procedure, reducer,
+    AnonymousViewContext, CtxDbRead, ViewContext, ProcedureContext, Query, ReducerContext, Table, procedure, reducer,
     table, view,
 };
 use tm_server_types::config::{ServerConfig, ServerConfigV2};
@@ -7,7 +7,7 @@ use tm_server_types::config::{ServerConfig, ServerConfigV2};
 use crate::{
     authorization::Authorization,
     auto_inc_manual::AutoIncWrite,
-    competition::{CompetitionPermissionsV1, node::NodeHandle},
+    competition::{CompetitionPermissionsV1, node::NodeHandle, roles::viewer_is_member},
     raw_server::occupation::TabRawServerOccupationRead,
     tm_match::MatchRead,
     tm_server::ServerRead,
@@ -88,6 +88,9 @@ pub(crate) trait RawServerContigRead {
 
     fn raw_server_config_exists(&self, config_id: u32) -> bool;
 
+    /// Inline configs have no competition and belong to the one node using them, so they can be edited in place.
+    fn raw_server_config_is_owned_inline(&self, config_id: u32) -> bool;
+
     fn raw_server_config_shared_competition(
         &self,
         competition_id: u32,
@@ -131,6 +134,15 @@ impl<Db: spacetimedb::CtxDbRead> RawServerContigRead for Db {
             .id()
             .find(config_id)
             .is_some()
+    }
+
+    fn raw_server_config_is_owned_inline(&self, config_id: u32) -> bool {
+        self.db_read_only()
+            .tab_raw_server_config_v2()
+            .id()
+            .find(config_id)
+            .is_some_and(|c| c.competition_id == 0)
+            && self.raw_server_config_references(config_id).len() == 1
     }
 
     fn raw_server_config_shared_competition(
@@ -326,6 +338,23 @@ fn unstable_raw_server_config_update_maps(
     ctx.db.tab_raw_server_config_v2().id().update(raw_config);
 
     Ok(())
+}
+
+/// The configs used by the matches of a competition, shared and inline.
+#[view(accessor = competition_match_configs, public)]
+fn competition_match_configs(ctx: &ViewContext, competition_id: u32) -> Vec<RawServerConfigV2> {
+    if !viewer_is_member(ctx, competition_id) {
+        return Vec::new();
+    }
+    let mut ids: Vec<u32> = ctx
+        .matches_in_competition(competition_id)
+        .flat_map(|m| m.config_ids())
+        .collect();
+    ids.sort_unstable();
+    ids.dedup();
+    ids.into_iter()
+        .filter_map(|id| ctx.db.tab_raw_server_config_v2().id().find(id))
+        .collect()
 }
 
 #[view(accessor = competition_shared_configs, public)]
