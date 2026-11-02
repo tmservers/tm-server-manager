@@ -384,7 +384,7 @@ fn member_assign_permission(
 }
 
 /// Members, roles and permissions of a competition are only visible to its members and the ones above.
-fn viewer_is_member(ctx: &ViewContext, competition_id: u32) -> bool {
+pub(crate) fn viewer_is_member(ctx: &ViewContext, competition_id: u32) -> bool {
     ctx.user_id()
         .is_ok_and(|user_id| ctx.competition_is_member(competition_id, user_id))
 }

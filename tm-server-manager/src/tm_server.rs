@@ -241,8 +241,7 @@ fn server_config_override(
         //.permission(CompetitionPermissionsV1::SERVER_ASSIGN)
         .authorize()?;
 
-    let configs = ctx.raw_server_config_references(tm_server.config);
-    if configs.len() == 1 {
+    if ctx.raw_server_config_is_owned_inline(tm_server.config) {
         ctx.raw_server_config_update(tm_server.config, config)?;
     } else {
         let config = ctx.raw_server_config_create(config, 0, String::new())?;
