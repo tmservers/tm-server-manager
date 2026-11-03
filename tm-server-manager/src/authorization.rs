@@ -3,28 +3,30 @@ use std::ops::{Add, BitAnd, BitOr, Not};
 use spacetimedb::{CtxDbRead, CtxWithSender, Identity};
 
 use crate::{
-    competition::{
-        CompetitionPermissionsV1, roles::CompetitionPermissionRead,
-    },
+    competition::{CompetitionPermissionsV1, roles::CompetitionPermissionRead},
     raw_server::TabRawServerRead,
     user::UserRead,
 };
 
-pub(crate) trait Authorization<T: CtxWithSender + CtxDbRead> {
+pub(crate) trait Authorization<Db: CtxWithSender + CtxDbRead> {
     fn user_id(&self) -> Result<u32, String>;
 
     fn server_id(&self) -> Result<u32, String>;
 
-    fn auth_builder(&'_ self, competition_id: u32) -> AuthBuilder<'_, CompetitionPermissionsV1, T>;
+    fn auth_builder(&'_ self, competition_id: u32)
+    -> AuthBuilder<'_, CompetitionPermissionsV1, Db>;
 }
 
-impl<T: CtxWithSender + CtxDbRead> Authorization<T> for T {
+impl<Db: CtxWithSender + CtxDbRead> Authorization<Db> for Db {
     fn server_id(&self) -> Result<u32, String> {
         self.get_raw_server_id(self.sender())
     }
 
-    fn auth_builder(&'_ self, competition_id: u32) -> AuthBuilder<'_, CompetitionPermissionsV1, T> {
-        AuthBuilder::<CompetitionPermissionsV1, T>::new(competition_id, self, self.sender())
+    fn auth_builder(
+        &'_ self,
+        competition_id: u32,
+    ) -> AuthBuilder<'_, CompetitionPermissionsV1, Db> {
+        AuthBuilder::<CompetitionPermissionsV1, Db>::new(competition_id, self, self.sender())
     }
 
     fn user_id(&self) -> Result<u32, String> {
@@ -46,19 +48,18 @@ pub(crate) trait PermissionType:
     fn bypass(self) -> bool;
 }
 pub(crate) struct AuthBuilder<'a, Item: PermissionType, Db: CtxDbRead> {
-    //got: Item,
     expected: Item,
     competition_id: u32,
-    ctx: &'a Db,
+    db: &'a Db,
     sender: Identity,
 }
 
 impl<'a, Db: CtxDbRead> AuthBuilder<'a, CompetitionPermissionsV1, Db> {
-    fn new(competition_id: u32, ctx: &'a Db, sender: Identity) -> Self {
+    fn new(competition_id: u32, db: &'a Db, sender: Identity) -> Self {
         AuthBuilder {
             expected: CompetitionPermissionsV1::initial(),
             competition_id,
-            ctx,
+            db,
             sender,
         }
     }
@@ -69,10 +70,10 @@ impl<'a, Db: CtxDbRead> AuthBuilder<'a, CompetitionPermissionsV1, Db> {
     }
 
     pub(crate) fn authorize(self) -> Result<u32, String> {
-        let user_id = self.ctx.get_user_id(self.sender)?;
+        let user_id = self.db.get_user_id(self.sender)?;
 
         // Membership is always required, even when no permission is expected.
-        match self.ctx.competition_access(self.competition_id, user_id) {
+        match self.db.competition_access(self.competition_id, user_id) {
             None => Err("You are not a member of this competition.".into()),
             Some(permissions) if permissions.has(self.expected) => Ok(user_id),
             Some(_) => Err("Not sufficient permissions to perform this action.".into()),
