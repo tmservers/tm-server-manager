@@ -6,7 +6,7 @@ use crate::{
 };
 
 #[derive(Debug, SpacetimeType, Clone, Copy)]
-pub(super) struct LbRemapSettings {
+pub(crate) struct LbRemapSettings {
     origin: LbParams,
     target: LbParams,
     manipulation: LbManipulationKind,
@@ -25,9 +25,9 @@ enum LbManipulationKind {
 }
 
 impl LbRemapSettings {
-    pub(super) fn evaluate(self, lb_id: u32, mut leaderboard: Vec<LbEntry>) -> Vec<LbEntry> {
+    pub(super) fn evaluate(self, origin: NodeHandle, mut leaderboard: Vec<LbEntry>) -> Vec<LbEntry> {
         for entry in &mut leaderboard {
-            entry.set_origin(NodeHandle::LeaderboardV1(lb_id));
+            entry.set_origin(origin);
             let new_val = match self.manipulation {
                 LbManipulationKind::Add => match self.origin {
                     LbParams::Score => entry.score + self.manipulation_value,

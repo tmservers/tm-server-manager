@@ -1,3 +1,5 @@
+use std::{collections::HashMap, hash::Hash};
+
 use spacetimedb::{
     AnonymousViewContext, ProcedureContext, Query, ReducerContext, SpacetimeType, Table, procedure,
     reducer, table, view,
@@ -12,12 +14,16 @@ use crate::{
         connection::internal_graph_resolution_node_finished,
         node::{NodeHandle, NodeLeaderboard, NodeRead, NodeWrite, Vec2},
     },
-    leaderboard::{filter::LbFilterSettings, merge::LbMergeSettings, remap::LbRemapSettings},
+    leaderboard::{
+        filter::LbFilterSettings, merge::LbMergeSettings, remap::LbRemapSettings,
+        select::LbSelectSettings,
+    },
 };
 
 mod filter;
 mod merge;
 mod remap;
+pub(crate) mod select;
 #[cfg(test)]
 pub(crate) mod test_util;
 
@@ -86,12 +92,44 @@ enum LbSettings {
     Filter(LbFilterSettings),
 }
 
-#[derive(Debug, SpacetimeType, Clone, Copy)]
-enum LbSettingsV2 {
+/// A step of a leaderboard pipeline, used by leaderboard nodes and data connections.
+#[derive(Debug, SpacetimeType, Clone)]
+pub(crate) enum LbSettingsV2 {
     Merge(LbMergeSettings),
     Filter(LbFilterSettings),
     Remap(LbRemapSettings),
     Finalize,
+    // New variants have to be appended for the schema to stay migratable.
+    Select(LbSelectSettings),
+}
+
+impl LbSettingsV2 {
+    fn evaluate(
+        &self,
+        origin: NodeHandle,
+        leaderboard: Vec<LbEntry>,
+        ctx: &impl spacetimedb::CtxDbRead,
+    ) -> Vec<LbEntry> {
+        match self {
+            LbSettingsV2::Merge(settings) => settings.evaluate(origin, leaderboard),
+            LbSettingsV2::Filter(settings) => settings.evaluate(origin, leaderboard, ctx),
+            LbSettingsV2::Remap(settings) => settings.evaluate(origin, leaderboard),
+            LbSettingsV2::Finalize => leaderboard.finalize(ctx),
+            LbSettingsV2::Select(settings) => settings.evaluate(leaderboard),
+        }
+    }
+}
+
+/// Runs the steps one after another, entries created by a step get `origin` as their node.
+pub(crate) fn evaluate_steps(
+    ctx: &impl spacetimedb::CtxDbRead,
+    origin: NodeHandle,
+    steps: &[LbSettingsV2],
+    leaderboard: Vec<LbEntry>,
+) -> Vec<LbEntry> {
+    steps
+        .iter()
+        .fold(leaderboard, |leaderboard, step| step.evaluate(origin, leaderboard, ctx))
 }
 
 #[derive(Debug, SpacetimeType, Clone, Copy)]
@@ -99,6 +137,37 @@ enum LbParams {
     Score,
     Time,
     Position,
+}
+
+impl LbParams {
+    /// Sorts the best entries first.
+    fn sort(self, entries: &mut [LbEntry]) {
+        match self {
+            LbParams::Score => entries.sort_by_key(|f| -f.score),
+            // A time of zero or less was not driven so it is the worst.
+            LbParams::Time => entries.sort_by_key(|f| if f.time <= 0 { i32::MAX } else { f.time }),
+            LbParams::Position => entries.sort_by_key(|f| f.position),
+        }
+    }
+}
+
+/// Groups the entries by the key, keeping their order inside of a group.
+fn group_by<K: Hash + Eq>(
+    entries: impl IntoIterator<Item = LbEntry>,
+    key: impl Fn(&LbEntry) -> K,
+) -> HashMap<K, Vec<LbEntry>> {
+    let mut groups: HashMap<K, Vec<LbEntry>> = HashMap::new();
+    for entry in entries {
+        groups.entry(key(&entry)).or_default().push(entry);
+    }
+    groups
+}
+
+/// Sets the positions to the order of the entries, starting at 1.
+pub(crate) fn renumber_positions(entries: &mut [LbEntry]) {
+    for (index, entry) in entries.iter_mut().enumerate() {
+        entry.position = (index + 1) as u16;
+    }
 }
 
 #[derive(Debug, SpacetimeType, Clone, Copy)]
@@ -323,27 +392,10 @@ impl<Db: spacetimedb::CtxDbRead> LeadearboardRead for Db {
             return Vec::new();
         }
 
-        let settings = lb.settings;
+        let node = NodeHandle::LeaderboardV1(leaderboard_id);
+        let input = self.node_resolve_input_data(node);
 
-        let mut leaderboards =
-            self.node_resolve_input_data(NodeHandle::LeaderboardV1(leaderboard_id));
-
-        for (index, setting) in settings.into_iter().enumerate() {
-            leaderboards = match setting {
-                LbSettingsV2::Merge(lb_merge_settings) => {
-                    lb_merge_settings.evaluate(leaderboard_id, leaderboards)
-                }
-                LbSettingsV2::Filter(lb_filter_settings) => {
-                    lb_filter_settings.evaluate(leaderboard_id, leaderboards, self)
-                }
-                LbSettingsV2::Remap(lb_remap_settings) => {
-                    lb_remap_settings.evaluate(leaderboard_id, leaderboards)
-                }
-                LbSettingsV2::Finalize => leaderboards.finalize(self),
-            }
-        }
-
-        leaderboards
+        evaluate_steps(self, node, &lb.settings, input)
     }
 
     fn leaderboard_find(&self, id: u32) -> Result<LeaderboardV2, String> {

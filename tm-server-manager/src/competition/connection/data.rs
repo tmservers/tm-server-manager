@@ -1,18 +1,19 @@
-use spacetimedb::{
-    AnonymousViewContext, ProcedureContext, Query, ReducerContext, SpacetimeType, Table, procedure,
-    reducer, table, view,
-};
+use spacetimedb::{AnonymousViewContext, Query, ReducerContext, SpacetimeType, Table, reducer, table, view};
 
 use crate::{
     authorization::Authorization,
     competition::{
         CompetitionPermissionsV1,
         connection::{ConnectionStatus, tab_connection},
-        node::NodeLeaderboard,
+        node::NodeHandle,
     },
-    leaderboard::LbEntry,
+    leaderboard::{
+        LbEntry, LbSettingsV2, evaluate_steps,
+        select::{LbSelectFirstOffsetN, LbSelectSettings},
+    },
 };
 
+/// Superseded by [`ConnectionDataV2`], only kept until `migration_connection_data_to_v2` moved the rows.
 #[derive(Debug)]
 #[table(accessor=tab_connection_data, vis_private)]
 pub struct ConnectionData {
@@ -24,119 +25,6 @@ pub struct ConnectionData {
     options: ConnectionDataOption,
 }
 
-impl ConnectionData {
-    pub(crate) fn new(connection_id: u32, competition_id: u32) -> Self {
-        ConnectionData {
-            competition_id,
-            connection_id,
-            options: ConnectionDataOption::All,
-        }
-    }
-
-    pub(crate) fn instantiate(mut self, connection_id: u32, competition_id: u32) -> Self {
-        self.competition_id = competition_id;
-        self.connection_id = connection_id;
-        self
-    }
-
-    /* pub(super) fn apply_match(&self, tm_match: Vec<MatchRoundPlayer>) -> Vec<MatchRoundPlayer> {
-        let players = match &self.options {
-            ConnectionDataOption::All => tm_match,
-            ConnectionDataOption::FirstN(f) => tm_match.into_iter().take(*f as usize).collect(),
-            ConnectionDataOption::LastN(l) => {
-                tm_match.into_iter().rev().take(*l as usize).collect()
-            }
-            ConnectionDataOption::Custom(items) => {
-                let mut players = Vec::with_capacity(items.len());
-                for item in items {
-                    if let Some(player) = tm_match.get((*item - 1) as usize) {
-                        players.push(*player);
-                    }
-                }
-                players
-            }
-            ConnectionDataOption::FirstOffsetN(opt) => tm_match
-                .into_iter()
-                .skip(opt.offset as usize)
-                .take(opt.take as usize)
-                .collect(),
-        };
-        players
-            .into_iter()
-            //.map(|p| PermittedPlayer::new(p.account_id, false, false))
-            .collect()
-    } */
-
-    pub(super) fn apply_filter(
-        &self,
-        tm_match: Vec<LbEntry>,
-        ctx: &impl spacetimedb::CtxDbRead,
-    ) -> Vec<LbEntry> {
-        if matches!(self.options, ConnectionDataOption::All) {
-            return tm_match;
-        }
-
-        let tm_match = tm_match.finalize(ctx);
-
-        match &self.options {
-            ConnectionDataOption::All => tm_match,
-            ConnectionDataOption::FirstN(f) => tm_match.into_iter().take(*f as usize).collect(),
-            ConnectionDataOption::LastN(l) => {
-                tm_match.into_iter().rev().take(*l as usize).collect()
-            }
-            ConnectionDataOption::Custom(items) => {
-                let mut players = Vec::with_capacity(items.len());
-                for item in items {
-                    if let Some(player) = tm_match.get((*item - 1) as usize) {
-                        players.push(*player);
-                    }
-                }
-                players
-            }
-            ConnectionDataOption::FirstOffsetN(opt) => tm_match
-                .into_iter()
-                .skip(opt.offset as usize)
-                .take(opt.take as usize)
-                .collect(),
-        }
-
-        /* .into_iter()
-        //.map(|p| PermittedPlayer::new(p.account_id, false, false))
-        .collect() */
-    }
-
-    /* pub(super) fn apply_registration(
-        &self,
-        registration: Vec<RegisterationPlayer>,
-    ) -> Vec<RegisterationPlayer> {
-        let players = match &self.options {
-            ConnectionDataOption::All => registration,
-            ConnectionDataOption::FirstN(f) => registration.into_iter().take(*f as usize).collect(),
-            ConnectionDataOption::LastN(l) => {
-                registration.into_iter().rev().take(*l as usize).collect()
-            }
-            ConnectionDataOption::Custom(items) => {
-                let mut players = Vec::with_capacity(items.len());
-                for item in items {
-                    if let Some(player) = registration.get((*item - 1) as usize) {
-                        players.push(*player);
-                    }
-                }
-                players
-            }
-            ConnectionDataOption::FirstOffsetN(opt) => registration
-                .into_iter()
-                .skip(opt.offset as usize)
-                .take(opt.take as usize)
-                .collect(),
-        };
-        players
-            .into_iter()
-            //.map(|p| PermittedPlayer::new(p.user_id, false, false))
-            .collect()
-    } */
-}
-
 #[derive(Debug, SpacetimeType)]
 enum ConnectionDataOption {
     All,
@@ -146,21 +34,106 @@ enum ConnectionDataOption {
     FirstOffsetN(ConnectionDataOptionFirstOffsetN),
 }
 
-/* #[view(accessor=connection_data,public)]
-pub fn connection_data(
-    ctx: &ViewContext, /* ,competition_id: u32 */
-) -> impl Query<ConnectionData> {
-    let competition_id = 1u32;
-    ctx.from
-        .tab_connection_data()
-        .r#where(|c| c.competition_id.eq(competition_id))
-} */
+#[derive(Debug, SpacetimeType)]
+struct ConnectionDataOptionFirstOffsetN {
+    offset: u8,
+    take: u8,
+}
+
+/// The leaderboard steps a data connection applies to the data flowing through it.
+#[derive(Debug)]
+#[table(accessor=tab_connection_data_v2, vis_private)]
+pub struct ConnectionDataV2 {
+    #[index(hash)]
+    competition_id: u32,
+    #[primary_key]
+    pub connection_id: u32,
+
+    settings: Vec<LbSettingsV2>,
+}
+
+impl ConnectionDataV2 {
+    pub(crate) fn new(connection_id: u32, competition_id: u32) -> Self {
+        ConnectionDataV2 {
+            competition_id,
+            connection_id,
+            settings: Vec::new(),
+        }
+    }
+
+    pub(crate) fn instantiate(mut self, connection_id: u32, competition_id: u32) -> Self {
+        self.competition_id = competition_id;
+        self.connection_id = connection_id;
+        self
+    }
+
+    pub(super) fn evaluate(
+        &self,
+        origin: NodeHandle,
+        leaderboard: Vec<LbEntry>,
+        ctx: &impl spacetimedb::CtxDbRead,
+    ) -> Vec<LbEntry> {
+        evaluate_steps(ctx, origin, &self.settings, leaderboard)
+    }
+}
+
+impl From<ConnectionData> for ConnectionDataV2 {
+    fn from(data: ConnectionData) -> Self {
+        // Every option except `All` finalized the leaderboard before selecting from it.
+        let select = match data.options {
+            ConnectionDataOption::All => None,
+            ConnectionDataOption::FirstN(n) => Some(LbSelectSettings::FirstN(n)),
+            ConnectionDataOption::LastN(n) => Some(LbSelectSettings::LastN(n)),
+            ConnectionDataOption::Custom(places) => Some(LbSelectSettings::Custom(places)),
+            ConnectionDataOption::FirstOffsetN(opt) => {
+                Some(LbSelectSettings::FirstOffsetN(LbSelectFirstOffsetN {
+                    offset: opt.offset,
+                    take: opt.take,
+                }))
+            }
+        };
+        let settings = match select {
+            Some(select) => vec![LbSettingsV2::Finalize, LbSettingsV2::Select(select)],
+            None => Vec::new(),
+        };
+
+        ConnectionDataV2 {
+            competition_id: data.competition_id,
+            connection_id: data.connection_id,
+            settings,
+        }
+    }
+}
+
+/// Moves the connection data over to the v2 table, it is safe to call this multiple times.
+#[reducer]
+fn migration_connection_data_to_v2(ctx: &ReducerContext) -> Result<(), String> {
+    let rows: Vec<ConnectionData> = ctx.db.tab_connection_data().iter().collect();
+    for row in rows {
+        let connection_id = row.connection_id;
+        if ctx
+            .db
+            .tab_connection_data_v2()
+            .connection_id()
+            .find(connection_id)
+            .is_none()
+        {
+            ctx.db.tab_connection_data_v2().try_insert(row.into())?;
+        }
+        ctx.db
+            .tab_connection_data()
+            .connection_id()
+            .delete(connection_id);
+    }
+
+    Ok(())
+}
 
 #[reducer]
 fn competition_connection_data_update(
     ctx: &ReducerContext,
     connection_id: u32,
-    option: ConnectionDataOption,
+    settings: Vec<LbSettingsV2>,
 ) -> Result<(), String> {
     let Some(connection) = ctx.db.tab_connection().id().find(connection_id) else {
         return Err("connection could not be found!".into());
@@ -176,59 +149,58 @@ fn competition_connection_data_update(
 
     let Some(mut data) = ctx
         .db
-        .tab_connection_data()
+        .tab_connection_data_v2()
         .connection_id()
         .find(connection_id)
     else {
         return Err("Connection data could not be found.".into());
     };
 
-    data.options = option;
+    data.settings = settings;
 
-    ctx.db.tab_connection_data().connection_id().update(data);
+    ctx.db.tab_connection_data_v2().connection_id().update(data);
 
     Ok(())
-}
-
-#[derive(Debug, SpacetimeType)]
-struct ConnectionDataOptionFirstOffsetN {
-    offset: u8,
-    take: u8,
 }
 
 #[view(accessor = competition_connections_data,public)]
 fn competition_connections_data(
     ctx: &AnonymousViewContext,
     competition_id: u32,
-) -> impl Query<ConnectionData> {
+) -> impl Query<ConnectionDataV2> {
     ctx.from
-        .tab_connection_data()
+        .tab_connection_data_v2()
         .filter(|r| r.competition_id.eq(competition_id))
 }
 
 pub(crate) trait ConnectionDataRead {
-    fn connection_data_find(&self, connection_id: u32) -> Option<ConnectionData>;
+    fn connection_data_find(&self, connection_id: u32) -> Option<ConnectionDataV2>;
 }
 impl<Db: spacetimedb::CtxDbRead> ConnectionDataRead for Db {
-    fn connection_data_find(&self, connection_id: u32) -> Option<ConnectionData> {
+    fn connection_data_find(&self, connection_id: u32) -> Option<ConnectionDataV2> {
         self.db_read_only()
-            .tab_connection_data()
+            .tab_connection_data_v2()
             .connection_id()
             .find(connection_id)
     }
 }
 
 pub(crate) trait ConnectionDataWrite: ConnectionDataRead {
-    fn connection_data_insert(&self, data: ConnectionData) -> Result<(), String>;
+    fn connection_data_insert(&self, data: ConnectionDataV2) -> Result<(), String>;
     fn connection_data_delete(&self, connection_id: u32);
 }
 impl<Db: spacetimedb::CtxDbWrite> ConnectionDataWrite for Db {
-    fn connection_data_insert(&self, data: ConnectionData) -> Result<(), String> {
-        self.db().tab_connection_data().try_insert(data)?;
+    fn connection_data_insert(&self, data: ConnectionDataV2) -> Result<(), String> {
+        self.db().tab_connection_data_v2().try_insert(data)?;
         Ok(())
     }
 
     fn connection_data_delete(&self, connection_id: u32) {
+        self.db()
+            .tab_connection_data_v2()
+            .connection_id()
+            .delete(connection_id);
+        // A connection deleted before the migration ran would otherwise be migrated back.
         self.db()
             .tab_connection_data()
             .connection_id()

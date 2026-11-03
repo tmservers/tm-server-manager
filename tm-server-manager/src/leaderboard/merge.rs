@@ -1,4 +1,3 @@
-use core::num;
 use std::collections::HashMap;
 
 use spacetimedb::SpacetimeType;
@@ -6,12 +5,11 @@ use tm_server_types::config::TmMode;
 
 use crate::{
     competition::node::NodeHandle,
-    leaderboard::{LbEntry, LbParams},
-    tm_match::leaderboard::MatchRoundPlayer,
+    leaderboard::{LbEntry, LbParams, group_by, renumber_positions},
 };
 
 #[derive(Debug, SpacetimeType, Clone, Copy)]
-pub(super) struct LbMergeSettings {
+pub(crate) struct LbMergeSettings {
     /// This whole thing should be considered deprecated it has no meaning i think.
     kind: LbMergeKind,
     action: LbMergeAction,
@@ -32,97 +30,37 @@ enum LbMergeAction {
 }
 
 impl LbMergeSettings {
-    pub(super) fn evaluate(self, lb_id: u32, leaderboard: Vec<LbEntry>) -> Vec<LbEntry> {
-        let mut player_rounds: HashMap<u32, Vec<LbEntry>> = HashMap::new();
-
-        for row in leaderboard {
-            player_rounds
-                .entry(row.user_id)
-                .and_modify(|e| {
-                    e.push(row);
-                })
-                .or_insert(vec![row]);
-        }
+    pub(super) fn evaluate(self, origin: NodeHandle, leaderboard: Vec<LbEntry>) -> Vec<LbEntry> {
+        let player_rounds = group_by(leaderboard, |e| e.user_id);
 
         let mut map: HashMap<u32, LbEntry> = HashMap::new();
-        match self.action {
-            LbMergeAction::Average => {
-                for (player, rounds) in player_rounds {
-                    let num_rounds = rounds.len();
-                    //TODO set right position for this whole thing.
-                    let init =
-                        LbEntry::new(player, TmMode::Unknown, 0, NodeHandle::LeaderboardV1(lb_id))
-                            .set_score(0)
-                            .set_time(0);
-                    let mut accumulated =
-                        rounds
-                            .into_iter()
-                            .fold(init, |mut acc, x| match self.param {
-                                LbParams::Score => {
-                                    acc.score += x.score;
-                                    acc
-                                }
-
-                                LbParams::Time => {
-                                    acc.time += x.time;
-                                    acc
-                                }
-
-                                LbParams::Position => {
-                                    acc.position += x.position;
-                                    acc
-                                }
-                            });
-                    let avg = (accumulated.score as f32 / num_rounds as f32) as i32;
-                    accumulated.score = avg;
-
-                    map.insert(player, accumulated);
+        for (player, rounds) in player_rounds {
+            let num_rounds = rounds.len();
+            //TODO set right position for this whole thing.
+            let init = LbEntry::new(player, TmMode::Unknown, 0, origin)
+                .set_score(0)
+                .set_time(0);
+            let mut accumulated = rounds.into_iter().fold(init, |mut acc, x| {
+                match self.param {
+                    LbParams::Score => acc.score += x.score,
+                    LbParams::Time => acc.time += x.time,
+                    LbParams::Position => acc.position += x.position,
                 }
+                acc
+            });
+            if let LbMergeAction::Average = self.action {
+                accumulated.score = (accumulated.score as f32 / num_rounds as f32) as i32;
             }
-            LbMergeAction::Summate => {
-                for (player, rounds) in player_rounds {
-                    let init =
-                        LbEntry::new(player, TmMode::Unknown, 0, NodeHandle::LeaderboardV1(lb_id))
-                            .set_score(0)
-                            .set_time(0);
-                    let accumulated =
-                        rounds
-                            .into_iter()
-                            .fold(init, |mut acc, x| match self.param {
-                                LbParams::Score => {
-                                    acc.score += x.score;
-                                    acc
-                                }
-                                LbParams::Time => {
-                                    acc.time += x.time;
-                                    acc
-                                }
-                                LbParams::Position => {
-                                    acc.position += x.position;
-                                    acc
-                                }
-                            });
-                    map.insert(player, accumulated);
-                }
-            }
+
+            map.insert(player, accumulated);
         }
         log::info!("Merge Map Result: {:?}", map);
 
         let mut vec = map.into_values().collect::<Vec<_>>();
-        match self.param {
-            LbParams::Score => {
-                vec.sort_by_key(|f| -f.score);
-                // readjust the position.
-                vec.iter_mut()
-                    .enumerate()
-                    .for_each(|(i, e)| e.position = (i + 1) as u16);
-            }
-            LbParams::Time => {
-                vec.sort_by_key(|f| if f.time <= 0 { i32::MAX } else { f.time });
-            }
-            LbParams::Position => {
-                vec.sort_by_key(|f| f.position);
-            }
+        self.param.sort(&mut vec);
+        if let LbParams::Score = self.param {
+            // readjust the position.
+            renumber_positions(&mut vec);
         }
 
         vec

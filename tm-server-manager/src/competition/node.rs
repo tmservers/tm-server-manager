@@ -12,7 +12,7 @@ use crate::{
         tab_competition__view,
     },
     input::{InputRead, InputWrite},
-    leaderboard::{LbEntry, LeadearboardRead, LeaderboardWrite},
+    leaderboard::{LbEntry, LeadearboardRead, LeaderboardWrite, renumber_positions},
     output::{OutputRead, OutputWrite},
     raw_server::{config::RawServerContigRead, player::PermittedPlayer},
     registration::{RegistrationRead, RegistrationWrite, player::RegistrationPlayerRead},
@@ -567,9 +567,7 @@ impl NodeLeaderboard for Vec<LbEntry> {
 
                 standings.sort_by_key(|v| -v.score);
 
-                for (index, stand) in standings.iter_mut().enumerate() {
-                    stand.position = (index + 1) as u16;
-                }
+                renumber_positions(&mut standings);
 
                 standings
             }
@@ -612,9 +610,7 @@ impl NodeLeaderboard for Vec<LbEntry> {
 
                 standings.sort_by_key(|v| -(v.round as i32));
 
-                for (index, stand) in standings.iter_mut().enumerate() {
-                    stand.position = (index + 1) as u16;
-                }
+                renumber_positions(&mut standings);
 
                 standings
             }
@@ -637,9 +633,7 @@ impl NodeLeaderboard for Vec<LbEntry> {
 
                 standings.sort_by_key(|v| -(v.round as i32));
 
-                for (index, stand) in standings.iter_mut().enumerate() {
-                    stand.position = (index + 1) as u16;
-                }
+                renumber_positions(&mut standings);
 
                 standings
             }
