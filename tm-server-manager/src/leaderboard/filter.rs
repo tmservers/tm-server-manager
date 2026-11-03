@@ -2,13 +2,45 @@ use spacetimedb::SpacetimeType;
 use tm_server_types::config::TmMode;
 
 use crate::{
-    competition::node::{NodeHandle, NodeLeaderboard},
-    leaderboard::{LbEntry, LbParams, group_by},
+    competition::node::NodeHandle,
+    leaderboard::{LbEntry, LbParams, LbSettingsV3, group_by},
 };
 
+/// Superseded by [`LbFilterSettingsV2`].
 #[derive(Debug, SpacetimeType, Clone, Copy)]
 pub(crate) struct LbFilterSettings {
     kind: LbFilterKind,
+    param: LbParams,
+    filter: LbFilterIdent,
+    fallback: LbFilterFallback,
+}
+
+#[derive(Debug, SpacetimeType, Clone, Copy)]
+enum LbFilterKind {
+    //Maps,
+    Rounds,
+    // Actions // TODO we should be able to inspect the actions of the player.
+    Matches,
+}
+
+impl LbFilterSettings {
+    /// Filtering matches was filtering the standings of the matches.
+    pub(super) fn upgrade(self) -> Vec<LbSettingsV3> {
+        let filter = LbSettingsV3::Filter(LbFilterSettingsV2 {
+            param: self.param,
+            filter: self.filter,
+            fallback: self.fallback,
+        });
+        match self.kind {
+            LbFilterKind::Rounds => vec![filter],
+            LbFilterKind::Matches => vec![LbSettingsV3::Match, filter],
+        }
+    }
+}
+
+/// Keeps the best entries of every user.
+#[derive(Debug, SpacetimeType, Clone, Copy)]
+pub(crate) struct LbFilterSettingsV2 {
     param: LbParams,
     filter: LbFilterIdent,
     fallback: LbFilterFallback,
@@ -24,54 +56,21 @@ enum LbFilterFallback {
     Worst,
 }
 
-#[derive(Debug, SpacetimeType, Clone, Copy)]
-enum LbFilterKind {
-    //Maps,
-    Rounds,
-    // Actions // TODO we should be able to inspect the actions of the player.
-    Matches,
-}
+impl LbFilterSettingsV2 {
+    pub(super) fn evaluate(self, origin: NodeHandle, leaderboard: Vec<LbEntry>) -> Vec<LbEntry> {
+        //TODO valiidate that the sort does all edge cases.
+        let mut users = group_by(leaderboard, |e| e.user_id);
 
-impl LbFilterSettings {
-    pub(super) fn evaluate(
-        self,
-        origin: NodeHandle,
-        leaderboard: Vec<LbEntry>,
-        ctx: &impl spacetimedb::CtxDbRead,
-    ) -> Vec<LbEntry> {
-        let (mut map, max) = match self.kind {
-            //LbFilterKind::Match => todo!(),
-            //LbFilterKind::Maps => todo!(),
-            //TODO valiidate that the sort does all edge cases.
-            LbFilterKind::Rounds => {
-                let map = group_by(leaderboard, |e| e.user_id);
-
-                let Some(max_rounds) = map.values().map(Vec::len).max() else {
-                    // This case is only hit when nobody is even there so it is safe to just return nothing.
-                    return Vec::new();
-                };
-                (map, max_rounds as u16)
-            }
-            LbFilterKind::Matches => {
-                let lb_nodes = group_by(leaderboard, |e| e.get_node());
-                let max = lb_nodes.len() as u16;
-
-                let results = lb_nodes.values().flat_map(|entries| entries.finalize(ctx));
-                (group_by(results, |e| e.get_user()), max)
-            }
-        };
-
-        let map_len = map.len();
-
-        if map_len == 0 {
+        let Some(max) = users.iter().map(|(_, rows)| rows.len()).max() else {
+            // This case is only hit when nobody is even there so it is safe to just return nothing.
             return Vec::new();
-        }
+        };
+        let max = max as u16;
+        let user_count = users.len();
 
-        for rows in map.values_mut() {
+        for (user_id, rows) in &mut users {
             self.param.sort(rows);
-        }
 
-        for (user_id, rows) in &mut map {
             match self.filter {
                 LbFilterIdent::Best(n) => {
                     rows.truncate(n as usize);
@@ -88,7 +87,7 @@ impl LbFilterSettings {
                                             LbEntry::new(
                                                 *user_id,
                                                 TmMode::Unknown,
-                                                map_len as u16,
+                                                user_count as u16,
                                                 origin,
                                             )
                                             .set_score(0),
@@ -101,7 +100,7 @@ impl LbFilterSettings {
                                         rows.push(LbEntry::new(
                                             *user_id,
                                             TmMode::Unknown,
-                                            map_len as u16,
+                                            user_count as u16,
                                             origin,
                                         ));
                                     }
@@ -113,9 +112,7 @@ impl LbFilterSettings {
             };
         }
 
-        let filter = map.into_values().flatten().collect();
-
-        filter
+        users.into_iter().flat_map(|(_, rows)| rows).collect()
     }
 }
 

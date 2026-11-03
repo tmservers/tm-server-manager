@@ -54,7 +54,8 @@ impl<Db: spacetimedb::CtxDbWrite> AutoIncWrite for Db {
 fn table_id_from_trait<T: TableInternal>() -> u32 {
     match T::TABLE_NAME {
         "tab_raw_server_config_v2" => 1,
-        "tab_leaderboard_v2" => 2,
+        // The v3 table continues the ids of the v2 one.
+        "tab_leaderboard_v2" | "tab_leaderboard_v3" => 2,
         _ => {
             log::error!("Table case not covered!");
             panic!()

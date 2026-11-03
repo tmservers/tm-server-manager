@@ -1,9 +1,6 @@
 use spacetimedb::SpacetimeType;
 
-use crate::{
-    competition::node::NodeHandle,
-    leaderboard::{LbEntry, LbParams},
-};
+use crate::leaderboard::{LbEntry, LbParams};
 
 #[derive(Debug, SpacetimeType, Clone, Copy)]
 pub(crate) struct LbRemapSettings {
@@ -25,9 +22,9 @@ enum LbManipulationKind {
 }
 
 impl LbRemapSettings {
-    pub(super) fn evaluate(self, origin: NodeHandle, mut leaderboard: Vec<LbEntry>) -> Vec<LbEntry> {
+    /// Only changes values, so the entries keep their origin and can still be matched afterwards.
+    pub(super) fn evaluate(self, mut leaderboard: Vec<LbEntry>) -> Vec<LbEntry> {
         for entry in &mut leaderboard {
-            entry.set_origin(origin);
             let new_val = match self.manipulation {
                 LbManipulationKind::Add => match self.origin {
                     LbParams::Score => entry.score + self.manipulation_value,
