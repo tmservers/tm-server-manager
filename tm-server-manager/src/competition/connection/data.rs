@@ -8,7 +8,7 @@ use crate::{
         node::NodeHandle,
     },
     leaderboard::{
-        LbEntry, LbSettingsV2, evaluate_steps,
+        LbEntry, LbSettingsV3, evaluate_steps,
         select::{LbSelectFirstOffsetN, LbSelectSettings},
     },
 };
@@ -49,7 +49,7 @@ pub struct ConnectionDataV2 {
     #[primary_key]
     pub connection_id: u32,
 
-    settings: Vec<LbSettingsV2>,
+    settings: Vec<LbSettingsV3>,
 }
 
 impl ConnectionDataV2 {
@@ -79,7 +79,7 @@ impl ConnectionDataV2 {
 
 impl From<ConnectionData> for ConnectionDataV2 {
     fn from(data: ConnectionData) -> Self {
-        // Every option except `All` finalized the leaderboard before selecting from it.
+        // Every option except `All` took the match standings before selecting from them.
         let select = match data.options {
             ConnectionDataOption::All => None,
             ConnectionDataOption::FirstN(n) => Some(LbSelectSettings::FirstN(n)),
@@ -93,7 +93,7 @@ impl From<ConnectionData> for ConnectionDataV2 {
             }
         };
         let settings = match select {
-            Some(select) => vec![LbSettingsV2::Finalize, LbSettingsV2::Select(select)],
+            Some(select) => vec![LbSettingsV3::Match, LbSettingsV3::Select(select)],
             None => Vec::new(),
         };
 
@@ -133,7 +133,7 @@ fn migration_connection_data_to_v2(ctx: &ReducerContext) -> Result<(), String> {
 fn competition_connection_data_update(
     ctx: &ReducerContext,
     connection_id: u32,
-    settings: Vec<LbSettingsV2>,
+    settings: Vec<LbSettingsV3>,
 ) -> Result<(), String> {
     let Some(connection) = ctx.db.tab_connection().id().find(connection_id) else {
         return Err("connection could not be found!".into());

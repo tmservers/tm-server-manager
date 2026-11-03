@@ -1,7 +1,6 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use spacetimedb::{ProcedureContext, ReducerContext, SpacetimeType, Uuid, procedure, reducer};
-use tm_server_types::config::{ModeSettingsV2, TmMode};
 
 use crate::{
     authorization::Authorization,
@@ -12,9 +11,9 @@ use crate::{
         tab_competition__view,
     },
     input::{InputRead, InputWrite},
-    leaderboard::{LbEntry, LeadearboardRead, LeaderboardWrite, renumber_positions},
+    leaderboard::{LbEntry, LeadearboardRead, LeaderboardWrite, standings::LbStandings},
     output::{OutputRead, OutputWrite},
-    raw_server::{config::RawServerContigRead, player::PermittedPlayer},
+    raw_server::player::PermittedPlayer,
     registration::{RegistrationRead, RegistrationWrite, player::RegistrationPlayerRead},
     schedule::{ScheduleRead, ScheduleWrite},
     tm_match::{MatchRead, MatchStatus, MatchWrite, leaderboard::MatchLeadearboardRead},
@@ -219,7 +218,7 @@ impl<Db: spacetimedb::CtxDbRead> NodeRead for Db {
             } */
         let players = self
             .node_resolve_input_data(node)
-            .finalize(self)
+            .match_standings(self)
             .into_iter()
             .map(|p| {
                 let account_id = self.user_account_from_id(p.get_user());
@@ -480,7 +479,7 @@ fn node_leaderboard_output(
     ctx: &mut ProcedureContext,
     node: NodeHandle,
 ) -> Result<Vec<LbEntry>, String> {
-    ctx.try_with_tx(|ctx| Ok(ctx.node_resolve_output_data(node).finalize(ctx)))
+    ctx.try_with_tx(|ctx| Ok(ctx.node_resolve_output_data(node).match_standings(ctx)))
 }
 
 #[procedure]
@@ -505,7 +504,7 @@ fn node_leaderboard_input_finalize(
     ctx: &mut ProcedureContext,
     node: NodeHandle,
 ) -> Result<Vec<LbEntry>, String> {
-    ctx.try_with_tx(|ctx| Ok(ctx.node_resolve_input_data(node).finalize(ctx)))
+    ctx.try_with_tx(|ctx| Ok(ctx.node_resolve_input_data(node).match_standings(ctx)))
 }
 
 // To test the destination
@@ -515,144 +514,6 @@ fn test_node_permitted_players_input(
     node: NodeHandle,
 ) -> Result<Vec<PermittedPlayer>, String> {
     ctx.try_with_tx(|ctx| Ok(ctx.node_permitted_players_input(node)))
-}
-
-pub trait NodeLeaderboard {
-    fn finalize(&self, ctx: &impl spacetimedb::CtxDbRead) -> Vec<LbEntry>;
-}
-
-impl NodeLeaderboard for Vec<LbEntry> {
-    fn finalize(&self, ctx: &impl spacetimedb::CtxDbRead) -> Vec<LbEntry> {
-        /*  let Some(state) = self
-            .db_read_only()
-            .tab_match_state()
-            .match_id()
-            .find(match_id)
-        else {
-            return Vec::new();
-        };
-        if round == 0 {
-            round = state.get_round();
-        };
-        let mut entries: Vec<MatchRoundPlayer> = self
-            .db_read_only()
-            .tab_match_round_player()
-            .match_round_range()
-            .filter((match_id, 1..=round))
-            .collect(); */
-
-        let mut entries = self.clone();
-
-        let mut map = HashMap::<u32, LbEntry>::new();
-
-        let Some(entry) = entries.get(0) else {
-            return Vec::new();
-        };
-        let entry = *entry;
-
-        let returned = match entry.get_mode() {
-            TmMode::Rounds => {
-                for entry in entries {
-                    map.entry(entry.user_id)
-                        .and_modify(|e| {
-                            e.score += entry.score;
-                            if entry.round > e.round {
-                                e.round = entry.round;
-                            }
-                        })
-                        .or_insert(entry);
-                }
-
-                let mut standings = map.into_values().collect::<Vec<_>>();
-
-                standings.sort_by_key(|v| -v.score);
-
-                renumber_positions(&mut standings);
-
-                standings
-            }
-            TmMode::ReverseCup => {
-                let mut eliminated = HashSet::new();
-
-                for entry in entries {
-                    map.entry(entry.user_id)
-                        .and_modify(|e| {
-                            if entry.score <= -2000 {
-                                eliminated.insert(e.user_id);
-                            }
-                            e.score += entry.score;
-
-                            if entry.round > e.round {
-                                e.round = entry.round;
-                            }
-                        })
-                        .or_insert(entry);
-                }
-
-                let mut standings = map.into_values().collect::<Vec<_>>();
-
-                let tm_match = ctx.match_find(entry.get_node().id()).unwrap();
-                let cfg = ctx
-                    .raw_server_config(tm_match.get_active_config_id())
-                    .unwrap();
-                let starting_points = match cfg.get_mode() {
-                    ModeSettingsV2::ReverseCup(reverse_cup) => reverse_cup.starting_points,
-                    _ => unreachable!(),
-                };
-
-                for stand in standings.iter_mut() {
-                    stand.score += starting_points;
-
-                    if !eliminated.contains(&stand.user_id) || stand.score > 0 {
-                        stand.round += 1;
-                    }
-                }
-
-                standings.sort_by_key(|v| -(v.round as i32));
-
-                renumber_positions(&mut standings);
-
-                standings
-            }
-            TmMode::Knockout => {
-                for entry in entries {
-                    map.entry(entry.user_id)
-                        .and_modify(|e| {
-                            if entry.score == -1 {
-                                *e = entry;
-                            }
-
-                            if entry.round > e.round {
-                                e.round = entry.round;
-                            }
-                        })
-                        .or_insert(entry);
-                }
-
-                let mut standings = map.into_values().collect::<Vec<_>>();
-
-                standings.sort_by_key(|v| -(v.round as i32));
-
-                renumber_positions(&mut standings);
-
-                standings
-            }
-            TmMode::TimeAttack => {
-                entries.sort_by_key(|v| if v.time <= 0 { i32::MAX } else { v.time });
-
-                entries
-            }
-            TmMode::Unknown => {
-                // should come out of lb node so its always flattened in our case rn TODO fix this up.
-                entries.sort_by_key(|k| k.position);
-                entries
-            }
-        };
-
-        // log::info!("{returned:?}");
-
-        returned
-    }
 }
 
 /*

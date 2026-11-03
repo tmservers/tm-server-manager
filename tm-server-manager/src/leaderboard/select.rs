@@ -2,7 +2,7 @@ use spacetimedb::SpacetimeType;
 
 use crate::leaderboard::LbEntry;
 
-/// Selects entries by their place in the leaderboard, so it should usually be finalized before.
+/// Selects entries by their place in the leaderboard, so it usually comes after a match or merge step.
 #[derive(Debug, SpacetimeType, Clone)]
 pub(crate) enum LbSelectSettings {
     FirstN(u8),
@@ -20,6 +20,15 @@ pub(crate) struct LbSelectFirstOffsetN {
 
 impl LbSelectSettings {
     pub(super) fn evaluate(&self, leaderboard: Vec<LbEntry>) -> Vec<LbEntry> {
+        // Places are only meaningful in a single leaderboard, several have to be merged first.
+        if let Some(first) = leaderboard.first() {
+            let origin = first.get_node();
+            if leaderboard.iter().any(|e| e.get_node() != origin) {
+                log::error!("Cannot select from entries of more than one origin, merge them first.");
+                return Vec::new();
+            }
+        }
+
         match self {
             LbSelectSettings::FirstN(f) => leaderboard.into_iter().take(*f as usize).collect(),
             LbSelectSettings::LastN(l) => {
