@@ -117,7 +117,7 @@ impl MatchState {
         matches!(self.status, MatchStatus::LiveComitted)
     }
 
-    pub(super) fn get_mode(&self) -> TmMode {
+    pub(crate) fn get_mode(&self) -> TmMode {
         self.mode
     }
 }

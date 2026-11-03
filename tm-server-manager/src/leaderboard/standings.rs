@@ -4,9 +4,9 @@ use tm_server_types::config::{ModeSettingsV2, TmMode};
 
 use crate::{
     competition::node::NodeHandle,
-    leaderboard::{LbEntry, LbParams, group_by, renumber_positions},
+    leaderboard::{LbEntry, LbEntryKind, LbParams, group_by, renumber_positions},
     raw_server::config::RawServerContigRead,
-    tm_match::MatchRead,
+    tm_match::{MatchRead, state::MatchStateRead},
 };
 
 pub(crate) trait LbStandings {
@@ -17,35 +17,51 @@ pub(crate) trait LbStandings {
 
 impl LbStandings for Vec<LbEntry> {
     fn match_standings(&self, ctx: &impl spacetimedb::CtxDbRead) -> Vec<LbEntry> {
-        group_by(self.iter().copied(), |e| e.get_node())
+        group_by(self.iter().copied(), |e| (e.get_node(), e.kind))
             .into_iter()
-            .flat_map(|(node, entries)| node_standings(ctx, node, entries))
+            .flat_map(|((node, kind), entries)| match kind {
+                LbEntryKind::Round => round_standings(ctx, node, entries),
+                LbEntryKind::Standing => sorted_standings(entries),
+            })
             .collect()
     }
 }
 
-/// All entries are from the same node so they share the mode of its match.
-fn node_standings(
+fn sorted_standings(mut entries: Vec<LbEntry>) -> Vec<LbEntry> {
+    entries.sort_by_key(|e| e.position);
+    entries
+}
+
+/// The rounds of a single match, its mode decides how they become standings.
+fn round_standings(
     ctx: &impl spacetimedb::CtxDbRead,
     node: NodeHandle,
-    mut entries: Vec<LbEntry>,
+    entries: Vec<LbEntry>,
 ) -> Vec<LbEntry> {
-    let mut standings = match entries[0].get_mode() {
-        TmMode::Unknown => {
-            entries.sort_by_key(|e| e.position);
-            return entries;
-        }
+    let Some(mode) = match_mode(ctx, node) else {
+        log::error!("Rounds of {node:?} have no match mode, they are kept as they are.");
+        return sorted_standings(entries);
+    };
+
+    let mut standings = match mode {
         TmMode::Rounds => rounds(entries),
         TmMode::ReverseCup => reverse_cup(ctx, node, entries),
         TmMode::Knockout => knockout(entries),
         TmMode::TimeAttack => time_attack(entries),
+        TmMode::Unknown => sorted_standings(entries),
     };
 
-    // Marks them as standings.
     for standing in &mut standings {
-        standing.mode = TmMode::Unknown;
+        standing.kind = LbEntryKind::Standing;
     }
     standings
+}
+
+fn match_mode(ctx: &impl spacetimedb::CtxDbRead, node: NodeHandle) -> Option<TmMode> {
+    let NodeHandle::MatchV1(match_id) = node else {
+        return None;
+    };
+    Some(ctx.match_state_find(match_id)?.get_mode())
 }
 
 /// Folds the rounds of every user into their first one.
@@ -119,7 +135,9 @@ fn reverse_cup_starting_points(ctx: &impl spacetimedb::CtxDbRead, node: NodeHand
         return None;
     };
     let tm_match = ctx.match_find(match_id)?;
-    let config = ctx.raw_server_config(tm_match.get_active_config_id()).ok()?;
+    let config = ctx
+        .raw_server_config(tm_match.get_active_config_id())
+        .ok()?;
     match config.get_mode() {
         ModeSettingsV2::ReverseCup(reverse_cup) => Some(reverse_cup.starting_points),
         _ => None,

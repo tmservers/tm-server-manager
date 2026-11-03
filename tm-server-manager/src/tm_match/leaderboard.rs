@@ -5,7 +5,7 @@ use spacetimedb::{
 use crate::{
     authorization::Authorization,
     competition::{CompetitionPermissionsV1, node::NodeHandle},
-    leaderboard::LbEntry,
+    leaderboard::{LbEntry, LbEntryKind},
     tm_match::{state::MatchStateRead, tab_match},
 };
 
@@ -213,7 +213,7 @@ impl<Db: spacetimedb::CtxDbRead> MatchLeadearboardRead for Db {
             .map(|f| {
                 LbEntry::new(
                     f.user_id,
-                    state.get_mode(),
+                    LbEntryKind::Round,
                     f.position,
                     NodeHandle::MatchV1(match_id),
                 )
