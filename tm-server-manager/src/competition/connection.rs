@@ -16,7 +16,7 @@ use crate::{
         node::{NodeHandle, NodeRead},
     },
     input::InputRead,
-    leaderboard::LbEntry,
+    leaderboard::{LbEntry, context::LbContext, error::LbError},
     output::OutputRead,
     schedule::ScheduleWrite,
     tm_match::MatchWrite,
@@ -473,7 +473,7 @@ pub(crate) trait ConnectionRead {
         &self,
         connection: TabConnection,
         data: Vec<LbEntry>,
-    ) -> Vec<LbEntry>;
+    ) -> Result<Vec<LbEntry>, LbError>;
 
     /// The connections inside of a competition.
     fn connections_in_competition(
@@ -488,24 +488,25 @@ impl<Db: spacetimedb::CtxDbRead> ConnectionRead for Db {
         &self,
         connection: TabConnection,
         data: Vec<LbEntry>,
-    ) -> Vec<LbEntry> {
+    ) -> Result<Vec<LbEntry>, LbError> {
         // Prevent the method from misuse because it is impossible to form a lb from a non data connection.
         if !connection.is_data() {
-            log::error!("Wanted to filter a connection but it was not a data connection.");
-            return Vec::new();
+            return Err(LbError::new(format!(
+                "Connection {} is not a data connection.",
+                connection.id
+            )));
         }
 
         let Some(rules) = self.connection_data_find(connection.id) else {
-            log::error!(
+            return Err(LbError::new(format!(
                 "Data connection {} has no data, it might not be migrated yet.",
                 connection.id
-            );
-            return Vec::new();
+            )));
         };
 
         //let players = self.node_resolve_input_data(connection.origin());
 
-        rules.evaluate(connection.origin(), data, self)
+        rules.evaluate(&LbContext::new(self, connection.origin()), data)
     }
 
     fn connections_in_competition(

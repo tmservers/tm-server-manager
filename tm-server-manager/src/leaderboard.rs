@@ -1,5 +1,3 @@
-use std::{collections::HashMap, hash::Hash};
-
 use spacetimedb::{
     AnonymousViewContext, ProcedureContext, Query, ReducerContext, SpacetimeType, Table, procedure,
     reducer, table, view,
@@ -13,19 +11,26 @@ use crate::{
         node::{NodeHandle, NodeRead, NodeWrite, Vec2},
     },
     leaderboard::{
+        context::LbContext,
+        error::LbError,
         filter::{LbFilterSettings, LbFilterSettingsV2},
         merge::{LbMergeSettings, LbMergeSettingsV2},
+        modes::match_standings,
         remap::LbRemapSettings,
         select::LbSelectSettings,
-        standings::LbStandings,
     },
 };
 
+mod combinators;
+pub(crate) mod context;
+pub(crate) mod error;
 mod filter;
 mod merge;
+pub(crate) mod modes;
 mod remap;
 pub(crate) mod select;
-pub(crate) mod standings;
+#[cfg(test)]
+mod test_util;
 
 #[table(accessor= tab_leaderboard, vis_private)]
 struct LeaderboardV1 {
@@ -168,33 +173,36 @@ pub(crate) enum LbSettingsV3 {
     Select(LbSelectSettings),
 }
 
-impl LbSettingsV3 {
-    fn evaluate(
-        &self,
-        origin: NodeHandle,
-        leaderboard: Vec<LbEntry>,
-        ctx: &impl spacetimedb::CtxDbRead,
-    ) -> Vec<LbEntry> {
+/// Takes the entries of a leaderboard and returns the changed ones.
+pub(crate) trait LbStep {
+    fn apply(&self, cx: &LbContext, entries: Vec<LbEntry>) -> Result<Vec<LbEntry>, LbError>;
+}
+
+impl LbStep for LbSettingsV3 {
+    fn apply(&self, cx: &LbContext, entries: Vec<LbEntry>) -> Result<Vec<LbEntry>, LbError> {
         match self {
-            LbSettingsV3::Match => leaderboard.match_standings(ctx),
-            LbSettingsV3::Merge(settings) => settings.evaluate(origin, leaderboard),
-            LbSettingsV3::Filter(settings) => settings.evaluate(leaderboard),
-            LbSettingsV3::Remap(settings) => settings.evaluate(leaderboard),
-            LbSettingsV3::Select(settings) => settings.evaluate(leaderboard),
+            LbSettingsV3::Match => match_standings(cx, entries),
+            LbSettingsV3::Merge(settings) => settings.apply(cx, entries),
+            LbSettingsV3::Filter(settings) => settings.apply(cx, entries),
+            LbSettingsV3::Remap(settings) => settings.apply(cx, entries),
+            LbSettingsV3::Select(settings) => settings.apply(cx, entries),
         }
     }
 }
 
-/// Runs the steps one after another, entries created by a step get `origin` as their node.
+/// Runs the steps one after another, entries created by a step belong to the origin of `cx`.
 pub(crate) fn evaluate_steps(
-    ctx: &impl spacetimedb::CtxDbRead,
-    origin: NodeHandle,
+    cx: &LbContext,
     steps: &[LbSettingsV3],
-    leaderboard: Vec<LbEntry>,
-) -> Vec<LbEntry> {
-    steps.iter().fold(leaderboard, |leaderboard, step| {
-        step.evaluate(origin, leaderboard, ctx)
-    })
+    entries: Vec<LbEntry>,
+) -> Result<Vec<LbEntry>, LbError> {
+    steps
+        .iter()
+        .enumerate()
+        .try_fold(entries, |entries, (index, step)| {
+            step.apply(cx, entries)
+                .map_err(|error| error.at_step(cx.origin(), index))
+        })
 }
 
 #[derive(Debug, SpacetimeType, Clone, Copy)]
@@ -205,45 +213,18 @@ enum LbParams {
 }
 
 impl LbParams {
-    /// Sorts the best entries first.
-    fn sort(self, entries: &mut [LbEntry]) {
+    /// Sorting by the key puts the best entries first.
+    fn key(self, entry: &LbEntry) -> i64 {
         match self {
-            LbParams::Score => entries.sort_by_key(|f| -f.score),
-            LbParams::Time => entries.sort_by_key(|f| LbParams::time_key(f.time)),
-            LbParams::Position => entries.sort_by_key(|f| f.position),
+            LbParams::Score => -(entry.score as i64),
+            LbParams::Time => LbParams::time_key(entry.time) as i64,
+            LbParams::Position => entry.position as i64,
         }
     }
 
     /// A time of zero or less was not driven so it is the worst.
     fn time_key(time: i32) -> i32 {
         if time <= 0 { i32::MAX } else { time }
-    }
-}
-
-/// Groups the entries by the key, the groups and the entries inside of them keep their order.
-fn group_by<K: Hash + Eq + Copy>(
-    entries: impl IntoIterator<Item = LbEntry>,
-    key: impl Fn(&LbEntry) -> K,
-) -> Vec<(K, Vec<LbEntry>)> {
-    let mut indices: HashMap<K, usize> = HashMap::new();
-    let mut groups: Vec<(K, Vec<LbEntry>)> = Vec::new();
-    for entry in entries {
-        let key = key(&entry);
-        match indices.get(&key) {
-            Some(&index) => groups[index].1.push(entry),
-            None => {
-                indices.insert(key, groups.len());
-                groups.push((key, vec![entry]));
-            }
-        }
-    }
-    groups
-}
-
-/// Sets the positions to the order of the entries, starting at 1.
-pub(crate) fn renumber_positions(entries: &mut [LbEntry]) {
-    for (index, entry) in entries.iter_mut().enumerate() {
-        entry.position = (index + 1) as u16;
     }
 }
 
@@ -401,7 +382,7 @@ fn leaderboard_settings_update(
 
 pub(crate) trait LeadearboardRead {
     fn leaderboard_find(&self, id: u32) -> Result<LeaderboardV3, String>;
-    fn leaderboard_evaluation(&self, leaderboard_id: u32) -> Vec<LbEntry>;
+    fn leaderboard_evaluation(&self, leaderboard_id: u32) -> Result<Vec<LbEntry>, LbError>;
     fn leaderboards_with_competition(
         &self,
         competition_id: u32,
@@ -409,26 +390,27 @@ pub(crate) trait LeadearboardRead {
     //fn leaderboard_finalize(&self, lb: Vec<LbEntry>) -> Vec<LbEntry>;
 }
 impl<Db: spacetimedb::CtxDbRead> LeadearboardRead for Db {
-    fn leaderboard_evaluation(&self, leaderboard_id: u32) -> Vec<LbEntry> {
+    fn leaderboard_evaluation(&self, leaderboard_id: u32) -> Result<Vec<LbEntry>, LbError> {
         let Some(lb) = self
             .db_read_only()
             .tab_leaderboard_v3()
             .id()
             .find(leaderboard_id)
         else {
-            log::warn!("Leaderboard was evaluated which does not exist.");
-            return Vec::new();
+            return Err(LbError::new(format!(
+                "Leaderboard {leaderboard_id} does not exist."
+            )));
         };
 
         if lb.status == LeaderboardStatus::Configuring {
             log::warn!("Tried to eval leadarboard but it is still getting configured.");
-            return Vec::new();
+            return Ok(Vec::new());
         }
 
         let node = NodeHandle::LeaderboardV1(leaderboard_id);
-        let input = self.node_resolve_input_data(node);
+        let input = self.node_resolve_input_data(node)?;
 
-        evaluate_steps(self, node, &lb.settings, input)
+        evaluate_steps(&LbContext::new(self, node), &lb.settings, input)
     }
 
     fn leaderboard_find(&self, id: u32) -> Result<LeaderboardV3, String> {

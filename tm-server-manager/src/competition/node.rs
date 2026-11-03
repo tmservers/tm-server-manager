@@ -11,7 +11,10 @@ use crate::{
         tab_competition__view,
     },
     input::{InputRead, InputWrite},
-    leaderboard::{LbEntry, LeadearboardRead, LeaderboardWrite, standings::LbStandings},
+    leaderboard::{
+        LbEntry, LeadearboardRead, LeaderboardWrite, context::LbContext, error::LbError,
+        modes::match_standings,
+    },
     output::{OutputRead, OutputWrite},
     raw_server::player::PermittedPlayer,
     registration::{RegistrationRead, RegistrationWrite, player::RegistrationPlayerRead},
@@ -176,8 +179,8 @@ fn node_delete(ctx: &ReducerContext, node: NodeHandle) -> Result<(), String> {
 pub(crate) trait NodeRead {
     fn node_permitted_players_input(&self, node: NodeHandle) -> Vec<PermittedPlayer>;
     fn node_get_parent(&self, node: NodeHandle) -> Result<u32, String>;
-    fn node_resolve_input_data(&self, node: NodeHandle) -> Vec<LbEntry>;
-    fn node_resolve_output_data(&self, node: NodeHandle) -> Vec<LbEntry>;
+    fn node_resolve_input_data(&self, node: NodeHandle) -> Result<Vec<LbEntry>, LbError>;
+    fn node_resolve_output_data(&self, node: NodeHandle) -> Result<Vec<LbEntry>, LbError>;
     fn node_is_template(&self, node: NodeHandle) -> bool;
 }
 impl<Db: spacetimedb::CtxDbRead> NodeRead for Db {
@@ -212,7 +215,11 @@ impl<Db: spacetimedb::CtxDbRead> NodeRead for Db {
             } */
         let players = self
             .node_resolve_input_data(node)
-            .match_standings(self)
+            .and_then(|input| match_standings(&LbContext::new(self, node), input))
+            .unwrap_or_else(|error| {
+                log::error!("The permitted players of {node:?} could not be resolved: {error}");
+                Vec::new()
+            })
             .into_iter()
             .map(|p| {
                 let account_id = self.user_account_from_id(p.get_user());
@@ -253,11 +260,11 @@ impl<Db: spacetimedb::CtxDbRead> NodeRead for Db {
         }
     }
 
-    fn node_resolve_input_data(&self, node: NodeHandle) -> Vec<LbEntry> {
+    fn node_resolve_input_data(&self, node: NodeHandle) -> Result<Vec<LbEntry>, LbError> {
         node_resolve_input_data_inner(self, node, &mut 1)
     }
 
-    fn node_resolve_output_data(&self, node: NodeHandle) -> Vec<LbEntry> {
+    fn node_resolve_output_data(&self, node: NodeHandle) -> Result<Vec<LbEntry>, LbError> {
         node_resolve_output_data_inner(self, node, &mut 1)
     }
 
@@ -303,21 +310,21 @@ fn node_resolve_output_data_inner(
     ctx: &impl spacetimedb::CtxDbRead,
     node: NodeHandle,
     origin_offset: &mut u8,
-) -> Vec<LbEntry> {
+) -> Result<Vec<LbEntry>, LbError> {
     match node {
         NodeHandle::ScheduleV1(n) => {
             log::warn!("Attempted to read node data output for a schedule node: {n}");
-            Vec::new()
+            Ok(Vec::new())
         }
         NodeHandle::ServerV1(n) => {
             log::warn!("Attempted to read node data output for a server node: {n}");
-            Vec::new()
+            Ok(Vec::new())
         }
-        NodeHandle::MatchV1(n) => ctx.match_rounds(n),
+        NodeHandle::MatchV1(n) => Ok(ctx.match_rounds(n)),
         NodeHandle::CompetitionV1(n) => {
             let Some(output) = ctx.outputs_in_parent(n).next() else {
                 log::warn!("Requested lb for competition {n} but it has no output node!");
-                return Vec::new();
+                return Ok(Vec::new());
             };
 
             node_resolve_input_data_inner(ctx, NodeHandle::OutputV1(output.id), origin_offset)
@@ -327,13 +334,13 @@ fn node_resolve_output_data_inner(
         }
         NodeHandle::InputV1(n) => {
             let Ok(input) = ctx.input_find(n) else {
-                return Vec::new();
+                return Ok(Vec::new());
             };
             let comp = input.get_comp_id();
 
             node_resolve_input_data_inner(ctx, NodeHandle::CompetitionV1(comp), origin_offset)
         }
-        NodeHandle::RegistrationV1(n) => ctx.registration_lb(n),
+        NodeHandle::RegistrationV1(n) => Ok(ctx.registration_lb(n)),
         NodeHandle::LeaderboardV1(n) => ctx.leaderboard_evaluation(n),
     }
 }
@@ -342,7 +349,7 @@ fn node_resolve_input_data_inner(
     ctx: &impl spacetimedb::CtxDbRead,
     node: NodeHandle,
     origin_offset: &mut u8,
-) -> Vec<LbEntry> {
+) -> Result<Vec<LbEntry>, LbError> {
     let mut player_entries = Vec::new();
 
     let depending_connections = ctx
@@ -352,14 +359,14 @@ fn node_resolve_input_data_inner(
 
     for depending_connection in depending_connections {
         let lb_entries =
-            node_resolve_output_data_inner(ctx, depending_connection.origin(), origin_offset);
+            node_resolve_output_data_inner(ctx, depending_connection.origin(), origin_offset)?;
 
-        let filtered = ctx.connection_resolve_leaderboard(depending_connection, lb_entries);
+        let filtered = ctx.connection_resolve_leaderboard(depending_connection, lb_entries)?;
 
         player_entries.extend(filtered);
     }
 
-    player_entries
+    Ok(player_entries)
 }
 
 pub(crate) trait NodeWrite: NodeRead {
@@ -427,7 +434,10 @@ fn node_leaderboard_output(
     ctx: &mut ProcedureContext,
     node: NodeHandle,
 ) -> Result<Vec<LbEntry>, String> {
-    ctx.try_with_tx(|ctx| Ok(ctx.node_resolve_output_data(node).match_standings(ctx)))
+    ctx.try_with_tx(|ctx| {
+        let output = ctx.node_resolve_output_data(node)?;
+        Ok(match_standings(&LbContext::new(ctx, node), output)?)
+    })
 }
 
 #[procedure]
@@ -435,7 +445,7 @@ fn node_leaderboard_output_raw(
     ctx: &mut ProcedureContext,
     node: NodeHandle,
 ) -> Result<Vec<LbEntry>, String> {
-    ctx.try_with_tx(|ctx| Ok(ctx.node_resolve_output_data(node)))
+    ctx.try_with_tx(|ctx| Ok(ctx.node_resolve_output_data(node)?))
 }
 
 #[procedure]
@@ -443,7 +453,7 @@ fn node_leaderboard_input(
     ctx: &mut ProcedureContext,
     node: NodeHandle,
 ) -> Result<Vec<LbEntry>, String> {
-    ctx.try_with_tx(|ctx| Ok(ctx.node_resolve_input_data(node)))
+    ctx.try_with_tx(|ctx| Ok(ctx.node_resolve_input_data(node)?))
 }
 
 // To test the destination
@@ -452,7 +462,10 @@ fn node_leaderboard_input_finalize(
     ctx: &mut ProcedureContext,
     node: NodeHandle,
 ) -> Result<Vec<LbEntry>, String> {
-    ctx.try_with_tx(|ctx| Ok(ctx.node_resolve_input_data(node).match_standings(ctx)))
+    ctx.try_with_tx(|ctx| {
+        let input = ctx.node_resolve_input_data(node)?;
+        Ok(match_standings(&LbContext::new(ctx, node), input)?)
+    })
 }
 
 // To test the destination

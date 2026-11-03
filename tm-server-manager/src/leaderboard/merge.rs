@@ -2,7 +2,10 @@ use spacetimedb::SpacetimeType;
 
 use crate::{
     competition::node::NodeHandle,
-    leaderboard::{LbEntry, LbEntryKind, LbParams, group_by, renumber_positions},
+    leaderboard::{
+        LbEntry, LbEntryKind, LbParams, LbStep, combinators::LbRows, context::LbContext,
+        error::LbError,
+    },
 };
 
 /// Superseded by [`LbMergeSettingsV2`].
@@ -40,26 +43,28 @@ enum LbMergeAction {
     Summate,
 }
 
+impl LbStep for LbMergeSettingsV2 {
+    fn apply(&self, cx: &LbContext, entries: Vec<LbEntry>) -> Result<Vec<LbEntry>, LbError> {
+        Ok(self.evaluate(cx.origin(), entries))
+    }
+}
+
 impl LbMergeSettingsV2 {
-    pub(super) fn evaluate(self, origin: NodeHandle, leaderboard: Vec<LbEntry>) -> Vec<LbEntry> {
-        let mut merged: Vec<LbEntry> = group_by(leaderboard, |e| e.user_id)
-            .into_iter()
-            .map(|(player, entries)| {
-                let init = LbEntry::new(player, LbEntryKind::Standing, 0, origin)
-                    .set_score(0)
-                    .set_time(0);
-                self.merge(init, &entries)
-            })
-            .collect();
+    fn evaluate(self, origin: NodeHandle, leaderboard: Vec<LbEntry>) -> Vec<LbEntry> {
+        let merged = leaderboard.group_by(|e| e.user_id).fold(|player, entries| {
+            let init = LbEntry::new(player, LbEntryKind::Standing, 0, origin)
+                .set_score(0)
+                .set_time(0);
+            self.merge(init, &entries)
+        });
         log::info!("Merge Result: {:?}", merged);
 
-        self.param.sort(&mut merged);
+        let merged = merged.sorted_by_key(|e| self.param.key(e));
         // When merging positions they are what gets sorted by so they are kept.
-        if !matches!(self.param, LbParams::Position) {
-            renumber_positions(&mut merged);
+        match self.param {
+            LbParams::Position => merged,
+            _ => merged.renumbered(),
         }
-
-        merged
     }
 
     fn merge(self, mut merged: LbEntry, entries: &[LbEntry]) -> LbEntry {
@@ -92,5 +97,61 @@ impl LbMergeSettingsV2 {
             LbMergeAction::Summate => sum,
             LbMergeAction::Average => sum / count as i64,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::leaderboard::test_util::{ranking, round};
+
+    const LEADERBOARD: NodeHandle = NodeHandle::LeaderboardV1(7);
+
+    fn merge(action: LbMergeAction, param: LbParams, entries: Vec<LbEntry>) -> Vec<LbEntry> {
+        LbMergeSettingsV2 { action, param }.evaluate(LEADERBOARD, entries)
+    }
+
+    #[test]
+    fn summed_scores_become_standings_of_the_leaderboard() {
+        let merged = merge(
+            LbMergeAction::Summate,
+            LbParams::Score,
+            vec![round(1, 1, 10, 0), round(2, 1, 30, 0), round(1, 2, 25, 0)],
+        );
+
+        assert_eq!(ranking(&merged), vec![(1, 1), (2, 2)]);
+        let scores: Vec<i32> = merged.iter().map(|e| e.score).collect();
+        assert_eq!(scores, vec![35, 30]);
+        assert!(merged.iter().all(|e| e.get_node() == LEADERBOARD));
+        assert!(merged.iter().all(|e| e.kind == LbEntryKind::Standing));
+    }
+
+    #[test]
+    fn an_undriven_time_makes_the_average_undriven() {
+        let merged = merge(
+            LbMergeAction::Average,
+            LbParams::Time,
+            vec![
+                round(2, 1, 0, 1000),
+                round(1, 1, 0, 1000),
+                round(2, 2, 0, 0),
+                round(1, 2, 0, 3000),
+            ],
+        );
+
+        assert_eq!(ranking(&merged), vec![(1, 1), (2, 2)]);
+        let times: Vec<i32> = merged.iter().map(|e| e.time).collect();
+        assert_eq!(times, vec![2000, 0]);
+    }
+
+    #[test]
+    fn merged_positions_are_kept_instead_of_renumbered() {
+        let entries = [(1, 1), (2, 2), (3, 4), (1, 3), (2, 2), (3, 6)].map(|(user, position)| {
+            LbEntry::new(user, LbEntryKind::Standing, position, LEADERBOARD)
+        });
+
+        let merged = merge(LbMergeAction::Average, LbParams::Position, entries.to_vec());
+
+        assert_eq!(ranking(&merged), vec![(1, 2), (2, 2), (3, 5)]);
     }
 }
