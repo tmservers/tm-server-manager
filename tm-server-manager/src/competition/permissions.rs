@@ -1,6 +1,4 @@
-use std::ops::{Add, BitAnd, BitOr, Not};
-
-use crate::authorization::PermissionType;
+use std::ops::{BitAnd, BitOr, Not};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Default)]
 pub(crate) struct CompetitionPermissionsV1(pub(super) u64);
@@ -75,12 +73,6 @@ impl CompetitionPermissionsV1 {
     pub(crate) fn has(self, perm: Self) -> bool {
         self.bypass() || (perm & !self) == CompetitionPermissionsV1::NONE
     }
-}
-
-impl PermissionType for CompetitionPermissionsV1 {
-    fn initial() -> Self {
-        Self(0)
-    }
 
     fn bypass(self) -> bool {
         // Owner bypass
@@ -89,14 +81,6 @@ impl PermissionType for CompetitionPermissionsV1 {
         }
 
         false
-    }
-}
-
-impl Add for CompetitionPermissionsV1 {
-    type Output = Self;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        CompetitionPermissionsV1(self.0 + rhs.0)
     }
 }
 
