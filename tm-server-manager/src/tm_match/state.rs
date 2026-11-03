@@ -1,7 +1,10 @@
 use spacetimedb::{AnonymousViewContext, Table, table, view};
 use tm_server_types::config::TmMode;
 
-use crate::tm_match::MatchStatus;
+use crate::{
+    maps::{TabTmMap, TmMapRead},
+    tm_match::MatchStatus,
+};
 
 #[derive(Debug, Copy, Clone)]
 #[table(accessor=tab_match_state, vis_private)]
@@ -118,11 +121,14 @@ impl MatchState {
 }
 
 #[view(accessor=match_state,public)]
-pub fn match_state(ctx: &AnonymousViewContext /* match_id:u32 */) -> Option<MatchState> {
-    let match_id = 51u32;
-    //TODO map the internal map id to string.
+pub fn match_state(ctx: &AnonymousViewContext, match_id: u32) -> Option<MatchState> {
     ctx.db.tab_match_state().match_id().find(match_id)
-    //.map(|a| a)
+}
+
+/// The map currently played in a match.
+#[view(accessor=match_map,public)]
+pub fn match_map(ctx: &AnonymousViewContext, match_id: u32) -> Option<TabTmMap> {
+    ctx.tm_map_find(ctx.match_state_find(match_id)?.map_id)
 }
 
 pub(crate) trait MatchStateRead {

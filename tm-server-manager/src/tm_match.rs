@@ -955,6 +955,11 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
 // -> need to restore the points.
 // -> start. (start command would need to happen sooner i guess but idk where exactly yet.)
 
+#[view(accessor = match_by_id, public)]
+fn match_by_id(ctx: &AnonymousViewContext, match_id: u32) -> impl Query<MatchV1> {
+    ctx.from.tab_match().filter(|r| r.id.eq(match_id))
+}
+
 #[view(accessor = competition_matches,public)]
 fn competition_matches(ctx: &AnonymousViewContext, competition_id: u32) -> impl Query<MatchV1> {
     ctx.from

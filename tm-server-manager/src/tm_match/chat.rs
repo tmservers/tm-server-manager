@@ -56,7 +56,7 @@ fn unstable_match_chat_message(
 
     let server_id = ctx
         .occupation_with_occupier(NodeHandle::MatchV1(match_id))
-        .unwrap();
+        .ok_or("The match has no server to send the message to.")?;
 
     let user_name = ctx.user_name(user_id);
 
