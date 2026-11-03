@@ -11,7 +11,7 @@ use crate::{
         CompetitionPermissionsV1,
         connection::{
             action::{ConnectionActionWrite, try_exec_action},
-            data::{ConnectionData, ConnectionDataRead, ConnectionDataWrite},
+            data::{ConnectionDataRead, ConnectionDataV2, ConnectionDataWrite},
         },
         node::{NodeHandle, NodeRead},
     },
@@ -277,7 +277,7 @@ fn connection_create(
         match connection.kind {
             ConnectionKind::Wait => (),
             ConnectionKind::Data => {
-                ctx.connection_data_insert(ConnectionData::new(
+                ctx.connection_data_insert(ConnectionDataV2::new(
                     connection.id,
                     connection.parent_id,
                 ))
@@ -495,11 +495,17 @@ impl<Db: spacetimedb::CtxDbRead> ConnectionRead for Db {
             return Vec::new();
         }
 
-        let rules = self.connection_data_find(connection.id).unwrap();
+        let Some(rules) = self.connection_data_find(connection.id) else {
+            log::error!(
+                "Data connection {} has no data, it might not be migrated yet.",
+                connection.id
+            );
+            return Vec::new();
+        };
 
         //let players = self.node_resolve_input_data(connection.origin());
 
-        rules.apply_filter(data, self)
+        rules.evaluate(connection.origin(), data, self)
     }
 
     fn connections_in_competition(

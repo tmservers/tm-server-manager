@@ -1,16 +1,13 @@
-use std::collections::{HashMap, HashSet};
-
 use spacetimedb::SpacetimeType;
 use tm_server_types::config::TmMode;
 
 use crate::{
     competition::node::{NodeHandle, NodeLeaderboard},
-    leaderboard::{LbEntry, LbParams},
-    tm_match::leaderboard::MatchRoundPlayer,
+    leaderboard::{LbEntry, LbParams, group_by},
 };
 
 #[derive(Debug, SpacetimeType, Clone, Copy)]
-pub(super) struct LbFilterSettings {
+pub(crate) struct LbFilterSettings {
     kind: LbFilterKind,
     param: LbParams,
     filter: LbFilterIdent,
@@ -38,64 +35,31 @@ enum LbFilterKind {
 impl LbFilterSettings {
     pub(super) fn evaluate(
         self,
-        lb_id: u32,
+        origin: NodeHandle,
         leaderboard: Vec<LbEntry>,
         ctx: &impl spacetimedb::CtxDbRead,
     ) -> Vec<LbEntry> {
-        let mut map: HashMap<u32, Vec<LbEntry>> = HashMap::new();
-
-        let max;
-
-        match self.kind {
+        let (mut map, max) = match self.kind {
             //LbFilterKind::Match => todo!(),
             //LbFilterKind::Maps => todo!(),
             //TODO valiidate that the sort does all edge cases.
-            LbFilterKind::Rounds =>
-            /* rows.sort_by(|a, b| match self.param {
-                LbParams::Score => a.score.cmp(&b.score),
-                // e.g. -43 seconds is more than -44 seconds.
-                // because otherwise 43 would be less than 44
-                // but less is better so we need invert.
-                LbParams::Time => (-a.time).cmp(&(-b.time)),
-                // Same reson as above. A lower position is better.
-                LbParams::Position => b.position.cmp(&a.position),
-            }) */
-            {
-                for row in leaderboard {
-                    map.entry(row.user_id)
-                        .and_modify(|e| {
-                            e.push(row);
-                        })
-                        .or_insert(vec![row]);
-                }
+            LbFilterKind::Rounds => {
+                let map = group_by(leaderboard, |e| e.user_id);
 
-                let Some(max_rounds) = map.values().max_by_key(|v| v.len()) else {
+                let Some(max_rounds) = map.values().map(Vec::len).max() else {
                     // This case is only hit when nobody is even there so it is safe to just return nothing.
                     return Vec::new();
                 };
-                max = max_rounds.len() as u16;
+                (map, max_rounds as u16)
             }
             LbFilterKind::Matches => {
-                let mut lb_nodes: HashMap<NodeHandle, Vec<LbEntry>> = HashMap::new();
-                for row in leaderboard {
-                    lb_nodes
-                        .entry(row.get_node())
-                        .and_modify(|e| e.push(row))
-                        .or_insert(vec![row]);
-                }
+                let lb_nodes = group_by(leaderboard, |e| e.get_node());
+                let max = lb_nodes.len() as u16;
 
-                max = lb_nodes.len() as u16;
-
-                for lb_entires in lb_nodes.values() {
-                    let lb_result = lb_entires.finalize(ctx);
-                    for user_result in lb_result {
-                        map.entry(user_result.get_user())
-                            .and_modify(|e| e.push(user_result))
-                            .or_insert(vec![user_result]);
-                    }
-                }
+                let results = lb_nodes.values().flat_map(|entries| entries.finalize(ctx));
+                (group_by(results, |e| e.get_user()), max)
             }
-        }
+        };
 
         let map_len = map.len();
 
@@ -104,13 +68,7 @@ impl LbFilterSettings {
         }
 
         for rows in map.values_mut() {
-            match self.param {
-                LbParams::Score => {
-                    rows.sort_by_key(|f| -f.score);
-                }
-                LbParams::Time => rows.sort_by_key(|f| if f.time <= 0 { i32::MAX } else { f.time }),
-                LbParams::Position => rows.sort_by_key(|f| f.position),
-            }
+            self.param.sort(rows);
         }
 
         for (user_id, rows) in &mut map {
@@ -131,7 +89,7 @@ impl LbFilterSettings {
                                                 *user_id,
                                                 TmMode::Unknown,
                                                 map_len as u16,
-                                                NodeHandle::LeaderboardV1(lb_id),
+                                                origin,
                                             )
                                             .set_score(0),
                                         );
@@ -144,7 +102,7 @@ impl LbFilterSettings {
                                             *user_id,
                                             TmMode::Unknown,
                                             map_len as u16,
-                                            NodeHandle::LeaderboardV1(lb_id),
+                                            origin,
                                         ));
                                     }
                                 }
