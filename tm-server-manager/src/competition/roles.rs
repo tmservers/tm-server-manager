@@ -79,6 +79,13 @@ impl CompetitionMember {
 
 pub(crate) trait CompetitionPermissionRead {
     /// The permissions of a user in a competition, given directly or through roles, including the competitions above.
+    /// `None` if the user is not a member of the competition or of one above it.
+    fn competition_access(
+        &self,
+        competition_id: u32,
+        user_id: u32,
+    ) -> Option<CompetitionPermissionsV1>;
+    /// The permissions of a user in a competition, `NONE` for non-members.
     fn competition_permissions(
         &self,
         competition_id: u32,
@@ -97,20 +104,24 @@ pub(crate) trait CompetitionPermissionRead {
 }
 
 impl<Db: CtxDbRead> CompetitionPermissionRead for Db {
-    fn competition_permissions(
+    fn competition_access(
         &self,
         competition_id: u32,
         user_id: u32,
-    ) -> CompetitionPermissionsV1 {
+    ) -> Option<CompetitionPermissionsV1> {
         let db = self.db_read_only();
-        self.competition_ancestors(competition_id).into_iter().fold(
+        let mut is_member = false;
+        let permissions = self.competition_ancestors(competition_id).into_iter().fold(
             CompetitionPermissionsV1::NONE,
             |acc, id| {
                 let direct = db
                     .tab_competition_member()
                     .user_member()
                     .filter((id, user_id))
-                    .fold(acc, |acc, member| acc | member.get_permissions());
+                    .fold(acc, |acc, member| {
+                        is_member = true;
+                        acc | member.get_permissions()
+                    });
                 db.tab_competition_role()
                     .competition_id()
                     .filter(id)
@@ -123,20 +134,22 @@ impl<Db: CtxDbRead> CompetitionPermissionRead for Db {
                     })
                     .fold(direct, |acc, role| acc | role.get_permissions1())
             },
-        )
+        );
+        // Roles left over from a removed membership must not grant anything.
+        is_member.then_some(permissions)
+    }
+
+    fn competition_permissions(
+        &self,
+        competition_id: u32,
+        user_id: u32,
+    ) -> CompetitionPermissionsV1 {
+        self.competition_access(competition_id, user_id)
+            .unwrap_or(CompetitionPermissionsV1::NONE)
     }
 
     fn competition_is_member(&self, competition_id: u32, user_id: u32) -> bool {
-        self.competition_ancestors(competition_id)
-            .into_iter()
-            .any(|id| {
-                self.db_read_only()
-                    .tab_competition_member()
-                    .user_member()
-                    .filter((id, user_id))
-                    .next()
-                    .is_some()
-            })
+        self.competition_access(competition_id, user_id).is_some()
     }
 
     /// Only the bits a user holds can be granted or revoked by them, owners can change everything.
@@ -383,15 +396,11 @@ fn member_assign_permission(
     Ok(())
 }
 
-/// Members, roles and permissions of a competition are only visible to its members and the ones above.
-pub(crate) fn viewer_is_member(ctx: &ViewContext, competition_id: u32) -> bool {
-    ctx.user_id()
-        .is_ok_and(|user_id| ctx.competition_is_member(competition_id, user_id))
-}
+// Members, roles and permissions of a competition are only visible to its members and the ones above.
 
 #[view(accessor = competition_members, public)]
 fn competition_members(ctx: &ViewContext, competition_id: u32) -> Vec<CompetitionMember> {
-    if !viewer_is_member(ctx, competition_id) {
+    if ctx.auth_builder(competition_id).authorize().is_err() {
         return Vec::new();
     }
     ctx.db
@@ -403,7 +412,7 @@ fn competition_members(ctx: &ViewContext, competition_id: u32) -> Vec<Competitio
 
 #[view(accessor = competition_roles, public)]
 fn competition_roles(ctx: &ViewContext, competition_id: u32) -> Vec<CompetitionRole> {
-    if !viewer_is_member(ctx, competition_id) {
+    if ctx.auth_builder(competition_id).authorize().is_err() {
         return Vec::new();
     }
     ctx.db
@@ -415,7 +424,7 @@ fn competition_roles(ctx: &ViewContext, competition_id: u32) -> Vec<CompetitionR
 
 #[view(accessor = competition_role_members, public)]
 fn competition_role_members(ctx: &ViewContext, competition_id: u32) -> Vec<CompetitionRoleMember> {
-    if !viewer_is_member(ctx, competition_id) {
+    if ctx.auth_builder(competition_id).authorize().is_err() {
         return Vec::new();
     }
     ctx.db

@@ -1,13 +1,12 @@
 use spacetimedb::{
-    AnonymousViewContext, CtxDbRead, ViewContext, ProcedureContext, Query, ReducerContext, Table, procedure, reducer,
-    table, view,
+    CtxDbRead, Query, RawQuery, ReducerContext, Table, ViewContext, reducer, table, view,
 };
 use tm_server_types::config::{ServerConfig, ServerConfigV2};
 
 use crate::{
     authorization::Authorization,
     auto_inc_manual::AutoIncWrite,
-    competition::{CompetitionPermissionsV1, node::NodeHandle, roles::viewer_is_member},
+    competition::{CompetitionPermissionsV1, node::NodeHandle},
     raw_server::occupation::TabRawServerOccupationRead,
     tm_match::MatchRead,
     tm_server::ServerRead,
@@ -343,7 +342,7 @@ fn unstable_raw_server_config_update_maps(
 /// The configs used by the matches of a competition, shared and inline.
 #[view(accessor = competition_match_configs, public)]
 fn competition_match_configs(ctx: &ViewContext, competition_id: u32) -> Vec<RawServerConfigV2> {
-    if !viewer_is_member(ctx, competition_id) {
+    if ctx.auth_builder(competition_id).authorize().is_err() {
         return Vec::new();
     }
     let mut ids: Vec<u32> = ctx
@@ -357,27 +356,16 @@ fn competition_match_configs(ctx: &ViewContext, competition_id: u32) -> Vec<RawS
         .collect()
 }
 
+/// The shared configs of a competition, the ones of the competitions above are not included.
 #[view(accessor = competition_shared_configs, public)]
 fn competition_shared_configs(
-    ctx: &AnonymousViewContext,
+    ctx: &ViewContext,
     competition_id: u32,
 ) -> impl Query<RawServerConfigV2> {
+    if ctx.auth_builder(competition_id).authorize().is_err() {
+        return RawQuery::new(String::new());
+    }
     ctx.from
         .tab_raw_server_config_v2()
-        .filter(|r| r.competition_id.eq(competition_id))
-}
-
-//TODO also handle upwards nesting because shared configs should be inherited.
-#[procedure(name = "unstable_competition_raw_server_config_v2")]
-fn unstable_competition_raw_server_config_v2(
-    ctx: &mut ProcedureContext,
-    competition_id: u32,
-) -> Vec<RawServerConfigV2> {
-    ctx.with_tx(|ctx| {
-        ctx.db
-            .tab_raw_server_config_v2()
-            .competition_id()
-            .filter(competition_id)
-    })
-    .collect()
+        .r#where(|row| row.competition_id.eq(competition_id))
 }

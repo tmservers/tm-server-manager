@@ -71,14 +71,11 @@ impl<'a, Db: CtxDbRead> AuthBuilder<'a, CompetitionPermissionsV1, Db> {
     pub(crate) fn authorize(self) -> Result<u32, String> {
         let user_id = self.ctx.get_user_id(self.sender)?;
 
-        if self
-            .ctx
-            .competition_permissions(self.competition_id, user_id)
-            .has(self.expected)
-        {
-            Ok(user_id)
-        } else {
-            Err("Not sufficient permissions to perform this action.".into())
+        // Membership is always required, even when no permission is expected.
+        match self.ctx.competition_access(self.competition_id, user_id) {
+            None => Err("You are not a member of this competition.".into()),
+            Some(permissions) if permissions.has(self.expected) => Ok(user_id),
+            Some(_) => Err("Not sufficient permissions to perform this action.".into()),
         }
     }
 }
