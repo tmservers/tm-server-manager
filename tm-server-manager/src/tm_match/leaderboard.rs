@@ -3,7 +3,7 @@ use spacetimedb::{ReducerContext, SpacetimeType, Table, reducer, table};
 use crate::{
     authorization::Authorization,
     competition::{CompetitionPermissionsV1, node::NodeHandle},
-    leaderboard::LbEntry,
+    leaderboard::{LbEntry, LbEntryKind},
     tm_match::{state::MatchStateRead, tab_match},
 };
 
@@ -204,9 +204,9 @@ pub(crate) trait MatchLeadearboardRead {
 }
 impl<Db: spacetimedb::CtxDbRead> MatchLeadearboardRead for Db {
     fn match_rounds(&self, match_id: u32) -> Vec<LbEntry> {
-        let Some(state) = self.match_state_find(match_id) else {
+        if self.match_state_find(match_id).is_none() {
             return Vec::new();
-        };
+        }
         self.db_read_only()
             .tab_match_round_player()
             .match_id()
@@ -214,7 +214,7 @@ impl<Db: spacetimedb::CtxDbRead> MatchLeadearboardRead for Db {
             .map(|f| {
                 LbEntry::new(
                     f.user_id,
-                    state.get_mode(),
+                    LbEntryKind::Round,
                     f.position,
                     NodeHandle::MatchV1(match_id),
                 )

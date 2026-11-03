@@ -1,10 +1,6 @@
 use spacetimedb::SpacetimeType;
-use tm_server_types::config::TmMode;
 
-use crate::{
-    competition::node::NodeHandle,
-    leaderboard::{LbEntry, LbParams, LbSettingsV3, group_by},
-};
+use crate::leaderboard::{LbEntry, LbParams, LbSettingsV3, group_by};
 
 /// Superseded by [`LbFilterSettingsV2`].
 #[derive(Debug, SpacetimeType, Clone, Copy)]
@@ -57,7 +53,7 @@ enum LbFilterFallback {
 }
 
 impl LbFilterSettingsV2 {
-    pub(super) fn evaluate(self, origin: NodeHandle, leaderboard: Vec<LbEntry>) -> Vec<LbEntry> {
+    pub(super) fn evaluate(self, leaderboard: Vec<LbEntry>) -> Vec<LbEntry> {
         //TODO valiidate that the sort does all edge cases.
         let mut users = group_by(leaderboard, |e| e.user_id);
 
@@ -74,6 +70,13 @@ impl LbFilterSettingsV2 {
             match self.filter {
                 LbFilterIdent::Best(n) => {
                     rows.truncate(n as usize);
+                    // Padding takes the kind and origin of the worst entry so it stays in the same leaderboard.
+                    let Some(&worst) = rows.last() else {
+                        continue;
+                    };
+                    let padding = || {
+                        LbEntry::new(*user_id, worst.kind, user_count as u16, worst.get_node())
+                    };
                     if rows.len() < (n as usize) {
                         // if we have played less rounds than the best n we take the current row count.
                         let needed = if n > max { max } else { n };
@@ -83,26 +86,13 @@ impl LbFilterSettingsV2 {
                                 LbParams::Score => {
                                     for _ in 0..missing {
                                         //TODO consider mode
-                                        rows.push(
-                                            LbEntry::new(
-                                                *user_id,
-                                                TmMode::Unknown,
-                                                user_count as u16,
-                                                origin,
-                                            )
-                                            .set_score(0),
-                                        );
+                                        rows.push(padding().set_score(0));
                                     }
                                 }
                                 LbParams::Time => (), //TODO
                                 LbParams::Position => {
                                     for _ in 0..missing {
-                                        rows.push(LbEntry::new(
-                                            *user_id,
-                                            TmMode::Unknown,
-                                            user_count as u16,
-                                            origin,
-                                        ));
+                                        rows.push(padding());
                                     }
                                 }
                             },

@@ -4,7 +4,6 @@ use spacetimedb::{
     AnonymousViewContext, ProcedureContext, Query, ReducerContext, SpacetimeType, Table, procedure,
     reducer, table, view,
 };
-use tm_server_types::config::TmMode;
 
 use crate::{
     authorization::Authorization,
@@ -179,7 +178,7 @@ impl LbSettingsV3 {
         match self {
             LbSettingsV3::Match => leaderboard.match_standings(ctx),
             LbSettingsV3::Merge(settings) => settings.evaluate(origin, leaderboard),
-            LbSettingsV3::Filter(settings) => settings.evaluate(origin, leaderboard),
+            LbSettingsV3::Filter(settings) => settings.evaluate(leaderboard),
             LbSettingsV3::Remap(settings) => settings.evaluate(leaderboard),
             LbSettingsV3::Select(settings) => settings.evaluate(leaderboard),
         }
@@ -248,6 +247,14 @@ pub(crate) fn renumber_positions(entries: &mut [LbEntry]) {
     }
 }
 
+/// Whether an entry is the result of a single round or the standing in a whole leaderboard.
+#[derive(Debug, SpacetimeType, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum LbEntryKind {
+    /// Comes from a match, its mode decides how the rounds become standings.
+    Round,
+    Standing,
+}
+
 #[derive(Debug, SpacetimeType, Clone, Copy)]
 pub struct LbEntry {
     // Required
@@ -267,7 +274,7 @@ pub struct LbEntry {
     // Required
     node_variant: u8,
     // Required
-    pub mode: TmMode,
+    pub kind: LbEntryKind,
 
     //TODO maybe
     // mode_fallback: enum {ScoreAsc,ScoreDsc,TimeAsc,...}
@@ -277,7 +284,7 @@ pub struct LbEntry {
 impl LbEntry {
     pub(crate) fn new(
         user_id: u32,
-        mode: TmMode,
+        kind: LbEntryKind,
         position: u16, /* , origin_idx: u16 */
         origin: NodeHandle,
     ) -> Self {
@@ -285,7 +292,7 @@ impl LbEntry {
         LbEntry {
             user_id,
             position,
-            mode,
+            kind,
             map_id: 0,
             round: 0,
             score: i32::MIN,
@@ -317,10 +324,6 @@ impl LbEntry {
 
     pub(crate) fn get_user(&self) -> u32 {
         self.user_id
-    }
-
-    pub(crate) fn get_mode(&self) -> TmMode {
-        self.mode
     }
 
     pub(crate) fn get_node(&self) -> NodeHandle {

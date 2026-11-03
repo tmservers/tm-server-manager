@@ -1,9 +1,8 @@
 use spacetimedb::SpacetimeType;
-use tm_server_types::config::TmMode;
 
 use crate::{
     competition::node::NodeHandle,
-    leaderboard::{LbEntry, LbParams, group_by, renumber_positions},
+    leaderboard::{LbEntry, LbEntryKind, LbParams, group_by, renumber_positions},
 };
 
 /// Superseded by [`LbMergeSettingsV2`].
@@ -46,7 +45,7 @@ impl LbMergeSettingsV2 {
         let mut merged: Vec<LbEntry> = group_by(leaderboard, |e| e.user_id)
             .into_iter()
             .map(|(player, entries)| {
-                let init = LbEntry::new(player, TmMode::Unknown, 0, origin)
+                let init = LbEntry::new(player, LbEntryKind::Standing, 0, origin)
                     .set_score(0)
                     .set_time(0);
                 self.merge(init, &entries)
