@@ -135,7 +135,9 @@ fn reverse_cup_starting_points(ctx: &impl spacetimedb::CtxDbRead, node: NodeHand
         return None;
     };
     let tm_match = ctx.match_find(match_id)?;
-    let config = ctx.raw_server_config(tm_match.get_active_config_id()).ok()?;
+    let config = ctx
+        .raw_server_config(tm_match.get_active_config_id())
+        .ok()?;
     match config.get_mode() {
         ModeSettingsV2::ReverseCup(reverse_cup) => Some(reverse_cup.starting_points),
         _ => None,

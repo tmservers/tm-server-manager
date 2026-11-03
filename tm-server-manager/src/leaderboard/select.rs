@@ -24,16 +24,16 @@ impl LbSelectSettings {
         if let Some(first) = leaderboard.first() {
             let origin = first.get_node();
             if leaderboard.iter().any(|e| e.get_node() != origin) {
-                log::error!("Cannot select from entries of more than one origin, merge them first.");
+                log::error!(
+                    "Cannot select from entries of more than one origin, merge them first."
+                );
                 return Vec::new();
             }
         }
 
         match self {
             LbSelectSettings::FirstN(f) => leaderboard.into_iter().take(*f as usize).collect(),
-            LbSelectSettings::LastN(l) => {
-                leaderboard.into_iter().rev().take(*l as usize).collect()
-            }
+            LbSelectSettings::LastN(l) => leaderboard.into_iter().rev().take(*l as usize).collect(),
             LbSelectSettings::Custom(places) => places
                 .iter()
                 .filter_map(|place| {

@@ -74,9 +74,8 @@ impl LbFilterSettingsV2 {
                     let Some(&worst) = rows.last() else {
                         continue;
                     };
-                    let padding = || {
-                        LbEntry::new(*user_id, worst.kind, user_count as u16, worst.get_node())
-                    };
+                    let padding =
+                        || LbEntry::new(*user_id, worst.kind, user_count as u16, worst.get_node());
                     if rows.len() < (n as usize) {
                         // if we have played less rounds than the best n we take the current row count.
                         let needed = if n > max { max } else { n };

@@ -263,8 +263,6 @@ pub struct LbEntry {
     pub position: u16,
     // Default: 0
     pub round: u16,
-    // Default: 0
-    pub map_id: u32,
     // Default: i32::MIN
     pub score: i32,
     // Default: i32::MIN
@@ -293,7 +291,6 @@ impl LbEntry {
             user_id,
             position,
             kind,
-            map_id: 0,
             round: 0,
             score: i32::MIN,
             time: i32::MIN,
@@ -315,10 +312,6 @@ impl LbEntry {
 
     pub(crate) fn set_round(mut self, round: u16) -> Self {
         self.round = round;
-        self
-    }
-    pub(crate) fn set_map(mut self, map: u32) -> Self {
-        self.map_id = map;
         self
     }
 

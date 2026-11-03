@@ -221,7 +221,6 @@ impl<Db: spacetimedb::CtxDbRead> MatchLeadearboardRead for Db {
                 .set_score(f.points)
                 .set_time(f.time)
                 .set_round(f.round)
-                //.set_map(/* map */) //TODO get the map id in there. this is pretty painful tho so defer until i know approach is good.
             })
             .collect()
     }
