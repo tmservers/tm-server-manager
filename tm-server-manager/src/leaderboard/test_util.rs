@@ -1,7 +1,13 @@
 use spacetimedb::test_utils::{TestAuth, TestContext};
 use tm_server_types::config::TmMode;
 
-use crate::tm_match::state::{MatchState, MatchStateWrite};
+use crate::{
+    competition::node::NodeHandle,
+    leaderboard::{LbEntry, LbEntryKind},
+    tm_match::state::{MatchState, MatchStateWrite},
+};
+
+pub(crate) const MATCH: NodeHandle = NodeHandle::MatchV1(1);
 
 /// A datastore with the matches being played in the modes.
 pub(crate) fn test_context(matches: &[(u32, TmMode)]) -> TestContext {
@@ -14,4 +20,20 @@ pub(crate) fn test_context(matches: &[(u32, TmMode)]) -> TestContext {
     })
     .expect("the matches should be inserted");
     test
+}
+
+pub(crate) fn round(user_id: u32, round: u16, score: i32, time: i32) -> LbEntry {
+    LbEntry::new(user_id, LbEntryKind::Round, 0, MATCH)
+        .set_round(round)
+        .set_score(score)
+        .set_time(time)
+}
+
+pub(crate) fn standing(user_id: u32, position: u16) -> LbEntry {
+    LbEntry::new(user_id, LbEntryKind::Standing, position, MATCH)
+}
+
+/// The users with their positions, in the order of the entries.
+pub(crate) fn ranking(entries: &[LbEntry]) -> Vec<(u32, u16)> {
+    entries.iter().map(|e| (e.user_id, e.position)).collect()
 }

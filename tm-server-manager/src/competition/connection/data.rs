@@ -7,10 +7,12 @@ use crate::{
     competition::{
         CompetitionPermissionsV1,
         connection::{ConnectionStatus, tab_connection},
-        node::NodeHandle,
     },
     leaderboard::{
-        LbEntry, LbSettingsV3, evaluate_steps,
+        LbEntry, LbSettingsV3,
+        context::LbContext,
+        error::LbError,
+        evaluate_steps,
         select::{LbSelectFirstOffsetN, LbSelectSettings},
     },
 };
@@ -71,11 +73,10 @@ impl ConnectionDataV2 {
 
     pub(super) fn evaluate(
         &self,
-        origin: NodeHandle,
+        cx: &LbContext,
         leaderboard: Vec<LbEntry>,
-        ctx: &impl spacetimedb::CtxDbRead,
-    ) -> Vec<LbEntry> {
-        evaluate_steps(ctx, origin, &self.settings, leaderboard)
+    ) -> Result<Vec<LbEntry>, LbError> {
+        evaluate_steps(cx, &self.settings, leaderboard)
     }
 }
 
