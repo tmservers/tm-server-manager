@@ -43,10 +43,15 @@ impl TabTmMap {
 
 pub(crate) trait TmMapRead {
     fn tm_map_find_uid(&self, uid: &String) -> Option<TabTmMap>;
+    fn tm_map_find(&self, map_id: u32) -> Option<TabTmMap>;
 }
 impl<Db: spacetimedb::CtxDbRead> TmMapRead for Db {
     fn tm_map_find_uid(&self, uid: &String) -> Option<TabTmMap> {
         self.db_read_only().tab_tm_map().uid().find(uid)
+    }
+
+    fn tm_map_find(&self, map_id: u32) -> Option<TabTmMap> {
+        self.db_read_only().tab_tm_map().id().find(map_id)
     }
 }
 
