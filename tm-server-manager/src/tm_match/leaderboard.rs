@@ -54,13 +54,10 @@ pub struct MatchRoundPlayer {
     round: u16,
     #[default(0)]
     position: u16,
-    /// The map the round was played on.
-    #[default(0)]
-    map_id: u32,
 }
 
 impl MatchRoundPlayer {
-    pub(super) fn new(match_id: u32, user_id: u32, round: u16, map_id: u32) -> Self {
+    pub(super) fn new(match_id: u32, user_id: u32, round: u16) -> Self {
         Self {
             user_id,
             match_id,
@@ -69,7 +66,6 @@ impl MatchRoundPlayer {
             points: 0,
             id: 0,
             position: 0,
-            map_id,
         }
     }
 
@@ -208,9 +204,10 @@ pub(crate) trait MatchLeadearboardRead {
 }
 impl<Db: spacetimedb::CtxDbRead> MatchLeadearboardRead for Db {
     fn match_rounds(&self, match_id: u32) -> Vec<LbEntry> {
-        if self.match_state_find(match_id).is_none() {
+        let Some(state) = self.match_state_find(match_id) else {
             return Vec::new();
-        }
+        };
+        let maps = self.match_round_maps(&state);
         self.db_read_only()
             .tab_match_round_player()
             .match_id()
@@ -225,7 +222,7 @@ impl<Db: spacetimedb::CtxDbRead> MatchLeadearboardRead for Db {
                 .set_score(f.points)
                 .set_time(f.time)
                 .set_round(f.round)
-                .set_map(f.map_id)
+                .set_map(maps.get(&f.round).copied().unwrap_or(0))
             })
             .collect()
     }
@@ -394,18 +391,37 @@ fn match_round_player_set_position_manual(
 
 #[cfg(test)]
 mod tests {
-    use spacetimedb::test_utils::TestAuth;
+    use spacetimedb::{TimeDuration, test_utils::TestAuth};
     use tm_server_types::config::TmMode;
 
     use super::*;
-    use crate::leaderboard::test_util::test_context;
+    use crate::{
+        leaderboard::test_util::test_context,
+        tm_match::state::{MatchState, MatchStateWrite},
+    };
 
     #[test]
     fn rounds_carry_the_map_they_were_played_on() {
         let test = test_context(&[(1, TmMode::Rounds)]);
+        let change = |change: fn(&mut MatchState)| {
+            // Every change is its own transaction, like the events of the server.
+            test.clock.advance(TimeDuration::from_micros(1));
+            test.with_reducer_tx(TestAuth::internal(), |ctx| {
+                let mut state = ctx.match_state_find(1).unwrap();
+                change(&mut state);
+                ctx.match_state_update(state);
+                Ok::<_, String>(())
+            })
+            .unwrap();
+        };
+        change(|state| state.set_map(7));
+        change(|state| state.new_round());
+        // The next map gets loaded before its first round starts.
+        change(|state| state.set_map(8));
+        change(|state| state.new_round());
         test.with_reducer_tx(TestAuth::internal(), |ctx| {
-            ctx.match_round_player_insert(MatchRoundPlayer::new(1, 5, 1, 7))?;
-            ctx.match_round_player_insert(MatchRoundPlayer::new(1, 5, 2, 8))?;
+            ctx.match_round_player_insert(MatchRoundPlayer::new(1, 5, 1))?;
+            ctx.match_round_player_insert(MatchRoundPlayer::new(1, 5, 2))?;
             Ok::<_, String>(())
         })
         .unwrap();

@@ -50,7 +50,6 @@ pub(crate) fn handle_match_event(
                     state.match_id,
                     user_id,
                     round,
-                    state.get_map(),
                 ))?;
                 ctx.match_round_player_ext_insert(MatchRoundPlayerExt::new(
                     player.id,
@@ -158,8 +157,7 @@ pub(crate) fn handle_match_event(
                     .match_round_player_of_user(state.match_id, round, user_id)
                     .unwrap_or_else(|| {
                         log::error!("Entry of player was not found.");
-                        let new_player =
-                            MatchRoundPlayer::new(state.match_id, user_id, round, state.get_map());
+                        let new_player = MatchRoundPlayer::new(state.match_id, user_id, round);
 
                         ctx.match_round_player_insert(new_player).unwrap()
                     });

@@ -619,17 +619,32 @@ pub(crate) trait MatchWrite: MatchRead {
         template: Option<MatchV1>,
         as_template: bool,
     ) -> Result<MatchV1, String>;
-    fn match_recovery_enter(&self, match_id: u32, manual: bool) -> Result<(), String>;
-    fn match_recovery_exit_seamless(&self, match_id: u32);
+    fn match_recovery_enter(&self, match_id: u32, manual: bool) -> Result<(), String>
+    where
+        Self: spacetimedb::CtxWithTimestamp;
+    fn match_recovery_exit_seamless(&self, match_id: u32)
+    where
+        Self: spacetimedb::CtxWithTimestamp;
     fn match_recovery_exit_forced(&self, match_id: u32);
     fn match_name_edit(&self, match_id: u32, name: String) -> Result<(), String>;
-    fn match_try_start(&self, match_id: u32, now: Timestamp) -> Result<(), String>;
-    fn match_set_preparation(&self, match_id: u32, now: Timestamp) -> Result<(), String>;
-    fn match_restart(&self, match_id: u32) -> Result<(), String>;
-    fn match_end(&self, match_id: u32) -> Result<(), String>;
+    fn match_try_start(&self, match_id: u32, now: Timestamp) -> Result<(), String>
+    where
+        Self: spacetimedb::CtxWithTimestamp;
+    fn match_set_preparation(&self, match_id: u32, now: Timestamp) -> Result<(), String>
+    where
+        Self: spacetimedb::CtxWithTimestamp;
+    fn match_restart(&self, match_id: u32) -> Result<(), String>
+    where
+        Self: spacetimedb::CtxWithTimestamp;
+    fn match_end(&self, match_id: u32) -> Result<(), String>
+    where
+        Self: spacetimedb::CtxWithTimestamp;
 }
 impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
-    fn match_recovery_enter(&self, match_id: u32, manual: bool) -> Result<(), String> {
+    fn match_recovery_enter(&self, match_id: u32, manual: bool) -> Result<(), String>
+    where
+        Self: spacetimedb::CtxWithTimestamp,
+    {
         //SAFETY: if a occupation is inserted it must also exist.
         let mut tm_match = self.db().tab_match().id().find(match_id).unwrap();
 
@@ -669,7 +684,10 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
         Ok(())
     }
 
-    fn match_recovery_exit_seamless(&self, match_id: u32) {
+    fn match_recovery_exit_seamless(&self, match_id: u32)
+    where
+        Self: spacetimedb::CtxWithTimestamp,
+    {
         //SAFETY: if a occupation is inserted it must also exist.
         let mut tm_match = self.db().tab_match().id().find(match_id).unwrap();
 
@@ -722,7 +740,10 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
         Ok(())
     }
 
-    fn match_try_start(&self, match_id: u32, now: Timestamp) -> Result<(), String> {
+    fn match_try_start(&self, match_id: u32, now: Timestamp) -> Result<(), String>
+    where
+        Self: spacetimedb::CtxWithTimestamp,
+    {
         let Some(mut tm_match) = self.db_read_only().tab_match().id().find(match_id) else {
             return Err("Match not found!".into());
         };
@@ -754,7 +775,10 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
         Ok(())
     }
 
-    fn match_set_preparation(&self, match_id: u32, now: Timestamp) -> Result<(), String> {
+    fn match_set_preparation(&self, match_id: u32, now: Timestamp) -> Result<(), String>
+    where
+        Self: spacetimedb::CtxWithTimestamp,
+    {
         let Some(mut tm_match) = self.db_read_only().tab_match().id().find(match_id) else {
             return Err("Match not found!".into());
         };
@@ -805,7 +829,10 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
         Ok(())
     }
 
-    fn match_restart(&self, match_id: u32) -> Result<(), String> {
+    fn match_restart(&self, match_id: u32) -> Result<(), String>
+    where
+        Self: spacetimedb::CtxWithTimestamp,
+    {
         let Some(tm_match) = self.db_read_only().tab_match().id().find(match_id) else {
             return Err("Match not found!".into());
         };
@@ -838,7 +865,10 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
         Ok(())
     }
 
-    fn match_end(&self, match_id: u32) -> Result<(), String> {
+    fn match_end(&self, match_id: u32) -> Result<(), String>
+    where
+        Self: spacetimedb::CtxWithTimestamp,
+    {
         let Some(mut tm_match) = self.db().tab_match().id().find(match_id) else {
             return Err("Match not found".into());
         };

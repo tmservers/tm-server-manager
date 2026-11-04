@@ -1,9 +1,11 @@
-use spacetimedb::{AnonymousViewContext, Table, table, view};
+use std::collections::HashMap;
+
+use spacetimedb::{AnonymousViewContext, CtxWithTimestamp, Table, Timestamp, table, view};
 use tm_server_types::config::TmMode;
 
 use crate::tm_match::MatchStatus;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 #[table(accessor=tab_match_state, vis_private)]
 pub struct MatchState {
     #[primary_key]
@@ -81,7 +83,7 @@ impl MatchState {
     }
 
     pub(crate) fn restart(&mut self) {
-        self.restarted = 0;
+        self.restarted = self.restarted.saturating_add(1);
         self.round = 0;
         self.warmup = 0;
         self.is_warmup = false;
@@ -117,6 +119,55 @@ impl MatchState {
     }
 }
 
+/// Every state a match was in, so what happened in it can be replayed.
+/// There is one row for every transaction which changed the state, the one it had at the end of it.
+#[derive(Debug, Copy, Clone, PartialEq)]
+#[table(accessor=tab_match_state_history, vis_private,
+    index(accessor=match_at, hash(columns=[match_id, at])))]
+pub struct MatchStateHistory {
+    #[index(hash)]
+    match_id: u32,
+    /// When the transaction changing the state ran.
+    at: Timestamp,
+    map_id: u32,
+    restarted: u16,
+    round: u16,
+    warmup: u16,
+    is_warmup: bool,
+    paused: bool,
+    status: MatchStatus,
+    mode: TmMode,
+}
+
+impl MatchStateHistory {
+    fn new(state: &MatchState, at: Timestamp) -> Self {
+        // Without `..` a new field of the state does not compile until it is part of the history too.
+        let MatchState {
+            match_id,
+            map_id,
+            restarted,
+            round,
+            warmup,
+            is_warmup,
+            paused,
+            status,
+            mode,
+        } = *state;
+        MatchStateHistory {
+            match_id,
+            at,
+            map_id,
+            restarted,
+            round,
+            warmup,
+            is_warmup,
+            paused,
+            status,
+            mode,
+        }
+    }
+}
+
 #[view(accessor=match_state,public)]
 pub fn match_state(ctx: &AnonymousViewContext /* match_id:u32 */) -> Option<MatchState> {
     let match_id = 51u32;
@@ -127,6 +178,8 @@ pub fn match_state(ctx: &AnonymousViewContext /* match_id:u32 */) -> Option<Matc
 
 pub(crate) trait MatchStateRead {
     fn match_state_find(&self, match_id: u32) -> Option<MatchState>;
+    /// The map every round since the last restart of the match was played on.
+    fn match_round_maps(&self, state: &MatchState) -> HashMap<u16, u32>;
 }
 impl<Db: spacetimedb::CtxDbRead> MatchStateRead for Db {
     fn match_state_find(&self, match_id: u32) -> Option<MatchState> {
@@ -135,19 +188,50 @@ impl<Db: spacetimedb::CtxDbRead> MatchStateRead for Db {
             .match_id()
             .find(match_id)
     }
+
+    fn match_round_maps(&self, state: &MatchState) -> HashMap<u16, u32> {
+        let mut history: Vec<MatchStateHistory> = self
+            .db_read_only()
+            .tab_match_state_history()
+            .match_id()
+            .filter(state.match_id)
+            .filter(|h| h.restarted == state.restarted)
+            .collect();
+        history.sort_by_key(|h| h.at);
+
+        let mut maps = HashMap::new();
+        for h in history {
+            // A round is played on the map it was started on, the next map gets loaded before the next round starts.
+            maps.entry(h.round).or_insert(h.map_id);
+        }
+        maps
+    }
 }
 
 pub(crate) trait MatchStateWrite: MatchStateRead {
     fn match_state_insert(&self, state: MatchState) -> Result<(), String>;
     fn match_state_update(&self, state: MatchState);
 }
-impl<Db: spacetimedb::CtxDbWrite> MatchStateWrite for Db {
+impl<Db: spacetimedb::CtxDbWrite + CtxWithTimestamp> MatchStateWrite for Db {
     fn match_state_insert(&self, state: MatchState) -> Result<(), String> {
         self.db().tab_match_state().try_insert(state)?;
+        self.db()
+            .tab_match_state_history()
+            .insert(MatchStateHistory::new(&state, self.timestamp()));
         Ok(())
     }
 
     fn match_state_update(&self, state: MatchState) {
+        let previous = self.match_state_find(state.match_id);
+        if previous == Some(state) {
+            return;
+        }
         self.db().tab_match_state().match_id().update(state);
+
+        let at = self.timestamp();
+        let history = self.db().tab_match_state_history();
+        // Only the state at the end of a transaction is ever seen, so an earlier change in the same one gets replaced.
+        history.match_at().delete((state.match_id, at));
+        history.insert(MatchStateHistory::new(&state, at));
     }
 }
