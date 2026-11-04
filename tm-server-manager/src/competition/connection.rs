@@ -779,10 +779,45 @@ mod tests {
     use spacetimedb::test_utils::TestAuth;
 
     use super::*;
-    use crate::{competition::node::NodeRead, leaderboard::test_util::test_context};
+    use crate::{
+        competition::{
+            connection::data::{ConnectionDataV2, ConnectionDataWrite},
+            node::NodeRead,
+        },
+        leaderboard::{shape::LbOrigins, test_util::test_context},
+    };
 
     fn connect(origin: NodeHandle, target: NodeHandle, kind: ConnectionKind) -> TabConnection {
         TabConnection::for_test(origin, target, kind)
+    }
+
+    #[test]
+    fn a_node_gets_the_entries_of_all_its_data_connections() {
+        let test = test_context(&[]);
+        let leaderboard = NodeHandle::LeaderboardV1(3);
+        test.with_reducer_tx(TestAuth::internal(), |ctx| {
+            for origin in [NodeHandle::MatchV1(1), NodeHandle::MatchV1(2)] {
+                let connection =
+                    ctx.connection_insert(connect(origin, leaderboard, ConnectionKind::Data))?;
+                ctx.connection_data_insert(ConnectionDataV2::new(connection.id, 1))?;
+            }
+            // Only data connections pass entries on.
+            ctx.connection_insert(connect(
+                NodeHandle::RegistrationV1(1),
+                leaderboard,
+                ConnectionKind::Wait,
+            ))?;
+            Ok::<_, String>(())
+        })
+        .unwrap();
+
+        let shape = test
+            .anonymous_view_context()
+            .node_input_shape(leaderboard)
+            .unwrap();
+
+        assert_eq!(shape.origins, LbOrigins::Many);
+        assert!(shape.rounds && !shape.standings);
     }
 
     #[test]

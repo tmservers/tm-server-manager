@@ -90,3 +90,56 @@ pub(super) fn check_scope(scope: &[LbKey], input: &LbShape) -> Result<(), LbErro
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::leaderboard::{
+        LbKey,
+        select::{LbSelectPlaces, LbSelectSettings},
+        test_util::MATCH,
+    };
+
+    fn select(scope: Vec<LbKey>) -> LbSettingsV3 {
+        LbSettingsV3::Select(LbSelectSettings {
+            scope,
+            places: LbSelectPlaces::FirstN(3),
+        })
+    }
+
+    #[test]
+    fn selecting_rounds_needs_a_match_step_first() {
+        let rounds = LbShape::rounds(MATCH);
+
+        assert!(check_steps(MATCH, &[select(vec![])], rounds).is_err());
+        assert!(check_steps(MATCH, &[LbSettingsV3::Match, select(vec![])], rounds).is_ok());
+    }
+
+    #[test]
+    fn selecting_from_several_origins_needs_an_origin_scope() {
+        let rounds = LbShape::rounds(MATCH).combine(LbShape::rounds(NodeHandle::MatchV1(2)));
+
+        assert!(check_steps(MATCH, &[LbSettingsV3::Match, select(vec![])], rounds).is_err());
+        assert!(
+            check_steps(
+                MATCH,
+                &[LbSettingsV3::Match, select(vec![LbKey::Origin])],
+                rounds
+            )
+            .is_ok()
+        );
+    }
+
+    #[test]
+    fn a_map_scope_needs_entries_with_maps() {
+        let registration = LbShape::standings(NodeHandle::RegistrationV1(1));
+
+        assert!(check_steps(MATCH, &[select(vec![LbKey::Map])], registration).is_err());
+    }
+
+    #[test]
+    fn nothing_is_rejected_before_there_are_inputs() {
+        // Steps can be configured before the inputs get connected.
+        assert!(check_steps(MATCH, &[select(vec![LbKey::Map])], LbShape::default()).is_ok());
+    }
+}
