@@ -19,6 +19,7 @@ use crate::{
         modes::match_standings,
         remap::LbRemapSettings,
         select::LbSelectSettings,
+        shape::{LbShape, check_steps},
     },
 };
 
@@ -30,6 +31,7 @@ mod merge;
 pub(crate) mod modes;
 mod remap;
 pub(crate) mod select;
+pub(crate) mod shape;
 #[cfg(test)]
 pub(crate) mod test_util;
 
@@ -181,6 +183,9 @@ pub(crate) enum LbSettingsV3 {
 /// Takes the entries of a leaderboard and returns the changed ones.
 pub(crate) trait LbStep {
     fn apply(&self, cx: &LbContext, entries: Vec<LbEntry>) -> Result<Vec<LbEntry>, LbError>;
+    /// Whether the step works on the entries it would get, returns what it would produce.
+    /// Only steps which certainly fail or produce something meaningless are rejected.
+    fn check(&self, origin: NodeHandle, input: LbShape) -> Result<LbShape, LbError>;
 }
 
 impl LbStep for LbSettingsV3 {
@@ -191,6 +196,21 @@ impl LbStep for LbSettingsV3 {
             LbSettingsV3::Filter(settings) => settings.apply(cx, entries),
             LbSettingsV3::Remap(settings) => settings.apply(cx, entries),
             LbSettingsV3::Select(settings) => settings.apply(cx, entries),
+        }
+    }
+
+    fn check(&self, origin: NodeHandle, input: LbShape) -> Result<LbShape, LbError> {
+        match self {
+            // Standings stay as they are, so this is never wrong.
+            LbSettingsV3::Match => Ok(LbShape {
+                rounds: false,
+                standings: !input.is_empty(),
+                ..input
+            }),
+            LbSettingsV3::Merge(settings) => settings.check(origin, input),
+            LbSettingsV3::Filter(settings) => settings.check(origin, input),
+            LbSettingsV3::Remap(settings) => settings.check(origin, input),
+            LbSettingsV3::Select(settings) => settings.check(origin, input),
         }
     }
 }
@@ -494,6 +514,9 @@ fn leaderboard_settings_update(
         return Err("The leaderboard can only be changed while it gets configured.".into());
     }
 
+    let node = NodeHandle::LeaderboardV1(id);
+    check_steps(node, &settings, ctx.node_input_shape(node)?)?;
+
     leaderboard.settings = settings;
 
     ctx.db.tab_leaderboard_v3().id().update(leaderboard);
@@ -504,6 +527,8 @@ fn leaderboard_settings_update(
 pub(crate) trait LeadearboardRead {
     fn leaderboard_find(&self, id: u32) -> Result<LeaderboardV3, String>;
     fn leaderboard_evaluation(&self, leaderboard_id: u32) -> Result<Vec<LbEntry>, LbError>;
+    /// What the leaderboard would output, its steps are checked against its inputs on the way.
+    fn leaderboard_output_shape(&self, leaderboard_id: u32) -> Result<LbShape, LbError>;
     fn leaderboards_with_competition(
         &self,
         competition_id: u32,
@@ -532,6 +557,27 @@ impl<Db: spacetimedb::CtxDbRead> LeadearboardRead for Db {
         let input = self.node_resolve_input_data(node)?;
 
         evaluate_steps(&LbContext::new(self, node), &lb.settings, input)
+    }
+
+    fn leaderboard_output_shape(&self, leaderboard_id: u32) -> Result<LbShape, LbError> {
+        let Some(lb) = self
+            .db_read_only()
+            .tab_leaderboard_v3()
+            .id()
+            .find(leaderboard_id)
+        else {
+            return Err(LbError::new(format!(
+                "Leaderboard {leaderboard_id} does not exist."
+            )));
+        };
+
+        // Like its evaluation it outputs nothing while it gets configured.
+        if lb.status == LeaderboardStatus::Configuring {
+            return Ok(LbShape::default());
+        }
+
+        let node = NodeHandle::LeaderboardV1(leaderboard_id);
+        check_steps(node, &lb.settings, self.node_input_shape(node)?)
     }
 
     fn leaderboard_find(&self, id: u32) -> Result<LeaderboardV3, String> {

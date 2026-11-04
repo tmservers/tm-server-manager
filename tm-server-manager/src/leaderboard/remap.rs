@@ -1,6 +1,9 @@
 use spacetimedb::SpacetimeType;
 
-use crate::leaderboard::{LbEntry, LbParams, LbStep, context::LbContext, error::LbError};
+use crate::{
+    competition::node::NodeHandle,
+    leaderboard::{LbEntry, LbParams, LbStep, context::LbContext, error::LbError, shape::LbShape},
+};
 
 #[derive(Debug, SpacetimeType, Clone, Copy)]
 pub(crate) struct LbRemapSettings {
@@ -24,6 +27,15 @@ enum LbManipulationKind {
 impl LbStep for LbRemapSettings {
     fn apply(&self, _cx: &LbContext, entries: Vec<LbEntry>) -> Result<Vec<LbEntry>, LbError> {
         self.evaluate(entries)
+    }
+
+    fn check(&self, _origin: NodeHandle, input: LbShape) -> Result<LbShape, LbError> {
+        if matches!(self.manipulation, LbManipulationKind::DivideLhs)
+            && self.manipulation_value == 0
+        {
+            return Err(LbError::new("Cannot divide by 0."));
+        }
+        Ok(input)
     }
 }
 

@@ -3,8 +3,12 @@ use spacetimedb::SpacetimeType;
 use crate::{
     competition::node::NodeHandle,
     leaderboard::{
-        LbEntry, LbEntryKind, LbParams, LbStep, combinators::LbRows, context::LbContext,
-        error::LbError, shared_map,
+        LbEntry, LbEntryKind, LbParams, LbStep,
+        combinators::LbRows,
+        context::LbContext,
+        error::LbError,
+        shape::{LbOrigins, LbShape},
+        shared_map,
     },
 };
 
@@ -46,6 +50,18 @@ enum LbMergeAction {
 impl LbStep for LbMergeSettingsV2 {
     fn apply(&self, cx: &LbContext, entries: Vec<LbEntry>) -> Result<Vec<LbEntry>, LbError> {
         Ok(self.evaluate(cx.origin(), entries))
+    }
+
+    fn check(&self, origin: NodeHandle, input: LbShape) -> Result<LbShape, LbError> {
+        if input.is_empty() {
+            return Ok(input);
+        }
+        Ok(LbShape {
+            rounds: false,
+            standings: true,
+            origins: LbOrigins::One(origin),
+            maps: input.maps,
+        })
     }
 }
 

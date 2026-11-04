@@ -1,0 +1,92 @@
+//! What is known about the entries of a pipeline before they exist, so its steps can be checked when they get saved.
+
+use crate::{
+    competition::node::NodeHandle,
+    leaderboard::{LbKey, LbSettingsV3, LbStep, error::LbError},
+};
+
+/// The nodes the entries can come from.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub(crate) enum LbOrigins {
+    #[default]
+    None,
+    One(NodeHandle),
+    Many,
+}
+
+/// The entries a pipeline can get, the default is getting none at all.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub(crate) struct LbShape {
+    /// Entries can be rounds of a match.
+    pub(crate) rounds: bool,
+    /// Entries can be standings.
+    pub(crate) standings: bool,
+    pub(crate) origins: LbOrigins,
+    /// Entries can carry the map they were played on.
+    pub(crate) maps: bool,
+}
+
+impl LbShape {
+    /// The rounds of a match.
+    pub(crate) fn rounds(origin: NodeHandle) -> Self {
+        LbShape {
+            rounds: true,
+            standings: false,
+            origins: LbOrigins::One(origin),
+            maps: true,
+        }
+    }
+
+    /// Standings without any maps, like the ones of a registration.
+    pub(crate) fn standings(origin: NodeHandle) -> Self {
+        LbShape {
+            rounds: false,
+            standings: true,
+            origins: LbOrigins::One(origin),
+            maps: false,
+        }
+    }
+
+    pub(crate) fn is_empty(&self) -> bool {
+        !self.rounds && !self.standings
+    }
+
+    /// The entries of both together, like the inputs of a node.
+    pub(crate) fn combine(self, other: LbShape) -> Self {
+        let origins = match (self.origins, other.origins) {
+            (LbOrigins::None, origins) | (origins, LbOrigins::None) => origins,
+            (LbOrigins::One(a), LbOrigins::One(b)) if a == b => LbOrigins::One(a),
+            _ => LbOrigins::Many,
+        };
+        LbShape {
+            rounds: self.rounds || other.rounds,
+            standings: self.standings || other.standings,
+            origins,
+            maps: self.maps || other.maps,
+        }
+    }
+}
+
+/// Checks the steps against the entries they would get and returns what they produce.
+/// Entries created by a step belong to `origin`, like when evaluating them.
+pub(crate) fn check_steps(
+    origin: NodeHandle,
+    steps: &[LbSettingsV3],
+    input: LbShape,
+) -> Result<LbShape, LbError> {
+    steps
+        .iter()
+        .enumerate()
+        .try_fold(input, |shape, (index, step)| {
+            step.check(origin, shape)
+                .map_err(|error| error.at_step(origin, index))
+        })
+}
+
+/// A scope can only group by values the entries have.
+pub(super) fn check_scope(scope: &[LbKey], input: &LbShape) -> Result<(), LbError> {
+    if scope.contains(&LbKey::Map) && !input.is_empty() && !input.maps {
+        return Err(LbError::new("The entries have no map to group them by."));
+    }
+    Ok(())
+}

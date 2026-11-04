@@ -1,7 +1,14 @@
 use spacetimedb::SpacetimeType;
 
-use crate::leaderboard::{
-    LbEntry, LbKey, LbScopeKey, LbStep, combinators::LbRows, context::LbContext, error::LbError,
+use crate::{
+    competition::node::NodeHandle,
+    leaderboard::{
+        LbEntry, LbKey, LbScopeKey, LbStep,
+        combinators::LbRows,
+        context::LbContext,
+        error::LbError,
+        shape::{LbOrigins, LbShape, check_scope},
+    },
 };
 
 /// Selects entries by their place in the leaderboard, so it usually comes after a match or merge step.
@@ -33,6 +40,21 @@ impl LbStep for LbSelectSettings {
             .group_by(|e| LbScopeKey::of(&self.scope, e))
             .try_map(|_, entries| self.places.select(entries))?
             .flatten())
+    }
+
+    fn check(&self, _origin: NodeHandle, input: LbShape) -> Result<LbShape, LbError> {
+        check_scope(&self.scope, &input)?;
+        if input.rounds {
+            return Err(LbError::new(
+                "Places only exist in standings, add a match or merge step before selecting.",
+            ));
+        }
+        if input.origins == LbOrigins::Many && !self.scope.contains(&LbKey::Origin) {
+            return Err(LbError::new(
+                "Places only exist in a single leaderboard, merge the entries or select per origin.",
+            ));
+        }
+        Ok(input)
     }
 }
 

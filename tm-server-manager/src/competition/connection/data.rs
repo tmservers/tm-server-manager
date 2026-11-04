@@ -7,6 +7,7 @@ use crate::{
     competition::{
         CompetitionPermissionsV1,
         connection::{ConnectionStatus, tab_connection},
+        node::{NodeHandle, NodeRead},
     },
     leaderboard::{
         LbEntry, LbSettingsV3,
@@ -14,6 +15,7 @@ use crate::{
         error::LbError,
         evaluate_steps,
         select::{LbSelectFirstOffsetN, LbSelectPlaces, LbSelectSettings},
+        shape::{LbShape, check_steps},
     },
 };
 
@@ -77,6 +79,10 @@ impl ConnectionDataV2 {
         leaderboard: Vec<LbEntry>,
     ) -> Result<Vec<LbEntry>, LbError> {
         evaluate_steps(cx, &self.settings, leaderboard)
+    }
+
+    pub(super) fn check(&self, origin: NodeHandle, input: LbShape) -> Result<LbShape, LbError> {
+        check_steps(origin, &self.settings, input)
     }
 }
 
@@ -155,6 +161,9 @@ fn competition_connection_data_update(
     ctx.auth_builder(connection.parent_id)
         .permission(CompetitionPermissionsV1::CONNECTION_CONFIGURE)
         .authorize()?;
+
+    let origin = connection.origin();
+    check_steps(origin, &settings, ctx.node_output_shape(origin)?)?;
 
     let Some(mut data) = ctx
         .db
