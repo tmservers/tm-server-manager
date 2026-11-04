@@ -193,6 +193,8 @@ pub enum MatchStatus {
     /// Match is immutable and achived.
     /// Loads the post match config if present.
     Ended,
+    /// Deprecated, nothing leads to it anymore.
+    /// It only stays because removing a variant of a type stored in a table is not possible.
     Locked,
     Recovery,
     RecoveryPreparation,
