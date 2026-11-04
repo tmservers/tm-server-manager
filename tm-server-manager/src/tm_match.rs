@@ -10,7 +10,7 @@ use crate::{
     authorization::Authorization,
     competition::{
         CompetitionPermissionsV1, CompetitionRead,
-        node::{NodeHandle, NodeWrite, Vec2},
+        node::{NodeHandle, NodeWrite, Vec2, seed::NodeSeedWrite},
         server_pool::TabCompetitionServerPoolRead,
     },
     raw_server::{
@@ -814,6 +814,9 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
         self.db().tab_match().id().update(tm_match);
 
         self.match_state_insert(MatchState::new(match_id, config.get_mode().get_mode()))?;
+
+        // From now on the participants keep their seeds, e.g. for the map picks.
+        self.node_seeds_freeze(NodeHandle::MatchV1(match_id))?;
 
         self.destination_claim(NodeHandle::MatchV1(match_id))?;
 

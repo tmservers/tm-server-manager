@@ -47,9 +47,17 @@ pub struct TabConnection {
 
     kind: ConnectionKind,
     status: ConnectionStatus,
+
+    /// The inputs of a node are ordered by their slot, e.g. to seed the participants.
+    #[default(0)]
+    slot: u8,
 }
 
 impl TabConnection {
+    pub(crate) fn slot(&self) -> u8 {
+        self.slot
+    }
+
     pub(crate) fn origin(&self) -> NodeHandle {
         NodeHandle::combine(self.origin_variant, self.origin_id)
     }
@@ -270,6 +278,7 @@ fn connection_create(
                 target_variant,
                 kind,
                 status: ConnectionStatus::Configuring,
+                slot: 0,
             })
             .map_err(|e| ConnectionError::InternalError(e.to_string()))?;
 
@@ -457,6 +466,31 @@ pub(crate) fn internal_graph_resolution_node_finished(
             );
         }
     }
+
+    Ok(())
+}
+
+/// Sets the place of the connection among the inputs of its target.
+#[reducer]
+fn connection_slot_update(
+    ctx: &ReducerContext,
+    connection_id: u32,
+    slot: u8,
+) -> Result<(), String> {
+    let Some(mut connection) = ctx.db.tab_connection().id().find(connection_id) else {
+        return Err("Connection could not be found.".into());
+    };
+
+    ctx.auth_builder(connection.parent_id)
+        .permission(CompetitionPermissionsV1::CONNECTION_CONFIGURE)
+        .authorize()?;
+
+    if connection.status == ConnectionStatus::Resolved {
+        return Err("A resolved connection cannot be changed anymore.".into());
+    }
+
+    connection.slot = slot;
+    ctx.db.tab_connection().id().update(connection);
 
     Ok(())
 }
@@ -735,6 +769,7 @@ mod tests {
             target_variant,
             kind,
             status: ConnectionStatus::Configured,
+            slot: 0,
         }
     }
 
