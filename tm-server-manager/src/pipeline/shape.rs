@@ -181,4 +181,12 @@ mod tests {
         // Steps can be configured before the inputs get connected.
         assert!(check_steps(MATCH, &[select(vec![LbKey::Map])], LbShape::default()).is_ok());
     }
+
+    #[test]
+    fn players_and_teams_cannot_be_selected_together() {
+        let registration = NodeHandle::RegistrationV1(1);
+        let mixed = LbShape::standings(registration).combine(LbShape::team_standings(registration));
+
+        assert!(check_steps(MATCH, &[select(vec![])], mixed).is_err());
+    }
 }

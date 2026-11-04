@@ -24,7 +24,7 @@ use crate::{
 };
 
 pub(super) mod action;
-pub(super) mod data;
+pub(crate) mod data;
 
 #[cfg(test)]
 pub(crate) use data::{
