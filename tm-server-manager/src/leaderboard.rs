@@ -284,8 +284,13 @@ pub enum LbEntryKind {
 
 #[derive(Debug, SpacetimeType, Clone, Copy)]
 pub struct LbEntry {
-    // Required
+    /// The user the entry belongs to, 0 if there is none.
+    /// Having this as 0 means team_id cannot be 0.
     pub user_id: u32,
+    /// The team the entry belongs to, 0 if there is none.
+    /// Without a user the entry is the one of the team.
+    /// Having this as 0 user_id cannot be 0.
+    pub team_id: u32,
     // Required
     pub position: u16,
     // Default: 0
@@ -302,12 +307,6 @@ pub struct LbEntry {
     node_variant: u8,
     // Required
     pub kind: LbEntryKind,
-
-    //TODO maybe
-    // mode_fallback: enum {ScoreAsc,ScoreDsc,TimeAsc,...}
-    /// The team the entry belongs to, 0 if there is none.
-    /// Without a user the entry is the one of the team.
-    pub team_id: u32,
 }
 
 impl LbEntry {
