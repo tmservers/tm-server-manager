@@ -456,3 +456,169 @@ impl<Db: CtxDbRead> TeamRead for Db {
             .collect()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use spacetimedb::test_utils::{TestAuth, TestContext};
+
+    use super::*;
+    use crate::{
+        competition::{
+            connection::{
+                ConnectionKind, ConnectionWrite, TabConnection,
+                data::{ConnectionDataV2, ConnectionDataWrite},
+            },
+            node::seed::NodeSeedWrite,
+        },
+        leaderboard::test_util::test_context,
+        registration::{Registration, RegistrationSettings, RegistrationStatus},
+    };
+
+    const REGISTRATION: u32 = 1;
+
+    /// A team registration for teams of exactly two.
+    fn registration(test: &TestContext, status: RegistrationStatus) {
+        test.with_reducer_tx(TestAuth::internal(), |ctx| {
+            ctx.db.tab_registration().insert(Registration {
+                name: String::new(),
+                id: REGISTRATION,
+                parent_id: 1,
+                settings: RegistrationSettings::Team(RegistrationSettingsTeam {
+                    team_limit: 4,
+                    team_size_min: 2,
+                    team_size_max: 2,
+                }),
+                status,
+                template: false,
+            });
+            Ok::<_, String>(())
+        })
+        .unwrap();
+    }
+
+    fn run<T>(
+        test: &TestContext,
+        body: impl FnOnce(&ReducerContext) -> Result<T, String>,
+    ) -> Result<T, String> {
+        test.with_reducer_tx(TestAuth::internal(), body)
+    }
+
+    /// A team of `captain` which `member` joined.
+    fn team_of_two(test: &TestContext, captain: u32, member: u32) -> u32 {
+        run(test, |ctx| {
+            let team = create_team(ctx, captain, REGISTRATION, String::new())?;
+            invite(ctx, captain, team.id, member)?;
+            accept_invite(ctx, member, team.id)?;
+            Ok(team.id)
+        })
+        .unwrap()
+    }
+
+    #[test]
+    fn a_user_is_in_one_team_of_a_registration_at_most() {
+        let test = test_context(&[]);
+        registration(&test, RegistrationStatus::Ongoing);
+        let team = team_of_two(&test, 1, 2);
+
+        assert!(
+            run(&test, |ctx| create_team(
+                ctx,
+                2,
+                REGISTRATION,
+                String::new()
+            ))
+            .is_err()
+        );
+        let other = run(&test, |ctx| {
+            create_team(ctx, 3, REGISTRATION, String::new())
+        })
+        .unwrap();
+        assert!(run(&test, |ctx| invite(ctx, 3, other.id, 1)).is_err());
+        assert!(member_find(&test.anonymous_view_context(), team, 2).is_some());
+    }
+
+    #[test]
+    fn a_full_team_takes_no_more_members() {
+        let test = test_context(&[]);
+        registration(&test, RegistrationStatus::Ongoing);
+        let team = team_of_two(&test, 1, 2);
+
+        run(&test, |ctx| invite(ctx, 1, team, 3)).unwrap();
+
+        assert!(run(&test, |ctx| accept_invite(ctx, 3, team)).is_err());
+    }
+
+    #[test]
+    fn handing_over_the_captaincy_keeps_one_captain() {
+        let test = test_context(&[]);
+        registration(&test, RegistrationStatus::Ongoing);
+        let team = team_of_two(&test, 1, 2);
+
+        run(&test, |ctx| role_update(ctx, 1, team, 2, TeamRole::Captain)).unwrap();
+
+        let cx = test.anonymous_view_context();
+        assert_eq!(member_find(&cx, team, 1).unwrap().role, TeamRole::Player);
+        assert_eq!(member_find(&cx, team, 2).unwrap().role, TeamRole::Captain);
+    }
+
+    #[test]
+    fn teams_cannot_change_once_the_registration_ended() {
+        let test = test_context(&[]);
+        registration(&test, RegistrationStatus::Ended);
+
+        assert!(
+            run(&test, |ctx| create_team(
+                ctx,
+                1,
+                REGISTRATION,
+                String::new()
+            ))
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn only_teams_with_enough_members_take_part() {
+        let test = test_context(&[]);
+        registration(&test, RegistrationStatus::Ongoing);
+        run(&test, |ctx| {
+            create_team(ctx, 1, REGISTRATION, String::new())
+        })
+        .unwrap();
+        let full = team_of_two(&test, 2, 3);
+
+        let settings = RegistrationSettingsTeam {
+            team_limit: 4,
+            team_size_min: 2,
+            team_size_max: 2,
+        };
+        let standings = test
+            .anonymous_view_context()
+            .registration_team_lb(REGISTRATION, &settings);
+
+        let participants: Vec<LbParticipant> = standings.iter().map(|e| e.participant()).collect();
+        assert_eq!(participants, vec![LbParticipant::Team(full)]);
+    }
+
+    #[test]
+    fn players_of_a_match_play_for_the_team_it_got_seeded_with() {
+        let test = test_context(&[]);
+        registration(&test, RegistrationStatus::Ongoing);
+        let team = team_of_two(&test, 1, 2);
+        let tm_match = NodeHandle::MatchV1(3);
+        run(&test, |ctx| {
+            let connection = ctx.connection_insert(TabConnection::for_test(
+                NodeHandle::RegistrationV1(REGISTRATION),
+                tm_match,
+                ConnectionKind::Data,
+            ))?;
+            ctx.connection_data_insert(ConnectionDataV2::new(connection.id, 1))?;
+            ctx.node_seeds_freeze(tm_match)
+        })
+        .unwrap();
+
+        let teams = test.anonymous_view_context().node_user_teams(tm_match);
+
+        assert_eq!(teams, HashMap::from([(1, team), (2, team)]));
+    }
+}

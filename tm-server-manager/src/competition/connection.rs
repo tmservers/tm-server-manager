@@ -23,7 +23,7 @@ use crate::{
 };
 
 pub(super) mod action;
-pub(super) mod data;
+pub(crate) mod data;
 
 #[spacetimedb::table(accessor= tab_connection, vis_private,
     index(accessor=connection_exists,hash(columns=[origin_variant,target_variant,origin_id,target_id])),

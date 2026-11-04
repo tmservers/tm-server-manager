@@ -331,4 +331,16 @@ mod tests {
         let maps: Vec<(u32, u32)> = standings.iter().map(|s| (s.user_id, s.map_id)).collect();
         assert_eq!(maps, vec![(1, 7), (2, 0)]);
     }
+
+    #[test]
+    fn built_in_modes_do_not_rank_teams() {
+        let test = test_context(&[(1, TmMode::Rounds)]);
+
+        let standings = match_team_standings(
+            &LbContext::new(&test.anonymous_view_context(), MATCH),
+            vec![round(1, 1, 10, 0)],
+        );
+
+        assert!(standings.is_err());
+    }
 }
