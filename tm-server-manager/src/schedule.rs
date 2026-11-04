@@ -68,6 +68,8 @@ enum ScheduleStatus {
     Configured,
     Waiting,
     Finished,
+    /// Deprecated, nothing leads to it anymore.
+    /// It only stays because removing a variant of a type stored in a table is not possible.
     Locked,
 }
 
