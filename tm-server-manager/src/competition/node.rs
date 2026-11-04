@@ -13,7 +13,7 @@ use crate::{
     input::{InputRead, InputWrite},
     leaderboard::{
         LbEntry, LeadearboardRead, LeaderboardWrite, context::LbContext, error::LbError,
-        modes::match_standings,
+        modes::match_standings, shape::LbShape,
     },
     output::{OutputRead, OutputWrite},
     raw_server::player::PermittedPlayer,
@@ -181,6 +181,10 @@ pub(crate) trait NodeRead {
     fn node_get_parent(&self, node: NodeHandle) -> Result<u32, String>;
     fn node_resolve_input_data(&self, node: NodeHandle) -> Result<Vec<LbEntry>, LbError>;
     fn node_resolve_output_data(&self, node: NodeHandle) -> Result<Vec<LbEntry>, LbError>;
+    /// What the node would get as input, the steps on the way are checked.
+    fn node_input_shape(&self, node: NodeHandle) -> Result<LbShape, LbError>;
+    /// What the node would output, the steps on the way are checked.
+    fn node_output_shape(&self, node: NodeHandle) -> Result<LbShape, LbError>;
     fn node_is_template(&self, node: NodeHandle) -> bool;
 }
 impl<Db: spacetimedb::CtxDbRead> NodeRead for Db {
@@ -266,6 +270,33 @@ impl<Db: spacetimedb::CtxDbRead> NodeRead for Db {
 
     fn node_resolve_output_data(&self, node: NodeHandle) -> Result<Vec<LbEntry>, LbError> {
         node_resolve_output_data_inner(self, node, &mut 1)
+    }
+
+    fn node_input_shape(&self, node: NodeHandle) -> Result<LbShape, LbError> {
+        self.connection_origins_of(node)
+            .filter(|c| c.is_data())
+            .try_fold(LbShape::default(), |shape, connection| {
+                let output = self.node_output_shape(connection.origin())?;
+                Ok(shape.combine(self.connection_shape(connection, output)?))
+            })
+    }
+
+    fn node_output_shape(&self, node: NodeHandle) -> Result<LbShape, LbError> {
+        match node {
+            NodeHandle::ScheduleV1(_) | NodeHandle::ServerV1(_) => Ok(LbShape::default()),
+            NodeHandle::MatchV1(_) => Ok(LbShape::rounds(node)),
+            NodeHandle::CompetitionV1(n) => match self.outputs_in_parent(n).next() {
+                Some(output) => self.node_input_shape(NodeHandle::OutputV1(output.id)),
+                None => Ok(LbShape::default()),
+            },
+            NodeHandle::OutputV1(_) => self.node_input_shape(node),
+            NodeHandle::InputV1(n) => match self.input_find(n) {
+                Ok(input) => self.node_input_shape(NodeHandle::CompetitionV1(input.get_comp_id())),
+                Err(_) => Ok(LbShape::default()),
+            },
+            NodeHandle::RegistrationV1(_) => Ok(LbShape::standings(node)),
+            NodeHandle::LeaderboardV1(n) => self.leaderboard_output_shape(n),
+        }
     }
 
     fn node_is_template(&self, node: NodeHandle) -> bool {

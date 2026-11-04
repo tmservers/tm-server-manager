@@ -1,8 +1,14 @@
 use spacetimedb::SpacetimeType;
 
-use crate::leaderboard::{
-    LbEntry, LbKey, LbParams, LbScopeKey, LbSettingsV3, LbStep, combinators::LbRows,
-    context::LbContext, error::LbError,
+use crate::{
+    competition::node::NodeHandle,
+    leaderboard::{
+        LbEntry, LbKey, LbParams, LbScopeKey, LbSettingsV3, LbStep,
+        combinators::LbRows,
+        context::LbContext,
+        error::LbError,
+        shape::{LbShape, check_scope},
+    },
 };
 
 /// Superseded by [`LbFilterSettingsV2`].
@@ -61,6 +67,11 @@ enum LbFilterFallback {
 impl LbStep for LbFilterSettingsV2 {
     fn apply(&self, _cx: &LbContext, entries: Vec<LbEntry>) -> Result<Vec<LbEntry>, LbError> {
         Ok(self.evaluate(entries))
+    }
+
+    fn check(&self, _origin: NodeHandle, input: LbShape) -> Result<LbShape, LbError> {
+        check_scope(&self.scope, &input)?;
+        Ok(input)
     }
 }
 
