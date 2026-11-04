@@ -4,6 +4,7 @@ use crate::{
     authorization::Authorization,
     competition::{CompetitionPermissionsV1, node::NodeHandle},
     leaderboard::{LbEntry, LbEntryKind},
+    registration::team::TeamRead,
     tm_match::{state::MatchStateRead, tab_match},
 };
 
@@ -215,12 +216,13 @@ impl<Db: spacetimedb::CtxDbRead> MatchLeadearboardRead for Db {
             return Vec::new();
         };
         let maps = self.match_round_maps(&state);
+        let teams = self.node_user_teams(NodeHandle::MatchV1(match_id));
         self.db_read_only()
             .tab_match_round_player()
             .match_id()
             .filter(match_id)
             .map(|f| {
-                LbEntry::new(
+                let mut entry = LbEntry::new(
                     f.user_id,
                     LbEntryKind::Round,
                     f.position,
@@ -229,7 +231,9 @@ impl<Db: spacetimedb::CtxDbRead> MatchLeadearboardRead for Db {
                 .set_score(f.points)
                 .set_time(f.time)
                 .set_round(f.round)
-                .set_map(maps.get(&f.round).copied().unwrap_or(0))
+                .set_map(maps.get(&f.round).copied().unwrap_or(0));
+                entry.team_id = teams.get(&f.user_id).copied().unwrap_or(0);
+                entry
             })
             .collect()
     }

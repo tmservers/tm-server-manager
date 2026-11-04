@@ -8,6 +8,7 @@ use crate::{
     },
     leaderboard::{context::LbContext, modes::match_standings},
     raw_server::{occupation::TabRawServerOccupationRead, tab_raw_server__view},
+    registration::team::TeamRead,
     user::UserRead,
 };
 
@@ -103,7 +104,10 @@ impl<Db: spacetimedb::CtxDbWrite> TabRawServerDestinationWrite for Db {
         let players = match_standings(&LbContext::new(self, node), input)?;
         let server_id = self.occupation_with_occupier(node).unwrap();
         let competition_id = self.node_get_parent(node).unwrap();
-        for player in players {
+        let user_ids = players
+            .into_iter()
+            .flat_map(|p| self.participant_users(p.participant()));
+        for user_id in user_ids {
             /* if player.only_spectator {
                 continue;
             } */
@@ -114,7 +118,7 @@ impl<Db: spacetimedb::CtxDbWrite> TabRawServerDestinationWrite for Db {
                     node_id: node.id(),
                     competition_id,
                     destination_server_id: server_id,
-                    user_id: player.user_id,
+                    user_id,
                 })?;
         }
 

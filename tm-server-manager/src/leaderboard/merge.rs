@@ -7,7 +7,7 @@ use crate::{
         combinators::LbRows,
         context::LbContext,
         error::LbError,
-        shape::{LbOrigins, LbShape},
+        shape::{LbOrigins, LbShape, check_participants},
         shared_map,
     },
 };
@@ -56,11 +56,12 @@ impl LbStep for LbMergeSettingsV2 {
         if input.is_empty() {
             return Ok(input);
         }
+        check_participants(&input)?;
         Ok(LbShape {
             rounds: false,
             standings: true,
             origins: LbOrigins::One(origin),
-            maps: input.maps,
+            ..input
         })
     }
 }

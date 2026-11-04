@@ -7,7 +7,7 @@ use crate::{
         combinators::LbRows,
         context::LbContext,
         error::LbError,
-        shape::{LbOrigins, LbShape, check_scope},
+        shape::{LbOrigins, LbShape, check_participants, check_scope},
     },
 };
 
@@ -44,6 +44,7 @@ impl LbStep for LbSelectSettings {
 
     fn check(&self, _origin: NodeHandle, input: LbShape) -> Result<LbShape, LbError> {
         check_scope(&self.scope, &input)?;
+        check_participants(&input)?;
         if input.rounds {
             return Err(LbError::new(
                 "Places only exist in standings, add a match or merge step before selecting.",
