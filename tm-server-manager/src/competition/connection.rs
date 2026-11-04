@@ -453,7 +453,7 @@ fn advance(ctx: &ReducerContext, affected_connection: CompetitionConnection) {
         log::warn!("The node can be started now.");
 
         let result = match affected_connection.target {
-            NodeHandle::MatchV1(match_id) => ctx.match_set_preparation(match_id, ctx.timestamp),
+            NodeHandle::MatchV1(match_id) => ctx.match_set_preparation(match_id),
             NodeHandle::CompetitionV1(c) => {
                 let inputs = ctx.inputs_in_parent(c);
 

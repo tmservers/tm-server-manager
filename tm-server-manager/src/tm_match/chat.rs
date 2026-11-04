@@ -71,7 +71,7 @@ fn unstable_match_chat_message(
         status: tm_match.status(),
     });
 
-    ctx.send_raw_server_message(server_id, user_id, ctx.timestamp, ingame_message)?;
+    ctx.send_raw_server_message(server_id, user_id, ingame_message)?;
 
     Ok(())
 }

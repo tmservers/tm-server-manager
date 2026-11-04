@@ -131,6 +131,6 @@ fn client_connected(ctx: &ReducerContext) -> Result<(), String> {
 #[spacetimedb::reducer(client_disconnected)]
 fn client_disconnected(ctx: &ReducerContext) {
     if let Ok(server_id) = ctx.server_id() {
-        ctx.raw_server_disconnected(server_id, ctx.timestamp);
+        ctx.raw_server_disconnected(server_id);
     }
 }
