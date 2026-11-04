@@ -228,6 +228,52 @@ impl LbParams {
     }
 }
 
+/// What the entries are grouped by so a step is applied to every group on its own.
+#[derive(Debug, SpacetimeType, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum LbKey {
+    /// The node the entries come from, e.g. every match.
+    Origin,
+    Map,
+    Round,
+    Team,
+}
+
+/// The values of the keys in a scope, keys which are not part of it stay empty.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+struct LbScopeKey {
+    origin: Option<NodeHandle>,
+    map_id: Option<u32>,
+    round: Option<u16>,
+    team_id: Option<u32>,
+}
+
+impl LbScopeKey {
+    fn of(scope: &[LbKey], entry: &LbEntry) -> Self {
+        let mut key = LbScopeKey::default();
+        for scope_key in scope {
+            match scope_key {
+                LbKey::Origin => key.origin = Some(entry.get_node()),
+                LbKey::Map => key.map_id = Some(entry.map_id),
+                LbKey::Round => key.round = Some(entry.round),
+                LbKey::Team => key.team_id = Some(entry.team_id),
+            }
+        }
+        key
+    }
+}
+
+/// The map entries were played on together, 0 if they were played on different ones.
+fn shared_map(a: u32, b: u32) -> u32 {
+    if a == b { a } else { 0 }
+}
+
+/// Whom an entry ranks, a leaderboard has at most one standing per participant.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub(crate) enum LbParticipant {
+    Player(u32),
+    Team(u32),
+}
+
 /// Whether an entry is the result of a single round or the standing in a whole leaderboard.
 #[derive(Debug, SpacetimeType, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum LbEntryKind {
@@ -244,6 +290,8 @@ pub struct LbEntry {
     pub position: u16,
     // Default: 0
     pub round: u16,
+    // Default: 0, which is an unknown map or several ones.
+    pub map_id: u32,
     // Default: i32::MIN
     pub score: i32,
     // Default: i32::MIN
@@ -257,6 +305,8 @@ pub struct LbEntry {
 
     //TODO maybe
     // mode_fallback: enum {ScoreAsc,ScoreDsc,TimeAsc,...}
+    /// The team the entry belongs to, 0 if there is none.
+    /// Without a user the entry is the one of the team.
     pub team_id: u32,
 }
 
@@ -273,6 +323,7 @@ impl LbEntry {
             position,
             kind,
             round: 0,
+            map_id: 0,
             score: i32::MIN,
             time: i32::MIN,
             node_id,
@@ -291,9 +342,40 @@ impl LbEntry {
         self
     }
 
+    /// An entry of the participant without any results.
+    pub(crate) fn for_participant(
+        participant: LbParticipant,
+        kind: LbEntryKind,
+        position: u16,
+        origin: NodeHandle,
+    ) -> Self {
+        match participant {
+            LbParticipant::Player(user_id) => LbEntry::new(user_id, kind, position, origin),
+            LbParticipant::Team(team_id) => {
+                let mut entry = LbEntry::new(0, kind, position, origin);
+                entry.team_id = team_id;
+                entry
+            }
+        }
+    }
+
     pub(crate) fn set_round(mut self, round: u16) -> Self {
         self.round = round;
         self
+    }
+
+    pub(crate) fn set_map(mut self, map_id: u32) -> Self {
+        self.map_id = map_id;
+        self
+    }
+
+    pub(crate) fn participant(&self) -> LbParticipant {
+        if self.user_id != 0 {
+            // The team is left out so a player who played for several teams still has one standing.
+            LbParticipant::Player(self.user_id)
+        } else {
+            LbParticipant::Team(self.team_id)
+        }
     }
 
     pub(crate) fn get_user(&self) -> u32 {
@@ -499,7 +581,7 @@ mod tests {
 
     use super::*;
     use crate::leaderboard::{
-        select::LbSelectSettings,
+        select::{LbSelectPlaces, LbSelectSettings},
         test_util::{round, test_context},
     };
 
@@ -512,7 +594,10 @@ mod tests {
         let error = evaluate_steps(
             &LbContext::new(&test.anonymous_view_context(), leaderboard),
             &[
-                LbSettingsV3::Select(LbSelectSettings::FirstN(5)),
+                LbSettingsV3::Select(LbSelectSettings {
+                    scope: Vec::new(),
+                    places: LbSelectPlaces::FirstN(5),
+                }),
                 LbSettingsV3::Match,
             ],
             vec![round(1, 1, -500, 0)],

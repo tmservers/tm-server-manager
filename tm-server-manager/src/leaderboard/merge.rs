@@ -4,7 +4,7 @@ use crate::{
     competition::node::NodeHandle,
     leaderboard::{
         LbEntry, LbEntryKind, LbParams, LbStep, combinators::LbRows, context::LbContext,
-        error::LbError,
+        error::LbError, shared_map,
     },
 };
 
@@ -30,7 +30,7 @@ impl From<LbMergeSettings> for LbMergeSettingsV2 {
     }
 }
 
-/// Merges all entries of a user into one.
+/// Merges all entries of a participant into one.
 #[derive(Debug, SpacetimeType, Clone, Copy)]
 pub(crate) struct LbMergeSettingsV2 {
     action: LbMergeAction,
@@ -51,12 +51,16 @@ impl LbStep for LbMergeSettingsV2 {
 
 impl LbMergeSettingsV2 {
     fn evaluate(self, origin: NodeHandle, leaderboard: Vec<LbEntry>) -> Vec<LbEntry> {
-        let merged = leaderboard.group_by(|e| e.user_id).fold(|player, entries| {
-            let init = LbEntry::new(player, LbEntryKind::Standing, 0, origin)
-                .set_score(0)
-                .set_time(0);
-            self.merge(init, &entries)
-        });
+        let merged = leaderboard
+            .group_by(|e| e.participant())
+            .fold(|participant, entries| {
+                let map_id = entries.iter().map(|e| e.map_id).reduce(shared_map);
+                let init = LbEntry::for_participant(participant, LbEntryKind::Standing, 0, origin)
+                    .set_score(0)
+                    .set_time(0)
+                    .set_map(map_id.unwrap_or(0));
+                self.merge(init, &entries)
+            });
         log::info!("Merge Result: {:?}", merged);
 
         let merged = merged.sorted_by_key(|e| self.param.key(e));

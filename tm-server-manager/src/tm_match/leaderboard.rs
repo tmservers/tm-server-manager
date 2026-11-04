@@ -54,10 +54,13 @@ pub struct MatchRoundPlayer {
     round: u16,
     #[default(0)]
     position: u16,
+    /// The map the round was played on.
+    #[default(0)]
+    map_id: u32,
 }
 
 impl MatchRoundPlayer {
-    pub(super) fn new(match_id: u32, user_id: u32, round: u16) -> Self {
+    pub(super) fn new(match_id: u32, user_id: u32, round: u16, map_id: u32) -> Self {
         Self {
             user_id,
             match_id,
@@ -66,6 +69,7 @@ impl MatchRoundPlayer {
             points: 0,
             id: 0,
             position: 0,
+            map_id,
         }
     }
 
@@ -221,6 +225,7 @@ impl<Db: spacetimedb::CtxDbRead> MatchLeadearboardRead for Db {
                 .set_score(f.points)
                 .set_time(f.time)
                 .set_round(f.round)
+                .set_map(f.map_id)
             })
             .collect()
     }

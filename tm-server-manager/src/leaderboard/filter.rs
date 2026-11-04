@@ -1,8 +1,8 @@
 use spacetimedb::SpacetimeType;
 
 use crate::leaderboard::{
-    LbEntry, LbParams, LbSettingsV3, LbStep, combinators::LbRows, context::LbContext,
-    error::LbError,
+    LbEntry, LbKey, LbParams, LbScopeKey, LbSettingsV3, LbStep, combinators::LbRows,
+    context::LbContext, error::LbError,
 };
 
 /// Superseded by [`LbFilterSettingsV2`].
@@ -26,6 +26,7 @@ impl LbFilterSettings {
     /// Filtering matches was filtering the standings of the matches.
     pub(super) fn upgrade(self) -> Vec<LbSettingsV3> {
         let filter = LbSettingsV3::Filter(LbFilterSettingsV2 {
+            scope: Vec::new(),
             param: self.param,
             filter: self.filter,
             fallback: self.fallback,
@@ -38,8 +39,10 @@ impl LbFilterSettings {
 }
 
 /// Keeps the best entries of every user.
-#[derive(Debug, SpacetimeType, Clone, Copy)]
+#[derive(Debug, SpacetimeType, Clone)]
 pub(crate) struct LbFilterSettingsV2 {
+    /// The entries of every group are filtered on their own, e.g. the best rounds on every map.
+    scope: Vec<LbKey>,
     param: LbParams,
     filter: LbFilterIdent,
     fallback: LbFilterFallback,
@@ -62,9 +65,16 @@ impl LbStep for LbFilterSettingsV2 {
 }
 
 impl LbFilterSettingsV2 {
-    fn evaluate(self, leaderboard: Vec<LbEntry>) -> Vec<LbEntry> {
+    fn evaluate(&self, leaderboard: Vec<LbEntry>) -> Vec<LbEntry> {
+        leaderboard
+            .group_by(|e| LbScopeKey::of(&self.scope, e))
+            .map(|_, entries| self.filter_group(entries))
+            .flatten()
+    }
+
+    fn filter_group(&self, leaderboard: Vec<LbEntry>) -> Vec<LbEntry> {
         //TODO valiidate that the sort does all edge cases.
-        let users = leaderboard.group_by(|e| e.user_id);
+        let users = leaderboard.group_by(|e| e.participant());
 
         let Some(max) = users.max_len() else {
             // This case is only hit when nobody is even there so it is safe to just return nothing.
@@ -74,18 +84,26 @@ impl LbFilterSettingsV2 {
         let user_count = users.len();
 
         users
-            .map(|user_id, rows| {
+            .map(|_, rows| {
                 let mut rows = rows.sorted_by_key(|e| self.param.key(e));
 
                 match self.filter {
                     LbFilterIdent::Best(n) => {
                         rows.truncate(n as usize);
-                        // Padding takes the kind and origin of the worst entry so it stays in the same leaderboard.
+                        // Padding takes everything identifying the worst entry so it stays in the same leaderboard and group.
                         let Some(&worst) = rows.last() else {
                             return rows;
                         };
                         let padding = || {
-                            LbEntry::new(user_id, worst.kind, user_count as u16, worst.get_node())
+                            let mut padding = LbEntry::new(
+                                worst.user_id,
+                                worst.kind,
+                                user_count as u16,
+                                worst.get_node(),
+                            )
+                            .set_map(worst.map_id);
+                            padding.team_id = worst.team_id;
+                            padding
                         };
                         if rows.len() < (n as usize) {
                             // if we have played less rounds than the best n we take the current row count.
@@ -148,6 +166,7 @@ mod tests {
     #[test]
     fn keeps_the_best_rounds_and_pads_missing_ones_with_zero() {
         let filtered = LbFilterSettingsV2 {
+            scope: Vec::new(),
             param: LbParams::Score,
             filter: LbFilterIdent::Best(2),
             fallback: LbFilterFallback::Worst,
@@ -172,6 +191,7 @@ mod tests {
     #[test]
     fn pads_only_up_to_the_most_rounds_anyone_played() {
         let filtered = LbFilterSettingsV2 {
+            scope: Vec::new(),
             param: LbParams::Score,
             filter: LbFilterIdent::Best(5),
             fallback: LbFilterFallback::Worst,

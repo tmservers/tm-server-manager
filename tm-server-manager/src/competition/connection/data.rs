@@ -13,7 +13,7 @@ use crate::{
         context::LbContext,
         error::LbError,
         evaluate_steps,
-        select::{LbSelectFirstOffsetN, LbSelectSettings},
+        select::{LbSelectFirstOffsetN, LbSelectPlaces, LbSelectSettings},
     },
 };
 
@@ -83,20 +83,26 @@ impl ConnectionDataV2 {
 impl From<ConnectionData> for ConnectionDataV2 {
     fn from(data: ConnectionData) -> Self {
         // Every option except `All` took the match standings before selecting from them.
-        let select = match data.options {
+        let places = match data.options {
             ConnectionDataOption::All => None,
-            ConnectionDataOption::FirstN(n) => Some(LbSelectSettings::FirstN(n)),
-            ConnectionDataOption::LastN(n) => Some(LbSelectSettings::LastN(n)),
-            ConnectionDataOption::Custom(places) => Some(LbSelectSettings::Custom(places)),
+            ConnectionDataOption::FirstN(n) => Some(LbSelectPlaces::FirstN(n)),
+            ConnectionDataOption::LastN(n) => Some(LbSelectPlaces::LastN(n)),
+            ConnectionDataOption::Custom(places) => Some(LbSelectPlaces::Custom(places)),
             ConnectionDataOption::FirstOffsetN(opt) => {
-                Some(LbSelectSettings::FirstOffsetN(LbSelectFirstOffsetN {
+                Some(LbSelectPlaces::FirstOffsetN(LbSelectFirstOffsetN {
                     offset: opt.offset,
                     take: opt.take,
                 }))
             }
         };
-        let settings = match select {
-            Some(select) => vec![LbSettingsV3::Match, LbSettingsV3::Select(select)],
+        let settings = match places {
+            Some(places) => vec![
+                LbSettingsV3::Match,
+                LbSettingsV3::Select(LbSelectSettings {
+                    scope: Vec::new(),
+                    places,
+                }),
+            ],
             None => Vec::new(),
         };
 
