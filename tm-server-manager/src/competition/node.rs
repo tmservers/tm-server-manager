@@ -6,7 +6,7 @@ use crate::{
     authorization::Authorization,
     competition::{
         CompetitionPermissionsV1, CompetitionRead, CompetitionWrite,
-        connection::{ConnectionRead, ConnectionWrite},
+        connection::{ConnectionRead, ConnectionWrite, data::ConnectionDataRead},
         roles::CompetitionMemberRead,
         tab_competition__view,
     },
@@ -24,8 +24,11 @@ use crate::{
     user::UserRead,
 };
 mod position;
+pub(crate) mod seed;
 
 pub use position::*;
+
+use seed::NodeSeedWrite;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, SpacetimeType, Hash)]
 #[non_exhaustive]
@@ -180,6 +183,8 @@ pub(crate) trait NodeRead {
     fn node_permitted_players_input(&self, node: NodeHandle) -> Vec<PermittedPlayer>;
     fn node_get_parent(&self, node: NodeHandle) -> Result<u32, String>;
     fn node_resolve_input_data(&self, node: NodeHandle) -> Result<Vec<LbEntry>, LbError>;
+    /// The entries of every data connection into the node on their own, ordered by slot.
+    fn node_resolve_inputs(&self, node: NodeHandle) -> Result<Vec<Vec<LbEntry>>, LbError>;
     fn node_resolve_output_data(&self, node: NodeHandle) -> Result<Vec<LbEntry>, LbError>;
     /// What the node would get as input, the steps on the way are checked.
     fn node_input_shape(&self, node: NodeHandle) -> Result<LbShape, LbError>;
@@ -272,6 +277,10 @@ impl<Db: spacetimedb::CtxDbRead> NodeRead for Db {
 
     fn node_resolve_input_data(&self, node: NodeHandle) -> Result<Vec<LbEntry>, LbError> {
         node_resolve_input_data_inner(self, node, &mut 1)
+    }
+
+    fn node_resolve_inputs(&self, node: NodeHandle) -> Result<Vec<Vec<LbEntry>>, LbError> {
+        node_resolve_inputs_inner(self, node, &mut 1)
     }
 
     fn node_resolve_output_data(&self, node: NodeHandle) -> Result<Vec<LbEntry>, LbError> {
@@ -426,23 +435,34 @@ fn node_resolve_input_data_inner(
     node: NodeHandle,
     origin_offset: &mut u8,
 ) -> Result<Vec<LbEntry>, LbError> {
-    let mut player_entries = Vec::new();
-
-    let depending_connections = ctx
-        .connection_origins_of(node)
+    Ok(node_resolve_inputs_inner(ctx, node, origin_offset)?
         .into_iter()
-        .filter(|c| c.is_data());
+        .flatten()
+        .collect())
+}
 
-    for depending_connection in depending_connections {
-        let lb_entries =
-            node_resolve_output_data_inner(ctx, depending_connection.origin(), origin_offset)?;
+fn node_resolve_inputs_inner(
+    ctx: &impl spacetimedb::CtxDbRead,
+    node: NodeHandle,
+    origin_offset: &mut u8,
+) -> Result<Vec<Vec<LbEntry>>, LbError> {
+    let mut depending_connections: Vec<_> = ctx
+        .connection_origins_of(node)
+        .filter(|c| c.is_data())
+        .collect();
+    depending_connections.sort_by_cached_key(|c| {
+        let slot = ctx.connection_data_find(c.id).map_or(0, |data| data.slot());
+        (slot, c.id)
+    });
 
-        let filtered = ctx.connection_resolve_leaderboard(depending_connection, lb_entries)?;
-
-        player_entries.extend(filtered);
-    }
-
-    Ok(player_entries)
+    depending_connections
+        .into_iter()
+        .map(|depending_connection| {
+            let lb_entries =
+                node_resolve_output_data_inner(ctx, depending_connection.origin(), origin_offset)?;
+            ctx.connection_resolve_leaderboard(depending_connection, lb_entries)
+        })
+        .collect()
 }
 
 pub(crate) trait NodeWrite: NodeRead {
@@ -479,6 +499,8 @@ impl<Db: spacetimedb::CtxDbWrite> NodeWrite for Db {
 
         // Delete postition table entry.
         self.node_position_delete(node);
+
+        self.node_seeds_delete(node);
 
         // Delete all associated connection tables involving the node.
         self.node_connections_delete(node);

@@ -56,6 +56,10 @@ pub struct ConnectionDataV2 {
     pub connection_id: u32,
 
     settings: Vec<LbSettingsV3>,
+
+    /// The inputs of a node are ordered by the slot of their connection, e.g. to seed the participants.
+    #[default(0)]
+    slot: u8,
 }
 
 impl ConnectionDataV2 {
@@ -64,7 +68,12 @@ impl ConnectionDataV2 {
             competition_id,
             connection_id,
             settings: Vec::new(),
+            slot: 0,
         }
+    }
+
+    pub(crate) fn slot(&self) -> u8 {
+        self.slot
     }
 
     pub(crate) fn instantiate(mut self, connection_id: u32, competition_id: u32) -> Self {
@@ -116,6 +125,7 @@ impl From<ConnectionData> for ConnectionDataV2 {
             competition_id: data.competition_id,
             connection_id: data.connection_id,
             settings,
+            slot: 0,
         }
     }
 }
@@ -149,6 +159,7 @@ fn competition_connection_data_update(
     ctx: &ReducerContext,
     connection_id: u32,
     settings: Vec<LbSettingsV3>,
+    slot: u8,
 ) -> Result<(), String> {
     let Some(connection) = ctx.db.tab_connection().id().find(connection_id) else {
         return Err("connection could not be found!".into());
@@ -175,6 +186,7 @@ fn competition_connection_data_update(
     };
 
     data.settings = settings;
+    data.slot = slot;
 
     ctx.db.tab_connection_data_v2().connection_id().update(data);
 
