@@ -513,6 +513,8 @@ pub(crate) trait ConnectionRead {
     ) -> impl Iterator<Item = TabConnection>;
     /// The connections which have the node as their target.
     fn connection_origins_of(&self, node: NodeHandle) -> impl Iterator<Item = TabConnection>;
+    /// The connections which have the node as their origin.
+    fn connection_targets_of(&self, node: NodeHandle) -> impl Iterator<Item = TabConnection>;
 }
 impl<Db: spacetimedb::CtxDbRead> ConnectionRead for Db {
     fn connection_resolve_leaderboard(
@@ -547,6 +549,13 @@ impl<Db: spacetimedb::CtxDbRead> ConnectionRead for Db {
         self.db_read_only()
             .tab_connection()
             .origins_of()
+            .filter(node.split())
+    }
+
+    fn connection_targets_of(&self, node: NodeHandle) -> impl Iterator<Item = TabConnection> {
+        self.db_read_only()
+            .tab_connection()
+            .targets_of()
             .filter(node.split())
     }
 }
@@ -763,5 +772,30 @@ mod tests {
 
         assert!(!cx.node_is_finished(waiting));
         assert!(cx.node_is_finished(done));
+    }
+
+    #[test]
+    fn only_targets_which_took_the_output_rely_on_a_node() {
+        let test = test_context(&[]);
+        let origin = NodeHandle::MatchV1(1);
+        test.with_reducer_tx(TestAuth::internal(), |ctx| {
+            for (target, kind, resolved) in [
+                (NodeHandle::MatchV1(2), ConnectionKind::Data, true),
+                (NodeHandle::MatchV1(3), ConnectionKind::Data, false),
+                (NodeHandle::MatchV1(4), ConnectionKind::Action, true),
+            ] {
+                let mut connection = connect(origin, target, kind);
+                if resolved {
+                    connection.resolve();
+                }
+                ctx.connection_insert(connection)?;
+            }
+            Ok::<_, String>(())
+        })
+        .unwrap();
+
+        let dependents = test.anonymous_view_context().node_dependents(origin);
+
+        assert_eq!(dependents, vec![NodeHandle::MatchV1(2)]);
     }
 }
