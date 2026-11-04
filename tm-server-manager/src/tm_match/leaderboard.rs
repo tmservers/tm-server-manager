@@ -205,6 +205,7 @@ impl<Db: spacetimedb::CtxDbRead> MatchLeadearboardRead for Db {
         let Some(state) = self.match_state_find(match_id) else {
             return Vec::new();
         };
+        let maps = self.match_round_maps(&state);
         self.db_read_only()
             .tab_match_round_player()
             .match_id()
@@ -219,7 +220,7 @@ impl<Db: spacetimedb::CtxDbRead> MatchLeadearboardRead for Db {
                 .set_score(f.points)
                 .set_time(f.time)
                 .set_round(f.round)
-                //.set_map(/* map */) //TODO get the map id in there. this is pretty painful tho so defer until i know approach is good.
+                .set_map(maps.get(&f.round).copied().unwrap_or(0))
             })
             .collect()
     }
