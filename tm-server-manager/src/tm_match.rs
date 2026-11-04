@@ -490,7 +490,7 @@ fn match_set_preparation(ctx: &ReducerContext, match_id: u32) -> Result<(), Stri
         .permission(CompetitionPermissionsV1::MATCH_CONFIGURE)
         .authorize()?;
 
-    ctx.match_set_preparation(match_id, ctx.timestamp)
+    ctx.match_set_preparation(match_id)
 }
 
 /// If the match is fully configured and ready start.
@@ -505,7 +505,7 @@ fn match_try_start(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
         .permission(CompetitionPermissionsV1::MATCH_START)
         .authorize()?;
 
-    ctx.match_try_start(match_id, ctx.timestamp)
+    ctx.match_try_start(match_id)
 }
 
 #[reducer]
@@ -629,10 +629,10 @@ pub(crate) trait MatchWrite: MatchRead {
         Self: spacetimedb::CtxWithTimestamp;
     fn match_recovery_exit_forced(&self, match_id: u32);
     fn match_name_edit(&self, match_id: u32, name: String) -> Result<(), String>;
-    fn match_try_start(&self, match_id: u32, now: Timestamp) -> Result<(), String>
+    fn match_try_start(&self, match_id: u32) -> Result<(), String>
     where
         Self: spacetimedb::CtxWithTimestamp;
-    fn match_set_preparation(&self, match_id: u32, now: Timestamp) -> Result<(), String>
+    fn match_set_preparation(&self, match_id: u32) -> Result<(), String>
     where
         Self: spacetimedb::CtxWithTimestamp;
     fn match_restart(&self, match_id: u32) -> Result<(), String>
@@ -771,7 +771,7 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
         Ok(())
     }
 
-    fn match_try_start(&self, match_id: u32, now: Timestamp) -> Result<(), String>
+    fn match_try_start(&self, match_id: u32) -> Result<(), String>
     where
         Self: spacetimedb::CtxWithTimestamp,
     {
@@ -791,7 +791,7 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
             return Err("No server is assigned to the match.".into());
         };
 
-        self.send_raw_server_message(server_id, 0, now, "$0f0The Match will now be Live!".into())?;
+        self.send_raw_server_message(server_id, 0, "$0f0The Match will now be Live!".into())?;
 
         //TODO this is depending on player state (e.g. is there need to be specific players present are all there?)
         tm_match.status = MatchStatus::Live;
@@ -806,7 +806,7 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
         Ok(())
     }
 
-    fn match_set_preparation(&self, match_id: u32, now: Timestamp) -> Result<(), String>
+    fn match_set_preparation(&self, match_id: u32) -> Result<(), String>
     where
         Self: spacetimedb::CtxWithTimestamp,
     {
@@ -858,12 +858,7 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
 
         self.emit_raw_server_config(server_id, false)?;
 
-        self.send_raw_server_message(
-            server_id,
-            0,
-            now,
-            "$0f0The Match is now in preparation!".into(),
-        )?;
+        self.send_raw_server_message(server_id, 0, "$0f0The Match is now in preparation!".into())?;
 
         Ok(())
     }
