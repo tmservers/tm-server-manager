@@ -161,6 +161,11 @@ fn unstable_manual_register_override_players(
         .permission(CompetitionPermissionsV1::OWNER)
         .authorize()?;
 
+    // Once it ended the nodes after it rely on the registered players.
+    if registration.has_ended() {
+        return Err("The registration already ended.".into());
+    }
+
     ctx.db
         .tab_registeration_player()
         .registration_id()
