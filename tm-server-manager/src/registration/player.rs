@@ -12,11 +12,9 @@ use crate::{
     user::{UserRead, UserV1, UserWrite},
 };
 
-//TODO make this table private again.
 #[table(
     accessor=tab_registeration_player, vis_private,
-    index(accessor=user_registered, hash(columns=[user_id,registration_id])),
-    public
+    index(accessor=user_registered, hash(columns=[user_id,registration_id]))
 )]
 #[derive(Debug, Clone, Copy)]
 pub struct RegisterationPlayer {
@@ -24,6 +22,13 @@ pub struct RegisterationPlayer {
     #[index(hash)]
     pub registration_id: u32,
     pub user_id: u32,
+}
+
+#[view(accessor=registration_players, public)]
+fn registration_players(ctx: &AnonymousViewContext, registration_id: u32) -> impl Query<RegisterationPlayer> {
+    ctx.from
+        .tab_registeration_player()
+        .filter(|r| r.registration_id.eq(registration_id))
 }
 
 #[reducer]

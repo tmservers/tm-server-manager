@@ -1,4 +1,4 @@
-use spacetimedb::{ReducerContext, Table, reducer, table};
+use spacetimedb::{AnonymousViewContext, Query, ReducerContext, Table, reducer, table, view};
 
 use crate::{
     authorization::Authorization,
@@ -8,11 +8,7 @@ use crate::{
     user::UserRead,
 };
 
-//TODO make private again
-#[table(
-    accessor= tab_match_chat, vis_private,
-    public
-)]
+#[table(accessor= tab_match_chat, vis_private)]
 pub struct MatchChat {
     message: String,
 
@@ -37,6 +33,11 @@ impl MatchChat {
             status,
         }
     }
+}
+
+#[view(accessor = match_chat, public)]
+fn match_chat(ctx: &AnonymousViewContext, match_id: u32) -> impl Query<MatchChat> {
+    ctx.from.tab_match_chat().filter(|r| r.match_id.eq(match_id))
 }
 
 #[reducer]
