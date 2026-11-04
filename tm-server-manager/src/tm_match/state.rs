@@ -241,3 +241,74 @@ impl<Db: spacetimedb::CtxDbWrite + CtxWithTimestamp> MatchStateWrite for Db {
         history.insert(MatchStateHistory::new(&state, at));
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use spacetimedb::{
+        TimeDuration,
+        test_utils::{TestAuth, TestContext},
+    };
+
+    use super::*;
+    use crate::leaderboard::test_util::test_context;
+
+    fn history(test: &TestContext) -> Vec<MatchStateHistory> {
+        let mut history: Vec<MatchStateHistory> = test
+            .db
+            .tab_match_state_history()
+            .match_id()
+            .filter(1u32)
+            .collect();
+        history.sort_by_key(|h| h.at);
+        history
+    }
+
+    /// Applies the changes to match 1 in a transaction of their own.
+    fn transaction(test: &TestContext, changes: &[fn(&mut MatchState)]) {
+        test.clock.advance(TimeDuration::from_micros(1));
+        test.with_reducer_tx(TestAuth::internal(), |ctx| {
+            for change in changes {
+                let mut state = ctx.match_state_find(1).unwrap();
+                change(&mut state);
+                ctx.match_state_update(state);
+            }
+            Ok::<_, String>(())
+        })
+        .unwrap();
+    }
+
+    #[test]
+    fn a_transaction_only_keeps_the_state_it_ended_with() {
+        let test = test_context(&[(1, TmMode::Rounds)]);
+
+        transaction(&test, &[|s| s.set_map(7), |s| s.new_round()]);
+
+        // The state the match started with and the one after the transaction.
+        let rows: Vec<(u16, u32)> = history(&test).iter().map(|h| (h.round, h.map_id)).collect();
+        assert_eq!(rows, vec![(0, 0), (1, 7)]);
+    }
+
+    #[test]
+    fn an_unchanged_state_is_not_added_again() {
+        let test = test_context(&[(1, TmMode::Rounds)]);
+
+        transaction(&test, &[|_| ()]);
+
+        assert_eq!(history(&test).len(), 1);
+    }
+
+    #[test]
+    fn rounds_after_a_restart_are_played_on_the_maps_of_the_new_attempt() {
+        let test = test_context(&[(1, TmMode::Rounds)]);
+        transaction(&test, &[|s| s.set_map(7)]);
+        transaction(&test, &[|s| s.new_round()]);
+        transaction(&test, &[|s| s.restart()]);
+        transaction(&test, &[|s| s.set_map(8)]);
+        transaction(&test, &[|s| s.new_round()]);
+
+        let cx = test.anonymous_view_context();
+        let maps = cx.match_round_maps(&cx.match_state_find(1).unwrap());
+
+        assert_eq!(maps.get(&1), Some(&8));
+    }
+}
