@@ -123,7 +123,10 @@ impl LbMergeSettingsV2 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::leaderboard::test_util::{ranking, round, team_standing};
+    use crate::leaderboard::{
+        shape::LbOrigins,
+        test_util::{ranking, round, team_standing},
+    };
 
     const LEADERBOARD: NodeHandle = NodeHandle::LeaderboardV1(7);
 
@@ -192,5 +195,21 @@ mod tests {
             .map(|e| (e.user_id, e.team_id, e.score))
             .collect();
         assert_eq!(rows, vec![(0, 1, 35), (0, 2, 30)]);
+    }
+
+    #[test]
+    fn merged_entries_of_several_origins_belong_to_the_merging_node() {
+        let rounds = LbShape::rounds(NodeHandle::MatchV1(1))
+            .combine(LbShape::rounds(NodeHandle::MatchV1(2)));
+
+        let merged = LbMergeSettingsV2 {
+            action: LbMergeAction::Summate,
+            param: LbParams::Score,
+        }
+        .check(LEADERBOARD, rounds)
+        .unwrap();
+
+        assert_eq!(merged.origins, LbOrigins::One(LEADERBOARD));
+        assert!(merged.standings && !merged.rounds);
     }
 }
