@@ -119,7 +119,6 @@ import * as NodeLeaderboardOutputProcedure from "./node_leaderboard_output_proce
 import * as NodeLeaderboardOutputRawProcedure from "./node_leaderboard_output_raw_procedure";
 import * as PostRoundReplayProcedure from "./post_round_replay_procedure";
 import * as TestNodePermittedPlayersInputProcedure from "./test_node_permitted_players_input_procedure";
-import * as UnstableCompetitionRawServerConfigV2Procedure from "./unstable_competition_raw_server_config_v_2_procedure";
 
 // Import all table schema definitions
 import CompetitionRow from "./competition_table";
@@ -129,6 +128,7 @@ import CompetitionConnectionsRow from "./competition_connections_table";
 import CompetitionConnectionsDataRow from "./competition_connections_data_table";
 import CompetitionInputsRow from "./competition_inputs_table";
 import CompetitionLeaderboardsRow from "./competition_leaderboards_table";
+import CompetitionMatchConfigsRow from "./competition_match_configs_table";
 import CompetitionMatchesRow from "./competition_matches_table";
 import CompetitionMembersRow from "./competition_members_table";
 import CompetitionNodePositionsRow from "./competition_node_positions_table";
@@ -142,6 +142,9 @@ import CompetitionServersRow from "./competition_servers_table";
 import CompetitionSharedConfigsRow from "./competition_shared_configs_table";
 import EventRawServerMethodRow from "./event_raw_server_method_table";
 import EventRawServerStateRow from "./event_raw_server_state_table";
+import MatchByIdRow from "./match_by_id_table";
+import MatchChatRow from "./match_chat_table";
+import MatchMapRow from "./match_map_table";
 import MatchStateRow from "./match_state_table";
 import MyCompetitionPermissionsRow from "./my_competition_permissions_table";
 import MyProjectsRow from "./my_projects_table";
@@ -151,12 +154,8 @@ import MyUserRow from "./my_user_table";
 import ProjectCompetitionDescendantsRow from "./project_competition_descendants_table";
 import RawServerPermittedPlayersRow from "./raw_server_permitted_players_table";
 import RawServerPlayerDestinationRow from "./raw_server_player_destination_table";
-import TabMatchChatRow from "./tab_match_chat_table";
-import TabMatchRoundPlayerRow from "./tab_match_round_player_table";
-import TabMatchRoundPlayerExtRow from "./tab_match_round_player_ext_table";
-import TabRawServerPlayerRow from "./tab_raw_server_player_table";
-import TabRegisterationPlayerRow from "./tab_registeration_player_table";
-import TabUserRow from "./tab_user_table";
+import RegistrationPlayersRow from "./registration_players_table";
+import UsersRow from "./users_table";
 
 /** Type-only namespace exports for generated type groups. */
 
@@ -189,123 +188,6 @@ const tablesSchema = __schema({
     ],
     event: true,
   }, EventRawServerStateRow),
-  tabMatchChat: __table({
-    name: 'tab_match_chat',
-    indexes: [
-      { accessor: 'id', name: 'tab_match_chat_id_idx_btree', algorithm: 'btree', columns: [
-        'id',
-      ] },
-      { accessor: 'match_id', name: 'tab_match_chat_match_id_idx_hash', algorithm: 'btree', columns: [
-        'matchId',
-      ] },
-      { accessor: 'user_id', name: 'tab_match_chat_user_id_idx_hash', algorithm: 'btree', columns: [
-        'userId',
-      ] },
-    ],
-    constraints: [
-      { name: 'tab_match_chat_id_key', constraint: 'unique', columns: ['id'] },
-    ],
-  }, TabMatchChatRow),
-  tabMatchRoundPlayer: __table({
-    name: 'tab_match_round_player',
-    indexes: [
-      { accessor: 'id', name: 'tab_match_round_player_id_idx_btree', algorithm: 'btree', columns: [
-        'id',
-      ] },
-      { accessor: 'match_id', name: 'tab_match_round_player_match_id_idx_hash', algorithm: 'btree', columns: [
-        'matchId',
-      ] },
-      { accessor: 'match_round_range', name: 'tab_match_round_player_match_id_round_idx_btree', algorithm: 'btree', columns: [
-        'matchId',
-        'round',
-      ] },
-      { accessor: 'match_round', name: 'tab_match_round_player_match_id_round_idx_hash', algorithm: 'btree', columns: [
-        'matchId',
-        'round',
-      ] },
-      { accessor: 'match_round_player', name: 'tab_match_round_player_match_id_round_user_id_idx_hash', algorithm: 'btree', columns: [
-        'matchId',
-        'round',
-        'userId',
-      ] },
-      { accessor: 'user_id', name: 'tab_match_round_player_user_id_idx_hash', algorithm: 'btree', columns: [
-        'userId',
-      ] },
-    ],
-    constraints: [
-      { name: 'tab_match_round_player_id_key', constraint: 'unique', columns: ['id'] },
-    ],
-  }, TabMatchRoundPlayerRow),
-  tabMatchRoundPlayerExt: __table({
-    name: 'tab_match_round_player_ext',
-    indexes: [
-      { accessor: 'id', name: 'tab_match_round_player_ext_id_idx_btree', algorithm: 'btree', columns: [
-        'id',
-      ] },
-      { accessor: 'match_id', name: 'tab_match_round_player_ext_match_id_idx_hash', algorithm: 'btree', columns: [
-        'matchId',
-      ] },
-      { accessor: 'match_round_range', name: 'tab_match_round_player_ext_match_id_round_idx_btree', algorithm: 'btree', columns: [
-        'matchId',
-        'round',
-      ] },
-      { accessor: 'match_round', name: 'tab_match_round_player_ext_match_id_round_idx_hash', algorithm: 'btree', columns: [
-        'matchId',
-        'round',
-      ] },
-      { accessor: 'match_round_player', name: 'tab_match_round_player_ext_match_id_round_user_id_idx_hash', algorithm: 'btree', columns: [
-        'matchId',
-        'round',
-        'userId',
-      ] },
-    ],
-    constraints: [
-      { name: 'tab_match_round_player_ext_id_key', constraint: 'unique', columns: ['id'] },
-    ],
-  }, TabMatchRoundPlayerExtRow),
-  tabRawServerPlayer: __table({
-    name: 'tab_raw_server_player',
-    indexes: [
-      { accessor: 'account_id', name: 'tab_raw_server_player_account_id_idx_btree', algorithm: 'btree', columns: [
-        'accountId',
-      ] },
-      { accessor: 'server_id', name: 'tab_raw_server_player_server_id_idx_hash', algorithm: 'btree', columns: [
-        'serverId',
-      ] },
-    ],
-    constraints: [
-      { name: 'tab_raw_server_player_account_id_key', constraint: 'unique', columns: ['accountId'] },
-    ],
-  }, TabRawServerPlayerRow),
-  tabRegisterationPlayer: __table({
-    name: 'tab_registeration_player',
-    indexes: [
-      { accessor: 'registration_id', name: 'tab_registeration_player_registration_id_idx_hash', algorithm: 'btree', columns: [
-        'registrationId',
-      ] },
-      { accessor: 'user_registered', name: 'tab_registeration_player_user_id_registration_id_idx_hash', algorithm: 'btree', columns: [
-        'userId',
-        'registrationId',
-      ] },
-    ],
-    constraints: [
-    ],
-  }, TabRegisterationPlayerRow),
-  tabUser: __table({
-    name: 'tab_user',
-    indexes: [
-      { accessor: 'account_id', name: 'tab_user_account_id_idx_btree', algorithm: 'btree', columns: [
-        'accountId',
-      ] },
-      { accessor: 'id', name: 'tab_user_id_idx_btree', algorithm: 'btree', columns: [
-        'id',
-      ] },
-    ],
-    constraints: [
-      { name: 'tab_user_account_id_key', constraint: 'unique', columns: ['accountId'] },
-      { name: 'tab_user_id_key', constraint: 'unique', columns: ['id'] },
-    ],
-  }, TabUserRow),
   competition: __withViewParams(__table({
     name: 'competition',
     indexes: [
@@ -367,6 +249,15 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, CompetitionLeaderboardsRow), {
+    competitionId: __t.u32(),
+  }),
+  competitionMatchConfigs: __withViewParams(__table({
+    name: 'competition_match_configs',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, CompetitionMatchConfigsRow), {
     competitionId: __t.u32(),
   }),
   competitionMatches: __withViewParams(__table({
@@ -468,13 +359,42 @@ const tablesSchema = __schema({
   }, CompetitionSharedConfigsRow), {
     competitionId: __t.u32(),
   }),
-  matchState: __table({
+  matchById: __withViewParams(__table({
+    name: 'match_by_id',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MatchByIdRow), {
+    matchId: __t.u32(),
+  }),
+  matchChat: __withViewParams(__table({
+    name: 'match_chat',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MatchChatRow), {
+    matchId: __t.u32(),
+  }),
+  matchMap: __withViewParams(__table({
+    name: 'match_map',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MatchMapRow), {
+    matchId: __t.u32(),
+  }),
+  matchState: __withViewParams(__table({
     name: 'match_state',
     indexes: [
     ],
     constraints: [
     ],
-  }, MatchStateRow),
+  }, MatchStateRow), {
+    matchId: __t.u32(),
+  }),
   myCompetitionPermissions: __withViewParams(__table({
     name: 'my_competition_permissions',
     indexes: [
@@ -533,6 +453,22 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, RawServerPlayerDestinationRow),
+  registrationPlayers: __withViewParams(__table({
+    name: 'registration_players',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, RegistrationPlayersRow), {
+    registrationId: __t.u32(),
+  }),
+  users: __table({
+    name: 'users',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, UsersRow),
 });
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
@@ -623,7 +559,6 @@ const proceduresSchema = __procedures(
   __procedureSchema("node_leaderboard_output_raw", NodeLeaderboardOutputRawProcedure.params, NodeLeaderboardOutputRawProcedure.returnType),
   __procedureSchema("post_round_replay", PostRoundReplayProcedure.params, PostRoundReplayProcedure.returnType),
   __procedureSchema("test_node_permitted_players_input", TestNodePermittedPlayersInputProcedure.params, TestNodePermittedPlayersInputProcedure.returnType),
-  __procedureSchema("unstable_competition_raw_server_config_v2", UnstableCompetitionRawServerConfigV2Procedure.params, UnstableCompetitionRawServerConfigV2Procedure.returnType),
 );
 
 type __SchemaWithTableAccessorAliases = Omit<typeof tablesSchema.schemaType, "tables"> & {
@@ -632,18 +567,6 @@ type __SchemaWithTableAccessorAliases = Omit<typeof tablesSchema.schemaType, "ta
     readonly "event_raw_server_method": Omit<typeof tablesSchema.schemaType.tables["eventRawServerMethod"], "accessorName"> & { readonly accessorName: "event_raw_server_method" };
     /** @deprecated Use `eventRawServerState` instead. This alias will be removed in the next major version. */
     readonly "event_raw_server_state": Omit<typeof tablesSchema.schemaType.tables["eventRawServerState"], "accessorName"> & { readonly accessorName: "event_raw_server_state" };
-    /** @deprecated Use `tabMatchChat` instead. This alias will be removed in the next major version. */
-    readonly "tab_match_chat": Omit<typeof tablesSchema.schemaType.tables["tabMatchChat"], "accessorName"> & { readonly accessorName: "tab_match_chat" };
-    /** @deprecated Use `tabMatchRoundPlayer` instead. This alias will be removed in the next major version. */
-    readonly "tab_match_round_player": Omit<typeof tablesSchema.schemaType.tables["tabMatchRoundPlayer"], "accessorName"> & { readonly accessorName: "tab_match_round_player" };
-    /** @deprecated Use `tabMatchRoundPlayerExt` instead. This alias will be removed in the next major version. */
-    readonly "tab_match_round_player_ext": Omit<typeof tablesSchema.schemaType.tables["tabMatchRoundPlayerExt"], "accessorName"> & { readonly accessorName: "tab_match_round_player_ext" };
-    /** @deprecated Use `tabRawServerPlayer` instead. This alias will be removed in the next major version. */
-    readonly "tab_raw_server_player": Omit<typeof tablesSchema.schemaType.tables["tabRawServerPlayer"], "accessorName"> & { readonly accessorName: "tab_raw_server_player" };
-    /** @deprecated Use `tabRegisterationPlayer` instead. This alias will be removed in the next major version. */
-    readonly "tab_registeration_player": Omit<typeof tablesSchema.schemaType.tables["tabRegisterationPlayer"], "accessorName"> & { readonly accessorName: "tab_registeration_player" };
-    /** @deprecated Use `tabUser` instead. This alias will be removed in the next major version. */
-    readonly "tab_user": Omit<typeof tablesSchema.schemaType.tables["tabUser"], "accessorName"> & { readonly accessorName: "tab_user" };
     /** @deprecated Use `competitionAvailableServerPool` instead. This alias will be removed in the next major version. */
     readonly "competition_available_server_pool": Omit<typeof tablesSchema.schemaType.tables["competitionAvailableServerPool"], "accessorName"> & { readonly accessorName: "competition_available_server_pool" };
     /** @deprecated Use `competitionCompetitions` instead. This alias will be removed in the next major version. */
@@ -656,6 +579,8 @@ type __SchemaWithTableAccessorAliases = Omit<typeof tablesSchema.schemaType, "ta
     readonly "competition_inputs": Omit<typeof tablesSchema.schemaType.tables["competitionInputs"], "accessorName"> & { readonly accessorName: "competition_inputs" };
     /** @deprecated Use `competitionLeaderboards` instead. This alias will be removed in the next major version. */
     readonly "competition_leaderboards": Omit<typeof tablesSchema.schemaType.tables["competitionLeaderboards"], "accessorName"> & { readonly accessorName: "competition_leaderboards" };
+    /** @deprecated Use `competitionMatchConfigs` instead. This alias will be removed in the next major version. */
+    readonly "competition_match_configs": Omit<typeof tablesSchema.schemaType.tables["competitionMatchConfigs"], "accessorName"> & { readonly accessorName: "competition_match_configs" };
     /** @deprecated Use `competitionMatches` instead. This alias will be removed in the next major version. */
     readonly "competition_matches": Omit<typeof tablesSchema.schemaType.tables["competitionMatches"], "accessorName"> & { readonly accessorName: "competition_matches" };
     /** @deprecated Use `competitionMembers` instead. This alias will be removed in the next major version. */
@@ -678,6 +603,12 @@ type __SchemaWithTableAccessorAliases = Omit<typeof tablesSchema.schemaType, "ta
     readonly "competition_servers": Omit<typeof tablesSchema.schemaType.tables["competitionServers"], "accessorName"> & { readonly accessorName: "competition_servers" };
     /** @deprecated Use `competitionSharedConfigs` instead. This alias will be removed in the next major version. */
     readonly "competition_shared_configs": Omit<typeof tablesSchema.schemaType.tables["competitionSharedConfigs"], "accessorName"> & { readonly accessorName: "competition_shared_configs" };
+    /** @deprecated Use `matchById` instead. This alias will be removed in the next major version. */
+    readonly "match_by_id": Omit<typeof tablesSchema.schemaType.tables["matchById"], "accessorName"> & { readonly accessorName: "match_by_id" };
+    /** @deprecated Use `matchChat` instead. This alias will be removed in the next major version. */
+    readonly "match_chat": Omit<typeof tablesSchema.schemaType.tables["matchChat"], "accessorName"> & { readonly accessorName: "match_chat" };
+    /** @deprecated Use `matchMap` instead. This alias will be removed in the next major version. */
+    readonly "match_map": Omit<typeof tablesSchema.schemaType.tables["matchMap"], "accessorName"> & { readonly accessorName: "match_map" };
     /** @deprecated Use `matchState` instead. This alias will be removed in the next major version. */
     readonly "match_state": Omit<typeof tablesSchema.schemaType.tables["matchState"], "accessorName"> & { readonly accessorName: "match_state" };
     /** @deprecated Use `myCompetitionPermissions` instead. This alias will be removed in the next major version. */
@@ -696,6 +627,8 @@ type __SchemaWithTableAccessorAliases = Omit<typeof tablesSchema.schemaType, "ta
     readonly "raw_server_permitted_players": Omit<typeof tablesSchema.schemaType.tables["rawServerPermittedPlayers"], "accessorName"> & { readonly accessorName: "raw_server_permitted_players" };
     /** @deprecated Use `rawServerPlayerDestination` instead. This alias will be removed in the next major version. */
     readonly "raw_server_player_destination": Omit<typeof tablesSchema.schemaType.tables["rawServerPlayerDestination"], "accessorName"> & { readonly accessorName: "raw_server_player_destination" };
+    /** @deprecated Use `registrationPlayers` instead. This alias will be removed in the next major version. */
+    readonly "registration_players": Omit<typeof tablesSchema.schemaType.tables["registrationPlayers"], "accessorName"> & { readonly accessorName: "registration_players" };
   };
 };
 
@@ -705,7 +638,7 @@ const REMOTE_MODULE = {
     cliVersion: "2.13.0" as const,
   },
   tables: tablesSchema.schemaType.tables as __SchemaWithTableAccessorAliases["tables"],
-  viewsWithArgs: ["competition", "competition_available_server_pool", "competition_competitions", "competition_connections", "competition_connections_data", "competition_inputs", "competition_leaderboards", "competition_matches", "competition_members", "competition_node_positions", "competition_occupied_servers", "competition_output", "competition_raw_servers", "competition_registrations", "competition_role_members", "competition_roles", "competition_servers", "competition_shared_configs", "my_competition_permissions"],
+  viewsWithArgs: ["competition", "competition_available_server_pool", "competition_competitions", "competition_connections", "competition_connections_data", "competition_inputs", "competition_leaderboards", "competition_match_configs", "competition_matches", "competition_members", "competition_node_positions", "competition_occupied_servers", "competition_output", "competition_raw_servers", "competition_registrations", "competition_role_members", "competition_roles", "competition_servers", "competition_shared_configs", "match_by_id", "match_chat", "match_map", "match_state", "my_competition_permissions", "registration_players"],
   reducers: reducersSchema.reducersType.reducers,
   ...proceduresSchema,
 } satisfies __RemoteModule<
@@ -717,18 +650,13 @@ const REMOTE_MODULE = {
 const tableAccessorAliases = {
   "event_raw_server_method": "eventRawServerMethod",
   "event_raw_server_state": "eventRawServerState",
-  "tab_match_chat": "tabMatchChat",
-  "tab_match_round_player": "tabMatchRoundPlayer",
-  "tab_match_round_player_ext": "tabMatchRoundPlayerExt",
-  "tab_raw_server_player": "tabRawServerPlayer",
-  "tab_registeration_player": "tabRegisterationPlayer",
-  "tab_user": "tabUser",
   "competition_available_server_pool": "competitionAvailableServerPool",
   "competition_competitions": "competitionCompetitions",
   "competition_connections": "competitionConnections",
   "competition_connections_data": "competitionConnectionsData",
   "competition_inputs": "competitionInputs",
   "competition_leaderboards": "competitionLeaderboards",
+  "competition_match_configs": "competitionMatchConfigs",
   "competition_matches": "competitionMatches",
   "competition_members": "competitionMembers",
   "competition_node_positions": "competitionNodePositions",
@@ -740,6 +668,9 @@ const tableAccessorAliases = {
   "competition_roles": "competitionRoles",
   "competition_servers": "competitionServers",
   "competition_shared_configs": "competitionSharedConfigs",
+  "match_by_id": "matchById",
+  "match_chat": "matchChat",
+  "match_map": "matchMap",
   "match_state": "matchState",
   "my_competition_permissions": "myCompetitionPermissions",
   "my_projects": "myProjects",
@@ -749,6 +680,7 @@ const tableAccessorAliases = {
   "project_competition_descendants": "projectCompetitionDescendants",
   "raw_server_permitted_players": "rawServerPermittedPlayers",
   "raw_server_player_destination": "rawServerPlayerDestination",
+  "registration_players": "registrationPlayers",
 } as const;
 
 function __withTableAccessorAliases<T extends object>(target: T, freeze = false): T {
@@ -773,18 +705,6 @@ export type DbView = __DbViewBase & {
   readonly "event_raw_server_method": __DbViewBase["eventRawServerMethod"];
   /** @deprecated Use `eventRawServerState` instead. This alias will be removed in the next major version. */
   readonly "event_raw_server_state": __DbViewBase["eventRawServerState"];
-  /** @deprecated Use `tabMatchChat` instead. This alias will be removed in the next major version. */
-  readonly "tab_match_chat": __DbViewBase["tabMatchChat"];
-  /** @deprecated Use `tabMatchRoundPlayer` instead. This alias will be removed in the next major version. */
-  readonly "tab_match_round_player": __DbViewBase["tabMatchRoundPlayer"];
-  /** @deprecated Use `tabMatchRoundPlayerExt` instead. This alias will be removed in the next major version. */
-  readonly "tab_match_round_player_ext": __DbViewBase["tabMatchRoundPlayerExt"];
-  /** @deprecated Use `tabRawServerPlayer` instead. This alias will be removed in the next major version. */
-  readonly "tab_raw_server_player": __DbViewBase["tabRawServerPlayer"];
-  /** @deprecated Use `tabRegisterationPlayer` instead. This alias will be removed in the next major version. */
-  readonly "tab_registeration_player": __DbViewBase["tabRegisterationPlayer"];
-  /** @deprecated Use `tabUser` instead. This alias will be removed in the next major version. */
-  readonly "tab_user": __DbViewBase["tabUser"];
   /** @deprecated Use `competitionAvailableServerPool` instead. This alias will be removed in the next major version. */
   readonly "competition_available_server_pool": __DbViewBase["competitionAvailableServerPool"];
   /** @deprecated Use `competitionCompetitions` instead. This alias will be removed in the next major version. */
@@ -797,6 +717,8 @@ export type DbView = __DbViewBase & {
   readonly "competition_inputs": __DbViewBase["competitionInputs"];
   /** @deprecated Use `competitionLeaderboards` instead. This alias will be removed in the next major version. */
   readonly "competition_leaderboards": __DbViewBase["competitionLeaderboards"];
+  /** @deprecated Use `competitionMatchConfigs` instead. This alias will be removed in the next major version. */
+  readonly "competition_match_configs": __DbViewBase["competitionMatchConfigs"];
   /** @deprecated Use `competitionMatches` instead. This alias will be removed in the next major version. */
   readonly "competition_matches": __DbViewBase["competitionMatches"];
   /** @deprecated Use `competitionMembers` instead. This alias will be removed in the next major version. */
@@ -819,6 +741,12 @@ export type DbView = __DbViewBase & {
   readonly "competition_servers": __DbViewBase["competitionServers"];
   /** @deprecated Use `competitionSharedConfigs` instead. This alias will be removed in the next major version. */
   readonly "competition_shared_configs": __DbViewBase["competitionSharedConfigs"];
+  /** @deprecated Use `matchById` instead. This alias will be removed in the next major version. */
+  readonly "match_by_id": __DbViewBase["matchById"];
+  /** @deprecated Use `matchChat` instead. This alias will be removed in the next major version. */
+  readonly "match_chat": __DbViewBase["matchChat"];
+  /** @deprecated Use `matchMap` instead. This alias will be removed in the next major version. */
+  readonly "match_map": __DbViewBase["matchMap"];
   /** @deprecated Use `matchState` instead. This alias will be removed in the next major version. */
   readonly "match_state": __DbViewBase["matchState"];
   /** @deprecated Use `myCompetitionPermissions` instead. This alias will be removed in the next major version. */
@@ -837,6 +765,8 @@ export type DbView = __DbViewBase & {
   readonly "raw_server_permitted_players": __DbViewBase["rawServerPermittedPlayers"];
   /** @deprecated Use `rawServerPlayerDestination` instead. This alias will be removed in the next major version. */
   readonly "raw_server_player_destination": __DbViewBase["rawServerPlayerDestination"];
+  /** @deprecated Use `registrationPlayers` instead. This alias will be removed in the next major version. */
+  readonly "registration_players": __DbViewBase["registrationPlayers"];
 };
 
 type __TablesBase = __QueryBuilder<typeof tablesSchema.schemaType>;
@@ -845,18 +775,6 @@ export type Tables = __TablesBase & {
   readonly "event_raw_server_method": __TablesBase["eventRawServerMethod"];
   /** @deprecated Use `eventRawServerState` instead. This alias will be removed in the next major version. */
   readonly "event_raw_server_state": __TablesBase["eventRawServerState"];
-  /** @deprecated Use `tabMatchChat` instead. This alias will be removed in the next major version. */
-  readonly "tab_match_chat": __TablesBase["tabMatchChat"];
-  /** @deprecated Use `tabMatchRoundPlayer` instead. This alias will be removed in the next major version. */
-  readonly "tab_match_round_player": __TablesBase["tabMatchRoundPlayer"];
-  /** @deprecated Use `tabMatchRoundPlayerExt` instead. This alias will be removed in the next major version. */
-  readonly "tab_match_round_player_ext": __TablesBase["tabMatchRoundPlayerExt"];
-  /** @deprecated Use `tabRawServerPlayer` instead. This alias will be removed in the next major version. */
-  readonly "tab_raw_server_player": __TablesBase["tabRawServerPlayer"];
-  /** @deprecated Use `tabRegisterationPlayer` instead. This alias will be removed in the next major version. */
-  readonly "tab_registeration_player": __TablesBase["tabRegisterationPlayer"];
-  /** @deprecated Use `tabUser` instead. This alias will be removed in the next major version. */
-  readonly "tab_user": __TablesBase["tabUser"];
   /** @deprecated Use `competitionAvailableServerPool` instead. This alias will be removed in the next major version. */
   readonly "competition_available_server_pool": __TablesBase["competitionAvailableServerPool"];
   /** @deprecated Use `competitionCompetitions` instead. This alias will be removed in the next major version. */
@@ -869,6 +787,8 @@ export type Tables = __TablesBase & {
   readonly "competition_inputs": __TablesBase["competitionInputs"];
   /** @deprecated Use `competitionLeaderboards` instead. This alias will be removed in the next major version. */
   readonly "competition_leaderboards": __TablesBase["competitionLeaderboards"];
+  /** @deprecated Use `competitionMatchConfigs` instead. This alias will be removed in the next major version. */
+  readonly "competition_match_configs": __TablesBase["competitionMatchConfigs"];
   /** @deprecated Use `competitionMatches` instead. This alias will be removed in the next major version. */
   readonly "competition_matches": __TablesBase["competitionMatches"];
   /** @deprecated Use `competitionMembers` instead. This alias will be removed in the next major version. */
@@ -891,6 +811,12 @@ export type Tables = __TablesBase & {
   readonly "competition_servers": __TablesBase["competitionServers"];
   /** @deprecated Use `competitionSharedConfigs` instead. This alias will be removed in the next major version. */
   readonly "competition_shared_configs": __TablesBase["competitionSharedConfigs"];
+  /** @deprecated Use `matchById` instead. This alias will be removed in the next major version. */
+  readonly "match_by_id": __TablesBase["matchById"];
+  /** @deprecated Use `matchChat` instead. This alias will be removed in the next major version. */
+  readonly "match_chat": __TablesBase["matchChat"];
+  /** @deprecated Use `matchMap` instead. This alias will be removed in the next major version. */
+  readonly "match_map": __TablesBase["matchMap"];
   /** @deprecated Use `matchState` instead. This alias will be removed in the next major version. */
   readonly "match_state": __TablesBase["matchState"];
   /** @deprecated Use `myCompetitionPermissions` instead. This alias will be removed in the next major version. */
@@ -909,6 +835,8 @@ export type Tables = __TablesBase & {
   readonly "raw_server_permitted_players": __TablesBase["rawServerPermittedPlayers"];
   /** @deprecated Use `rawServerPlayerDestination` instead. This alias will be removed in the next major version. */
   readonly "raw_server_player_destination": __TablesBase["rawServerPlayerDestination"];
+  /** @deprecated Use `registrationPlayers` instead. This alias will be removed in the next major version. */
+  readonly "registration_players": __TablesBase["registrationPlayers"];
 };
 
 /** The tables available in this remote SpacetimeDB module. Each table reference doubles as a query builder. */

@@ -9,13 +9,16 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
+import {
+  ServerConfigV2,
+} from "./types";
+
 
 export default __t.row({
-  id: __t.u32().primaryKey(),
-  userId: __t.u32().name("user_id"),
-  matchId: __t.u32().name("match_id"),
-  time: __t.i32(),
-  points: __t.i32(),
-  round: __t.u16(),
-  position: __t.u16(),
+  id: __t.u32(),
+  competitionId: __t.u32().name("competition_id"),
+  get config() {
+    return ServerConfigV2;
+  },
+  name: __t.string(),
 });
