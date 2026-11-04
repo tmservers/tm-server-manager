@@ -5,7 +5,8 @@ use tm_server_types::config::{ModeSettingsV2, TmMode};
 use crate::{
     competition::node::NodeHandle,
     leaderboard::{
-        LbEntry, LbEntryKind, LbParams, combinators::LbRows, context::LbContext, error::LbError,
+        LbEntry, LbEntryKind, LbParams, LbParticipant, combinators::LbRows, context::LbContext,
+        error::LbError, shared_map,
     },
 };
 
@@ -83,33 +84,34 @@ fn by_position(entries: Vec<LbEntry>) -> Vec<LbEntry> {
     entries.sorted_by_key(|e| e.position)
 }
 
-/// Adds up the rounds of a user and keeps the latest round.
+/// Adds up the rounds of a participant and keeps the latest round.
 fn summed(mut standing: LbEntry, round: LbEntry) -> LbEntry {
     standing.score = standing.score.saturating_add(round.score);
     standing.round = standing.round.max(round.round);
+    standing.map_id = shared_map(standing.map_id, round.map_id);
     standing
 }
 
 fn rounds(rounds: Vec<LbEntry>) -> Vec<LbEntry> {
     rounds
-        .group_by(|e| e.user_id)
+        .group_by(|e| e.participant())
         .reduce(summed)
         .sorted_by_key(|s| LbParams::Score.key(s))
         .renumbered()
 }
 
 fn reverse_cup(starting_points: i32, rounds: Vec<LbEntry>) -> Vec<LbEntry> {
-    let eliminated: HashSet<u32> = rounds
+    let eliminated: HashSet<LbParticipant> = rounds
         .iter()
         .filter(|e| e.score <= -2000)
-        .map(|e| e.user_id)
+        .map(|e| e.participant())
         .collect();
 
-    let mut standings = rounds.group_by(|e| e.user_id).reduce(summed);
+    let mut standings = rounds.group_by(|e| e.participant()).reduce(summed);
     for standing in &mut standings {
         standing.score = standing.score.saturating_add(starting_points);
 
-        if !eliminated.contains(&standing.user_id) || standing.score > 0 {
+        if !eliminated.contains(&standing.participant()) || standing.score > 0 {
             standing.round += 1;
         }
     }
@@ -119,13 +121,15 @@ fn reverse_cup(starting_points: i32, rounds: Vec<LbEntry>) -> Vec<LbEntry> {
 
 fn knockout(rounds: Vec<LbEntry>) -> Vec<LbEntry> {
     rounds
-        .group_by(|e| e.user_id)
+        .group_by(|e| e.participant())
         .reduce(|mut standing, round| {
+            let map_id = shared_map(standing.map_id, round.map_id);
             // The round in which the player got knocked out.
             if round.score == -1 {
                 standing = round;
             }
             standing.round = standing.round.max(round.round);
+            standing.map_id = map_id;
             standing
         })
         .sorted_by_key(|s| Reverse(s.round))
@@ -134,13 +138,16 @@ fn knockout(rounds: Vec<LbEntry>) -> Vec<LbEntry> {
 
 fn time_attack(rounds: Vec<LbEntry>) -> Vec<LbEntry> {
     rounds
-        .group_by(|e| e.user_id)
+        .group_by(|e| e.participant())
         .reduce(|best, round| {
-            if LbParams::time_key(round.time) < LbParams::time_key(best.time) {
+            let map_id = shared_map(best.map_id, round.map_id);
+            let mut best = if LbParams::time_key(round.time) < LbParams::time_key(best.time) {
                 round
             } else {
                 best
-            }
+            };
+            best.map_id = map_id;
+            best
         })
         .sorted_by_key(|s| LbParams::Time.key(s))
         .renumbered()
