@@ -344,6 +344,30 @@ fn connection_configured(ctx: &ReducerContext, connection_id: u32) -> Result<(),
     Ok(())
 }
 
+/// Allows to change the connection again as long as its target did not take what it passes on yet.
+#[reducer]
+fn connection_unconfigure(ctx: &ReducerContext, connection_id: u32) -> Result<(), String> {
+    let Some(mut connection) = ctx.db.tab_connection().id().find(connection_id) else {
+        return Err("Connection not found.".into());
+    };
+
+    ctx.auth_builder(connection.parent_id)
+        .permission(CompetitionPermissionsV1::CONNECTION_CONFIGURED)
+        .authorize()?;
+
+    // A resolved connection already passed everything on.
+    if connection.status != ConnectionStatus::Configured {
+        return Err(
+            "Only configured connections which are not resolved yet can be changed again.".into(),
+        );
+    }
+
+    connection.status = ConnectionStatus::Configuring;
+    ctx.db.tab_connection().id().update(connection);
+
+    Ok(())
+}
+
 #[derive(Debug, SpacetimeType)]
 pub struct CompetitionConnection {
     id: u32,

@@ -475,6 +475,34 @@ fn leaderboard_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> {
     Ok(())
 }
 
+/// Allows to change the leaderboard again as long as nothing relies on it yet.
+#[reducer]
+fn leaderboard_unconfigure(ctx: &ReducerContext, id: u32) -> Result<(), String> {
+    let Some(mut leaderboard) = ctx.db.tab_leaderboard_v3().id().find(id) else {
+        return Err("Leaderboard was not found!".into());
+    };
+
+    ctx.auth_builder(leaderboard.parent_id)
+        .permission(CompetitionPermissionsV1::LEADERBOARD_CONFIGURED)
+        .authorize()?;
+
+    if leaderboard.status != LeaderboardStatus::Configured {
+        return Err("Leaderboard is not in configured state".into());
+    }
+
+    let dependents = ctx.node_dependents(NodeHandle::LeaderboardV1(id));
+    if !dependents.is_empty() {
+        return Err(format!(
+            "The leaderboard cannot be changed anymore because {dependents:?} already rely on it."
+        ));
+    }
+
+    leaderboard.status = LeaderboardStatus::Configuring;
+    ctx.db.tab_leaderboard_v3().id().update(leaderboard);
+
+    Ok(())
+}
+
 #[reducer]
 fn leaderboard_settings_update(
     ctx: &ReducerContext,
