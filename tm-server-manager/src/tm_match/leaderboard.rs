@@ -69,6 +69,13 @@ impl MatchRoundPlayer {
         }
     }
 
+    #[cfg(test)]
+    pub(crate) fn for_test(match_id: u32, user_id: u32, round: u16, points: i32) -> Self {
+        let mut player = MatchRoundPlayer::new(match_id, user_id, round);
+        player.points = points;
+        player
+    }
+
     pub(super) fn set_time(&mut self, points: i32) {
         self.time = points;
     }

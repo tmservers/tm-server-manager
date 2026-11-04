@@ -72,6 +72,12 @@ impl ConnectionDataV2 {
         }
     }
 
+    #[cfg(test)]
+    pub(crate) fn with_slot(mut self, slot: u8) -> Self {
+        self.slot = slot;
+        self
+    }
+
     pub(crate) fn slot(&self) -> u8 {
         self.slot
     }
