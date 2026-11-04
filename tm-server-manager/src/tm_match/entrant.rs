@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use spacetimedb::{CtxDbRead, ReducerContext, Table, ViewContext, reducer, table, view};
 
@@ -11,6 +11,7 @@ use crate::{
     pipeline::{
         LbEntry, LbParticipant, context::LbContext, error::LbError, modes::match_standings,
     },
+    registration::team::TeamRead,
     tm_match::{MatchRead, MatchStatus},
 };
 
@@ -39,6 +40,14 @@ impl MatchEntrant {
             user_id,
             team_id,
             seed,
+        }
+    }
+
+    pub(crate) fn participant(&self) -> LbParticipant {
+        if self.user_id == 0 {
+            LbParticipant::Team(self.team_id)
+        } else {
+            LbParticipant::Player(self.user_id)
         }
     }
 }
@@ -86,6 +95,10 @@ pub(crate) trait MatchEntrantRead {
     fn match_entrants_preview(&self, match_id: u32) -> Result<Vec<MatchEntrant>, LbError>;
     /// The frozen entrants of the match, the best seed first.
     fn match_entrants(&self, match_id: u32) -> Vec<MatchEntrant>;
+    /// The users playing for the frozen entrants, everyone in a team for a team.
+    fn match_players(&self, match_id: u32) -> Vec<u32>;
+    /// The team every user of the match plays for, from the teams which got frozen as its entrants.
+    fn match_user_teams(&self, match_id: u32) -> HashMap<u32, u32>;
 }
 impl<Db: CtxDbRead> MatchEntrantRead for Db {
     fn match_entrants_preview(&self, match_id: u32) -> Result<Vec<MatchEntrant>, LbError> {
@@ -113,6 +126,25 @@ impl<Db: CtxDbRead> MatchEntrantRead for Db {
             .collect();
         entrants.sort_by_key(|e| e.seed);
         entrants
+    }
+
+    fn match_players(&self, match_id: u32) -> Vec<u32> {
+        self.match_entrants(match_id)
+            .into_iter()
+            .flat_map(|e| self.participant_users(e.participant()))
+            .collect()
+    }
+
+    fn match_user_teams(&self, match_id: u32) -> HashMap<u32, u32> {
+        self.match_entrants(match_id)
+            .into_iter()
+            .filter(|e| e.user_id == 0)
+            .flat_map(|e| {
+                self.participant_users(e.participant())
+                    .into_iter()
+                    .map(move |user_id| (user_id, e.team_id))
+            })
+            .collect()
     }
 }
 

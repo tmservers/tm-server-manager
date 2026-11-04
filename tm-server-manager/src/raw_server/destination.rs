@@ -104,11 +104,8 @@ impl<Db: spacetimedb::CtxDbWrite> TabRawServerDestinationWrite for Db {
         };
         let server_id = self.occupation_with_occupier(node).unwrap();
         let competition_id = self.node_get_parent(node).unwrap();
-        for entrant in self.match_entrants(match_id) {
-            // An entrant of a team has no user, its members are not known here.
-            if entrant.user_id == 0 {
-                continue;
-            }
+        // Everyone of a team gets moved, substitutes too.
+        for user_id in self.match_players(match_id) {
             self.db()
                 .tab_player_destination()
                 .try_insert(TabPlayerDestination {
@@ -116,7 +113,7 @@ impl<Db: spacetimedb::CtxDbWrite> TabRawServerDestinationWrite for Db {
                     node_id: node.id(),
                     competition_id,
                     destination_server_id: server_id,
-                    user_id: entrant.user_id,
+                    user_id,
                 })?;
         }
 

@@ -22,6 +22,19 @@ pub(crate) trait ModeRules {
         node: NodeHandle,
         rounds: Vec<LbEntry>,
     ) -> Result<Vec<LbEntry>, LbError>;
+
+    /// The standings of the teams in the match, from the rounds of their players.
+    /// None of the built-in modes ranks teams, a mode has to define how it does.
+    fn team_standings(
+        &self,
+        _cx: &LbContext,
+        node: NodeHandle,
+        _rounds: Vec<LbEntry>,
+    ) -> Result<Vec<LbEntry>, LbError> {
+        Err(LbError::new(format!(
+            "The mode of {node:?} cannot rank teams."
+        )))
+    }
 }
 
 impl ModeRules for TmMode {
@@ -52,6 +65,41 @@ pub(crate) fn match_standings(
         .try_map(|(node, kind), entries| match kind {
             LbEntryKind::Round => round_standings(cx, node, entries),
             LbEntryKind::Standing => Ok(by_position(entries)),
+        })?
+        .flatten())
+}
+
+/// The team standings of every match in the entries, like [`match_standings`] does for players.
+pub(crate) fn match_team_standings(
+    cx: &LbContext,
+    entries: Vec<LbEntry>,
+) -> Result<Vec<LbEntry>, LbError> {
+    Ok(entries
+        .group_by(|e| (e.get_node(), e.kind))
+        .try_map(|(node, kind), entries| match kind {
+            LbEntryKind::Round => {
+                let Some(mode) = cx.match_mode(node) else {
+                    return Err(LbError::new(format!(
+                        "The rounds of {node:?} have no match mode."
+                    )));
+                };
+                let mut standings = mode.team_standings(cx, node, entries)?;
+                for standing in &mut standings {
+                    standing.kind = LbEntryKind::Standing;
+                }
+                Ok(standings)
+            }
+            LbEntryKind::Standing => {
+                if entries
+                    .iter()
+                    .any(|e| matches!(e.participant(), LbParticipant::Player(_)))
+                {
+                    return Err(LbError::new(
+                        "Standings of players cannot become standings of teams.",
+                    ));
+                }
+                Ok(by_position(entries))
+            }
         })?
         .flatten())
 }

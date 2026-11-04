@@ -9,7 +9,7 @@ use crate::{
         combinators::LbRows,
         context::LbContext,
         error::LbError,
-        shape::{LbOrigins, LbShape, check_scope, check_standings},
+        shape::{LbOrigins, LbShape, check_participants, check_scope, check_standings},
     },
 };
 
@@ -55,6 +55,7 @@ impl LbStep for LbSelectSettings {
                 )));
             }
         }
+        check_participants(&input)?;
         check_standings(&input)?;
         if input.origins == LbOrigins::Many && !self.scope.contains(&LbKey::Origin) {
             return Err(LbError::new(

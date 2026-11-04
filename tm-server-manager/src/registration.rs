@@ -10,17 +10,17 @@ use crate::{
         connection::internal_graph_resolution_node_finished,
         node::{NodeHandle, NodeWrite, Vec2},
     },
-    registration::player::RegistrationPlayerRead,
+    pipeline::LbEntry,
+    registration::{player::RegistrationPlayerRead, team::TeamRead},
 };
 
 pub mod player;
-//mod team;
+pub mod team;
 
 #[derive(Debug, SpacetimeType)]
 pub enum RegistrationSettings {
     Player(RegistrationSettingsPlayer),
-    //TODO
-    //Team(RegistrationSettingsTeam),
+    Team(RegistrationSettingsTeam),
 }
 
 #[derive(Debug, SpacetimeType)]
@@ -28,12 +28,14 @@ pub struct RegistrationSettingsPlayer {
     player_limit: u32,
 }
 
-/* #[derive(Debug, SpacetimeType)]
+/// Takes 4 bytes like [`RegistrationSettingsPlayer`], so adding it keeps the stored layout of the settings.
+#[derive(Debug, SpacetimeType, Clone, Copy)]
 pub struct RegistrationSettingsTeam {
-    team_limit: u32,
+    team_limit: u16,
+    /// Teams with less members do not take part.
     team_size_min: u8,
     team_size_max: u8,
-} */
+}
 
 #[table(accessor=tab_registration,vis_private)]
 pub struct Registration {
@@ -86,28 +88,32 @@ impl Registration {
                 } else {
                     Err("Registration maximum players exceeded.".into())
                 }
-            } /* RegistrationSettings::Team(_) => {
-                  Err("Tried to register as a player but it is a team registration.".into())
-              } */
+            }
+            RegistrationSettings::Team(_) => {
+                Err("Tried to register as a player but it is a team registration.".into())
+            }
         }
     }
 
-    /* pub(crate) fn team_registration_allowed(&self, ctx: &ReducerContext) -> bool {
-        /* self.state == RegistrationState::Ongoing
-        && !self.template
-        && match &self.settings {
-            RegistrationSettings::Player(registration_settings_player) => {
-                ctx.db
-                    .tab_registered_player()
-                    .registration_id()
-                    .filter(self.id)
-                    .count()
-                    < registration_settings_player.player_limit as usize
+    /// The team settings as long as teams of this registration can still change.
+    pub(crate) fn team_registration_allowed(&self) -> Result<RegistrationSettingsTeam, String> {
+        if self.template {
+            return Err("Cannot register for a template.".into());
+        }
+        if self.status != RegistrationStatus::Ongoing {
+            return Err("Registration is not ongoing.".into());
+        }
+        match &self.settings {
+            RegistrationSettings::Team(settings) => Ok(*settings),
+            RegistrationSettings::Player(_) => {
+                Err("Tried to register a team but it is a player registration.".into())
             }
-            RegistrationSettings::Team(_) => false,
-        } */
-        todo!()
-    } */
+        }
+    }
+
+    pub(crate) fn is_team(&self) -> bool {
+        matches!(self.settings, RegistrationSettings::Team(_))
+    }
 
     pub(crate) fn can_change_settings(&self) -> Result<(), String> {
         if !self.status.before_ongoing() {
@@ -243,6 +249,8 @@ pub(crate) trait RegistrationRead {
         competition_id: u32,
     ) -> impl Iterator<Item = Registration>;
     fn registration_find(&self, id: u32) -> Result<Registration, String>;
+    /// The registered players or teams as standings.
+    fn registration_output(&self, id: u32) -> Vec<LbEntry>;
 }
 
 impl<Db: CtxDbRead> RegistrationRead for Db {
@@ -262,6 +270,16 @@ impl<Db: CtxDbRead> RegistrationRead for Db {
             .tab_registration()
             .parent_id()
             .filter(competition_id)
+    }
+
+    fn registration_output(&self, id: u32) -> Vec<LbEntry> {
+        let Ok(registration) = self.registration_find(id) else {
+            return Vec::new();
+        };
+        match &registration.settings {
+            RegistrationSettings::Player(_) => self.registration_lb(id),
+            RegistrationSettings::Team(settings) => self.registration_team_lb(id, settings),
+        }
     }
 }
 
