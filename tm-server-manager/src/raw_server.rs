@@ -107,14 +107,21 @@ fn my_raw_servers(ctx: &ViewContext) -> Vec<RawServerV1> {
 
 /// The servers occupied by the nodes of a competition.
 #[view(accessor = competition_occupied_servers, public)]
-fn competition_occupied_servers(ctx: &ViewContext, competition_id: u32) -> Vec<CompetitionRawServer> {
+fn competition_occupied_servers(
+    ctx: &ViewContext,
+    competition_id: u32,
+) -> Vec<CompetitionRawServer> {
     if ctx.auth_builder(competition_id).authorize().is_err() {
         return Vec::new();
     }
 
     // Matches and servers are the only nodes which occupy a raw server.
-    let matches = ctx.matches_in_competition(competition_id).map(|m| NodeHandle::MatchV1(m.id));
-    let servers = ctx.servers_with_competition(competition_id).map(|s| NodeHandle::ServerV1(s.id));
+    let matches = ctx
+        .matches_in_competition(competition_id)
+        .map(|m| NodeHandle::MatchV1(m.id));
+    let servers = ctx
+        .servers_with_competition(competition_id)
+        .map(|s| NodeHandle::ServerV1(s.id));
     matches
         .chain(servers)
         .filter_map(|node| ctx.occupation_with_occupier(node))
@@ -251,22 +258,6 @@ pub fn login_as_server(
     Ok(id)
 }
 
-/* #[view(accessor= this_raw_server, public)]
-fn this_raw_server(ctx: &ViewContext) -> Option<RawServerV1> {
-    ctx.db
-        .tab_raw_server_identity()
-        .identity()
-        .find(ctx.sender())
-} */
-
-/* #[view(accessor= my_raw_server_pool, public)]
-fn my_raw_server_pool(ctx: &ViewContext) -> impl Query<RawServerV1> {
-    let Ok(user_id) = ctx.user_id() else {
-        return RawQuery::new(String::new());
-    };
-    ctx.from.tab_raw_server().r#where(|r| r.user_id.eq(user_id))
-} */
-
 #[reducer]
 fn raw_server_verify(ctx: &ReducerContext, server_id: u32) -> Result<(), String> {
     let user_id = ctx.user_id()?;
@@ -301,7 +292,7 @@ pub(crate) trait TabRawServerRead {
 }
 pub(crate) trait TabRawServerWrite: TabRawServerRead {
     fn raw_server_pool_assign(&self, node_handle: NodeHandle) -> Result<u32, String>;
-    fn raw_server_disconnected(&self, server_id: u32, now: Timestamp)
+    fn raw_server_disconnected(&self, server_id: u32)
     where
         Self: spacetimedb::CtxWithTimestamp;
 }
@@ -336,7 +327,11 @@ impl<Db: CtxDbRead> TabRawServerRead for Db {
     }
 
     fn raw_servers_of_user(&self, user_id: u32) -> Vec<RawServerV1> {
-        self.db_read_only().tab_raw_server().user_id().filter(user_id).collect()
+        self.db_read_only()
+            .tab_raw_server()
+            .user_id()
+            .filter(user_id)
+            .collect()
     }
 }
 
@@ -354,13 +349,13 @@ impl<Db: CtxDbWrite> TabRawServerWrite for Db {
         Ok(server_id)
     }
 
-    fn raw_server_disconnected(&self, server_id: u32, when: Timestamp)
+    fn raw_server_disconnected(&self, server_id: u32)
     where
         Self: spacetimedb::CtxWithTimestamp,
     {
         let mut server = self.db().tab_raw_server().id().find(server_id).unwrap();
 
-        server.set_offline(when);
+        server.set_offline(self.timestamp());
 
         log::info!("Server {} went offline", server.server_login);
         self.db().tab_raw_server().id().update(server);

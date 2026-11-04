@@ -1,7 +1,8 @@
 use std::time::SystemTime;
 
 use spacetimedb::{
-    Local, ReducerContext, Table, TimeDuration, Timestamp, Uuid, ViewContext, reducer, table, view,
+    CtxWithTimestamp, Local, ReducerContext, Table, TimeDuration, Timestamp, Uuid, ViewContext,
+    reducer, table, view,
 };
 use tm_server_types::method::{MethodCall, MethodResponse};
 
@@ -110,9 +111,10 @@ pub(crate) trait RawServerMethodWrite {
         &self,
         server_id: u32,
         user_id: u32,
-        now: Timestamp,
         message: String,
-    ) -> Result<(), String>;
+    ) -> Result<(), String>
+    where
+        Self: CtxWithTimestamp;
 }
 
 impl<Db: spacetimedb::CtxDbWrite> RawServerMethodWrite for Db {
@@ -120,9 +122,11 @@ impl<Db: spacetimedb::CtxDbWrite> RawServerMethodWrite for Db {
         &self,
         server_id: u32,
         user_id: u32,
-        now: Timestamp,
         message: String,
-    ) -> Result<(), String> {
+    ) -> Result<(), String>
+    where
+        Self: spacetimedb::CtxWithTimestamp,
+    {
         let Some(server) = self.db().tab_raw_server().id().find(server_id) else {
             return Err(format!(
                 "Server with id {server_id} was not found or is not online."
@@ -135,7 +139,7 @@ impl<Db: spacetimedb::CtxDbWrite> RawServerMethodWrite for Db {
             .try_insert(RawServerMethod {
                 id: 0,
                 user_id,
-                call_time: now,
+                call_time: self.timestamp(),
                 response_time: Timestamp::from_time_duration_since_unix_epoch(TimeDuration::ZERO),
                 server_id: server.id,
                 call: MethodCall::ChatSendServerMessage(message),

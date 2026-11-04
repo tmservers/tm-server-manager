@@ -398,7 +398,7 @@ pub(crate) fn internal_graph_resolution_node_finished(
             log::warn!("The node can be started now.");
 
             let result = match affected_connection.target {
-                NodeHandle::MatchV1(match_id) => ctx.match_set_preparation(match_id, ctx.timestamp),
+                NodeHandle::MatchV1(match_id) => ctx.match_set_preparation(match_id),
                 NodeHandle::CompetitionV1(c) => {
                     let inputs = ctx.inputs_in_parent(c);
 
