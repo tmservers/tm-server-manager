@@ -35,6 +35,10 @@ impl ScheduleV1 {
         self.parent_id
     }
 
+    pub(crate) fn is_finished(&self) -> bool {
+        self.status == ScheduleStatus::Finished
+    }
+
     pub(crate) fn name(&self) -> &str {
         &self.name
     }

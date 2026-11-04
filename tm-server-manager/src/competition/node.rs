@@ -17,7 +17,7 @@ use crate::{
     raw_server::{config::RawServerContigRead, player::PermittedPlayer},
     registration::{RegistrationRead, RegistrationWrite, player::RegistrationPlayerRead},
     schedule::{ScheduleRead, ScheduleWrite},
-    tm_match::{MatchRead, MatchWrite, leaderboard::MatchLeadearboardRead},
+    tm_match::{MatchRead, MatchStatus, MatchWrite, leaderboard::MatchLeadearboardRead},
     tm_server::{ServerRead, ServerWrite},
     user::UserRead,
 };
@@ -179,6 +179,10 @@ pub(crate) trait NodeRead {
     fn node_get_parent(&self, node: NodeHandle) -> Result<u32, String>;
     fn node_resolve_input_data(&self, node: NodeHandle) -> Vec<LbEntry>;
     fn node_resolve_output_data(&self, node: NodeHandle) -> Vec<LbEntry>;
+    /// The nodes this node still waits for, action connections do not count.
+    fn node_pending_origins(&self, node: NodeHandle) -> Vec<NodeHandle>;
+    /// Whether the node is done, so what it outputs does not change anymore.
+    fn node_is_finished(&self, node: NodeHandle) -> bool;
     fn node_is_template(&self, node: NodeHandle) -> bool;
 }
 impl<Db: spacetimedb::CtxDbRead> NodeRead for Db {
@@ -260,6 +264,38 @@ impl<Db: spacetimedb::CtxDbRead> NodeRead for Db {
 
     fn node_resolve_output_data(&self, node: NodeHandle) -> Vec<LbEntry> {
         node_resolve_output_data_inner(self, node, &mut 1)
+    }
+
+    fn node_pending_origins(&self, node: NodeHandle) -> Vec<NodeHandle> {
+        self.connection_origins_of(node)
+            .filter(|c| !c.is_action() && !c.is_resolved())
+            .map(|c| c.origin())
+            .collect()
+    }
+
+    fn node_is_finished(&self, node: NodeHandle) -> bool {
+        match node {
+            NodeHandle::MatchV1(m) => self
+                .match_find(m)
+                .is_some_and(|m| m.status() == MatchStatus::Ended),
+            NodeHandle::ScheduleV1(s) => self.schedule_find(s).is_ok_and(|s| s.is_finished()),
+            NodeHandle::RegistrationV1(r) => self.registration_find(r).is_ok_and(|r| r.has_ended()),
+            // These pass on what they get, so they are done once everything before them is.
+            NodeHandle::LeaderboardV1(l) => {
+                self.leaderboard_find(l).is_ok_and(|l| l.is_configured())
+                    && self.node_pending_origins(node).is_empty()
+            }
+            NodeHandle::OutputV1(_) => self.node_pending_origins(node).is_empty(),
+            NodeHandle::CompetitionV1(c) => self
+                .outputs_in_parent(c)
+                .next()
+                .is_some_and(|output| self.node_is_finished(NodeHandle::OutputV1(output.id))),
+            NodeHandle::InputV1(i) => self.input_find(i).is_ok_and(|input| {
+                self.node_pending_origins(NodeHandle::CompetitionV1(input.get_comp_id()))
+                    .is_empty()
+            }),
+            NodeHandle::ServerV1(_) => false,
+        }
     }
 
     fn node_is_template(&self, node: NodeHandle) -> bool {

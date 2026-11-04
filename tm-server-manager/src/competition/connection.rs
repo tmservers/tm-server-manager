@@ -16,7 +16,7 @@ use crate::{
         node::{NodeHandle, NodeRead},
     },
     input::InputRead,
-    leaderboard::LbEntry,
+    leaderboard::{LbEntry, LeadearboardRead},
     output::OutputRead,
     schedule::ScheduleWrite,
     tm_match::MatchWrite,
@@ -308,7 +308,14 @@ fn connection_configured(ctx: &ReducerContext, connection_id: u32) -> Result<(),
 
     connection.status = ConnectionStatus::Configured;
 
-    ctx.db.tab_connection().id().update(connection);
+    // The origin could have finished already, then nothing would resolve the connection anymore.
+    if ctx.node_is_finished(connection.origin()) {
+        connection.resolve();
+        ctx.db.tab_connection().id().update(connection);
+        advance(ctx, CompetitionConnection::from(connection));
+    } else {
+        ctx.db.tab_connection().id().update(connection);
+    }
 
     Ok(())
 }
@@ -374,91 +381,99 @@ pub(crate) fn internal_graph_resolution_node_finished(
         });
 
     for affected_connection in affected_connections {
-        // If that connection is a action connection it cannot be the last missing connection
-        // because it is not counted in the first place so we can safely skip it.
-        if affected_connection.is_action() {
-            try_exec_action(affected_connection.id, affected_connection.target, ctx);
-
-            // Action connections dont influence anything else.
-            continue;
-        }
-
-        let pending_connections = ctx
-            .db
-            .tab_connection()
-            .origins_of()
-            .filter(affected_connection.target.split())
-            // Action connections dont influence the implicit advance flow.
-            // If the connection is resolved we discard it so if everything is resolved we have an empty array.
-            .filter(|c| !c.is_action() && !c.is_resolved())
-            .collect::<Vec<_>>();
-
-        // When no more pending connections are left it is safe to implicitly start depending nodes.
-        if pending_connections.is_empty() {
-            log::warn!("The node can be started now.");
-
-            let result = match affected_connection.target {
-                NodeHandle::MatchV1(match_id) => ctx.match_set_preparation(match_id, ctx.timestamp),
-                NodeHandle::CompetitionV1(c) => {
-                    let inputs = ctx.inputs_in_parent(c);
-
-                    for input in inputs {
-                        let result = internal_graph_resolution_node_finished(
-                            ctx,
-                            NodeHandle::InputV1(input.id),
-                        );
-
-                        if let Err(error) = result {
-                            log::error!(
-                                "Implicit Flow: Node should have been ready but action failed. Error: {error}"
-                            );
-                        }
-                    }
-
-                    Ok(())
-                }
-                NodeHandle::ScheduleV1(s) => ctx.schedule_start_relative(s, ctx.timestamp),
-                NodeHandle::ServerV1(_) => unreachable!(),
-                NodeHandle::RegistrationV1(_) => unreachable!(),
-                NodeHandle::InputV1(n) => {
-                    internal_graph_resolution_node_finished(ctx, NodeHandle::InputV1(n))
-                }
-                NodeHandle::OutputV1(n) => {
-                    let output = ctx.output_find(n);
-                    if output.is_err() {
-                        log::error!("Hit a output node but it does not exist!");
-                        return Ok(());
-                    };
-                    let output = output.unwrap();
-
-                    internal_graph_resolution_node_finished(
-                        ctx,
-                        NodeHandle::CompetitionV1(output.get_comp_id()),
-                    )
-                }
-                NodeHandle::LeaderboardV1(n) => {
-                    // We can pass this through since the leadearboard has no state by itself.
-                    // This means that if matches dpeend on it they will be triggered and if its
-                    // a lead leadearboard where nothing is connected to it will just trigger nothing.
-                    internal_graph_resolution_node_finished(ctx, NodeHandle::LeaderboardV1(n))
-                }
-            };
-
-            if let Err(error) = result {
-                //TODO maybe add a table for node problems?
-                // maybe there also should be a intended to progress state in the nodes.
-                log::error!(
-                    "Implicit Flow: Node should have been ready but action failed. Error: {error}"
-                )
-            };
-        } else {
-            log::info!(
-                "There are still nodes that are not finished!, Pending Nodes: {pending_connections:?}"
-            );
-        }
+        advance(ctx, affected_connection);
     }
 
     Ok(())
+}
+
+/// Lets the target of a resolved connection advance once it does not wait for anything else anymore.
+fn advance(ctx: &ReducerContext, affected_connection: CompetitionConnection) {
+    // If that connection is a action connection it cannot be the last missing connection
+    // because it is not counted in the first place so we can safely skip it.
+    if affected_connection.is_action() {
+        try_exec_action(affected_connection.id, affected_connection.target, ctx);
+
+        // Action connections dont influence anything else.
+        return;
+    }
+
+    let pending_connections = ctx
+        .db
+        .tab_connection()
+        .origins_of()
+        .filter(affected_connection.target.split())
+        // Action connections dont influence the implicit advance flow.
+        // If the connection is resolved we discard it so if everything is resolved we have an empty array.
+        .filter(|c| !c.is_action() && !c.is_resolved())
+        .collect::<Vec<_>>();
+
+    // When no more pending connections are left it is safe to implicitly start depending nodes.
+    if pending_connections.is_empty() {
+        log::warn!("The node can be started now.");
+
+        let result = match affected_connection.target {
+            NodeHandle::MatchV1(match_id) => ctx.match_set_preparation(match_id, ctx.timestamp),
+            NodeHandle::CompetitionV1(c) => {
+                let inputs = ctx.inputs_in_parent(c);
+
+                for input in inputs {
+                    let result =
+                        internal_graph_resolution_node_finished(ctx, NodeHandle::InputV1(input.id));
+
+                    if let Err(error) = result {
+                        log::error!(
+                            "Implicit Flow: Node should have been ready but action failed. Error: {error}"
+                        );
+                    }
+                }
+
+                Ok(())
+            }
+            NodeHandle::ScheduleV1(s) => ctx.schedule_start_relative(s, ctx.timestamp),
+            NodeHandle::ServerV1(_) => unreachable!(),
+            NodeHandle::RegistrationV1(_) => unreachable!(),
+            NodeHandle::InputV1(n) => {
+                internal_graph_resolution_node_finished(ctx, NodeHandle::InputV1(n))
+            }
+            NodeHandle::OutputV1(n) => {
+                let output = ctx.output_find(n);
+                if output.is_err() {
+                    log::error!("Hit a output node but it does not exist!");
+                    return;
+                };
+                let output = output.unwrap();
+
+                internal_graph_resolution_node_finished(
+                    ctx,
+                    NodeHandle::CompetitionV1(output.get_comp_id()),
+                )
+            }
+            NodeHandle::LeaderboardV1(n) => {
+                // We can pass this through since the leadearboard has no state by itself.
+                // This means that if matches dpeend on it they will be triggered and if its
+                // a lead leadearboard where nothing is connected to it will just trigger nothing.
+                // While it still gets configured it outputs nothing, configuring it lets it finish.
+                if ctx.leaderboard_find(n).is_ok_and(|l| l.is_configured()) {
+                    internal_graph_resolution_node_finished(ctx, NodeHandle::LeaderboardV1(n))
+                } else {
+                    Ok(())
+                }
+            }
+        };
+
+        if let Err(error) = result {
+            //TODO maybe add a table for node problems?
+            // maybe there also should be a intended to progress state in the nodes.
+            log::error!(
+                "Implicit Flow: Node should have been ready but action failed. Error: {error}"
+            )
+        };
+    } else {
+        log::info!(
+            "There are still nodes that are not finished!, Pending Nodes: {pending_connections:?}"
+        );
+    }
 }
 
 pub(crate) trait ConnectionRead {
