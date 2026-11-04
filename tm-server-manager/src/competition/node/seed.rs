@@ -379,9 +379,10 @@ mod tests {
                     origin,
                     node,
                     ConnectionKind::Data,
-                    slot,
                 ))?;
-                ctx.connection_data_insert(ConnectionDataV2::new(connection.id, 1))?;
+                ctx.connection_data_insert(
+                    ConnectionDataV2::new(connection.id, 1).with_slot(slot),
+                )?;
             }
             ctx.node_seeds_freeze(node)
         })

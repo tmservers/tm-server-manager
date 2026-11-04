@@ -10,7 +10,7 @@ use crate::{
     authorization::Authorization,
     competition::{
         CompetitionPermissionsV1, CompetitionRead,
-        node::{NodeHandle, NodeWrite, Vec2, seed::NodeSeedWrite},
+        node::{NodeHandle, NodeRead, NodeWrite, Vec2, seed::NodeSeedWrite},
         server_pool::TabCompetitionServerPoolRead,
     },
     raw_server::{
@@ -794,6 +794,14 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
             return Err(
                 "Match needs a configuration in order to advance to the upcoming state.".into(),
             );
+        }
+
+        // Its inputs and seeds must not change anymore once it is prepared.
+        let pending = self.node_pending_origins(NodeHandle::MatchV1(match_id));
+        if !pending.is_empty() {
+            return Err(format!(
+                "The match waits for nodes which are not finished yet: {pending:?}. Delete the connections it does not rely on."
+            ));
         }
 
         let server_id = if let Some(server_id) =
