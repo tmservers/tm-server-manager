@@ -18,6 +18,8 @@ use crate::{
 mod filter;
 mod merge;
 mod remap;
+#[cfg(test)]
+pub(crate) mod test_util;
 
 #[table(accessor= tab_leaderboard, vis_private)]
 struct LeaderboardV1 {
