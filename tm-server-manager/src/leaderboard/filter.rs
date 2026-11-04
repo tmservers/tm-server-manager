@@ -205,4 +205,30 @@ mod tests {
         let rows: Vec<(u32, i32)> = filtered.iter().map(|e| (e.user_id, e.score)).collect();
         assert_eq!(rows, vec![(1, 5), (1, 3), (2, 4), (2, 0)]);
     }
+
+    #[test]
+    fn a_map_scope_filters_and_pads_the_rounds_of_every_map_on_its_own() {
+        let filtered = LbFilterSettingsV2 {
+            scope: vec![LbKey::Map],
+            param: LbParams::Score,
+            filter: LbFilterIdent::Best(2),
+            fallback: LbFilterFallback::Worst,
+        }
+        .evaluate(vec![
+            round(1, 1, 5, 0).set_map(7),
+            round(1, 2, 3, 0).set_map(8),
+            round(2, 3, 4, 0).set_map(7),
+            round(1, 4, 9, 0).set_map(7),
+        ]);
+
+        // Only map 7 has a player with two rounds, so only there the missing round gets padded.
+        let rows: Vec<(u32, u32, i32)> = filtered
+            .iter()
+            .map(|e| (e.map_id, e.user_id, e.score))
+            .collect();
+        assert_eq!(
+            rows,
+            vec![(7, 1, 9), (7, 1, 5), (7, 2, 4), (7, 2, 0), (8, 1, 3)]
+        );
+    }
 }

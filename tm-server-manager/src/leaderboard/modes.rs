@@ -266,4 +266,17 @@ mod tests {
         let times: Vec<i32> = standings.iter().map(|s| s.time).collect();
         assert_eq!(times, vec![4000, 4500, 0]);
     }
+
+    #[test]
+    fn standings_keep_the_map_only_if_every_round_was_played_on_it() {
+        let standings = rounds(vec![
+            round(1, 1, 10, 0).set_map(7),
+            round(2, 1, 5, 0).set_map(7),
+            round(1, 2, 10, 0).set_map(7),
+            round(2, 2, 5, 0).set_map(8),
+        ]);
+
+        let maps: Vec<(u32, u32)> = standings.iter().map(|s| (s.user_id, s.map_id)).collect();
+        assert_eq!(maps, vec![(1, 7), (2, 0)]);
+    }
 }

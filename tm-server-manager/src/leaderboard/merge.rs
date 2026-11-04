@@ -107,7 +107,7 @@ impl LbMergeSettingsV2 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::leaderboard::test_util::{ranking, round};
+    use crate::leaderboard::test_util::{ranking, round, team_standing};
 
     const LEADERBOARD: NodeHandle = NodeHandle::LeaderboardV1(7);
 
@@ -157,5 +157,24 @@ mod tests {
         let merged = merge(LbMergeAction::Average, LbParams::Position, entries.to_vec());
 
         assert_eq!(ranking(&merged), vec![(1, 2), (2, 2), (3, 5)]);
+    }
+
+    #[test]
+    fn teams_without_users_are_merged_per_team() {
+        let merged = merge(
+            LbMergeAction::Summate,
+            LbParams::Score,
+            vec![
+                team_standing(1, 1, 10),
+                team_standing(2, 2, 30),
+                team_standing(1, 1, 25),
+            ],
+        );
+
+        let rows: Vec<(u32, u32, i32)> = merged
+            .iter()
+            .map(|e| (e.user_id, e.team_id, e.score))
+            .collect();
+        assert_eq!(rows, vec![(0, 1, 35), (0, 2, 30)]);
     }
 }
