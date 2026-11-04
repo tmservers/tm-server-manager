@@ -8,7 +8,7 @@ use crate::{
     auto_inc_manual::AutoIncWrite,
     competition::{CompetitionPermissionsV1, node::NodeHandle},
     raw_server::occupation::TabRawServerOccupationRead,
-    tm_match::MatchRead,
+    tm_match::{MatchRead, MatchWrite},
     tm_server::ServerRead,
 };
 
@@ -308,6 +308,8 @@ fn raw_server_config_shared_update(
         .permission(CompetitionPermissionsV1::SHARED_CONFIG)
         .authorize()?;
 
+    // Finished matches keep the config they were played with.
+    ctx.match_finished_configs_detach(config_id)?;
     ctx.raw_server_config_update(config_id, config)?;
 
     Ok(())
@@ -332,6 +334,8 @@ fn unstable_raw_server_config_update_maps(
         .permission(CompetitionPermissionsV1::SHARED_CONFIG)
         .authorize()?;
 
+    // Finished matches keep the config they were played with.
+    ctx.match_finished_configs_detach(config_id)?;
     raw_config.config.set_maps(maps);
 
     ctx.db.tab_raw_server_config_v2().id().update(raw_config);

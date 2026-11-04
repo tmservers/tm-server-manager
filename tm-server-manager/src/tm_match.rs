@@ -639,8 +639,37 @@ pub(crate) trait MatchWrite: MatchRead {
     fn match_end(&self, match_id: u32) -> Result<(), String>
     where
         Self: spacetimedb::CtxWithTimestamp;
+    /// Gives every finished match using the config its own copy of it, so changing the config does not change them.
+    fn match_finished_configs_detach(&self, config_id: u32) -> Result<(), String>;
 }
 impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
+    fn match_finished_configs_detach(&self, config_id: u32) -> Result<(), String> {
+        let mut finished: Vec<MatchV1> = self
+            .matches_with_config(config_id)
+            .chain(self.matches_with_pre_config(config_id))
+            .filter(|m| m.status == MatchStatus::Ended)
+            .collect();
+        finished.sort_by_key(|m| m.id);
+        finished.dedup_by_key(|m| m.id);
+        if finished.is_empty() {
+            return Ok(());
+        }
+
+        let config = self.raw_server_config(config_id)?;
+        for mut tm_match in finished {
+            let copy = self.raw_server_config_create(config.clone(), 0, String::new())?;
+            if tm_match.config == config_id {
+                tm_match.config = copy.id;
+            }
+            if tm_match.pre_config == config_id {
+                tm_match.pre_config = copy.id;
+            }
+            self.db().tab_match().id().update(tm_match);
+        }
+
+        Ok(())
+    }
+
     fn match_recovery_enter(&self, match_id: u32, manual: bool) -> Result<(), String>
     where
         Self: spacetimedb::CtxWithTimestamp,
@@ -996,4 +1025,56 @@ fn competition_matches(ctx: &AnonymousViewContext, competition_id: u32) -> impl 
     ctx.from
         .tab_match()
         .filter(|r| r.parent_id.eq(competition_id))
+}
+
+#[cfg(test)]
+mod tests {
+    use spacetimedb::test_utils::TestAuth;
+
+    use super::*;
+    use crate::leaderboard::test_util::test_context;
+
+    fn tm_match(id: u32, status: MatchStatus, config: u32) -> MatchV1 {
+        MatchV1 {
+            name: String::new(),
+            id,
+            parent_id: 1,
+            pre_config: 0,
+            config,
+            status,
+            auto_provision_server: false,
+            open: false,
+            template: false,
+        }
+    }
+
+    #[test]
+    fn changing_a_shared_config_does_not_change_finished_matches() {
+        let test = test_context(&[]);
+        let old = ServerConfigV2::default();
+        let mut new = old.clone();
+        new.set_maps(vec!["map".into()]);
+
+        test.with_reducer_tx(TestAuth::internal(), |ctx| {
+            let shared = ctx.raw_server_config_create(old.clone(), 1, "shared".into())?;
+            ctx.db
+                .tab_match()
+                .insert(tm_match(1, MatchStatus::Ended, shared.id));
+            ctx.db
+                .tab_match()
+                .insert(tm_match(2, MatchStatus::Live, shared.id));
+
+            ctx.match_finished_configs_detach(shared.id)?;
+            ctx.raw_server_config_update(shared.id, new.clone())?;
+
+            let finished = ctx.match_find(1).unwrap();
+            let live = ctx.match_find(2).unwrap();
+            assert_ne!(finished.config, shared.id);
+            assert_eq!(ctx.raw_server_config(finished.config)?, old);
+            assert_eq!(live.config, shared.id);
+            assert_eq!(ctx.raw_server_config(live.config)?, new);
+            Ok::<_, String>(())
+        })
+        .unwrap();
+    }
 }
