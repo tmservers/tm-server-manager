@@ -28,6 +28,11 @@ base64.workspace = true
 petgraph.workspace = true
 #mlua.workspace = true
 
+[dev-dependencies]
+spacetimedb = { workspace = true, features = ["test-utils"] }
+# temporal_rs 0.1.2, which the test datastore pulls in through v8, does not compile against icu 2.2 and newer.
+icu_calendar = "~2.1"
+
 
 [features]
 production = []
