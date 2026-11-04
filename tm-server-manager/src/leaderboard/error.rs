@@ -45,3 +45,18 @@ impl From<LbError> for String {
         error.to_string()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn keeps_the_innermost_step_when_passed_up() {
+        // A leaderboard failing inside of the input of another one.
+        let error = LbError::new("broken")
+            .at_step(NodeHandle::LeaderboardV1(1), 0)
+            .at_step(NodeHandle::LeaderboardV1(2), 3);
+
+        assert_eq!(error.to_string(), "LeaderboardV1(1) step 1: broken");
+    }
+}

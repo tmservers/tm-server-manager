@@ -149,7 +149,53 @@ fn time_attack(rounds: Vec<LbEntry>) -> Vec<LbEntry> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::leaderboard::test_util::{ranking, round};
+    use crate::leaderboard::test_util::{MATCH, ranking, round, round_in, test_context};
+
+    #[test]
+    fn every_match_becomes_standings_with_its_own_mode() {
+        let test = test_context(&[(1, TmMode::Rounds), (2, TmMode::TimeAttack)]);
+        let time_attack = NodeHandle::MatchV1(2);
+
+        let standings = match_standings(
+            &LbContext::new(&test.anonymous_view_context(), MATCH),
+            vec![
+                round(1, 1, 10, 3000),
+                round_in(time_attack, 1, 1, 20, 3000),
+                round(2, 1, 20, 2000),
+                round_in(time_attack, 2, 1, 10, 2000),
+                round(1, 2, 15, 0),
+            ],
+        )
+        .unwrap();
+
+        // In both matches player 1 has more points and player 2 the better time, so the order shows the mode used.
+        let rows: Vec<(NodeHandle, u32, u16)> = standings
+            .iter()
+            .map(|s| (s.get_node(), s.user_id, s.position))
+            .collect();
+        assert_eq!(
+            rows,
+            vec![
+                (MATCH, 1, 1),
+                (MATCH, 2, 2),
+                (time_attack, 2, 1),
+                (time_attack, 1, 2)
+            ]
+        );
+        assert!(standings.iter().all(|s| s.kind == LbEntryKind::Standing));
+    }
+
+    #[test]
+    fn rounds_of_a_match_without_state_are_an_error() {
+        let test = test_context(&[]);
+
+        let standings = match_standings(
+            &LbContext::new(&test.anonymous_view_context(), MATCH),
+            vec![round(1, 1, 10, 0)],
+        );
+
+        assert!(standings.is_err());
+    }
 
     #[test]
     fn rounds_ranks_by_the_summed_score() {

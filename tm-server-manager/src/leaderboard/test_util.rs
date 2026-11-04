@@ -23,7 +23,17 @@ pub(crate) fn test_context(matches: &[(u32, TmMode)]) -> TestContext {
 }
 
 pub(crate) fn round(user_id: u32, round: u16, score: i32, time: i32) -> LbEntry {
-    LbEntry::new(user_id, LbEntryKind::Round, 0, MATCH)
+    round_in(MATCH, user_id, round, score, time)
+}
+
+pub(crate) fn round_in(
+    node: NodeHandle,
+    user_id: u32,
+    round: u16,
+    score: i32,
+    time: i32,
+) -> LbEntry {
+    LbEntry::new(user_id, LbEntryKind::Round, 0, node)
         .set_round(round)
         .set_score(score)
         .set_time(time)

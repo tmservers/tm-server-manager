@@ -540,6 +540,39 @@ fn competition_leaderboards(
         .filter(|r| r.parent_id.eq(competition_id))
 }
 
+#[cfg(test)]
+mod tests {
+    use tm_server_types::config::TmMode;
+
+    use super::*;
+    use crate::leaderboard::{
+        select::LbSelectSettings,
+        test_util::{round, test_context},
+    };
+
+    #[test]
+    fn errors_name_the_node_and_step_which_failed() {
+        let test = test_context(&[(1, TmMode::ReverseCup)]);
+        let leaderboard = NodeHandle::LeaderboardV1(3);
+
+        // The reverse cup has no config to take its starting points from.
+        let error = evaluate_steps(
+            &LbContext::new(&test.anonymous_view_context(), leaderboard),
+            &[
+                LbSettingsV3::Select(LbSelectSettings::FirstN(5)),
+                LbSettingsV3::Match,
+            ],
+            vec![round(1, 1, -500, 0)],
+        )
+        .unwrap_err();
+
+        assert_eq!(
+            error.to_string(),
+            "LeaderboardV1(3) step 2: Could not find the reverse cup config of MatchV1(1)."
+        );
+    }
+}
+
 // We should be able to iterate over every input and accumulate score or position.
 //After the accumulation there shuold also be math operations possible.
 
