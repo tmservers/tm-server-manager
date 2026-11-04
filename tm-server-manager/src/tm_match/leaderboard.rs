@@ -1,4 +1,6 @@
-use spacetimedb::{AnonymousViewContext, Query, ReducerContext, SpacetimeType, Table, reducer, table, view};
+use spacetimedb::{
+    AnonymousViewContext, Query, ReducerContext, SpacetimeType, Table, reducer, table, view,
+};
 
 use crate::{
     authorization::Authorization,
@@ -316,26 +318,6 @@ impl<Db: spacetimedb::CtxDbWrite> MatchLeaderboardWrite for Db {
             .match_id()
             .delete(match_id);
     }
-}
-
-#[view(accessor = match_round_players, public)]
-fn match_round_players(ctx: &AnonymousViewContext, match_id: u32) -> impl Query<MatchRoundPlayer> {
-    ctx.from
-        .tab_match_round_player()
-        .filter(|r| r.match_id.eq(match_id))
-}
-
-/// Checkpoints and other actions of every player in one round, they are too large to send for the whole match.
-#[view(accessor = match_round_player_actions, public)]
-fn match_round_player_actions(
-    ctx: &AnonymousViewContext,
-    match_id: u32,
-    round: u16,
-) -> impl Query<MatchRoundPlayerExt> {
-    ctx.from
-        .tab_match_round_player_ext()
-        .filter(|r| r.match_id.eq(match_id))
-        .filter(|r| r.round.eq(round))
 }
 
 #[reducer]
