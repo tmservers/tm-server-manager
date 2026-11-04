@@ -30,7 +30,7 @@ pub(crate) mod modes;
 mod remap;
 pub(crate) mod select;
 #[cfg(test)]
-mod test_util;
+pub(crate) mod test_util;
 
 #[table(accessor= tab_leaderboard, vis_private)]
 struct LeaderboardV1 {

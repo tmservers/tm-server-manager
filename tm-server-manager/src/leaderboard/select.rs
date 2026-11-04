@@ -66,7 +66,10 @@ mod tests {
     use super::*;
     use crate::{
         competition::node::NodeHandle,
-        leaderboard::{LbEntryKind, test_util::standing},
+        leaderboard::{
+            LbEntryKind,
+            test_util::{MATCH, standing, standing_in, test_context},
+        },
     };
 
     fn standings() -> Vec<LbEntry> {
@@ -113,5 +116,29 @@ mod tests {
         ));
 
         assert!(LbSelectPlaces::FirstN(2).select(entries).is_err());
+    }
+
+    #[test]
+    fn an_origin_scope_selects_the_places_of_every_origin() {
+        let other = NodeHandle::MatchV1(2);
+        let entries = vec![
+            standing(10, 1),
+            standing(20, 2),
+            standing_in(other, 30, 1),
+            standing_in(other, 40, 2),
+        ];
+
+        let selected = LbSelectSettings {
+            scope: vec![LbKey::Origin],
+            places: LbSelectPlaces::FirstN(1),
+        }
+        .apply(
+            &LbContext::new(&test_context(&[]).anonymous_view_context(), MATCH),
+            entries,
+        )
+        .unwrap();
+
+        let users: Vec<u32> = selected.iter().map(|e| e.user_id).collect();
+        assert_eq!(users, vec![10, 30]);
     }
 }

@@ -391,3 +391,29 @@ fn match_round_player_set_position_manual(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use spacetimedb::test_utils::TestAuth;
+    use tm_server_types::config::TmMode;
+
+    use super::*;
+    use crate::leaderboard::test_util::test_context;
+
+    #[test]
+    fn rounds_carry_the_map_they_were_played_on() {
+        let test = test_context(&[(1, TmMode::Rounds)]);
+        test.with_reducer_tx(TestAuth::internal(), |ctx| {
+            ctx.match_round_player_insert(MatchRoundPlayer::new(1, 5, 1, 7))?;
+            ctx.match_round_player_insert(MatchRoundPlayer::new(1, 5, 2, 8))?;
+            Ok::<_, String>(())
+        })
+        .unwrap();
+
+        let rounds = test.anonymous_view_context().match_rounds(1);
+
+        let mut maps: Vec<(u16, u32)> = rounds.iter().map(|e| (e.round, e.map_id)).collect();
+        maps.sort();
+        assert_eq!(maps, vec![(1, 7), (2, 8)]);
+    }
+}

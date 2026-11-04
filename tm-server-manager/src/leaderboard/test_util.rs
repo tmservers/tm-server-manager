@@ -3,7 +3,7 @@ use tm_server_types::config::TmMode;
 
 use crate::{
     competition::node::NodeHandle,
-    leaderboard::{LbEntry, LbEntryKind},
+    leaderboard::{LbEntry, LbEntryKind, LbParticipant},
     tm_match::state::{MatchState, MatchStateWrite},
 };
 
@@ -40,7 +40,22 @@ pub(crate) fn round_in(
 }
 
 pub(crate) fn standing(user_id: u32, position: u16) -> LbEntry {
-    LbEntry::new(user_id, LbEntryKind::Standing, position, MATCH)
+    standing_in(MATCH, user_id, position)
+}
+
+pub(crate) fn standing_in(node: NodeHandle, user_id: u32, position: u16) -> LbEntry {
+    LbEntry::new(user_id, LbEntryKind::Standing, position, node)
+}
+
+/// The standing of a team, which has no user.
+pub(crate) fn team_standing(team_id: u32, position: u16, score: i32) -> LbEntry {
+    LbEntry::for_participant(
+        LbParticipant::Team(team_id),
+        LbEntryKind::Standing,
+        position,
+        MATCH,
+    )
+    .set_score(score)
 }
 
 /// The users with their positions, in the order of the entries.
