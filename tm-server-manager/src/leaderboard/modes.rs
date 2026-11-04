@@ -11,6 +11,10 @@ use crate::{
 };
 
 /// How the rounds of a match become its standings.
+///
+/// Standings are computed again whenever they are read, also for matches which are long over.
+/// So a mode must never change how it ranks, a change needs a version stored with the match.
+/// E.g. a column on the match state whose default is the version before the change, so existing matches keep it.
 pub(crate) trait ModeRules {
     fn standings(
         &self,
