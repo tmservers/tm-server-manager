@@ -301,7 +301,9 @@ pub(crate) trait TabRawServerRead {
 }
 pub(crate) trait TabRawServerWrite: TabRawServerRead {
     fn raw_server_pool_assign(&self, node_handle: NodeHandle) -> Result<u32, String>;
-    fn raw_server_disconnected(&self, server_id: u32, now: Timestamp);
+    fn raw_server_disconnected(&self, server_id: u32, now: Timestamp)
+    where
+        Self: spacetimedb::CtxWithTimestamp;
 }
 
 impl<Db: CtxDbRead> TabRawServerRead for Db {
@@ -352,7 +354,10 @@ impl<Db: CtxDbWrite> TabRawServerWrite for Db {
         Ok(server_id)
     }
 
-    fn raw_server_disconnected(&self, server_id: u32, when: Timestamp) {
+    fn raw_server_disconnected(&self, server_id: u32, when: Timestamp)
+    where
+        Self: spacetimedb::CtxWithTimestamp,
+    {
         let mut server = self.db().tab_raw_server().id().find(server_id).unwrap();
 
         server.set_offline(when);
