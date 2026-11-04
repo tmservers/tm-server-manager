@@ -794,4 +794,52 @@ mod tests {
         assert_eq!(shape.origins, LbOrigins::Many);
         assert!(shape.rounds && !shape.standings);
     }
+
+    #[test]
+    fn only_unresolved_connections_keep_a_node_waiting() {
+        let test = test_context(&[]);
+        let target = NodeHandle::MatchV1(9);
+        test.with_reducer_tx(TestAuth::internal(), |ctx| {
+            let mut finished = connect(NodeHandle::MatchV1(1), target, ConnectionKind::Data);
+            finished.resolve();
+            ctx.connection_insert(finished)?;
+            ctx.connection_insert(connect(
+                NodeHandle::MatchV1(2),
+                target,
+                ConnectionKind::Wait,
+            ))?;
+            // Actions only trigger something, the match does not rely on them.
+            ctx.connection_insert(connect(
+                NodeHandle::MatchV1(3),
+                target,
+                ConnectionKind::Action,
+            ))?;
+            Ok::<_, String>(())
+        })
+        .unwrap();
+
+        let pending = test.anonymous_view_context().node_pending_origins(target);
+
+        assert_eq!(pending, vec![NodeHandle::MatchV1(2)]);
+    }
+
+    #[test]
+    fn a_passing_node_is_finished_once_everything_before_it_is() {
+        let test = test_context(&[]);
+        let (waiting, done) = (NodeHandle::OutputV1(1), NodeHandle::OutputV1(2));
+        test.with_reducer_tx(TestAuth::internal(), |ctx| {
+            ctx.connection_insert(connect(
+                NodeHandle::MatchV1(1),
+                waiting,
+                ConnectionKind::Data,
+            ))?;
+            Ok::<_, String>(())
+        })
+        .unwrap();
+
+        let cx = test.anonymous_view_context();
+
+        assert!(!cx.node_is_finished(waiting));
+        assert!(cx.node_is_finished(done));
+    }
 }
