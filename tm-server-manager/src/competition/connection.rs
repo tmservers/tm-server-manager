@@ -54,6 +54,28 @@ pub struct TabConnection {
 }
 
 impl TabConnection {
+    #[cfg(test)]
+    pub(crate) fn for_test(
+        origin: NodeHandle,
+        target: NodeHandle,
+        kind: ConnectionKind,
+        slot: u8,
+    ) -> Self {
+        let (origin_variant, origin_id) = origin.split();
+        let (target_variant, target_id) = target.split();
+        TabConnection {
+            id: 0,
+            parent_id: 1,
+            origin_id,
+            target_id,
+            origin_variant,
+            target_variant,
+            kind,
+            status: ConnectionStatus::Configured,
+            slot,
+        }
+    }
+
     pub(crate) fn slot(&self) -> u8 {
         self.slot
     }
@@ -758,19 +780,7 @@ mod tests {
     };
 
     fn connect(origin: NodeHandle, target: NodeHandle, kind: ConnectionKind) -> TabConnection {
-        let (origin_variant, origin_id) = origin.split();
-        let (target_variant, target_id) = target.split();
-        TabConnection {
-            id: 0,
-            parent_id: 1,
-            origin_id,
-            target_id,
-            origin_variant,
-            target_variant,
-            kind,
-            status: ConnectionStatus::Configured,
-            slot: 0,
-        }
+        TabConnection::for_test(origin, target, kind, 0)
     }
 
     #[test]

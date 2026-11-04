@@ -270,3 +270,130 @@ fn node_seeds_preview(ctx: &ViewContext, node: NodeHandle) -> Vec<NodeSeed> {
         Vec::new()
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use spacetimedb::test_utils::{TestAuth, TestContext};
+    use tm_server_types::config::TmMode;
+
+    use super::*;
+    use crate::{
+        competition::connection::{
+            ConnectionKind, ConnectionWrite, TabConnection,
+            data::{ConnectionDataV2, ConnectionDataWrite},
+        },
+        leaderboard::test_util::{standing, test_context},
+        tm_match::leaderboard::{MatchLeaderboardWrite, MatchRoundPlayer},
+    };
+
+    fn players(participants: &[LbParticipant]) -> Vec<u32> {
+        participants
+            .iter()
+            .map(|participant| match participant {
+                LbParticipant::Player(user_id) => *user_id,
+                LbParticipant::Team(_) => panic!("only players are seeded here"),
+            })
+            .collect()
+    }
+
+    #[test]
+    fn interleaving_takes_turns_between_the_inputs() {
+        let inputs = vec![
+            vec![standing(1, 1), standing(2, 2), standing(3, 3)],
+            vec![standing(4, 1)],
+        ];
+
+        let order = seed_order(NodeSeedOrder::Interleave, inputs);
+
+        assert_eq!(players(&order), vec![1, 4, 2, 3]);
+    }
+
+    #[test]
+    fn by_position_breaks_ties_with_the_input_order() {
+        let inputs = vec![
+            vec![standing(1, 1), standing(2, 3)],
+            vec![standing(3, 1), standing(4, 2)],
+        ];
+
+        let order = seed_order(NodeSeedOrder::ByPosition, inputs);
+
+        assert_eq!(players(&order), vec![1, 3, 4, 2]);
+    }
+
+    #[test]
+    fn a_participant_in_several_inputs_keeps_the_best_seed() {
+        let inputs = vec![
+            vec![standing(1, 1), standing(2, 2)],
+            vec![standing(3, 1), standing(1, 2)],
+        ];
+
+        let order = seed_order(NodeSeedOrder::Concat, inputs);
+
+        assert_eq!(players(&order), vec![1, 2, 3]);
+    }
+
+    #[test]
+    fn reseeding_needs_every_seed_exactly_once() {
+        let node = NodeHandle::MatchV1(1);
+        let seeds: Vec<NodeSeed> = (1u16..=3)
+            .map(|seed| NodeSeed::new(node, LbParticipant::Player(seed as u32 * 10), seed))
+            .collect();
+
+        let reseeded_users: Vec<(u32, u16)> = reseeded(&seeds, &[2, 1, 3])
+            .unwrap()
+            .iter()
+            .map(|s| (s.user_id, s.seed))
+            .collect();
+        assert_eq!(reseeded_users, vec![(20, 1), (10, 2), (30, 3)]);
+
+        assert!(reseeded(&seeds, &[1, 1, 3]).is_err());
+        assert!(reseeded(&seeds, &[1, 2]).is_err());
+        assert!(reseeded(&seeds, &[1, 2, 4]).is_err());
+    }
+
+    fn play_round(test: &TestContext, match_id: u32, user_id: u32, points: i32) {
+        test.with_reducer_tx(TestAuth::internal(), |ctx| {
+            ctx.match_round_player_insert(MatchRoundPlayer::for_test(
+                match_id, user_id, 1, points,
+            ))?;
+            Ok::<_, String>(())
+        })
+        .unwrap();
+    }
+
+    fn seeded_users(seeds: &[NodeSeed]) -> Vec<u32> {
+        seeds.iter().map(|s| s.user_id).collect()
+    }
+
+    #[test]
+    fn frozen_seeds_follow_the_slots_and_ignore_later_results() {
+        let test = test_context(&[(1, TmMode::Rounds), (2, TmMode::Rounds)]);
+        let node = NodeHandle::MatchV1(3);
+        play_round(&test, 1, 10, 5);
+        play_round(&test, 1, 11, 9);
+        play_round(&test, 2, 20, 1);
+        test.with_reducer_tx(TestAuth::internal(), |ctx| {
+            // The second connection gets the first slot.
+            for (origin, slot) in [(NodeHandle::MatchV1(1), 1), (NodeHandle::MatchV1(2), 0)] {
+                let connection = ctx.connection_insert(TabConnection::for_test(
+                    origin,
+                    node,
+                    ConnectionKind::Data,
+                    slot,
+                ))?;
+                ctx.connection_data_insert(ConnectionDataV2::new(connection.id, 1))?;
+            }
+            ctx.node_seeds_freeze(node)
+        })
+        .unwrap();
+
+        play_round(&test, 1, 12, 20);
+
+        let cx = test.anonymous_view_context();
+        assert_eq!(seeded_users(&cx.node_seeds(node)), vec![20, 11, 10]);
+        assert_eq!(
+            seeded_users(&cx.node_seeds_preview(node).unwrap()),
+            vec![20, 12, 11, 10]
+        );
+    }
+}
