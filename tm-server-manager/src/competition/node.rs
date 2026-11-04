@@ -192,6 +192,8 @@ pub(crate) trait NodeRead {
     fn node_output_shape(&self, node: NodeHandle) -> Result<LbShape, LbError>;
     /// The nodes this node still waits for, action connections do not count.
     fn node_pending_origins(&self, node: NodeHandle) -> Vec<NodeHandle>;
+    /// The nodes which already took what this node passes on, action connections do not count.
+    fn node_dependents(&self, node: NodeHandle) -> Vec<NodeHandle>;
     /// Whether the node is done, so what it outputs does not change anymore.
     fn node_is_finished(&self, node: NodeHandle) -> bool;
     fn node_is_template(&self, node: NodeHandle) -> bool;
@@ -316,6 +318,13 @@ impl<Db: spacetimedb::CtxDbRead> NodeRead for Db {
         self.connection_origins_of(node)
             .filter(|c| !c.is_action() && !c.is_resolved())
             .map(|c| c.origin())
+            .collect()
+    }
+
+    fn node_dependents(&self, node: NodeHandle) -> Vec<NodeHandle> {
+        self.connection_targets_of(node)
+            .filter(|c| !c.is_action() && c.is_resolved())
+            .map(|c| c.target())
             .collect()
     }
 
@@ -480,6 +489,13 @@ impl<Db: spacetimedb::CtxDbWrite> NodeWrite for Db {
             NodeHandle::RegistrationV1(_) => todo!(),
             NodeHandle::LeaderboardV1(_) => todo!(),
         } */
+
+        let dependents = self.node_dependents(node);
+        if !dependents.is_empty() {
+            return Err(format!(
+                "The node cannot be deleted anymore because {dependents:?} already rely on it."
+            ));
+        }
 
         // Delete postition table entry.
         self.node_position_delete(node);
