@@ -7,6 +7,7 @@ use crate::{
     authorization::Authorization,
     competition::{
         CompetitionPermissionsV1, CompetitionRead,
+        connection::internal_graph_resolution_node_finished,
         node::{NodeHandle, NodeWrite, Vec2},
     },
     registration::player::RegistrationPlayerRead,
@@ -55,6 +56,10 @@ pub struct Registration {
 impl Registration {
     pub(crate) fn get_comp_id(&self) -> u32 {
         self.parent_id
+    }
+
+    pub(crate) fn has_ended(&self) -> bool {
+        self.status == RegistrationStatus::Ended
     }
 
     pub(crate) fn is_template(&self) -> bool {
@@ -226,7 +231,10 @@ fn registration_end(ctx: &ReducerContext, id: u32) -> Result<(), String> {
         .permission(CompetitionPermissionsV1::REGISTRATION_CLOSE)
         .authorize()?;
 
-    ctx.registration_close(id)
+    ctx.registration_close(id)?;
+
+    // The registered players are final now, so the nodes relying on them can advance.
+    internal_graph_resolution_node_finished(ctx, NodeHandle::RegistrationV1(id))
 }
 
 pub(crate) trait RegistrationRead {

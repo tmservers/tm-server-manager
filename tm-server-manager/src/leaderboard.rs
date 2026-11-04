@@ -9,6 +9,7 @@ use crate::{
     auto_inc_manual::AutoIncWrite,
     competition::{
         CompetitionPermissionsV1, CompetitionRead,
+        connection::internal_graph_resolution_node_finished,
         node::{NodeHandle, NodeLeaderboard, NodeRead, NodeWrite, Vec2},
     },
     leaderboard::{filter::LbFilterSettings, merge::LbMergeSettings, remap::LbRemapSettings},
@@ -52,6 +53,10 @@ pub struct LeaderboardV2 {
 }
 
 impl LeaderboardV2 {
+    pub(crate) fn is_configured(&self) -> bool {
+        self.status == LeaderboardStatus::Configured
+    }
+
     pub(crate) fn is_template(&self) -> bool {
         self.template
     }
@@ -228,6 +233,12 @@ fn leaderboard_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> {
 
     ctx.db.tab_leaderboard_v2().id().update(leaderboard);
 
+    // Everything before it could have finished while it got configured.
+    let node = NodeHandle::LeaderboardV1(id);
+    if ctx.node_pending_origins(node).is_empty() {
+        internal_graph_resolution_node_finished(ctx, node)?;
+    }
+
     Ok(())
 }
 
@@ -245,8 +256,9 @@ fn leaderboard_settings_update(
         .permission(CompetitionPermissionsV1::LEADERBOARD_CONFIGURE)
         .authorize()?;
 
-    //TODO maybe add state to reevaluation.
-    //leaderboard.can_change_settings()?;
+    if leaderboard.status != LeaderboardStatus::Configuring {
+        return Err("The leaderboard can only be changed while it gets configured.".into());
+    }
 
     leaderboard.settings = settings;
 

@@ -4,7 +4,7 @@ use crate::{
     authorization::Authorization,
     competition::{
         CompetitionPermissionsV1,
-        connection::{ConnectionStatus, tab_connection},
+        connection::{ConnectionStatus, internal_graph_resolution_node_finished, tab_connection},
         node::NodeHandle,
     },
     registration::RegistrationWrite,
@@ -179,7 +179,10 @@ pub(super) fn try_exec_action(connection: u32, target: NodeHandle, ctx: &Reducer
                     }
                 }
                 ConnectionActionRegistration::Close => {
-                    if let Err(err) = ctx.registration_close(r) {
+                    let result = ctx.registration_close(r).and_then(|()| {
+                        internal_graph_resolution_node_finished(ctx, NodeHandle::RegistrationV1(r))
+                    });
+                    if let Err(err) = result {
                         log::error!(
                             "Explicit Flow: registration_close action failed through connection {} Error: {}",
                             connection,

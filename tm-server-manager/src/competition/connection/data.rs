@@ -166,8 +166,8 @@ fn competition_connection_data_update(
         return Err("connection could not be found!".into());
     };
 
-    if connection.status == ConnectionStatus::Resolved {
-        return Err("Wrong status to chnge config".into());
+    if connection.status != ConnectionStatus::Configuring {
+        return Err("The connection can only be changed while it gets configured.".into());
     }
 
     ctx.auth_builder(connection.parent_id)
