@@ -1,4 +1,4 @@
-use spacetimedb::{ReducerContext, SpacetimeType, Table, reducer, table};
+use spacetimedb::{AnonymousViewContext, Query, ReducerContext, SpacetimeType, Table, reducer, table, view};
 
 use crate::{
     authorization::Authorization,
@@ -29,12 +29,10 @@ pub(super) struct PlayerActionCheckpoint {
     time: u32,
 }
 
-// TODO change back to private
 #[table(accessor= tab_match_round_player, vis_private,
     index(accessor=match_round, hash(columns=[match_id,round])),
     index(accessor=match_round_range, btree(columns=[match_id,round])),
-    index(accessor=match_round_player, hash(columns=[match_id,round,user_id])),
-    public
+    index(accessor=match_round_player, hash(columns=[match_id,round,user_id]))
 )]
 #[derive(Debug, Clone, Copy)]
 pub struct MatchRoundPlayer {
@@ -98,12 +96,10 @@ impl MatchRoundPlayer {
     }
 }
 
-//TODO change back to private
 #[table(accessor= tab_match_round_player_ext, vis_private,
     index(accessor=match_round, hash(columns=[match_id,round])),
     index(accessor=match_round_range, btree(columns=[match_id,round])),
-    index(accessor=match_round_player, hash(columns=[match_id,round,user_id])),
-    public
+    index(accessor=match_round_player, hash(columns=[match_id,round,user_id]))
 )]
 pub struct MatchRoundPlayerExt {
     round_actions: Vec<PlayerAction>,
@@ -320,6 +316,26 @@ impl<Db: spacetimedb::CtxDbWrite> MatchLeaderboardWrite for Db {
             .match_id()
             .delete(match_id);
     }
+}
+
+#[view(accessor = match_round_players, public)]
+fn match_round_players(ctx: &AnonymousViewContext, match_id: u32) -> impl Query<MatchRoundPlayer> {
+    ctx.from
+        .tab_match_round_player()
+        .filter(|r| r.match_id.eq(match_id))
+}
+
+/// Checkpoints and other actions of every player in one round, they are too large to send for the whole match.
+#[view(accessor = match_round_player_actions, public)]
+fn match_round_player_actions(
+    ctx: &AnonymousViewContext,
+    match_id: u32,
+    round: u16,
+) -> impl Query<MatchRoundPlayerExt> {
+    ctx.from
+        .tab_match_round_player_ext()
+        .filter(|r| r.match_id.eq(match_id))
+        .filter(|r| r.round.eq(round))
 }
 
 #[reducer]

@@ -7,9 +7,8 @@ use crate::{
     raw_server::occupation::TabRawServerOccupationRead,
 };
 
-//TODO make private again.
 #[derive(Debug)]
-#[table(accessor= tab_raw_server_player,public,vis_private)]
+#[table(accessor= tab_raw_server_player, vis_private)]
 pub struct RawServerPlayer {
     #[primary_key]
     pub(crate) account_id: Uuid,
