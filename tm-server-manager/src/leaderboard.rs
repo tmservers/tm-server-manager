@@ -170,6 +170,9 @@ impl LbSettingsV2 {
 }
 
 /// A step of a leaderboard pipeline, used by leaderboard nodes and data connections.
+///
+/// Steps get evaluated again whenever their leaderboard is read, also for competitions which are long over.
+/// So what a variant does must never change, a change is a new variant (like `SelectV2`) next to the old one.
 #[derive(Debug, SpacetimeType, Clone)]
 pub(crate) enum LbSettingsV3 {
     /// Turns the rounds of every match into the standings of that match.

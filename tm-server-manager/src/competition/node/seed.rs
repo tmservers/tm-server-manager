@@ -17,6 +17,8 @@ use crate::{
 };
 
 /// How the participants of the inputs of a node get their seeds.
+///
+/// What a variant does must never change, a change is a new variant next to the old one.
 #[derive(Debug, SpacetimeType, Clone, Copy, PartialEq, Eq, Default)]
 pub enum NodeSeedOrder {
     /// Everyone of the first input, then everyone of the second one and so on.
