@@ -8,7 +8,7 @@ use crate::{
     pipeline::{
         context::LbContext,
         error::LbError,
-        modes::match_standings,
+        modes::{match_standings, match_team_standings},
         shape::LbShape,
         steps::{
             filter::LbFilterSettingsV2,
@@ -43,6 +43,8 @@ pub(crate) enum LbSettingsV3 {
     Select(LbSelectSettings),
     Sort(LbSortSettings),
     Renumber(LbRenumberSettings),
+    /// Turns the rounds of every match into the standings of its teams.
+    MatchTeams,
 }
 
 /// Takes the entries of a leaderboard and returns the changed ones.
@@ -63,6 +65,7 @@ impl LbStep for LbSettingsV3 {
             LbSettingsV3::Select(settings) => settings.apply(cx, entries),
             LbSettingsV3::Sort(settings) => settings.apply(cx, entries),
             LbSettingsV3::Renumber(settings) => settings.apply(cx, entries),
+            LbSettingsV3::MatchTeams => match_team_standings(cx, entries),
         }
     }
 
@@ -80,6 +83,14 @@ impl LbStep for LbSettingsV3 {
             LbSettingsV3::Select(settings) => settings.check(origin, input),
             LbSettingsV3::Sort(settings) => settings.check(origin, input),
             LbSettingsV3::Renumber(settings) => settings.check(origin, input),
+            // Whether the mode can rank teams is only known when the match gets evaluated.
+            LbSettingsV3::MatchTeams => Ok(LbShape {
+                rounds: false,
+                standings: !input.is_empty(),
+                players: false,
+                teams: !input.is_empty(),
+                ..input
+            }),
         }
     }
 }
@@ -264,10 +275,6 @@ impl LbEntry {
         } else {
             LbParticipant::Team(self.team_id)
         }
-    }
-
-    pub(crate) fn get_user(&self) -> u32 {
-        self.user_id
     }
 
     /// The entry as one of the leaderboard of `origin`.
