@@ -62,3 +62,9 @@ pub(crate) fn team_standing(team_id: u32, position: u16, score: i32) -> LbEntry 
 pub(crate) fn ranking(entries: &[LbEntry]) -> Vec<(u32, u16)> {
     entries.iter().map(|e| (e.user_id, e.position)).collect()
 }
+
+/// The entry played for the team.
+pub(crate) fn for_team(mut entry: LbEntry, team_id: u32) -> LbEntry {
+    entry.team_id = team_id;
+    entry
+}
