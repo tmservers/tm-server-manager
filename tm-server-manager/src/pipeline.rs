@@ -304,7 +304,7 @@ mod tests {
     use super::*;
     use crate::pipeline::{
         steps::select::{LbSelectPlaces, LbSelectSettings},
-        test_util::{round, test_context},
+        test_util::{MATCH, for_team, round, round_in, test_context},
     };
 
     #[test]
@@ -330,5 +330,46 @@ mod tests {
             error.to_string(),
             "LeaderboardV1(3) step 2: Could not find the reverse cup config of MatchV1(1)."
         );
+    }
+
+    #[test]
+    fn team_standings_from_the_best_rounds_of_their_players_in_different_matches() {
+        let test = test_context(&[]);
+        let leaderboard = NodeHandle::LeaderboardV1(3);
+        let other = NodeHandle::MatchV1(2);
+        let rounds = |node, user, team, times: [i32; 3]| {
+            (1..)
+                .zip(times)
+                .map(move |(number, time)| for_team(round_in(node, user, number, 0, time), team))
+        };
+
+        // Every team has one player in each match, a time of 0 was not driven.
+        let entries = rounds(MATCH, 1, 1, [100, 300, 200])
+            .chain(rounds(MATCH, 3, 2, [150, 150, 500]))
+            .chain(rounds(other, 2, 1, [400, 100, 0]))
+            .chain(rounds(other, 4, 2, [200, 250, 900]))
+            .collect();
+
+        let standings = evaluate_steps(
+            &LbContext::new(&test.anonymous_view_context(), leaderboard),
+            &[
+                LbSettingsV3::Filter(LbFilterSettingsV2::best(
+                    vec![LbKey::Origin],
+                    LbParams::Time,
+                    2,
+                )),
+                LbSettingsV3::MergeTeams(LbMergeSettingsV2::summate(LbParams::Time)),
+            ],
+            entries,
+        )
+        .unwrap();
+
+        // Team 1 has 100 + 200 and 100 + 400, team 2 has 150 + 150 and 200 + 250.
+        let rows: Vec<(u32, u32, u16, i32)> = standings
+            .iter()
+            .map(|e| (e.user_id, e.team_id, e.position, e.time))
+            .collect();
+        assert_eq!(rows, vec![(0, 2, 1, 750), (0, 1, 2, 800)]);
+        assert!(standings.iter().all(|e| e.get_node() == leaderboard));
     }
 }
