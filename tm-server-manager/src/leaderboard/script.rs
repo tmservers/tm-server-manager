@@ -486,3 +486,165 @@ fn register_combinators(engine: &mut Engine) {
         });
 }
 
+#[cfg(test)]
+mod tests {
+    use tm_server_types::config::TmMode;
+
+    use super::*;
+    use crate::leaderboard::{
+        merge::LbMergeSettingsV2,
+        test_util::{MATCH, round, test_context},
+    };
+
+    const LEADERBOARD: NodeHandle = NodeHandle::LeaderboardV1(7);
+
+    fn script(source: &str, output: LbScriptOutput) -> LbScriptSettings {
+        LbScriptSettings {
+            source: source.into(),
+            output,
+        }
+    }
+
+    fn rounds() -> Vec<LbEntry> {
+        vec![
+            round(1, 1, 10, 0),
+            round(2, 1, 30, 0),
+            round(3, 1, 20, 0),
+            round(1, 2, 25, 0),
+            round(3, 2, 15, 0),
+        ]
+    }
+
+    #[test]
+    fn a_script_can_merge_like_the_merge_step() {
+        let test = test_context(&[]);
+        let cx = LbContext::new(&test.anonymous_view_context(), LEADERBOARD);
+        let summed = script(
+            r#"
+            fn step(cx, entries) {
+                let standings = [];
+                for group in entries.group_by(|e| e.participant) {
+                    let standing = cx.standing(group.key);
+                    for e in group.entries {
+                        standing.score += e.score;
+                    }
+                    standings.push(standing);
+                }
+                standings.sort_by_key(|s| -s.score).renumbered()
+            }
+            "#,
+            LbScriptOutput::Standings,
+        );
+
+        let rows = |entries: Vec<LbEntry>| -> Vec<(u32, u16, i32, NodeHandle, LbEntryKind)> {
+            entries
+                .iter()
+                .map(|e| (e.user_id, e.position, e.score, e.get_node(), e.kind))
+                .collect()
+        };
+        // Player 2 and 3 are tied, so this also shows both keep the order the players first appeared in.
+        let merged = LbMergeSettingsV2::summate(LbParams::Score)
+            .apply(&cx, rounds())
+            .unwrap();
+        assert_eq!(rows(summed.apply(&cx, rounds()).unwrap()), rows(merged));
+    }
+
+    #[test]
+    fn scripts_can_use_the_standings_of_the_built_in_modes() {
+        let test = test_context(&[(1, TmMode::Rounds)]);
+        let cx = LbContext::new(&test.anonymous_view_context(), LEADERBOARD);
+        let first = script(
+            "fn step(cx, entries) { cx.match_standings(entries).places([1]) }",
+            LbScriptOutput::Standings,
+        );
+
+        let standings = first.apply(&cx, rounds()).unwrap();
+
+        let users: Vec<u32> = standings.iter().map(|e| e.user_id).collect();
+        assert_eq!(users, vec![1]);
+    }
+
+    #[test]
+    fn a_script_has_to_return_what_it_declares() {
+        let test = test_context(&[]);
+        let cx = LbContext::new(&test.anonymous_view_context(), LEADERBOARD);
+        let unchanged = "fn step(cx, entries) { entries }";
+
+        assert!(
+            script(unchanged, LbScriptOutput::Rounds)
+                .apply(&cx, rounds())
+                .is_ok()
+        );
+        assert!(
+            script(unchanged, LbScriptOutput::Standings)
+                .apply(&cx, rounds())
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn a_script_which_never_ends_gets_stopped() {
+        let test = test_context(&[]);
+        let cx = LbContext::new(&test.anonymous_view_context(), LEADERBOARD);
+
+        let error = script("fn step(cx, entries) { loop {} }", LbScriptOutput::Rounds)
+            .apply(&cx, rounds())
+            .unwrap_err();
+
+        assert!(error.to_string().contains("Too many operations"));
+    }
+
+    #[test]
+    fn scripts_which_cannot_run_are_rejected_when_saved() {
+        let rounds = LbShape::rounds(MATCH);
+        let check = |source: &str| script(source, LbScriptOutput::Rounds).check(MATCH, rounds);
+
+        assert!(check("fn step(cx, entries) { entries }").is_ok());
+        assert!(check("fn step(cx, entries) { entries").is_err());
+        assert!(check("fn step(entries) { entries }").is_err());
+        // Unknown variables are errors when compiling.
+        assert!(check("fn step(cx, entries) { entires }").is_err());
+    }
+
+    #[test]
+    fn the_declared_output_is_what_later_steps_get_checked_against() {
+        let unchanged = "fn step(cx, entries) { entries }";
+        let standings = LbShape::standings(NodeHandle::RegistrationV1(1));
+
+        let teams = script(unchanged, LbScriptOutput::TeamStandings)
+            .check(LEADERBOARD, standings)
+            .unwrap();
+        assert!(teams.teams && !teams.players);
+        // Rounds cannot be created, so there have to be some to return.
+        assert!(
+            script(unchanged, LbScriptOutput::Rounds)
+                .check(LEADERBOARD, standings)
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn only_changing_a_script_needs_the_script_permission() {
+        let steps = |source: &str, extra: bool| {
+            let mut steps = vec![LbSettingsV3::Script(script(source, LbScriptOutput::Rounds))];
+            if extra {
+                steps.push(LbSettingsV3::Match);
+            }
+            steps
+        };
+        let old = steps("fn step(cx, entries) { entries }", false);
+
+        assert_eq!(
+            script_permission(&old, &steps("fn step(cx, entries) { entries }", true)),
+            CompetitionPermissionsV1::NONE
+        );
+        assert_eq!(
+            script_permission(&old, &steps("fn step(cx, e) { e }", false)),
+            CompetitionPermissionsV1::SCRIPT_EDIT
+        );
+        assert_eq!(
+            script_permission(&old, &[]),
+            CompetitionPermissionsV1::SCRIPT_EDIT
+        );
+    }
+}
