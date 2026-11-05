@@ -8,7 +8,7 @@ use crate::{
         context::LbContext,
         error::LbError,
         shape::{LbOrigins, LbShape, check_participants},
-        shared_map,
+        shared_map, shared_team,
     },
 };
 
@@ -34,7 +34,7 @@ impl From<LbMergeSettings> for LbMergeSettingsV2 {
     }
 }
 
-/// Merges all entries of a participant into one.
+/// Merges all entries of a participant into one, it keeps the map and team only if all of them share it.
 #[derive(Debug, SpacetimeType, Clone, Copy)]
 pub(crate) struct LbMergeSettingsV2 {
     action: LbMergeAction,
@@ -72,10 +72,13 @@ impl LbMergeSettingsV2 {
             .group_by(|e| e.participant())
             .fold(|participant, entries| {
                 let map_id = entries.iter().map(|e| e.map_id).reduce(shared_map);
-                let init = LbEntry::for_participant(participant, LbEntryKind::Standing, 0, origin)
-                    .set_score(0)
-                    .set_time(0)
-                    .set_map(map_id.unwrap_or(0));
+                let team_id = entries.iter().map(|e| e.team_id).reduce(shared_team);
+                let mut init =
+                    LbEntry::for_participant(participant, LbEntryKind::Standing, 0, origin)
+                        .set_score(0)
+                        .set_time(0)
+                        .set_map(map_id.unwrap_or(0));
+                init.team_id = team_id.unwrap_or(0);
                 self.merge(init, &entries)
             });
         log::info!("Merge Result: {:?}", merged);

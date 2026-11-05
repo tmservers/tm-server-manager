@@ -306,6 +306,11 @@ fn shared_map(a: u32, b: u32) -> u32 {
     if a == b { a } else { 0 }
 }
 
+/// The team entries were played for together, 0 if they were played for different ones.
+fn shared_team(a: u32, b: u32) -> u32 {
+    if a == b { a } else { 0 }
+}
+
 /// Whom an entry ranks, a leaderboard has at most one standing per participant.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) enum LbParticipant {

@@ -6,7 +6,7 @@ use crate::{
     competition::node::NodeHandle,
     leaderboard::{
         LbEntry, LbEntryKind, LbParams, LbParticipant, combinators::LbRows, context::LbContext,
-        error::LbError, shared_map,
+        error::LbError, shared_map, shared_team,
     },
 };
 
@@ -137,10 +137,12 @@ fn by_position(entries: Vec<LbEntry>) -> Vec<LbEntry> {
 }
 
 /// Adds up the rounds of a participant and keeps the latest round.
+/// Like every mode it keeps the map and team only if all rounds share it.
 fn summed(mut standing: LbEntry, round: LbEntry) -> LbEntry {
     standing.score = standing.score.saturating_add(round.score);
     standing.round = standing.round.max(round.round);
     standing.map_id = shared_map(standing.map_id, round.map_id);
+    standing.team_id = shared_team(standing.team_id, round.team_id);
     standing
 }
 
@@ -176,12 +178,14 @@ fn knockout(rounds: Vec<LbEntry>) -> Vec<LbEntry> {
         .group_by(|e| e.participant())
         .reduce(|mut standing, round| {
             let map_id = shared_map(standing.map_id, round.map_id);
+            let team_id = shared_team(standing.team_id, round.team_id);
             // The round in which the player got knocked out.
             if round.score == -1 {
                 standing = round;
             }
             standing.round = standing.round.max(round.round);
             standing.map_id = map_id;
+            standing.team_id = team_id;
             standing
         })
         .sorted_by_key(|s| Reverse(s.round))
@@ -193,12 +197,14 @@ fn time_attack(rounds: Vec<LbEntry>) -> Vec<LbEntry> {
         .group_by(|e| e.participant())
         .reduce(|best, round| {
             let map_id = shared_map(best.map_id, round.map_id);
+            let team_id = shared_team(best.team_id, round.team_id);
             let mut best = if LbParams::time_key(round.time) < LbParams::time_key(best.time) {
                 round
             } else {
                 best
             };
             best.map_id = map_id;
+            best.team_id = team_id;
             best
         })
         .sorted_by_key(|s| LbParams::Time.key(s))
