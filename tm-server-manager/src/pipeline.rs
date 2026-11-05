@@ -14,6 +14,7 @@ use crate::{
             filter::LbFilterSettingsV2,
             merge::{LbMergeSettingsV2, LbMergeTeams},
             remap::LbRemapSettings,
+            script::LbScriptSettings,
             select::LbSelectSettings,
             sort::{LbRenumberSettings, LbSortSettings},
         },
@@ -47,6 +48,7 @@ pub(crate) enum LbSettingsV3 {
     MatchTeams,
     /// Merges all entries of every team into one standing of the team, entries without a team are left out.
     MergeTeams(LbMergeSettingsV2),
+    Script(LbScriptSettings),
 }
 
 /// Takes the entries of a leaderboard and returns the changed ones.
@@ -69,6 +71,7 @@ impl LbStep for LbSettingsV3 {
             LbSettingsV3::Renumber(settings) => settings.apply(cx, entries),
             LbSettingsV3::MatchTeams => match_team_standings(cx, entries),
             LbSettingsV3::MergeTeams(settings) => LbMergeTeams(settings).apply(cx, entries),
+            LbSettingsV3::Script(settings) => settings.apply(cx, entries),
         }
     }
 
@@ -95,6 +98,7 @@ impl LbStep for LbSettingsV3 {
                 ..input
             }),
             LbSettingsV3::MergeTeams(settings) => LbMergeTeams(settings).check(origin, input),
+            LbSettingsV3::Script(settings) => settings.check(origin, input),
         }
     }
 }

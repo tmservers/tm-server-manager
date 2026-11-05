@@ -15,7 +15,10 @@ use crate::{
         error::LbError,
         evaluate_steps,
         shape::{LbShape, check_steps},
-        steps::select::{LbSelectFirstOffsetN, LbSelectPlaces, LbSelectSettings},
+        steps::{
+            script::script_permission,
+            select::{LbSelectFirstOffsetN, LbSelectPlaces, LbSelectSettings},
+        },
     },
 };
 
@@ -229,14 +232,6 @@ fn competition_connection_data_update(
         return Err("The connection can only be changed while it gets configured.".into());
     }
 
-    ctx.auth_builder(connection.parent_id)
-        .permission(CompetitionPermissionsV1::CONNECTION_CONFIGURE)
-        .authorize()?;
-
-    let origin = connection.origin();
-    check_steps(origin, &settings, ctx.node_output_shape(origin)?)
-        .map_err(|error| error.in_connection(connection_id))?;
-
     let Some(mut data) = ctx
         .db
         .tab_connection_data_v2()
@@ -245,6 +240,15 @@ fn competition_connection_data_update(
     else {
         return Err("Connection data could not be found.".into());
     };
+
+    ctx.auth_builder(connection.parent_id)
+        .permission(CompetitionPermissionsV1::CONNECTION_CONFIGURE)
+        .permission(script_permission(&data.settings, &settings))
+        .authorize()?;
+
+    let origin = connection.origin();
+    check_steps(origin, &settings, ctx.node_output_shape(origin)?)
+        .map_err(|error| error.in_connection(connection_id))?;
 
     if let Some(taken) = slot_taken_by(ctx, connection.target(), slot, connection_id) {
         return Err(format!(
