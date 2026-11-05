@@ -1,5 +1,6 @@
 use spacetimedb::{
-    CtxDbRead, ReducerContext, SpacetimeType, Table, Timestamp, ViewContext, reducer, table, view,
+    AnonymousViewContext, CtxDbRead, Query, ReducerContext, SpacetimeType, Table, Timestamp,
+    ViewContext, reducer, table, view,
 };
 
 use crate::{
@@ -20,7 +21,7 @@ pub enum TeamRole {
 
 /// A team of a team registration.
 /// Teams can only change while their registration is ongoing, afterwards the nodes after it rely on them.
-#[table(accessor = tab_team, vis_private, public)]
+#[table(accessor = tab_team, vis_private)]
 #[derive(Debug, Clone)]
 pub struct RegisteredTeam {
     #[auto_inc]
@@ -34,7 +35,7 @@ pub struct RegisteredTeam {
     registered_at: Timestamp,
 }
 
-#[table(accessor = tab_team_member, vis_private, public,
+#[table(accessor = tab_team_member, vis_private,
     index(accessor = team_user, hash(columns = [team_id, user_id])))]
 #[derive(Debug, Clone, Copy)]
 pub struct TeamMember {
@@ -356,6 +357,23 @@ fn team_member_role_update(
     role: TeamRole,
 ) -> Result<(), String> {
     role_update(ctx, ctx.user_id()?, team_id, user_id, role)
+}
+
+/// The teams of a registration.
+#[view(accessor = registration_teams, public)]
+fn registration_teams(
+    ctx: &AnonymousViewContext,
+    registration_id: u32,
+) -> impl Query<RegisteredTeam> {
+    ctx.from
+        .tab_team()
+        .filter(|r| r.registration_id.eq(registration_id))
+}
+
+/// The members of a team.
+#[view(accessor = team_members, public)]
+fn team_members(ctx: &AnonymousViewContext, team_id: u32) -> impl Query<TeamMember> {
+    ctx.from.tab_team_member().filter(|r| r.team_id.eq(team_id))
 }
 
 /// The invites of the viewer.
