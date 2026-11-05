@@ -61,7 +61,7 @@ fn unstable_match_chat_message(
 
     let user_name = ctx.user_name(user_id);
 
-    let ingame_message = "[".to_string() + &user_name + "] " + &message;
+    let ingame_message = "[".to_string() + user_name.as_str() + "] " + message.as_str();
 
     ctx.db.tab_match_chat().insert(MatchChat {
         message,
