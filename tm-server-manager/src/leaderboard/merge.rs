@@ -85,6 +85,15 @@ impl LbStep for LbMergeTeams<'_> {
 }
 
 impl LbMergeSettingsV2 {
+    /// Adds up the param of all entries.
+    #[cfg(test)]
+    pub(super) fn summate(param: LbParams) -> Self {
+        LbMergeSettingsV2 {
+            action: LbMergeAction::Summate,
+            param,
+        }
+    }
+
     fn evaluate(self, origin: NodeHandle, leaderboard: Vec<LbEntry>) -> Vec<LbEntry> {
         self.merge_groups(origin, leaderboard.group_by(|e| e.participant()))
     }
@@ -248,6 +257,37 @@ mod tests {
 
         let teams: Vec<(u32, u32)> = merged.iter().map(|e| (e.user_id, e.team_id)).collect();
         assert_eq!(teams, vec![(2, 0), (1, 5)]);
+    }
+
+    #[test]
+    fn players_without_a_team_are_left_out_of_the_team_standings() {
+        let merged = LbMergeSettingsV2::summate(LbParams::Score).evaluate_teams(
+            LEADERBOARD,
+            vec![
+                for_team(round(1, 1, 10, 0), 5),
+                round(2, 1, 50, 0),
+                for_team(round(3, 1, 20, 0), 5),
+            ],
+        );
+
+        let rows: Vec<(u32, u32, i32)> = merged
+            .iter()
+            .map(|e| (e.user_id, e.team_id, e.score))
+            .collect();
+        assert_eq!(rows, vec![(0, 5, 30)]);
+    }
+
+    #[test]
+    fn merging_teams_turns_players_into_teams() {
+        let rounds = LbShape::rounds(NodeHandle::MatchV1(1));
+
+        let merged = LbMergeTeams(&LbMergeSettingsV2::summate(LbParams::Score))
+            .check(LEADERBOARD, rounds)
+            .unwrap();
+
+        // So later steps reject mixing them with players.
+        assert!(merged.teams && !merged.players);
+        assert!(merged.standings && !merged.rounds);
     }
 
     #[test]
