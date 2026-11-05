@@ -474,7 +474,7 @@ mod tests {
     use super::*;
     use crate::pipeline::{
         steps::merge::LbMergeSettingsV2,
-        test_util::{MATCH, round, test_context},
+        test_util::{MATCH, round, round_in, test_context},
     };
 
     const LEADERBOARD: NodeHandle = NodeHandle::LeaderboardV1(7);
@@ -626,6 +626,84 @@ mod tests {
         assert_eq!(
             script_permission(&old, &[]),
             CompetitionPermissionsV1::SCRIPT_EDIT
+        );
+    }
+
+    #[test]
+    fn a_points_table_with_countback_over_several_matches() {
+        let test = test_context(&[(1, TmMode::Rounds), (2, TmMode::Rounds)]);
+        let cx = LbContext::new(&test.anonymous_view_context(), LEADERBOARD);
+        let series = script(
+            r#"
+            fn step(cx, entries) {
+                let points = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
+                let rows = [];
+                for group in cx.match_standings(entries).group_by(|e| e.participant) {
+                    let standing = cx.standing(group.key);
+                    let places = [0, 0, 0];
+                    for e in group.entries {
+                        if e.position <= points.len() {
+                            standing.score += points[e.position - 1];
+                        }
+                        if e.position <= 3 {
+                            places[e.position - 1] += 1;
+                        }
+                    }
+                    rows.push(#{ standing: standing, places: places });
+                }
+                rows.sort_by_key(|r| [-r.standing.score, -r.places[0], -r.places[1], -r.places[2]])
+                    .map(|r| r.standing)
+                    .renumbered()
+            }
+            "#,
+            LbScriptOutput::Standings,
+        );
+        let second = NodeHandle::MatchV1(2);
+        // The second match comes first, so player 2 appears before player 1.
+        let mut entries: Vec<LbEntry> = [3, 4, 2, 5, 6, 1]
+            .into_iter()
+            .zip([60, 50, 40, 30, 20, 10])
+            .map(|(user, score)| round_in(second, user, 1, score, 0))
+            .collect();
+        entries.extend([round(1, 1, 20, 0), round(2, 1, 10, 0)]);
+
+        let standings = series.apply(&cx, entries).unwrap();
+
+        // Player 1 was first and sixth, player 2 second and third, both have 33 points.
+        // Player 1 has a win, so they are ahead although player 2 appeared first.
+        let rows: Vec<(u32, u16, i32)> = standings
+            .iter()
+            .map(|e| (e.user_id, e.position, e.score))
+            .collect();
+        assert_eq!(
+            rows,
+            vec![
+                (1, 1, 33),
+                (2, 2, 33),
+                (3, 3, 25),
+                (4, 4, 18),
+                (5, 5, 12),
+                (6, 6, 10)
+            ]
+        );
+    }
+
+    #[test]
+    fn ids_which_do_not_fit_a_script_integer_cannot_be_read() {
+        let test = test_context(&[]);
+        let cx = LbContext::new(&test.anonymous_view_context(), LEADERBOARD);
+        let read = script(
+            "fn step(cx, entries) { for e in entries { e.user_id; } entries }",
+            LbScriptOutput::Rounds,
+        );
+
+        assert!(
+            read.apply(&cx, vec![round(i32::MAX as u32, 1, 0, 0)])
+                .is_ok()
+        );
+        assert!(
+            read.apply(&cx, vec![round(i32::MAX as u32 + 1, 1, 0, 0)])
+                .is_err()
         );
     }
 }
