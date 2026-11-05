@@ -39,6 +39,8 @@ uuid = { version = "1.12", features = ["serde"] }
 # This can be removed if we actualy have higher-ranked trait bounds for AsyncFnMuts Output type which is a supertrait of AsyncFn which is needed for event propagation in the trackmania server. 
 async_fn_traits = "*"
 petgraph = { version = "0.8.3", features = ['all'] }
+# Pinned because an update could change what the leaderboard scripts of existing competitions do.
+rhai = { version = "=1.27.0", default-features = false }
 
 mlua = { version = "0.12", features = ["luau"] }
 #chumsky = { version = "1.0.0-alpha.8" }
