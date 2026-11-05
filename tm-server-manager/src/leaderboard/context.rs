@@ -1,8 +1,12 @@
+use std::{cell::OnceCell, rc::Rc};
+
+use rhai::Engine;
 use spacetimedb::{CtxDbRead, LocalReadOnly};
 use tm_server_types::config::{ModeSettingsV2, TmMode};
 
 use crate::{
     competition::node::NodeHandle,
+    leaderboard::script,
     raw_server::config::RawServerContigRead,
     tm_match::{MatchRead, state::MatchStateRead},
 };
@@ -12,10 +16,14 @@ use crate::{
 /// Steps only read what they need when they need it, so a view evaluating them only depends on those rows.
 /// Reads should be point lookups, everything else makes the view depend on the whole table.
 /// Nothing read from the database may be kept across evaluations, the view would then miss its changes.
+///
+/// One context is created per call, the nodes evaluated during it get one with [`LbContext::at`].
 #[derive(Clone)]
 pub(crate) struct LbContext {
     db: LocalReadOnly,
     origin: NodeHandle,
+    /// Built when the first script runs and shared by every node of the call.
+    script_engine: Rc<OnceCell<Engine>>,
 }
 
 impl LbContext {
@@ -23,7 +31,20 @@ impl LbContext {
         LbContext {
             db: ctx.db_read_only().clone(),
             origin,
+            script_engine: Rc::default(),
         }
+    }
+
+    /// The context for evaluating `origin` during the same call.
+    pub(crate) fn at(&self, origin: NodeHandle) -> Self {
+        LbContext {
+            origin,
+            ..self.clone()
+        }
+    }
+
+    pub(crate) fn script_engine(&self) -> &Engine {
+        self.script_engine.get_or_init(script::engine)
     }
 
     /// The node the steps are evaluated for, entries created by a step belong to it.
@@ -57,3 +78,4 @@ impl CtxDbRead for LbContext {
         &self.db
     }
 }
+

@@ -8,7 +8,7 @@ use crate::{
     authorization::Authorization,
     competition::{
         CompetitionPermissionsV1,
-        node::{NodeHandle, NodeRead},
+        node::{NodeHandle, NodeRead, resolve_inputs},
     },
     leaderboard::{
         LbEntry, LbParticipant, context::LbContext, error::LbError, modes::match_standings,
@@ -147,8 +147,7 @@ impl<Db: CtxDbRead> NodeSeedRead for Db {
 
     fn node_seeds_preview(&self, node: NodeHandle) -> Result<Vec<NodeSeed>, LbError> {
         let cx = LbContext::new(self, node);
-        let inputs = self
-            .node_resolve_inputs(node)?
+        let inputs = resolve_inputs(&cx, node)?
             .into_iter()
             .map(|input| match_standings(&cx, input))
             .collect::<Result<Vec<_>, _>>()?;

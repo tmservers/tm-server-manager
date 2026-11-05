@@ -4,7 +4,7 @@ use crate::{
     authorization::Authorization,
     competition::{
         CompetitionRead,
-        node::{NodeHandle, NodeRead},
+        node::{NodeHandle, NodeRead, resolve_input_data},
     },
     leaderboard::{context::LbContext, modes::match_standings},
     raw_server::{occupation::TabRawServerOccupationRead, tab_raw_server__view},
@@ -100,8 +100,9 @@ pub(crate) trait TabRawServerDestinationWrite: TabRawServerDestinationRead {
 }
 impl<Db: spacetimedb::CtxDbWrite> TabRawServerDestinationWrite for Db {
     fn destination_claim(&self, node: NodeHandle) -> Result<(), String> {
-        let input = self.node_resolve_input_data(node)?;
-        let players = match_standings(&LbContext::new(self, node), input)?;
+        let cx = LbContext::new(self, node);
+        let input = resolve_input_data(&cx, node)?;
+        let players = match_standings(&cx, input)?;
         let server_id = self.occupation_with_occupier(node).unwrap();
         let competition_id = self.node_get_parent(node).unwrap();
         let user_ids = players

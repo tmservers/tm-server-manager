@@ -532,11 +532,6 @@ pub(crate) trait ConnectionRead {
 
     //fn connection_receive_leaderboard(&self, connection: TabConnection) -> Vec<PermittedPlayer>;
 
-    fn connection_resolve_leaderboard(
-        &self,
-        connection: TabConnection,
-        data: Vec<LbEntry>,
-    ) -> Result<Vec<LbEntry>, LbError>;
     /// What the connection would pass on, its steps are checked against the input on the way.
     fn connection_shape(
         &self,
@@ -554,32 +549,31 @@ pub(crate) trait ConnectionRead {
     /// The connections which have the node as their origin.
     fn connection_targets_of(&self, node: NodeHandle) -> impl Iterator<Item = TabConnection>;
 }
-impl<Db: spacetimedb::CtxDbRead> ConnectionRead for Db {
-    fn connection_resolve_leaderboard(
-        &self,
-        connection: TabConnection,
-        data: Vec<LbEntry>,
-    ) -> Result<Vec<LbEntry>, LbError> {
-        // Prevent the method from misuse because it is impossible to form a lb from a non data connection.
-        if !connection.is_data() {
-            return Err(LbError::new(format!(
-                "Connection {} is not a data connection.",
-                connection.id
-            )));
-        }
-
-        let Some(rules) = self.connection_data_find(connection.id) else {
-            return Err(LbError::new(format!(
-                "Data connection {} has no data, it might not be migrated yet.",
-                connection.id
-            )));
-        };
-
-        //let players = self.node_resolve_input_data(connection.origin());
-
-        rules.evaluate(&LbContext::new(self, connection.origin()), data)
+/// The entries the data connection passes on from `data`, the output of its origin.
+pub(crate) fn connection_resolve_leaderboard(
+    cx: &LbContext,
+    connection: TabConnection,
+    data: Vec<LbEntry>,
+) -> Result<Vec<LbEntry>, LbError> {
+    // Prevent the method from misuse because it is impossible to form a lb from a non data connection.
+    if !connection.is_data() {
+        return Err(LbError::new(format!(
+            "Connection {} is not a data connection.",
+            connection.id
+        )));
     }
 
+    let Some(rules) = cx.connection_data_find(connection.id) else {
+        return Err(LbError::new(format!(
+            "Data connection {} has no data, it might not be migrated yet.",
+            connection.id
+        )));
+    };
+
+    rules.evaluate(&cx.at(connection.origin()), data)
+}
+
+impl<Db: spacetimedb::CtxDbRead> ConnectionRead for Db {
     fn connection_shape(
         &self,
         connection: TabConnection,

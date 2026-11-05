@@ -4,7 +4,8 @@
 //! Scripts can only read the database through `cx`, which only does point lookups,
 //! so a view evaluating them only depends on the rows they read.
 //!
-//! SpacetimeDB modules cannot keep anything in statics, so every run builds its engine and compiles its script.
+//! SpacetimeDB modules cannot keep anything in statics, so the engine is built once per call by [`LbContext`]
+//! and every run compiles its script.
 
 use std::collections::HashMap;
 
@@ -72,8 +73,8 @@ impl LbScriptOutput {
 
 impl LbStep for LbScriptSettings {
     fn apply(&self, cx: &LbContext, entries: Vec<LbEntry>) -> Result<Vec<LbEntry>, LbError> {
-        let engine = engine();
-        let ast = compile(&engine, &self.source)?;
+        let engine = cx.script_engine();
+        let ast = compile(engine, &self.source)?;
         let entries: Array = entries.into_iter().map(Dynamic::from).collect();
 
         let returned = engine
@@ -103,7 +104,7 @@ impl LbStep for LbScriptSettings {
     }
 
     fn check(&self, origin: NodeHandle, input: LbShape) -> Result<LbShape, LbError> {
-        compile(&engine(), &self.source)?;
+        compile(&compiler(), &self.source)?;
         if input.is_empty() {
             return Ok(input);
         }
@@ -181,13 +182,9 @@ fn compile(engine: &Engine, source: &str) -> Result<AST, LbError> {
 
 type ScriptResult<T> = Result<T, Box<EvalAltResult>>;
 
-fn engine() -> Engine {
+/// An engine which can only compile scripts, compiling does not need any of the registered functions.
+fn compiler() -> Engine {
     let mut engine = Engine::new_raw();
-    engine.register_global_module(CorePackage::new().as_shared_module());
-    engine.register_global_module(LogicPackage::new().as_shared_module());
-    engine.register_global_module(BasicArrayPackage::new().as_shared_module());
-    engine.register_global_module(BasicMapPackage::new().as_shared_module());
-
     engine
         .set_max_operations(MAX_OPERATIONS)
         .set_max_call_levels(32)
@@ -198,6 +195,16 @@ fn engine() -> Engine {
         // Typos are errors when compiling instead of silently being nothing.
         .set_strict_variables(true)
         .set_fail_on_invalid_map_property(true);
+    engine
+}
+
+/// The engine scripts run in, [`LbContext::script_engine`] builds it once per call.
+pub(crate) fn engine() -> Engine {
+    let mut engine = compiler();
+    engine.register_global_module(CorePackage::new().as_shared_module());
+    engine.register_global_module(LogicPackage::new().as_shared_module());
+    engine.register_global_module(BasicArrayPackage::new().as_shared_module());
+    engine.register_global_module(BasicMapPackage::new().as_shared_module());
 
     engine.on_print(|text| log::info!("Leaderboard script: {text}"));
     engine.on_debug(|text, _, position| log::info!("Leaderboard script {position}: {text}"));
