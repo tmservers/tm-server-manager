@@ -78,3 +78,40 @@ impl CtxDbRead for LbContext {
         &self.db
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::pipeline::{
+        LbSettingsV3, evaluate_steps,
+        steps::script::{LbScriptOutput, LbScriptSettings},
+        test_util::{MATCH, round, test_context},
+    };
+
+    #[test]
+    fn the_nodes_of_a_call_share_one_script_engine() {
+        let test = test_context(&[]);
+        let cx = LbContext::new(&test.anonymous_view_context(), MATCH);
+
+        let other = cx.at(NodeHandle::LeaderboardV1(2));
+
+        assert!(std::ptr::eq(cx.script_engine(), other.script_engine()));
+        assert_eq!(other.origin(), NodeHandle::LeaderboardV1(2));
+    }
+
+    #[test]
+    fn the_script_engine_is_only_built_when_a_script_runs() {
+        let test = test_context(&[]);
+        let cx = LbContext::new(&test.anonymous_view_context(), MATCH);
+        let script = LbSettingsV3::Script(LbScriptSettings {
+            source: "fn step(cx, entries) { entries }".into(),
+            output: LbScriptOutput::Rounds,
+        });
+
+        evaluate_steps(&cx, &[LbSettingsV3::Match], vec![round(1, 1, 10, 0)]).ok();
+        assert!(cx.script_engine.get().is_none());
+
+        evaluate_steps(&cx, &[script], vec![round(1, 1, 10, 0)]).unwrap();
+        assert!(cx.script_engine.get().is_some());
+    }
+}
