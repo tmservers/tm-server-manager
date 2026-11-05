@@ -3,8 +3,8 @@ use spacetimedb::SpacetimeType;
 use crate::{
     competition::node::NodeHandle,
     pipeline::{
-        LbEntry, LbEntryKind, LbParams, LbStep,
-        combinators::LbRows,
+        LbEntry, LbEntryKind, LbParams, LbParticipant, LbStep,
+        combinators::{Groups, LbRows},
         context::LbContext,
         error::LbError,
         shape::{LbOrigins, LbShape, check_participants},
@@ -66,21 +66,52 @@ impl LbStep for LbMergeSettingsV2 {
     }
 }
 
+/// Merges all entries of every team into one standing of the team, like [`LbMergeSettingsV2`] does per participant.
+/// Entries of players without a team are left out.
+pub(crate) struct LbMergeTeams<'a>(pub(crate) &'a LbMergeSettingsV2);
+
+impl LbStep for LbMergeTeams<'_> {
+    fn apply(&self, cx: &LbContext, entries: Vec<LbEntry>) -> Result<Vec<LbEntry>, LbError> {
+        Ok(self.0.evaluate_teams(cx.origin(), entries))
+    }
+
+    fn check(&self, origin: NodeHandle, input: LbShape) -> Result<LbShape, LbError> {
+        Ok(LbShape {
+            players: false,
+            teams: !input.is_empty(),
+            ..self.0.check(origin, input)?
+        })
+    }
+}
+
 impl LbMergeSettingsV2 {
     fn evaluate(self, origin: NodeHandle, leaderboard: Vec<LbEntry>) -> Vec<LbEntry> {
-        let merged = leaderboard
-            .group_by(|e| e.participant())
-            .fold(|participant, entries| {
-                let map_id = entries.iter().map(|e| e.map_id).reduce(shared_map);
-                let team_id = entries.iter().map(|e| e.team_id).reduce(shared_team);
-                let mut init =
-                    LbEntry::for_participant(participant, LbEntryKind::Standing, 0, origin)
-                        .set_score(0)
-                        .set_time(0)
-                        .set_map(map_id.unwrap_or(0));
-                init.team_id = team_id.unwrap_or(0);
-                self.merge(init, &entries)
-            });
+        self.merge_groups(origin, leaderboard.group_by(|e| e.participant()))
+    }
+
+    fn evaluate_teams(self, origin: NodeHandle, leaderboard: Vec<LbEntry>) -> Vec<LbEntry> {
+        let with_team: Vec<LbEntry> = leaderboard.into_iter().filter(|e| e.team_id != 0).collect();
+        self.merge_groups(
+            origin,
+            with_team.group_by(|e| LbParticipant::Team(e.team_id)),
+        )
+    }
+
+    fn merge_groups(
+        self,
+        origin: NodeHandle,
+        groups: Groups<LbParticipant, LbEntry>,
+    ) -> Vec<LbEntry> {
+        let merged = groups.fold(|participant, entries| {
+            let map_id = entries.iter().map(|e| e.map_id).reduce(shared_map);
+            let team_id = entries.iter().map(|e| e.team_id).reduce(shared_team);
+            let mut init = LbEntry::for_participant(participant, LbEntryKind::Standing, 0, origin)
+                .set_score(0)
+                .set_time(0)
+                .set_map(map_id.unwrap_or(0));
+            init.team_id = team_id.unwrap_or(0);
+            self.merge(init, &entries)
+        });
         let merged = merged.sorted_by_key(|e| self.param.key(e));
         // When merging positions they are what gets sorted by so they are kept.
         match self.param {
