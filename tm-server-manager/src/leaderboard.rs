@@ -17,7 +17,10 @@ use crate::{
         error::LbError,
         evaluate_steps,
         shape::{LbShape, check_steps},
-        steps::{filter::LbFilterSettings, merge::LbMergeSettings, remap::LbRemapSettings},
+        steps::{
+            filter::LbFilterSettings, merge::LbMergeSettings, remap::LbRemapSettings,
+            script::script_permission,
+        },
     },
 };
 
@@ -262,6 +265,7 @@ fn leaderboard_settings_update(
 
     ctx.auth_builder(leaderboard.parent_id)
         .permission(CompetitionPermissionsV1::LEADERBOARD_CONFIGURE)
+        .permission(script_permission(&leaderboard.settings, &settings))
         .authorize()?;
 
     if leaderboard.status != LeaderboardStatus::Configuring {
