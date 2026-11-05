@@ -18,6 +18,7 @@ use crate::{
         merge::{LbMergeSettings, LbMergeSettingsV2, LbMergeTeams},
         modes::{match_standings, match_team_standings},
         remap::LbRemapSettings,
+        script::{LbScriptSettings, script_permission},
         select::LbSelectSettings,
         shape::{LbShape, check_steps},
     },
@@ -30,6 +31,7 @@ mod filter;
 mod merge;
 pub(crate) mod modes;
 mod remap;
+pub(crate) mod script;
 pub(crate) mod select;
 pub(crate) mod shape;
 #[cfg(test)]
@@ -185,6 +187,7 @@ pub(crate) enum LbSettingsV3 {
     MatchTeams,
     /// Merges all entries of every team into one standing of the team, entries without a team are left out.
     MergeTeams(LbMergeSettingsV2),
+    Script(LbScriptSettings),
 }
 
 /// Takes the entries of a leaderboard and returns the changed ones.
@@ -205,6 +208,7 @@ impl LbStep for LbSettingsV3 {
             LbSettingsV3::Select(settings) => settings.apply(cx, entries),
             LbSettingsV3::MatchTeams => match_team_standings(cx, entries),
             LbSettingsV3::MergeTeams(settings) => LbMergeTeams(settings).apply(cx, entries),
+            LbSettingsV3::Script(settings) => settings.apply(cx, entries),
         }
     }
 
@@ -229,6 +233,7 @@ impl LbStep for LbSettingsV3 {
                 ..input
             }),
             LbSettingsV3::MergeTeams(settings) => LbMergeTeams(settings).check(origin, input),
+            LbSettingsV3::Script(settings) => settings.check(origin, input),
         }
     }
 }
@@ -531,6 +536,7 @@ fn leaderboard_settings_update(
 
     ctx.auth_builder(leaderboard.parent_id)
         .permission(CompetitionPermissionsV1::LEADERBOARD_CONFIGURE)
+        .permission(script_permission(&leaderboard.settings, &settings))
         .authorize()?;
 
     if leaderboard.status != LeaderboardStatus::Configuring {

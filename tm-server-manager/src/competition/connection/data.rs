@@ -14,6 +14,7 @@ use crate::{
         context::LbContext,
         error::LbError,
         evaluate_steps,
+        script::script_permission,
         select::{LbSelectFirstOffsetN, LbSelectPlaces, LbSelectSettings},
         shape::{LbShape, check_steps},
     },
@@ -175,13 +176,6 @@ fn competition_connection_data_update(
         return Err("The connection can only be changed while it gets configured.".into());
     }
 
-    ctx.auth_builder(connection.parent_id)
-        .permission(CompetitionPermissionsV1::CONNECTION_CONFIGURE)
-        .authorize()?;
-
-    let origin = connection.origin();
-    check_steps(origin, &settings, ctx.node_output_shape(origin)?)?;
-
     let Some(mut data) = ctx
         .db
         .tab_connection_data_v2()
@@ -190,6 +184,14 @@ fn competition_connection_data_update(
     else {
         return Err("Connection data could not be found.".into());
     };
+
+    ctx.auth_builder(connection.parent_id)
+        .permission(CompetitionPermissionsV1::CONNECTION_CONFIGURE)
+        .permission(script_permission(&data.settings, &settings))
+        .authorize()?;
+
+    let origin = connection.origin();
+    check_steps(origin, &settings, ctx.node_output_shape(origin)?)?;
 
     data.settings = settings;
     data.slot = slot;

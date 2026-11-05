@@ -72,6 +72,9 @@ impl CompetitionPermissionsV1 {
 
     pub const NODE_SEEDING: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 46);
 
+    /// Changing the scripts of leaderboard steps, on top of the permission to change the steps.
+    pub const SCRIPT_EDIT: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 47);
+
     pub(crate) fn has(self, perm: Self) -> bool {
         self.bypass() || (perm & !self) == CompetitionPermissionsV1::NONE
     }
