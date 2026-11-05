@@ -6,12 +6,15 @@ use crate::{
     authorization::Authorization,
     competition::{
         CompetitionPermissionsV1, CompetitionRead, CompetitionWrite,
-        connection::{ConnectionRead, ConnectionWrite, data::ConnectionDataRead},
+        connection::{
+            ConnectionRead, ConnectionWrite, connection_resolve_leaderboard,
+            data::ConnectionDataRead,
+        },
         roles::CompetitionMemberRead,
         tab_competition__view,
     },
     input::{InputRead, InputWrite},
-    leaderboard::{LeadearboardRead, LeaderboardWrite},
+    leaderboard::{LeadearboardRead, LeaderboardWrite, leaderboard_evaluate},
     output::{OutputRead, OutputWrite},
     pipeline::{
         LbEntry, context::LbContext, error::LbError, modes::match_standings, shape::LbShape,
@@ -184,9 +187,6 @@ pub(crate) trait NodeRead {
     fn node_permitted_players_input(&self, node: NodeHandle) -> Vec<PermittedPlayer>;
     fn node_get_parent(&self, node: NodeHandle) -> Result<u32, String>;
     fn node_resolve_input_data(&self, node: NodeHandle) -> Result<Vec<LbEntry>, LbError>;
-    /// The entries of every data connection into the node on their own, ordered by slot.
-    /// Inputs with slot 0 have no order, they come after the others.
-    fn node_resolve_inputs(&self, node: NodeHandle) -> Result<Vec<Vec<LbEntry>>, LbError>;
     fn node_resolve_output_data(&self, node: NodeHandle) -> Result<Vec<LbEntry>, LbError>;
     /// What the node would get as input, the steps on the way are checked.
     fn node_input_shape(&self, node: NodeHandle) -> Result<LbShape, LbError>;
@@ -226,17 +226,21 @@ impl<Db: spacetimedb::CtxDbRead> NodeRead for Db {
         let players: Vec<u32> = match node {
             // The players of a match are frozen with its entrants, only the spectators can still change.
             NodeHandle::MatchV1(match_id) => self.match_players(match_id),
-            _ => self
-                .node_resolve_input_data(node)
-                .and_then(|input| match_standings(&LbContext::new(self, node), input))
-                .unwrap_or_else(|error| {
-                    log::error!("The permitted players of {node:?} could not be resolved: {error}");
-                    Vec::new()
-                })
-                .into_iter()
-                // Everyone of a team may play, substitutes too.
-                .flat_map(|p| self.participant_users(p.participant()))
-                .collect(),
+            _ => {
+                let cx = LbContext::new(self, node);
+                resolve_input_data(&cx, node)
+                    .and_then(|input| match_standings(&cx, input))
+                    .unwrap_or_else(|error| {
+                        log::error!(
+                            "The permitted players of {node:?} could not be resolved: {error}"
+                        );
+                        Vec::new()
+                    })
+                    .into_iter()
+                    // Everyone of a team may play, substitutes too.
+                    .flat_map(|p| self.participant_users(p.participant()))
+                    .collect()
+            }
         };
         // The players override them being spectators.
         map.extend(players.into_iter().map(|user_id| {
@@ -278,15 +282,11 @@ impl<Db: spacetimedb::CtxDbRead> NodeRead for Db {
     }
 
     fn node_resolve_input_data(&self, node: NodeHandle) -> Result<Vec<LbEntry>, LbError> {
-        node_resolve_input_data_inner(self, node)
-    }
-
-    fn node_resolve_inputs(&self, node: NodeHandle) -> Result<Vec<Vec<LbEntry>>, LbError> {
-        node_resolve_inputs_inner(self, node)
+        resolve_input_data(&LbContext::new(self, node), node)
     }
 
     fn node_resolve_output_data(&self, node: NodeHandle) -> Result<Vec<LbEntry>, LbError> {
-        node_resolve_output_data_inner(self, node)
+        resolve_output_data(&LbContext::new(self, node), node)
     }
 
     fn node_input_shape(&self, node: NodeHandle) -> Result<LbShape, LbError> {
@@ -461,8 +461,33 @@ fn node_check_target_inner(
     }
 }
 
+/// Like [`NodeRead::node_resolve_input_data`] during a call which already has a context.
+pub(crate) fn resolve_input_data(
+    cx: &LbContext,
+    node: NodeHandle,
+) -> Result<Vec<LbEntry>, LbError> {
+    node_resolve_input_data_inner(cx, node)
+}
+
+/// The entries of every data connection into the node on their own, ordered by slot.
+/// Inputs with slot 0 have no order, they come after the others.
+pub(crate) fn resolve_inputs(
+    cx: &LbContext,
+    node: NodeHandle,
+) -> Result<Vec<Vec<LbEntry>>, LbError> {
+    node_resolve_inputs_inner(cx, node)
+}
+
+/// Like [`NodeRead::node_resolve_output_data`] during a call which already has a context.
+pub(crate) fn resolve_output_data(
+    cx: &LbContext,
+    node: NodeHandle,
+) -> Result<Vec<LbEntry>, LbError> {
+    node_resolve_output_data_inner(cx, node)
+}
+
 fn node_resolve_output_data_inner(
-    ctx: &impl spacetimedb::CtxDbRead,
+    ctx: &LbContext,
     node: NodeHandle,
 ) -> Result<Vec<LbEntry>, LbError> {
     match node {
@@ -493,12 +518,12 @@ fn node_resolve_output_data_inner(
             node_resolve_input_data_inner(ctx, NodeHandle::CompetitionV1(comp))
         }
         NodeHandle::RegistrationV1(n) => Ok(ctx.registration_output(n)),
-        NodeHandle::LeaderboardV1(n) => ctx.leaderboard_evaluation(n),
+        NodeHandle::LeaderboardV1(n) => leaderboard_evaluate(ctx, n),
     }
 }
 
 fn node_resolve_input_data_inner(
-    ctx: &impl spacetimedb::CtxDbRead,
+    ctx: &LbContext,
     node: NodeHandle,
 ) -> Result<Vec<LbEntry>, LbError> {
     Ok(node_resolve_inputs_inner(ctx, node)?
@@ -508,7 +533,7 @@ fn node_resolve_input_data_inner(
 }
 
 fn node_resolve_inputs_inner(
-    ctx: &impl spacetimedb::CtxDbRead,
+    ctx: &LbContext,
     node: NodeHandle,
 ) -> Result<Vec<Vec<LbEntry>>, LbError> {
     let mut depending_connections: Vec<_> = ctx
@@ -524,7 +549,7 @@ fn node_resolve_inputs_inner(
         .into_iter()
         .map(|depending_connection| {
             let lb_entries = node_resolve_output_data_inner(ctx, depending_connection.origin())?;
-            ctx.connection_resolve_leaderboard(depending_connection, lb_entries)
+            connection_resolve_leaderboard(ctx, depending_connection, lb_entries)
         })
         .collect()
 }
@@ -606,8 +631,9 @@ fn node_leaderboard_output(
     node: NodeHandle,
 ) -> Result<Vec<LbEntry>, String> {
     ctx.try_with_tx(|ctx| {
-        let output = ctx.node_resolve_output_data(node)?;
-        Ok(match_standings(&LbContext::new(ctx, node), output)?)
+        let cx = LbContext::new(ctx, node);
+        let output = resolve_output_data(&cx, node)?;
+        Ok(match_standings(&cx, output)?)
     })
 }
 
@@ -634,8 +660,9 @@ fn node_leaderboard_input_finalize(
     node: NodeHandle,
 ) -> Result<Vec<LbEntry>, String> {
     ctx.try_with_tx(|ctx| {
-        let input = ctx.node_resolve_input_data(node)?;
-        Ok(match_standings(&LbContext::new(ctx, node), input)?)
+        let cx = LbContext::new(ctx, node);
+        let input = resolve_input_data(&cx, node)?;
+        Ok(match_standings(&cx, input)?)
     })
 }
 
