@@ -6,7 +6,7 @@ use crate::{
     authorization::Authorization,
     competition::{
         CompetitionPermissionsV1,
-        node::{NodeHandle, NodeRead},
+        node::{NodeHandle, NodeRead, resolve_inputs},
     },
     pipeline::{
         LbEntry, LbParticipant, context::LbContext, error::LbError, modes::match_standings,
@@ -104,8 +104,7 @@ impl<Db: CtxDbRead> MatchEntrantRead for Db {
     fn match_entrants_preview(&self, match_id: u32) -> Result<Vec<MatchEntrant>, LbError> {
         let node = NodeHandle::MatchV1(match_id);
         let cx = LbContext::new(self, node);
-        let inputs = self
-            .node_resolve_inputs(node)?
+        let inputs = resolve_inputs(&cx, node)?
             .into_iter()
             .map(|input| match_standings(&cx, input))
             .collect::<Result<Vec<_>, _>>()?;

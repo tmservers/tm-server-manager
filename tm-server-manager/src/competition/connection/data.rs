@@ -337,7 +337,10 @@ mod tests {
 
     use super::*;
     use crate::{
-        competition::connection::{ConnectionKind, ConnectionWrite, TabConnection},
+        competition::{
+            connection::{ConnectionKind, ConnectionWrite, TabConnection},
+            node::resolve_inputs,
+        },
         pipeline::test_util::test_context,
         tm_match::leaderboard::{MatchLeaderboardWrite, MatchRoundPlayer},
     };
@@ -414,10 +417,8 @@ mod tests {
             ],
         );
 
-        let inputs = test
-            .anonymous_view_context()
-            .node_resolve_inputs(target)
-            .unwrap();
+        let cx = LbContext::new(&test.anonymous_view_context(), target);
+        let inputs = resolve_inputs(&cx, target).unwrap();
 
         let users: Vec<u32> = inputs.iter().map(|input| input[0].user_id).collect();
         assert_eq!(users, vec![30, 20, 10]);
