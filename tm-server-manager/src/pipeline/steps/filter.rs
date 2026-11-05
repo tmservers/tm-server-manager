@@ -76,6 +76,17 @@ impl LbStep for LbFilterSettingsV2 {
 }
 
 impl LbFilterSettingsV2 {
+    /// Keeps the best `n` entries of every participant in every group of the scope.
+    #[cfg(test)]
+    pub(in crate::pipeline) fn best(scope: Vec<LbKey>, param: LbParams, n: u16) -> Self {
+        LbFilterSettingsV2 {
+            scope,
+            param,
+            filter: LbFilterIdent::Best(n),
+            fallback: LbFilterFallback::Worst,
+        }
+    }
+
     fn evaluate(&self, leaderboard: Vec<LbEntry>) -> Vec<LbEntry> {
         leaderboard
             .group_by(|e| LbScopeKey::of(&self.scope, e))
