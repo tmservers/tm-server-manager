@@ -129,7 +129,7 @@ mod tests {
     use super::*;
     use crate::leaderboard::{
         shape::LbOrigins,
-        test_util::{ranking, round, team_standing},
+        test_util::{for_team, ranking, round, round_in, team_standing},
     };
 
     const LEADERBOARD: NodeHandle = NodeHandle::LeaderboardV1(7);
@@ -199,6 +199,24 @@ mod tests {
             .map(|e| (e.user_id, e.team_id, e.score))
             .collect();
         assert_eq!(rows, vec![(0, 1, 35), (0, 2, 30)]);
+    }
+
+    #[test]
+    fn merged_players_keep_their_team_only_if_they_always_played_for_it() {
+        let other = NodeHandle::MatchV1(2);
+        let merged = merge(
+            LbMergeAction::Summate,
+            LbParams::Score,
+            vec![
+                for_team(round(1, 1, 10, 0), 5),
+                for_team(round(2, 1, 20, 0), 5),
+                for_team(round_in(other, 1, 1, 10, 0), 5),
+                for_team(round_in(other, 2, 1, 20, 0), 6),
+            ],
+        );
+
+        let teams: Vec<(u32, u32)> = merged.iter().map(|e| (e.user_id, e.team_id)).collect();
+        assert_eq!(teams, vec![(2, 0), (1, 5)]);
     }
 
     #[test]

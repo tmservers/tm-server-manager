@@ -214,7 +214,7 @@ fn time_attack(rounds: Vec<LbEntry>) -> Vec<LbEntry> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::leaderboard::test_util::{MATCH, ranking, round, round_in, test_context};
+    use crate::leaderboard::test_util::{MATCH, for_team, ranking, round, round_in, test_context};
 
     #[test]
     fn every_match_becomes_standings_with_its_own_mode() {
@@ -336,6 +336,23 @@ mod tests {
 
         let maps: Vec<(u32, u32)> = standings.iter().map(|s| (s.user_id, s.map_id)).collect();
         assert_eq!(maps, vec![(1, 7), (2, 0)]);
+    }
+
+    #[test]
+    fn standings_keep_the_team_only_if_every_round_was_played_for_it() {
+        let rounds = vec![
+            for_team(round(1, 1, 0, 3000), 5),
+            for_team(round(2, 1, 0, 2000), 5),
+            for_team(round(1, 2, 0, 1000), 5),
+            for_team(round(2, 2, 0, 4000), 6),
+        ];
+
+        let teams = |standings: Vec<LbEntry>| -> Vec<(u32, u32)> {
+            standings.iter().map(|s| (s.user_id, s.team_id)).collect()
+        };
+        assert_eq!(teams(self::rounds(rounds.clone())), vec![(1, 5), (2, 0)]);
+        // Time attack keeps the best round, but it still was not the only team.
+        assert_eq!(teams(time_attack(rounds)), vec![(1, 5), (2, 0)]);
     }
 
     #[test]
