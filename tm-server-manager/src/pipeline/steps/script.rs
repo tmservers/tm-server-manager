@@ -3,8 +3,10 @@
 //! A script defines `fn step(cx, entries)` and returns the new entries, everything else of it is ignored.
 //! Scripts can only read the database through `cx`, which only does point lookups,
 //! so a view evaluating them only depends on the rows they read.
+//!
+//! SpacetimeDB modules cannot keep anything in statics, so every run builds its engine and compiles its script.
 
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::collections::HashMap;
 
 use rhai::{
     AST, Array, CallFnOptions, Dynamic, Engine, EvalAltResult, FnPtr, ImmutableString, Map,
@@ -29,9 +31,6 @@ const STEP_HOOK: &str = "step";
 
 /// Stops scripts which would run for too long, e.g. because they never end.
 const MAX_OPERATIONS: u64 = 5_000_000;
-
-/// Compiled scripts are kept up to this many, then they get compiled again.
-const MAX_COMPILED: usize = 64;
 
 /// Runs a script on the entries.
 ///
@@ -73,20 +72,19 @@ impl LbScriptOutput {
 
 impl LbStep for LbScriptSettings {
     fn apply(&self, cx: &LbContext, entries: Vec<LbEntry>) -> Result<Vec<LbEntry>, LbError> {
-        let ast = compiled(&self.source)?;
+        let engine = engine();
+        let ast = compile(&engine, &self.source)?;
         let entries: Array = entries.into_iter().map(Dynamic::from).collect();
 
-        let returned = ENGINE
-            .with(|engine| {
-                engine.call_fn_with_options::<Array>(
-                    // Only the functions of the script are used.
-                    CallFnOptions::new().eval_ast(false),
-                    &mut Scope::new(),
-                    &ast,
-                    STEP_HOOK,
-                    (cx.clone(), entries),
-                )
-            })
+        let returned = engine
+            .call_fn_with_options::<Array>(
+                // Only the functions of the script are used.
+                CallFnOptions::new().eval_ast(false),
+                &mut Scope::new(),
+                &ast,
+                STEP_HOOK,
+                (cx.clone(), entries),
+            )
             .map_err(|error| LbError::new(format!("The script failed: {error}")))?;
 
         returned
@@ -105,7 +103,7 @@ impl LbStep for LbScriptSettings {
     }
 
     fn check(&self, origin: NodeHandle, input: LbShape) -> Result<LbShape, LbError> {
-        compiled(&self.source)?;
+        compile(&engine(), &self.source)?;
         if input.is_empty() {
             return Ok(input);
         }
@@ -165,19 +163,10 @@ fn scripts_changed(old: &[LbSettingsV3], new: &[LbSettingsV3]) -> bool {
     scripts(old) != scripts(new)
 }
 
-thread_local! {
-    static ENGINE: Engine = engine();
-    static COMPILED: RefCell<HashMap<String, Rc<AST>>> = RefCell::default();
-}
-
 /// The script compiled, it has to define the hook.
-fn compiled(source: &str) -> Result<Rc<AST>, LbError> {
-    if let Some(ast) = COMPILED.with_borrow(|compiled| compiled.get(source).cloned()) {
-        return Ok(ast);
-    }
-
-    let ast = ENGINE
-        .with(|engine| engine.compile(source))
+fn compile(engine: &Engine, source: &str) -> Result<AST, LbError> {
+    let ast = engine
+        .compile(source)
         .map_err(|error| LbError::new(format!("The script does not compile: {error}")))?;
     if !ast
         .iter_functions()
@@ -187,14 +176,6 @@ fn compiled(source: &str) -> Result<Rc<AST>, LbError> {
             "The script has to define `fn {STEP_HOOK}(cx, entries)`."
         )));
     }
-
-    let ast = Rc::new(ast);
-    COMPILED.with_borrow_mut(|compiled| {
-        if compiled.len() >= MAX_COMPILED {
-            compiled.clear();
-        }
-        compiled.insert(source.to_owned(), ast.clone());
-    });
     Ok(ast)
 }
 
