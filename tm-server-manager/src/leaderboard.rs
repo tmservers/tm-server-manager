@@ -15,7 +15,7 @@ use crate::{
         context::LbContext,
         error::LbError,
         filter::{LbFilterSettings, LbFilterSettingsV2},
-        merge::{LbMergeSettings, LbMergeSettingsV2},
+        merge::{LbMergeSettings, LbMergeSettingsV2, LbMergeTeams},
         modes::{match_standings, match_team_standings},
         remap::LbRemapSettings,
         select::LbSelectSettings,
@@ -183,6 +183,8 @@ pub(crate) enum LbSettingsV3 {
     Select(LbSelectSettings),
     /// Turns the rounds of every match into the standings of its teams.
     MatchTeams,
+    /// Merges all entries of every team into one standing of the team, entries without a team are left out.
+    MergeTeams(LbMergeSettingsV2),
 }
 
 /// Takes the entries of a leaderboard and returns the changed ones.
@@ -202,6 +204,7 @@ impl LbStep for LbSettingsV3 {
             LbSettingsV3::Remap(settings) => settings.apply(cx, entries),
             LbSettingsV3::Select(settings) => settings.apply(cx, entries),
             LbSettingsV3::MatchTeams => match_team_standings(cx, entries),
+            LbSettingsV3::MergeTeams(settings) => LbMergeTeams(settings).apply(cx, entries),
         }
     }
 
@@ -225,6 +228,7 @@ impl LbStep for LbSettingsV3 {
                 teams: !input.is_empty(),
                 ..input
             }),
+            LbSettingsV3::MergeTeams(settings) => LbMergeTeams(settings).check(origin, input),
         }
     }
 }
