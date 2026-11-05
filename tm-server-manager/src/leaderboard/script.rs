@@ -7,10 +7,10 @@
 //! SpacetimeDB modules cannot keep anything in statics, so the engine is built once per call by [`LbContext`]
 //! and every run compiles its script.
 
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt};
 
 use rhai::{
-    AST, Array, CallFnOptions, Dynamic, Engine, EvalAltResult, FnPtr, ImmutableString, Map,
+    AST, Array, CallFnOptions, Dynamic, Engine, EvalAltResult, FnPtr, INT, ImmutableString, Map,
     NativeCallContext, Scope,
     packages::{BasicArrayPackage, BasicMapPackage, CorePackage, LogicPackage, Package},
 };
@@ -217,61 +217,55 @@ pub(crate) fn engine() -> Engine {
     engine
 }
 
-fn int<T: TryFrom<i64>>(name: &str, value: i64) -> ScriptResult<T> {
+/// The value converted for a field, it is an error if it does not fit.
+fn int<T: TryFrom<F>, F: Copy + fmt::Display>(name: &str, value: F) -> ScriptResult<T> {
     T::try_from(value).map_err(|_| format!("{value} is out of range for {name}.").into())
+}
+
+/// Ids are u32, so the few which do not fit a script integer cannot be read.
+fn id(value: u32) -> ScriptResult<INT> {
+    int("id", value)
 }
 
 fn register_entry(engine: &mut Engine) {
     engine
         .register_type_with_name::<LbEntry>("Entry")
-        .register_get("user_id", |e: &mut LbEntry| e.user_id as i64)
-        .register_get("team_id", |e: &mut LbEntry| e.team_id as i64)
-        .register_get("map_id", |e: &mut LbEntry| e.map_id as i64)
+        .register_get("user_id", |e: &mut LbEntry| id(e.user_id))
+        .register_get("team_id", |e: &mut LbEntry| id(e.team_id))
+        .register_get("map_id", |e: &mut LbEntry| id(e.map_id))
         .register_get("participant", |e: &mut LbEntry| e.participant())
         .register_get("node", |e: &mut LbEntry| e.get_node())
         .register_get("is_round", |e: &mut LbEntry| e.kind == LbEntryKind::Round)
-        .register_get("position", |e: &mut LbEntry| e.position as i64)
-        .register_set("position", |e: &mut LbEntry, v: i64| {
-            e.position = int("position", v)?;
-            ScriptResult::Ok(())
+        .register_get("score", |e: &mut LbEntry| e.score)
+        .register_set("score", |e: &mut LbEntry, score: INT| e.score = score)
+        .register_get("time", |e: &mut LbEntry| e.time)
+        .register_set("time", |e: &mut LbEntry, time: INT| e.time = time)
+        .register_get("position", |e: &mut LbEntry| e.position as INT)
+        .register_set("position", |e: &mut LbEntry, position: INT| {
+            ScriptResult::Ok(e.position = int("position", position)?)
         })
-        .register_get("round", |e: &mut LbEntry| e.round as i64)
-        .register_set("round", |e: &mut LbEntry, v: i64| {
-            e.round = int("round", v)?;
-            ScriptResult::Ok(())
-        })
-        .register_get("score", |e: &mut LbEntry| e.score as i64)
-        .register_set("score", |e: &mut LbEntry, v: i64| {
-            e.score = int("score", v)?;
-            ScriptResult::Ok(())
-        })
-        .register_get("time", |e: &mut LbEntry| e.time as i64)
-        .register_set("time", |e: &mut LbEntry, v: i64| {
-            e.time = int("time", v)?;
-            ScriptResult::Ok(())
+        .register_get("round", |e: &mut LbEntry| e.round as INT)
+        .register_set("round", |e: &mut LbEntry, round: INT| {
+            ScriptResult::Ok(e.round = int("round", round)?)
         })
         .register_fn("to_string", |e: &mut LbEntry| format!("{e:?}"))
         .register_fn("to_debug", |e: &mut LbEntry| format!("{e:?}"));
 }
 
 fn register_participant(engine: &mut Engine) {
-    fn id(value: i64) -> ScriptResult<u32> {
-        match int::<u32>("id", value)? {
+    fn new(value: INT, participant: fn(u32) -> LbParticipant) -> ScriptResult<LbParticipant> {
+        match int("id", value)? {
             0 => Err("An id cannot be 0.".into()),
-            id => Ok(id),
+            value => Ok(participant(value)),
         }
     }
 
     engine
         .register_type_with_name::<LbParticipant>("Participant")
-        .register_fn("player", |user_id: i64| {
-            ScriptResult::Ok(LbParticipant::Player(id(user_id)?))
-        })
-        .register_fn("team", |team_id: i64| {
-            ScriptResult::Ok(LbParticipant::Team(id(team_id)?))
-        })
+        .register_fn("player", |user_id: INT| new(user_id, LbParticipant::Player))
+        .register_fn("team", |team_id: INT| new(team_id, LbParticipant::Team))
         .register_get("id", |p: &mut LbParticipant| match *p {
-            LbParticipant::Player(id) | LbParticipant::Team(id) => id as i64,
+            LbParticipant::Player(value) | LbParticipant::Team(value) => id(value),
         })
         .register_get("is_team", |p: &mut LbParticipant| {
             matches!(p, LbParticipant::Team(_))
@@ -285,7 +279,7 @@ fn register_participant(engine: &mut Engine) {
 fn register_node(engine: &mut Engine) {
     engine
         .register_type_with_name::<NodeHandle>("Node")
-        .register_get("id", |n: &mut NodeHandle| n.split().1 as i64)
+        .register_get("id", |n: &mut NodeHandle| id(n.split().1))
         .register_get("kind", |n: &mut NodeHandle| match n {
             NodeHandle::MatchV1(_) => "Match",
             NodeHandle::CompetitionV1(_) => "Competition",
@@ -362,7 +356,7 @@ fn register_context(engine: &mut Engine) {
 enum ScriptKey {
     Unit,
     Bool(bool),
-    Int(i64),
+    Int(INT),
     Str(ImmutableString),
     Participant(bool, u32),
     Node(u8, u32),
@@ -447,7 +441,7 @@ fn register_combinators(engine: &mut Engine) {
         // The positions set to the order of the entries, starting at 1.
         .register_fn("renumbered", |entries: &mut Array| -> ScriptResult<Array> {
             let mut entries = entries_of(entries.clone())?;
-            for (position, entry) in (1..).zip(&mut entries) {
+            for (position, entry) in (1usize..).zip(&mut entries) {
                 entry.position = int("position", position)?;
             }
             Ok(array_of(entries))
@@ -460,8 +454,9 @@ fn register_combinators(engine: &mut Engine) {
                     .iter()
                     .map(|place| -> ScriptResult<Option<Dynamic>> {
                         let place = place.as_int().map_err(|_| "Places have to be numbers.")?;
-                        Ok(usize::try_from(place - 1)
+                        Ok(usize::try_from(place)
                             .ok()
+                            .and_then(|place| place.checked_sub(1))
                             .and_then(|index| entries.get(index).cloned()))
                     })
                     .filter_map(Result::transpose)
@@ -469,9 +464,7 @@ fn register_combinators(engine: &mut Engine) {
             },
         )
         // Sorting by it puts the best times first, times which were not driven last.
-        .register_fn("time_key", |time: i64| -> ScriptResult<i64> {
-            Ok(LbParams::time_key(int("time", time)?) as i64)
-        });
+        .register_fn("time_key", |time: INT| LbParams::time_key(time));
 }
 
 #[cfg(test)]
