@@ -455,12 +455,16 @@ fn leaderboard_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> {
     if leaderboard.status != LeaderboardStatus::Configuring {
         return Err("Leaderboard is not in configuring state".into());
     }
+
+    // The inputs could have changed since the steps were saved.
+    let node = NodeHandle::LeaderboardV1(id);
+    check_steps(node, &leaderboard.settings, ctx.node_input_shape(node)?)?;
+
     leaderboard.status = LeaderboardStatus::Configured;
 
     ctx.db.tab_leaderboard_v3().id().update(leaderboard);
 
     // Everything before it could have finished while it got configured.
-    let node = NodeHandle::LeaderboardV1(id);
     if ctx.node_pending_origins(node).is_empty() {
         internal_graph_resolution_node_finished(ctx, node)?;
     }

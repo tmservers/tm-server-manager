@@ -322,6 +322,14 @@ fn connection_configured(ctx: &ReducerContext, connection_id: u32) -> Result<(),
         return Err("Wrong status to configure".into());
     }
 
+    if connection.is_data() {
+        let Some(data) = ctx.connection_data_find(connection.id) else {
+            return Err("Connection data could not be found.".into());
+        };
+        let origin = connection.origin();
+        data.check(origin, ctx.node_output_shape(origin)?)?;
+    }
+
     connection.status = ConnectionStatus::Configured;
 
     // The origin could have finished already, then nothing would resolve the connection anymore.
