@@ -274,6 +274,7 @@ mod tests {
     };
     use crate::{
         pipeline::test_util::{standing, test_context},
+        tm_match::tab_match,
         user::UserRead,
     };
 
@@ -366,5 +367,41 @@ mod tests {
             .map(|user_id| cx.user_account_from_id(user_id))
             .collect();
         assert_eq!(permitted, entrants);
+    }
+
+    #[test]
+    fn seeds_can_only_change_while_the_match_gets_prepared() {
+        let test = test_context(&[(1, TmMode::Rounds)]);
+        prepared_match(&test, 3);
+        play(&test, 1, 10, 5);
+        play(&test, 1, 11, 9);
+        connect(&test, NodeHandle::MatchV1(1), NodeHandle::MatchV1(3), 0);
+        let reseed = |order: &[u16]| {
+            test.with_reducer_tx(TestAuth::internal(), |ctx| {
+                ctx.match_entrants_reseed(3, order)
+            })
+        };
+        test.with_reducer_tx(TestAuth::internal(), |ctx| ctx.match_entrants_freeze(3))
+            .unwrap();
+
+        reseed(&[2, 1]).unwrap();
+        assert_eq!(
+            users(&test.anonymous_view_context().match_entrants(3)),
+            vec![10, 11]
+        );
+
+        test.with_reducer_tx(TestAuth::internal(), |ctx| {
+            let mut tm_match = ctx.db.tab_match().id().find(3).unwrap();
+            tm_match.status = MatchStatus::Live;
+            ctx.db.tab_match().id().update(tm_match);
+            Ok::<_, String>(())
+        })
+        .unwrap();
+
+        assert!(reseed(&[2, 1]).is_err());
+        assert_eq!(
+            users(&test.anonymous_view_context().match_entrants(3)),
+            vec![10, 11]
+        );
     }
 }

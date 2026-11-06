@@ -377,4 +377,32 @@ mod tests {
         let users: Vec<u32> = inputs.iter().map(|input| input[0].user_id).collect();
         assert_eq!(users, vec![30, 20, 10]);
     }
+
+    fn migrated(options: ConnectionDataOption) -> Result<Vec<LbSettingsV3>, String> {
+        ConnectionDataV2::try_from(ConnectionData {
+            competition_id: 1,
+            connection_id: 2,
+            options,
+        })
+        .map(|data| data.settings)
+    }
+
+    #[test]
+    fn migrated_options_select_from_the_match_standings() {
+        assert!(migrated(ConnectionDataOption::All).unwrap().is_empty());
+        assert!(matches!(
+            migrated(ConnectionDataOption::FirstN(3))
+                .unwrap()
+                .as_slice(),
+            [
+                LbSettingsV3::Match,
+                LbSettingsV3::Select(LbSelectSettings {
+                    places: LbSelectPlaces::FirstN(3),
+                    ..
+                })
+            ]
+        ));
+        // Selecting the last places does not exist anymore.
+        assert!(migrated(ConnectionDataOption::LastN(3)).is_err());
+    }
 }

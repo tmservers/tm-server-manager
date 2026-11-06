@@ -174,4 +174,13 @@ mod tests {
             .is_ok()
         );
     }
+
+    #[test]
+    fn renumbering_closes_the_gaps_in_the_order_of_the_places() {
+        let renumbered = LbRenumberSettings { scope: Vec::new() }
+            .evaluate(vec![standing_in(FIRST, 5, 5), standing_in(FIRST, 2, 2)]);
+
+        let places: Vec<(u32, u16)> = renumbered.iter().map(|e| (e.user_id, e.position)).collect();
+        assert_eq!(places, vec![(2, 1), (5, 2)]);
+    }
 }

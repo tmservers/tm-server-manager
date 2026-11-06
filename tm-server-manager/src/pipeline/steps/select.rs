@@ -181,4 +181,15 @@ mod tests {
         let users: Vec<u32> = selected.iter().map(|e| e.user_id).collect();
         assert_eq!(users, vec![10, 30]);
     }
+
+    #[test]
+    fn places_come_from_the_positions_and_not_the_order_of_the_entries() {
+        // E.g. after remapping the positions the entries are not in the order of their places anymore.
+        let entries = vec![standing(30, 3), standing(10, 1), standing(20, 2)];
+
+        let selected = LbSelectPlaces::FirstN(2).select(entries).unwrap();
+
+        let users: Vec<u32> = selected.iter().map(|e| e.user_id).collect();
+        assert_eq!(users, vec![10, 20]);
+    }
 }

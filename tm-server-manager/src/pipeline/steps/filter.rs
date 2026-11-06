@@ -240,4 +240,26 @@ mod tests {
             vec![(7, 1, 9), (7, 1, 5), (7, 2, 4), (7, 2, 0), (8, 1, 3)]
         );
     }
+
+    #[test]
+    fn filtering_matches_is_upgraded_to_filtering_their_standings() {
+        let upgrade = |kind| {
+            LbFilterSettings {
+                kind,
+                param: LbParams::Score,
+                filter: LbFilterIdent::Best(1),
+                fallback: LbFilterFallback::Worst,
+            }
+            .upgrade()
+        };
+
+        assert!(matches!(
+            upgrade(LbFilterKind::Matches).as_slice(),
+            [LbSettingsV3::Match, LbSettingsV3::Filter(_)]
+        ));
+        assert!(matches!(
+            upgrade(LbFilterKind::Rounds).as_slice(),
+            [LbSettingsV3::Filter(_)]
+        ));
+    }
 }
