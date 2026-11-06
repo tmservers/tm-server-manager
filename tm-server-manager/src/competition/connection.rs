@@ -793,6 +793,23 @@ fn connection_delete(ctx: &ReducerContext, id: u32) -> Result<(), String> {
     ctx.connection_delete(id)
 }
 
+/// Inserts a configured data connection with the slot, returns its id.
+#[cfg(test)]
+pub(crate) fn data_connection_for_test(
+    ctx: &ReducerContext,
+    origin: NodeHandle,
+    target: NodeHandle,
+    slot: u16,
+) -> Result<u32, String> {
+    let connection = ctx.connection_insert(TabConnection::for_test(
+        origin,
+        target,
+        ConnectionKind::Data,
+    ))?;
+    ctx.connection_data_insert(ConnectionDataV2::new(connection.id, 1).with_slot(slot))?;
+    Ok(connection.id)
+}
+
 #[cfg(test)]
 mod tests {
     use spacetimedb::test_utils::TestAuth;

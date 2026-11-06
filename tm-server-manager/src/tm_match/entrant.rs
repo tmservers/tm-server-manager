@@ -187,3 +187,176 @@ fn match_entrants_preview(ctx: &ViewContext, match_id: u32) -> Vec<MatchEntrant>
             Vec::new()
         })
 }
+
+#[cfg(test)]
+pub(crate) mod test_util {
+    use spacetimedb::{
+        Table, Uuid,
+        test_utils::{TestAuth, TestContext},
+    };
+
+    use crate::{
+        competition::{connection::data_connection_for_test, node::NodeHandle},
+        tm_match::{
+            MatchStatus, MatchV1,
+            leaderboard::{MatchLeaderboardWrite, MatchRoundPlayer},
+            tab_match,
+        },
+        user::{UserV1, UserWrite},
+    };
+
+    /// Inserts a match which gets prepared, its inputs can be connected afterwards.
+    pub(crate) fn prepared_match(test: &TestContext, match_id: u32) {
+        test.with_reducer_tx(TestAuth::internal(), |ctx| {
+            ctx.db.tab_match().insert(MatchV1 {
+                name: String::new(),
+                id: match_id,
+                parent_id: 1,
+                pre_config: 0,
+                config: 0,
+                status: MatchStatus::Preparation,
+                auto_provision_server: false,
+                open: false,
+                template: false,
+            });
+            Ok::<_, String>(())
+        })
+        .unwrap();
+    }
+
+    /// The user plays a round of the match and scores the points.
+    pub(crate) fn play(test: &TestContext, match_id: u32, user_id: u32, points: i32) {
+        test.with_reducer_tx(TestAuth::internal(), |ctx| {
+            ctx.match_round_player_insert(MatchRoundPlayer::for_test(
+                match_id, user_id, 1, points,
+            ))?;
+            Ok::<_, String>(())
+        })
+        .unwrap();
+    }
+
+    pub(crate) fn connect(test: &TestContext, origin: NodeHandle, target: NodeHandle, slot: u16) {
+        test.with_reducer_tx(TestAuth::internal(), |ctx| {
+            data_connection_for_test(ctx, origin, target, slot)
+        })
+        .unwrap();
+    }
+
+    /// Inserts a user with the account, returns the id of the user.
+    pub(crate) fn user(test: &TestContext, account: u32) -> u32 {
+        let account_id =
+            Uuid::parse_str(&format!("00000000-0000-0000-0000-{account:012}")).unwrap();
+        test.with_reducer_tx(TestAuth::internal(), |ctx| {
+            ctx.user_insert(UserV1::new(account_id))
+        })
+        .unwrap()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashSet;
+
+    use spacetimedb::test_utils::TestAuth;
+    use tm_server_types::config::TmMode;
+
+    use super::{
+        test_util::{connect, play, prepared_match, user},
+        *,
+    };
+    use crate::{
+        pipeline::test_util::{standing, test_context},
+        user::UserRead,
+    };
+
+    fn players(participants: &[LbParticipant]) -> Vec<u32> {
+        participants
+            .iter()
+            .map(|participant| match participant {
+                LbParticipant::Player(user_id) => *user_id,
+                LbParticipant::Team(_) => panic!("only players enter here"),
+            })
+            .collect()
+    }
+
+    fn users(entrants: &[MatchEntrant]) -> Vec<u32> {
+        entrants.iter().map(|e| e.user_id).collect()
+    }
+
+    #[test]
+    fn entrants_keep_the_order_of_their_inputs_and_their_best_seed() {
+        let inputs = vec![
+            vec![standing(1, 1), standing(2, 2)],
+            vec![standing(3, 1), standing(1, 2)],
+        ];
+
+        assert_eq!(players(&entrant_order(inputs)), vec![1, 2, 3]);
+    }
+
+    #[test]
+    fn reseeding_needs_every_seed_exactly_once() {
+        let entrants: Vec<MatchEntrant> = (1u16..=3)
+            .map(|seed| MatchEntrant::new(1, LbParticipant::Player(seed as u32 * 10), seed))
+            .collect();
+
+        let reseeded_users: Vec<(u32, u16)> = reseeded(&entrants, &[2, 1, 3])
+            .unwrap()
+            .iter()
+            .map(|e| (e.user_id, e.seed))
+            .collect();
+        assert_eq!(reseeded_users, vec![(20, 1), (10, 2), (30, 3)]);
+
+        assert!(reseeded(&entrants, &[1, 1, 3]).is_err());
+        assert!(reseeded(&entrants, &[1, 2]).is_err());
+        assert!(reseeded(&entrants, &[1, 2, 4]).is_err());
+    }
+
+    #[test]
+    fn frozen_entrants_follow_the_slots_and_ignore_later_results() {
+        let test = test_context(&[(1, TmMode::Rounds), (2, TmMode::Rounds)]);
+        let target = NodeHandle::MatchV1(3);
+        play(&test, 1, 10, 5);
+        play(&test, 1, 11, 9);
+        play(&test, 2, 20, 1);
+        connect(&test, NodeHandle::MatchV1(1), target, 2);
+        connect(&test, NodeHandle::MatchV1(2), target, 1);
+        test.with_reducer_tx(TestAuth::internal(), |ctx| ctx.match_entrants_freeze(3))
+            .unwrap();
+
+        play(&test, 1, 12, 20);
+
+        let cx = test.anonymous_view_context();
+        assert_eq!(users(&cx.match_entrants(3)), vec![20, 11, 10]);
+        assert_eq!(
+            users(&cx.match_entrants_preview(3).unwrap()),
+            vec![20, 12, 11, 10]
+        );
+    }
+
+    #[test]
+    fn the_players_permitted_on_the_server_are_the_frozen_entrants() {
+        let test = test_context(&[(1, TmMode::Rounds)]);
+        let (first, second, late) = (user(&test, 1), user(&test, 2), user(&test, 3));
+        prepared_match(&test, 3);
+        play(&test, 1, first, 5);
+        play(&test, 1, second, 9);
+        connect(&test, NodeHandle::MatchV1(1), NodeHandle::MatchV1(3), 0);
+        test.with_reducer_tx(TestAuth::internal(), |ctx| ctx.match_entrants_freeze(3))
+            .unwrap();
+
+        // Results after the freeze do not let anyone else in.
+        play(&test, 1, late, 20);
+
+        let cx = test.anonymous_view_context();
+        let permitted: HashSet<_> = cx
+            .node_permitted_players_input(NodeHandle::MatchV1(3))
+            .into_iter()
+            .map(|p| p.account_id)
+            .collect();
+        let entrants: HashSet<_> = [first, second]
+            .into_iter()
+            .map(|user_id| cx.user_account_from_id(user_id))
+            .collect();
+        assert_eq!(permitted, entrants);
+    }
+}
