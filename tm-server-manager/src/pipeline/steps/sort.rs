@@ -95,3 +95,92 @@ fn check_standings(input: &LbShape) -> Result<(), LbError> {
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::pipeline::{
+        LbSettingsV3, evaluate_steps,
+        test_util::{standing_in, test_context},
+    };
+
+    const LEADERBOARD: NodeHandle = NodeHandle::LeaderboardV1(7);
+    const FIRST: NodeHandle = NodeHandle::MatchV1(1);
+    const SECOND: NodeHandle = NodeHandle::MatchV1(2);
+
+    /// The first input has all its places, the second one only kept its 2nd and 5th place.
+    fn inputs() -> Vec<LbEntry> {
+        vec![
+            standing_in(FIRST, 1, 1),
+            standing_in(FIRST, 2, 2),
+            standing_in(FIRST, 3, 3),
+            standing_in(SECOND, 4, 2),
+            standing_in(SECOND, 5, 5),
+        ]
+    }
+
+    fn ranked(steps: &[LbSettingsV3], entries: Vec<LbEntry>) -> Vec<(u32, u16)> {
+        let test = test_context(&[]);
+        let ranked = evaluate_steps(
+            &LbContext::new(&test.anonymous_view_context(), LEADERBOARD),
+            steps,
+            entries,
+        )
+        .unwrap();
+        assert!(ranked.iter().all(|e| e.get_node() == LEADERBOARD));
+        ranked.iter().map(|e| (e.user_id, e.position)).collect()
+    }
+
+    fn sort() -> LbSettingsV3 {
+        LbSettingsV3::Sort(LbSortSettings {
+            param: LbParams::Position,
+        })
+    }
+
+    #[test]
+    fn sorting_by_place_ranks_the_inputs_together_and_the_lower_slot_wins_ties() {
+        assert_eq!(
+            ranked(&[sort()], inputs()),
+            vec![(1, 1), (2, 2), (4, 3), (3, 4), (5, 5)]
+        );
+    }
+
+    #[test]
+    fn renumbering_every_origin_first_interleaves_the_inputs() {
+        let renumber = LbSettingsV3::Renumber(LbRenumberSettings {
+            scope: vec![LbKey::Origin],
+        });
+
+        assert_eq!(
+            ranked(&[renumber, sort()], inputs()),
+            vec![(1, 1), (4, 2), (2, 3), (5, 4), (3, 5)]
+        );
+    }
+
+    #[test]
+    fn someone_in_several_inputs_keeps_the_best_place() {
+        let entries = vec![
+            standing_in(FIRST, 1, 1),
+            standing_in(FIRST, 2, 2),
+            standing_in(SECOND, 3, 1),
+            standing_in(SECOND, 1, 2),
+        ];
+
+        assert_eq!(ranked(&[sort()], entries), vec![(1, 1), (3, 2), (2, 3)]);
+    }
+
+    #[test]
+    fn rounds_have_no_places_to_rank_by() {
+        let rounds = LbShape::rounds(FIRST);
+
+        assert!(sort().check(LEADERBOARD, rounds).is_err());
+        assert!(
+            crate::pipeline::shape::check_steps(
+                LEADERBOARD,
+                &[LbSettingsV3::Match, sort()],
+                rounds
+            )
+            .is_ok()
+        );
+    }
+}
