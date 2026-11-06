@@ -9,11 +9,12 @@ use crate::{
         combinators::LbRows,
         context::LbContext,
         error::LbError,
-        shape::{LbOrigins, LbShape, check_scope},
+        shape::{LbOrigins, LbShape, check_scope, check_standings},
     },
 };
 
 /// Selects entries by their place in the leaderboard, so it usually comes after a match or merge step.
+/// The selected entries keep the order of their places, also entries with the same place keep theirs.
 #[derive(Debug, SpacetimeType, Clone)]
 pub(crate) struct LbSelectSettings {
     /// The places are selected in every group on its own, e.g. the first places of every match.
@@ -24,7 +25,6 @@ pub(crate) struct LbSelectSettings {
 #[derive(Debug, SpacetimeType, Clone)]
 pub(crate) enum LbSelectPlaces {
     FirstN(u16),
-    LastN(u16),
     /// The places to take, starting at 1. Every place can only be taken once.
     Custom(Vec<u16>),
     FirstOffsetN(LbSelectFirstOffsetN),
@@ -55,11 +55,7 @@ impl LbStep for LbSelectSettings {
                 )));
             }
         }
-        if input.rounds {
-            return Err(LbError::new(
-                "Places only exist in standings, add a match or merge step before selecting.",
-            ));
-        }
+        check_standings(&input)?;
         if input.origins == LbOrigins::Many && !self.scope.contains(&LbKey::Origin) {
             return Err(LbError::new(
                 "Places only exist in a single leaderboard, merge the entries or select per origin.",
@@ -81,9 +77,10 @@ impl LbSelectPlaces {
             }
         }
 
+        // The place of an entry is where its position puts it, a step before could have changed it.
+        let leaderboard = leaderboard.sorted_by_key(|e| e.position);
         Ok(match self {
             LbSelectPlaces::FirstN(f) => leaderboard.into_iter().take(*f as usize).collect(),
-            LbSelectPlaces::LastN(l) => leaderboard.into_iter().rev().take(*l as usize).collect(),
             LbSelectPlaces::Custom(places) => leaderboard.places(places),
             LbSelectPlaces::FirstOffsetN(opt) => leaderboard
                 .into_iter()
@@ -119,8 +116,6 @@ mod tests {
     #[test]
     fn selects_by_place() {
         assert_eq!(selected_users(LbSelectPlaces::FirstN(2)), vec![10, 20]);
-        // The last places come out in reverse.
-        assert_eq!(selected_users(LbSelectPlaces::LastN(2)), vec![50, 40]);
         assert_eq!(
             selected_users(LbSelectPlaces::FirstOffsetN(LbSelectFirstOffsetN {
                 offset: 1,

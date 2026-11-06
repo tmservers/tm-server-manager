@@ -9,7 +9,7 @@ use crate::{
         combinators::LbRows,
         context::LbContext,
         error::LbError,
-        shape::{LbOrigins, LbShape, check_scope},
+        shape::{LbOrigins, LbShape, check_scope, check_standings},
     },
 };
 
@@ -57,7 +57,8 @@ impl LbSortSettings {
     }
 }
 
-/// Numbers the places of every group again in the order of its entries, starting at 1.
+/// Numbers the places of every group again from 1, which closes the gaps left by e.g. a select step.
+/// Entries keep the order of their places, also entries with the same place keep theirs.
 /// Only the places change, so the entries keep their origin.
 #[derive(Debug, SpacetimeType, Clone)]
 pub(crate) struct LbRenumberSettings {
@@ -81,19 +82,9 @@ impl LbRenumberSettings {
     fn evaluate(&self, entries: Vec<LbEntry>) -> Vec<LbEntry> {
         entries
             .group_by(|e| LbScopeKey::of(&self.scope, e))
-            .map(|_, entries| entries.renumbered())
+            .map(|_, entries| entries.sorted_by_key(|e| e.position).renumbered())
             .flatten()
     }
-}
-
-/// Places only exist in standings, the place of a round is its own.
-fn check_standings(input: &LbShape) -> Result<(), LbError> {
-    if input.rounds {
-        return Err(LbError::new(
-            "Places only exist in standings, add a match or merge step first.",
-        ));
-    }
-    Ok(())
 }
 
 #[cfg(test)]

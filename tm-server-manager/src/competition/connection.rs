@@ -565,30 +565,33 @@ pub(crate) trait ConnectionRead {
     /// The connections which have the node as their origin.
     fn connection_targets_of(&self, node: NodeHandle) -> impl Iterator<Item = TabConnection>;
 }
+
+/// The steps of a data connection, any other connection has none.
+fn data_of(
+    ctx: &impl spacetimedb::CtxDbRead,
+    connection: &TabConnection,
+) -> Result<ConnectionDataV2, LbError> {
+    if !connection.is_data() {
+        return Err(LbError::new(format!(
+            "Connection {} is not a data connection.",
+            connection.id
+        )));
+    }
+    ctx.connection_data_find(connection.id).ok_or_else(|| {
+        LbError::new(format!(
+            "Data connection {} has no data, it might not be migrated yet.",
+            connection.id
+        ))
+    })
+}
+
 impl<Db: spacetimedb::CtxDbRead> ConnectionRead for Db {
     fn connection_resolve_leaderboard(
         &self,
         connection: TabConnection,
         data: Vec<LbEntry>,
     ) -> Result<Vec<LbEntry>, LbError> {
-        // Prevent the method from misuse because it is impossible to form a lb from a non data connection.
-        if !connection.is_data() {
-            return Err(LbError::new(format!(
-                "Connection {} is not a data connection.",
-                connection.id
-            )));
-        }
-
-        let Some(rules) = self.connection_data_find(connection.id) else {
-            return Err(LbError::new(format!(
-                "Data connection {} has no data, it might not be migrated yet.",
-                connection.id
-            )));
-        };
-
-        //let players = self.node_resolve_input_data(connection.origin());
-
-        rules.evaluate(&LbContext::new(self, connection.origin()), data)
+        data_of(self, &connection)?.evaluate(&LbContext::new(self, connection.origin()), data)
     }
 
     fn connection_shape(
@@ -596,21 +599,7 @@ impl<Db: spacetimedb::CtxDbRead> ConnectionRead for Db {
         connection: TabConnection,
         input: LbShape,
     ) -> Result<LbShape, LbError> {
-        if !connection.is_data() {
-            return Err(LbError::new(format!(
-                "Connection {} is not a data connection.",
-                connection.id
-            )));
-        }
-
-        let Some(rules) = self.connection_data_find(connection.id) else {
-            return Err(LbError::new(format!(
-                "Data connection {} has no data, it might not be migrated yet.",
-                connection.id
-            )));
-        };
-
-        rules.check(connection.origin(), input)
+        data_of(self, &connection)?.check(connection.origin(), input)
     }
 
     fn connections_in_competition(

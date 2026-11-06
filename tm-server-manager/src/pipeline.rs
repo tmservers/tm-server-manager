@@ -204,12 +204,7 @@ pub struct LbEntry {
 }
 
 impl LbEntry {
-    pub(crate) fn new(
-        user_id: u32,
-        kind: LbEntryKind,
-        position: u16, /* , origin_idx: u16 */
-        origin: NodeHandle,
-    ) -> Self {
+    pub(crate) fn new(user_id: u32, kind: LbEntryKind, position: u16, origin: NodeHandle) -> Self {
         let (node_variant, node_id) = origin.split();
         LbEntry {
             user_id,
@@ -221,7 +216,7 @@ impl LbEntry {
             time: i32::MIN,
             node_id,
             node_variant,
-            team_id: 0, //TODO
+            team_id: 0,
         }
     }
 

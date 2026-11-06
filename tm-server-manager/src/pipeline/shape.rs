@@ -83,6 +83,16 @@ pub(crate) fn check_steps(
         })
 }
 
+/// Places only exist in standings, the place of a round is its own.
+pub(super) fn check_standings(input: &LbShape) -> Result<(), LbError> {
+    if input.rounds {
+        return Err(LbError::new(
+            "Places only exist in standings, add a match or merge step first.",
+        ));
+    }
+    Ok(())
+}
+
 /// A scope can only group by values the entries have.
 pub(super) fn check_scope(scope: &[LbKey], input: &LbShape) -> Result<(), LbError> {
     if scope.contains(&LbKey::Map) && !input.is_empty() && !input.maps {

@@ -145,27 +145,6 @@ impl LbFilterSettingsV2 {
     }
 }
 
-// filter per: (everything specific to user) | think it the other way around? if i request a filter rounds we automatically separate by maps?
-// matches -> outputs match | invalid for filter
-// match -> outputs maps | maps can either be map count or map id i guess e.g. if map is played 2 times.
-// map -> outputs rounds
-// rounds -> outputs params
-
-// Input: its always the MatchRoundPlayer.
-// that means that we always sort by player???????
-
-// keyed/ unkeyed filter?
-// a big problem are the orphaned fields which proceed to be meaningless when remapping stuff 🤔
-// position should always be recomputed i guess
-// the match is a problem when propagating... this is because the leadearboard is now also something which is able to be searched for 🤔
-// this means the connection should give me the leaderboard and then we also shoud do a new struct i reckon.
-
-// separate by map
-// for each map filter rounds best 5/6 merge rounds averge position
-
-// match is match or leadarboard or probably also monitoring in the future.
-// how to incorporate this? map_id: u32, | for match its pf for leaderboard its harder.
-
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -101,13 +101,21 @@ impl ConnectionDataV2 {
     }
 }
 
-impl From<ConnectionData> for ConnectionDataV2 {
-    fn from(data: ConnectionData) -> Self {
+impl TryFrom<ConnectionData> for ConnectionDataV2 {
+    type Error = String;
+
+    fn try_from(data: ConnectionData) -> Result<Self, Self::Error> {
         // Every option except `All` took the match standings before selecting from them.
         let places = match data.options {
             ConnectionDataOption::All => None,
             ConnectionDataOption::FirstN(n) => Some(LbSelectPlaces::FirstN(n.into())),
-            ConnectionDataOption::LastN(n) => Some(LbSelectPlaces::LastN(n.into())),
+            // Nothing used it, so selecting the last places got removed.
+            ConnectionDataOption::LastN(_) => {
+                return Err(format!(
+                    "Connection {} selects the last places, which cannot be migrated.",
+                    data.connection_id
+                ));
+            }
             ConnectionDataOption::Custom(places) => Some(LbSelectPlaces::Custom(
                 places.into_iter().map(u16::from).collect(),
             )),
@@ -129,12 +137,12 @@ impl From<ConnectionData> for ConnectionDataV2 {
             None => Vec::new(),
         };
 
-        ConnectionDataV2 {
+        Ok(ConnectionDataV2 {
             competition_id: data.competition_id,
             connection_id: data.connection_id,
             settings,
             slot: 0,
-        }
+        })
     }
 }
 
@@ -151,7 +159,9 @@ fn migration_connection_data_to_v2(ctx: &ReducerContext) -> Result<(), String> {
             .find(connection_id)
             .is_none()
         {
-            ctx.db.tab_connection_data_v2().try_insert(row.into())?;
+            ctx.db
+                .tab_connection_data_v2()
+                .try_insert(row.try_into()?)?;
         }
         ctx.db
             .tab_connection_data()

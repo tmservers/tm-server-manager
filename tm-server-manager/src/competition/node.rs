@@ -223,18 +223,6 @@ impl<Db: spacetimedb::CtxDbRead> NodeRead for Db {
                 None
             }))
         }
-        /* let depending_connections = self
-            .db_read_only()
-            .tab_connection()
-            .origins_of()
-            .filter(node.split())
-            .filter(|c| c.is_data());
-        for depending_connection in depending_connections {
-            let permitted_players = self
-                .connection_filter_permitted_players(depending_connection)
-                .into_iter()
-                // This overrides the existing entrys.
-            } */
         let players: Vec<u32> = match node {
             // The players of a match are frozen with its entrants, only the spectators can still change.
             NodeHandle::MatchV1(match_id) => self
@@ -299,15 +287,15 @@ impl<Db: spacetimedb::CtxDbRead> NodeRead for Db {
     }
 
     fn node_resolve_input_data(&self, node: NodeHandle) -> Result<Vec<LbEntry>, LbError> {
-        node_resolve_input_data_inner(self, node, &mut 1)
+        node_resolve_input_data_inner(self, node)
     }
 
     fn node_resolve_inputs(&self, node: NodeHandle) -> Result<Vec<Vec<LbEntry>>, LbError> {
-        node_resolve_inputs_inner(self, node, &mut 1)
+        node_resolve_inputs_inner(self, node)
     }
 
     fn node_resolve_output_data(&self, node: NodeHandle) -> Result<Vec<LbEntry>, LbError> {
-        node_resolve_output_data_inner(self, node, &mut 1)
+        node_resolve_output_data_inner(self, node)
     }
 
     fn node_input_shape(&self, node: NodeHandle) -> Result<LbShape, LbError> {
@@ -482,7 +470,6 @@ fn node_check_target_inner(
 fn node_resolve_output_data_inner(
     ctx: &impl spacetimedb::CtxDbRead,
     node: NodeHandle,
-    origin_offset: &mut u8,
 ) -> Result<Vec<LbEntry>, LbError> {
     match node {
         NodeHandle::ScheduleV1(n) => {
@@ -500,18 +487,16 @@ fn node_resolve_output_data_inner(
                 return Ok(Vec::new());
             };
 
-            node_resolve_input_data_inner(ctx, NodeHandle::OutputV1(output.id), origin_offset)
+            node_resolve_input_data_inner(ctx, NodeHandle::OutputV1(output.id))
         }
-        NodeHandle::OutputV1(n) => {
-            node_resolve_input_data_inner(ctx, NodeHandle::OutputV1(n), origin_offset)
-        }
+        NodeHandle::OutputV1(n) => node_resolve_input_data_inner(ctx, NodeHandle::OutputV1(n)),
         NodeHandle::InputV1(n) => {
             let Ok(input) = ctx.input_find(n) else {
                 return Ok(Vec::new());
             };
             let comp = input.get_comp_id();
 
-            node_resolve_input_data_inner(ctx, NodeHandle::CompetitionV1(comp), origin_offset)
+            node_resolve_input_data_inner(ctx, NodeHandle::CompetitionV1(comp))
         }
         NodeHandle::RegistrationV1(n) => Ok(ctx.registration_lb(n)),
         NodeHandle::LeaderboardV1(n) => ctx.leaderboard_evaluation(n),
@@ -521,9 +506,8 @@ fn node_resolve_output_data_inner(
 fn node_resolve_input_data_inner(
     ctx: &impl spacetimedb::CtxDbRead,
     node: NodeHandle,
-    origin_offset: &mut u8,
 ) -> Result<Vec<LbEntry>, LbError> {
-    Ok(node_resolve_inputs_inner(ctx, node, origin_offset)?
+    Ok(node_resolve_inputs_inner(ctx, node)?
         .into_iter()
         .flatten()
         .collect())
@@ -532,7 +516,6 @@ fn node_resolve_input_data_inner(
 fn node_resolve_inputs_inner(
     ctx: &impl spacetimedb::CtxDbRead,
     node: NodeHandle,
-    origin_offset: &mut u8,
 ) -> Result<Vec<Vec<LbEntry>>, LbError> {
     let mut depending_connections: Vec<_> = ctx
         .connection_origins_of(node)
@@ -546,8 +529,7 @@ fn node_resolve_inputs_inner(
     depending_connections
         .into_iter()
         .map(|depending_connection| {
-            let lb_entries =
-                node_resolve_output_data_inner(ctx, depending_connection.origin(), origin_offset)?;
+            let lb_entries = node_resolve_output_data_inner(ctx, depending_connection.origin())?;
             ctx.connection_resolve_leaderboard(depending_connection, lb_entries)
         })
         .collect()
@@ -671,24 +653,3 @@ fn test_node_permitted_players_input(
 ) -> Result<Vec<PermittedPlayer>, String> {
     ctx.try_with_tx(|ctx| Ok(ctx.node_permitted_players_input(node)))
 }
-
-/*
-Mode -> Opinionated sorting
-
-Origin -> Lb | Match | the compe/in/out but only Proxy
-
-Connection Filter -> Only on "pure" lb -> each Player one time occurence
-
-Lb Node -> Can operate on pure and impure lb -> Always get the full data and assemble it yourself… -> how is this possible with Connection filters? -> could cf purify the lb? -> probably Need to get rid of the matchroundplayer struct all together and immediately downcast to lb.
-
-We have two possible Solutions here: have some data duplication and meaningless columns in certain situations.
-Make Dedicated structs for each Scenario :(
-
-
-Maybe there is a further Option where we can use an enum to dispatch between those possible situations -> improves type safety and Client side filtering.
-
-The purify function is VERY tricky
-
-but a unified way to filter EVERYTHNG would make the codebase infinetly better -> mayyybe get rid of the data connection
-
-*/

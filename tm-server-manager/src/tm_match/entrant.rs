@@ -120,6 +120,8 @@ pub(crate) trait MatchEntrantWrite: MatchEntrantRead {
     /// Freezes the entrants the match gets from its inputs, entrants which already got frozen are kept.
     fn match_entrants_freeze(&self, match_id: u32) -> Result<(), String>;
     fn match_entrants_delete(&self, match_id: u32);
+    /// Reorders the frozen entrants while the match gets prepared, see [`match_reseed`].
+    fn match_entrants_reseed(&self, match_id: u32, order: &[u16]) -> Result<(), String>;
 }
 impl<Db: spacetimedb::CtxDbWrite> MatchEntrantWrite for Db {
     fn match_entrants_freeze(&self, match_id: u32) -> Result<(), String> {
@@ -135,6 +137,22 @@ impl<Db: spacetimedb::CtxDbWrite> MatchEntrantWrite for Db {
     fn match_entrants_delete(&self, match_id: u32) {
         self.db().tab_match_entrant().match_id().delete(match_id);
     }
+
+    fn match_entrants_reseed(&self, match_id: u32, order: &[u16]) -> Result<(), String> {
+        let Some(tm_match) = self.match_find(match_id) else {
+            return Err("Match not found.".into());
+        };
+        if tm_match.status() != MatchStatus::Preparation {
+            return Err("Seeds can only be changed while the match gets prepared.".into());
+        }
+
+        let entrants = reseeded(&self.match_entrants(match_id), order)?;
+        self.match_entrants_delete(match_id);
+        for entrant in entrants {
+            self.db().tab_match_entrant().try_insert(entrant)?;
+        }
+        Ok(())
+    }
 }
 
 /// Reorders the frozen entrants of a match while it gets prepared.
@@ -148,17 +166,7 @@ fn match_reseed(ctx: &ReducerContext, match_id: u32, order: Vec<u16>) -> Result<
         .permission(CompetitionPermissionsV1::MATCH_RESEED)
         .authorize()?;
 
-    if tm_match.status() != MatchStatus::Preparation {
-        return Err("Seeds can only be changed while the match gets prepared.".into());
-    }
-
-    let entrants = reseeded(&ctx.match_entrants(match_id), &order)?;
-    ctx.db.tab_match_entrant().match_id().delete(match_id);
-    for entrant in entrants {
-        ctx.db.tab_match_entrant().insert(entrant);
-    }
-
-    Ok(())
+    ctx.match_entrants_reseed(match_id, &order)
 }
 
 fn is_member(ctx: &ViewContext, match_id: u32) -> bool {
