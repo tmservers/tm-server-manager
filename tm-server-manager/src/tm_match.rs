@@ -10,7 +10,7 @@ use crate::{
     authorization::Authorization,
     competition::{
         CompetitionPermissionsV1, CompetitionRead,
-        node::{NodeHandle, NodeRead, NodeWrite, Vec2, seed::NodeSeedWrite},
+        node::{NodeHandle, NodeRead, NodeWrite, Vec2},
         server_pool::TabCompetitionServerPoolRead,
     },
     raw_server::{
@@ -22,6 +22,7 @@ use crate::{
     },
     tm_match::{
         auto_recovery::RecoveryWrite,
+        entrant::MatchEntrantWrite,
         leaderboard::MatchLeaderboardWrite,
         replay::MatchReplayWrite,
         state::{MatchState, MatchStateRead, MatchStateWrite},
@@ -30,6 +31,7 @@ use crate::{
 
 mod auto_recovery;
 pub mod chat;
+pub mod entrant;
 pub mod event;
 //pub mod hook;
 pub mod leaderboard;
@@ -854,8 +856,8 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
 
         self.match_state_insert(MatchState::new(match_id, config.get_mode().get_mode()))?;
 
-        // From now on the participants keep their seeds, e.g. for the map picks.
-        self.node_seeds_freeze(NodeHandle::MatchV1(match_id))?;
+        // From now on the entrants keep their seeds, the destinations are claimed for them.
+        self.match_entrants_freeze(match_id)?;
 
         self.destination_claim(NodeHandle::MatchV1(match_id))?;
 

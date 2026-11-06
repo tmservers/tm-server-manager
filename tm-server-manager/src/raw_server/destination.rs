@@ -6,8 +6,8 @@ use crate::{
         CompetitionRead,
         node::{NodeHandle, NodeRead},
     },
-    pipeline::{context::LbContext, modes::match_standings},
     raw_server::{occupation::TabRawServerOccupationRead, tab_raw_server__view},
+    tm_match::entrant::MatchEntrantRead,
     user::UserRead,
 };
 
@@ -99,14 +99,16 @@ pub(crate) trait TabRawServerDestinationWrite: TabRawServerDestinationRead {
 }
 impl<Db: spacetimedb::CtxDbWrite> TabRawServerDestinationWrite for Db {
     fn destination_claim(&self, node: NodeHandle) -> Result<(), String> {
-        let input = self.node_resolve_input_data(node)?;
-        let players = match_standings(&LbContext::new(self, node), input)?;
+        let NodeHandle::MatchV1(match_id) = node else {
+            return Err(format!("Only matches claim destinations, not {node:?}."));
+        };
         let server_id = self.occupation_with_occupier(node).unwrap();
         let competition_id = self.node_get_parent(node).unwrap();
-        for player in players {
-            /* if player.only_spectator {
+        for entrant in self.match_entrants(match_id) {
+            // An entrant of a team has no user, its members are not known here.
+            if entrant.user_id == 0 {
                 continue;
-            } */
+            }
             self.db()
                 .tab_player_destination()
                 .try_insert(TabPlayerDestination {
@@ -114,7 +116,7 @@ impl<Db: spacetimedb::CtxDbWrite> TabRawServerDestinationWrite for Db {
                     node_id: node.id(),
                     competition_id,
                     destination_server_id: server_id,
-                    user_id: player.user_id,
+                    user_id: entrant.user_id,
                 })?;
         }
 

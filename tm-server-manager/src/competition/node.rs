@@ -19,16 +19,17 @@ use crate::{
     raw_server::player::PermittedPlayer,
     registration::{RegistrationRead, RegistrationWrite, player::RegistrationPlayerRead},
     schedule::{ScheduleRead, ScheduleWrite},
-    tm_match::{MatchRead, MatchStatus, MatchWrite, leaderboard::MatchLeadearboardRead},
+    tm_match::{
+        MatchRead, MatchStatus, MatchWrite,
+        entrant::{MatchEntrantRead, MatchEntrantWrite},
+        leaderboard::MatchLeadearboardRead,
+    },
     tm_server::{ServerRead, ServerWrite},
     user::UserRead,
 };
 mod position;
-pub(crate) mod seed;
 
 pub use position::*;
-
-use seed::NodeSeedWrite;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, SpacetimeType, Hash)]
 #[non_exhaustive]
@@ -234,19 +235,35 @@ impl<Db: spacetimedb::CtxDbRead> NodeRead for Db {
                 .into_iter()
                 // This overrides the existing entrys.
             } */
-        let players = self
-            .node_resolve_input_data(node)
-            .and_then(|input| match_standings(&LbContext::new(self, node), input))
-            .unwrap_or_else(|error| {
-                log::error!("The permitted players of {node:?} could not be resolved: {error}");
-                Vec::new()
-            })
-            .into_iter()
-            .map(|p| {
-                let account_id = self.user_account_from_id(p.get_user());
-                (account_id, PermittedPlayer::new(account_id, false, false))
-            });
-        map.extend(players);
+        let players: Vec<u32> = match node {
+            // The players of a match are frozen with its entrants, only the spectators can still change.
+            NodeHandle::MatchV1(match_id) => self
+                .match_entrants(match_id)
+                .into_iter()
+                .map(|e| e.user_id)
+                .collect(),
+            _ => self
+                .node_resolve_input_data(node)
+                .and_then(|input| match_standings(&LbContext::new(self, node), input))
+                .unwrap_or_else(|error| {
+                    log::error!("The permitted players of {node:?} could not be resolved: {error}");
+                    Vec::new()
+                })
+                .into_iter()
+                .map(|p| p.get_user())
+                .collect(),
+        };
+        // The players override them being spectators.
+        map.extend(
+            players
+                .into_iter()
+                // An entry of a team has no user, its members are not known here.
+                .filter(|&user_id| user_id != 0)
+                .map(|user_id| {
+                    let account_id = self.user_account_from_id(user_id);
+                    (account_id, PermittedPlayer::new(account_id, false, false))
+                }),
+        );
 
         map.into_values().collect()
     }
@@ -571,7 +588,9 @@ impl<Db: spacetimedb::CtxDbWrite> NodeWrite for Db {
         // Delete postition table entry.
         self.node_position_delete(node);
 
-        self.node_seeds_delete(node);
+        if let NodeHandle::MatchV1(match_id) = node {
+            self.match_entrants_delete(match_id);
+        }
 
         // Delete all associated connection tables involving the node.
         self.node_connections_delete(node);
