@@ -11,8 +11,11 @@ use crate::{
         modes::match_standings,
         shape::LbShape,
         steps::{
-            filter::LbFilterSettingsV2, merge::LbMergeSettingsV2, remap::LbRemapSettings,
+            filter::LbFilterSettingsV2,
+            merge::LbMergeSettingsV2,
+            remap::LbRemapSettings,
             select::LbSelectSettings,
+            sort::{LbRenumberSettings, LbSortSettings},
         },
     },
 };
@@ -38,6 +41,8 @@ pub(crate) enum LbSettingsV3 {
     Filter(LbFilterSettingsV2),
     Remap(LbRemapSettings),
     Select(LbSelectSettings),
+    Sort(LbSortSettings),
+    Renumber(LbRenumberSettings),
 }
 
 /// Takes the entries of a leaderboard and returns the changed ones.
@@ -56,6 +61,8 @@ impl LbStep for LbSettingsV3 {
             LbSettingsV3::Filter(settings) => settings.apply(cx, entries),
             LbSettingsV3::Remap(settings) => settings.apply(cx, entries),
             LbSettingsV3::Select(settings) => settings.apply(cx, entries),
+            LbSettingsV3::Sort(settings) => settings.apply(cx, entries),
+            LbSettingsV3::Renumber(settings) => settings.apply(cx, entries),
         }
     }
 
@@ -71,6 +78,8 @@ impl LbStep for LbSettingsV3 {
             LbSettingsV3::Filter(settings) => settings.check(origin, input),
             LbSettingsV3::Remap(settings) => settings.check(origin, input),
             LbSettingsV3::Select(settings) => settings.check(origin, input),
+            LbSettingsV3::Sort(settings) => settings.check(origin, input),
+            LbSettingsV3::Renumber(settings) => settings.check(origin, input),
         }
     }
 }
@@ -264,6 +273,12 @@ impl LbEntry {
 
     pub(crate) fn get_user(&self) -> u32 {
         self.user_id
+    }
+
+    /// The entry as one of the leaderboard of `origin`.
+    pub(crate) fn with_origin(mut self, origin: NodeHandle) -> Self {
+        (self.node_variant, self.node_id) = origin.split();
+        self
     }
 
     pub(crate) fn get_node(&self) -> NodeHandle {
