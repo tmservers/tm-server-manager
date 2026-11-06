@@ -55,11 +55,11 @@ pub struct ConnectionDataV2 {
     #[primary_key]
     pub connection_id: u32,
 
-    settings: Vec<LbSettingsV3>,
-
     /// The inputs of a node are ordered by the slot of their connection, e.g. to seed the participants.
     /// Every input of a node has its own slot, only 0 can be shared by inputs whose order does not matter.
     slot: u16,
+
+    settings: Vec<LbSettingsV3>,
 }
 
 impl ConnectionDataV2 {
