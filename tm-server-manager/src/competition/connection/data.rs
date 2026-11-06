@@ -274,3 +274,97 @@ impl<Db: spacetimedb::CtxDbWrite> ConnectionDataWrite for Db {
             .delete(connection_id);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use spacetimedb::test_utils::{TestAuth, TestContext};
+    use tm_server_types::config::TmMode;
+
+    use super::*;
+    use crate::{
+        competition::connection::{ConnectionKind, ConnectionWrite, TabConnection},
+        pipeline::test_util::test_context,
+        tm_match::leaderboard::{MatchLeaderboardWrite, MatchRoundPlayer},
+    };
+
+    /// Connects every origin to the target with its slot, returns the connection ids.
+    fn connect(test: &TestContext, target: NodeHandle, inputs: &[(NodeHandle, u16)]) -> Vec<u32> {
+        test.with_reducer_tx(TestAuth::internal(), |ctx| {
+            let mut ids = Vec::new();
+            for &(origin, slot) in inputs {
+                let connection = ctx.connection_insert(TabConnection::for_test(
+                    origin,
+                    target,
+                    ConnectionKind::Data,
+                ))?;
+                ctx.connection_data_insert(
+                    ConnectionDataV2::new(connection.id, 1).with_slot(slot),
+                )?;
+                ids.push(connection.id);
+            }
+            Ok::<_, String>(ids)
+        })
+        .unwrap()
+    }
+
+    #[test]
+    fn a_slot_can_only_be_used_once_per_target_but_0_can_be_shared() {
+        let test = test_context(&[]);
+        let (target, other) = (NodeHandle::MatchV1(9), NodeHandle::MatchV1(8));
+        let ids = connect(
+            &test,
+            target,
+            &[(NodeHandle::MatchV1(1), 1), (NodeHandle::MatchV1(2), 0)],
+        );
+        connect(&test, other, &[(NodeHandle::MatchV1(3), 2)]);
+        let cx = test.anonymous_view_context();
+        let new_connection = 100;
+
+        assert_eq!(slot_taken_by(&cx, target, 1, new_connection), Some(ids[0]));
+        // A connection keeping its own slot does not collide with itself.
+        assert_eq!(slot_taken_by(&cx, target, 1, ids[0]), None);
+        assert_eq!(slot_taken_by(&cx, target, 0, new_connection), None);
+        // Slots of other targets do not count.
+        assert_eq!(slot_taken_by(&cx, target, 2, new_connection), None);
+    }
+
+    #[test]
+    fn inputs_come_in_slot_order_and_those_without_a_slot_last() {
+        let test = test_context(&[
+            (1, TmMode::Rounds),
+            (2, TmMode::Rounds),
+            (3, TmMode::Rounds),
+        ]);
+        let target = NodeHandle::MatchV1(9);
+        test.with_reducer_tx(TestAuth::internal(), |ctx| {
+            // Every match is played by a single user, so the users show the order of the inputs.
+            for match_id in 1..=3 {
+                ctx.match_round_player_insert(MatchRoundPlayer::for_test(
+                    match_id,
+                    match_id * 10,
+                    1,
+                    0,
+                ))?;
+            }
+            Ok::<_, String>(())
+        })
+        .unwrap();
+        connect(
+            &test,
+            target,
+            &[
+                (NodeHandle::MatchV1(1), 0),
+                (NodeHandle::MatchV1(2), 2),
+                (NodeHandle::MatchV1(3), 1),
+            ],
+        );
+
+        let inputs = test
+            .anonymous_view_context()
+            .node_resolve_inputs(target)
+            .unwrap();
+
+        let users: Vec<u32> = inputs.iter().map(|input| input[0].user_id).collect();
+        assert_eq!(users, vec![30, 20, 10]);
+    }
+}
