@@ -184,6 +184,7 @@ pub(crate) trait NodeRead {
     fn node_get_parent(&self, node: NodeHandle) -> Result<u32, String>;
     fn node_resolve_input_data(&self, node: NodeHandle) -> Result<Vec<LbEntry>, LbError>;
     /// The entries of every data connection into the node on their own, ordered by slot.
+    /// Inputs with slot 0 have no order, they come after the others.
     fn node_resolve_inputs(&self, node: NodeHandle) -> Result<Vec<Vec<LbEntry>>, LbError>;
     fn node_resolve_output_data(&self, node: NodeHandle) -> Result<Vec<LbEntry>, LbError>;
     /// What the node would get as input, the steps on the way are checked.
@@ -522,7 +523,7 @@ fn node_resolve_inputs_inner(
         .collect();
     depending_connections.sort_by_cached_key(|c| {
         let slot = ctx.connection_data_find(c.id).map_or(0, |data| data.slot());
-        (slot, c.id)
+        (slot == 0, slot, c.id)
     });
 
     depending_connections

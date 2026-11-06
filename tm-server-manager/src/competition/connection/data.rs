@@ -6,7 +6,7 @@ use crate::{
     authorization::Authorization,
     competition::{
         CompetitionPermissionsV1,
-        connection::{ConnectionStatus, tab_connection},
+        connection::{ConnectionRead, ConnectionStatus, tab_connection},
         node::{NodeHandle, NodeRead},
     },
     pipeline::{
@@ -58,6 +58,7 @@ pub struct ConnectionDataV2 {
     settings: Vec<LbSettingsV3>,
 
     /// The inputs of a node are ordered by the slot of their connection, e.g. to seed the participants.
+    /// Every input of a node has its own slot, only 0 can be shared by inputs whose order does not matter.
     slot: u16,
 }
 
@@ -192,6 +193,13 @@ fn competition_connection_data_update(
         return Err("Connection data could not be found.".into());
     };
 
+    if let Some(taken) = slot_taken_by(ctx, connection.target(), slot, connection_id) {
+        return Err(format!(
+            "Slot {slot} is already used by connection {taken} into {:?}.",
+            connection.target()
+        ));
+    }
+
     data.settings = settings;
     data.slot = slot;
 
@@ -201,6 +209,25 @@ fn competition_connection_data_update(
     ctx.node_check_target(connection.target())?;
 
     Ok(())
+}
+
+/// The other data connection into `target` which already has the slot, slot 0 can be shared.
+fn slot_taken_by(
+    ctx: &impl spacetimedb::CtxDbRead,
+    target: NodeHandle,
+    slot: u16,
+    connection_id: u32,
+) -> Option<u32> {
+    if slot == 0 {
+        return None;
+    }
+    ctx.connection_origins_of(target)
+        .filter(|c| c.is_data() && c.id != connection_id)
+        .find(|c| {
+            ctx.connection_data_find(c.id)
+                .is_some_and(|data| data.slot == slot)
+        })
+        .map(|c| c.id)
 }
 
 #[view(accessor = competition_connections_data,public)]

@@ -376,7 +376,7 @@ mod tests {
         play_round(&test, 2, 20, 1);
         test.with_reducer_tx(TestAuth::internal(), |ctx| {
             // The second connection gets the first slot.
-            for (origin, slot) in [(NodeHandle::MatchV1(1), 1), (NodeHandle::MatchV1(2), 0)] {
+            for (origin, slot) in [(NodeHandle::MatchV1(1), 2), (NodeHandle::MatchV1(2), 1)] {
                 let connection = ctx.connection_insert(TabConnection::for_test(
                     origin,
                     node,
