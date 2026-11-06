@@ -2,7 +2,7 @@
 
 use crate::{
     competition::node::NodeHandle,
-    leaderboard::{LbKey, LbSettingsV3, LbStep, error::LbError},
+    pipeline::{LbKey, LbSettingsV3, LbStep, error::LbError},
 };
 
 /// The nodes the entries can come from.
@@ -94,9 +94,9 @@ pub(super) fn check_scope(scope: &[LbKey], input: &LbShape) -> Result<(), LbErro
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::leaderboard::{
+    use crate::pipeline::{
         LbKey,
-        select::{LbSelectPlaces, LbSelectSettings},
+        steps::select::{LbSelectPlaces, LbSelectSettings},
         test_util::MATCH,
     };
 

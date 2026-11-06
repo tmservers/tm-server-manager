@@ -9,13 +9,13 @@ use crate::{
         connection::{ConnectionStatus, tab_connection},
         node::{NodeHandle, NodeRead},
     },
-    leaderboard::{
+    pipeline::{
         LbEntry, LbSettingsV3,
         context::LbContext,
         error::LbError,
         evaluate_steps,
-        select::{LbSelectFirstOffsetN, LbSelectPlaces, LbSelectSettings},
         shape::{LbShape, check_steps},
+        steps::select::{LbSelectFirstOffsetN, LbSelectPlaces, LbSelectSettings},
     },
 };
 

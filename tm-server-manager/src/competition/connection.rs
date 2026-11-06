@@ -16,8 +16,9 @@ use crate::{
         node::{NodeHandle, NodeRead},
     },
     input::InputRead,
-    leaderboard::{LbEntry, LeadearboardRead, context::LbContext, error::LbError, shape::LbShape},
+    leaderboard::LeadearboardRead,
     output::OutputRead,
+    pipeline::{LbEntry, context::LbContext, error::LbError, shape::LbShape},
     schedule::ScheduleWrite,
     tm_match::MatchWrite,
 };
@@ -802,11 +803,12 @@ mod tests {
             connection::data::{ConnectionDataV2, ConnectionDataWrite},
             node::NodeRead,
         },
-        leaderboard::{
+        leaderboard::test_util::configured_leaderboard,
+        pipeline::{
             LbKey, LbSettingsV3,
-            select::{LbSelectPlaces, LbSelectSettings},
             shape::LbOrigins,
-            test_util::{configured_leaderboard, test_context},
+            steps::select::{LbSelectPlaces, LbSelectSettings},
+            test_util::test_context,
         },
     };
 

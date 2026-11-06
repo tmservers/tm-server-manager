@@ -5,7 +5,7 @@ use spacetimedb::{
 use crate::{
     authorization::Authorization,
     competition::{CompetitionPermissionsV1, node::NodeHandle},
-    leaderboard::{LbEntry, LbEntryKind},
+    pipeline::{LbEntry, LbEntryKind},
     tm_match::{state::MatchStateRead, tab_match},
 };
 
@@ -401,7 +401,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        leaderboard::test_util::test_context,
+        pipeline::test_util::test_context,
         tm_match::state::{MatchState, MatchStateWrite},
     };
 

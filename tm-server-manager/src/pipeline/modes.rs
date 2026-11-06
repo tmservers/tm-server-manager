@@ -4,7 +4,7 @@ use tm_server_types::config::{ModeSettingsV2, TmMode};
 
 use crate::{
     competition::node::NodeHandle,
-    leaderboard::{
+    pipeline::{
         LbEntry, LbEntryKind, LbParams, LbParticipant, combinators::LbRows, context::LbContext,
         error::LbError, shared_map,
     },
@@ -166,7 +166,7 @@ fn time_attack(rounds: Vec<LbEntry>) -> Vec<LbEntry> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::leaderboard::test_util::{MATCH, ranking, round, round_in, test_context};
+    use crate::pipeline::test_util::{MATCH, ranking, round, round_in, test_context};
 
     #[test]
     fn every_match_becomes_standings_with_its_own_mode() {

@@ -6,7 +6,7 @@ use spacetimedb::{
 use crate::{
     authorization::Authorization,
     competition::{CompetitionPermissionsV1, node::NodeHandle},
-    leaderboard::{LbEntry, LbEntryKind},
+    pipeline::{LbEntry, LbEntryKind},
     registration::{RegistrationStatus, tab_registration},
     user::{UserRead, UserV1, UserWrite},
 };

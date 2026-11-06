@@ -11,11 +11,11 @@ use crate::{
         tab_competition__view,
     },
     input::{InputRead, InputWrite},
-    leaderboard::{
-        LbEntry, LeadearboardRead, LeaderboardWrite, context::LbContext, error::LbError,
-        modes::match_standings, shape::LbShape,
-    },
+    leaderboard::{LeadearboardRead, LeaderboardWrite},
     output::{OutputRead, OutputWrite},
+    pipeline::{
+        LbEntry, context::LbContext, error::LbError, modes::match_standings, shape::LbShape,
+    },
     raw_server::player::PermittedPlayer,
     registration::{RegistrationRead, RegistrationWrite, player::RegistrationPlayerRead},
     schedule::{ScheduleRead, ScheduleWrite},

@@ -250,7 +250,7 @@ mod tests {
     };
 
     use super::*;
-    use crate::leaderboard::test_util::test_context;
+    use crate::pipeline::test_util::test_context;
 
     fn history(test: &TestContext) -> Vec<MatchStateHistory> {
         let mut history: Vec<MatchStateHistory> = test

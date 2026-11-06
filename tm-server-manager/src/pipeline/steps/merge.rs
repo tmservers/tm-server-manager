@@ -2,7 +2,7 @@ use spacetimedb::SpacetimeType;
 
 use crate::{
     competition::node::NodeHandle,
-    leaderboard::{
+    pipeline::{
         LbEntry, LbEntryKind, LbParams, LbStep,
         combinators::LbRows,
         context::LbContext,
@@ -121,7 +121,7 @@ impl LbMergeSettingsV2 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::leaderboard::{
+    use crate::pipeline::{
         shape::LbOrigins,
         test_util::{ranking, round, team_standing},
     };

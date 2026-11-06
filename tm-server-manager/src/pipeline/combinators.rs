@@ -3,7 +3,7 @@
 
 use std::{collections::HashMap, hash::Hash};
 
-use crate::leaderboard::LbEntry;
+use crate::pipeline::LbEntry;
 
 /// An entry which has a place in a leaderboard.
 pub(crate) trait LbRow: Copy {

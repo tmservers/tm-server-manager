@@ -10,7 +10,7 @@ use crate::{
         CompetitionPermissionsV1,
         node::{NodeHandle, NodeRead},
     },
-    leaderboard::{
+    pipeline::{
         LbEntry, LbParticipant, context::LbContext, error::LbError, modes::match_standings,
     },
     tm_match::{MatchRead, MatchStatus},
@@ -284,7 +284,7 @@ mod tests {
             ConnectionKind, ConnectionWrite, TabConnection,
             data::{ConnectionDataV2, ConnectionDataWrite},
         },
-        leaderboard::test_util::{standing, test_context},
+        pipeline::test_util::{standing, test_context},
         tm_match::leaderboard::{MatchLeaderboardWrite, MatchRoundPlayer},
     };
 

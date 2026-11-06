@@ -2,7 +2,7 @@ use spacetimedb::SpacetimeType;
 
 use crate::{
     competition::node::NodeHandle,
-    leaderboard::{LbEntry, LbParams, LbStep, context::LbContext, error::LbError, shape::LbShape},
+    pipeline::{LbEntry, LbParams, LbStep, context::LbContext, error::LbError, shape::LbShape},
 };
 
 #[derive(Debug, SpacetimeType, Clone, Copy)]
@@ -83,7 +83,7 @@ impl LbRemapSettings {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::leaderboard::test_util::round;
+    use crate::pipeline::test_util::round;
 
     #[test]
     fn rhs_operations_use_the_origin_as_right_hand_side() {

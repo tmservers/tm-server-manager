@@ -2,7 +2,7 @@ use spacetimedb::SpacetimeType;
 
 use crate::{
     competition::node::NodeHandle,
-    leaderboard::{
+    pipeline::{
         LbEntry, LbKey, LbParams, LbScopeKey, LbSettingsV3, LbStep,
         combinators::LbRows,
         context::LbContext,
@@ -30,7 +30,7 @@ enum LbFilterKind {
 
 impl LbFilterSettings {
     /// Filtering matches was filtering the standings of the matches.
-    pub(super) fn upgrade(self) -> Vec<LbSettingsV3> {
+    pub(crate) fn upgrade(self) -> Vec<LbSettingsV3> {
         let filter = LbSettingsV3::Filter(LbFilterSettingsV2 {
             scope: Vec::new(),
             param: self.param,
@@ -169,7 +169,7 @@ impl LbFilterSettingsV2 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::leaderboard::{
+    use crate::pipeline::{
         LbEntryKind,
         test_util::{MATCH, round},
     };

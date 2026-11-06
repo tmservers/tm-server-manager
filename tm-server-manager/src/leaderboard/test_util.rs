@@ -1,32 +1,9 @@
-use spacetimedb::{
-    ReducerContext, Table,
-    test_utils::{TestAuth, TestContext},
-};
-use tm_server_types::config::TmMode;
+use spacetimedb::{ReducerContext, Table};
 
 use crate::{
-    competition::node::NodeHandle,
-    leaderboard::{
-        LbEntry, LbEntryKind, LbParticipant, LbSettingsV3, LeaderboardStatus, LeaderboardV3,
-        tab_leaderboard_v3,
-    },
-    tm_match::state::{MatchState, MatchStateWrite},
+    leaderboard::{LeaderboardStatus, LeaderboardV3, tab_leaderboard_v3},
+    pipeline::LbSettingsV3,
 };
-
-pub(crate) const MATCH: NodeHandle = NodeHandle::MatchV1(1);
-
-/// A datastore with the matches being played in the modes.
-pub(crate) fn test_context(matches: &[(u32, TmMode)]) -> TestContext {
-    let test = TestContext::new().expect("the test datastore should initialize");
-    test.with_reducer_tx(TestAuth::internal(), |ctx| {
-        for &(match_id, mode) in matches {
-            ctx.match_state_insert(MatchState::new(match_id, mode))?;
-        }
-        Ok::<_, String>(())
-    })
-    .expect("the matches should be inserted");
-    test
-}
 
 /// Inserts a leaderboard which got configured with the steps.
 pub(crate) fn configured_leaderboard(ctx: &ReducerContext, id: u32, settings: Vec<LbSettingsV3>) {
@@ -38,45 +15,4 @@ pub(crate) fn configured_leaderboard(ctx: &ReducerContext, id: u32, settings: Ve
         template: false,
         status: LeaderboardStatus::Configured,
     });
-}
-
-pub(crate) fn round(user_id: u32, round: u16, score: i32, time: i32) -> LbEntry {
-    round_in(MATCH, user_id, round, score, time)
-}
-
-pub(crate) fn round_in(
-    node: NodeHandle,
-    user_id: u32,
-    round: u16,
-    score: i32,
-    time: i32,
-) -> LbEntry {
-    LbEntry::new(user_id, LbEntryKind::Round, 0, node)
-        .set_round(round)
-        .set_score(score)
-        .set_time(time)
-}
-
-pub(crate) fn standing(user_id: u32, position: u16) -> LbEntry {
-    standing_in(MATCH, user_id, position)
-}
-
-pub(crate) fn standing_in(node: NodeHandle, user_id: u32, position: u16) -> LbEntry {
-    LbEntry::new(user_id, LbEntryKind::Standing, position, node)
-}
-
-/// The standing of a team, which has no user.
-pub(crate) fn team_standing(team_id: u32, position: u16, score: i32) -> LbEntry {
-    LbEntry::for_participant(
-        LbParticipant::Team(team_id),
-        LbEntryKind::Standing,
-        position,
-        MATCH,
-    )
-    .set_score(score)
-}
-
-/// The users with their positions, in the order of the entries.
-pub(crate) fn ranking(entries: &[LbEntry]) -> Vec<(u32, u16)> {
-    entries.iter().map(|e| (e.user_id, e.position)).collect()
 }

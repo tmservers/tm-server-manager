@@ -6,7 +6,7 @@ use crate::{
         CompetitionRead,
         node::{NodeHandle, NodeRead},
     },
-    leaderboard::{context::LbContext, modes::match_standings},
+    pipeline::{context::LbContext, modes::match_standings},
     raw_server::{occupation::TabRawServerOccupationRead, tab_raw_server__view},
     user::UserRead,
 };

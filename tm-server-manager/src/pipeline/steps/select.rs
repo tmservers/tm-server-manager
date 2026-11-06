@@ -4,7 +4,7 @@ use spacetimedb::SpacetimeType;
 
 use crate::{
     competition::node::NodeHandle,
-    leaderboard::{
+    pipeline::{
         LbEntry, LbKey, LbScopeKey, LbStep,
         combinators::LbRows,
         context::LbContext,
@@ -99,7 +99,7 @@ mod tests {
     use super::*;
     use crate::{
         competition::node::NodeHandle,
-        leaderboard::{
+        pipeline::{
             LbEntryKind,
             test_util::{MATCH, standing, standing_in, test_context},
         },

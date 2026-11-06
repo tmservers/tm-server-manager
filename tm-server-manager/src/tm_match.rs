@@ -1039,7 +1039,7 @@ mod tests {
     use spacetimedb::test_utils::TestAuth;
 
     use super::*;
-    use crate::leaderboard::test_util::test_context;
+    use crate::pipeline::test_util::test_context;
 
     fn tm_match(id: u32, status: MatchStatus, config: u32) -> MatchV1 {
         MatchV1 {
