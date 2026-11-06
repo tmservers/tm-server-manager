@@ -128,8 +128,8 @@ impl LbFilterSettingsV2 {
                                             rows.push(padding().set_score(0));
                                         }
                                     }
-                                    LbParams::Time => (), //TODO
-                                    LbParams::Position => {
+                                    // The padding has no time, so it counts as not driven.
+                                    LbParams::Time | LbParams::Position => {
                                         for _ in 0..missing {
                                             rows.push(padding());
                                         }
@@ -197,6 +197,25 @@ mod tests {
         assert_eq!(padding.kind, LbEntryKind::Round);
         assert_eq!(padding.get_node(), MATCH);
         assert_eq!(padding.position, 2);
+    }
+
+    #[test]
+    fn missing_times_are_padded_as_not_driven() {
+        let filtered = LbFilterSettingsV2 {
+            scope: Vec::new(),
+            param: LbParams::Time,
+            filter: LbFilterIdent::Best(2),
+            fallback: LbFilterFallback::Worst,
+        }
+        .evaluate(vec![
+            round(1, 1, 0, 5000),
+            round(1, 2, 0, 4000),
+            round(2, 1, 0, 4500),
+        ]);
+
+        let rows: Vec<(u32, i32)> = filtered.iter().map(|e| (e.user_id, e.time)).collect();
+        assert_eq!(rows, vec![(1, 4000), (1, 5000), (2, 4500), (2, i32::MIN)]);
+        assert_eq!(LbParams::time_key(filtered[3].time), i32::MAX);
     }
 
     #[test]

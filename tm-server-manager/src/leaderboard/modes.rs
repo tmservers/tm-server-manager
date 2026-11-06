@@ -120,7 +120,10 @@ fn reverse_cup(starting_points: i32, rounds: Vec<LbEntry>) -> Vec<LbEntry> {
         }
     }
 
-    standings.sorted_by_key(|s| Reverse(s.round)).renumbered()
+    // Who is in the same round is ranked by the points left.
+    standings
+        .sorted_by_key(|s| (Reverse(s.round), Reverse(s.score)))
+        .renumbered()
 }
 
 fn knockout(rounds: Vec<LbEntry>) -> Vec<LbEntry> {
@@ -128,15 +131,18 @@ fn knockout(rounds: Vec<LbEntry>) -> Vec<LbEntry> {
         .group_by(|e| e.participant())
         .reduce(|mut standing, round| {
             let map_id = shared_map(standing.map_id, round.map_id);
-            // The round in which the player got knocked out.
-            if round.score == -1 {
+            let round_number = standing.round.max(round.round);
+            // The round in which the player got knocked out, otherwise the latest one.
+            let knocked_out = standing.score == -1;
+            if round.score == -1 || (!knocked_out && round.round >= standing.round) {
                 standing = round;
             }
-            standing.round = standing.round.max(round.round);
+            standing.round = round_number;
             standing.map_id = map_id;
             standing
         })
-        .sorted_by_key(|s| Reverse(s.round))
+        // Who got knocked out in the same round is ranked by the place in that round.
+        .sorted_by_key(|s| (Reverse(s.round), s.position))
         .renumbered()
 }
 
@@ -237,6 +243,13 @@ mod tests {
     }
 
     #[test]
+    fn reverse_cup_ranks_players_in_the_same_round_by_their_points_left() {
+        let standings = reverse_cup(1000, vec![round(1, 1, -500, 0), round(2, 1, -100, 0)]);
+
+        assert_eq!(ranking(&standings), vec![(2, 1), (1, 2)]);
+    }
+
+    #[test]
     fn knockout_ranks_by_the_round_a_player_was_knocked_out() {
         let standings = knockout(vec![
             round(1, 1, 0, 0),
@@ -253,6 +266,18 @@ mod tests {
         assert_eq!(ranking(&standings), vec![(1, 1), (2, 2), (3, 3)]);
         let rounds: Vec<u16> = standings.iter().map(|s| s.round).collect();
         assert_eq!(rounds, vec![4, 3, 2]);
+    }
+
+    #[test]
+    fn knockout_ranks_players_knocked_out_together_by_their_place_in_that_round() {
+        let place = |entry: LbEntry, position| LbEntry { position, ..entry };
+        let standings = knockout(vec![
+            place(round(1, 1, 0, 0), 1),
+            place(round(2, 1, -1, 0), 3),
+            place(round(3, 1, -1, 0), 2),
+        ]);
+
+        assert_eq!(ranking(&standings), vec![(1, 1), (3, 2), (2, 3)]);
     }
 
     #[test]

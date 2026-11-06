@@ -58,8 +58,7 @@ pub struct ConnectionDataV2 {
     settings: Vec<LbSettingsV3>,
 
     /// The inputs of a node are ordered by the slot of their connection, e.g. to seed the participants.
-    #[default(0)]
-    slot: u8,
+    slot: u16,
 }
 
 impl ConnectionDataV2 {
@@ -73,12 +72,12 @@ impl ConnectionDataV2 {
     }
 
     #[cfg(test)]
-    pub(crate) fn with_slot(mut self, slot: u8) -> Self {
+    pub(crate) fn with_slot(mut self, slot: u16) -> Self {
         self.slot = slot;
         self
     }
 
-    pub(crate) fn slot(&self) -> u8 {
+    pub(crate) fn slot(&self) -> u16 {
         self.slot
     }
 
@@ -106,13 +105,15 @@ impl From<ConnectionData> for ConnectionDataV2 {
         // Every option except `All` took the match standings before selecting from them.
         let places = match data.options {
             ConnectionDataOption::All => None,
-            ConnectionDataOption::FirstN(n) => Some(LbSelectPlaces::FirstN(n)),
-            ConnectionDataOption::LastN(n) => Some(LbSelectPlaces::LastN(n)),
-            ConnectionDataOption::Custom(places) => Some(LbSelectPlaces::Custom(places)),
+            ConnectionDataOption::FirstN(n) => Some(LbSelectPlaces::FirstN(n.into())),
+            ConnectionDataOption::LastN(n) => Some(LbSelectPlaces::LastN(n.into())),
+            ConnectionDataOption::Custom(places) => Some(LbSelectPlaces::Custom(
+                places.into_iter().map(u16::from).collect(),
+            )),
             ConnectionDataOption::FirstOffsetN(opt) => {
                 Some(LbSelectPlaces::FirstOffsetN(LbSelectFirstOffsetN {
-                    offset: opt.offset,
-                    take: opt.take,
+                    offset: opt.offset.into(),
+                    take: opt.take.into(),
                 }))
             }
         };
@@ -165,7 +166,7 @@ fn competition_connection_data_update(
     ctx: &ReducerContext,
     connection_id: u32,
     settings: Vec<LbSettingsV3>,
-    slot: u8,
+    slot: u16,
 ) -> Result<(), String> {
     let Some(connection) = ctx.db.tab_connection().id().find(connection_id) else {
         return Err("connection could not be found!".into());

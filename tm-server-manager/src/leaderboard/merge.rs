@@ -77,8 +77,6 @@ impl LbMergeSettingsV2 {
                     .set_map(map_id.unwrap_or(0));
                 self.merge(init, &entries)
             });
-        log::info!("Merge Result: {:?}", merged);
-
         let merged = merged.sorted_by_key(|e| self.param.key(e));
         // When merging positions they are what gets sorted by so they are kept.
         match self.param {

@@ -105,7 +105,7 @@ pub(crate) trait LbRows<E>: Sized {
     where
         E: LbRow;
     /// The entries at the places, starting at 1. Places which do not exist are skipped.
-    fn places(&self, places: &[u8]) -> Self
+    fn places(&self, places: &[u16]) -> Self
     where
         E: Copy;
 }
@@ -130,7 +130,7 @@ impl<E> LbRows<E> for Vec<E> {
         self
     }
 
-    fn places(&self, places: &[u8]) -> Self
+    fn places(&self, places: &[u16]) -> Self
     where
         E: Copy,
     {

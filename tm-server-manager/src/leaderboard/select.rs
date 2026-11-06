@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use spacetimedb::SpacetimeType;
 
 use crate::{
@@ -21,17 +23,17 @@ pub(crate) struct LbSelectSettings {
 
 #[derive(Debug, SpacetimeType, Clone)]
 pub(crate) enum LbSelectPlaces {
-    FirstN(u8),
-    LastN(u8),
-    /// The places to take, starting at 1.
-    Custom(Vec<u8>),
+    FirstN(u16),
+    LastN(u16),
+    /// The places to take, starting at 1. Every place can only be taken once.
+    Custom(Vec<u16>),
     FirstOffsetN(LbSelectFirstOffsetN),
 }
 
 #[derive(Debug, SpacetimeType, Clone, Copy)]
 pub(crate) struct LbSelectFirstOffsetN {
-    pub(crate) offset: u8,
-    pub(crate) take: u8,
+    pub(crate) offset: u16,
+    pub(crate) take: u16,
 }
 
 impl LbStep for LbSelectSettings {
@@ -44,6 +46,15 @@ impl LbStep for LbSelectSettings {
 
     fn check(&self, _origin: NodeHandle, input: LbShape) -> Result<LbShape, LbError> {
         check_scope(&self.scope, &input)?;
+        if let LbSelectPlaces::Custom(places) = &self.places {
+            let mut seen = HashSet::new();
+            if let Some(place) = places.iter().find(|place| !seen.insert(**place)) {
+                // A participant would come out twice, but a leaderboard has one standing per participant.
+                return Err(LbError::new(format!(
+                    "Place {place} is selected more than once."
+                )));
+            }
+        }
         if input.rounds {
             return Err(LbError::new(
                 "Places only exist in standings, add a match or merge step before selecting.",
@@ -122,9 +133,21 @@ mod tests {
     #[test]
     fn custom_places_skip_places_which_do_not_exist() {
         assert_eq!(
-            selected_users(LbSelectPlaces::Custom(vec![0, 2, 9, 2])),
-            vec![20, 20]
+            selected_users(LbSelectPlaces::Custom(vec![0, 3, 9, 2])),
+            vec![30, 20]
         );
+    }
+
+    #[test]
+    fn a_place_can_only_be_selected_once() {
+        let select = |places| LbSelectSettings {
+            scope: Vec::new(),
+            places: LbSelectPlaces::Custom(places),
+        };
+        let standings = LbShape::standings(MATCH);
+
+        assert!(select(vec![1, 3, 1]).check(MATCH, standings).is_err());
+        assert!(select(vec![1, 3]).check(MATCH, standings).is_ok());
     }
 
     #[test]
