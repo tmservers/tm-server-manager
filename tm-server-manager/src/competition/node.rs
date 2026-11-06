@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use spacetimedb::{ProcedureContext, ReducerContext, SpacetimeType, Uuid, procedure, reducer};
 
@@ -190,6 +190,11 @@ pub(crate) trait NodeRead {
     fn node_input_shape(&self, node: NodeHandle) -> Result<LbShape, LbError>;
     /// What the node would output, the steps on the way are checked.
     fn node_output_shape(&self, node: NodeHandle) -> Result<LbShape, LbError>;
+    /// Checks the steps after the node again, they were checked against what it output back then.
+    /// Connections still getting configured are checked when they get configured.
+    fn node_check_dependents(&self, node: NodeHandle) -> Result<(), LbError>;
+    /// Checks the steps of the node again because what it gets changed, and everything after it.
+    fn node_check_target(&self, node: NodeHandle) -> Result<(), LbError>;
     /// The nodes this node still waits for, action connections do not count.
     fn node_pending_origins(&self, node: NodeHandle) -> Vec<NodeHandle>;
     /// The nodes which already took what this node passes on, action connections do not count.
@@ -314,6 +319,14 @@ impl<Db: spacetimedb::CtxDbRead> NodeRead for Db {
         }
     }
 
+    fn node_check_dependents(&self, node: NodeHandle) -> Result<(), LbError> {
+        node_check_dependents_inner(self, node, &mut HashSet::new())
+    }
+
+    fn node_check_target(&self, node: NodeHandle) -> Result<(), LbError> {
+        node_check_target_inner(self, node, &mut HashSet::new())
+    }
+
     fn node_pending_origins(&self, node: NodeHandle) -> Vec<NodeHandle> {
         self.connection_origins_of(node)
             .filter(|c| !c.is_action() && !c.is_resolved())
@@ -388,6 +401,63 @@ impl<Db: spacetimedb::CtxDbRead> NodeRead for Db {
                 node.is_template()
             }
         }
+    }
+}
+
+fn node_check_dependents_inner(
+    ctx: &impl spacetimedb::CtxDbRead,
+    node: NodeHandle,
+    checked: &mut HashSet<NodeHandle>,
+) -> Result<(), LbError> {
+    let output = ctx.node_output_shape(node)?;
+    let connections: Vec<_> = ctx
+        .connection_targets_of(node)
+        .filter(|c| c.is_data())
+        .collect();
+    for connection in connections {
+        if !connection.is_configuring() {
+            ctx.connection_shape(connection, output)?;
+        }
+        node_check_target_inner(ctx, connection.target(), checked)?;
+    }
+    Ok(())
+}
+
+fn node_check_target_inner(
+    ctx: &impl spacetimedb::CtxDbRead,
+    node: NodeHandle,
+    checked: &mut HashSet<NodeHandle>,
+) -> Result<(), LbError> {
+    // A node reached on several ways only needs to be checked once.
+    if !checked.insert(node) {
+        return Ok(());
+    }
+    match node {
+        // A leaderboard still getting configured outputs nothing and is checked when it gets configured.
+        NodeHandle::LeaderboardV1(n)
+            if ctx.leaderboard_find(n).is_ok_and(|l| l.is_configured()) =>
+        {
+            // Its output shape checks its steps against what it gets now.
+            node_check_dependents_inner(ctx, node, checked)
+        }
+        // These pass on what they get, so everything after them gets it as well.
+        NodeHandle::OutputV1(n) => match ctx.output_find(n) {
+            Ok(output) => node_check_dependents_inner(
+                ctx,
+                NodeHandle::CompetitionV1(output.get_comp_id()),
+                checked,
+            ),
+            Err(_) => Ok(()),
+        },
+        NodeHandle::CompetitionV1(n) => {
+            let inputs: Vec<_> = ctx.inputs_in_parent(n).collect();
+            for input in inputs {
+                node_check_dependents_inner(ctx, NodeHandle::InputV1(input.id), checked)?;
+            }
+            Ok(())
+        }
+        // The output of everything else does not depend on what it gets.
+        _ => Ok(()),
     }
 }
 

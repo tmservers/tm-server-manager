@@ -1,9 +1,15 @@
-use spacetimedb::test_utils::{TestAuth, TestContext};
+use spacetimedb::{
+    ReducerContext, Table,
+    test_utils::{TestAuth, TestContext},
+};
 use tm_server_types::config::TmMode;
 
 use crate::{
     competition::node::NodeHandle,
-    leaderboard::{LbEntry, LbEntryKind, LbParticipant},
+    leaderboard::{
+        LbEntry, LbEntryKind, LbParticipant, LbSettingsV3, LeaderboardStatus, LeaderboardV3,
+        tab_leaderboard_v3,
+    },
     tm_match::state::{MatchState, MatchStateWrite},
 };
 
@@ -20,6 +26,18 @@ pub(crate) fn test_context(matches: &[(u32, TmMode)]) -> TestContext {
     })
     .expect("the matches should be inserted");
     test
+}
+
+/// Inserts a leaderboard which got configured with the steps.
+pub(crate) fn configured_leaderboard(ctx: &ReducerContext, id: u32, settings: Vec<LbSettingsV3>) {
+    ctx.db.tab_leaderboard_v3().insert(LeaderboardV3 {
+        name: String::new(),
+        settings,
+        id,
+        parent_id: 1,
+        template: false,
+        status: LeaderboardStatus::Configured,
+    });
 }
 
 pub(crate) fn round(user_id: u32, round: u16, score: i32, time: i32) -> LbEntry {

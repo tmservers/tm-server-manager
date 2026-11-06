@@ -197,6 +197,9 @@ fn competition_connection_data_update(
 
     ctx.db.tab_connection_data_v2().connection_id().update(data);
 
+    // The target already gets what the connection passes on, even while it gets configured.
+    ctx.node_check_target(connection.target())?;
+
     Ok(())
 }
 

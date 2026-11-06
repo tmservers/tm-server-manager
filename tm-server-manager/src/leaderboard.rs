@@ -467,6 +467,9 @@ fn leaderboard_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> {
 
     ctx.db.tab_leaderboard_v3().id().update(leaderboard);
 
+    // While it got configured it output nothing, so the steps after it were checked against nothing.
+    ctx.node_check_dependents(node)?;
+
     // Everything before it could have finished while it got configured.
     if ctx.node_pending_origins(node).is_empty() {
         internal_graph_resolution_node_finished(ctx, node)?;

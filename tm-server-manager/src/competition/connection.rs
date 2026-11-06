@@ -98,6 +98,10 @@ impl TabConnection {
         self.status == ConnectionStatus::Resolved
     }
 
+    pub(crate) fn is_configuring(&self) -> bool {
+        self.status == ConnectionStatus::Configuring
+    }
+
     pub(crate) fn instantiate(mut self, parent_id: u32) -> Self {
         self.parent_id = parent_id;
         self.id = 0;
@@ -154,6 +158,9 @@ enum ConnectionError {
     InvalidOriginNode,
 
     InvalidKind,
+
+    /// The steps after the target do not work with what it gets anymore.
+    Steps(String),
 }
 
 /// Since we need to check either way if the two thing have the same parent we can omit specifing the competition manually.
@@ -298,6 +305,9 @@ fn connection_create(
                     connection.parent_id,
                 ))
                 .map_err(|e| ConnectionError::InternalError(e.to_string()))?;
+                // The target gets more than before, so the steps after it have to work with that.
+                ctx.node_check_target(target)
+                    .map_err(|e| ConnectionError::Steps(e.to_string()))?;
             }
             ConnectionKind::Action => {
                 todo!()
@@ -792,7 +802,12 @@ mod tests {
             connection::data::{ConnectionDataV2, ConnectionDataWrite},
             node::NodeRead,
         },
-        leaderboard::{shape::LbOrigins, test_util::test_context},
+        leaderboard::{
+            LbKey, LbSettingsV3,
+            select::{LbSelectPlaces, LbSelectSettings},
+            shape::LbOrigins,
+            test_util::{configured_leaderboard, test_context},
+        },
     };
 
     fn connect(origin: NodeHandle, target: NodeHandle, kind: ConnectionKind) -> TabConnection {
@@ -826,6 +841,64 @@ mod tests {
 
         assert_eq!(shape.origins, LbOrigins::Many);
         assert!(shape.rounds && !shape.standings);
+    }
+
+    /// Two matches go into leaderboard 1, which goes into leaderboard 2 selecting the first places.
+    fn configured_after_a_leaderboard(scope: Vec<LbKey>) -> spacetimedb::test_utils::TestContext {
+        let test = test_context(&[]);
+        test.with_reducer_tx(TestAuth::internal(), |ctx| {
+            configured_leaderboard(ctx, 1, Vec::new());
+            configured_leaderboard(
+                ctx,
+                2,
+                vec![
+                    LbSettingsV3::Match,
+                    LbSettingsV3::Select(LbSelectSettings {
+                        scope: scope.clone(),
+                        places: LbSelectPlaces::FirstN(1),
+                    }),
+                ],
+            );
+            for (origin, target) in [
+                (NodeHandle::MatchV1(1), NodeHandle::LeaderboardV1(1)),
+                (NodeHandle::MatchV1(2), NodeHandle::LeaderboardV1(1)),
+                (NodeHandle::LeaderboardV1(1), NodeHandle::LeaderboardV1(2)),
+            ] {
+                let connection =
+                    ctx.connection_insert(connect(origin, target, ConnectionKind::Data))?;
+                ctx.connection_data_insert(ConnectionDataV2::new(connection.id, 1))?;
+            }
+            Ok::<_, String>(())
+        })
+        .unwrap();
+        test
+    }
+
+    #[test]
+    fn steps_saved_while_a_leaderboard_before_them_got_configured_are_checked_again() {
+        // Leaderboard 2 was checked while leaderboard 1 still output nothing, now it gets the rounds of two matches.
+        let test = configured_after_a_leaderboard(Vec::new());
+
+        let error = test
+            .anonymous_view_context()
+            .node_check_dependents(NodeHandle::LeaderboardV1(1))
+            .unwrap_err();
+
+        assert_eq!(
+            error.to_string(),
+            "LeaderboardV1(2) step 2: Places only exist in a single leaderboard, merge the entries or select per origin."
+        );
+    }
+
+    #[test]
+    fn steps_which_still_work_with_what_they_get_now_pass_the_check_again() {
+        let test = configured_after_a_leaderboard(vec![LbKey::Origin]);
+
+        let checked = test
+            .anonymous_view_context()
+            .node_check_dependents(NodeHandle::LeaderboardV1(1));
+
+        assert!(checked.is_ok());
     }
 
     #[test]
