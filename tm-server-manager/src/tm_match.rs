@@ -22,6 +22,7 @@ use crate::{
     },
     tm_match::{
         auto_recovery::RecoveryWrite,
+        entrant::MatchEntrantWrite,
         leaderboard::MatchLeaderboardWrite,
         replay::MatchReplayWrite,
         state::{MatchState, MatchStateRead, MatchStateWrite},
@@ -30,6 +31,7 @@ use crate::{
 
 mod auto_recovery;
 pub mod chat;
+pub mod entrant;
 pub mod event;
 //pub mod hook;
 pub mod leaderboard;
@@ -854,6 +856,9 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
 
         self.match_state_insert(MatchState::new(match_id, config.get_mode().get_mode()))?;
 
+        // From now on the entrants keep their seeds, the destinations are claimed for them.
+        self.match_entrants_freeze(match_id)?;
+
         self.destination_claim(NodeHandle::MatchV1(match_id))?;
 
         self.emit_raw_server_config(server_id, false)?;
@@ -1036,7 +1041,7 @@ mod tests {
     use spacetimedb::test_utils::TestAuth;
 
     use super::*;
-    use crate::leaderboard::test_util::test_context;
+    use crate::pipeline::test_util::test_context;
 
     fn tm_match(id: u32, status: MatchStatus, config: u32) -> MatchV1 {
         MatchV1 {

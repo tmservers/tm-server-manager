@@ -5,7 +5,7 @@ use spacetimedb::{
 use crate::{
     authorization::Authorization,
     competition::{CompetitionPermissionsV1, node::NodeHandle},
-    leaderboard::LbEntry,
+    pipeline::{LbEntry, LbEntryKind},
     tm_match::{state::MatchStateRead, tab_match},
 };
 
@@ -67,6 +67,13 @@ impl MatchRoundPlayer {
             id: 0,
             position: 0,
         }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn for_test(match_id: u32, user_id: u32, round: u16, points: i32) -> Self {
+        let mut player = MatchRoundPlayer::new(match_id, user_id, round);
+        player.points = points;
+        player
     }
 
     pub(super) fn set_time(&mut self, points: i32) {
@@ -213,7 +220,7 @@ impl<Db: spacetimedb::CtxDbRead> MatchLeadearboardRead for Db {
             .map(|f| {
                 LbEntry::new(
                     f.user_id,
-                    state.get_mode(),
+                    LbEntryKind::Round,
                     f.position,
                     NodeHandle::MatchV1(match_id),
                 )
@@ -394,7 +401,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        leaderboard::test_util::test_context,
+        pipeline::test_util::test_context,
         tm_match::state::{MatchState, MatchStateWrite},
     };
 

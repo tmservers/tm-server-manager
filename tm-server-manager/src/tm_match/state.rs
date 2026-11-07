@@ -117,7 +117,7 @@ impl MatchState {
         matches!(self.status, MatchStatus::LiveComitted)
     }
 
-    pub(super) fn get_mode(&self) -> TmMode {
+    pub(crate) fn get_mode(&self) -> TmMode {
         self.mode
     }
 }
@@ -250,7 +250,7 @@ mod tests {
     };
 
     use super::*;
-    use crate::leaderboard::test_util::test_context;
+    use crate::pipeline::test_util::test_context;
 
     fn history(test: &TestContext) -> Vec<MatchStateHistory> {
         let mut history: Vec<MatchStateHistory> = test

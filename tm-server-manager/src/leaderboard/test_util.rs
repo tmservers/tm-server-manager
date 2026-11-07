@@ -1,17 +1,18 @@
-use spacetimedb::test_utils::{TestAuth, TestContext};
-use tm_server_types::config::TmMode;
+use spacetimedb::{ReducerContext, Table};
 
-use crate::tm_match::state::{MatchState, MatchStateWrite};
+use crate::{
+    leaderboard::{LeaderboardStatus, LeaderboardV3, tab_leaderboard_v3},
+    pipeline::LbSettingsV3,
+};
 
-/// A datastore with the matches being played in the modes.
-pub(crate) fn test_context(matches: &[(u32, TmMode)]) -> TestContext {
-    let test = TestContext::new().expect("the test datastore should initialize");
-    test.with_reducer_tx(TestAuth::internal(), |ctx| {
-        for &(match_id, mode) in matches {
-            ctx.match_state_insert(MatchState::new(match_id, mode))?;
-        }
-        Ok::<_, String>(())
-    })
-    .expect("the matches should be inserted");
-    test
+/// Inserts a leaderboard which got configured with the steps.
+pub(crate) fn configured_leaderboard(ctx: &ReducerContext, id: u32, settings: Vec<LbSettingsV3>) {
+    ctx.db.tab_leaderboard_v3().insert(LeaderboardV3 {
+        name: String::new(),
+        settings,
+        id,
+        parent_id: 1,
+        template: false,
+        status: LeaderboardStatus::Configured,
+    });
 }

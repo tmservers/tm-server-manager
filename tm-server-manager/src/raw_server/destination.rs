@@ -4,9 +4,10 @@ use crate::{
     authorization::Authorization,
     competition::{
         CompetitionRead,
-        node::{NodeHandle, NodeLeaderboard, NodeRead},
+        node::{NodeHandle, NodeRead},
     },
     raw_server::{occupation::TabRawServerOccupationRead, tab_raw_server__view},
+    tm_match::entrant::MatchEntrantRead,
     user::UserRead,
 };
 
@@ -98,13 +99,16 @@ pub(crate) trait TabRawServerDestinationWrite: TabRawServerDestinationRead {
 }
 impl<Db: spacetimedb::CtxDbWrite> TabRawServerDestinationWrite for Db {
     fn destination_claim(&self, node: NodeHandle) -> Result<(), String> {
-        let players = self.node_resolve_input_data(node).finalize(self);
+        let NodeHandle::MatchV1(match_id) = node else {
+            return Err(format!("Only matches claim destinations, not {node:?}."));
+        };
         let server_id = self.occupation_with_occupier(node).unwrap();
         let competition_id = self.node_get_parent(node).unwrap();
-        for player in players {
-            /* if player.only_spectator {
+        for entrant in self.match_entrants(match_id) {
+            // An entrant of a team has no user, its members are not known here.
+            if entrant.user_id == 0 {
                 continue;
-            } */
+            }
             self.db()
                 .tab_player_destination()
                 .try_insert(TabPlayerDestination {
@@ -112,7 +116,7 @@ impl<Db: spacetimedb::CtxDbWrite> TabRawServerDestinationWrite for Db {
                     node_id: node.id(),
                     competition_id,
                     destination_server_id: server_id,
-                    user_id: player.user_id,
+                    user_id: entrant.user_id,
                 })?;
         }
 
@@ -151,3 +155,48 @@ impl<Db: spacetimedb::CtxDbWrite> TabRawServerDestinationWrite for Db {
 // And it is done through a checkbox e.g. claim_players (defualt true) which automatically generates the claim
 // IF the match is open we move everybody there ????
 // IF match is done it drops the claim :)
+
+#[cfg(test)]
+mod tests {
+    use spacetimedb::test_utils::TestAuth;
+    use tm_server_types::config::TmMode;
+
+    use super::*;
+    use crate::{
+        pipeline::test_util::test_context,
+        raw_server::occupation::TabRawServerOccupationWrite,
+        tm_match::entrant::{
+            MatchEntrantWrite,
+            test_util::{connect, play, prepared_match},
+        },
+    };
+
+    #[test]
+    fn destinations_are_claimed_for_the_frozen_entrants() {
+        let test = test_context(&[(1, TmMode::Rounds)]);
+        let target = NodeHandle::MatchV1(3);
+        prepared_match(&test, 3);
+        play(&test, 1, 10, 5);
+        play(&test, 1, 11, 9);
+        connect(&test, NodeHandle::MatchV1(1), target, 0);
+        test.with_reducer_tx(TestAuth::internal(), |ctx| {
+            ctx.match_entrants_freeze(3)?;
+            ctx.raw_server_occupation_add(target, 5)
+        })
+        .unwrap();
+
+        // Results after the freeze do not claim anyone else.
+        play(&test, 1, 12, 20);
+        test.with_reducer_tx(TestAuth::internal(), |ctx| ctx.destination_claim(target))
+            .unwrap();
+
+        let mut claimed: Vec<(u32, u32)> = test
+            .db
+            .tab_player_destination()
+            .iter()
+            .map(|d| (d.user_id, d.destination_server_id))
+            .collect();
+        claimed.sort();
+        assert_eq!(claimed, vec![(10, 5), (11, 5)]);
+    }
+}

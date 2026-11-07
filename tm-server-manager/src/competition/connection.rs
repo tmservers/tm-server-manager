@@ -11,13 +11,14 @@ use crate::{
         CompetitionPermissionsV1,
         connection::{
             action::{ConnectionActionWrite, try_exec_action},
-            data::{ConnectionData, ConnectionDataRead, ConnectionDataWrite},
+            data::{ConnectionDataRead, ConnectionDataV2, ConnectionDataWrite},
         },
         node::{NodeHandle, NodeRead},
     },
     input::InputRead,
-    leaderboard::{LbEntry, LeadearboardRead},
+    leaderboard::LeadearboardRead,
     output::OutputRead,
+    pipeline::{LbEntry, context::LbContext, error::LbError, shape::LbShape},
     schedule::ScheduleWrite,
     tm_match::MatchWrite,
 };
@@ -98,6 +99,10 @@ impl TabConnection {
         self.status == ConnectionStatus::Resolved
     }
 
+    pub(crate) fn is_configuring(&self) -> bool {
+        self.status == ConnectionStatus::Configuring
+    }
+
     pub(crate) fn instantiate(mut self, parent_id: u32) -> Self {
         self.parent_id = parent_id;
         self.id = 0;
@@ -154,6 +159,9 @@ enum ConnectionError {
     InvalidOriginNode,
 
     InvalidKind,
+
+    /// The steps after the target do not work with what it gets anymore.
+    Steps(String),
 }
 
 /// Since we need to check either way if the two thing have the same parent we can omit specifing the competition manually.
@@ -293,11 +301,14 @@ fn connection_create(
         match connection.kind {
             ConnectionKind::Wait => (),
             ConnectionKind::Data => {
-                ctx.connection_data_insert(ConnectionData::new(
+                ctx.connection_data_insert(ConnectionDataV2::new(
                     connection.id,
                     connection.parent_id,
                 ))
                 .map_err(|e| ConnectionError::InternalError(e.to_string()))?;
+                // The target gets more than before, so the steps after it have to work with that.
+                ctx.node_check_target(target)
+                    .map_err(|e| ConnectionError::Steps(e.to_string()))?;
             }
             ConnectionKind::Action => {
                 todo!()
@@ -320,6 +331,14 @@ fn connection_configured(ctx: &ReducerContext, connection_id: u32) -> Result<(),
 
     if connection.status != ConnectionStatus::Configuring {
         return Err("Wrong status to configure".into());
+    }
+
+    if connection.is_data() {
+        let Some(data) = ctx.connection_data_find(connection.id) else {
+            return Err("Connection data could not be found.".into());
+        };
+        let origin = connection.origin();
+        data.check(origin, ctx.node_output_shape(origin)?)?;
     }
 
     connection.status = ConnectionStatus::Configured;
@@ -528,7 +547,13 @@ pub(crate) trait ConnectionRead {
         &self,
         connection: TabConnection,
         data: Vec<LbEntry>,
-    ) -> Vec<LbEntry>;
+    ) -> Result<Vec<LbEntry>, LbError>;
+    /// What the connection would pass on, its steps are checked against the input on the way.
+    fn connection_shape(
+        &self,
+        connection: TabConnection,
+        input: LbShape,
+    ) -> Result<LbShape, LbError>;
 
     /// The connections inside of a competition.
     fn connections_in_competition(
@@ -540,23 +565,41 @@ pub(crate) trait ConnectionRead {
     /// The connections which have the node as their origin.
     fn connection_targets_of(&self, node: NodeHandle) -> impl Iterator<Item = TabConnection>;
 }
+
+/// The steps of a data connection, any other connection has none.
+fn data_of(
+    ctx: &impl spacetimedb::CtxDbRead,
+    connection: &TabConnection,
+) -> Result<ConnectionDataV2, LbError> {
+    if !connection.is_data() {
+        return Err(LbError::new(format!(
+            "Connection {} is not a data connection.",
+            connection.id
+        )));
+    }
+    ctx.connection_data_find(connection.id).ok_or_else(|| {
+        LbError::new(format!(
+            "Data connection {} has no data, it might not be migrated yet.",
+            connection.id
+        ))
+    })
+}
+
 impl<Db: spacetimedb::CtxDbRead> ConnectionRead for Db {
     fn connection_resolve_leaderboard(
         &self,
         connection: TabConnection,
         data: Vec<LbEntry>,
-    ) -> Vec<LbEntry> {
-        // Prevent the method from misuse because it is impossible to form a lb from a non data connection.
-        if !connection.is_data() {
-            log::error!("Wanted to filter a connection but it was not a data connection.");
-            return Vec::new();
-        }
+    ) -> Result<Vec<LbEntry>, LbError> {
+        data_of(self, &connection)?.evaluate(&LbContext::new(self, connection.origin()), data)
+    }
 
-        let rules = self.connection_data_find(connection.id).unwrap();
-
-        //let players = self.node_resolve_input_data(connection.origin());
-
-        rules.apply_filter(data, self)
+    fn connection_shape(
+        &self,
+        connection: TabConnection,
+        input: LbShape,
+    ) -> Result<LbShape, LbError> {
+        data_of(self, &connection)?.check(connection.origin(), input)
     }
 
     fn connections_in_competition(
@@ -739,15 +782,131 @@ fn connection_delete(ctx: &ReducerContext, id: u32) -> Result<(), String> {
     ctx.connection_delete(id)
 }
 
+/// Inserts a configured data connection with the slot, returns its id.
+#[cfg(test)]
+pub(crate) fn data_connection_for_test(
+    ctx: &ReducerContext,
+    origin: NodeHandle,
+    target: NodeHandle,
+    slot: u16,
+) -> Result<u32, String> {
+    let connection = ctx.connection_insert(TabConnection::for_test(
+        origin,
+        target,
+        ConnectionKind::Data,
+    ))?;
+    ctx.connection_data_insert(ConnectionDataV2::new(connection.id, 1).with_slot(slot))?;
+    Ok(connection.id)
+}
+
 #[cfg(test)]
 mod tests {
     use spacetimedb::test_utils::TestAuth;
 
     use super::*;
-    use crate::{competition::node::NodeRead, leaderboard::test_util::test_context};
+    use crate::{
+        competition::{
+            connection::data::{ConnectionDataV2, ConnectionDataWrite},
+            node::NodeRead,
+        },
+        leaderboard::test_util::configured_leaderboard,
+        pipeline::{
+            LbKey, LbSettingsV3,
+            shape::LbOrigins,
+            steps::select::{LbSelectPlaces, LbSelectSettings},
+            test_util::test_context,
+        },
+    };
 
     fn connect(origin: NodeHandle, target: NodeHandle, kind: ConnectionKind) -> TabConnection {
         TabConnection::for_test(origin, target, kind)
+    }
+
+    #[test]
+    fn a_node_gets_the_entries_of_all_its_data_connections() {
+        let test = test_context(&[]);
+        let leaderboard = NodeHandle::LeaderboardV1(3);
+        test.with_reducer_tx(TestAuth::internal(), |ctx| {
+            for origin in [NodeHandle::MatchV1(1), NodeHandle::MatchV1(2)] {
+                let connection =
+                    ctx.connection_insert(connect(origin, leaderboard, ConnectionKind::Data))?;
+                ctx.connection_data_insert(ConnectionDataV2::new(connection.id, 1))?;
+            }
+            // Only data connections pass entries on.
+            ctx.connection_insert(connect(
+                NodeHandle::RegistrationV1(1),
+                leaderboard,
+                ConnectionKind::Wait,
+            ))?;
+            Ok::<_, String>(())
+        })
+        .unwrap();
+
+        let shape = test
+            .anonymous_view_context()
+            .node_input_shape(leaderboard)
+            .unwrap();
+
+        assert_eq!(shape.origins, LbOrigins::Many);
+        assert!(shape.rounds && !shape.standings);
+    }
+
+    /// Two matches go into leaderboard 1, which goes into leaderboard 2 selecting the first places.
+    fn configured_after_a_leaderboard(scope: Vec<LbKey>) -> spacetimedb::test_utils::TestContext {
+        let test = test_context(&[]);
+        test.with_reducer_tx(TestAuth::internal(), |ctx| {
+            configured_leaderboard(ctx, 1, Vec::new());
+            configured_leaderboard(
+                ctx,
+                2,
+                vec![
+                    LbSettingsV3::Match,
+                    LbSettingsV3::Select(LbSelectSettings {
+                        scope: scope.clone(),
+                        places: LbSelectPlaces::FirstN(1),
+                    }),
+                ],
+            );
+            for (origin, target) in [
+                (NodeHandle::MatchV1(1), NodeHandle::LeaderboardV1(1)),
+                (NodeHandle::MatchV1(2), NodeHandle::LeaderboardV1(1)),
+                (NodeHandle::LeaderboardV1(1), NodeHandle::LeaderboardV1(2)),
+            ] {
+                let connection =
+                    ctx.connection_insert(connect(origin, target, ConnectionKind::Data))?;
+                ctx.connection_data_insert(ConnectionDataV2::new(connection.id, 1))?;
+            }
+            Ok::<_, String>(())
+        })
+        .unwrap();
+        test
+    }
+
+    #[test]
+    fn steps_saved_while_a_leaderboard_before_them_got_configured_are_checked_again() {
+        // Leaderboard 2 was checked while leaderboard 1 still output nothing, now it gets the rounds of two matches.
+        let test = configured_after_a_leaderboard(Vec::new());
+
+        let error = test
+            .anonymous_view_context()
+            .node_check_dependents(NodeHandle::LeaderboardV1(1))
+            .unwrap_err();
+
+        assert_eq!(
+            error.to_string(),
+            "LeaderboardV1(2) step 2: Places only exist in a single leaderboard, merge the entries or select per origin."
+        );
+    }
+
+    #[test]
+    fn steps_which_still_work_with_what_they_get_now_pass_the_check_again() {
+        let test = configured_after_a_leaderboard(vec![LbKey::Origin]);
+
+        let checked = test
+            .anonymous_view_context()
+            .node_check_dependents(NodeHandle::LeaderboardV1(1));
+
+        assert!(checked.is_ok());
     }
 
     #[test]

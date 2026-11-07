@@ -14,6 +14,7 @@ pub mod input;
 pub mod leaderboard;
 pub mod maps;
 pub mod output;
+pub mod pipeline;
 pub mod project;
 pub mod raw_server;
 pub mod record;

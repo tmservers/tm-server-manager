@@ -1,23 +1,29 @@
 use std::collections::{HashMap, HashSet};
 
 use spacetimedb::{ProcedureContext, ReducerContext, SpacetimeType, Uuid, procedure, reducer};
-use tm_server_types::config::{ModeSettingsV2, TmMode};
 
 use crate::{
     authorization::Authorization,
     competition::{
         CompetitionPermissionsV1, CompetitionRead, CompetitionWrite,
-        connection::{ConnectionRead, ConnectionWrite},
+        connection::{ConnectionRead, ConnectionWrite, data::ConnectionDataRead},
         roles::CompetitionMemberRead,
         tab_competition__view,
     },
     input::{InputRead, InputWrite},
-    leaderboard::{LbEntry, LeadearboardRead, LeaderboardWrite},
+    leaderboard::{LeadearboardRead, LeaderboardWrite},
     output::{OutputRead, OutputWrite},
-    raw_server::{config::RawServerContigRead, player::PermittedPlayer},
+    pipeline::{
+        LbEntry, context::LbContext, error::LbError, modes::match_standings, shape::LbShape,
+    },
+    raw_server::player::PermittedPlayer,
     registration::{RegistrationRead, RegistrationWrite, player::RegistrationPlayerRead},
     schedule::{ScheduleRead, ScheduleWrite},
-    tm_match::{MatchRead, MatchStatus, MatchWrite, leaderboard::MatchLeadearboardRead},
+    tm_match::{
+        MatchRead, MatchStatus, MatchWrite,
+        entrant::{MatchEntrantRead, MatchEntrantWrite},
+        leaderboard::MatchLeadearboardRead,
+    },
     tm_server::{ServerRead, ServerWrite},
     user::UserRead,
 };
@@ -177,8 +183,20 @@ fn node_delete(ctx: &ReducerContext, node: NodeHandle) -> Result<(), String> {
 pub(crate) trait NodeRead {
     fn node_permitted_players_input(&self, node: NodeHandle) -> Vec<PermittedPlayer>;
     fn node_get_parent(&self, node: NodeHandle) -> Result<u32, String>;
-    fn node_resolve_input_data(&self, node: NodeHandle) -> Vec<LbEntry>;
-    fn node_resolve_output_data(&self, node: NodeHandle) -> Vec<LbEntry>;
+    fn node_resolve_input_data(&self, node: NodeHandle) -> Result<Vec<LbEntry>, LbError>;
+    /// The entries of every data connection into the node on their own, ordered by slot.
+    /// Inputs with slot 0 have no order, they come after the others.
+    fn node_resolve_inputs(&self, node: NodeHandle) -> Result<Vec<Vec<LbEntry>>, LbError>;
+    fn node_resolve_output_data(&self, node: NodeHandle) -> Result<Vec<LbEntry>, LbError>;
+    /// What the node would get as input, the steps on the way are checked.
+    fn node_input_shape(&self, node: NodeHandle) -> Result<LbShape, LbError>;
+    /// What the node would output, the steps on the way are checked.
+    fn node_output_shape(&self, node: NodeHandle) -> Result<LbShape, LbError>;
+    /// Checks the steps after the node again, they were checked against what it output back then.
+    /// Connections still getting configured are checked when they get configured.
+    fn node_check_dependents(&self, node: NodeHandle) -> Result<(), LbError>;
+    /// Checks the steps of the node again because what it gets changed, and everything after it.
+    fn node_check_target(&self, node: NodeHandle) -> Result<(), LbError>;
     /// The nodes this node still waits for, action connections do not count.
     fn node_pending_origins(&self, node: NodeHandle) -> Vec<NodeHandle>;
     /// The nodes which already took what this node passes on, action connections do not count.
@@ -205,27 +223,35 @@ impl<Db: spacetimedb::CtxDbRead> NodeRead for Db {
                 None
             }))
         }
-        /* let depending_connections = self
-            .db_read_only()
-            .tab_connection()
-            .origins_of()
-            .filter(node.split())
-            .filter(|c| c.is_data());
-        for depending_connection in depending_connections {
-            let permitted_players = self
-                .connection_filter_permitted_players(depending_connection)
+        let players: Vec<u32> = match node {
+            // The players of a match are frozen with its entrants, only the spectators can still change.
+            NodeHandle::MatchV1(match_id) => self
+                .match_entrants(match_id)
                 .into_iter()
-                // This overrides the existing entrys.
-            } */
-        let players = self
-            .node_resolve_input_data(node)
-            .finalize(self)
-            .into_iter()
-            .map(|p| {
-                let account_id = self.user_account_from_id(p.get_user());
-                (account_id, PermittedPlayer::new(account_id, false, false))
-            });
-        map.extend(players);
+                .map(|e| e.user_id)
+                .collect(),
+            _ => self
+                .node_resolve_input_data(node)
+                .and_then(|input| match_standings(&LbContext::new(self, node), input))
+                .unwrap_or_else(|error| {
+                    log::error!("The permitted players of {node:?} could not be resolved: {error}");
+                    Vec::new()
+                })
+                .into_iter()
+                .map(|p| p.get_user())
+                .collect(),
+        };
+        // The players override them being spectators.
+        map.extend(
+            players
+                .into_iter()
+                // An entry of a team has no user, its members are not known here.
+                .filter(|&user_id| user_id != 0)
+                .map(|user_id| {
+                    let account_id = self.user_account_from_id(user_id);
+                    (account_id, PermittedPlayer::new(account_id, false, false))
+                }),
+        );
 
         map.into_values().collect()
     }
@@ -260,12 +286,51 @@ impl<Db: spacetimedb::CtxDbRead> NodeRead for Db {
         }
     }
 
-    fn node_resolve_input_data(&self, node: NodeHandle) -> Vec<LbEntry> {
-        node_resolve_input_data_inner(self, node, &mut 1)
+    fn node_resolve_input_data(&self, node: NodeHandle) -> Result<Vec<LbEntry>, LbError> {
+        node_resolve_input_data_inner(self, node)
     }
 
-    fn node_resolve_output_data(&self, node: NodeHandle) -> Vec<LbEntry> {
-        node_resolve_output_data_inner(self, node, &mut 1)
+    fn node_resolve_inputs(&self, node: NodeHandle) -> Result<Vec<Vec<LbEntry>>, LbError> {
+        node_resolve_inputs_inner(self, node)
+    }
+
+    fn node_resolve_output_data(&self, node: NodeHandle) -> Result<Vec<LbEntry>, LbError> {
+        node_resolve_output_data_inner(self, node)
+    }
+
+    fn node_input_shape(&self, node: NodeHandle) -> Result<LbShape, LbError> {
+        self.connection_origins_of(node)
+            .filter(|c| c.is_data())
+            .try_fold(LbShape::default(), |shape, connection| {
+                let output = self.node_output_shape(connection.origin())?;
+                Ok(shape.combine(self.connection_shape(connection, output)?))
+            })
+    }
+
+    fn node_output_shape(&self, node: NodeHandle) -> Result<LbShape, LbError> {
+        match node {
+            NodeHandle::ScheduleV1(_) | NodeHandle::ServerV1(_) => Ok(LbShape::default()),
+            NodeHandle::MatchV1(_) => Ok(LbShape::rounds(node)),
+            NodeHandle::CompetitionV1(n) => match self.outputs_in_parent(n).next() {
+                Some(output) => self.node_input_shape(NodeHandle::OutputV1(output.id)),
+                None => Ok(LbShape::default()),
+            },
+            NodeHandle::OutputV1(_) => self.node_input_shape(node),
+            NodeHandle::InputV1(n) => match self.input_find(n) {
+                Ok(input) => self.node_input_shape(NodeHandle::CompetitionV1(input.get_comp_id())),
+                Err(_) => Ok(LbShape::default()),
+            },
+            NodeHandle::RegistrationV1(_) => Ok(LbShape::standings(node)),
+            NodeHandle::LeaderboardV1(n) => self.leaderboard_output_shape(n),
+        }
+    }
+
+    fn node_check_dependents(&self, node: NodeHandle) -> Result<(), LbError> {
+        node_check_dependents_inner(self, node, &mut HashSet::new())
+    }
+
+    fn node_check_target(&self, node: NodeHandle) -> Result<(), LbError> {
+        node_check_target_inner(self, node, &mut HashSet::new())
     }
 
     fn node_pending_origins(&self, node: NodeHandle) -> Vec<NodeHandle> {
@@ -345,41 +410,95 @@ impl<Db: spacetimedb::CtxDbRead> NodeRead for Db {
     }
 }
 
+fn node_check_dependents_inner(
+    ctx: &impl spacetimedb::CtxDbRead,
+    node: NodeHandle,
+    checked: &mut HashSet<NodeHandle>,
+) -> Result<(), LbError> {
+    let output = ctx.node_output_shape(node)?;
+    let connections: Vec<_> = ctx
+        .connection_targets_of(node)
+        .filter(|c| c.is_data())
+        .collect();
+    for connection in connections {
+        if !connection.is_configuring() {
+            ctx.connection_shape(connection, output)?;
+        }
+        node_check_target_inner(ctx, connection.target(), checked)?;
+    }
+    Ok(())
+}
+
+fn node_check_target_inner(
+    ctx: &impl spacetimedb::CtxDbRead,
+    node: NodeHandle,
+    checked: &mut HashSet<NodeHandle>,
+) -> Result<(), LbError> {
+    // A node reached on several ways only needs to be checked once.
+    if !checked.insert(node) {
+        return Ok(());
+    }
+    match node {
+        // A leaderboard still getting configured outputs nothing and is checked when it gets configured.
+        NodeHandle::LeaderboardV1(n)
+            if ctx.leaderboard_find(n).is_ok_and(|l| l.is_configured()) =>
+        {
+            // Its output shape checks its steps against what it gets now.
+            node_check_dependents_inner(ctx, node, checked)
+        }
+        // These pass on what they get, so everything after them gets it as well.
+        NodeHandle::OutputV1(n) => match ctx.output_find(n) {
+            Ok(output) => node_check_dependents_inner(
+                ctx,
+                NodeHandle::CompetitionV1(output.get_comp_id()),
+                checked,
+            ),
+            Err(_) => Ok(()),
+        },
+        NodeHandle::CompetitionV1(n) => {
+            let inputs: Vec<_> = ctx.inputs_in_parent(n).collect();
+            for input in inputs {
+                node_check_dependents_inner(ctx, NodeHandle::InputV1(input.id), checked)?;
+            }
+            Ok(())
+        }
+        // The output of everything else does not depend on what it gets.
+        _ => Ok(()),
+    }
+}
+
 fn node_resolve_output_data_inner(
     ctx: &impl spacetimedb::CtxDbRead,
     node: NodeHandle,
-    origin_offset: &mut u8,
-) -> Vec<LbEntry> {
+) -> Result<Vec<LbEntry>, LbError> {
     match node {
         NodeHandle::ScheduleV1(n) => {
             log::warn!("Attempted to read node data output for a schedule node: {n}");
-            Vec::new()
+            Ok(Vec::new())
         }
         NodeHandle::ServerV1(n) => {
             log::warn!("Attempted to read node data output for a server node: {n}");
-            Vec::new()
+            Ok(Vec::new())
         }
-        NodeHandle::MatchV1(n) => ctx.match_rounds(n),
+        NodeHandle::MatchV1(n) => Ok(ctx.match_rounds(n)),
         NodeHandle::CompetitionV1(n) => {
             let Some(output) = ctx.outputs_in_parent(n).next() else {
                 log::warn!("Requested lb for competition {n} but it has no output node!");
-                return Vec::new();
+                return Ok(Vec::new());
             };
 
-            node_resolve_input_data_inner(ctx, NodeHandle::OutputV1(output.id), origin_offset)
+            node_resolve_input_data_inner(ctx, NodeHandle::OutputV1(output.id))
         }
-        NodeHandle::OutputV1(n) => {
-            node_resolve_input_data_inner(ctx, NodeHandle::OutputV1(n), origin_offset)
-        }
+        NodeHandle::OutputV1(n) => node_resolve_input_data_inner(ctx, NodeHandle::OutputV1(n)),
         NodeHandle::InputV1(n) => {
             let Ok(input) = ctx.input_find(n) else {
-                return Vec::new();
+                return Ok(Vec::new());
             };
             let comp = input.get_comp_id();
 
-            node_resolve_input_data_inner(ctx, NodeHandle::CompetitionV1(comp), origin_offset)
+            node_resolve_input_data_inner(ctx, NodeHandle::CompetitionV1(comp))
         }
-        NodeHandle::RegistrationV1(n) => ctx.registration_lb(n),
+        NodeHandle::RegistrationV1(n) => Ok(ctx.registration_lb(n)),
         NodeHandle::LeaderboardV1(n) => ctx.leaderboard_evaluation(n),
     }
 }
@@ -387,25 +506,33 @@ fn node_resolve_output_data_inner(
 fn node_resolve_input_data_inner(
     ctx: &impl spacetimedb::CtxDbRead,
     node: NodeHandle,
-    origin_offset: &mut u8,
-) -> Vec<LbEntry> {
-    let mut player_entries = Vec::new();
-
-    let depending_connections = ctx
-        .connection_origins_of(node)
+) -> Result<Vec<LbEntry>, LbError> {
+    Ok(node_resolve_inputs_inner(ctx, node)?
         .into_iter()
-        .filter(|c| c.is_data());
+        .flatten()
+        .collect())
+}
 
-    for depending_connection in depending_connections {
-        let lb_entries =
-            node_resolve_output_data_inner(ctx, depending_connection.origin(), origin_offset);
+fn node_resolve_inputs_inner(
+    ctx: &impl spacetimedb::CtxDbRead,
+    node: NodeHandle,
+) -> Result<Vec<Vec<LbEntry>>, LbError> {
+    let mut depending_connections: Vec<_> = ctx
+        .connection_origins_of(node)
+        .filter(|c| c.is_data())
+        .collect();
+    depending_connections.sort_by_cached_key(|c| {
+        let slot = ctx.connection_data_find(c.id).map_or(0, |data| data.slot());
+        (slot == 0, slot, c.id)
+    });
 
-        let filtered = ctx.connection_resolve_leaderboard(depending_connection, lb_entries);
-
-        player_entries.extend(filtered);
-    }
-
-    player_entries
+    depending_connections
+        .into_iter()
+        .map(|depending_connection| {
+            let lb_entries = node_resolve_output_data_inner(ctx, depending_connection.origin())?;
+            ctx.connection_resolve_leaderboard(depending_connection, lb_entries)
+        })
+        .collect()
 }
 
 pub(crate) trait NodeWrite: NodeRead {
@@ -442,6 +569,10 @@ impl<Db: spacetimedb::CtxDbWrite> NodeWrite for Db {
 
         // Delete postition table entry.
         self.node_position_delete(node);
+
+        if let NodeHandle::MatchV1(match_id) = node {
+            self.match_entrants_delete(match_id);
+        }
 
         // Delete all associated connection tables involving the node.
         self.node_connections_delete(node);
@@ -480,7 +611,10 @@ fn node_leaderboard_output(
     ctx: &mut ProcedureContext,
     node: NodeHandle,
 ) -> Result<Vec<LbEntry>, String> {
-    ctx.try_with_tx(|ctx| Ok(ctx.node_resolve_output_data(node).finalize(ctx)))
+    ctx.try_with_tx(|ctx| {
+        let output = ctx.node_resolve_output_data(node)?;
+        Ok(match_standings(&LbContext::new(ctx, node), output)?)
+    })
 }
 
 #[procedure]
@@ -488,7 +622,7 @@ fn node_leaderboard_output_raw(
     ctx: &mut ProcedureContext,
     node: NodeHandle,
 ) -> Result<Vec<LbEntry>, String> {
-    ctx.try_with_tx(|ctx| Ok(ctx.node_resolve_output_data(node)))
+    ctx.try_with_tx(|ctx| Ok(ctx.node_resolve_output_data(node)?))
 }
 
 #[procedure]
@@ -496,7 +630,7 @@ fn node_leaderboard_input(
     ctx: &mut ProcedureContext,
     node: NodeHandle,
 ) -> Result<Vec<LbEntry>, String> {
-    ctx.try_with_tx(|ctx| Ok(ctx.node_resolve_input_data(node)))
+    ctx.try_with_tx(|ctx| Ok(ctx.node_resolve_input_data(node)?))
 }
 
 // To test the destination
@@ -505,7 +639,10 @@ fn node_leaderboard_input_finalize(
     ctx: &mut ProcedureContext,
     node: NodeHandle,
 ) -> Result<Vec<LbEntry>, String> {
-    ctx.try_with_tx(|ctx| Ok(ctx.node_resolve_input_data(node).finalize(ctx)))
+    ctx.try_with_tx(|ctx| {
+        let input = ctx.node_resolve_input_data(node)?;
+        Ok(match_standings(&LbContext::new(ctx, node), input)?)
+    })
 }
 
 // To test the destination
@@ -516,168 +653,3 @@ fn test_node_permitted_players_input(
 ) -> Result<Vec<PermittedPlayer>, String> {
     ctx.try_with_tx(|ctx| Ok(ctx.node_permitted_players_input(node)))
 }
-
-pub trait NodeLeaderboard {
-    fn finalize(&self, ctx: &impl spacetimedb::CtxDbRead) -> Vec<LbEntry>;
-}
-
-impl NodeLeaderboard for Vec<LbEntry> {
-    fn finalize(&self, ctx: &impl spacetimedb::CtxDbRead) -> Vec<LbEntry> {
-        /*  let Some(state) = self
-            .db_read_only()
-            .tab_match_state()
-            .match_id()
-            .find(match_id)
-        else {
-            return Vec::new();
-        };
-        if round == 0 {
-            round = state.get_round();
-        };
-        let mut entries: Vec<MatchRoundPlayer> = self
-            .db_read_only()
-            .tab_match_round_player()
-            .match_round_range()
-            .filter((match_id, 1..=round))
-            .collect(); */
-
-        let mut entries = self.clone();
-
-        let mut map = HashMap::<u32, LbEntry>::new();
-
-        let Some(entry) = entries.get(0) else {
-            return Vec::new();
-        };
-        let entry = *entry;
-
-        let returned = match entry.get_mode() {
-            TmMode::Rounds => {
-                for entry in entries {
-                    map.entry(entry.user_id)
-                        .and_modify(|e| {
-                            e.score += entry.score;
-                            if entry.round > e.round {
-                                e.round = entry.round;
-                            }
-                        })
-                        .or_insert(entry);
-                }
-
-                let mut standings = map.into_values().collect::<Vec<_>>();
-
-                standings.sort_by_key(|v| -v.score);
-
-                for (index, stand) in standings.iter_mut().enumerate() {
-                    stand.position = (index + 1) as u16;
-                }
-
-                standings
-            }
-            TmMode::ReverseCup => {
-                let mut eliminated = HashSet::new();
-
-                for entry in entries {
-                    map.entry(entry.user_id)
-                        .and_modify(|e| {
-                            if entry.score <= -2000 {
-                                eliminated.insert(e.user_id);
-                            }
-                            e.score += entry.score;
-
-                            if entry.round > e.round {
-                                e.round = entry.round;
-                            }
-                        })
-                        .or_insert(entry);
-                }
-
-                let mut standings = map.into_values().collect::<Vec<_>>();
-
-                let tm_match = ctx.match_find(entry.get_node().id()).unwrap();
-                let cfg = ctx
-                    .raw_server_config(tm_match.get_active_config_id())
-                    .unwrap();
-                let starting_points = match cfg.get_mode() {
-                    ModeSettingsV2::ReverseCup(reverse_cup) => reverse_cup.starting_points,
-                    _ => unreachable!(),
-                };
-
-                for stand in standings.iter_mut() {
-                    stand.score += starting_points;
-
-                    if !eliminated.contains(&stand.user_id) || stand.score > 0 {
-                        stand.round += 1;
-                    }
-                }
-
-                standings.sort_by_key(|v| -(v.round as i32));
-
-                for (index, stand) in standings.iter_mut().enumerate() {
-                    stand.position = (index + 1) as u16;
-                }
-
-                standings
-            }
-            TmMode::Knockout => {
-                for entry in entries {
-                    map.entry(entry.user_id)
-                        .and_modify(|e| {
-                            if entry.score == -1 {
-                                *e = entry;
-                            }
-
-                            if entry.round > e.round {
-                                e.round = entry.round;
-                            }
-                        })
-                        .or_insert(entry);
-                }
-
-                let mut standings = map.into_values().collect::<Vec<_>>();
-
-                standings.sort_by_key(|v| -(v.round as i32));
-
-                for (index, stand) in standings.iter_mut().enumerate() {
-                    stand.position = (index + 1) as u16;
-                }
-
-                standings
-            }
-            TmMode::TimeAttack => {
-                entries.sort_by_key(|v| if v.time <= 0 { i32::MAX } else { v.time });
-
-                entries
-            }
-            TmMode::Unknown => {
-                // should come out of lb node so its always flattened in our case rn TODO fix this up.
-                entries.sort_by_key(|k| k.position);
-                entries
-            }
-        };
-
-        // log::info!("{returned:?}");
-
-        returned
-    }
-}
-
-/*
-Mode -> Opinionated sorting
-
-Origin -> Lb | Match | the compe/in/out but only Proxy
-
-Connection Filter -> Only on "pure" lb -> each Player one time occurence
-
-Lb Node -> Can operate on pure and impure lb -> Always get the full data and assemble it yourself… -> how is this possible with Connection filters? -> could cf purify the lb? -> probably Need to get rid of the matchroundplayer struct all together and immediately downcast to lb.
-
-We have two possible Solutions here: have some data duplication and meaningless columns in certain situations.
-Make Dedicated structs for each Scenario :(
-
-
-Maybe there is a further Option where we can use an enum to dispatch between those possible situations -> improves type safety and Client side filtering.
-
-The purify function is VERY tricky
-
-but a unified way to filter EVERYTHNG would make the codebase infinetly better -> mayyybe get rid of the data connection
-
-*/

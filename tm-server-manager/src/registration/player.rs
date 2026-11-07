@@ -2,12 +2,11 @@ use spacetimedb::{
     AnonymousViewContext, Query, RawQuery, ReducerContext, Table, TimeDuration, Timestamp, Uuid,
     reducer, table, view,
 };
-use tm_server_types::config::TmMode;
 
 use crate::{
     authorization::Authorization,
     competition::{CompetitionPermissionsV1, node::NodeHandle},
-    leaderboard::LbEntry,
+    pipeline::{LbEntry, LbEntryKind},
     registration::{RegistrationStatus, tab_registration},
     user::{UserRead, UserV1, UserWrite},
 };
@@ -129,7 +128,7 @@ impl<Db: spacetimedb::CtxDbRead> RegistrationPlayerRead for Db {
             .map(|(index, e)| {
                 LbEntry::new(
                     e.user_id,
-                    TmMode::Unknown,
+                    LbEntryKind::Standing,
                     (index + 1) as u16,
                     NodeHandle::RegistrationV1(registration_id),
                 )
