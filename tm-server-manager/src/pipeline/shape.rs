@@ -24,6 +24,10 @@ pub(crate) struct LbShape {
     pub(crate) origins: LbOrigins,
     /// Entries can carry the map they were played on.
     pub(crate) maps: bool,
+    /// Entries can be of players.
+    pub(crate) players: bool,
+    /// Entries can be of teams.
+    pub(crate) teams: bool,
 }
 
 impl LbShape {
@@ -34,16 +38,29 @@ impl LbShape {
             standings: false,
             origins: LbOrigins::One(origin),
             maps: true,
+            players: true,
+            teams: false,
         }
     }
 
-    /// Standings without any maps, like the ones of a registration.
+    /// Standings of players without any maps, like the ones of a registration.
     pub(crate) fn standings(origin: NodeHandle) -> Self {
         LbShape {
             rounds: false,
             standings: true,
             origins: LbOrigins::One(origin),
             maps: false,
+            players: true,
+            teams: false,
+        }
+    }
+
+    /// Standings of teams without any maps, like the ones of a team registration.
+    pub(crate) fn team_standings(origin: NodeHandle) -> Self {
+        LbShape {
+            players: false,
+            teams: true,
+            ..LbShape::standings(origin)
         }
     }
 
@@ -63,6 +80,8 @@ impl LbShape {
             standings: self.standings || other.standings,
             origins,
             maps: self.maps || other.maps,
+            players: self.players || other.players,
+            teams: self.teams || other.teams,
         }
     }
 }
@@ -88,6 +107,16 @@ pub(super) fn check_standings(input: &LbShape) -> Result<(), LbError> {
     if input.rounds {
         return Err(LbError::new(
             "Places only exist in standings, add a match or merge step first.",
+        ));
+    }
+    Ok(())
+}
+
+/// Players and teams cannot be ranked against each other.
+pub(super) fn check_participants(input: &LbShape) -> Result<(), LbError> {
+    if input.players && input.teams {
+        return Err(LbError::new(
+            "The entries are of players and of teams, they cannot be ranked together.",
         ));
     }
     Ok(())
@@ -151,5 +180,13 @@ mod tests {
     fn nothing_is_rejected_before_there_are_inputs() {
         // Steps can be configured before the inputs get connected.
         assert!(check_steps(MATCH, &[select(vec![LbKey::Map])], LbShape::default()).is_ok());
+    }
+
+    #[test]
+    fn players_and_teams_cannot_be_selected_together() {
+        let registration = NodeHandle::RegistrationV1(1);
+        let mixed = LbShape::standings(registration).combine(LbShape::team_standings(registration));
+
+        assert!(check_steps(MATCH, &[select(vec![])], mixed).is_err());
     }
 }

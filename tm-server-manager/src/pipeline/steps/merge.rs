@@ -3,12 +3,12 @@ use spacetimedb::SpacetimeType;
 use crate::{
     competition::node::NodeHandle,
     pipeline::{
-        LbEntry, LbEntryKind, LbParams, LbStep,
-        combinators::LbRows,
+        LbEntry, LbEntryKind, LbParams, LbParticipant, LbStep,
+        combinators::{Groups, LbRows},
         context::LbContext,
         error::LbError,
-        shape::{LbOrigins, LbShape},
-        shared_map,
+        shape::{LbOrigins, LbShape, check_participants},
+        shared_map, shared_team,
     },
 };
 
@@ -34,7 +34,7 @@ impl From<LbMergeSettings> for LbMergeSettingsV2 {
     }
 }
 
-/// Merges all entries of a participant into one.
+/// Merges all entries of a participant into one, it keeps the map and team only if all of them share it.
 #[derive(Debug, SpacetimeType, Clone, Copy)]
 pub(crate) struct LbMergeSettingsV2 {
     action: LbMergeAction,
@@ -56,27 +56,71 @@ impl LbStep for LbMergeSettingsV2 {
         if input.is_empty() {
             return Ok(input);
         }
+        check_participants(&input)?;
         Ok(LbShape {
             rounds: false,
             standings: true,
             origins: LbOrigins::One(origin),
-            maps: input.maps,
+            ..input
+        })
+    }
+}
+
+/// Merges all entries of every team into one standing of the team, like [`LbMergeSettingsV2`] does per participant.
+/// Entries of players without a team are left out.
+pub(crate) struct LbMergeTeams<'a>(pub(crate) &'a LbMergeSettingsV2);
+
+impl LbStep for LbMergeTeams<'_> {
+    fn apply(&self, cx: &LbContext, entries: Vec<LbEntry>) -> Result<Vec<LbEntry>, LbError> {
+        Ok(self.0.evaluate_teams(cx.origin(), entries))
+    }
+
+    fn check(&self, origin: NodeHandle, input: LbShape) -> Result<LbShape, LbError> {
+        Ok(LbShape {
+            players: false,
+            teams: !input.is_empty(),
+            ..self.0.check(origin, input)?
         })
     }
 }
 
 impl LbMergeSettingsV2 {
+    /// Adds up the param of all entries.
+    #[cfg(test)]
+    pub(in crate::pipeline) fn summate(param: LbParams) -> Self {
+        LbMergeSettingsV2 {
+            action: LbMergeAction::Summate,
+            param,
+        }
+    }
+
     fn evaluate(self, origin: NodeHandle, leaderboard: Vec<LbEntry>) -> Vec<LbEntry> {
-        let merged = leaderboard
-            .group_by(|e| e.participant())
-            .fold(|participant, entries| {
-                let map_id = entries.iter().map(|e| e.map_id).reduce(shared_map);
-                let init = LbEntry::for_participant(participant, LbEntryKind::Standing, 0, origin)
-                    .set_score(0)
-                    .set_time(0)
-                    .set_map(map_id.unwrap_or(0));
-                self.merge(init, &entries)
-            });
+        self.merge_groups(origin, leaderboard.group_by(|e| e.participant()))
+    }
+
+    fn evaluate_teams(self, origin: NodeHandle, leaderboard: Vec<LbEntry>) -> Vec<LbEntry> {
+        let with_team: Vec<LbEntry> = leaderboard.into_iter().filter(|e| e.team_id != 0).collect();
+        self.merge_groups(
+            origin,
+            with_team.group_by(|e| LbParticipant::Team(e.team_id)),
+        )
+    }
+
+    fn merge_groups(
+        self,
+        origin: NodeHandle,
+        groups: Groups<LbParticipant, LbEntry>,
+    ) -> Vec<LbEntry> {
+        let merged = groups.fold(|participant, entries| {
+            let map_id = entries.iter().map(|e| e.map_id).reduce(shared_map);
+            let team_id = entries.iter().map(|e| e.team_id).reduce(shared_team);
+            let mut init = LbEntry::for_participant(participant, LbEntryKind::Standing, 0, origin)
+                .set_score(0)
+                .set_time(0)
+                .set_map(map_id.unwrap_or(0));
+            init.team_id = team_id.unwrap_or(0);
+            self.merge(init, &entries)
+        });
         let merged = merged.sorted_by_key(|e| self.param.key(e));
         // When merging positions they are what gets sorted by so they are kept.
         match self.param {
@@ -123,7 +167,7 @@ mod tests {
     use super::*;
     use crate::pipeline::{
         shape::LbOrigins,
-        test_util::{ranking, round, team_standing},
+        test_util::{for_team, ranking, round, round_in, team_standing},
     };
 
     const LEADERBOARD: NodeHandle = NodeHandle::LeaderboardV1(7);
@@ -193,6 +237,55 @@ mod tests {
             .map(|e| (e.user_id, e.team_id, e.score))
             .collect();
         assert_eq!(rows, vec![(0, 1, 35), (0, 2, 30)]);
+    }
+
+    #[test]
+    fn merged_players_keep_their_team_only_if_they_always_played_for_it() {
+        let other = NodeHandle::MatchV1(2);
+        let merged = merge(
+            LbMergeAction::Summate,
+            LbParams::Score,
+            vec![
+                for_team(round(1, 1, 10, 0), 5),
+                for_team(round(2, 1, 20, 0), 5),
+                for_team(round_in(other, 1, 1, 10, 0), 5),
+                for_team(round_in(other, 2, 1, 20, 0), 6),
+            ],
+        );
+
+        let teams: Vec<(u32, u32)> = merged.iter().map(|e| (e.user_id, e.team_id)).collect();
+        assert_eq!(teams, vec![(2, 0), (1, 5)]);
+    }
+
+    #[test]
+    fn players_without_a_team_are_left_out_of_the_team_standings() {
+        let merged = LbMergeSettingsV2::summate(LbParams::Score).evaluate_teams(
+            LEADERBOARD,
+            vec![
+                for_team(round(1, 1, 10, 0), 5),
+                round(2, 1, 50, 0),
+                for_team(round(3, 1, 20, 0), 5),
+            ],
+        );
+
+        let rows: Vec<(u32, u32, i32)> = merged
+            .iter()
+            .map(|e| (e.user_id, e.team_id, e.score))
+            .collect();
+        assert_eq!(rows, vec![(0, 5, 30)]);
+    }
+
+    #[test]
+    fn merging_teams_turns_players_into_teams() {
+        let rounds = LbShape::rounds(NodeHandle::MatchV1(1));
+
+        let merged = LbMergeTeams(&LbMergeSettingsV2::summate(LbParams::Score))
+            .check(LEADERBOARD, rounds)
+            .unwrap();
+
+        // So later steps reject mixing them with players.
+        assert!(merged.teams && !merged.players);
+        assert!(merged.standings && !merged.rounds);
     }
 
     #[test]

@@ -17,7 +17,7 @@ use crate::{
         LbEntry, context::LbContext, error::LbError, modes::match_standings, shape::LbShape,
     },
     raw_server::player::PermittedPlayer,
-    registration::{RegistrationRead, RegistrationWrite, player::RegistrationPlayerRead},
+    registration::{RegistrationRead, RegistrationWrite, team::TeamRead},
     schedule::{ScheduleRead, ScheduleWrite},
     tm_match::{
         MatchRead, MatchStatus, MatchWrite,
@@ -225,11 +225,7 @@ impl<Db: spacetimedb::CtxDbRead> NodeRead for Db {
         }
         let players: Vec<u32> = match node {
             // The players of a match are frozen with its entrants, only the spectators can still change.
-            NodeHandle::MatchV1(match_id) => self
-                .match_entrants(match_id)
-                .into_iter()
-                .map(|e| e.user_id)
-                .collect(),
+            NodeHandle::MatchV1(match_id) => self.match_players(match_id),
             _ => self
                 .node_resolve_input_data(node)
                 .and_then(|input| match_standings(&LbContext::new(self, node), input))
@@ -238,20 +234,15 @@ impl<Db: spacetimedb::CtxDbRead> NodeRead for Db {
                     Vec::new()
                 })
                 .into_iter()
-                .map(|p| p.get_user())
+                // Everyone of a team may play, substitutes too.
+                .flat_map(|p| self.participant_users(p.participant()))
                 .collect(),
         };
         // The players override them being spectators.
-        map.extend(
-            players
-                .into_iter()
-                // An entry of a team has no user, its members are not known here.
-                .filter(|&user_id| user_id != 0)
-                .map(|user_id| {
-                    let account_id = self.user_account_from_id(user_id);
-                    (account_id, PermittedPlayer::new(account_id, false, false))
-                }),
-        );
+        map.extend(players.into_iter().map(|user_id| {
+            let account_id = self.user_account_from_id(user_id);
+            (account_id, PermittedPlayer::new(account_id, false, false))
+        }));
 
         map.into_values().collect()
     }
@@ -320,7 +311,10 @@ impl<Db: spacetimedb::CtxDbRead> NodeRead for Db {
                 Ok(input) => self.node_input_shape(NodeHandle::CompetitionV1(input.get_comp_id())),
                 Err(_) => Ok(LbShape::default()),
             },
-            NodeHandle::RegistrationV1(_) => Ok(LbShape::standings(node)),
+            NodeHandle::RegistrationV1(r) => Ok(match self.registration_find(r) {
+                Ok(registration) if registration.is_team() => LbShape::team_standings(node),
+                _ => LbShape::standings(node),
+            }),
             NodeHandle::LeaderboardV1(n) => self.leaderboard_output_shape(n),
         }
     }
@@ -498,7 +492,7 @@ fn node_resolve_output_data_inner(
 
             node_resolve_input_data_inner(ctx, NodeHandle::CompetitionV1(comp))
         }
-        NodeHandle::RegistrationV1(n) => Ok(ctx.registration_lb(n)),
+        NodeHandle::RegistrationV1(n) => Ok(ctx.registration_output(n)),
         NodeHandle::LeaderboardV1(n) => ctx.leaderboard_evaluation(n),
     }
 }

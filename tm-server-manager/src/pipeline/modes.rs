@@ -6,7 +6,7 @@ use crate::{
     competition::node::NodeHandle,
     pipeline::{
         LbEntry, LbEntryKind, LbParams, LbParticipant, combinators::LbRows, context::LbContext,
-        error::LbError, shared_map,
+        error::LbError, shared_map, shared_team,
     },
 };
 
@@ -22,6 +22,19 @@ pub(crate) trait ModeRules {
         node: NodeHandle,
         rounds: Vec<LbEntry>,
     ) -> Result<Vec<LbEntry>, LbError>;
+
+    /// The standings of the teams in the match, from the rounds of their players.
+    /// None of the built-in modes ranks teams, a mode has to define how it does.
+    fn team_standings(
+        &self,
+        _cx: &LbContext,
+        node: NodeHandle,
+        _rounds: Vec<LbEntry>,
+    ) -> Result<Vec<LbEntry>, LbError> {
+        Err(LbError::new(format!(
+            "The mode of {node:?} cannot rank teams."
+        )))
+    }
 }
 
 impl ModeRules for TmMode {
@@ -52,6 +65,41 @@ pub(crate) fn match_standings(
         .try_map(|(node, kind), entries| match kind {
             LbEntryKind::Round => round_standings(cx, node, entries),
             LbEntryKind::Standing => Ok(by_position(entries)),
+        })?
+        .flatten())
+}
+
+/// The team standings of every match in the entries, like [`match_standings`] does for players.
+pub(crate) fn match_team_standings(
+    cx: &LbContext,
+    entries: Vec<LbEntry>,
+) -> Result<Vec<LbEntry>, LbError> {
+    Ok(entries
+        .group_by(|e| (e.get_node(), e.kind))
+        .try_map(|(node, kind), entries| match kind {
+            LbEntryKind::Round => {
+                let Some(mode) = cx.match_mode(node) else {
+                    return Err(LbError::new(format!(
+                        "The rounds of {node:?} have no match mode."
+                    )));
+                };
+                let mut standings = mode.team_standings(cx, node, entries)?;
+                for standing in &mut standings {
+                    standing.kind = LbEntryKind::Standing;
+                }
+                Ok(standings)
+            }
+            LbEntryKind::Standing => {
+                if entries
+                    .iter()
+                    .any(|e| matches!(e.participant(), LbParticipant::Player(_)))
+                {
+                    return Err(LbError::new(
+                        "Standings of players cannot become standings of teams.",
+                    ));
+                }
+                Ok(by_position(entries))
+            }
         })?
         .flatten())
 }
@@ -89,10 +137,12 @@ fn by_position(entries: Vec<LbEntry>) -> Vec<LbEntry> {
 }
 
 /// Adds up the rounds of a participant and keeps the latest round.
+/// Like every mode it keeps the map and team only if all rounds share it.
 fn summed(mut standing: LbEntry, round: LbEntry) -> LbEntry {
     standing.score = standing.score.saturating_add(round.score);
     standing.round = standing.round.max(round.round);
     standing.map_id = shared_map(standing.map_id, round.map_id);
+    standing.team_id = shared_team(standing.team_id, round.team_id);
     standing
 }
 
@@ -131,6 +181,7 @@ fn knockout(rounds: Vec<LbEntry>) -> Vec<LbEntry> {
         .group_by(|e| e.participant())
         .reduce(|mut standing, round| {
             let map_id = shared_map(standing.map_id, round.map_id);
+            let team_id = shared_team(standing.team_id, round.team_id);
             let round_number = standing.round.max(round.round);
             // The round in which the player got knocked out, otherwise the latest one.
             let knocked_out = standing.score == -1;
@@ -139,6 +190,7 @@ fn knockout(rounds: Vec<LbEntry>) -> Vec<LbEntry> {
             }
             standing.round = round_number;
             standing.map_id = map_id;
+            standing.team_id = team_id;
             standing
         })
         // Who got knocked out in the same round is ranked by the place in that round.
@@ -151,12 +203,14 @@ fn time_attack(rounds: Vec<LbEntry>) -> Vec<LbEntry> {
         .group_by(|e| e.participant())
         .reduce(|best, round| {
             let map_id = shared_map(best.map_id, round.map_id);
+            let team_id = shared_team(best.team_id, round.team_id);
             let mut best = if LbParams::time_key(round.time) < LbParams::time_key(best.time) {
                 round
             } else {
                 best
             };
             best.map_id = map_id;
+            best.team_id = team_id;
             best
         })
         .sorted_by_key(|s| LbParams::Time.key(s))
@@ -166,7 +220,7 @@ fn time_attack(rounds: Vec<LbEntry>) -> Vec<LbEntry> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::pipeline::test_util::{MATCH, ranking, round, round_in, test_context};
+    use crate::pipeline::test_util::{MATCH, for_team, ranking, round, round_in, test_context};
 
     #[test]
     fn every_match_becomes_standings_with_its_own_mode() {
@@ -307,5 +361,34 @@ mod tests {
 
         let maps: Vec<(u32, u32)> = standings.iter().map(|s| (s.user_id, s.map_id)).collect();
         assert_eq!(maps, vec![(1, 7), (2, 0)]);
+    }
+
+    #[test]
+    fn standings_keep_the_team_only_if_every_round_was_played_for_it() {
+        let rounds = vec![
+            for_team(round(1, 1, 0, 3000), 5),
+            for_team(round(2, 1, 0, 2000), 5),
+            for_team(round(1, 2, 0, 1000), 5),
+            for_team(round(2, 2, 0, 4000), 6),
+        ];
+
+        let teams = |standings: Vec<LbEntry>| -> Vec<(u32, u32)> {
+            standings.iter().map(|s| (s.user_id, s.team_id)).collect()
+        };
+        assert_eq!(teams(self::rounds(rounds.clone())), vec![(1, 5), (2, 0)]);
+        // Time attack keeps the best round, but it still was not the only team.
+        assert_eq!(teams(time_attack(rounds)), vec![(1, 5), (2, 0)]);
+    }
+
+    #[test]
+    fn built_in_modes_do_not_rank_teams() {
+        let test = test_context(&[(1, TmMode::Rounds)]);
+
+        let standings = match_team_standings(
+            &LbContext::new(&test.anonymous_view_context(), MATCH),
+            vec![round(1, 1, 10, 0)],
+        );
+
+        assert!(standings.is_err());
     }
 }

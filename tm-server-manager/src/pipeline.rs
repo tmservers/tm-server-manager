@@ -8,11 +8,11 @@ use crate::{
     pipeline::{
         context::LbContext,
         error::LbError,
-        modes::match_standings,
+        modes::{match_standings, match_team_standings},
         shape::LbShape,
         steps::{
             filter::LbFilterSettingsV2,
-            merge::LbMergeSettingsV2,
+            merge::{LbMergeSettingsV2, LbMergeTeams},
             remap::LbRemapSettings,
             select::LbSelectSettings,
             sort::{LbRenumberSettings, LbSortSettings},
@@ -43,6 +43,10 @@ pub(crate) enum LbSettingsV3 {
     Select(LbSelectSettings),
     Sort(LbSortSettings),
     Renumber(LbRenumberSettings),
+    /// Turns the rounds of every match into the standings of its teams.
+    MatchTeams,
+    /// Merges all entries of every team into one standing of the team, entries without a team are left out.
+    MergeTeams(LbMergeSettingsV2),
 }
 
 /// Takes the entries of a leaderboard and returns the changed ones.
@@ -63,6 +67,8 @@ impl LbStep for LbSettingsV3 {
             LbSettingsV3::Select(settings) => settings.apply(cx, entries),
             LbSettingsV3::Sort(settings) => settings.apply(cx, entries),
             LbSettingsV3::Renumber(settings) => settings.apply(cx, entries),
+            LbSettingsV3::MatchTeams => match_team_standings(cx, entries),
+            LbSettingsV3::MergeTeams(settings) => LbMergeTeams(settings).apply(cx, entries),
         }
     }
 
@@ -80,6 +86,15 @@ impl LbStep for LbSettingsV3 {
             LbSettingsV3::Select(settings) => settings.check(origin, input),
             LbSettingsV3::Sort(settings) => settings.check(origin, input),
             LbSettingsV3::Renumber(settings) => settings.check(origin, input),
+            // Whether the mode can rank teams is only known when the match gets evaluated.
+            LbSettingsV3::MatchTeams => Ok(LbShape {
+                rounds: false,
+                standings: !input.is_empty(),
+                players: false,
+                teams: !input.is_empty(),
+                ..input
+            }),
+            LbSettingsV3::MergeTeams(settings) => LbMergeTeams(settings).check(origin, input),
         }
     }
 }
@@ -158,6 +173,11 @@ impl LbScopeKey {
 
 /// The map entries were played on together, 0 if they were played on different ones.
 fn shared_map(a: u32, b: u32) -> u32 {
+    if a == b { a } else { 0 }
+}
+
+/// The team entries were played for together, 0 if they were played for different ones.
+fn shared_team(a: u32, b: u32) -> u32 {
     if a == b { a } else { 0 }
 }
 
@@ -266,10 +286,6 @@ impl LbEntry {
         }
     }
 
-    pub(crate) fn get_user(&self) -> u32 {
-        self.user_id
-    }
-
     /// The entry as one of the leaderboard of `origin`.
     pub(crate) fn with_origin(mut self, origin: NodeHandle) -> Self {
         (self.node_variant, self.node_id) = origin.split();
@@ -288,7 +304,7 @@ mod tests {
     use super::*;
     use crate::pipeline::{
         steps::select::{LbSelectPlaces, LbSelectSettings},
-        test_util::{round, test_context},
+        test_util::{MATCH, for_team, round, round_in, test_context},
     };
 
     #[test]
@@ -314,5 +330,46 @@ mod tests {
             error.to_string(),
             "LeaderboardV1(3) step 2: Could not find the reverse cup config of MatchV1(1)."
         );
+    }
+
+    #[test]
+    fn team_standings_from_the_best_rounds_of_their_players_in_different_matches() {
+        let test = test_context(&[]);
+        let leaderboard = NodeHandle::LeaderboardV1(3);
+        let other = NodeHandle::MatchV1(2);
+        let rounds = |node, user, team, times: [i32; 3]| {
+            (1..)
+                .zip(times)
+                .map(move |(number, time)| for_team(round_in(node, user, number, 0, time), team))
+        };
+
+        // Every team has one player in each match, a time of 0 was not driven.
+        let entries = rounds(MATCH, 1, 1, [100, 300, 200])
+            .chain(rounds(MATCH, 3, 2, [150, 150, 500]))
+            .chain(rounds(other, 2, 1, [400, 100, 0]))
+            .chain(rounds(other, 4, 2, [200, 250, 900]))
+            .collect();
+
+        let standings = evaluate_steps(
+            &LbContext::new(&test.anonymous_view_context(), leaderboard),
+            &[
+                LbSettingsV3::Filter(LbFilterSettingsV2::best(
+                    vec![LbKey::Origin],
+                    LbParams::Time,
+                    2,
+                )),
+                LbSettingsV3::MergeTeams(LbMergeSettingsV2::summate(LbParams::Time)),
+            ],
+            entries,
+        )
+        .unwrap();
+
+        // Team 1 has 100 + 200 and 100 + 400, team 2 has 150 + 150 and 200 + 250.
+        let rows: Vec<(u32, u32, u16, i32)> = standings
+            .iter()
+            .map(|e| (e.user_id, e.team_id, e.position, e.time))
+            .collect();
+        assert_eq!(rows, vec![(0, 2, 1, 750), (0, 1, 2, 800)]);
+        assert!(standings.iter().all(|e| e.get_node() == leaderboard));
     }
 }
