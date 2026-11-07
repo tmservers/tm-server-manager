@@ -15,7 +15,10 @@ use crate::{
         error::LbError,
         evaluate_steps,
         shape::{LbShape, check_steps},
-        steps::select::{LbSelectFirstOffsetN, LbSelectPlaces, LbSelectSettings},
+        steps::{
+            script::script_permission,
+            select::{LbSelectFirstOffsetN, LbSelectPlaces, LbSelectSettings},
+        },
     },
 };
 
@@ -187,13 +190,6 @@ fn competition_connection_data_update(
         return Err("The connection can only be changed while it gets configured.".into());
     }
 
-    ctx.auth_builder(connection.parent_id)
-        .permission(CompetitionPermissionsV1::CONNECTION_CONFIGURE)
-        .authorize()?;
-
-    let origin = connection.origin();
-    check_steps(origin, &settings, ctx.node_output_shape(origin)?)?;
-
     let Some(mut data) = ctx
         .db
         .tab_connection_data_v2()
@@ -202,6 +198,14 @@ fn competition_connection_data_update(
     else {
         return Err("Connection data could not be found.".into());
     };
+
+    ctx.auth_builder(connection.parent_id)
+        .permission(CompetitionPermissionsV1::CONNECTION_CONFIGURE)
+        .permission(script_permission(&data.settings, &settings))
+        .authorize()?;
+
+    let origin = connection.origin();
+    check_steps(origin, &settings, ctx.node_output_shape(origin)?)?;
 
     if let Some(taken) = slot_taken_by(ctx, connection.target(), slot, connection_id) {
         return Err(format!(
@@ -292,7 +296,10 @@ mod tests {
 
     use super::*;
     use crate::{
-        competition::connection::{ConnectionKind, ConnectionWrite, TabConnection},
+        competition::{
+            connection::{ConnectionKind, ConnectionWrite, TabConnection},
+            node::resolve_inputs,
+        },
         pipeline::test_util::test_context,
         tm_match::leaderboard::{MatchLeaderboardWrite, MatchRoundPlayer},
     };
@@ -369,10 +376,8 @@ mod tests {
             ],
         );
 
-        let inputs = test
-            .anonymous_view_context()
-            .node_resolve_inputs(target)
-            .unwrap();
+        let cx = LbContext::new(&test.anonymous_view_context(), target);
+        let inputs = resolve_inputs(&cx, target).unwrap();
 
         let users: Vec<u32> = inputs.iter().map(|input| input[0].user_id).collect();
         assert_eq!(users, vec![30, 20, 10]);

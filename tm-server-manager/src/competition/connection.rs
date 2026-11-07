@@ -543,11 +543,6 @@ pub(crate) trait ConnectionRead {
 
     //fn connection_receive_leaderboard(&self, connection: TabConnection) -> Vec<PermittedPlayer>;
 
-    fn connection_resolve_leaderboard(
-        &self,
-        connection: TabConnection,
-        data: Vec<LbEntry>,
-    ) -> Result<Vec<LbEntry>, LbError>;
     /// What the connection would pass on, its steps are checked against the input on the way.
     fn connection_shape(
         &self,
@@ -565,7 +560,6 @@ pub(crate) trait ConnectionRead {
     /// The connections which have the node as their origin.
     fn connection_targets_of(&self, node: NodeHandle) -> impl Iterator<Item = TabConnection>;
 }
-
 /// The steps of a data connection, any other connection has none.
 fn data_of(
     ctx: &impl spacetimedb::CtxDbRead,
@@ -585,15 +579,16 @@ fn data_of(
     })
 }
 
-impl<Db: spacetimedb::CtxDbRead> ConnectionRead for Db {
-    fn connection_resolve_leaderboard(
-        &self,
-        connection: TabConnection,
-        data: Vec<LbEntry>,
-    ) -> Result<Vec<LbEntry>, LbError> {
-        data_of(self, &connection)?.evaluate(&LbContext::new(self, connection.origin()), data)
-    }
+/// The entries the data connection passes on from `data`, the output of its origin.
+pub(crate) fn connection_resolve_leaderboard(
+    cx: &LbContext,
+    connection: TabConnection,
+    data: Vec<LbEntry>,
+) -> Result<Vec<LbEntry>, LbError> {
+    data_of(cx, &connection)?.evaluate(&cx.at(connection.origin()), data)
+}
 
+impl<Db: spacetimedb::CtxDbRead> ConnectionRead for Db {
     fn connection_shape(
         &self,
         connection: TabConnection,

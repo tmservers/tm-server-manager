@@ -155,7 +155,7 @@ pub fn login_as_server(
             "Authorization",
             format!(
                 "Basic {}",
-                BASE64_STANDARD.encode(login.clone() + ":" + &password)
+                BASE64_STANDARD.encode(login.clone() + ":" + password.as_str())
             ),
         )
         .header("Content-Type", "application/json")

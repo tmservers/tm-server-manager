@@ -1,6 +1,6 @@
 use spacetimedb::{
-    AnonymousViewContext, ProcedureContext, Query, ReducerContext, SpacetimeType, Table, procedure,
-    reducer, table, view,
+    AnonymousViewContext, CtxDbRead, ProcedureContext, Query, ReducerContext, SpacetimeType, Table,
+    procedure, reducer, table, view,
 };
 
 use crate::{
@@ -9,7 +9,7 @@ use crate::{
     competition::{
         CompetitionPermissionsV1, CompetitionRead,
         connection::internal_graph_resolution_node_finished,
-        node::{NodeHandle, NodeRead, NodeWrite, Vec2},
+        node::{NodeHandle, NodeRead, NodeWrite, Vec2, resolve_input_data},
     },
     pipeline::{
         LbEntry, LbSettingsV3,
@@ -17,7 +17,10 @@ use crate::{
         error::LbError,
         evaluate_steps,
         shape::{LbShape, check_steps},
-        steps::{filter::LbFilterSettings, merge::LbMergeSettings, remap::LbRemapSettings},
+        steps::{
+            filter::LbFilterSettings, merge::LbMergeSettings, remap::LbRemapSettings,
+            script::script_permission,
+        },
     },
 };
 
@@ -262,6 +265,7 @@ fn leaderboard_settings_update(
 
     ctx.auth_builder(leaderboard.parent_id)
         .permission(CompetitionPermissionsV1::LEADERBOARD_CONFIGURE)
+        .permission(script_permission(&leaderboard.settings, &settings))
         .authorize()?;
 
     if leaderboard.status != LeaderboardStatus::Configuring {
@@ -280,7 +284,6 @@ fn leaderboard_settings_update(
 
 pub(crate) trait LeadearboardRead {
     fn leaderboard_find(&self, id: u32) -> Result<LeaderboardV3, String>;
-    fn leaderboard_evaluation(&self, leaderboard_id: u32) -> Result<Vec<LbEntry>, LbError>;
     /// What the leaderboard would output, its steps are checked against its inputs on the way.
     fn leaderboard_output_shape(&self, leaderboard_id: u32) -> Result<LbShape, LbError>;
     fn leaderboards_with_competition(
@@ -289,30 +292,35 @@ pub(crate) trait LeadearboardRead {
     ) -> impl Iterator<Item = LeaderboardV3>;
     //fn leaderboard_finalize(&self, lb: Vec<LbEntry>) -> Vec<LbEntry>;
 }
-impl<Db: spacetimedb::CtxDbRead> LeadearboardRead for Db {
-    fn leaderboard_evaluation(&self, leaderboard_id: u32) -> Result<Vec<LbEntry>, LbError> {
-        let Some(lb) = self
-            .db_read_only()
-            .tab_leaderboard_v3()
-            .id()
-            .find(leaderboard_id)
-        else {
-            return Err(LbError::new(format!(
-                "Leaderboard {leaderboard_id} does not exist."
-            )));
-        };
+/// The entries the leaderboard outputs, evaluated during the call of `cx`.
+pub(crate) fn leaderboard_evaluate(
+    cx: &LbContext,
+    leaderboard_id: u32,
+) -> Result<Vec<LbEntry>, LbError> {
+    let Some(lb) = cx
+        .db_read_only()
+        .tab_leaderboard_v3()
+        .id()
+        .find(leaderboard_id)
+    else {
+        return Err(LbError::new(format!(
+            "Leaderboard {leaderboard_id} does not exist."
+        )));
+    };
 
-        if lb.status == LeaderboardStatus::Configuring {
-            log::warn!("Tried to eval leadarboard but it is still getting configured.");
-            return Ok(Vec::new());
-        }
-
-        let node = NodeHandle::LeaderboardV1(leaderboard_id);
-        let input = self.node_resolve_input_data(node)?;
-
-        evaluate_steps(&LbContext::new(self, node), &lb.settings, input)
+    if lb.status == LeaderboardStatus::Configuring {
+        log::warn!("Tried to eval leadarboard but it is still getting configured.");
+        return Ok(Vec::new());
     }
 
+    let node = NodeHandle::LeaderboardV1(leaderboard_id);
+    let cx = cx.at(node);
+    let input = resolve_input_data(&cx, node)?;
+
+    evaluate_steps(&cx, &lb.settings, input)
+}
+
+impl<Db: spacetimedb::CtxDbRead> LeadearboardRead for Db {
     fn leaderboard_output_shape(&self, leaderboard_id: u32) -> Result<LbShape, LbError> {
         let Some(lb) = self
             .db_read_only()
