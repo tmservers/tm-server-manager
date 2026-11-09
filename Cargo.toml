@@ -35,7 +35,19 @@ base64 = { version = "*" }
 dxr = "0.8"
 json = { package = "simd-json", version = "0.17" }
 serde = { version = "1" }
+serde_json = "1.0.154"
 uuid = { version = "1.12", features = ["serde"] }
+thiserror = "2"
+bytes = "1"
+flate2 = "1.0"
+minilzo-rs = "0"
+gbx-header = "0"
+log = "0.4"
+tachyonix = "*"
+dashmap = "*"
+nadeo-api = "*"
+# Optional in the bridge, which needs it to link statically against it in docker builds.
+openssl = { version = "0.10", features = ["vendored"] }
 # This can be removed if we actualy have higher-ranked trait bounds for AsyncFnMuts Output type which is a supertrait of AsyncFn which is needed for event propagation in the trackmania server. 
 async_fn_traits = "*"
 petgraph = { version = "0.8.3", features = ['all'] }
@@ -44,6 +56,13 @@ rhai = { version = "=1.27.0", default-features = false }
 
 mlua = { version = "0.12", features = ["luau"] }
 #chumsky = { version = "1.0.0-alpha.8" }
+
+#========
+# Tracing
+#========
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+opentelemetry = "0.31"
 
 #============
 # SpacetimeDB
@@ -68,8 +87,7 @@ tm-server-controller = { path = "./tm-server-controller", version = "0.1.0-dev" 
 #Testing
 #=======
 
-testcontainers = { version = "0", default-features = false, features = [
-    "blocking",
-] }
+# The bridge adds the blocking feature for its sync runner.
+testcontainers = "0"
 insta = { version = "1", features = ["yaml"] }
 proptest = "1"
