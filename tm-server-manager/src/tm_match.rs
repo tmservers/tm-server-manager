@@ -690,10 +690,12 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
             //SAFETY: Match is live so have to have a state.
             let mut state = self.match_state_find(match_id).unwrap();
 
+            // The round the disconnect interrupts does not count, it gets played again.
+            if let Some(round) = state.interrupt_round() {
+                self.match_round_delete(match_id, round);
+            }
             state.set_pause(true);
             state.set_recovery();
-
-            self.match_round_delete(match_id, state.get_round());
 
             self.match_state_update(state);
 
