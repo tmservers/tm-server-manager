@@ -304,3 +304,16 @@ mod tests {
         assert!(merged.standings && !merged.rounds);
     }
 }
+
+#[cfg(test)]
+impl LbMergeSettingsV2 {
+    /// Any merge, for property tests.
+    pub(in crate::pipeline) fn strategy() -> impl proptest::strategy::Strategy<Value = Self> {
+        use proptest::prelude::*;
+        (
+            prop_oneof![Just(LbMergeAction::Average), Just(LbMergeAction::Summate)],
+            crate::pipeline::test_util::params(),
+        )
+            .prop_map(|(action, param)| LbMergeSettingsV2 { action, param })
+    }
+}

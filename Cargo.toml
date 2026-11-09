@@ -72,3 +72,4 @@ testcontainers = { version = "0", default-features = false, features = [
     "blocking",
 ] }
 insta = { version = "1", features = ["yaml"] }
+proptest = "1"

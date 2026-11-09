@@ -186,3 +186,19 @@ mod tests {
         assert_eq!(places, vec![(2, 1), (5, 2)]);
     }
 }
+
+#[cfg(test)]
+impl LbSortSettings {
+    pub(in crate::pipeline) fn by(param: LbParams) -> Self {
+        LbSortSettings { param }
+    }
+}
+
+#[cfg(test)]
+impl LbRenumberSettings {
+    /// Any renumbering, for property tests.
+    pub(in crate::pipeline) fn strategy() -> impl proptest::strategy::Strategy<Value = Self> {
+        use proptest::prelude::*;
+        crate::pipeline::test_util::scope().prop_map(|scope| LbRenumberSettings { scope })
+    }
+}

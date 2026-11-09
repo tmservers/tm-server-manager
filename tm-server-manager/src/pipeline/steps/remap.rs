@@ -151,3 +151,46 @@ mod tests {
         assert_eq!(remapped[0].position, 0);
     }
 }
+
+#[cfg(test)]
+impl LbRemapSettings {
+    /// Any remap, for property tests.
+    pub(in crate::pipeline) fn strategy() -> impl proptest::strategy::Strategy<Value = Self> {
+        use crate::pipeline::test_util::params;
+        use proptest::prelude::*;
+        let manipulation = prop_oneof![
+            Just(LbManipulationKind::Add),
+            Just(LbManipulationKind::Multiply),
+            Just(LbManipulationKind::SubtractLhs),
+            Just(LbManipulationKind::SubtractRhs),
+            Just(LbManipulationKind::DivideLhs),
+            Just(LbManipulationKind::DivideRhs),
+        ];
+        (params(), params(), manipulation, -5..=5i32).prop_map(
+            |(origin, target, manipulation, manipulation_value)| LbRemapSettings {
+                origin,
+                target,
+                manipulation,
+                manipulation_value,
+            },
+        )
+    }
+
+    /// Adds the value to the param.
+    pub(in crate::pipeline) fn adding(param: LbParams, value: i32) -> Self {
+        LbRemapSettings {
+            origin: param,
+            target: param,
+            manipulation: LbManipulationKind::Add,
+            manipulation_value: value,
+        }
+    }
+
+    /// Subtracts the value from the param.
+    pub(in crate::pipeline) fn subtracting(param: LbParams, value: i32) -> Self {
+        LbRemapSettings {
+            manipulation: LbManipulationKind::SubtractLhs,
+            ..LbRemapSettings::adding(param, value)
+        }
+    }
+}

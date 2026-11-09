@@ -40,6 +40,7 @@ rhai = { workspace = true, features = [
 #mlua.workspace = true
 
 [dev-dependencies]
+proptest.workspace = true
 spacetimedb = { workspace = true, features = ["test-utils"] }
 # temporal_rs 0.1.2, which the test datastore pulls in through v8, does not compile against icu 2.2 and newer.
 icu_calendar = "~2.1"
