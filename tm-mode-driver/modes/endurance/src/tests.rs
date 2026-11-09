@@ -162,6 +162,28 @@ fn checkpoints_of_every_race_count() {
 }
 
 #[test]
+fn players_who_got_equally_far_at_the_same_time_go_by_the_checkpoints_before() {
+    let harness = started("{}", &["a", "b", "c", "d"]);
+    let at = |account_id, times: &[u32]| racer(account_id, vec![race(times, 0, false)]);
+
+    let round = harness.live_round(races(vec![
+        // Everyone passed their second checkpoint after 20 seconds.
+        at("c", &[10_000, 20_000]),
+        at("b", &[10_000, 20_000]),
+        at("d", &[9_000, 20_000]),
+        // Further than everyone else.
+        at("a", &[11_000, 21_000, 31_000]),
+    ]));
+
+    // d was earlier at the checkpoint before, b and c only differ by their account.
+    let order: Vec<(&str, u32)> = round
+        .iter()
+        .map(|entry| (entry.account_id.as_str(), entry.position))
+        .collect();
+    assert_eq!(order, [("a", 1), ("d", 2), ("b", 3), ("c", 4)]);
+}
+
+#[test]
 fn the_race_is_the_result_of_the_match() {
     let mut harness = started(r#"{"laps": 2}"#, &["a", "b", "c"]);
     let finish = race(&[10_000, 20_000, 30_000, 40_000, 50_000, 60_000], 2, true);
