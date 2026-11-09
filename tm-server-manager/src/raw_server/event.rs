@@ -12,7 +12,7 @@ use crate::{
         event::handle_match_event,
         state::MatchStateRead,
     },
-    user::{UserRead, UserV1, UserWrite},
+    user::UserWrite,
 };
 
 /// Servers call this to post the event stream.
@@ -24,11 +24,8 @@ pub(crate) fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), Strin
         Event::PlayerConnect(player) => {
             log::info!("Player connected: {}", player.account_id);
             let account_id = Uuid::parse_str(&player.account_id).unwrap();
-            if !ctx.has_user(account_id) {
-                let user = UserV1::new(account_id);
-                if let Err(err) = ctx.user_insert(user) {
-                    log::error!("{err}");
-                };
+            if let Err(err) = ctx.user_id_or_insert(account_id) {
+                log::error!("{err}");
             }
             if let Err(err) = raw_server_player_add(ctx, account_id, player.is_spectator) {
                 log::error!("Player Disconnect: {err}");
@@ -59,7 +56,8 @@ pub(crate) fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), Strin
             //match_handle_hook(ctx, state, &event)?;
             if let Event::PlayerChat(chat) = &event {
                 let account_id = Uuid::parse_str(&chat.account_id).unwrap();
-                let user_id = ctx.user_id_from_account(account_id);
+                // Players who joined while the bridge was gone never connected, their chat still counts.
+                let user_id = ctx.user_id_or_insert(account_id)?;
                 ctx.match_chat_insert(MatchChat::new(
                     state.match_id,
                     state.status(),
