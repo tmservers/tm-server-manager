@@ -159,3 +159,147 @@ fn record(ctx: &(impl CtxDbWrite + CtxWithTimestamp), node: NodeHandle, error: &
         since: ctx.timestamp(),
     });
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{competition::node::NodeHandle, test_world::*, tm_match::MatchStatus};
+
+    const NO_SERVER: &str = "no servers left";
+
+    /// A configured match which waits for a leaderboard that is finished, so it should start right away.
+    fn ready_match(world: &World, name: &str) -> (u32, NodeHandle) {
+        let match_id = world.configured_match(name);
+        let node = NodeHandle::MatchV1(match_id);
+        let seeding = world.finished_leaderboard(&format!("Seeding of {name}"));
+        world.wait_for(node, seeding);
+        (match_id, node)
+    }
+
+    fn assert_waits_for_a_server(world: &World, match_id: u32) {
+        assert_eq!(world.match_status(match_id), MatchStatus::Configured);
+        let failures = world.start_failures();
+        let failure = failures
+            .iter()
+            .find(|(node, _)| *node == NodeHandle::MatchV1(match_id))
+            .expect("the match could not start");
+        assert!(
+            failure.1.contains(NO_SERVER),
+            "unexpected reason: {}",
+            failure.1
+        );
+    }
+
+    #[test]
+    fn a_match_which_could_not_get_a_server_starts_once_one_is_free() {
+        let world = World::new();
+        let server = world.server(1);
+        let a = player(1);
+        let first = world.live_match(&server, &[&a]);
+
+        let (second, node) = ready_match(&world, "Second");
+        assert_waits_for_a_server(&world, second);
+
+        server.post(&world, [start_match()]);
+        server.post(&world, round(1, &[(&a, 30_000, 10)]));
+        server.post(&world, [end_match()]);
+
+        assert_eq!(world.match_status(first), MatchStatus::Ended);
+        assert_eq!(world.match_status(second), MatchStatus::Preparation);
+        assert_eq!(world.server_of(node), Some(server.id));
+        assert_eq!(world.start_failures(), vec![]);
+    }
+
+    #[test]
+    fn a_match_which_could_not_get_a_server_starts_with_one_lent_and_verified_later() {
+        let world = World::new();
+        let (match_id, node) = ready_match(&world, "Final");
+        assert_waits_for_a_server(&world, match_id);
+
+        let server = world.logged_in_server(1);
+        world.lend(&server);
+        // A server nobody verified cannot be used yet.
+        assert_waits_for_a_server(&world, match_id);
+
+        world.verify(&server);
+
+        assert_eq!(world.match_status(match_id), MatchStatus::Preparation);
+        assert_eq!(world.server_of(node), Some(server.id));
+        assert_eq!(world.start_failures(), vec![]);
+    }
+
+    #[test]
+    fn a_match_which_could_not_get_a_server_starts_with_a_verified_one_lent_later() {
+        let world = World::new();
+        let server = world.logged_in_server(1);
+        world.verify(&server);
+        let (match_id, node) = ready_match(&world, "Final");
+        assert_waits_for_a_server(&world, match_id);
+
+        world.lend(&server);
+
+        assert_eq!(world.match_status(match_id), MatchStatus::Preparation);
+        assert_eq!(world.server_of(node), Some(server.id));
+    }
+
+    #[test]
+    fn a_match_which_could_not_get_a_server_starts_once_one_comes_online() {
+        let world = World::new();
+        let server = world.server(1);
+        server.disconnect(&world);
+        let (match_id, node) = ready_match(&world, "Final");
+        assert_waits_for_a_server(&world, match_id);
+
+        server.reconnect(&world);
+
+        assert_eq!(world.match_status(match_id), MatchStatus::Preparation);
+        assert_eq!(world.server_of(node), Some(server.id));
+    }
+
+    #[test]
+    fn a_match_which_could_not_get_a_server_starts_with_one_taken_from_another_match() {
+        let world = World::new();
+        let server = world.server(1);
+        let holding = world.configured_match("Holding");
+        world.as_owner(|ctx| crate::tm_match::match_assign_server(ctx, holding, server.id));
+        let (match_id, node) = ready_match(&world, "Final");
+        assert_waits_for_a_server(&world, match_id);
+
+        world.as_owner(|ctx| crate::tm_match::match_server_revoke(ctx, holding));
+
+        assert_eq!(world.match_status(match_id), MatchStatus::Preparation);
+        assert_eq!(world.server_of(node), Some(server.id));
+    }
+
+    #[test]
+    fn the_match_which_waits_the_longest_gets_the_free_server() {
+        let world = World::new();
+        let server = world.server(1);
+        let a = player(1);
+        world.live_match(&server, &[&a]);
+        let (earlier, earlier_node) = ready_match(&world, "Earlier");
+        world
+            .test
+            .clock
+            .advance(spacetimedb::TimeDuration::from_micros(1));
+        let (later, _) = ready_match(&world, "Later");
+
+        server.post(&world, [start_match()]);
+        server.post(&world, round(1, &[(&a, 30_000, 10)]));
+        server.post(&world, [end_match()]);
+
+        assert_eq!(world.match_status(earlier), MatchStatus::Preparation);
+        assert_eq!(world.server_of(earlier_node), Some(server.id));
+        assert_waits_for_a_server(&world, later);
+    }
+
+    #[test]
+    fn a_deleted_match_does_not_wait_for_a_server_anymore() {
+        let world = World::new();
+        let (match_id, node) = ready_match(&world, "Final");
+        assert_waits_for_a_server(&world, match_id);
+
+        world.as_owner(|ctx| crate::competition::node::node_delete(ctx, node));
+
+        assert_eq!(world.start_failures(), vec![]);
+    }
+}

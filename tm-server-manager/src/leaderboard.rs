@@ -162,7 +162,7 @@ impl LbSettingsV2 {
 }
 
 #[reducer]
-fn leaderboard_create(
+pub(crate) fn leaderboard_create(
     ctx: &ReducerContext,
     name: String,
     parent_id: u32,
@@ -193,7 +193,7 @@ fn leaderboard_create(
 }
 
 #[reducer]
-fn leaderboard_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> {
+pub(crate) fn leaderboard_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> {
     let Some(mut leaderboard) = ctx.db.tab_leaderboard_v3().id().find(id) else {
         return Err("Leaderboard was mot found!".into());
     };
