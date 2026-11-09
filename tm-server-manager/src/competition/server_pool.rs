@@ -2,7 +2,7 @@ use spacetimedb::{ReducerContext, Table, ViewContext, reducer, table, view};
 
 use crate::{
     authorization::Authorization,
-    competition::{CompetitionPermissionsV1, CompetitionRead},
+    competition::{CompetitionPermissionsV1, CompetitionRead, connection::start::NodeStartWrite},
     raw_server::{
         CompetitionRawServer, RawServerV1, TabRawServerRead, occupation::TabRawServerOccupationRead,
     },
@@ -46,6 +46,9 @@ pub(crate) fn raw_server_add(ctx: &ReducerContext, server_id: u32, competition_i
             competition_id,
             server_id,
         })?;
+
+    // The server can be used by the nodes which wait for one.
+    ctx.node_starts_retry();
 
     Ok(())
 }

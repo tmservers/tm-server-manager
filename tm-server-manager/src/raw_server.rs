@@ -9,6 +9,7 @@ use spacetimedb::{
 };
 
 use crate::authorization::Authorization;
+use crate::competition::connection::start::NodeStartWrite;
 use crate::competition::node::{NodeHandle, NodeRead};
 use crate::competition::server_pool::TabCompetitionServerPoolRead;
 use crate::raw_server::occupation::{TabRawServerOccupationRead, TabRawServerOccupationWrite};
@@ -230,6 +231,10 @@ pub fn login_as_server(
                     ctx.match_recovery_exit_forced(match_id);
                 }
             }
+
+            // The server is online again for the nodes which wait for one.
+            ctx.node_starts_retry();
+
             Ok(server_id)
         } else {
             // Server has never been seen before so create a new one.
@@ -275,6 +280,10 @@ pub(crate) fn raw_server_verify(ctx: &ReducerContext, server_id: u32) -> Result<
         } else {
             server.verified = true;
             ctx.db.tab_raw_server().id().update(server);
+
+            // The server can be used by the nodes which wait for one.
+            ctx.node_starts_retry();
+
             Ok(())
         }
     } else {
