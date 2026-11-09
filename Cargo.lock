@@ -6206,6 +6206,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "tm-mode-driver-builtin"
+version = "0.1.0-dev"
+dependencies = [
+ "tm-mode-driver-sdk",
+ "tm-mode-endurance",
+ "tm-mode-knockout",
+ "tm-mode-reverse-cup",
+ "tm-mode-rounds",
+ "tm-mode-time-attack",
+]
+
+[[package]]
 name = "tm-mode-driver-sdk"
 version = "0.1.0-dev"
 dependencies = [
