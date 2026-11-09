@@ -15,10 +15,10 @@ repository.workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
-log = "0.4"
+log.workspace = true
 spacetimedb = { workspace = true }
-tm-server-types = { path = "../tm-server-types", features = ["spacetime"] }
-gbx-header = "0"
+tm-server-types = { workspace = true, features = ["spacetime"] }
+gbx-header.workspace = true
 
 serde = { workspace = true, features = ["derive"] }
 json.workspace = true
