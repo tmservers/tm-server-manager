@@ -259,7 +259,7 @@ pub fn login_as_server(
 }
 
 #[reducer]
-fn raw_server_verify(ctx: &ReducerContext, server_id: u32) -> Result<(), String> {
+pub(crate) fn raw_server_verify(ctx: &ReducerContext, server_id: u32) -> Result<(), String> {
     let user_id = ctx.user_id()?;
 
     let mut server = ctx

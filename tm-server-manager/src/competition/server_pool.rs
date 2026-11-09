@@ -18,7 +18,7 @@ pub struct CompetitionServer {
 
 /// Allows a user to lend a server he owns to a project.
 #[reducer]
-fn raw_server_add(ctx: &ReducerContext, server_id: u32, competition_id: u32) -> Result<(), String> {
+pub(crate) fn raw_server_add(ctx: &ReducerContext, server_id: u32, competition_id: u32) -> Result<(), String> {
     let user_id = ctx
         .auth_builder(competition_id)
         .permission(CompetitionPermissionsV1::RAW_SERVER_ADD)
