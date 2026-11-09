@@ -25,6 +25,9 @@ pub struct MatchState {
     // or Knockout.
     #[default(TmMode::Rounds)]
     mode: TmMode,
+    /// Whether the round the counter is at has started and not ended yet.
+    #[default(false)]
+    round_running: bool,
 }
 
 impl MatchState {
@@ -39,6 +42,7 @@ impl MatchState {
             map_id: 0,
             status: MatchStatus::Preparation,
             mode,
+            round_running: false,
         }
     }
 
@@ -55,10 +59,19 @@ impl MatchState {
     }
 
     pub(crate) fn set_pause(&mut self, paused: bool) {
-        if !self.paused && paused {
-            self.round -= 1;
-        }
         self.paused = paused;
+    }
+
+    /// Stops the round which runs, it gets played again under its number.
+    /// Returns the round whose results have to be dropped, none if no round ran.
+    pub(crate) fn interrupt_round(&mut self) -> Option<u16> {
+        if !self.round_running {
+            return None;
+        }
+        let interrupted = self.round;
+        self.round -= 1;
+        self.round_running = false;
+        Some(interrupted)
     }
 
     pub(crate) fn new_wu_round(&mut self) {
@@ -67,6 +80,11 @@ impl MatchState {
 
     pub(crate) fn new_round(&mut self) {
         self.round += 1;
+        self.round_running = true;
+    }
+
+    pub(crate) fn end_round(&mut self) {
+        self.round_running = false;
     }
 
     pub(crate) fn set_live(&mut self) {
@@ -91,6 +109,7 @@ impl MatchState {
         self.warmup = 0;
         self.is_warmup = false;
         self.paused = false;
+        self.round_running = false;
     }
 
     pub(super) fn get_round(&self) -> u16 {
@@ -140,6 +159,8 @@ pub struct MatchStateHistory {
     paused: bool,
     status: MatchStatus,
     mode: TmMode,
+    #[default(false)]
+    round_running: bool,
 }
 
 impl MatchStateHistory {
@@ -155,6 +176,7 @@ impl MatchStateHistory {
             paused,
             status,
             mode,
+            round_running,
         } = *state;
         MatchStateHistory {
             match_id,
@@ -167,6 +189,7 @@ impl MatchStateHistory {
             paused,
             status,
             mode,
+            round_running,
         }
     }
 }

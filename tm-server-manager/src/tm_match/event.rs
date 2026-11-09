@@ -221,6 +221,10 @@ pub(crate) fn handle_match_event(
 
             ctx.match_state_update(state);
         }
+        Event::EndRoundEnd(_) => {
+            state.end_round();
+            ctx.match_state_update(state);
+        }
         Event::StartMatchStart(_) => {
             state.set_live_commited();
             ctx.match_state_update(state);
@@ -265,9 +269,12 @@ pub(crate) fn handle_match_event(
             ctx.match_state_update(state);
         }
         Event::Pause(pause) => {
-            // If we just entered a pause we need to delete the current ongoing round.
-            if pause.active && !state.paused() {
-                ctx.match_round_delete(state.match_id, state.get_round());
+            // The round a pause interrupts does not count, it gets played again.
+            if pause.active
+                && !state.paused()
+                && let Some(round) = state.interrupt_round()
+            {
+                ctx.match_round_delete(state.match_id, round);
             }
 
             state.set_pause(pause.active);
