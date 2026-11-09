@@ -91,6 +91,7 @@ tm-mode-driver-sim = { path = "./tm-mode-driver/sim" }
 tm-mode-rounds = { path = "./tm-mode-driver/modes/rounds" }
 tm-mode-time-attack = { path = "./tm-mode-driver/modes/time-attack" }
 tm-mode-reverse-cup = { path = "./tm-mode-driver/modes/reverse-cup" }
+tm-mode-knockout = { path = "./tm-mode-driver/modes/knockout" }
 
 
 #=======

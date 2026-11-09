@@ -6225,6 +6225,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "tm-mode-knockout"
+version = "0.1.0-dev"
+dependencies = [
+ "insta",
+ "serde",
+ "serde_json",
+ "tm-mode-driver-sdk",
+ "tm-mode-driver-sim",
+]
+
+[[package]]
 name = "tm-mode-reverse-cup"
 version = "0.1.0-dev"
 dependencies = [
