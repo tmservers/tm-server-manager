@@ -428,3 +428,6 @@ fn engine(cost: Rc<Cell<u64>>, printed: Rc<RefCell<Vec<String>>>) -> Engine {
     api::register(&mut engine);
     engine
 }
+
+#[cfg(test)]
+mod tests;
