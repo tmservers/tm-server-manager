@@ -28,15 +28,7 @@ base64.workspace = true
 petgraph.workspace = true
 # Scripts of leaderboard steps and modes, a module has no clock or imports to give it.
 # Integers are i32 like the values of the entries, which also halves the size of every value on wasm32.
-rhai = { workspace = true, features = [
-    "std",
-    "no_time",
-    "no_module",
-    "no_float",
-    "no_custom_syntax",
-    "no_optimize",
-    "only_i32",
-] }
+rhai.workspace = true
 #mlua.workspace = true
 
 [dev-dependencies]

@@ -58,7 +58,16 @@ openssl = { version = "0.10", features = ["vendored"] }
 async_fn_traits = "*"
 petgraph = { version = "0.8.3", features = ['all'] }
 # Pinned because an update could change what the leaderboard scripts of existing competitions do.
-rhai = { version = "=1.27.0", default-features = false }
+# One set of features for every crate, they are unified anyway and scripts have to mean the same everywhere.
+rhai = { version = "=1.27.0", default-features = false, features = [
+    "std",
+    "no_time",
+    "no_module",
+    "no_float",
+    "no_custom_syntax",
+    "no_optimize",
+    "only_i32",
+] }
 
 mlua = { version = "0.12", features = ["luau"] }
 #chumsky = { version = "1.0.0-alpha.8" }
