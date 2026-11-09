@@ -129,11 +129,20 @@ impl Endurance {
     }
 
     /// The racers by the checkpoints they collected, equal ones by who got there
-    /// first. Their points are the checkpoints, their time the race times at their
-    /// last checkpoints added up and their label the lap they are in.
+    /// first: the time at their last checkpoint, then at the one before and so on,
+    /// and finally the account, so nobody ties. Their points are the checkpoints,
+    /// their time the race times at their last checkpoints added up and their label
+    /// the lap they are in.
     fn place(&self, races: &RoundEnd) -> Vec<Entry> {
         let mut progress: Vec<Progress> = races.racers.iter().map(Progress::of).collect();
-        progress.sort_by_key(|p| (Reverse(p.checkpoints), p.time, p.account_id.clone()));
+        progress.sort_by_cached_key(|p| {
+            (
+                Reverse(p.checkpoints),
+                p.time,
+                p.earlier.clone(),
+                p.account_id.clone(),
+            )
+        });
         progress
             .into_iter()
             .enumerate()
@@ -184,6 +193,10 @@ struct Progress {
     checkpoints: u32,
     /// The race times at the last checkpoints of the races added up.
     time: u32,
+    /// The race times at the checkpoints before the last one of the last race, from
+    /// the latest backwards. They tell players apart who got equally far at the
+    /// same time.
+    earlier: Vec<u32>,
     laps: u32,
     /// A race reached the finish after its laps.
     finished: bool,
@@ -199,6 +212,9 @@ impl Progress {
                 .iter()
                 .filter_map(|race| race.checkpoints.last())
                 .fold(0, |sum, &time| sum.saturating_add(time)),
+            earlier: races.last().map_or_else(Vec::new, |race| {
+                race.checkpoints.iter().rev().skip(1).copied().collect()
+            }),
             laps: races.iter().map(|race| race.laps).sum(),
             finished: races.iter().any(|race| race.finished),
         }
