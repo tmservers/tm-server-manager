@@ -57,6 +57,13 @@ pub struct PlayerInfo {
     pub flags: i32,
 }
 
+impl PlayerInfo {
+    /// The server itself shows up in the player list too.
+    pub fn is_server(&self) -> bool {
+        self.flags & 0b100000 != 0
+    }
+}
+
 impl dxr::TryFromValue for PlayerInfo {
     fn try_from_value(value: &dxr::Value) -> ::std::result::Result<PlayerInfo, dxr::Error> {
         use ::std::collections::HashMap;
