@@ -25,6 +25,8 @@ mod combinators;
 pub(crate) mod context;
 pub(crate) mod error;
 pub(crate) mod modes;
+#[cfg(test)]
+mod properties;
 pub(crate) mod shape;
 pub(crate) mod steps;
 #[cfg(test)]

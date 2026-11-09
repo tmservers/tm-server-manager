@@ -383,3 +383,14 @@ mod tests {
         assert_eq!(rows, vec![(1, -5, 5), (1, 0, 2), (2, -1, 1), (2, -2, 3)]);
     }
 }
+
+#[cfg(test)]
+impl LbFilterSettingsV2 {
+    /// Any filter, for property tests.
+    pub(in crate::pipeline) fn strategy() -> impl proptest::strategy::Strategy<Value = Self> {
+        use crate::pipeline::test_util::{params, scope};
+        use proptest::prelude::*;
+        (scope(), params(), 1..=4u16)
+            .prop_map(|(scope, param, n)| LbFilterSettingsV2::best(scope, param, n))
+    }
+}
