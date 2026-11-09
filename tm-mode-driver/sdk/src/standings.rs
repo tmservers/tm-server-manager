@@ -1,0 +1,525 @@
+//! Helpers for the standings every mode shares.
+
+use std::{cmp::Ordering, collections::BTreeMap};
+
+use crate::{
+    CanSpawn, Command, CountedRace, Entry, Label, RoundEnd, Standings, Status, Tone, race_order,
+};
+
+impl Default for Standings {
+    /// Standings without players, like the host hands them over when a match starts.
+    fn default() -> Self {
+        Self {
+            entries: Vec::new(),
+            round: Vec::new(),
+            rounds_on_map: 0,
+            rounds_played: 0,
+            maps_played: 0,
+            info: String::new(),
+        }
+    }
+}
+
+impl Standings {
+    /// The entry of a player in the match.
+    pub fn player(&self, account_id: &str) -> Option<&Entry> {
+        self.entries.iter().find(|p| p.account_id == account_id)
+    }
+
+    pub fn player_mut(&mut self, account_id: &str) -> Option<&mut Entry> {
+        self.entries.iter_mut().find(|p| p.account_id == account_id)
+    }
+
+    /// The entry of a player in the match. A player new to the standings starts
+    /// playing without points.
+    pub fn join(&mut self, account_id: &str) -> &mut Entry {
+        join(&mut self.entries, account_id)
+    }
+
+    /// The entry of a player in the round that ends. A player new to the round
+    /// starts without points.
+    pub fn round_entry(&mut self, account_id: &str) -> &mut Entry {
+        join(&mut self.round, account_id)
+    }
+
+    /// Players taking part in the match, everyone but spectators.
+    pub fn participants(&self) -> impl Iterator<Item = &Entry> {
+        self.entries
+            .iter()
+            .filter(|p| p.status != Status::Spectator)
+    }
+
+    /// Participants who are not eliminated.
+    pub fn in_match(&self) -> impl Iterator<Item = &Entry> {
+        self.entries.iter().filter(|p| p.is_in_match())
+    }
+
+    /// Adds points to the match and to the round of a player.
+    pub fn award(&mut self, account_id: &str, points: i32) {
+        let player = self.join(account_id);
+        player.score = player.score.saturating_add(points);
+        let round = self.round_entry(account_id);
+        round.score = round.score.saturating_add(points);
+    }
+
+    /// Ranks the players at the end of a round and orders them by position: the
+    /// players still in the match by points, players with the same points by their
+    /// race in the round (see [`race_order`]), which never ties. Eliminated players
+    /// follow and keep the position the mode gave them when they were eliminated.
+    /// Spectators come last without a position. Nobody shares a position.
+    pub fn rank(&mut self, round_end: &RoundEnd, counted: CountedRace) {
+        let order = race_order(
+            self.in_match().map(|p| p.account_id.as_str()),
+            round_end,
+            counted,
+        );
+        let race: BTreeMap<String, usize> = order
+            .into_iter()
+            .enumerate()
+            .map(|(index, account_id)| (account_id, index))
+            .collect();
+
+        self.entries.sort_by(|a, b| {
+            group(a.status)
+                .cmp(&group(b.status))
+                .then_with(|| match a.status {
+                    Status::Playing => b
+                        .score
+                        .cmp(&a.score)
+                        .then_with(|| race.get(&a.account_id).cmp(&race.get(&b.account_id))),
+                    Status::Eliminated => a.position.cmp(&b.position),
+                    // Stable, so spectators keep their order.
+                    Status::Spectator => Ordering::Equal,
+                })
+        });
+
+        let mut position = 0;
+        for player in &mut self.entries {
+            match player.status {
+                Status::Playing => {
+                    position += 1;
+                    player.position = position;
+                }
+                Status::Eliminated => {}
+                Status::Spectator => player.position = 0,
+            }
+        }
+    }
+
+    /// Keeps everyone in the round who does not take part from spawning and shows
+    /// them as spectators, the racers and the players on the server, e.g. once the
+    /// participants of a match are known. Nothing happens without participants. The
+    /// host leaves out permissions it sent before, so calling it after every round
+    /// is fine.
+    pub fn block_others(&mut self, round_end: &RoundEnd) -> Vec<Command> {
+        if self.participants().next().is_none() {
+            return Vec::new();
+        }
+        let watching = round_end
+            .present
+            .iter()
+            .filter(|account_id| round_end.racer(account_id).is_none());
+        let players = round_end
+            .racers
+            .iter()
+            .map(|r| &r.account_id)
+            .chain(watching);
+
+        let mut commands = Vec::new();
+        for account_id in players {
+            let status = self.player(account_id).map(|p| p.status);
+            if matches!(status, None | Some(Status::Spectator)) {
+                self.join(account_id).status = Status::Spectator;
+                commands.push(Command::SetCanSpawn(CanSpawn {
+                    account_id: account_id.clone(),
+                    can_spawn: false,
+                }));
+            }
+        }
+        commands
+    }
+
+    /// The player ranked first wins the match.
+    pub fn crown_leaders(&mut self) {
+        for player in self.entries.iter_mut().filter(|p| p.position == 1) {
+            player.label = Some(Label::winner());
+        }
+    }
+
+    /// Places the participants who raced or got points in the round that ends by
+    /// their race (see [`race_order`]), so nobody shares a place. The round entries
+    /// get the time of the race that counts and the status of the player in the
+    /// match.
+    ///
+    /// Call it at the round end once the points are awarded.
+    pub fn place_round(&mut self, round_end: &RoundEnd, counted: CountedRace) {
+        self.round = self.placed(round_end, counted, |account_id| {
+            self.round_score(account_id)
+        });
+    }
+
+    /// The round of [`Standings::place_round`] with these points of the round,
+    /// without changing the standings, e.g. for [`Mode::live_round`](crate::Mode::live_round):
+    /// the participants who raced or got points, placed by their race.
+    pub fn placed(
+        &self,
+        round_end: &RoundEnd,
+        counted: CountedRace,
+        points: impl Fn(&str) -> i32,
+    ) -> Vec<Entry> {
+        let placed: Vec<&str> = self
+            .participants()
+            .filter(|player| {
+                round_end.racer(&player.account_id).is_some() || points(&player.account_id) != 0
+            })
+            .map(|player| player.account_id.as_str())
+            .collect();
+        race_order(placed, round_end, counted)
+            .into_iter()
+            .enumerate()
+            .map(|(index, account_id)| Entry {
+                position: index as u32 + 1,
+                score: points(&account_id),
+                time: round_end
+                    .racer(&account_id)
+                    .and_then(|racer| counted.time(racer)),
+                status: self
+                    .player(&account_id)
+                    .map_or(Status::Playing, |p| p.status),
+                label: None,
+                account_id,
+            })
+            .collect()
+    }
+
+    /// The points of a player in the round that ends.
+    fn round_score(&self, account_id: &str) -> i32 {
+        self.round
+            .iter()
+            .find(|r| r.account_id == account_id)
+            .map_or(0, |r| r.score)
+    }
+}
+
+/// Players in the match first, then the eliminated ones and spectators last.
+fn group(status: Status) -> u8 {
+    match status {
+        Status::Playing => 0,
+        Status::Eliminated => 1,
+        Status::Spectator => 2,
+    }
+}
+
+fn join<'a>(entries: &'a mut Vec<Entry>, account_id: &str) -> &'a mut Entry {
+    let index = match entries.iter().position(|p| p.account_id == account_id) {
+        Some(index) => index,
+        None => {
+            entries.push(Entry {
+                account_id: account_id.into(),
+                position: 0,
+                score: 0,
+                time: None,
+                status: Status::Playing,
+                label: None,
+            });
+            entries.len() - 1
+        }
+    };
+    &mut entries[index]
+}
+
+impl Entry {
+    /// Takes part and is not eliminated.
+    pub fn is_in_match(&self) -> bool {
+        self.status == Status::Playing
+    }
+}
+
+impl Label {
+    pub fn new(text: impl Into<String>, tone: Tone) -> Self {
+        Self {
+            text: text.into(),
+            tone,
+        }
+    }
+
+    /// Players who won the match.
+    pub fn winner() -> Self {
+        Self::new("Winner", Tone::Positive)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{Race, Racer};
+
+    use super::*;
+
+    fn standings(players: &[(&str, Status, i32, u32)]) -> Standings {
+        let mut standings = Standings::default();
+        for &(account_id, status, score, position) in players {
+            let player = standings.join(account_id);
+            player.status = status;
+            player.score = score;
+            player.position = position;
+        }
+        standings
+    }
+
+    fn positions(standings: &Standings) -> Vec<(&str, u32)> {
+        standings
+            .entries
+            .iter()
+            .map(|p| (p.account_id.as_str(), p.position))
+            .collect()
+    }
+
+    /// A race finished in this time.
+    fn finished(time: u32) -> Race {
+        Race {
+            checkpoints: vec![time / 2, time],
+            finished: true,
+            laps: 1,
+        }
+    }
+
+    fn racer(account_id: &str, races: Vec<Race>) -> Racer {
+        Racer {
+            account_id: account_id.into(),
+            races,
+        }
+    }
+
+    fn finish(account_id: &str, time: u32) -> Racer {
+        racer(account_id, vec![finished(time)])
+    }
+
+    /// Passed this many checkpoints without a finish.
+    fn dnf(account_id: &str, progress: u32) -> Racer {
+        let checkpoints = (1..=progress)
+            .map(|checkpoint| checkpoint * 10_000)
+            .collect();
+        racer(
+            account_id,
+            vec![Race {
+                checkpoints,
+                finished: false,
+                laps: 0,
+            }],
+        )
+    }
+
+    /// A round in which these players raced while these players were on the server.
+    fn round_end(racers: Vec<Racer>, present: &[&str]) -> RoundEnd {
+        RoundEnd {
+            invalid: false,
+            racers,
+            present: present.iter().map(|&p| p.into()).collect(),
+        }
+    }
+
+    /// The players of the round in the order of their places.
+    fn places(standings: &Standings) -> Vec<(&str, u32, i32)> {
+        standings
+            .round
+            .iter()
+            .map(|p| (p.account_id.as_str(), p.position, p.score))
+            .collect()
+    }
+
+    #[test]
+    fn ranks_by_status_points_and_race() {
+        let mut standings = standings(&[
+            ("spectator", Status::Spectator, 0, 3),
+            ("eliminated_last", Status::Eliminated, 0, 7),
+            ("no_points", Status::Playing, 0, 0),
+            ("third", Status::Playing, 10, 0),
+            ("eliminated", Status::Eliminated, 0, 6),
+            ("slower", Status::Playing, 20, 0),
+            ("faster", Status::Playing, 20, 0),
+            ("absent", Status::Playing, 0, 0),
+        ]);
+        let round_end = round_end(
+            vec![
+                finish("slower", 31_000),
+                dnf("no_points", 0),
+                finish("faster", 30_000),
+            ],
+            &[],
+        );
+        standings.rank(&round_end, CountedRace::Last);
+
+        // Players with the same points go by the race of the round, so nobody shares
+        // a position.
+        assert_eq!(
+            positions(&standings),
+            [
+                ("faster", 1),
+                ("slower", 2),
+                ("third", 3),
+                ("no_points", 4),
+                ("absent", 5),
+                ("eliminated", 6),
+                ("eliminated_last", 7),
+                ("spectator", 0),
+            ]
+        );
+    }
+
+    #[test]
+    fn players_join_once() {
+        let mut standings = Standings::default();
+        standings.join("a").score = 5;
+        assert_eq!(standings.join("a").score, 5);
+        assert_eq!(standings.entries.len(), 1);
+        assert!(standings.round.is_empty());
+    }
+
+    #[test]
+    fn award_adds_to_the_match_and_the_round() {
+        let mut standings = Standings::default();
+        standings.join("a").score = 3;
+        standings.award("a", 10);
+        standings.award("a", -2);
+        assert_eq!(standings.player("a").unwrap().score, 11);
+        assert_eq!(standings.round_entry("a").score, 8);
+    }
+
+    #[test]
+    fn others_cannot_spawn() {
+        let mut standings = standings(&[
+            ("a", Status::Playing, 0, 1),
+            ("out", Status::Eliminated, 0, 2),
+        ]);
+        // On the server without racing: out after the elimination, s only watches.
+        let round_end = round_end(
+            vec![finish("a", 30_000), finish("late", 29_000)],
+            &["a", "out", "s"],
+        );
+        let cannot_spawn = |account_id: &str| {
+            Command::SetCanSpawn(CanSpawn {
+                account_id: account_id.into(),
+                can_spawn: false,
+            })
+        };
+
+        assert_eq!(
+            standings.block_others(&round_end),
+            [cannot_spawn("late"), cannot_spawn("s")]
+        );
+        assert_eq!(standings.player("late").unwrap().status, Status::Spectator);
+        assert_eq!(standings.player("s").unwrap().status, Status::Spectator);
+        assert_eq!(standings.player("out").unwrap().status, Status::Eliminated);
+        // Players can only be told apart from spectators once someone takes part.
+        assert!(Standings::default().block_others(&round_end).is_empty());
+    }
+
+    #[test]
+    fn the_leader_wins() {
+        let mut standings = standings(&[
+            ("a", Status::Playing, 10, 0),
+            ("b", Status::Playing, 10, 0),
+            ("c", Status::Playing, 5, 0),
+        ]);
+        // Tied on points, b drove the better race.
+        let round_end = round_end(vec![finish("a", 31_000), finish("b", 30_000)], &[]);
+        standings.rank(&round_end, CountedRace::Last);
+        standings.crown_leaders();
+        let labels: Vec<(&str, Option<Label>)> = standings
+            .entries
+            .iter()
+            .map(|p| (p.account_id.as_str(), p.label.clone()))
+            .collect();
+        assert_eq!(
+            labels,
+            [("b", Some(Label::winner())), ("a", None), ("c", None)]
+        );
+    }
+
+    #[test]
+    fn rounds_are_placed_by_the_race() {
+        let mut standings = standings(&[
+            // Lost nothing without a finish, still behind every finisher.
+            ("spared", Status::Playing, 0, 1),
+            ("slow", Status::Playing, 0, 2),
+            ("fast", Status::Playing, 0, 3),
+            ("far", Status::Playing, 0, 4),
+            // Left before starting but lost points.
+            ("left", Status::Playing, 0, 5),
+            // Did not race and got nothing.
+            ("idle", Status::Playing, 0, 6),
+            ("spectator", Status::Spectator, 0, 0),
+        ]);
+        for (account_id, points) in [("slow", -6), ("fast", -2), ("far", -20), ("left", -20)] {
+            standings.round_entry(account_id).score = points;
+        }
+        let round_end = round_end(
+            vec![
+                finish("slow", 31_000),
+                dnf("spared", 1),
+                dnf("far", 2),
+                finish("fast", 30_000),
+                // Not in the standings, e.g. a late player.
+                finish("late", 29_000),
+                // Raced without taking part.
+                finish("spectator", 28_000),
+            ],
+            &["idle"],
+        );
+
+        standings.place_round(&round_end, CountedRace::Last);
+        assert_eq!(
+            places(&standings),
+            [
+                ("fast", 1, -2),
+                ("slow", 2, -6),
+                ("far", 3, -20),
+                ("spared", 4, 0),
+                ("left", 5, -20)
+            ]
+        );
+        assert_eq!(standings.round[0].time, Some(30_000));
+        assert_eq!(standings.round[2].time, None);
+    }
+
+    #[test]
+    fn rounds_are_placed_by_the_race_that_counts() {
+        let mut standings =
+            standings(&[("a", Status::Playing, 0, 0), ("b", Status::Playing, 0, 0)]);
+        let round_end = round_end(
+            vec![
+                finish("a", 42_000),
+                racer("b", vec![finished(41_000), finished(45_000)]),
+            ],
+            &[],
+        );
+
+        standings.place_round(&round_end, CountedRace::Best);
+        assert_eq!(places(&standings), [("b", 1, 0), ("a", 2, 0)]);
+        assert_eq!(standings.round[0].time, Some(41_000));
+        standings.place_round(&round_end, CountedRace::Last);
+        assert_eq!(places(&standings), [("a", 1, 0), ("b", 2, 0)]);
+        assert_eq!(standings.round[1].time, Some(45_000));
+    }
+
+    #[test]
+    fn a_live_round_is_placed_without_changing_the_standings() {
+        let standings = standings(&[
+            ("a", Status::Playing, 10, 1),
+            ("b", Status::Playing, 6, 2),
+            ("c", Status::Playing, 0, 3),
+        ]);
+        let before = standings.clone();
+        // b finished, a is still racing, c did not start yet.
+        let races = round_end(vec![finish("b", 30_000), dnf("a", 2)], &[]);
+        let points = |account_id: &str| if account_id == "b" { 10 } else { 0 };
+
+        let live = standings.placed(&races, CountedRace::Last, points);
+        let live: Vec<(&str, u32, i32, Option<u32>)> = live
+            .iter()
+            .map(|p| (p.account_id.as_str(), p.position, p.score, p.time))
+            .collect();
+        assert_eq!(live, [("b", 1, 10, Some(30_000)), ("a", 2, 0, None)]);
+        assert_eq!(standings, before);
+    }
+}
