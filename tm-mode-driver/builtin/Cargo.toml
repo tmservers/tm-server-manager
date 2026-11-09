@@ -1,0 +1,20 @@
+[package]
+name = "tm-mode-driver-builtin"
+description = "The modes built into the mode driver of tm-server-manager, by the name configs select them with."
+publish = false
+
+version.workspace = true
+authors.workspace = true
+keywords.workspace = true
+categories.workspace = true
+license.workspace = true
+edition.workspace = true
+repository.workspace = true
+
+[dependencies]
+tm-mode-driver-sdk.workspace = true
+tm-mode-rounds.workspace = true
+tm-mode-time-attack.workspace = true
+tm-mode-reverse-cup.workspace = true
+tm-mode-knockout.workspace = true
+tm-mode-endurance.workspace = true

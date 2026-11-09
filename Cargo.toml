@@ -9,6 +9,7 @@ members = [
     "tm-mode-driver/sdk",
     "tm-mode-driver/core",
     "tm-mode-driver/sim",
+    "tm-mode-driver/builtin",
     "tm-mode-driver/modes/*",
 ]
 resolver = "3"
@@ -88,6 +89,7 @@ tm-server-controller = { path = "./tm-server-controller", version = "0.1.0-dev" 
 tm-mode-driver-sdk = { path = "./tm-mode-driver/sdk" }
 tm-mode-driver = { path = "./tm-mode-driver/core" }
 tm-mode-driver-sim = { path = "./tm-mode-driver/sim" }
+tm-mode-driver-builtin = { path = "./tm-mode-driver/builtin" }
 tm-mode-rounds = { path = "./tm-mode-driver/modes/rounds" }
 tm-mode-time-attack = { path = "./tm-mode-driver/modes/time-attack" }
 tm-mode-reverse-cup = { path = "./tm-mode-driver/modes/reverse-cup" }
