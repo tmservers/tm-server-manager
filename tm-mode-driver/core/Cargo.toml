@@ -18,3 +18,8 @@ thiserror.workspace = true
 tracing.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
+
+[dev-dependencies]
+# The callbacks of the server and the rounds mode the tests run.
+tm-mode-driver-sim.workspace = true
+tm-mode-rounds.workspace = true
