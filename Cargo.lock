@@ -6223,6 +6223,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "tm-mode-rounds"
+version = "0.1.0-dev"
+dependencies = [
+ "insta",
+ "serde",
+ "serde_json",
+ "tm-mode-driver-sdk",
+ "tm-mode-driver-sim",
+]
+
+[[package]]
 name = "tm-server-bridge"
 version = "0.1.0-dev"
 dependencies = [
