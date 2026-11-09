@@ -234,7 +234,7 @@ impl MatchStatus {
 }
 
 #[reducer]
-fn match_create(
+pub(crate) fn match_create(
     ctx: &ReducerContext,
     name: String,
     parent_id: u32,
@@ -341,7 +341,7 @@ fn match_server_revoke(ctx: &ReducerContext, match_id: u32) -> Result<(), String
 }
 
 #[reducer]
-fn match_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> {
+pub(crate) fn match_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> {
     let Some(mut tm_match) = ctx.db.tab_match().id().find(id) else {
         return Err("Match was mot found!".into());
     };
@@ -402,7 +402,7 @@ fn match_override_pre_config(
 }
 
 #[reducer]
-fn match_override_config(
+pub(crate) fn match_override_config(
     ctx: &ReducerContext,
     id: u32,
     config: ServerConfigV2,
@@ -483,7 +483,7 @@ fn match_shared_config(ctx: &ReducerContext, match_id: u32, config_id: u32) -> R
 /// If the match is fully configured and ready start.
 /// This can also serve as a manual override for scheduled matches.
 #[reducer]
-fn match_set_preparation(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
+pub(crate) fn match_set_preparation(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
     let Some(tm_match) = ctx.db.tab_match().id().find(match_id) else {
         return Err("Match not found!".into());
     };
@@ -498,7 +498,7 @@ fn match_set_preparation(ctx: &ReducerContext, match_id: u32) -> Result<(), Stri
 /// If the match is fully configured and ready start.
 /// This can also serve as a manual override for scheduled matches.
 #[reducer]
-fn match_try_start(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
+pub(crate) fn match_try_start(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
     let Some(tm_match) = ctx.db.tab_match().id().find(match_id) else {
         return Err("Match not found!".into());
     };

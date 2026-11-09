@@ -17,7 +17,7 @@ use crate::{
 
 /// Servers call this to post the event stream.
 #[reducer]
-fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
+pub(crate) fn post_event(ctx: &ReducerContext, event: Event) -> Result<(), String> {
     let server_id = ctx.server_id()?;
 
     match &event {

@@ -66,7 +66,7 @@ impl ProjectStatus {
 /// Requires name, description, starting and ending timestamps.
 /// Description can be empty.
 #[reducer]
-fn create_project(
+pub(crate) fn create_project(
     ctx: &ReducerContext,
     name: String,
     description: String,
