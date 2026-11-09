@@ -6199,6 +6199,8 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.21",
  "tm-mode-driver-sdk",
+ "tm-mode-driver-sim",
+ "tm-mode-rounds",
  "tm-server-types",
  "tracing",
 ]
