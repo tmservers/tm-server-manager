@@ -6218,6 +6218,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "tm-mode-driver-manialinks"
+version = "0.1.0-dev"
+dependencies = [
+ "tm-server-types",
+]
+
+[[package]]
 name = "tm-mode-driver-sdk"
 version = "0.1.0-dev"
 dependencies = [
