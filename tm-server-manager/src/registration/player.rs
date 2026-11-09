@@ -194,3 +194,40 @@ fn unstable_manual_register_override_players(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use spacetimedb::{TimeDuration, test_utils::TestAuth};
+
+    use super::*;
+    use crate::pipeline::test_util::test_context;
+
+    #[test]
+    fn players_registered_at_the_same_time_are_ordered_by_user() {
+        let test = test_context(&[]);
+        let at = Timestamp::UNIX_EPOCH;
+        let later = at.checked_add(TimeDuration::from_micros(1)).unwrap();
+        test.with_reducer_tx(TestAuth::internal(), |ctx| {
+            for (user_id, registered_at) in [(5, later), (3, later), (4, at)] {
+                ctx.db
+                    .tab_registeration_player()
+                    .insert(RegisterationPlayer {
+                        registered_at,
+                        registration_id: 1,
+                        user_id,
+                    });
+            }
+            Ok::<_, String>(())
+        })
+        .unwrap();
+
+        let registered: Vec<(u32, u16)> = test
+            .anonymous_view_context()
+            .registration_lb(1)
+            .iter()
+            .map(|e| (e.user_id, e.position))
+            .collect();
+
+        assert_eq!(registered, vec![(4, 1), (3, 2), (5, 3)]);
+    }
+}

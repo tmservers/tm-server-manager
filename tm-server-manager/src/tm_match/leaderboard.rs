@@ -448,4 +448,62 @@ mod tests {
         maps.sort();
         assert_eq!(maps, vec![(1, 7), (2, 8)]);
     }
+
+    #[test]
+    fn the_rounds_of_a_match_come_by_round_and_place() {
+        let test = test_context(&[(1, TmMode::Rounds)]);
+        let placed = |user, round, position| {
+            let mut player = MatchRoundPlayer::new(1, user, round);
+            player.set_position(position);
+            player
+        };
+        test.with_reducer_tx(TestAuth::internal(), |ctx| {
+            // In the order the players started, which is no order the rounds can be read in.
+            for player in [
+                placed(3, 2, 1),
+                placed(2, 1, 0),
+                placed(4, 1, 2),
+                placed(1, 1, 1),
+                placed(1, 2, 2),
+            ] {
+                ctx.match_round_player_insert(player)?;
+            }
+            Ok::<_, String>(())
+        })
+        .unwrap();
+
+        let rounds: Vec<(u16, u32, u16)> = test
+            .anonymous_view_context()
+            .match_rounds(1)
+            .iter()
+            .map(|e| (e.round, e.user_id, e.position))
+            .collect();
+
+        // Players without a place, e.g. because they gave up, come last in their round.
+        assert_eq!(
+            rounds,
+            vec![(1, 1, 1), (1, 4, 2), (1, 2, 0), (2, 3, 1), (2, 1, 2)]
+        );
+    }
+
+    #[test]
+    fn players_with_the_same_points_rank_by_the_first_round_they_played() {
+        use crate::test_world::*;
+
+        let world = World::new();
+        let server = world.server(1);
+        let (a, b) = (player(1), player(2));
+        let match_id = world.live_match(&server, &[&b, &a]);
+        server.post(&world, [start_match()]);
+        // b is at the start first in both rounds, a wins the first one.
+        server.post(&world, round(1, &[(&b, 31_000, 6), (&a, 30_000, 10)]));
+        server.post(&world, round(2, &[(&b, 29_000, 10), (&a, 32_000, 6)]));
+
+        let standings: Vec<(String, u16, i32)> = world
+            .standings(match_id)
+            .iter()
+            .map(|e| (world.account(e.user_id), e.position, e.score))
+            .collect();
+        assert_eq!(standings, vec![(a, 1, 16), (b, 2, 16)]);
+    }
 }
