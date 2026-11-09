@@ -12,6 +12,7 @@ mod rules;
 use std::sync::OnceLock;
 
 use serde_json::json;
+use tm_mode_driver_script::ScriptMode;
 use tm_mode_driver_sdk::Native;
 use tm_mode_driver_sim::{
     InputLog, Rng, Simulator,
@@ -55,6 +56,57 @@ fn settings(rng: &mut Rng) -> String {
 }
 
 tm_mode_driver_sim::simulation_tests!(simulator);
+
+/// The rounds mode as a competition would write it as a script.
+const SCRIPT: &str = include_str!("../../rounds.rhai");
+
+/// The report of a simulation without what its calls cost, which built-in modes do not count.
+fn without_cost(report: &str) -> String {
+    report
+        .lines()
+        .filter(|line| !line.starts_with("cost "))
+        .map(|line| format!("{line}\n"))
+        .collect()
+}
+
+#[test]
+fn the_script_plays_the_matches_of_the_built_in_mode() {
+    let script = Simulator::new("rounds", ScriptMode::new(SCRIPT).unwrap())
+        .settings(settings)
+        .rules(rules::Rounds::boxed);
+    let worlds: [(_, fn(&Simulator, u64) -> tm_mode_driver_sim::World); 2] = [
+        (
+            tm_mode_driver_sim::seeds("SIM_SEEDS", 100..125),
+            Simulator::world,
+        ),
+        (
+            tm_mode_driver_sim::seeds("SIM_FULL_SERVERS", 100..102),
+            Simulator::full_server,
+        ),
+    ];
+
+    for (seeds, world) in worlds {
+        for seed in seeds {
+            let built_in = simulator().simulate(&world(simulator(), seed), seed);
+            let scripted = script.simulate(&world(&script, seed), seed);
+
+            assert_eq!(scripted.failure, None, "seed {seed}\n{}", scripted.report);
+            // Every round, every standing and every command the driver sent.
+            assert_eq!(
+                without_cost(&scripted.report),
+                built_in.report,
+                "the script plays seed {seed} differently"
+            );
+            assert!(
+                scripted
+                    .report
+                    .lines()
+                    .any(|line| line.starts_with("cost ")),
+                "the calls of a script are counted"
+            );
+        }
+    }
+}
 
 /// Fails once b wins a round, to see what shrinking keeps.
 struct BMustNotWin;
