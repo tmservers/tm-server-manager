@@ -424,3 +424,131 @@ pub(crate) fn handle_match_event(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::test_world::*;
+
+    /// What stops a match in the middle of it, the round that runs gets played again afterwards.
+    #[derive(Debug, Clone, Copy)]
+    enum Interruption {
+        Pause,
+        Disconnect,
+    }
+
+    impl Interruption {
+        fn start(self, world: &World, server: &Server) {
+            match self {
+                Interruption::Pause => server.post(world, [pause(true)]),
+                Interruption::Disconnect => server.disconnect(world),
+            }
+        }
+
+        /// The bridge pauses the match when it loses the database, so it ends with the pause too.
+        fn end(self, world: &World, server: &Server) {
+            if let Interruption::Disconnect = self {
+                server.reconnect(world);
+            }
+            server.post(world, [pause(false)]);
+        }
+    }
+
+    const INTERRUPTIONS: [Interruption; 2] = [Interruption::Pause, Interruption::Disconnect];
+
+    /// A live match with two players who finished two rounds.
+    fn two_rounds_played() -> (World, Server, u32, String, String) {
+        let world = World::new();
+        let server = world.server(1);
+        let (a, b) = (player(1), player(2));
+        let match_id = world.live_match(&server, &[&a, &b]);
+        server.post(&world, [start_match()]);
+        server.post(&world, round(1, &[(&a, 30_000, 10), (&b, 31_000, 6)]));
+        server.post(&world, round(2, &[(&b, 29_000, 10), (&a, 32_000, 4)]));
+        (world, server, match_id, a, b)
+    }
+
+    /// The rounds of [two_rounds_played] as [World::rounds] has them.
+    fn two_rounds(a: &str, b: &str) -> Vec<(u16, String, i32, u16)> {
+        vec![
+            (1, a.into(), 10, 1),
+            (1, b.into(), 6, 2),
+            (2, a.into(), 4, 2),
+            (2, b.into(), 10, 1),
+        ]
+    }
+
+    #[test]
+    fn an_interrupted_round_is_dropped_and_played_again_with_its_number() {
+        for interruption in INTERRUPTIONS {
+            let (world, server, match_id, a, b) = two_rounds_played();
+            // Round 3 runs and the first player already finished it.
+            server.post(&world, [start_round(3), start_line(&a), start_line(&b)]);
+            server.post(&world, [finish(&a, 30_000)]);
+
+            interruption.start(&world, &server);
+
+            assert_eq!(
+                world.rounds(match_id),
+                two_rounds(&a, &b),
+                "{interruption:?} keeps the finished rounds and drops the one which ran"
+            );
+
+            interruption.end(&world, &server);
+            server.post(&world, round(3, &[(&b, 30_000, 10), (&a, 31_000, 6)]));
+
+            let mut rounds = two_rounds(&a, &b);
+            rounds.extend([(3, a.clone(), 6, 2), (3, b.clone(), 10, 1)]);
+            assert_eq!(
+                world.rounds(match_id),
+                rounds,
+                "the round played again after the {interruption:?} is round 3"
+            );
+        }
+    }
+
+    #[test]
+    fn an_interruption_between_rounds_keeps_every_round() {
+        for interruption in INTERRUPTIONS {
+            let (world, server, match_id, a, b) = two_rounds_played();
+
+            interruption.start(&world, &server);
+            assert_eq!(
+                world.rounds(match_id),
+                two_rounds(&a, &b),
+                "{interruption:?} after round 2 ended keeps it"
+            );
+
+            interruption.end(&world, &server);
+            server.post(&world, round(3, &[(&b, 30_000, 10), (&a, 31_000, 6)]));
+
+            let mut rounds = two_rounds(&a, &b);
+            rounds.extend([(3, a.clone(), 6, 2), (3, b.clone(), 10, 1)]);
+            assert_eq!(
+                world.rounds(match_id),
+                rounds,
+                "the round after the {interruption:?} is round 3"
+            );
+        }
+    }
+
+    #[test]
+    fn an_interruption_before_the_first_round_counts_from_round_one() {
+        for interruption in INTERRUPTIONS {
+            let world = World::new();
+            let server = world.server(1);
+            let (a, b) = (player(1), player(2));
+            let match_id = world.live_match(&server, &[&a, &b]);
+            server.post(&world, [start_match()]);
+
+            interruption.start(&world, &server);
+            interruption.end(&world, &server);
+            server.post(&world, round(1, &[(&a, 30_000, 10), (&b, 31_000, 6)]));
+
+            assert_eq!(
+                world.rounds(match_id),
+                vec![(1, a.clone(), 10, 1), (1, b.clone(), 6, 2)],
+                "the first round after the {interruption:?} is round 1"
+            );
+        }
+    }
+}
