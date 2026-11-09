@@ -120,7 +120,8 @@ impl<Db: spacetimedb::CtxDbRead> RegistrationPlayerRead for Db {
             .filter(registration_id)
             .collect::<Vec<_>>();
 
-        registered.sort_by_key(|f| f.registered_at);
+        // Players registered at the same time still need an order which never changes.
+        registered.sort_by_key(|f| (f.registered_at, f.user_id));
 
         registered
             .into_iter()
