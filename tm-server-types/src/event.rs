@@ -54,6 +54,9 @@ pub use server::*;
 mod pause;
 pub use pause::Pause;
 
+mod driver;
+pub use driver::*;
+
 use crate::base::PlayerInfo;
 
 /// Can hold every Event trasmitted trough the ModeScript or vanilla events.
@@ -120,6 +123,12 @@ pub enum Event {
 
     KnockoutElimination(KnockoutElimination),
     SkipOutro(SkipOutro),
+
+    /// The driver modescript waits for the driver.
+    DriverHold(DriverHold),
+    /// Results decided by the driver. Never sent by the server. Posting them from the
+    /// bridge comes with the database integration of the manager.
+    DriverRoundResult(DriverRoundResult),
 }
 
 impl Event {
@@ -257,6 +266,19 @@ impl Event {
                 "Maniaplanet.Pause.Status" => Event::Pause(
                     json::from_str(&mut body).map_err(|e| (name.to_string(), e, body))?,
                 ),
+
+                DriverHold::CALLBACK => Event::DriverHold(
+                    json::from_str(&mut body).map_err(|e| (name.to_string(), e, body))?,
+                ),
+                // The driver callbacks are ours so an unknown one means the modescript
+                // and these types are out of sync. Never let it slip through as Custom.
+                _ if name.starts_with("Driver.") => {
+                    return Err((
+                        name.to_string(),
+                        serde::de::Error::custom("unknown driver callback"),
+                        body,
+                    ));
+                }
 
                 _ => Event::Custom(Custom::new(name.to_string(), body)),
             };

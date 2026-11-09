@@ -22,6 +22,10 @@ base64.workspace = true
 uuid.workspace = true
 
 
+[dev-dependencies]
+# Reads what the driver host publishes in tests.
+serde_json.workspace = true
+
 [features]
 default = ["serde"]
 serde = ["dep:serde"]
