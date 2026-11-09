@@ -35,7 +35,10 @@ impl LbFilterSettings {
             scope: Vec::new(),
             param: self.param,
             filter: self.filter,
-            fallback: self.fallback,
+            // What these leaderboards show must not change.
+            fallback: match self.fallback {
+                LbFilterFallback::Worst | LbFilterFallback::WorstV1 => LbFilterFallback::WorstV1,
+            },
         });
         match self.kind {
             LbFilterKind::Rounds => vec![filter],
@@ -61,7 +64,13 @@ enum LbFilterIdent {
 
 #[derive(Debug, SpacetimeType, Clone, Copy)]
 enum LbFilterFallback {
+    /// Missing entries count as the worst ones, never better than an entry of the group:
+    /// no points or the fewest anyone got, the last place or a worse one than anyone got and no time.
     Worst,
+    /// How [`LbFilterFallback::Worst`] padded before it took the entries of the group into account:
+    /// 0 points also where points can be lost and the number of participants as the place.
+    /// Leaderboards which filtered before keep it, so what they show does not change.
+    WorstV1,
 }
 
 impl LbStep for LbFilterSettingsV2 {
@@ -96,6 +105,15 @@ impl LbFilterSettingsV2 {
 
     fn filter_group(&self, leaderboard: Vec<LbEntry>) -> Vec<LbEntry> {
         //TODO valiidate that the sort does all edge cases.
+        // Where points can be lost no points would be better than what was played.
+        let worst_score = leaderboard
+            .iter()
+            .map(|e| e.score)
+            .min()
+            .unwrap_or(0)
+            .min(0);
+        // Places can come from a bigger leaderboard than the group.
+        let worst_position = leaderboard.iter().map(|e| e.position).max().unwrap_or(0);
         let users = leaderboard.group_by(|e| e.participant());
 
         let Some(max) = users.max_len() else {
@@ -116,13 +134,18 @@ impl LbFilterSettingsV2 {
                         let Some(&worst) = rows.last() else {
                             return rows;
                         };
+                        let padding_position = match self.fallback {
+                            LbFilterFallback::Worst => worst_position.max(user_count as u16),
+                            LbFilterFallback::WorstV1 => user_count as u16,
+                        };
                         let padding = || {
                             let mut padding = LbEntry::new(
                                 worst.user_id,
                                 worst.kind,
-                                user_count as u16,
+                                padding_position,
                                 worst.get_node(),
                             )
+                            .set_round(worst.round)
                             .set_map(worst.map_id);
                             padding.team_id = worst.team_id;
                             padding
@@ -131,21 +154,22 @@ impl LbFilterSettingsV2 {
                             // if we have played less rounds than the best n we take the current row count.
                             let needed = if n > max { max } else { n };
                             let missing = needed - rows.len() as u16;
-                            match self.fallback {
-                                LbFilterFallback::Worst => match self.param {
-                                    LbParams::Score => {
-                                        for _ in 0..missing {
-                                            //TODO consider mode
-                                            rows.push(padding().set_score(0));
-                                        }
+                            let padding_score = match self.fallback {
+                                LbFilterFallback::Worst => worst_score,
+                                LbFilterFallback::WorstV1 => 0,
+                            };
+                            match self.param {
+                                LbParams::Score => {
+                                    for _ in 0..missing {
+                                        rows.push(padding().set_score(padding_score));
                                     }
-                                    // The padding has no time, so it counts as not driven.
-                                    LbParams::Time | LbParams::Position => {
-                                        for _ in 0..missing {
-                                            rows.push(padding());
-                                        }
+                                }
+                                // The padding has no time, so it counts as not driven.
+                                LbParams::Time | LbParams::Position => {
+                                    for _ in 0..missing {
+                                        rows.push(padding());
                                     }
-                                },
+                                }
                             }
                         }
                     }
