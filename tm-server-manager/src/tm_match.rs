@@ -1107,4 +1107,27 @@ mod tests {
         })
         .unwrap();
     }
+
+    #[test]
+    fn a_match_which_already_runs_is_not_prepared_again() {
+        use crate::{competition::node::NodeHandle, test_world::*};
+
+        let world = World::new();
+        let server = world.server(1);
+        let match_id = world.live_match(&server, &[&player(1)]);
+        server.post(&world, [start_match()]);
+
+        // An input connected to the match later finishes, which lets the graph try to start it.
+        let leaderboard = world.finished_leaderboard("Seeding");
+        world.wait_for(NodeHandle::MatchV1(match_id), leaderboard);
+
+        assert_eq!(world.match_status(match_id), MatchStatus::Live);
+        let state = world
+            .test
+            .anonymous_view_context()
+            .match_state_find(match_id)
+            .unwrap();
+        assert_eq!(state.status(), MatchStatus::LiveComitted);
+        assert_eq!(world.start_failures(), vec![]);
+    }
 }
