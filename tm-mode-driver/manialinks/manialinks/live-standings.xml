@@ -1,0 +1,252 @@
+<manialink name="Driver_LiveStandings" version="3">
+<!--
+	Style: the classes below set fonts, text and backgrounds. The C_Style constants
+	at the top of the script set the colors that change with the round.
+	Colors are hex, opacities go from 0 to 1.
+-->
+<stylesheet>
+	<style class="title" textfont="GameFontBlack" textprefix="$i$t" textcolor="ffffff" textsize="2"/>
+	<style class="info" textfont="GameFontSemiBold" textprefix="$i" textcolor="ffffffaa" textsize="1"/>
+	<style class="live" textfont="GameFontBlack" textprefix="$i$t" textcolor="ffffff" textsize="0.7"/>
+	<style class="name" textfont="GameFontSemiBold" textprefix="$i" textcolor="ffffff" textsize="1.3"/>
+	<style class="detail" textfont="GameFontSemiBold" textprefix="$i" textcolor="ffffffbb" textsize="0.9"/>
+	<style class="number" textfont="OswaldMono" textcolor="ffffff" textsize="1.5"/>
+	<style class="time" textfont="OswaldMono" textcolor="ffffff" textsize="1.2"/>
+	<style class="match" textfont="OswaldMono" textcolor="ffffffbb" textsize="1.2"/>
+	<style class="header" bgcolor="000000" opacity="0.85"/>
+	<style class="accent" bgcolor="009b5f" opacity="1"/>
+	<style class="row" bgcolor="000000" opacity="0.5"/>
+	<style class="cell" bgcolor="000000" opacity="0.8"/>
+	<style class="highlight" bgcolor="ffffff" opacity="0.8"/>
+	<style class="tag" bgcolor="d61919" opacity="1"/>
+</stylesheet>
+
+<framemodel id="Model_Row">
+	<quad class="cell" size="6 4.5"/>
+	<label id="Label_Rank" class="number" pos="3 -2.25" size="5.5 4" halign="center" valign="center2"/>
+	<quad class="row" pos="6.5 0" size="27 4.5"/>
+	<quad id="Quad_Highlight" class="highlight" pos="6.5 0" z-index="1" size="27 4.5" hidden="1"/>
+	<label id="Label_Name" class="name" pos="8 -2.25" z-index="2" size="17 4" valign="center2"/>
+	<label id="Label_Detail" class="detail" pos="33 -2.25" z-index="2" size="8 4" halign="right" valign="center2"/>
+	<quad class="cell" pos="34 0" size="11 4.5"/>
+	<label id="Label_Time" class="time" pos="44.5 -2.25" z-index="2" size="10 4" halign="right" valign="center2"/>
+	<quad class="cell" pos="45.5 0" size="6.5 4.5"/>
+	<label id="Label_Score" class="number" pos="51.5 -2.25" z-index="2" size="6 4" halign="right" valign="center2"/>
+	<quad id="Quad_Match" class="row" pos="52.5 0" size="7.5 4.5" hidden="1"/>
+	<label id="Label_Match" class="match" pos="59 -2.25" z-index="2" size="7 4" halign="right" valign="center2" hidden="1"/>
+</framemodel>
+
+<frame id="Frame_Standings" pos="-158 62" hidden="1">
+	<quad id="Quad_Header" class="header" size="52 6"/>
+	<label id="Label_Title" class="title" pos="2 -3" size="30 5" valign="center2"/>
+	<label id="Label_Info" class="info" pos="50.5 -3" size="20 5" halign="right" valign="center2"/>
+	<quad id="Quad_Accent" class="accent" pos="0 -6" size="52 0.4"/>
+	<frame id="Frame_Live" pos="42 -6" z-index="3" hidden="1">
+		<quad class="tag" size="10 2.6" valign="center"/>
+		<label class="live" pos="5 0" size="10 2.6" halign="center" valign="center2" text="Live"/>
+	</frame>
+	<frameinstance modelid="Model_Row" id="Row_0" pos="0 -6.9"/>
+	<frameinstance modelid="Model_Row" id="Row_1" pos="0 -11.9"/>
+	<frameinstance modelid="Model_Row" id="Row_2" pos="0 -16.9"/>
+	<frameinstance modelid="Model_Row" id="Row_3" pos="0 -21.9"/>
+	<frameinstance modelid="Model_Row" id="Row_4" pos="0 -26.9"/>
+	<frameinstance modelid="Model_Row" id="Row_5" pos="0 -31.9"/>
+	<frameinstance modelid="Model_Row" id="Row_6" pos="0 -36.9"/>
+	<frameinstance modelid="Model_Row" id="Row_7" pos="0 -41.9"/>
+	<frameinstance modelid="Model_Row" id="Row_8" pos="0 -46.9"/>
+	<frameinstance modelid="Model_Row" id="Row_9" pos="0 -51.9"/>
+</frame>
+
+<script><!--
+/**
+ *	Shows the round instead of the match: the round as it stands while it runs and
+ *	the last round that counted otherwise, with the title and the info of the
+ *	standings and the names of the players, all from the netvars the driver
+ *	modescript writes (tm_server_types::method::DRIVER_NETVARS). A config selects it
+ *	in place of the standings for modes whose round players follow, e.g. the best
+ *	times of a time attack map or an endurance race.
+ *
+ *	Every row shows the place, the name, the label of the mode (e.g. the lap of an
+ *	endurance race), the time and the points of the round. Once a player has points
+ *	in the match, e.g. from earlier maps of a time attack match, a column with the
+ *	points of the match follows.
+ */
+#Include "TextLib" as TL
+#Include "ColorLib" as CL
+
+// Style: colors as hex, applied with every update.
+#Const C_Style_OwnColor "1e5f99"
+
+#Const C_MaxRows 10
+// The width of the standings without and with the column of the match.
+#Const C_Width 52.
+#Const C_MatchWidth 60.
+
+Void SetText(CMlFrame _Frame, Text _ControlId, Text _Value) {
+	declare CMlLabel Label <=> (_Frame.GetFirstChild(_ControlId) as CMlLabel);
+	if (Label != Null) Label.Value = _Value;
+}
+
+/// Shows a quad in a color or hides it for an empty color.
+Void SetQuadColor(CMlFrame _Frame, Text _ControlId, Text _Color) {
+	declare CMlQuad Quad <=> (_Frame.GetFirstChild(_ControlId) as CMlQuad);
+	if (Quad == Null) return;
+	Quad.Visible = _Color != "";
+	if (_Color != "") Quad.BgColor = CL::Hex6ToRgb(_Color);
+}
+
+Void SetVisible(CMlFrame _Frame, Text _ControlId, Boolean _Visible) {
+	declare CMlControl Control <=> _Frame.GetFirstChild(_ControlId);
+	if (Control != Null) Control.Visible = _Visible;
+}
+
+/// The points of every player in the match by player, empty while nobody has any.
+Integer[Integer] MatchScores() {
+	declare netread Integer[] Net_Driver_StandingsPlayers for Teams[0];
+	declare netread Integer[] Net_Driver_StandingsScores for Teams[0];
+	declare Integer[Integer] Scores;
+	declare Boolean Any = False;
+	foreach (Entry => Player in Net_Driver_StandingsPlayers) {
+		Scores[Player] = Net_Driver_StandingsScores[Entry];
+		if (Scores[Player] != 0) Any = True;
+	}
+	if (!Any) Scores.clear();
+	return Scores;
+}
+
+/// Widens the header for the column of the match or narrows it again.
+Void SetWidth(CMlFrame _Frame, Real _Width) {
+	declare CMlControl Header <=> _Frame.GetFirstChild("Quad_Header");
+	declare CMlControl Accent <=> _Frame.GetFirstChild("Quad_Accent");
+	declare CMlControl Info <=> _Frame.GetFirstChild("Label_Info");
+	declare CMlControl Live <=> _Frame.GetFirstChild("Frame_Live");
+	if (Header != Null) Header.Size = <_Width, 6.>;
+	if (Accent != Null) Accent.Size = <_Width, 0.4>;
+	if (Info != Null) Info.RelativePosition_V3 = <_Width - 1.5, -3.>;
+	if (Live != Null) Live.RelativePosition_V3 = <_Width - 10., -6.>;
+}
+
+/// The name of a player of the netvars, the account while the host does not know it.
+Text PlayerName(Integer _Player) {
+	declare netread Text[Integer] Net_Driver_UserAccountIds for Teams[0];
+	declare netread Text[Integer] Net_Driver_UserNames for Teams[0];
+	if (Net_Driver_UserNames.existskey(_Player) && Net_Driver_UserNames[_Player] != "") {
+		return Net_Driver_UserNames[_Player];
+	}
+	if (Net_Driver_UserAccountIds.existskey(_Player)) return Net_Driver_UserAccountIds[_Player];
+	return "";
+}
+
+/// Whether a player of the netvars is the local player.
+Boolean IsLocal(Integer _Player) {
+	declare netread Text[Integer] Net_Driver_UserAccountIds for Teams[0];
+	return LocalUser != Null
+		&& Net_Driver_UserAccountIds.existskey(_Player)
+		&& Net_Driver_UserAccountIds[_Player] == LocalUser.WebServicesUserId;
+}
+
+/// A race time like the game shows it, e.g. 1:02.345, with hours for long races.
+Text TimeText(Integer _Time) {
+	if (_Time < 0) return "-";
+	declare Integer Hours = _Time / 3600000;
+	declare Integer Minutes = (_Time / 60000) % 60;
+	declare Text Rest = TL::FormatInteger((_Time / 1000) % 60, 2)^"."^TL::FormatInteger(_Time % 1000, 3);
+	if (Hours > 0) return TL::ToText(Hours)^":"^TL::FormatInteger(Minutes, 2)^":"^Rest;
+	return TL::ToText(Minutes)^":"^Rest;
+}
+
+Void Update() {
+	declare netread Text Net_Driver_Title for Teams[0];
+	declare netread Text Net_Driver_Info for Teams[0];
+	declare netread Boolean Net_Driver_Paused for Teams[0];
+	declare netread Boolean Net_Driver_RoundLive for Teams[0];
+	declare netread Integer[] Net_Driver_RoundPlayers for Teams[0];
+	declare netread Integer[] Net_Driver_RoundPositions for Teams[0];
+	declare netread Integer[] Net_Driver_RoundScores for Teams[0];
+	declare netread Integer[] Net_Driver_RoundTimes for Teams[0];
+	declare netread Text[Integer] Net_Driver_RoundLabels for Teams[0];
+	declare CMlFrame Frame_Standings <=> (Page.GetFirstChild("Frame_Standings") as CMlFrame);
+
+	// Nothing until the driver published the standings.
+	Frame_Standings.Visible = Net_Driver_Title != "";
+	if (!Frame_Standings.Visible) return;
+	SetText(Frame_Standings, "Label_Title", Net_Driver_Title);
+	declare Text Info = Net_Driver_Info;
+	if (Net_Driver_Paused) Info = "Paused";
+	SetText(Frame_Standings, "Label_Info", Info);
+	declare CMlFrame Frame_Live <=> (Frame_Standings.GetFirstChild("Frame_Live") as CMlFrame);
+	if (Frame_Live != Null) Frame_Live.Visible = Net_Driver_RoundLive;
+	declare Integer[Integer] MatchScore = MatchScores();
+	declare Boolean WithMatch = MatchScore.count > 0;
+	if (WithMatch) {
+		SetWidth(Frame_Standings, C_MatchWidth);
+	} else {
+		SetWidth(Frame_Standings, C_Width);
+	}
+
+	// The round is ordered by place. The local player always gets a row, the last
+	// one if needed.
+	declare Integer[] Shown;
+	declare Integer Own = -1;
+	foreach (Entry => Player in Net_Driver_RoundPlayers) {
+		if (Shown.count < C_MaxRows) Shown.add(Entry);
+		if (IsLocal(Player)) Own = Entry;
+	}
+	if (Own >= 0 && !Shown.exists(Own) && Shown.count == C_MaxRows) Shown[C_MaxRows - 1] = Own;
+
+	for (RowIndex, 0, C_MaxRows - 1) {
+		declare CMlFrame Row <=> (Page.GetFirstChild("Row_"^RowIndex) as CMlFrame);
+		if (Row == Null) continue;
+		if (!Shown.existskey(RowIndex)) {
+			Row.Visible = False;
+			continue;
+		}
+
+		declare Integer Entry = Shown[RowIndex];
+		declare Integer Player = Net_Driver_RoundPlayers[Entry];
+		declare Text Label = "";
+		if (Net_Driver_RoundLabels.existskey(Player)) Label = Net_Driver_RoundLabels[Player];
+		Row.Visible = True;
+		SetText(Row, "Label_Rank", TL::ToText(Net_Driver_RoundPositions[Entry]));
+		SetText(Row, "Label_Name", PlayerName(Player));
+		SetText(Row, "Label_Detail", Label);
+		SetText(Row, "Label_Time", TimeText(Net_Driver_RoundTimes[Entry]));
+		SetText(Row, "Label_Score", TL::ToText(Net_Driver_RoundScores[Entry]));
+		SetVisible(Row, "Quad_Match", WithMatch);
+		SetVisible(Row, "Label_Match", WithMatch);
+		if (MatchScore.existskey(Player)) {
+			SetText(Row, "Label_Match", TL::ToText(MatchScore[Player]));
+		} else {
+			SetText(Row, "Label_Match", "");
+		}
+		if (IsLocal(Player)) {
+			SetQuadColor(Row, "Quad_Highlight", C_Style_OwnColor);
+		} else {
+			SetQuadColor(Row, "Quad_Highlight", "");
+		}
+	}
+}
+
+main() {
+	declare netread Integer Net_Driver_StandingsSerial for Teams[0];
+	declare netread Integer Net_Driver_RoundSerial for Teams[0];
+	declare netread Integer Net_Driver_UsersSerial for Teams[0];
+	declare Integer LastSerial = -1;
+	declare Integer LastRoundSerial = -1;
+	declare Integer LastUsersSerial = -1;
+
+	while (True) {
+		yield;
+		if (
+			LastSerial == Net_Driver_StandingsSerial &&
+			LastRoundSerial == Net_Driver_RoundSerial &&
+			LastUsersSerial == Net_Driver_UsersSerial
+		) continue;
+		LastSerial = Net_Driver_StandingsSerial;
+		LastRoundSerial = Net_Driver_RoundSerial;
+		LastUsersSerial = Net_Driver_UsersSerial;
+		Update();
+	}
+}
+--></script>
+</manialink>
