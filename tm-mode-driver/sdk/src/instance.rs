@@ -78,6 +78,12 @@ pub trait ModeSource {
     fn start(&self, settings: &str) -> Result<Result<Box<dyn ModeInstance>, String>, ModeFault>;
 }
 
+impl<S: ModeSource + ?Sized> ModeSource for Box<S> {
+    fn start(&self, settings: &str) -> Result<Result<Box<dyn ModeInstance>, String>, ModeFault> {
+        (**self).start(settings)
+    }
+}
+
 /// A [`Mode`] compiled into the driver.
 pub struct Native<M>(PhantomData<fn() -> M>);
 
@@ -221,6 +227,15 @@ mod tests {
             (mode.name(), mode.reloadable_settings()),
             ("Test".into(), vec!["points".to_string()])
         );
+    }
+
+    #[test]
+    fn a_boxed_source_starts_the_mode_it_holds() {
+        let boxed: Box<dyn ModeSource + Send + Sync> = Box::new(Native::<Test>::new());
+
+        let mode = boxed.start("{}").unwrap().unwrap();
+
+        assert_eq!(mode.name(), "Test");
     }
 
     #[test]
