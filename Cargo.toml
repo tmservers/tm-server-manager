@@ -12,6 +12,7 @@ members = [
     "tm-mode-driver/manialinks",
     "tm-mode-driver/builtin",
     "tm-mode-driver/script",
+    "tm-mode-driver/runner",
     "tm-mode-driver/modes/*",
 ]
 resolver = "3"

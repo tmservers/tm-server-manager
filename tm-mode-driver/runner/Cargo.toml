@@ -1,0 +1,24 @@
+[package]
+name = "tm-mode-driver-runner"
+description = "Drives a Trackmania server with a mode without the bridge and the manager."
+publish = false
+
+version.workspace = true
+authors.workspace = true
+keywords.workspace = true
+categories.workspace = true
+license.workspace = true
+edition.workspace = true
+repository.workspace = true
+
+[dependencies]
+tm-mode-driver.workspace = true
+tm-mode-driver-sdk.workspace = true
+tm-mode-driver-builtin.workspace = true
+tm-mode-driver-script.workspace = true
+tm-mode-driver-manialinks.workspace = true
+tm-server-types.workspace = true
+tm-server-controller.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
