@@ -100,14 +100,21 @@ impl Rules for Endurance {
 struct Progress {
     checkpoints: u32,
     time: u32,
+    /// The checkpoints before the last one of the last race, from the latest backwards.
+    earlier: Vec<u32>,
     laps: u32,
     finished: bool,
 }
 
 impl Progress {
     /// What orders the players, the best first.
-    fn key<'a>(&self, account_id: &'a str) -> (Reverse<u32>, u32, &'a str) {
-        (Reverse(self.checkpoints), self.time, account_id)
+    fn key<'a>(&self, account_id: &'a str) -> (Reverse<u32>, u32, Vec<u32>, &'a str) {
+        (
+            Reverse(self.checkpoints),
+            self.time,
+            self.earlier.clone(),
+            account_id,
+        )
     }
 }
 
@@ -119,6 +126,9 @@ fn progress(truth: &RoundTruth, account_id: &str) -> Progress {
             .iter()
             .filter_map(|race| race.checkpoints.last())
             .fold(0, |sum: u32, &time| sum.saturating_add(time)),
+        earlier: races.last().map_or_else(Vec::new, |race| {
+            race.checkpoints.iter().rev().skip(1).copied().collect()
+        }),
         laps: races.iter().map(|race| race.laps).sum(),
         finished: races.iter().any(|race| race.finished),
     }
