@@ -10,6 +10,7 @@ use crate::{
     authorization::Authorization,
     competition::{
         CompetitionPermissionsV1, CompetitionRead,
+        connection::start::NodeStartWrite,
         node::{NodeHandle, NodeRead, NodeWrite, Vec2},
         server_pool::TabCompetitionServerPoolRead,
     },
@@ -269,7 +270,11 @@ pub(crate) fn match_create(
 /// the user has the permission to assign servers in the project
 /// and the server is lended to the project.
 #[reducer]
-fn match_assign_server(ctx: &ReducerContext, to: u32, server_id: u32) -> Result<(), String> {
+pub(crate) fn match_assign_server(
+    ctx: &ReducerContext,
+    to: u32,
+    server_id: u32,
+) -> Result<(), String> {
     let Some(tm_match) = ctx.db.tab_match().id().find(to) else {
         return Err("Supplied match was not found!".into());
     };
@@ -309,7 +314,7 @@ fn match_assign_server(ctx: &ReducerContext, to: u32, server_id: u32) -> Result<
 }
 
 #[reducer]
-fn match_server_revoke(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
+pub(crate) fn match_server_revoke(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
     let Some(tm_match) = ctx.db.tab_match().id().find(match_id) else {
         return Err("Supplied match was not found!".into());
     };
@@ -336,6 +341,9 @@ fn match_server_revoke(ctx: &ReducerContext, match_id: u32) -> Result<(), String
     }
 
     ctx.raw_server_occupation_remove(NodeHandle::MatchV1(match_id))?;
+
+    // The server is free for the nodes which wait for one.
+    ctx.node_starts_retry();
 
     Ok(())
 }
@@ -825,11 +833,20 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
         if tm_match.status == MatchStatus::Configuring {
             return Err("Match is still getting configured.".into());
         }
+        // Preparing again would set back a match which already runs.
+        if tm_match.status != MatchStatus::Configured {
+            return Err(format!(
+                "Match is {:?}, only configured matches can be prepared.",
+                tm_match.status
+            ));
+        }
         if tm_match.config == 0 {
             return Err(
                 "Match needs a configuration in order to advance to the upcoming state.".into(),
             );
         }
+        // Everything which can fail is checked before anything changes, the graph keeps going when it fails.
+        let config = self.raw_server_config(tm_match.config)?;
 
         // Its inputs and seeds must not change anymore once it is prepared.
         let pending = self.node_pending_origins(NodeHandle::MatchV1(match_id));
@@ -853,7 +870,6 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
             return Err("Match has auto provisioning turned off and no server assigned! Cannot start the match!".into());
         };
 
-        let config = self.raw_server_config(tm_match.config)?;
         self.db().tab_match().id().update(tm_match);
 
         self.match_state_insert(MatchState::new(match_id, config.get_mode().get_mode()))?;
@@ -926,6 +942,9 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
         };
 
         self.destination_free(NodeHandle::MatchV1(match_id));
+
+        // The server of the match is free for the nodes which wait for one.
+        self.node_starts_retry();
 
         log::info!("The match {} has successfully ended!", match_id);
 

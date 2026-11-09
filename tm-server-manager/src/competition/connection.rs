@@ -12,6 +12,7 @@ use crate::{
         connection::{
             action::{ConnectionActionWrite, try_exec_action},
             data::{ConnectionDataRead, ConnectionDataV2, ConnectionDataWrite},
+            start::NodeStartWrite,
         },
         node::{NodeHandle, NodeRead},
     },
@@ -19,12 +20,11 @@ use crate::{
     leaderboard::LeadearboardRead,
     output::OutputRead,
     pipeline::{LbEntry, context::LbContext, error::LbError, shape::LbShape},
-    schedule::ScheduleWrite,
-    tm_match::MatchWrite,
 };
 
 pub(super) mod action;
 pub(crate) mod data;
+pub(crate) mod start;
 
 #[spacetimedb::table(accessor= tab_connection, vis_private,
     index(accessor=connection_exists,hash(columns=[origin_variant,target_variant,origin_id,target_id])),
@@ -145,7 +145,7 @@ impl ConnectionKind {
 }
 
 #[derive(Debug, SpacetimeType)]
-enum ConnectionError {
+pub(crate) enum ConnectionError {
     NoParallel,
     SelfCycle,
     Cycle(NodeHandle),
@@ -166,7 +166,7 @@ enum ConnectionError {
 
 /// Since we need to check either way if the two thing have the same parent we can omit specifing the competition manually.
 #[procedure]
-fn connection_create(
+pub(crate) fn connection_create(
     ctx: &mut ProcedureContext,
     origin: NodeHandle,
     target: NodeHandle,
@@ -320,7 +320,10 @@ fn connection_create(
 }
 
 #[reducer]
-fn connection_configured(ctx: &ReducerContext, connection_id: u32) -> Result<(), String> {
+pub(crate) fn connection_configured(
+    ctx: &ReducerContext,
+    connection_id: u32,
+) -> Result<(), String> {
     let Some(mut connection) = ctx.db.tab_connection().id().find(connection_id) else {
         return Err("Connection not found.".into());
     };
@@ -472,7 +475,8 @@ fn advance(ctx: &ReducerContext, affected_connection: CompetitionConnection) {
         log::warn!("The node can be started now.");
 
         let result = match affected_connection.target {
-            NodeHandle::MatchV1(match_id) => ctx.match_set_preparation(match_id),
+            // A node which cannot start is kept and tried again once a server becomes available.
+            node @ NodeHandle::MatchV1(_) => ctx.node_start(node),
             NodeHandle::CompetitionV1(c) => {
                 let inputs = ctx.inputs_in_parent(c);
 
@@ -489,7 +493,7 @@ fn advance(ctx: &ReducerContext, affected_connection: CompetitionConnection) {
 
                 Ok(())
             }
-            NodeHandle::ScheduleV1(s) => ctx.schedule_start_relative(s, ctx.timestamp),
+            node @ NodeHandle::ScheduleV1(_) => ctx.node_start(node),
             NodeHandle::ServerV1(_) => unreachable!(),
             NodeHandle::RegistrationV1(_) => unreachable!(),
             NodeHandle::InputV1(n) => {
@@ -522,8 +526,6 @@ fn advance(ctx: &ReducerContext, affected_connection: CompetitionConnection) {
         };
 
         if let Err(error) = result {
-            //TODO maybe add a table for node problems?
-            // maybe there also should be a intended to progress state in the nodes.
             log::error!(
                 "Implicit Flow: Node should have been ready but action failed. Error: {error}"
             )
