@@ -8,7 +8,7 @@ use crate::{
         CompetitionPermissionsV1, CompetitionRead, CompetitionWrite,
         connection::{
             ConnectionRead, ConnectionWrite, connection_resolve_leaderboard,
-            data::ConnectionDataRead,
+            data::ConnectionDataRead, start::node_start_failure_clear,
         },
         roles::CompetitionMemberRead,
         tab_competition__view,
@@ -174,7 +174,7 @@ impl NodeType for NodeHandle {
 } */
 
 #[reducer]
-fn node_delete(ctx: &ReducerContext, node: NodeHandle) -> Result<(), String> {
+pub(crate) fn node_delete(ctx: &ReducerContext, node: NodeHandle) -> Result<(), String> {
     let parent = ctx.node_get_parent(node)?;
     ctx.auth_builder(parent)
         .permission(CompetitionPermissionsV1::NODE_DELETE)
@@ -595,6 +595,9 @@ impl<Db: spacetimedb::CtxDbWrite> NodeWrite for Db {
 
         // Delete all associated connection tables involving the node.
         self.node_connections_delete(node);
+
+        // A deleted node does not wait to be started anymore.
+        node_start_failure_clear(self, node);
 
         Ok(())
     }
