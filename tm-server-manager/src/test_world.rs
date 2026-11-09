@@ -11,7 +11,8 @@ use tm_server_types::{
     base::{Player, RoundTime},
     config::{ModeSettingsV2, Rounds, ServerConfigV2},
     event::{
-        EndRoundEnd, Event, PlayerConnect, Scores, StartLine, StartMatch, StartRound, WayPoint,
+        EndRoundEnd, Event, Pause, PlayerConnect, Scores, StartLine, StartMatch, StartRound,
+        WayPoint,
     },
 };
 
@@ -83,7 +84,7 @@ impl World {
             connection: ConnectionId::from_u128(1000 + number as u128),
             id: 0,
         };
-        let id = server.login(self).expect("the server should log in");
+        let id = server.login(self, false).expect("the server should log in");
         let server = Server { id, ..server };
         self.as_owner(|ctx| crate::raw_server::raw_server_verify(ctx, id));
         self.as_owner(|ctx| crate::competition::server_pool::raw_server_add(ctx, id, COMPETITION));
@@ -167,7 +168,8 @@ impl Server {
     }
 
     /// Logs in through the procedure with Nadeo answering with a token for the account of the server.
-    fn login(&self, world: &World) -> Result<u32, String> {
+    /// A seamless login tells that the server kept the match running while the bridge was gone.
+    fn login(&self, world: &World, seamless: bool) -> Result<u32, String> {
         let account = Uuid::from_u128(0x5e17e7 + self.connection.to_u128());
         let token = format!(
             "header.{}.signature",
@@ -188,8 +190,27 @@ impl Server {
             self.login.clone(),
             "password".into(),
             Uuid::parse_str(OWNER).expect("the account of the owner is valid"),
-            false,
+            seamless,
         )
+    }
+
+    /// The bridge of the server lost its connection to the database.
+    pub(crate) fn disconnect(&self, world: &World) {
+        world.test.clock.advance(TimeDuration::from_micros(1));
+        world
+            .test
+            .with_reducer_tx(self.auth(), |ctx| {
+                crate::client_disconnected(ctx);
+                Ok::<_, String>(())
+            })
+            .expect("disconnecting never fails");
+    }
+
+    /// The bridge came back, the server kept running in the meantime.
+    pub(crate) fn reconnect(&self, world: &World) {
+        world.test.clock.advance(TimeDuration::from_micros(1));
+        self.login(world, true)
+            .expect("the server should log in again");
     }
 
     /// Posts the events one after another, every one in a transaction of its own like the bridge does.
@@ -251,6 +272,13 @@ pub(crate) fn end_round() -> Event {
         valid: 0,
         time: 0,
         is_valid: true,
+    })
+}
+
+pub(crate) fn pause(active: bool) -> Event {
+    Event::Pause(Pause {
+        available: true,
+        active,
     })
 }
 
