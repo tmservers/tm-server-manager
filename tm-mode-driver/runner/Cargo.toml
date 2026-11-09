@@ -1,7 +1,8 @@
 [package]
 name = "tm-mode-driver-runner"
-description = "Drives a Trackmania server with a mode without the bridge and the manager."
+description = "Drives a Trackmania server with a mode without the bridge and the manager, and measures what modes cost."
 publish = false
+default-run = "tm-mode-driver-runner"
 
 version.workspace = true
 authors.workspace = true
@@ -22,3 +23,6 @@ tm-server-controller.workspace = true
 tokio.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
+
+# Only used by the bench.
+tm-mode-driver-sim.workspace = true

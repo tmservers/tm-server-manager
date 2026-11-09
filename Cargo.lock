@@ -6233,6 +6233,7 @@ dependencies = [
  "tm-mode-driver-manialinks",
  "tm-mode-driver-script",
  "tm-mode-driver-sdk",
+ "tm-mode-driver-sim",
  "tm-server-controller",
  "tm-server-types",
  "tokio",
