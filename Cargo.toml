@@ -8,6 +8,7 @@ members = [
     "tm-server-manager-api-rs",
     "tm-mode-driver/sdk",
     "tm-mode-driver/core",
+    "tm-mode-driver/sim",
 ]
 resolver = "3"
 
@@ -85,6 +86,7 @@ tm-server-types = { path = "./tm-server-types", version = "0.1.0-dev" }
 tm-server-controller = { path = "./tm-server-controller", version = "0.1.0-dev" }
 tm-mode-driver-sdk = { path = "./tm-mode-driver/sdk" }
 tm-mode-driver = { path = "./tm-mode-driver/core" }
+tm-mode-driver-sim = { path = "./tm-mode-driver/sim" }
 
 
 #=======

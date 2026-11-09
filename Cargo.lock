@@ -6212,6 +6212,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "tm-mode-driver-sim"
+version = "0.1.0-dev"
+dependencies = [
+ "serde",
+ "serde_json",
+ "tm-mode-driver",
+ "tm-mode-driver-sdk",
+ "tm-server-types",
+]
+
+[[package]]
 name = "tm-server-bridge"
 version = "0.1.0-dev"
 dependencies = [
