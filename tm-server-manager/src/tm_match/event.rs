@@ -37,7 +37,8 @@ pub(crate) fn handle_match_event(
         // We use this to always insert participating players of the round in the leaderboard.
         Event::StartLine(start_line) if state.live_round() => {
             let account_id = Uuid::parse_str(&start_line.account_id).unwrap();
-            let user_id = ctx.user_id_from_account(account_id);
+            // Players who joined while the bridge was gone never connected, they still race.
+            let user_id = ctx.user_id_or_insert(account_id)?;
 
             let round = state.get_round();
 
@@ -70,12 +71,13 @@ pub(crate) fn handle_match_event(
         }
         Event::WayPoint(way_point) if state.live_round() => {
             let account_id = Uuid::parse_str(&way_point.account_id).unwrap();
-            let user_id = ctx.user_id_from_account(account_id);
+            let user_id = ctx.user_id_of_account(account_id);
 
             let round = state.get_round();
 
-            if let Some(mut entry) =
-                ctx.match_round_player_ext_of_user(state.match_id, round, user_id)
+            if let Some(user_id) = user_id
+                && let Some(mut entry) =
+                    ctx.match_round_player_ext_of_user(state.match_id, round, user_id)
             {
                 if way_point.is_end_race {
                     let mut round_player = ctx.match_round_player_find(entry.id).unwrap();
@@ -100,18 +102,19 @@ pub(crate) fn handle_match_event(
                     "Checkpoint without StartLine... Match: {}, Round: {}, Player: {}",
                     state.match_id,
                     round,
-                    user_id
+                    account_id
                 );
             }
         }
         Event::Respawn(respawn) if state.live_round() => {
             let account_id = Uuid::parse_str(&respawn.account_id).unwrap();
-            let user_id = ctx.user_id_from_account(account_id);
+            let user_id = ctx.user_id_of_account(account_id);
 
             let round = state.get_round();
 
-            if let Some(mut entry) =
-                ctx.match_round_player_ext_of_user(state.match_id, round, user_id)
+            if let Some(user_id) = user_id
+                && let Some(mut entry) =
+                    ctx.match_round_player_ext_of_user(state.match_id, round, user_id)
             {
                 entry.add_respawn(respawn.speed, respawn.time);
 
@@ -121,18 +124,19 @@ pub(crate) fn handle_match_event(
                     "Respawn without StartLine... Match: {}, Round: {}, Player: {}",
                     state.match_id,
                     round,
-                    user_id
+                    account_id
                 );
             }
         }
         Event::GiveUp(give_up) if state.live_round() => {
             let account_id = Uuid::parse_str(&give_up.account_id).unwrap();
-            let user_id = ctx.user_id_from_account(account_id);
+            let user_id = ctx.user_id_of_account(account_id);
 
             let round = state.get_round();
 
-            if let Some(mut entry) =
-                ctx.match_round_player_ext_of_user(state.match_id, round, user_id)
+            if let Some(user_id) = user_id
+                && let Some(mut entry) =
+                    ctx.match_round_player_ext_of_user(state.match_id, round, user_id)
             {
                 entry.give_up(give_up.time);
 
@@ -142,7 +146,7 @@ pub(crate) fn handle_match_event(
                     "GiveUp without StartLine... Match: {}, Round: {}, Player: {}",
                     state.match_id,
                     round,
-                    user_id
+                    account_id
                 );
             }
         }
@@ -151,7 +155,8 @@ pub(crate) fn handle_match_event(
 
             for player in &knocked_players.account_ids {
                 let account_id = Uuid::parse_str(player).unwrap();
-                let user_id = ctx.user_id_from_account(account_id);
+                // A knocked out player counts even if it never connected while the bridge was up.
+                let user_id = ctx.user_id_or_insert(account_id)?;
 
                 let mut entry = ctx
                     .match_round_player_of_user(state.match_id, round, user_id)
@@ -298,8 +303,9 @@ pub(crate) fn handle_match_event(
                     .players
                     .iter()
                     .filter_map(|p| {
+                        // Players who never started are no part of the round.
                         let user_id =
-                            ctx.user_id_from_account(Uuid::parse_str(&p.account_id).unwrap());
+                            ctx.user_id_of_account(Uuid::parse_str(&p.account_id).unwrap())?;
 
                         if matches!(state.get_mode(), TmMode::ReverseCup) && p.match_points <= -2000
                         {
@@ -375,11 +381,12 @@ pub(crate) fn handle_match_event(
                 let scores = scores
                     .players
                     .iter()
-                    .map(|p| {
+                    .filter_map(|p| {
+                        // Players who never started are no part of the round.
                         let user_id =
-                            ctx.user_id_from_account(Uuid::parse_str(&p.account_id).unwrap());
+                            ctx.user_id_of_account(Uuid::parse_str(&p.account_id).unwrap())?;
 
-                        ScoresPlayer {
+                        Some(ScoresPlayer {
                             user_id,
                             position: 0,
                             round_points: p.round_points,
@@ -389,7 +396,7 @@ pub(crate) fn handle_match_event(
                             } else {
                                 -1
                             },
-                        }
+                        })
                     })
                     .collect::<Vec<_>>();
 

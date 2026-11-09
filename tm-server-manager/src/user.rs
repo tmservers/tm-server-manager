@@ -94,6 +94,8 @@ pub(crate) trait UserRead {
     fn get_user_id(&self, identity: Identity) -> Result<u32, String>;
     //fn user(&self, identity: Identity) -> Result<UserV1, String>;
     fn user_id_from_account(&self, account_id: Uuid) -> u32;
+    /// The user of the account, none if it was never seen.
+    fn user_id_of_account(&self, account_id: Uuid) -> Option<u32>;
     fn user_account_from_id(&self, user_id: u32) -> Uuid;
     fn user_name(&self, user_id: u32) -> String;
 }
@@ -141,6 +143,14 @@ impl<Db: spacetimedb::CtxDbRead> UserRead for Db {
             .user_id
     }
 
+    fn user_id_of_account(&self, account_id: Uuid) -> Option<u32> {
+        self.db_read_only()
+            .tab_user_ids_map()
+            .account_id()
+            .find(account_id)
+            .map(|user| user.user_id)
+    }
+
     fn has_user(&self, account_id: Uuid) -> bool {
         self.db_read_only()
             .tab_user_ids_map()
@@ -161,10 +171,20 @@ impl<Db: spacetimedb::CtxDbRead> UserRead for Db {
 
 pub(crate) trait UserWrite: UserRead {
     fn user_insert(&self, user: UserV1) -> Result<u32, String>;
+    /// The user of the account, a new one without a name if it was never seen.
+    /// Unlike [`UserWrite::user_insert`] an existing user keeps its name.
+    fn user_id_or_insert(&self, account_id: Uuid) -> Result<u32, String>;
     fn user_login(&self, user_id: u32, identity: Identity) -> Result<(), String>;
     fn user_update_name(&self, account_id: Uuid, name: String);
 }
 impl<Db: spacetimedb::CtxDbWrite> UserWrite for Db {
+    fn user_id_or_insert(&self, account_id: Uuid) -> Result<u32, String> {
+        match self.user_id_of_account(account_id) {
+            Some(user_id) => Ok(user_id),
+            None => self.user_insert(UserV1::new(account_id)),
+        }
+    }
+
     fn user_insert(&self, new_user: UserV1) -> Result<u32, String> {
         let user = self.db().tab_user().account_id().find(new_user.account_id);
         if let Some(mut user) = user {
