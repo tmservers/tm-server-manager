@@ -622,4 +622,45 @@ mod tests {
         players.sort();
         assert_eq!(players, vec![1, 2]);
     }
+
+    #[test]
+    fn teams_registered_at_the_same_time_are_ordered_by_team() {
+        let test = test_context(&[]);
+        registration(&test, RegistrationStatus::Ongoing);
+        // The settings of the registration, teams of two take part.
+        let settings = RegistrationSettingsTeam {
+            team_limit: 4,
+            team_size_min: 2,
+            team_size_max: 2,
+        };
+        run(&test, |ctx| {
+            // The team with the higher id got in first.
+            for (team, members) in [(7, [1, 2]), (3, [3, 4])] {
+                ctx.db.tab_team().insert(RegisteredTeam {
+                    id: team,
+                    registration_id: REGISTRATION,
+                    name: String::new(),
+                    registered_at: ctx.timestamp,
+                });
+                for user_id in members {
+                    ctx.db.tab_team_member().insert(TeamMember {
+                        team_id: team,
+                        user_id,
+                        role: TeamRole::Player,
+                    });
+                }
+            }
+            Ok(())
+        })
+        .unwrap();
+
+        let teams: Vec<(u32, u16)> = test
+            .anonymous_view_context()
+            .registration_team_lb(REGISTRATION, &settings)
+            .iter()
+            .map(|e| (e.team_id, e.position))
+            .collect();
+
+        assert_eq!(teams, vec![(3, 1), (7, 2)]);
+    }
 }
