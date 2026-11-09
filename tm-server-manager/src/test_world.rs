@@ -11,15 +11,19 @@ use tm_server_types::{
     base::{Player, RoundTime},
     config::{ModeSettingsV2, Rounds, ServerConfigV2},
     event::{
-        EndRoundEnd, Event, GiveUp, KnockoutElimination, Pause, PlayerChat, PlayerConnect, Respawn,
-        Scores, StartLine, StartMatch, StartRound, WayPoint,
+        EndMatch, EndRoundEnd, Event, GiveUp, KnockoutElimination, Pause, PlayerChat,
+        PlayerConnect, Respawn, Scores, StartLine, StartMatch, StartRound, WayPoint,
     },
 };
 
 use crate::{
-    competition::node::Vec2,
+    competition::{
+        connection::{ConnectionKind, ConnectionRead},
+        node::{NodeHandle, Vec2},
+    },
+    leaderboard::LeadearboardRead,
     pipeline::{LbEntry, LbSettingsV3, context::LbContext, evaluate_steps},
-    tm_match::{MatchRead, leaderboard::MatchLeadearboardRead},
+    tm_match::{MatchRead, MatchStatus, leaderboard::MatchLeadearboardRead},
 };
 
 /// The trackmania account of the owner of the project.
@@ -79,16 +83,33 @@ impl World {
 
     /// A server of the owner which logged in, got verified and is lent to the competition.
     pub(crate) fn server(&self, number: u32) -> Server {
+        let server = self.logged_in_server(number);
+        self.verify(&server);
+        self.lend(&server);
+        server
+    }
+
+    /// A server of the owner which logged in, it is neither verified nor lent to the competition yet.
+    pub(crate) fn logged_in_server(&self, number: u32) -> Server {
         let server = Server {
             login: format!("server-{number}"),
             connection: ConnectionId::from_u128(1000 + number as u128),
             id: 0,
         };
         let id = server.login(self, false).expect("the server should log in");
-        let server = Server { id, ..server };
-        self.as_owner(|ctx| crate::raw_server::raw_server_verify(ctx, id));
-        self.as_owner(|ctx| crate::competition::server_pool::raw_server_add(ctx, id, COMPETITION));
-        server
+        Server { id, ..server }
+    }
+
+    /// The owner confirms that the server is theirs.
+    pub(crate) fn verify(&self, server: &Server) {
+        self.as_owner(|ctx| crate::raw_server::raw_server_verify(ctx, server.id));
+    }
+
+    /// The owner lends the server to the competition.
+    pub(crate) fn lend(&self, server: &Server) {
+        self.as_owner(|ctx| {
+            crate::competition::server_pool::raw_server_add(ctx, server.id, COMPETITION)
+        });
     }
 
     /// A configured match in the competition, which plays rounds.
@@ -117,6 +138,76 @@ impl World {
         match_id
     }
 
+    pub(crate) fn match_status(&self, match_id: u32) -> MatchStatus {
+        self.test
+            .anonymous_view_context()
+            .match_find(match_id)
+            .expect("the match exists")
+            .status()
+    }
+
+    /// A configured leaderboard without inputs, so it is finished right away.
+    pub(crate) fn finished_leaderboard(&self, name: &str) -> NodeHandle {
+        self.as_owner(|ctx| {
+            crate::leaderboard::leaderboard_create(
+                ctx,
+                name.into(),
+                COMPETITION,
+                Vec2::ZERO,
+                0,
+                false,
+            )
+        });
+        let id = self
+            .test
+            .anonymous_view_context()
+            .leaderboards_with_competition(COMPETITION)
+            .find(|l| l.name() == name)
+            .expect("the leaderboard was created")
+            .id;
+        self.as_owner(|ctx| crate::leaderboard::leaderboard_configured(ctx, id));
+        NodeHandle::LeaderboardV1(id)
+    }
+
+    /// Lets the target wait for the origin through a configured connection.
+    pub(crate) fn wait_for(&self, target: NodeHandle, origin: NodeHandle) {
+        let mut procedure = self.test.procedure_context(World::owner());
+        crate::competition::connection::connection_create(
+            &mut procedure,
+            origin,
+            target,
+            ConnectionKind::Wait,
+        )
+        .unwrap_or_else(|error| panic!("the connection could not be created: {error:?}"));
+        let id = self
+            .test
+            .anonymous_view_context()
+            .connections_in_competition(COMPETITION)
+            .find(|c| c.origin() == origin && c.target() == target)
+            .expect("the connection was created")
+            .id;
+        self.as_owner(|ctx| crate::competition::connection::connection_configured(ctx, id));
+    }
+
+    /// The nodes which could not start with the reason, the one which waits the longest first.
+    pub(crate) fn start_failures(&self) -> Vec<(NodeHandle, String)> {
+        use crate::competition::connection::start::NodeStartRead;
+        self.test
+            .anonymous_view_context()
+            .node_start_failures(COMPETITION)
+            .into_iter()
+            .map(|f| (f.node, f.error))
+            .collect()
+    }
+
+    /// The server the node runs on.
+    pub(crate) fn server_of(&self, node: NodeHandle) -> Option<u32> {
+        use crate::raw_server::occupation::TabRawServerOccupationRead;
+        self.test
+            .anonymous_view_context()
+            .occupation_with_occupier(node)
+    }
+
     /// The rounds of the match as (round, account, points, position), sorted.
     pub(crate) fn rounds(&self, match_id: u32) -> Vec<(u16, String, i32, u16)> {
         let cx = self.test.anonymous_view_context();
@@ -132,7 +223,7 @@ impl World {
     /// The standings of the match its mode makes from the rounds.
     pub(crate) fn standings(&self, match_id: u32) -> Vec<LbEntry> {
         let cx = self.test.anonymous_view_context();
-        let node = crate::competition::node::NodeHandle::MatchV1(match_id);
+        let node = NodeHandle::MatchV1(match_id);
         evaluate_steps(
             &LbContext::new(&cx, node),
             &[LbSettingsV3::Match],
@@ -253,6 +344,10 @@ pub(crate) fn connect(account: &str) -> Event {
 
 pub(crate) fn start_match() -> Event {
     Event::StartMatchStart(StartMatch { count: 0, time: 0 })
+}
+
+pub(crate) fn end_match() -> Event {
+    Event::EndMatchEnd(EndMatch { count: 0, time: 0 })
 }
 
 pub(crate) fn start_round(count: u32) -> Event {
@@ -381,9 +476,7 @@ pub(crate) fn round(count: u32, results: &[(&str, u32, i32)]) -> Vec<Event> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        competition::node::NodeHandle, raw_server::occupation::TabRawServerOccupationRead,
-    };
+    use crate::raw_server::occupation::TabRawServerOccupationRead;
 
     #[test]
     fn a_match_on_a_server_from_the_pool_scores_the_rounds_its_server_reports() {
