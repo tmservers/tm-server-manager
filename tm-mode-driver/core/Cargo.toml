@@ -1,0 +1,20 @@
+[package]
+name = "tm-mode-driver"
+description = "Runs the modes that drive the generic driver modescript of a Trackmania server."
+publish = false
+
+version.workspace = true
+authors.workspace = true
+keywords.workspace = true
+categories.workspace = true
+license.workspace = true
+edition.workspace = true
+repository.workspace = true
+
+[dependencies]
+tm-server-types.workspace = true
+tm-mode-driver-sdk.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
