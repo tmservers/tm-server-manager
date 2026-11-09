@@ -442,7 +442,8 @@ impl<Db: CtxDbRead> TeamRead for Db {
                 members >= settings.team_size_min as usize
             })
             .collect();
-        teams.sort_by_key(|t| t.registered_at);
+        // Teams registered at the same time still need an order which never changes.
+        teams.sort_by_key(|t| (t.registered_at, t.id));
 
         teams
             .into_iter()
