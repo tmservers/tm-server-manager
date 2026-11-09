@@ -18,5 +18,7 @@ serde = { workspace = true, features = ["derive"] }
 [dev-dependencies]
 # Simulated matches of the mode, see tests/simulation.
 tm-mode-driver-sim.workspace = true
+# The mode as a script has to play the same matches.
+tm-mode-driver-script.workspace = true
 insta.workspace = true
 serde_json.workspace = true

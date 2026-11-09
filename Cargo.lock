@@ -6291,6 +6291,7 @@ dependencies = [
  "insta",
  "serde",
  "serde_json",
+ "tm-mode-driver-script",
  "tm-mode-driver-sdk",
  "tm-mode-driver-sim",
 ]
