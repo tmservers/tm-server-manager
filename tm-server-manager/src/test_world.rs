@@ -11,8 +11,8 @@ use tm_server_types::{
     base::{Player, RoundTime},
     config::{ModeSettingsV2, Rounds, ServerConfigV2},
     event::{
-        EndRoundEnd, Event, Pause, PlayerConnect, Scores, StartLine, StartMatch, StartRound,
-        WayPoint,
+        EndRoundEnd, Event, GiveUp, KnockoutElimination, Pause, PlayerChat, PlayerConnect, Respawn,
+        Scores, StartLine, StartMatch, StartRound, WayPoint,
     },
 };
 
@@ -279,6 +279,41 @@ pub(crate) fn pause(active: bool) -> Event {
     Event::Pause(Pause {
         available: true,
         active,
+    })
+}
+
+pub(crate) fn respawn(account: &str) -> Event {
+    Event::Respawn(Respawn {
+        account_id: account.into(),
+        time: 1_000,
+        number_respawns: 1,
+        racetime: 1_000,
+        laptime: 1_000,
+        checkpoint_in_race: 0,
+        checkpoint_in_lap: 0,
+        speed: 0.,
+    })
+}
+
+pub(crate) fn give_up(account: &str) -> Event {
+    Event::GiveUp(GiveUp {
+        account_id: account.into(),
+        time: 2_000,
+    })
+}
+
+pub(crate) fn knock_out(accounts: &[&str]) -> Event {
+    Event::KnockoutElimination(KnockoutElimination {
+        account_ids: accounts.iter().map(|account| (*account).into()).collect(),
+    })
+}
+
+pub(crate) fn chat(account: &str, text: &str) -> Event {
+    Event::PlayerChat(PlayerChat {
+        account_id: account.into(),
+        text: text.into(),
+        is_registered_cmd: false,
+        options: 0,
     })
 }
 

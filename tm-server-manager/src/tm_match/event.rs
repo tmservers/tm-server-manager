@@ -558,4 +558,72 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn a_player_whose_connect_was_missed_still_races_and_scores() {
+        let world = World::new();
+        let server = world.server(1);
+        let (a, b, c) = (player(1), player(2), player(3));
+        // Only a connected while the bridge was up, b and c joined while it was gone.
+        let match_id = world.live_match(&server, &[&a]);
+        server.post(&world, [start_match(), start_round(1)]);
+        server.post(&world, [start_line(&a), start_line(&b)]);
+        server.post(&world, [finish(&a, 30_000), finish(&b, 31_000)]);
+        // c only watches, the scores still list everyone on the server.
+        server.post(
+            &world,
+            [
+                round_scores(&[(&a, 30_000, 10), (&b, 31_000, 6), (&c, 0, 0)]),
+                end_round(),
+            ],
+        );
+
+        assert_eq!(
+            world.rounds(match_id),
+            vec![(1, a, 10, 1), (1, b, 6, 2)],
+            "b raced so it is in the round, c only watched so it is not"
+        );
+    }
+
+    #[test]
+    fn a_player_knocked_out_without_being_seen_before_is_still_knocked_out() {
+        let world = World::new();
+        let server = world.server(1);
+        let (a, b) = (player(1), player(2));
+        let match_id = world.live_match(&server, &[&a]);
+        server.post(&world, [start_match(), start_round(1), start_line(&a)]);
+
+        server.post(&world, [knock_out(&[&b])]);
+
+        assert_eq!(world.rounds(match_id), vec![(1, a, 0, 0), (1, b, -1, 0)]);
+    }
+
+    #[test]
+    fn the_race_of_a_player_who_never_started_changes_nothing() {
+        use crate::user::UserRead;
+
+        let world = World::new();
+        let server = world.server(1);
+        let (a, b) = (player(1), player(2));
+        let match_id = world.live_match(&server, &[&a]);
+        server.post(&world, [start_match(), start_round(1), start_line(&a)]);
+
+        // The start line of b got lost, so its race cannot be told apart from noise.
+        server.post(&world, [respawn(&b), give_up(&b), finish(&b, 29_000)]);
+        server.post(
+            &world,
+            [
+                finish(&a, 30_000),
+                round_scores(&[(&a, 30_000, 10), (&b, 29_000, 0)]),
+                end_round(),
+            ],
+        );
+
+        assert_eq!(world.rounds(match_id), vec![(1, a, 10, 1)]);
+        let b = spacetimedb::Uuid::parse_str(&b).unwrap();
+        assert!(
+            !world.test.anonymous_view_context().has_user(b),
+            "a race without a start does not make b a user"
+        );
+    }
 }

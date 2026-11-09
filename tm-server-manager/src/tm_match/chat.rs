@@ -85,3 +85,29 @@ impl<Db: spacetimedb::CtxDbWrite> MatchChatWrite for Db {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_world::*;
+
+    #[test]
+    fn the_chat_of_a_player_whose_connect_was_missed_is_kept() {
+        let world = World::new();
+        let server = world.server(1);
+        let (a, b) = (player(1), player(2));
+        let match_id = world.live_match(&server, &[&a]);
+
+        server.post(&world, [chat(&b, "gg")]);
+
+        let messages: Vec<(String, String)> = world
+            .test
+            .db
+            .tab_match_chat()
+            .match_id()
+            .filter(match_id)
+            .map(|chat| (world.account(chat.user_id), chat.message))
+            .collect();
+        assert_eq!(messages, vec![(b, "gg".to_string())]);
+    }
+}
