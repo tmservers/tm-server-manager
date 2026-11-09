@@ -185,7 +185,7 @@ mod tests {
     use super::*;
     use crate::pipeline::{
         LbEntryKind,
-        test_util::{MATCH, round},
+        test_util::{MATCH, round, round_in},
     };
 
     #[test]
@@ -296,5 +296,90 @@ mod tests {
             upgrade(LbFilterKind::Rounds).as_slice(),
             [LbSettingsV3::Filter(_)]
         ));
+    }
+    /// Keeps the best two entries of every participant, padding the missing ones with the fallback.
+    fn best_two(
+        scope: Vec<LbKey>,
+        param: LbParams,
+        fallback: LbFilterFallback,
+    ) -> LbFilterSettingsV2 {
+        LbFilterSettingsV2 {
+            scope,
+            param,
+            filter: LbFilterIdent::Best(2),
+            fallback,
+        }
+    }
+
+    fn placed(user_id: u32, number: u16, position: u16) -> LbEntry {
+        let mut entry = round(user_id, number, 0, 0);
+        entry.position = position;
+        entry
+    }
+
+    #[test]
+    fn a_missing_entry_is_never_better_than_losing_points() {
+        // Points can be lost, e.g. in a reverse cup, so no points would beat playing.
+        let filtered =
+            best_two(Vec::new(), LbParams::Score, LbFilterFallback::Worst).evaluate(vec![
+                round(1, 1, -5, 0),
+                round(2, 1, -1, 0),
+                round(2, 2, -2, 0),
+            ]);
+
+        let rows: Vec<(u32, i32)> = filtered.iter().map(|e| (e.user_id, e.score)).collect();
+        assert_eq!(rows, vec![(1, -5), (1, -5), (2, -1), (2, -2)]);
+    }
+
+    #[test]
+    fn a_missing_entry_is_never_placed_better_than_a_place_somebody_got() {
+        // The places come from the whole match, the group only has two participants.
+        let filtered = best_two(Vec::new(), LbParams::Position, LbFilterFallback::Worst)
+            .evaluate(vec![placed(1, 1, 5), placed(2, 1, 1), placed(2, 2, 3)]);
+
+        let rows: Vec<(u32, u16)> = filtered.iter().map(|e| (e.user_id, e.position)).collect();
+        assert_eq!(rows, vec![(1, 5), (1, 5), (2, 1), (2, 3)]);
+    }
+
+    #[test]
+    fn a_missing_entry_stays_in_the_round_it_is_missing_from() {
+        let other = NodeHandle::MatchV1(2);
+        // Round 3 of two matches, player 2 played both of them.
+        let filtered = best_two(vec![LbKey::Round], LbParams::Score, LbFilterFallback::Worst)
+            .evaluate(vec![
+                round(1, 3, 5, 0),
+                round(2, 3, 4, 0),
+                round_in(other, 2, 3, 2, 0),
+            ]);
+
+        let rows: Vec<(u32, u16)> = filtered.iter().map(|e| (e.user_id, e.round)).collect();
+        assert_eq!(rows, vec![(1, 3), (1, 3), (2, 3), (2, 3)]);
+    }
+
+    #[test]
+    fn an_upgraded_filter_pads_like_it_did_before() {
+        let upgraded = LbFilterSettings {
+            kind: LbFilterKind::Rounds,
+            param: LbParams::Score,
+            filter: LbFilterIdent::Best(2),
+            fallback: LbFilterFallback::Worst,
+        }
+        .upgrade();
+        let [LbSettingsV3::Filter(filter)] = upgraded.as_slice() else {
+            panic!("filtering rounds is upgraded to a filter alone: {upgraded:?}");
+        };
+
+        let filtered = filter.evaluate(vec![
+            placed(1, 1, 5).set_score(-5),
+            placed(2, 1, 1).set_score(-1),
+            placed(2, 2, 3).set_score(-2),
+        ]);
+
+        // Leaderboards which already filtered keep padding with no points and the number of participants as the place.
+        let rows: Vec<(u32, i32, u16)> = filtered
+            .iter()
+            .map(|e| (e.user_id, e.score, e.position))
+            .collect();
+        assert_eq!(rows, vec![(1, -5, 5), (1, 0, 2), (2, -1, 1), (2, -2, 3)]);
     }
 }
