@@ -24,6 +24,9 @@ pub mod tm_match;
 pub mod tm_server;
 pub mod user;
 
+#[cfg(test)]
+pub(crate) mod test_world;
+
 // This is to avoid the enum variants to become camelCase
 #[spacetimedb::settings]
 const CASE_CONVERSION_POLICY: CaseConversionPolicy = CaseConversionPolicy::None;
