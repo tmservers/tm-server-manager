@@ -68,3 +68,25 @@ pub(crate) fn for_team(mut entry: LbEntry, team_id: u32) -> LbEntry {
     entry.team_id = team_id;
     entry
 }
+
+/// What steps rank entries by, for property tests.
+pub(in crate::pipeline) fn params()
+-> impl proptest::strategy::Strategy<Value = crate::pipeline::LbParams> {
+    use crate::pipeline::LbParams;
+    use proptest::prelude::*;
+    prop_oneof![
+        Just(LbParams::Score),
+        Just(LbParams::Time),
+        Just(LbParams::Position)
+    ]
+}
+
+/// What steps group entries by, for property tests.
+pub(in crate::pipeline) fn scope()
+-> impl proptest::strategy::Strategy<Value = Vec<crate::pipeline::LbKey>> {
+    use crate::pipeline::LbKey;
+    proptest::sample::subsequence(
+        vec![LbKey::Origin, LbKey::Map, LbKey::Round, LbKey::Team],
+        0..=2,
+    )
+}

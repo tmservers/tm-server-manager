@@ -289,3 +289,14 @@ mod tests {
         ));
     }
 }
+
+#[cfg(test)]
+impl LbFilterSettingsV2 {
+    /// Any filter, for property tests.
+    pub(in crate::pipeline) fn strategy() -> impl proptest::strategy::Strategy<Value = Self> {
+        use crate::pipeline::test_util::{params, scope};
+        use proptest::prelude::*;
+        (scope(), params(), 1..=4u16)
+            .prop_map(|(scope, param, n)| LbFilterSettingsV2::best(scope, param, n))
+    }
+}
