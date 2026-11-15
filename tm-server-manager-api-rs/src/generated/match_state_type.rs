@@ -19,6 +19,7 @@ pub struct MatchState {
     pub paused: bool,
     pub status: MatchStatus,
     pub mode: TmMode,
+    pub round_running: bool,
 }
 
 impl __sdk::InModule for MatchState {
@@ -38,6 +39,7 @@ pub struct MatchStateCols {
     pub paused: __sdk::__query_builder::Col<MatchState, bool>,
     pub status: __sdk::__query_builder::Col<MatchState, MatchStatus>,
     pub mode: __sdk::__query_builder::Col<MatchState, TmMode>,
+    pub round_running: __sdk::__query_builder::Col<MatchState, bool>,
 }
 
 impl __sdk::__query_builder::HasCols for MatchState {
@@ -53,6 +55,7 @@ impl __sdk::__query_builder::HasCols for MatchState {
             paused: __sdk::__query_builder::Col::new(table_name, "paused"),
             status: __sdk::__query_builder::Col::new(table_name, "status"),
             mode: __sdk::__query_builder::Col::new(table_name, "mode"),
+            round_running: __sdk::__query_builder::Col::new(table_name, "round_running"),
         }
     }
 }

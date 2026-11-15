@@ -16,6 +16,7 @@ use tm_server_manager_api_rs::RawServerPlayerDestinationTableAccess;
 use tm_server_manager_api_rs::event_raw_server_methodQueryTableAccess;
 use tm_server_manager_api_rs::event_raw_server_stateQueryTableAccess;
 use tm_server_manager_api_rs::login_as_server;
+use tm_server_manager_api_rs::raw_server_driver_modes;
 use tm_server_manager_api_rs::raw_server_permitted_playersQueryTableAccess;
 use tm_server_manager_api_rs::raw_server_player_destinationQueryTableAccess;
 use tokio::sync::RwLock;
@@ -99,6 +100,14 @@ impl MyDbConnection {
         };
 
         tracing::info!("Successfully connected to tmservers.live!");
+
+        // The manager only gives the server matches whose mode this bridge plays.
+        if let Err(err) = spacetime
+            .reducers
+            .raw_server_driver_modes(tm_mode_driver_builtin::supported())
+        {
+            tracing::error!("Could not report the modes of the driver: {err}");
+        }
 
         // Initialize state subscriptions for the server.
         _ = spacetime

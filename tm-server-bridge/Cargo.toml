@@ -17,6 +17,8 @@ spacetimedb-sdk.workspace = true
 tm-server-controller.workspace = true
 tm-server-types.workspace = true
 tm-server-manager-api-rs.workspace = true
+# The modes the bridge plays with the mode driver, reported to the manager.
+tm-mode-driver-builtin.workspace = true
 
 dotenvy.workspace = true
 
