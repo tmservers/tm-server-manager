@@ -74,7 +74,7 @@ use crate::{
 
 /// The tests every mode runs with its simulator: random matches, full servers, the
 /// matches of seeds 1 to 3 as snapshots and the logs saved in
-/// `tests/simulation/logs`. Takes the function that returns the simulator.
+/// `tests/simulation_v<n>/logs`. Takes the function that returns the simulator.
 #[macro_export]
 macro_rules! simulation_tests {
     ($simulator:ident) => {
@@ -398,7 +398,7 @@ impl Simulator {
     /// Simulates the worlds of these seeds in parallel and panics with every failure
     /// and the report of the first one. A single seed prints its report. With
     /// `SIM_SAVE` set to a directory, the inputs of the first failure are shrunk and
-    /// saved there as a log, e.g. to keep it in `tests/simulation/logs`.
+    /// saved there as a log, e.g. to keep it in `tests/simulation_v<n>/logs`.
     pub fn check(&self, seeds: Range<u64>, world: fn(&Simulator, u64) -> World) {
         if seeds.end - seeds.start == 1 {
             let outcome = self.simulate_caught(world, seeds.start);
