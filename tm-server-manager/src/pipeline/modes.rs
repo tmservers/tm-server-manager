@@ -54,6 +54,20 @@ impl ModeRules for TmMode {
             TmMode::Driver => driver_standings(cx, node),
         })
     }
+
+    fn team_standings(
+        &self,
+        cx: &LbContext,
+        node: NodeHandle,
+        _rounds: Vec<LbEntry>,
+    ) -> Result<Vec<LbEntry>, LbError> {
+        match self {
+            TmMode::Driver => Ok(driver_team_standings(cx, node)),
+            _ => Err(LbError::new(format!(
+                "The mode of {node:?} cannot rank teams."
+            ))),
+        }
+    }
 }
 
 /// The standings of every match in the entries, one after another in the order the matches first appear.
@@ -139,6 +153,23 @@ fn driver_standings(cx: &LbContext, node: NodeHandle) -> Vec<LbEntry> {
                 .set_score(standing.score)
                 .set_time(standing.time);
             entry.team_id = teams.get(&standing.user_id).copied().unwrap_or(0);
+            entry
+        })
+        .collect()
+}
+
+/// A driver match of teams has the team standings its mode left.
+fn driver_team_standings(cx: &LbContext, node: NodeHandle) -> Vec<LbEntry> {
+    let NodeHandle::MatchV1(match_id) = node else {
+        return Vec::new();
+    };
+    cx.match_driver_team_standings(match_id)
+        .into_iter()
+        .map(|standing| {
+            let position = u16::try_from(standing.position).unwrap_or(u16::MAX);
+            let mut entry =
+                LbEntry::new(0, LbEntryKind::Standing, position, node).set_score(standing.score);
+            entry.team_id = standing.team_id;
             entry
         })
         .collect()

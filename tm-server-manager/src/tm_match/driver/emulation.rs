@@ -12,7 +12,7 @@ use tm_server_types::{
     event::{
         DriverHold, DriverRecord, DriverRecordDigest, DriverRoundResult, DriverSection, Event,
     },
-    method::DriverEntry,
+    method::{DriverEntry, DriverTeamEntry},
 };
 
 /// The lap a player is in, as stored.
@@ -48,6 +48,8 @@ pub(crate) enum Effect {
     Lap { player: u32, round: u16, lap: Lap },
     /// The standings of the match changed.
     Standings(Vec<DriverEntry>),
+    /// The standings of the teams of a match of teams changed.
+    TeamStandings(Vec<DriverTeamEntry>),
     /// A round counted, the number of rounds which counted so far and the round of the races.
     Round {
         number: u32,
@@ -67,6 +69,7 @@ pub(crate) struct Emulation {
     racers: BTreeMap<u32, Racer>,
     /// The standings as stored, so only changes become effects.
     stored: Vec<DriverEntry>,
+    stored_teams: Vec<DriverTeamEntry>,
 }
 
 /// The source of a mode.
@@ -86,6 +89,7 @@ impl Emulation {
             in_warm_up: false,
             racers: BTreeMap::new(),
             stored: Vec::new(),
+            stored_teams: Vec::new(),
         })
     }
 
@@ -114,10 +118,14 @@ impl Emulation {
             }
         }
         if changes_standings(record) {
-            let entries = self.driver.driver().standings().entries;
-            if entries != self.stored {
-                self.stored.clone_from(&entries);
-                effects.push(Effect::Standings(entries));
+            let standings = self.driver.driver().standings();
+            if standings.entries != self.stored {
+                self.stored.clone_from(&standings.entries);
+                effects.push(Effect::Standings(standings.entries));
+            }
+            if standings.teams != self.stored_teams {
+                self.stored_teams.clone_from(&standings.teams);
+                effects.push(Effect::TeamStandings(standings.teams));
             }
         }
         Ok(effects)
