@@ -18,4 +18,5 @@ tm-mode-time-attack.workspace = true
 tm-mode-reverse-cup.workspace = true
 tm-mode-knockout.workspace = true
 tm-mode-endurance.workspace = true
+tm-mode-tmwt-2v2.workspace = true
 tm-server-types.workspace = true

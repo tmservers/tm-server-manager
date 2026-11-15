@@ -6215,6 +6215,7 @@ dependencies = [
  "tm-mode-reverse-cup",
  "tm-mode-rounds",
  "tm-mode-time-attack",
+ "tm-mode-tmwt-2v2",
  "tm-server-types",
 ]
 

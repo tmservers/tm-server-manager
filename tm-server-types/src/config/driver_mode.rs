@@ -52,6 +52,7 @@ built_in_modes! {
     ReverseCupV1 => "reverse-cup" v 1,
     KnockoutV1 => "knockout" v 1,
     EnduranceV1 => "endurance" v 1,
+    Tmwt2v2V1 => "tmwt-2v2" v 1,
 }
 
 impl BuiltInMode {

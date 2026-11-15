@@ -4,8 +4,8 @@
 //! A released version never changes how it plays, the snapshots of its simulations in
 //! `released.txt` hold it to that. A change of rules is a new version next to it.
 
-pub use tm_server_types::config::BuiltInMode;
 use tm_mode_driver_sdk::{ModeSource, Native};
+pub use tm_server_types::config::BuiltInMode;
 
 #[cfg(test)]
 mod released;
@@ -14,14 +14,11 @@ mod released;
 pub fn builtin(mode: BuiltInMode) -> Box<dyn ModeSource + Send + Sync> {
     match mode {
         BuiltInMode::RoundsV1 => Box::new(Native::<tm_mode_rounds::v1::Rounds>::new()),
-        BuiltInMode::TimeAttackV1 => {
-            Box::new(Native::<tm_mode_time_attack::v1::TimeAttack>::new())
-        }
-        BuiltInMode::ReverseCupV1 => {
-            Box::new(Native::<tm_mode_reverse_cup::v1::ReverseCup>::new())
-        }
+        BuiltInMode::TimeAttackV1 => Box::new(Native::<tm_mode_time_attack::v1::TimeAttack>::new()),
+        BuiltInMode::ReverseCupV1 => Box::new(Native::<tm_mode_reverse_cup::v1::ReverseCup>::new()),
         BuiltInMode::KnockoutV1 => Box::new(Native::<tm_mode_knockout::v1::Knockout>::new()),
         BuiltInMode::EnduranceV1 => Box::new(Native::<tm_mode_endurance::v1::Endurance>::new()),
+        BuiltInMode::Tmwt2v2V1 => Box::new(Native::<tm_mode_tmwt_2v2::v1::Tmwt2v2>::new()),
     }
 }
 
@@ -55,7 +52,8 @@ mod tests {
                 "Time Attack",
                 "Reverse Cup",
                 "Knockout",
-                "Endurance"
+                "Endurance",
+                "TMWT 2v2"
             ]
         );
     }

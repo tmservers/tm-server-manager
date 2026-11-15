@@ -18,3 +18,6 @@ time-attack-v1 modes/time-attack/tests/simulation_v1/snapshots/simulation_v1__se
 time-attack-v1 modes/time-attack/tests/simulation_v1/snapshots/simulation_v1__seed_3.snap b1025ae9f5dae99d
 time-attack-v1 modes/time-attack/tests/simulation_v1/snapshots/simulation_v1__the_best_race_counts.snap c01e8543c7fa6fc9
 rounds-v1 modes/rounds/tests/simulation_v1/snapshots/simulation_v1__seed_3.snap 4aff126df0833081
+tmwt-2v2-v1 modes/tmwt-2v2/tests/simulation_v1/snapshots/simulation_v1__seed_1.snap 0a90f1f790a3d739
+tmwt-2v2-v1 modes/tmwt-2v2/tests/simulation_v1/snapshots/simulation_v1__seed_2.snap ffd47c6a503ed6e7
+tmwt-2v2-v1 modes/tmwt-2v2/tests/simulation_v1/snapshots/simulation_v1__seed_3.snap 1e61c494b7cb7209
