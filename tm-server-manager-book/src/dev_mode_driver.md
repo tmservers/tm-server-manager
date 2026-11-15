@@ -402,9 +402,13 @@ Until then the host numbers them, which is all the netvars of a server need.
     e.g. from earlier maps of a time attack match, a column with the points of the match follows
     and the header widens for it. For modes whose round players follow, e.g. time attack and
     endurance, in place of `standings`.
-- The config selects manialinks by name (`Driver.manialinks`, `["standings", "scores-table"]` by
-  default). A tournament can bring its own, e.g. with another style, which replace defaults with
-  the same name. A name ending with `scores-table` makes a manialink the scores table.
+  - `team-standings`: the teams of a match of teams with positions, points of the match, points
+    on the map or their label, the team of the local player highlighted.
+  - `team-score-header`: the score of the first two teams at the top of the screen, maps won
+    outside and points on the map inside, e.g. for TMWT. The teams keep their sides.
+- The config selects them by an enum (`Driver.ui`, see [Layers](#layers)), so a typo does not
+  reach a server. The runner still selects them by name, a name ending with `scores-table`
+  makes a manialink the scores table there.
 - The runner shows the ones of `TM_MANIALINKS` (the defaults of the config without it), from
   `TM_MANIALINKS_DIR` or the defaults, when it starts and whenever the modescript (re)starts.
   `manialinks <name> ...` switches them while it runs and reads them again from their files, e.g.
@@ -412,6 +416,45 @@ Until then the host numbers them, which is all the netvars of a server need.
   names of the config.
 - Data of a mode the standings can not hold goes through `SetNetState` (`Net_Driver_State`) to
   manialinks that know the mode.
+
+### Layers
+
+`Driver.ui` is a `DriverUi`: the layers and the UI modules of the game to show or hide
+(`UiModule`, e.g. `Chrono`, by their ids like `Race_Chrono`). The default shows `standings` and
+`scores-table`. A layer is a manialink, where it goes and who sees it:
+
+```rust
+pub struct UiLayer { pub manialink: Manialink, pub placement: Placement, pub audience: Audience }
+pub enum Manialink { BuiltIn(BuiltInManialink) }            // manialinks of competitions follow
+pub enum Placement { Default, Normal, ScoresTable, Screen(ScreenTarget), Markers(Vec<MarkerBinding>),
+                     AltMenu, CutScene, LoadingScreen }
+pub enum Audience { Everyone, Players, Spectators, Teams(Vec<u32>), Accounts(Vec<String>) }
+```
+
+- `Default` is where the manialink belongs: the scores table for `ScoresTable`, over the race for
+  the others. `Screen` puts it on a screen of the stadium, a `ScreenIn3d` layer with the
+  `AttachId` of the screen (`155`, `155_StadiumSmall`, `64x10_Start`, `64x10_Finish`,
+  `64x10_Checkpoint`, `2x3_Stadium`). `AltMenu`, `CutScene` and `LoadingScreen` are the layer
+  types of the game of the same name. There is no custom in-game menu, the game keeps its own.
+- A layer for everyone is a layer of `UIAll`. Any other audience gives the layer to the UI of
+  every player in it. The modescript checks that at most once a second while players come, go,
+  start spectating or play for a team, and when a layer changes. Teams come from
+  `Net_Driver_UserTeams`.
+- `Markers` shows frames of the manialink at what each `MarkerBinding` names: the cars of an
+  audience of players, the landmarks of a kind (start, checkpoints, finish, the line of the laps)
+  or a place of the map. A marker shows a label the modescript fills from the netvars (name,
+  club tag, position, points, short name of the team), may hide on the own car, disappear beyond a
+  distance and show `Always`, `WhenInFrustum`, `WhenVisible` or `WhenInMiddleOfScreen`. The
+  markers are built again once the players, their standings or the teams changed. Whether a
+  frame of a markers layer is drawn once per marker, and how its script would know which marker
+  it is, is not documented, so the label is the way to show what belongs to a player.
+- Every player learns which player and team they are, `Net_Driver_MyUser` and `Net_Driver_MyTeam`
+  (`Integer`, `for UI`, -1 for none, `DRIVER_PLAYER_NETVARS`). A manialink reads them with
+  `declare netread Integer Net_Driver_MyUser for UI;`. They cost nothing for the others, only the
+  player gets them.
+- The bridge sends the layers and the modules when the config loads and whenever the modescript
+  restarts. Tests check that the script knows every kind of layer, every audience, anchor, label
+  and visibility, writes the netvars of a player and that every built-in manialink exists.
 
 ### Styling
 
@@ -1084,12 +1127,11 @@ Without the bridge, the runner loads a mode by its name, a built-in one like
 [Next steps](#next-steps)).
 
 For the integration the config of a match already has
-`ModeSettingsV2::Driver(Driver { mode, settings, decision_timeout, manialinks })`, which selects
+`ModeSettingsV2::Driver(Driver { mode, settings, decision_timeout, ui })`, which selects
 the driver script. `mode` is the version of the mode (`DriverMode::BuiltIn(BuiltInMode::RoundsV1)`,
 see [Versions](#versions)), `settings` is the json it starts with and
-`manialinks` names the manialinks shown next to the mode (`["standings", "scores-table"]` by
-default, e.g. `["live-standings", "my-standing", "scores-table"]` for an endurance race), the
-defaults of `tm-mode-driver-manialinks` or ones the manager stores for a tournament. The manager is
+`ui` is what players see (see [Layers](#layers)), e.g. `live-standings`, `my-standing` and
+`scores-table` for an endurance race or `team-score-header` and `team-standings` for TMWT. The manager is
 going to store the scripts of a competition next to its leaderboard scripts, and a match keeps the
 source it started with.
 
