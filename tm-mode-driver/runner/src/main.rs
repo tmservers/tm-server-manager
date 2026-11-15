@@ -117,13 +117,18 @@ async fn run() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     tracing::info!("Connected to the server.");
 
-    let selected = match std::env::var("TM_MANIALINKS") {
+    let selected: Vec<String> = match std::env::var("TM_MANIALINKS") {
         Ok(names) => names
             .split([',', ' '])
             .filter(|name| !name.is_empty())
             .map(String::from)
             .collect(),
-        Err(_) => DriverConfig::default().manialinks,
+        Err(_) => DriverConfig::default()
+            .ui
+            .layers
+            .iter()
+            .map(|layer| layer.manialink.name())
+            .collect(),
     };
     let layers = Layers::new(Mutex::new(resolve_manialinks(&selected)?));
     let active = Shared::default();

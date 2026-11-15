@@ -15,9 +15,9 @@ use tm_mode_driver::{DriverInput, DriverLimits, RecordingDriver};
 use tm_server_controller::method::ModeScriptMethodsXmlRpc;
 use tm_server_types::{
     base::PlayerInfo,
-    config::{Driver as DriverConfig, DriverMode},
+    config::{Driver as DriverConfig, DriverMode, DriverUi, Manialink},
     event::{DriverRecord, DriverTeam, Event},
-    method::{DriverCommand, DriverLayer},
+    method::{DriverCommand, DriverLayer, DriverUiModule},
 };
 use tokio::sync::{Mutex, mpsc::UnboundedSender};
 
@@ -160,7 +160,7 @@ fn input(input: DriverInput) {
 
 /// The driver thread.
 fn run(messages: mpsc::Receiver<Message>, out: UnboundedSender<Out>) {
-    let mut active: Option<(RecordingDriver, Vec<DriverLayer>)> = None;
+    let mut active: Option<(RecordingDriver, Vec<DriverCommand>)> = None;
     for message in messages {
         match message {
             Message::Start {
@@ -183,9 +183,10 @@ fn run(messages: mpsc::Receiver<Message>, out: UnboundedSender<Out>) {
                         continue;
                     }
                 };
-                let layers = layers(&config.manialinks);
+                let layers = layers(&config.ui);
                 _ = out.send(Out::Session(session()));
-                let mut commands = DriverCommand::show_layers(&layers);
+                let shown = show(&layers, &config.ui);
+                let mut commands = shown.clone();
                 let mut records = Vec::new();
                 let mut inputs = vec![
                     DriverInput::Playlist(playlist),
@@ -209,18 +210,18 @@ fn run(messages: mpsc::Receiver<Message>, out: UnboundedSender<Out>) {
                     commands,
                     hold: false,
                 });
-                active = Some((driver, layers));
+                active = Some((driver, shown));
             }
             Message::Stop => active = None,
             Message::Input(input) => {
-                let Some((driver, layers)) = active.as_mut() else {
+                let Some((driver, shown)) = active.as_mut() else {
                     continue;
                 };
                 // A (re)started modescript lost the layers of the manialinks.
                 if let DriverInput::Event(Event::StartServerEnd(_)) = input {
                     _ = out.send(Out::Apply {
                         records: Vec::new(),
-                        commands: DriverCommand::show_layers(layers),
+                        commands: shown.clone(),
                         hold: false,
                     });
                     continue;
@@ -241,18 +242,37 @@ fn run(messages: mpsc::Receiver<Message>, out: UnboundedSender<Out>) {
     }
 }
 
-/// The manialinks of the config, the ones which do not exist are left out.
-fn layers(names: &[String]) -> Vec<DriverLayer> {
-    names
+/// The layers of the config with their manialinks.
+fn layers(ui: &DriverUi) -> Vec<DriverLayer> {
+    ui.layers
         .iter()
-        .filter_map(|name| match tm_mode_driver_manialinks::default(name) {
-            Some(manialink) => Some(DriverLayer::selected(name.clone(), manialink.to_string())),
-            None => {
-                tracing::error!("There is no manialink {name}.");
-                None
+        .filter_map(|layer| {
+            let xml = match &layer.manialink {
+                Manialink::BuiltIn(manialink) => {
+                    tm_mode_driver_manialinks::default(manialink.name())
+                }
+            };
+            match xml {
+                Some(xml) => Some(layer.layer(xml)),
+                None => {
+                    tracing::error!("There is no manialink {}.", layer.manialink.name());
+                    None
+                }
             }
         })
         .collect()
+}
+
+/// The layers, then the UI modules of the game as the config shows or hides them.
+fn show(layers: &[DriverLayer], ui: &DriverUi) -> Vec<DriverCommand> {
+    let mut commands = DriverCommand::show_layers(layers);
+    commands.extend(ui.modules.iter().map(|module| {
+        DriverCommand::SetUiModuleVisible(DriverUiModule {
+            id: module.module.id().into(),
+            visible: module.visible,
+        })
+    }));
+    commands
 }
 
 /// The teams of the match of the server, as the manager knows them.

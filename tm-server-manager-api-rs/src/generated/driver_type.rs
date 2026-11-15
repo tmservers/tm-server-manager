@@ -5,6 +5,7 @@
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 use super::driver_mode_type::DriverMode;
+use super::driver_ui_type::DriverUi;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
@@ -12,7 +13,7 @@ pub struct Driver {
     pub mode: DriverMode,
     pub settings: String,
     pub decision_timeout: u32,
-    pub manialinks: Vec<String>,
+    pub ui: DriverUi,
 }
 
 impl __sdk::InModule for Driver {
