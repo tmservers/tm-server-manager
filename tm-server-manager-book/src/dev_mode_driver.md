@@ -837,6 +837,36 @@ Limits:
 - The default `standings` and `scores-table` show the checkpoints as the points of the match and of
   the round and no laps. A scores table for endurance would show the race like `live-standings`.
 
+## TMWT 2v2
+
+`tmwt-2v2-v1` follows the rules of Nadeo's script of the Trackmania World Tour (version 1.1.0 of
+March 2025): two teams of two race rounds, and the order in which the teams finish gives the
+points of the round. `A` is the team of the first finisher:
+
+| Finishers by team | Result | Points |
+|---|---|---|
+| A A B B, A A B, A A, A | Ace | 3 – 0 |
+| A B A B, A B A, A B | Victory | 2 – 1 |
+| A B B A, A B B | Draw | 1 – 1 |
+| nobody | | 0 – 0 |
+
+- Places come from the races like in every mode, so nobody ties. A player who does not finish is
+  simply not in the order.
+- A team wins the map once it has at least `map_points_limit` points (10) and more than the other
+  team. Level at the limit, the map goes on in overtime, the teams show the label `Overtime`.
+- The team which won the map gets a match point, the first team with `match_points_limit` (4,
+  best of seven) wins the match, also when the limit got lowered during the match.
+- Rounds which do not count, e.g. forced ones, give no points. Nobody gives up, players respawn at
+  their last checkpoint. `finish_timeout` is the one of the other modes. Pick and ban is not part
+  of the first version, the playlist plays in order.
+- The chat tells every round: `Ace for Red`, `Victory for Blue`, `Draw`.
+- Players get the points of their team in the rounds they finished, so the standings of the
+  players show who scored. The teams rank by match points, then by the points on the map,
+  finally by team.
+
+The teams come from the entrants of the match (see [Netvars](#netvars)). The simulation plays two
+teams of two (`Simulator::teams`) and checks every round against the table above.
+
 ## Costs
 
 The host measures every call into a mode (`Driver::stats()`, by kind: `init`, every event,
@@ -944,7 +974,7 @@ for move (see [Simulation Testing](./dev_driver_simulation.md)).
   `RoundEnd::taking_part` and `CountedRace` for the race that counts, `race_order` for the order
   of a round without ties, the `Host` a mode asks (`user`, `name`, `map_count`), `ordinal` for
   chat messages and shared `settings`. `testing::Harness` runs a mode with the lifecycle of the
-  host for unit tests, `Harness::change_settings` and `Harness::live_round` included.
+  host for unit tests, with the teams of `Harness::teams`, `Harness::change_settings` and `Harness::live_round` included.
   `testing::assert_reloadable_settings_exist` makes sure `RELOADABLE` only names settings.
 - `tm-mode-driver/modes/rounds`: Rounds (points repartition, rounds per map, maps per match, points
   limit, finish timeout).
@@ -952,6 +982,7 @@ for move (see [Simulation Testing](./dev_driver_simulation.md)).
 - `tm-mode-driver/modes/reverse-cup`: ReverseCup (see [ReverseCup](#reversecup)).
 - `tm-mode-driver/modes/knockout`: Knockout with lives (see [Knockout](#knockout)).
 - `tm-mode-driver/modes/endurance`: Endurance (see [Endurance](#endurance)).
+- `tm-mode-driver/modes/tmwt-2v2`: TMWT 2v2 (see [TMWT 2v2](#tmwt-2v2)).
 - `tm-mode-driver-builtin`: the built-in modes by the version a config selects them with
   (`builtin(BuiltInMode)`), and `supported()`, the names a bridge reports to the manager.
 - `tm-mode-driver-sim`: simulates whole matches of a mode against a fake server and runs logs of
