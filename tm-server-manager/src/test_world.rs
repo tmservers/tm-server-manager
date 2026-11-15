@@ -9,7 +9,7 @@ use spacetimedb::{
 };
 use tm_server_types::{
     base::{Player, RoundTime},
-    config::{ModeSettingsV2, Rounds, ServerConfigV2},
+    config::{BuiltInMode, Driver, DriverMode, ModeSettingsV2, Rounds, ServerConfigV2},
     event::{
         EndMatch, EndRoundEnd, Event, GiveUp, KnockoutElimination, Pause, PlayerChat,
         PlayerConnect, Respawn, Scores, StartLine, StartMatch, StartRound, WayPoint,
@@ -71,6 +71,14 @@ impl World {
         .expect("the claims of the owner are valid")
     }
 
+    /// Calls a reducer as the owner, which may fail.
+    pub(crate) fn try_as_owner<T>(
+        &self,
+        reducer: impl FnOnce(&ReducerContext) -> Result<T, String>,
+    ) -> Result<T, String> {
+        self.test.with_reducer_tx(World::owner(), reducer)
+    }
+
     /// Calls a reducer as the owner, it has to succeed.
     pub(crate) fn as_owner<T>(
         &self,
@@ -114,6 +122,11 @@ impl World {
 
     /// A configured match in the competition, which plays rounds.
     pub(crate) fn configured_match(&self, name: &str) -> u32 {
+        self.configured_match_with(name, rounds_config())
+    }
+
+    /// A configured match in the competition, which plays the config.
+    pub(crate) fn configured_match_with(&self, name: &str, config: ServerConfigV2) -> u32 {
         self.as_owner(|ctx| {
             crate::tm_match::match_create(ctx, name.into(), COMPETITION, Vec2::ZERO, 0, false)
         });
@@ -124,7 +137,7 @@ impl World {
             .find(|m| m.get_name() == name)
             .expect("the match was created")
             .id;
-        self.as_owner(|ctx| crate::tm_match::match_override_config(ctx, match_id, rounds_config()));
+        self.as_owner(|ctx| crate::tm_match::match_override_config(ctx, match_id, config));
         self.as_owner(|ctx| crate::tm_match::match_configured(ctx, match_id));
         match_id
     }
@@ -285,6 +298,17 @@ impl Server {
         )
     }
 
+    /// The bridge of the server tells the modes of the driver it plays, by name.
+    pub(crate) fn report_modes(&self, world: &World, modes: &[&str]) {
+        let modes = modes.iter().map(|mode| mode.to_string()).collect();
+        world
+            .test
+            .with_reducer_tx(self.auth(), |ctx| {
+                crate::raw_server::driver::raw_server_driver_modes(ctx, modes)
+            })
+            .expect("a logged in server reports its modes");
+    }
+
     /// The bridge of the server lost its connection to the database.
     pub(crate) fn disconnect(&self, world: &World) {
         world.test.clock.advance(TimeDuration::from_micros(1));
@@ -317,6 +341,14 @@ impl Server {
                 .unwrap_or_else(|error| panic!("the event {name} was rejected: {error}"));
         }
     }
+}
+
+/// A config which plays a mode of the driver.
+pub(crate) fn driver_config(mode: BuiltInMode) -> ServerConfigV2 {
+    ServerConfigV2::default().with_mode(ModeSettingsV2::Driver(Driver {
+        mode: DriverMode::BuiltIn(mode),
+        ..Default::default()
+    }))
 }
 
 /// A config which plays the rounds mode.
