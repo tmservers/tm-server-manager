@@ -13,10 +13,11 @@ use std::collections::BTreeMap;
 use tm_mode_driver_sdk::ModeSource;
 use tm_server_types::event::{
     DriverRecord, DriverRecordCheckpoint, DriverRecordDigest, DriverRecordLapEnd,
-    DriverRecordPlayer, DriverRecordResync, DriverRecordStart, Event, StartLine, WayPoint,
+    DriverRecordPlayer, DriverRecordResync, DriverRecordStart, DriverRecordUiAction, Event,
+    StartLine, WayPoint,
 };
 
-use crate::{Driver, DriverError, DriverInput, DriverLimits, DriverReply};
+use crate::{Driver, DriverError, DriverInput, DriverLimits, DriverReply, DriverUiAction};
 
 /// What the replay knows about the race of a player.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -123,6 +124,12 @@ impl Replayer {
             DriverRecord::Resumed => Some(DriverInput::Resumed),
             DriverRecord::Settings(settings) => Some(DriverInput::Settings(settings.clone())),
             DriverRecord::Teams(teams) => Some(DriverInput::Teams(teams.clone())),
+            DriverRecord::UiAction(action) => Some(DriverInput::UiAction(DriverUiAction {
+                account_id: self.account(action.player)?.to_string(),
+                layer: action.layer.clone(),
+                event: action.event.clone(),
+                args: action.args.clone(),
+            })),
         }
     }
 
@@ -261,6 +268,15 @@ impl Recorder {
                 records.push(DriverRecord::Settings(settings.clone()));
             }
             DriverInput::Teams(teams) => records.push(DriverRecord::Teams(teams.clone())),
+            DriverInput::UiAction(action) => {
+                let player = self.number(&action.account_id, &mut records);
+                records.push(DriverRecord::UiAction(DriverRecordUiAction {
+                    player,
+                    layer: action.layer.clone(),
+                    event: action.event.clone(),
+                    args: action.args.clone(),
+                }));
+            }
         }
         for record in &records {
             self.replay.input(record);

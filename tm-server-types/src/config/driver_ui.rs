@@ -5,7 +5,10 @@
 //! the config loads and whenever the modescript restarts. Enums are only ever appended,
 //! the database stores them.
 
-use crate::method::{DriverAudience, DriverLayer, DriverLayerKind, DriverMarker};
+use crate::{
+    config::{UiArg, UiEventSpec, UiManifest, UiRoute},
+    method::{DriverAudience, DriverLayer, DriverLayerKind, DriverMarker},
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -108,17 +111,40 @@ pub enum BuiltInManialink {
     TeamStandings,
     /// The score of the teams at the top of the screen, e.g. for TMWT.
     TeamScoreHeader,
+    /// Players tell they are ready, the match starts once all of them are.
+    ReadyCheck,
 }
 
 impl BuiltInManialink {
-    pub const ALL: [BuiltInManialink; 6] = [
+    pub const ALL: [BuiltInManialink; 7] = [
         BuiltInManialink::Standings,
         BuiltInManialink::LiveStandings,
         BuiltInManialink::MyStanding,
         BuiltInManialink::ScoresTable,
         BuiltInManialink::TeamStandings,
         BuiltInManialink::TeamScoreHeader,
+        BuiltInManialink::ReadyCheck,
     ];
+
+    /// The event `ready` of the ready check, and the key for whether a player is ready.
+    pub const READY: &str = "ready";
+    /// The key for how many players are ready, e.g. "3/4".
+    pub const READY_COUNT: &str = "ready-count";
+
+    /// The events it sends and the data it reads.
+    pub fn manifest(self) -> UiManifest {
+        match self {
+            BuiltInManialink::ReadyCheck => UiManifest {
+                events: vec![UiEventSpec {
+                    name: Self::READY.into(),
+                    route: UiRoute::Manager,
+                    args: vec![UiArg::Bool],
+                }],
+                data_keys: vec![Self::READY.into(), Self::READY_COUNT.into()],
+            },
+            _ => UiManifest::default(),
+        }
+    }
 
     /// The name of the manialink in `tm-mode-driver-manialinks`.
     pub const fn name(self) -> &'static str {
@@ -129,6 +155,7 @@ impl BuiltInManialink {
             BuiltInManialink::ScoresTable => "scores-table",
             BuiltInManialink::TeamStandings => "team-standings",
             BuiltInManialink::TeamScoreHeader => "team-score-header",
+            BuiltInManialink::ReadyCheck => "ready-check",
         }
     }
 

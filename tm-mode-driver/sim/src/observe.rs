@@ -334,6 +334,13 @@ impl Observer {
                 self.notes.push(format!("playlist {}", uids.join(" ")));
                 return Ok(None);
             }
+            DriverInput::UiAction(action) => {
+                self.notes.push(format!(
+                    "{} {} in {}",
+                    action.account_id, action.event, action.layer
+                ));
+                return Ok(None);
+            }
             DriverInput::Teams(teams) => {
                 self.teams.clone_from(teams);
                 let teams: Vec<String> = teams
@@ -557,6 +564,7 @@ impl Observer {
                 | DriverCommand::RemoveLayer(_)
                 | DriverCommand::SetUiModuleVisible(_)
                 | DriverCommand::SetNetState(_)
+                | DriverCommand::SetUiData(_)
                 | DriverCommand::ChatMessage(_) => {}
             }
         }

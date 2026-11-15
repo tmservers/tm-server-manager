@@ -65,12 +65,18 @@ impl Default for Driver {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{event::DriverHold, method::DriverCommand};
+    use crate::{
+        event::{DriverHold, DriverUiEvent},
+        method::DriverCommand,
+    };
 
     /// The modescript and the Rust types have to agree on every name.
     #[test]
     fn script_knows_every_callback_and_method() {
-        for name in std::iter::once(DriverHold::CALLBACK).chain(DriverCommand::MODESCRIPT_METHODS) {
+        for name in [DriverHold::CALLBACK, DriverUiEvent::CALLBACK]
+            .into_iter()
+            .chain(DriverCommand::MODESCRIPT_METHODS)
+        {
             assert!(
                 Driver::SCRIPT.contains(&format!("\"{name}\"")),
                 "{name} is missing in TM_Driver.Script.txt"
@@ -223,6 +229,18 @@ mod tests {
             visibility: String::new(),
         };
         keys(&serde_json::to_value(marker).unwrap(), &mut found);
+        keys(
+            &serde_json::to_value(crate::method::DriverNetUiData::default()).unwrap(),
+            &mut found,
+        );
+        // The other way round: what the script sends parses.
+        let event = crate::event::DriverUiEvent {
+            layer: String::new(),
+            account_id: String::new(),
+            name: String::new(),
+            data: Vec::new(),
+        };
+        keys(&serde_json::to_value(event).unwrap(), &mut found);
         for key in found {
             assert!(
                 Driver::SCRIPT.contains(&format!(" {key};")),
@@ -233,8 +251,12 @@ mod tests {
 
     /// Everything else reaches the driver through the standard callbacks.
     #[test]
-    fn script_only_sends_holds() {
-        assert_eq!(Driver::SCRIPT.matches("XmlRpc::SendCallback(").count(), 1);
+    fn script_only_sends_holds_and_ui_events() {
+        assert_eq!(Driver::SCRIPT.matches("XmlRpc::SendCallback(").count(), 2);
+        assert!(Driver::SCRIPT.contains("XmlRpc::SendCallback(C_Callback_Hold, [_Hold.tojson()])"));
+        assert!(
+            Driver::SCRIPT.contains("XmlRpc::SendCallback(C_Callback_UiEvent, [UiEvent.tojson()])")
+        );
     }
 
     #[test]

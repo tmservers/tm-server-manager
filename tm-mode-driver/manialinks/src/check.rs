@@ -1,7 +1,10 @@
 //! What a manialink of a competition has to be before a server shows it: small enough,
 //! well formed and reading the netvars of the driver with the types they have.
 
-use tm_server_types::method::{DRIVER_NETVARS, DRIVER_PLAYER_NETVARS};
+use tm_server_types::{
+    config::UiManifest,
+    method::{DRIVER_NETVARS, DRIVER_PLAYER_NETVARS},
+};
 
 /// The largest manialink a competition can save, in bytes. The defaults are below
 /// 30 KB. What a layer of the game can carry is not documented, so this stays well
@@ -24,6 +27,36 @@ pub fn check(xml: &str) -> Result<(), String> {
         }
     }
     Ok(())
+}
+
+/// Checks a manialink with the manifest of what it sends and reads: the manifest is
+/// valid and declares every event the manialink sends by name.
+pub fn check_with_manifest(xml: &str, manifest: &UiManifest) -> Result<(), String> {
+    check(xml)?;
+    manifest.check()?;
+    for name in sent_events(xml) {
+        if manifest.event(name).is_none() {
+            return Err(format!(
+                "The manialink sends {name}, which its manifest does not declare."
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// The events a manialink sends by a literal name, `SendCustomEvent("name", ...)`.
+pub fn sent_events(xml: &str) -> Vec<&str> {
+    const CALL: &str = "SendCustomEvent(\"";
+    let mut names = Vec::new();
+    let mut rest = xml;
+    while let Some(start) = rest.find(CALL) {
+        rest = &rest[start + CALL.len()..];
+        if let Some((name, after)) = rest.split_once('"') {
+            names.push(name);
+            rest = after;
+        }
+    }
+    names
 }
 
 /// A netvar of the driver has to be one the modescript writes, with its type and owner.
@@ -141,6 +174,10 @@ mod tests {
         for default in crate::DEFAULTS {
             assert_eq!(check(default.manialink), Ok(()), "{}", default.name);
         }
+        for manialink in tm_server_types::config::BuiltInManialink::ALL {
+            let xml = crate::default(manialink.name()).unwrap();
+            assert_eq!(check_with_manifest(xml, &manialink.manifest()), Ok(()));
+        }
     }
 
     #[test]
@@ -215,6 +252,33 @@ mod tests {
             ))
             .unwrap_err(),
             "Line 2: Net_Driver_MyUser is no netvar of the driver"
+        );
+    }
+
+    #[test]
+    fn manifests_declare_the_events_a_manialink_sends() {
+        use tm_server_types::config::{UiEventSpec, UiRoute};
+        let xml = r#"<manialink><script><!-- SendCustomEvent("vote", ["1"]); SendCustomEvent("skip", []); --></script></manialink>"#;
+        assert_eq!(sent_events(xml), ["vote", "skip"]);
+        let mut manifest = UiManifest::default();
+        assert_eq!(
+            check_with_manifest(xml, &manifest).unwrap_err(),
+            "The manialink sends vote, which its manifest does not declare."
+        );
+        for name in ["vote", "skip"] {
+            manifest.events.push(UiEventSpec {
+                name: name.into(),
+                route: UiRoute::Manager,
+                args: Vec::new(),
+            });
+        }
+        assert_eq!(check_with_manifest(xml, &manifest), Ok(()));
+        // The manialink and the manifest are both checked.
+        assert!(check_with_manifest("<manialink>", &manifest).is_err());
+        manifest.events.push(manifest.events[0].clone());
+        assert_eq!(
+            check_with_manifest(xml, &manifest).unwrap_err(),
+            "The event vote is declared twice."
         );
     }
 

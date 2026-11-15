@@ -5,7 +5,7 @@
 //! driver the same way, so both drivers are the same. Starts and checkpoints are most
 //! of a match and only carry what is new: a checkpoint is 11 bytes.
 
-use crate::{base::PlayerInfo, event::Event};
+use crate::{base::PlayerInfo, config::UiValue, event::Event};
 
 /// One input of the driver of a match, numbered in the order the driver got them.
 ///
@@ -54,6 +54,21 @@ pub enum DriverRecord {
     Digest(DriverRecordDigest),
     /// The teams of the match and who plays for them.
     Teams(Vec<DriverTeam>),
+    /// A player did something in a manialink, for the mode.
+    UiAction(DriverRecordUiAction),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
+#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
+pub struct DriverRecordUiAction {
+    pub player: u32,
+    /// The layer of the manialink.
+    pub layer: String,
+    /// The event of its manifest.
+    pub event: String,
+    pub args: Vec<UiValue>,
 }
 
 /// A team of a match, as the manager knows it from the entrants of the match.

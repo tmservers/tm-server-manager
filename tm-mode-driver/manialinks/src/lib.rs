@@ -7,7 +7,7 @@
 //! `scores-table` makes a manialink the scores table of the game.
 
 mod check;
-pub use check::{MAX_SIZE, check};
+pub use check::{MAX_SIZE, check, check_with_manifest, sent_events};
 
 /// A manialink by the name a config selects it with.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -25,7 +25,8 @@ pub struct Manialink {
 ///   the best times of a time attack map or an endurance race.
 /// - `team-standings`: the standings of the teams of a match of teams.
 /// - `team-score-header`: the score of two teams at the top of the screen, e.g. for TMWT.
-pub const DEFAULTS: [Manialink; 6] = [
+/// - `ready-check`: players tell they are ready, the match starts once all of them are.
+pub const DEFAULTS: [Manialink; 7] = [
     Manialink {
         name: "standings",
         manialink: include_str!("../manialinks/standings.xml"),
@@ -49,6 +50,10 @@ pub const DEFAULTS: [Manialink; 6] = [
     Manialink {
         name: "team-score-header",
         manialink: include_str!("../manialinks/team-score-header.xml"),
+    },
+    Manialink {
+        name: "ready-check",
+        manialink: include_str!("../manialinks/ready-check.xml"),
     },
 ];
 

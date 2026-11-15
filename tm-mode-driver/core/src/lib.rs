@@ -36,10 +36,11 @@ use std::{
 use tm_mode_driver_sdk::{self as sdk, Host, LogLevel, ModeFault, ModeInstance, ModeSource};
 use tm_server_types::{
     base::{Map, PlayerInfo},
+    config::UiValue,
     event::{DriverHold, DriverRoundResult, DriverSection, DriverTeam, Event},
     method::{
         DriverCanSpawn, DriverCommand, DriverNetRound, DriverNetStandings, DriverNetTeams,
-        DriverNetUsers, DriverRound, DriverStandings, DriverUsers,
+        DriverNetUiData, DriverNetUsers, DriverRound, DriverStandings, DriverUsers,
     },
 };
 mod convert;
@@ -118,6 +119,9 @@ pub struct Driver {
     stats: DriverStats,
     /// Spawn permissions sent in this match, so repeated ones are left out.
     spawn_permissions: BTreeMap<String, bool>,
+    /// The values the mode gave the manialinks, by scope and key, to send them again
+    /// to a modescript that lost them.
+    ui_data: BTreeMap<(String, u32, String, String), String>,
     session: Option<i32>,
     /// The last hold, in case the modescript asks again.
     last_hold: Option<LastHold>,
@@ -198,6 +202,20 @@ pub enum DriverInput {
     /// ([`Driver::reloadable_settings`]), which then change nothing
     /// ([`DriverReply::rejected`]). Later settings replace ones that still wait.
     Settings(String),
+    /// A player did something in a manialink whose manifest sends the event to the
+    /// mode, its arguments parsed and checked by the bridge.
+    UiAction(DriverUiAction),
+}
+
+/// What a player did in a manialink, see [`DriverInput::UiAction`].
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct DriverUiAction {
+    pub account_id: String,
+    /// The layer of the manialink in the config.
+    pub layer: String,
+    /// The event of its manifest.
+    pub event: String,
+    pub args: Vec<UiValue>,
 }
 
 /// What should happen after an input.
@@ -248,6 +266,7 @@ impl Driver {
             indices: BTreeMap::new(),
             stats: DriverStats::default(),
             spawn_permissions: BTreeMap::new(),
+            ui_data: BTreeMap::new(),
             session: None,
             last_hold: None,
             playlist: Vec::new(),
@@ -334,6 +353,7 @@ impl Driver {
                     })
                     .collect();
                 self.published = Published::default();
+                commands.extend(self.ui_data_commands());
                 commands.extend(self.publish());
                 DriverReply {
                     commands,
@@ -347,6 +367,13 @@ impl Driver {
                 DriverReply::default()
             }
             DriverInput::Settings(new) => self.new_settings(new)?,
+            DriverInput::UiAction(action) => {
+                if self.poisoned {
+                    return Err(DriverError::Poisoned);
+                }
+                let reply = self.step(sdk::Event::UiAction(convert::ui_action(action)))?;
+                return Ok(after_settings(settings, reply));
+            }
             DriverInput::Teams(teams) => {
                 self.teams.clone_from(teams);
                 self.host.teams = teams
@@ -474,7 +501,13 @@ impl Driver {
                 self.live_round = None;
                 // Everything is published again, e.g. for a modescript that just started.
                 self.published = Published::default();
-                self.step(sdk::Event::MatchStart)
+                // What the mode gave the manialinks before goes out first, what it
+                // sets for the new match after it and wins.
+                let mut commands = self.ui_data_commands();
+                let mut reply = self.step(sdk::Event::MatchStart)?;
+                commands.append(&mut reply.commands);
+                reply.commands = commands;
+                Ok(reply)
             }
             Event::StartMapStart(start) => {
                 self.map = Some(start.map.clone());
@@ -841,8 +874,35 @@ impl Driver {
         }
     }
 
+    /// The values the mode gave the manialinks, one command each.
+    fn ui_data_commands(&self) -> Vec<DriverCommand> {
+        self.ui_data
+            .iter()
+            .map(|((scope, team, account, key), value)| {
+                DriverCommand::SetUiData(json(&DriverNetUiData {
+                    scope: scope.clone(),
+                    team: *team,
+                    account: account.clone(),
+                    keys: vec![key.clone()],
+                    values: vec![value.clone()],
+                }))
+            })
+            .collect()
+    }
+
     /// The commands of the mode for the server.
     fn commands(&mut self, commands: Vec<sdk::Command>) -> Vec<DriverCommand> {
+        for command in &commands {
+            if let sdk::Command::SetUiData(data) = command {
+                let net = convert::net_ui_data(data);
+                let key = (net.scope, net.team, net.account, data.key.clone());
+                if data.value.is_empty() {
+                    self.ui_data.remove(&key);
+                } else {
+                    self.ui_data.insert(key, data.value.clone());
+                }
+            }
+        }
         let mut commands = convert::commands(commands, &self.playlist);
         if commands
             .iter()
@@ -966,7 +1026,8 @@ fn clear(standings: &mut sdk::Standings, event: &sdk::Event) {
         | sdk::Event::RaceStart(_)
         | sdk::Event::RoundEnd(_)
         | sdk::Event::MatchEnd
-        | sdk::Event::SettingsChanged => {}
+        | sdk::Event::SettingsChanged
+        | sdk::Event::UiAction(_) => {}
     }
 }
 
@@ -981,6 +1042,7 @@ fn kind(event: &sdk::Event) -> &'static str {
         sdk::Event::MapEnd => "map-end",
         sdk::Event::MatchEnd => "match-end",
         sdk::Event::SettingsChanged => "settings-changed",
+        sdk::Event::UiAction(_) => "ui-action",
     }
 }
 

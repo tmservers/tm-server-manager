@@ -50,6 +50,10 @@ pub enum DriverCommand {
     /// host whenever the teams of the match or the players it knows change, never
     /// produced by a mode itself.
     SetTeams(String),
+    /// [`DriverNetUiData`] as json: values a mode or the manager gives the manialinks,
+    /// for everyone (`Net_Driver_Data`) or for the players of a team or one player
+    /// (`Net_Driver_MyData`).
+    SetUiData(String),
     /// A message for everyone in the chat.
     ChatMessage(String),
 }
@@ -87,11 +91,12 @@ impl DriverCommand {
     pub const SET_ROUND: &str = "Driver.SetRound";
     pub const SET_USERS: &str = "Driver.SetUsers";
     pub const SET_TEAMS: &str = "Driver.SetTeams";
+    pub const SET_UI_DATA: &str = "Driver.SetUiData";
     pub const SET_WARM_UP: &str = "Driver.SetWarmUp";
     pub const SET_RACE_RULES: &str = "Driver.SetRaceRules";
 
     /// Methods implemented by the driver modescript.
-    pub const MODESCRIPT_METHODS: [&str; 13] = [
+    pub const MODESCRIPT_METHODS: [&str; 14] = [
         Self::CONTINUE,
         Self::SET_ROUND_FORMAT,
         Self::SET_CAN_SPAWN,
@@ -103,6 +108,7 @@ impl DriverCommand {
         Self::SET_ROUND,
         Self::SET_USERS,
         Self::SET_TEAMS,
+        Self::SET_UI_DATA,
         Self::SET_WARM_UP,
         Self::SET_RACE_RULES,
     ];
@@ -185,6 +191,7 @@ impl DriverCommand {
             DriverCommand::SetRound(round) => (Self::SET_ROUND, vec![round.clone()]),
             DriverCommand::SetUsers(users) => (Self::SET_USERS, vec![users.clone()]),
             DriverCommand::SetTeams(teams) => (Self::SET_TEAMS, vec![teams.clone()]),
+            DriverCommand::SetUiData(data) => (Self::SET_UI_DATA, vec![data.clone()]),
             DriverCommand::ChatMessage(message) => {
                 return DriverCall::ChatSendServerMessage(message.clone());
             }
@@ -640,7 +647,7 @@ impl DriverLabelTone {
 ///
 /// Every group (players, standings, round, teams, state of the mode) has a serial that
 /// increases once all its netvars changed together, which manialinks watch.
-pub const DRIVER_NETVARS: [(&str, &str); 50] = [
+pub const DRIVER_NETVARS: [(&str, &str); 52] = [
     ("Net_Driver_UsersSerial", "Integer"),
     ("Net_Driver_UserAccountIds", "Text[Integer]"),
     ("Net_Driver_UserNames", "Text[Integer]"),
@@ -689,6 +696,8 @@ pub const DRIVER_NETVARS: [(&str, &str); 50] = [
     ("Net_Driver_TeamLogoUrls", "Text[Integer]"),
     ("Net_Driver_TeamFlagUrls", "Text[Integer]"),
     ("Net_Driver_UserTeams", "Integer[Integer]"),
+    ("Net_Driver_DataSerial", "Integer"),
+    ("Net_Driver_Data", "Text[Text]"),
     ("Net_Driver_StateSerial", "Integer"),
     ("Net_Driver_State", "Text"),
 ];
@@ -696,10 +705,27 @@ pub const DRIVER_NETVARS: [(&str, &str); 50] = [
 /// The netvars the driver modescript writes for every player into the UI of the
 /// player (`for UI`), e.g. `declare netread Integer Net_Driver_MyUser for UI;`:
 /// the index of the player in the netvars of the players and its team, -1 for none.
-pub const DRIVER_PLAYER_NETVARS: [(&str, &str); 2] = [
+pub const DRIVER_PLAYER_NETVARS: [(&str, &str); 4] = [
     ("Net_Driver_MyUser", "Integer"),
     ("Net_Driver_MyTeam", "Integer"),
+    ("Net_Driver_MyDataSerial", "Integer"),
+    ("Net_Driver_MyData", "Text[Text]"),
 ];
+
+/// Values for the manialinks, sent as json with [`DriverCommand::SetUiData`]. They
+/// replace the values of their keys, an empty value removes its key.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
+#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
+pub struct DriverNetUiData {
+    /// `all`, `team` or `account`.
+    pub scope: String,
+    pub team: u32,
+    pub account: String,
+    pub keys: Vec<String>,
+    pub values: Vec<String>,
+}
 
 /// The standings the driver modescript writes into the netvars of the standings,
 /// sent as json with [`DriverCommand::SetStandings`].

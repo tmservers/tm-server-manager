@@ -24,6 +24,9 @@ pub use driver_mode::{BuiltInMode, DriverMode};
 mod driver_ui;
 pub use driver_ui::*;
 
+mod driver_ui_events;
+pub use driver_ui_events::*;
+
 mod rounds_bot_online;
 pub use rounds_bot_online::RoundsBotOnline;
 

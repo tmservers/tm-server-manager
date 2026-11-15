@@ -63,10 +63,12 @@ pub(crate) struct Event {
     kind: &'static str,
     account_id: Option<String>,
     round: Option<Round>,
+    action: Option<sdk::UiAction>,
 }
 
 impl From<sdk::Event> for Event {
     fn from(event: sdk::Event) -> Self {
+        let mut action = None;
         let (kind, account_id, round) = match event {
             sdk::Event::MatchStart => ("match_start", None, None),
             sdk::Event::MapStart => ("map_start", None, None),
@@ -76,13 +78,27 @@ impl From<sdk::Event> for Event {
             sdk::Event::MapEnd => ("map_end", None, None),
             sdk::Event::MatchEnd => ("match_end", None, None),
             sdk::Event::SettingsChanged => ("settings_changed", None, None),
+            sdk::Event::UiAction(ui_action) => {
+                let account_id = ui_action.account_id.clone();
+                action = Some(ui_action);
+                ("ui_action", Some(account_id), None)
+            }
         };
         Event {
             kind,
             account_id,
             round,
+            action,
         }
     }
+}
+
+fn ui_data(scope: sdk::UiScope, key: &str, value: &str) -> Command {
+    Command::SetUiData(sdk::UiData {
+        scope,
+        key: key.into(),
+        value: value.into(),
+    })
 }
 
 fn int(name: &str, value: u32) -> ScriptResult<INT> {
@@ -447,7 +463,40 @@ fn register_event(engine: &mut Engine) {
             e.round
                 .clone()
                 .ok_or_else(|| format!("A {} event has no round.", e.kind).into())
+        })
+        // The layer of the manialink a player did something in.
+        .register_get("layer", |e: &mut Event| -> ScriptResult<String> {
+            Ok(ui_action(e)?.layer.clone())
+        })
+        // The event of the manifest of the manialink.
+        .register_get("ui_event", |e: &mut Event| -> ScriptResult<String> {
+            Ok(ui_action(e)?.event.clone())
+        })
+        // Its arguments: numbers for numbers, choices (their index) and teams, true or
+        // false, and text for text and accounts.
+        .register_get("args", |e: &mut Event| -> ScriptResult<Array> {
+            ui_action(e)?
+                .args
+                .iter()
+                .map(|value| {
+                    Ok(match value {
+                        sdk::UiValue::Int(n) => Dynamic::from_int(INT::from(*n)),
+                        sdk::UiValue::Bool(b) => Dynamic::from_bool(*b),
+                        sdk::UiValue::Text(text) | sdk::UiValue::User(text) => text.clone().into(),
+                        sdk::UiValue::Choice(n) | sdk::UiValue::Team(n) => {
+                            Dynamic::from_int(int("an argument", *n)?)
+                        }
+                    })
+                })
+                .collect()
         });
+}
+
+fn ui_action(event: &Event) -> ScriptResult<&sdk::UiAction> {
+    event
+        .action
+        .as_ref()
+        .ok_or_else(|| format!("A {} event comes from no manialink.", event.kind).into())
 }
 
 fn register_context(engine: &mut Engine) {
@@ -575,6 +624,27 @@ fn register_commands(engine: &mut Engine) {
             Command::SetNetState(state.into())
         })
         .register_fn("chat", |message: &str| Command::ChatMessage(message.into()))
+        // Values for the manialinks: for everyone, the players of a team or one
+        // player. An empty value removes the key.
+        .register_fn("ui_data", |key: &str, value: &str| {
+            ui_data(sdk::UiScope::All, key, value)
+        })
+        .register_fn(
+            "team_ui_data",
+            |team: INT, key: &str, value: &str| -> ScriptResult<Command> {
+                Ok(ui_data(
+                    sdk::UiScope::Team(unsigned("team", team)?),
+                    key,
+                    value,
+                ))
+            },
+        )
+        .register_fn(
+            "player_ui_data",
+            |account_id: &str, key: &str, value: &str| {
+                ui_data(sdk::UiScope::Account(account_id.into()), key, value)
+            },
+        )
         // A place for chat messages: 1st, 2nd, 3rd, ...
         .register_fn("ordinal", |place: INT| -> ScriptResult<String> {
             Ok(sdk::ordinal(unsigned("place", place)?))
