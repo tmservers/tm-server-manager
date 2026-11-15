@@ -425,7 +425,7 @@ Until then the host numbers them, which is all the netvars of a server need.
 
 ```rust
 pub struct UiLayer { pub manialink: Manialink, pub placement: Placement, pub audience: Audience }
-pub enum Manialink { BuiltIn(BuiltInManialink) }            // manialinks of competitions follow
+pub enum Manialink { BuiltIn(BuiltInManialink), Custom(u32) }   // Custom: a revision
 pub enum Placement { Default, Normal, ScoresTable, Screen(ScreenTarget), Markers(Vec<MarkerBinding>),
                      AltMenu, CutScene, LoadingScreen }
 pub enum Audience { Everyone, Players, Spectators, Teams(Vec<u32>), Accounts(Vec<String>) }
@@ -452,6 +452,19 @@ pub enum Audience { Everyone, Players, Spectators, Teams(Vec<u32>), Accounts(Vec
   (`Integer`, `for UI`, -1 for none, `DRIVER_PLAYER_NETVARS`). A manialink reads them with
   `declare netread Integer Net_Driver_MyUser for UI;`. They cost nothing for the others, only the
   player gets them.
+- **Manialinks of competitions.** `Manialink::Custom(revision)` shows a manialink a competition
+  wrote. A manialink (`tab_manialink`: competition, name) has revisions (`tab_manialink_revision`)
+  which never change, so a config shows exactly what it was configured with, however the manialink
+  changes later. Writing them needs `MANIALINK_EDIT`, they run on the machines of the players:
+  `manialink_create`, `manialink_revise` and `manialink_rename`, read with the views
+  `competition_manialinks` and `manialink_revisions`. Every revision is checked before it is
+  saved (`tm_mode_driver_manialinks::check`): at most 256 KB, one well formed `<manialink>` (scripts
+  stay in comments as usual) and every `Net_Driver_*` netvar it reads is one the modescript
+  writes, with its type and for `Teams[0]` or `UI`. A config may only show manialinks of its
+  competition and of the ones above it, checked whenever a config is set. The bridge reads the
+  xml of the revisions its config shows from `my_server_manialinks`. Manialinks may load images
+  and open links of any host, the permission is the decision of trust. Templates copy configs
+  without the manialinks of the template.
 - The bridge sends the layers and the modules when the config loads and whenever the modescript
   restarts. Tests check that the script knows every kind of layer, every audience, anchor, label
   and visibility, writes the netvars of a player and that every built-in manialink exists.
