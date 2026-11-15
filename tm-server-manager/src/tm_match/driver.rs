@@ -952,6 +952,52 @@ mod tests {
         assert_eq!(world.rounds(match_id), vec![]);
     }
 
+    #[test]
+    fn a_match_of_teams_keeps_the_standings_of_its_teams() {
+        let world = World::new();
+        let server = world.server(1);
+        let tmwt = BuiltInMode::Tmwt2v2V1;
+        let match_id = world.live_driver_match(&server, tmwt, "{}");
+        let (a, b, c) = players();
+        let d = player(4);
+        let team =
+            |team_id, name: &str, players: [&String; 2]| tm_server_types::event::DriverTeam {
+                team_id,
+                name: name.into(),
+                short_name: String::new(),
+                logo_url: String::new(),
+                flag_url: String::new(),
+                players: players.iter().map(|p| p.to_string()).collect(),
+            };
+        let mut log = InputLog::new("{}");
+        log.players(&[&a, &b, &c, &d]);
+        log.push(DriverInput::Teams(vec![
+            team(7, "Red", [&a, &b]),
+            team(3, "Blue", [&c, &d]),
+        ]));
+        log.match_start().map_start("m1");
+        // Red finishes first and second: an ace.
+        log.round(&[
+            (&a, Race::finish(&[30_000])),
+            (&b, Race::finish(&[31_000])),
+            (&c, Race::finish(&[32_000])),
+        ]);
+        let mut bridge = Bridge::new(tmwt, "{}", 1);
+
+        bridge.play(&world, &server, &log.inputs);
+
+        let teams: Vec<(u32, u32, i32, i32)> = world
+            .test
+            .anonymous_view_context()
+            .match_driver_team_standings(match_id)
+            .into_iter()
+            .map(|t| (t.team_id, t.position, t.score, t.map_score))
+            .collect();
+        assert_eq!(teams, vec![(7, 1, 0, 3), (3, 2, 0, 0)]);
+        assert_eq!(stored(&world, match_id)[0], (a.clone(), 1, 3));
+        assert_eq!(state(&world, match_id), MatchDriverState::Running);
+    }
+
     /// Checkpoints are most of a match, the log of a long race stays small.
     #[test]
     fn a_checkpoint_is_eleven_bytes() {
