@@ -5,7 +5,8 @@ use std::collections::BTreeMap;
 use serde_json::Value;
 
 use crate::{
-    Command, Entry, Event, Host, LogLevel, Mode, RoundEnd, Standings, User, reload::Configured,
+    Command, Entry, Event, Host, LogLevel, Mode, RoundEnd, Standings, Team, TeamEntry, User,
+    reload::Configured,
 };
 
 /// A mode together with the standings the host would keep for it.
@@ -14,10 +15,14 @@ pub struct Harness<M> {
     pub standings: Standings,
     /// The last round that counted, as the mode placed it.
     pub round: Vec<Entry>,
+    /// The teams of the last round that counted.
+    pub round_teams: Vec<TeamEntry>,
     /// What [`Host::map_count`] returns.
     pub map_count: u32,
     /// What [`Host::user`] returns.
     pub users: BTreeMap<String, User>,
+    /// What [`Host::teams`] returns.
+    pub teams: Vec<Team>,
 }
 
 impl<M: Mode> Harness<M> {
@@ -26,8 +31,10 @@ impl<M: Mode> Harness<M> {
             configured: Configured::new(settings)?,
             standings: Standings::default(),
             round: Vec::new(),
+            round_teams: Vec::new(),
             map_count: 0,
             users: BTreeMap::new(),
+            teams: Vec::new(),
         })
     }
 
@@ -36,13 +43,16 @@ impl<M: Mode> Harness<M> {
         clear(&mut self.standings, &event);
         if let Event::MatchStart = event {
             self.round.clear();
+            self.round_teams.clear();
         }
         let host = self.host();
         let counts = matches!(&event, Event::RoundEnd(round_end) if !round_end.invalid);
         let commands = self.configured.mode.step(&host, &mut self.standings, event);
         let round = std::mem::take(&mut self.standings.round);
+        let round_teams = std::mem::take(&mut self.standings.round_teams);
         if counts {
             self.round = round;
+            self.round_teams = round_teams;
         }
         commands
     }
@@ -60,6 +70,7 @@ impl<M: Mode> Harness<M> {
         TestHost {
             map_count: self.map_count,
             users: self.users.clone(),
+            teams: self.teams.clone(),
         }
     }
 
@@ -94,6 +105,7 @@ impl<M: Mode> Harness<M> {
 /// Mirrors what the host clears before an event (`clear` in tm-mode-driver).
 fn clear(standings: &mut Standings, event: &Event) {
     standings.round.clear();
+    standings.round_teams.clear();
     match event {
         Event::MatchStart => *standings = Standings::default(),
         Event::MapStart => standings.rounds_on_map = 0,
@@ -130,6 +142,7 @@ pub fn assert_reloadable_settings_exist<M: Mode>() {
 pub struct TestHost {
     pub map_count: u32,
     pub users: BTreeMap<String, User>,
+    pub teams: Vec<Team>,
 }
 
 impl Host for TestHost {
@@ -143,5 +156,9 @@ impl Host for TestHost {
 
     fn map_count(&self) -> u32 {
         self.map_count
+    }
+
+    fn teams(&self) -> Vec<Team> {
+        self.teams.clone()
     }
 }
