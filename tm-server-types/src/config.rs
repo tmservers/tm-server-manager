@@ -18,6 +18,9 @@ pub use knockout::Knockout;
 mod driver;
 pub use driver::Driver;
 
+mod driver_mode;
+pub use driver_mode::{BuiltInMode, DriverMode};
+
 mod rounds_bot_online;
 pub use rounds_bot_online::RoundsBotOnline;
 
@@ -168,6 +171,28 @@ impl ServerConfigV2 {
         let mut cfg = self.common.get_xml_map();
         cfg.append(&mut self.mode.get_xml_map());
         dxr::Value::Struct(cfg)
+    }
+
+    pub fn with_mode(mut self, mode: ModeSettingsV2) -> Self {
+        self.mode = mode;
+        self
+    }
+
+    /// The mode of the driver, none if the config plays a modescript of the game.
+    pub fn driver_mode(&self) -> Option<DriverMode> {
+        match &self.mode {
+            ModeSettingsV2::Driver(driver) => Some(driver.mode),
+            _ => None,
+        }
+    }
+
+    /// Whether a new config may be like this. Configs which exist already keep working,
+    /// e.g. with a mode a newer version superseded.
+    pub fn check_instantiable(&self) -> Result<(), String> {
+        match self.driver_mode() {
+            Some(mode) => mode.check_instantiable(),
+            None => Ok(()),
+        }
     }
 }
 

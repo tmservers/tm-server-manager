@@ -1,5 +1,7 @@
 use std::collections::BTreeMap;
 
+use super::DriverMode;
+
 /// The generic driver modescript. The rules of the mode run in the mode driver next to the
 /// server, a built-in mode or a script of the competition.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -7,8 +9,8 @@ use std::collections::BTreeMap;
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub struct Driver {
-    /// Name of the mode, a built-in one like `rounds` or a script of the competition.
-    pub mode: String,
+    /// The mode and its version. Matches keep it, new configs have to use the latest version.
+    pub mode: DriverMode,
     /// Json settings passed to the mode when it is initialized.
     pub settings: String,
     /// Milliseconds the modescript waits for a decision before showing a waiting
@@ -51,7 +53,7 @@ impl Driver {
 impl Default for Driver {
     fn default() -> Self {
         Self {
-            mode: "rounds".into(),
+            mode: DriverMode::BuiltIn(super::BuiltInMode::RoundsV1),
             settings: "{}".into(),
             decision_timeout: 10_000,
             manialinks: vec!["standings".into(), "scores-table".into()],

@@ -437,11 +437,11 @@ fn mode_source(mode: &str) -> Result<Box<dyn ModeSource>, String> {
             std::fs::read_to_string(mode).map_err(|e| format!("Could not read {mode}: {e}"))?;
         return Ok(Box::new(ScriptMode::new(script)?));
     }
-    match tm_mode_driver_builtin::builtin(mode) {
-        Some(built_in) => Ok(built_in),
+    match tm_mode_driver_builtin::BuiltInMode::from_name(mode) {
+        Some(built_in) => Ok(tm_mode_driver_builtin::builtin(built_in)),
         None => Err(format!(
-            "{mode} is no built-in mode ({}) and no .rhai script.",
-            tm_mode_driver_builtin::NAMES.join(", ")
+            "{mode} is no built-in mode ({}, a name without version plays the latest) and no .rhai script.",
+            tm_mode_driver_builtin::supported().join(", ")
         )),
     }
 }
