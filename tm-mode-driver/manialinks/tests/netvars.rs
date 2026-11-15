@@ -41,6 +41,8 @@ fn manialinks_read_the_netvars_of_the_driver() {
 /// The netvars of every group, which change together with its serial.
 fn group(name: &str) -> &'static str {
     match name {
+        "Net_Driver_UserTeams" => "Teams",
+        _ if name.starts_with("Net_Driver_Team") => "Teams",
         _ if name.starts_with("Net_Driver_User") => "Users",
         _ if name.starts_with("Net_Driver_Round") && name != "Net_Driver_RoundsOnMap" => "Round",
         _ if name.starts_with("Net_Driver_State") => "State",
@@ -70,6 +72,18 @@ fn every_netvar_has_a_serial() {
         assert!(
             DRIVER_NETVARS.iter().any(|(netvar, _)| *netvar == serial),
             "{name} has no serial"
+        );
+    }
+}
+
+/// Every manialink a config can select is one of the defaults.
+#[test]
+fn every_built_in_manialink_of_a_config_exists() {
+    for manialink in tm_server_types::config::BuiltInManialink::ALL {
+        assert!(
+            tm_mode_driver_manialinks::default(manialink.name()).is_some(),
+            "{} is no default manialink",
+            manialink.name()
         );
     }
 }
