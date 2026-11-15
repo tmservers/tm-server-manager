@@ -241,6 +241,7 @@ pub(crate) fn round_result(entries: &[Entry]) -> DriverRoundResult {
                 account_id: entry.account_id,
                 points: entry.score,
                 position: entry.position,
+                time: entry.time,
             })
             .collect(),
     }
