@@ -75,6 +75,9 @@ impl CompetitionPermissionsV1 {
     /// Changing the scripts of leaderboard steps, on top of the permission to change the steps.
     pub const SCRIPT_EDIT: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 47);
 
+    /// Writing the manialinks of the competition, which run on the machines of the players.
+    pub const MANIALINK_EDIT: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 48);
+
     pub(crate) fn has(self, perm: Self) -> bool {
         self.bypass() || (perm & !self) == CompetitionPermissionsV1::NONE
     }

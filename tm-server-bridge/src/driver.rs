@@ -5,6 +5,7 @@
 //! stream to the manager one by one and numbered, so the manager replays the same
 //! driver for the scores. The driver lives on a thread of its own, modes are no `Send`.
 
+use std::collections::BTreeMap;
 use std::sync::{
     OnceLock,
     atomic::{AtomicBool, Ordering},
@@ -29,6 +30,8 @@ enum Message {
         playlist: Vec<String>,
         players: Vec<PlayerInfo>,
         teams: Vec<DriverTeam>,
+        /// The xml of the manialinks of the competition the config shows, by revision.
+        manialinks: BTreeMap<u32, String>,
     },
     Stop,
     Input(DriverInput),
@@ -109,6 +112,7 @@ pub(crate) async fn driver_config(config: Option<&DriverConfig>, playlist: Vec<S
         playlist,
         players,
         teams: match_teams(),
+        manialinks: server_manialinks(),
     });
 }
 
@@ -168,6 +172,7 @@ fn run(messages: mpsc::Receiver<Message>, out: UnboundedSender<Out>) {
                 playlist,
                 players,
                 teams,
+                manialinks,
             } => {
                 active = None;
                 let DriverMode::BuiltIn(mode) = config.mode;
@@ -183,7 +188,7 @@ fn run(messages: mpsc::Receiver<Message>, out: UnboundedSender<Out>) {
                         continue;
                     }
                 };
-                let layers = layers(&config.ui);
+                let layers = layers(&config.ui, &manialinks);
                 _ = out.send(Out::Session(session()));
                 let shown = show(&layers, &config.ui);
                 let mut commands = shown.clone();
@@ -243,7 +248,7 @@ fn run(messages: mpsc::Receiver<Message>, out: UnboundedSender<Out>) {
 }
 
 /// The layers of the config with their manialinks.
-fn layers(ui: &DriverUi) -> Vec<DriverLayer> {
+fn layers(ui: &DriverUi, custom: &BTreeMap<u32, String>) -> Vec<DriverLayer> {
     ui.layers
         .iter()
         .filter_map(|layer| {
@@ -251,6 +256,7 @@ fn layers(ui: &DriverUi) -> Vec<DriverLayer> {
                 Manialink::BuiltIn(manialink) => {
                     tm_mode_driver_manialinks::default(manialink.name())
                 }
+                Manialink::Custom(revision) => custom.get(revision).map(String::as_str),
             };
             match xml {
                 Some(xml) => Some(layer.layer(xml)),
@@ -289,6 +295,19 @@ fn match_teams() -> Vec<DriverTeam> {
             let bytes = spacetimedb_lib::bsatn::to_vec(&team).ok()?;
             spacetimedb_lib::bsatn::from_slice::<DriverTeam>(&bytes).ok()
         })
+        .collect()
+}
+
+/// The manialinks of the competition the config of the server shows, by revision.
+fn server_manialinks() -> BTreeMap<u32, String> {
+    use spacetimedb_sdk::Table;
+    use tm_server_manager_api_rs::MyServerManialinksTableAccess;
+    SPACETIME
+        .read()
+        .db
+        .my_server_manialinks()
+        .iter()
+        .map(|manialink| (manialink.revision, manialink.xml))
         .collect()
 }
 

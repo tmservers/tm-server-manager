@@ -34,6 +34,8 @@ rhai.workspace = true
 tm-mode-driver.workspace = true
 tm-mode-driver-sdk.workspace = true
 tm-mode-driver-builtin.workspace = true
+# Checks the manialinks competitions save.
+tm-mode-driver-manialinks.workspace = true
 
 [dev-dependencies]
 proptest.workspace = true
