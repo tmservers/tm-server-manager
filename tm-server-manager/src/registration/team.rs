@@ -610,6 +610,45 @@ mod tests {
     }
 
     #[test]
+    fn the_driver_of_a_match_gets_its_teams_with_the_accounts_of_their_players() {
+        use crate::{tm_match::driver::MatchDriverRead, user::UserWrite};
+
+        let test = test_context(&[]);
+        registration(&test, RegistrationStatus::Ongoing);
+        let accounts = [
+            spacetimedb::Uuid::from_u128(0xa1),
+            spacetimedb::Uuid::from_u128(0xb2),
+        ];
+        let users: Vec<u32> = accounts
+            .iter()
+            .map(|account| run(&test, |ctx| ctx.user_id_or_insert(*account)).unwrap())
+            .collect();
+        let team = run(&test, |ctx| {
+            let team = create_team(ctx, users[0], REGISTRATION, "Red".into())?;
+            invite(ctx, users[0], team.id, users[1])?;
+            accept_invite(ctx, users[1], team.id)?;
+            Ok(team.id)
+        })
+        .unwrap();
+        connect(
+            &test,
+            NodeHandle::RegistrationV1(REGISTRATION),
+            NodeHandle::MatchV1(3),
+            1,
+        );
+        run(&test, |ctx| ctx.match_entrants_freeze(3)).unwrap();
+
+        let teams = test.anonymous_view_context().match_driver_teams(3);
+
+        assert_eq!(teams.len(), 1);
+        assert_eq!(teams[0].team_id, team);
+        assert_eq!(teams[0].name, "Red");
+        let mut players = teams[0].players.clone();
+        players.sort();
+        assert_eq!(players, accounts.map(|a| a.to_string()));
+    }
+
+    #[test]
     fn players_of_a_match_play_for_the_team_it_got_frozen_with() {
         let test = test_context(&[]);
         registration(&test, RegistrationStatus::Ongoing);
