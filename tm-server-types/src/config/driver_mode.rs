@@ -134,9 +134,15 @@ mod tests {
 
     #[test]
     fn a_family_names_its_latest_version() {
-        assert_eq!(BuiltInMode::from_name("knockout"), Some(BuiltInMode::KnockoutV1));
+        assert_eq!(
+            BuiltInMode::from_name("knockout"),
+            Some(BuiltInMode::KnockoutV1)
+        );
         assert_eq!(BuiltInMode::named("knockout"), None);
-        assert_eq!(BuiltInMode::named("knockout-v1"), Some(BuiltInMode::KnockoutV1));
+        assert_eq!(
+            BuiltInMode::named("knockout-v1"),
+            Some(BuiltInMode::KnockoutV1)
+        );
         assert_eq!(BuiltInMode::from_name("rounds-v2"), None);
         assert_eq!(BuiltInMode::from_name("Rounds"), None);
     }
