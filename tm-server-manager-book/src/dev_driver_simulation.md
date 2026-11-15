@@ -35,7 +35,7 @@ match the driver never asked for.
 | Crate | Tests |
 |---|---|
 | `tm-mode-driver-sim` | Nothing about modes. A library: the fake server, worlds, input logs, the checks every mode has to keep, the `Rules` trait and the tests every mode runs. |
-| `tm-mode-driver/modes/<mode>` | Unit tests of its rules with the SDK's harness in `src/tests.rs`, and simulations in `tests/simulation`: its `Rules`, random settings, logs and snapshots. |
+| `tm-mode-driver/modes/<mode>` | Unit tests of the rules of every version with the SDK's harness in `src/v<version>/tests.rs`, and simulations in `tests/simulation_v<version>`: its `Rules`, random settings, logs and snapshots. |
 | `tm-mode-driver` | The host: holds, publishing, players, sessions, replays, resuming, the playlist, limits. It runs the rounds mode for that, with the callbacks of `tm_mode_driver_sim::events`, but does not test its rules. |
 
 A new mode, also one from outside the repository, brings its own simulation without touching the
@@ -137,7 +137,7 @@ never asked for.
 
 When a seed fails, `SIM_SAVE=<dir>` saves its inputs as a log, shrunk to the shortest log the
 simulator finds that fails the same way. `Simulator::shrink` leaves out ever smaller runs of inputs
-while the failure stays. Kept in `tests/simulation/logs`, a log is a regression test that does not
+while the failure stays. Kept in `tests/simulation_v<version>/logs`, a log is a regression test that does not
 change when the simulator does, unlike a seed.
 
 ## What the checks see
@@ -267,13 +267,13 @@ the host folding a restart into the finished race and a time attack playing one 
 
 ## Testing a mode
 
-A mode keeps its simulation in `tests/simulation`:
+Every version of a mode keeps its simulation in `tests/simulation_v<version>`:
 
 ```text
-tests/simulation/main.rs        the simulator for the mode, its random settings and its tests
-tests/simulation/rules.rs       its Rules
-tests/simulation/logs/          saved logs, each a test
-tests/simulation/snapshots/     the reports insta keeps
+tests/simulation_v1/main.rs        the simulator for the mode, its random settings and its tests
+tests/simulation_v1/rules.rs       its Rules
+tests/simulation_v1/logs/          saved logs, each a test
+tests/simulation_v1/snapshots/     the reports insta keeps
 ```
 
 `main.rs` hands the simulator the mode and what only the mode knows and runs the tests every mode
@@ -310,22 +310,27 @@ script, at its end, the most every kind of call cost, with two or three figures.
 built-in modes have no costs, so their snapshots do not change with the compiler. Maps show
 their laps, map starts the race rules a mode set. Notes tell what happened around it, e.g.
 players joining, the bridge going down or callbacks it missed. The snapshots are
-[insta](https://insta.rs) files in `tests/simulation/snapshots` of every mode, the same in debug and
+[insta](https://insta.rs) files in `tests/simulation_v<version>/snapshots` of every mode, the same in debug and
 release builds. Reports of full servers are not kept, they are hundreds of kilobytes.
 
 When a mode or the driver changes on purpose, review the new reports with `cargo insta review` or
 accept them with `INSTA_UPDATE=always`. Changing the simulator itself changes the matches of the
-seeds as well.
+seeds as well. The reports of released versions may not change at all, `released.txt` of
+`tm-mode-driver-builtin` holds them (see [Versions](./dev_mode_driver.md#versions)): a change of
+rules is a new version of the mode. A change of the simulator which changes the reports of released
+versions has to show that the modes play as before, e.g. that only the notes of the report
+changed, and lists the new hashes in the same commit by removing the old lines and running
+`RELEASE_SNAPSHOTS=1 cargo test -p tm-mode-driver-builtin released`.
 
 ## Running
 
 ```sh
 cargo test -p tm-mode-knockout                     # unit tests and simulations
-SIM_SEEDS=5000 cargo test --release -p tm-mode-knockout --test simulation
-SIM_FULL_SERVERS=50 cargo test --release -p tm-mode-knockout --test simulation
-SIM_SEED_START=90000 cargo test --release -p tm-mode-knockout --test simulation
-SIM_SEED=42 cargo test -p tm-mode-knockout --test simulation random_matches_follow -- --nocapture
-SIM_SAVE=tests/simulation/logs cargo test -p tm-mode-knockout --test simulation
+SIM_SEEDS=5000 cargo test --release -p tm-mode-knockout --test simulation_v1
+SIM_FULL_SERVERS=50 cargo test --release -p tm-mode-knockout --test simulation_v1
+SIM_SEED_START=90000 cargo test --release -p tm-mode-knockout --test simulation_v1
+SIM_SEED=42 cargo test -p tm-mode-knockout --test simulation_v1 random_matches_follow -- --nocapture
+SIM_SAVE=tests/simulation_v1/logs cargo test -p tm-mode-knockout --test simulation_v1
 ```
 
 `SIM_SEEDS` and `SIM_FULL_SERVERS` set how many random matches and full servers run,

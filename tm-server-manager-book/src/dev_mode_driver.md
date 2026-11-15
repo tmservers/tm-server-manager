@@ -880,11 +880,37 @@ for move (see [Simulation Testing](./dev_driver_simulation.md)).
 - `tm-mode-driver/modes/reverse-cup`: ReverseCup (see [ReverseCup](#reversecup)).
 - `tm-mode-driver/modes/knockout`: Knockout with lives (see [Knockout](#knockout)).
 - `tm-mode-driver/modes/endurance`: Endurance (see [Endurance](#endurance)).
-- `tm-mode-driver-builtin`: the built-in modes by the name a config selects them with.
+- `tm-mode-driver-builtin`: the built-in modes by the version a config selects them with
+  (`builtin(BuiltInMode)`), and `supported()`, the names a bridge reports to the manager.
 - `tm-mode-driver-sim`: simulates whole matches of a mode against a fake server and runs logs of
-  inputs with the same checks. Every mode tests its rules with it in `tests/simulation` (see
+  inputs with the same checks. Every version of a mode tests its rules with it in
+  `tests/simulation_v<version>` (see
   [Simulation Testing](./dev_driver_simulation.md)). The integration tests of `tm-mode-driver` test
   the host, with the rounds mode as the mode and the callbacks of `tm_mode_driver_sim::events`.
+
+## Versions
+
+A built-in mode never changes how it plays once it is released. A change of rules is a new
+version, which is a mode of its own: `BuiltInMode::RoundsV2` next to `RoundsV1`, in
+`tm_mode_rounds::v2` next to `v1`, with its own simulations in `tests/simulation_v2`. Both stay
+compiled into the driver, the bridge and the manager.
+
+- **Matches keep their version.** A config names the version it plays, so a match plays the rules
+  it was configured with across any number of deployments.
+- **Only new configs need the latest.** A config which names a superseded version is refused when
+  it is created, changed, attached to a match or copied from a template. Matches which have it
+  already keep playing it.
+- **Released versions are frozen.** `tm-mode-driver-builtin/released.txt` lists a hash of the
+  report of every snapshot of every version. A test fails when one changes, also when the change
+  comes from the host or the SDK, which every version shares. New snapshots are listed with
+  `RELEASE_SNAPSHOTS=1 cargo test -p tm-mode-driver-builtin released`, which never changes a
+  listed hash.
+- **A bridge plays what it reports.** After it logged in, a bridge reports the versions it plays
+  by name (`rounds-v1`). The pool only gives a driver match to a server whose bridge plays its
+  version, a server assigned by hand has to play it as well. Without such a server the match
+  waits in the start failures of its competition with the reason and starts once an updated
+  bridge reports the version. A bridge which logs in again reports again, it may be another
+  version. Names the manager does not know, e.g. from a newer bridge, are ignored.
 
 ## Script modes
 
@@ -950,13 +976,14 @@ same matches, faults and checks as for the built-in modes.
 
 ## Configuration
 
-Until the bridge integrates the driver, the runner loads a mode by its name, a built-in one, or by
-the path of a `.rhai` script, with settings as inline json or a json file (see
+Until the bridge integrates the driver, the runner loads a mode by its name, a built-in one like
+`rounds-v1` or `rounds` for its latest version, or by the path of a `.rhai` script, with settings as inline json or a json file (see
 [Next steps](#next-steps)).
 
 For the integration the config of a match already has
 `ModeSettingsV2::Driver(Driver { mode, settings, decision_timeout, manialinks })`, which selects
-the driver script. `mode` names the mode, `settings` is the json it starts with and
+the driver script. `mode` is the version of the mode (`DriverMode::BuiltIn(BuiltInMode::RoundsV1)`,
+see [Versions](#versions)), `settings` is the json it starts with and
 `manialinks` names the manialinks shown next to the mode (`["standings", "scores-table"]` by
 default, e.g. `["live-standings", "my-standing", "scores-table"]` for an endurance race), the
 defaults of `tm-mode-driver-manialinks` or ones the manager stores for a tournament. The manager is
