@@ -267,6 +267,11 @@ the host folding a restart into the finished race and a time attack playing one 
 
 ## Testing a mode
 
+A mode of teams sets their number and size with `Simulator::teams`: every world then has exactly
+these players, the server gives the driver the teams after the players, and the rules get them
+(`RoundEnd::teams`). Reports show the teams of every round and their standings, reports of modes
+of players stay as they were.
+
 Every version of a mode keeps its simulation in `tests/simulation_v<version>`:
 
 ```text
