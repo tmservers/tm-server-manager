@@ -1,6 +1,8 @@
 //! What surrounds the driver in a simulation: the server with its maps and
 //! players, how they race and what goes wrong, all random from a seed.
 
+use tm_server_types::event::DriverTeam;
+
 use crate::Rng;
 
 /// A server holds at most this many players.
@@ -25,7 +27,12 @@ pub struct World {
     /// New settings an admin gives the match in this order, see
     /// [`Faults::settings_changes`].
     pub settings_changes: Vec<SettingsChange>,
+    /// The teams of a match of teams, the driver gets them when it loads.
+    pub teams: Vec<DriverTeam>,
 }
+
+/// The names of the teams of a simulation, in order.
+const TEAM_NAMES: [&str; 4] = ["Red", "Blue", "Green", "Gold"];
 
 /// New settings during a match.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -254,7 +261,35 @@ impl World {
             players,
             // The simulator plans them, it knows the settings of the mode.
             settings_changes: Vec::new(),
+            teams: Vec::new(),
         }
+    }
+
+    /// The world with `count` teams of `size` players, the first players of the world
+    /// and new ones until there are enough. Ids of teams count from 11, apart from the
+    /// indices of the players.
+    pub fn with_teams(mut self, seed: u64, count: u32, size: u32) -> World {
+        let needed = (count * size) as usize;
+        let rng = Rng::new(seed).fork("world");
+        for index in self.players.len()..needed {
+            let player = PlayerSpec::random(index, &mut rng.fork(&format!("player/{index}")));
+            self.players.push(player);
+        }
+        self.players.truncate(needed);
+        self.teams = (0..count as usize)
+            .map(|team| DriverTeam {
+                team_id: 11 + team as u32,
+                name: TEAM_NAMES[team % TEAM_NAMES.len()].into(),
+                short_name: TEAM_NAMES[team % TEAM_NAMES.len()][..1].into(),
+                logo_url: String::new(),
+                flag_url: String::new(),
+                players: self.players[team * size as usize..(team + 1) * size as usize]
+                    .iter()
+                    .map(|player| player.account_id.clone())
+                    .collect(),
+            })
+            .collect();
+        self
     }
 
     pub fn map(&self, uid: &str) -> Option<&MapSpec> {

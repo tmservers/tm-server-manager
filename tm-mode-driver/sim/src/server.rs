@@ -542,6 +542,9 @@ impl Server {
             players.push(info(&self.world, &player.account_id));
         }
         self.deliver(DriverInput::Players(players));
+        if !self.world.teams.is_empty() {
+            self.deliver(DriverInput::Teams(self.world.teams.clone()));
+        }
         self.phase = Phase::StartMatch;
     }
 
@@ -1389,6 +1392,7 @@ mod tests {
             matches: 1,
             max_rounds: 1,
             settings_changes: Vec::new(),
+            teams: Vec::new(),
         };
         let mut server = Server::new(&world, 9);
         while server.phase != Phase::Racing {

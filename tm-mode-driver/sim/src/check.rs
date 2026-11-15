@@ -138,6 +138,7 @@ impl Checker {
                 standings: &standings,
                 round: &round,
                 truth: observer.truth(),
+                teams: observer.teams(),
             })?;
         }
 
@@ -150,6 +151,7 @@ impl Checker {
                         round: &round,
                         commands: &reply.commands,
                         truth: observer.truth(),
+                        teams: observer.teams(),
                     };
                     self.rules.round_end(&end)?;
                     self.check_progress(&round, &standings)?;
@@ -160,6 +162,7 @@ impl Checker {
                         after: &standings,
                         commands: &reply.commands,
                         playlist: self.playlist,
+                        teams: observer.teams(),
                     };
                     self.rules.map_end(&end)?;
                 }
@@ -285,6 +288,7 @@ fn decisions(commands: &[DriverCommand]) -> Vec<&DriverCommand> {
                 DriverCommand::SetStandings(_)
                     | DriverCommand::SetRound(_)
                     | DriverCommand::SetUsers(_)
+                    | DriverCommand::SetTeams(_)
             )
         })
         .collect()

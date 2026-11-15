@@ -10,7 +10,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use tm_mode_driver::{DriverInput, DriverReply};
 use tm_server_types::{
-    event::{DriverHold, DriverSection, Event, WayPoint},
+    event::{DriverHold, DriverSection, DriverTeam, Event, WayPoint},
     method::{
         DriverCommand, DriverFinishTimeout, DriverNetRound, DriverNetStandings, DriverNetTeams,
         DriverNetUsers, DriverRaceRules, DriverRoundFormat, DriverWarmUp,
@@ -156,6 +156,8 @@ pub(crate) struct Observer {
     live_due: bool,
     /// Live rounds that reached the server in the round that runs or ended last.
     live_updates: u32,
+    /// The teams the driver got.
+    teams: Vec<DriverTeam>,
     session: Option<i32>,
     seq: u32,
     answers: BTreeMap<(i32, u32), Answer>,
@@ -203,6 +205,7 @@ impl Observer {
             live_updates: 0,
             session: None,
             seq: 0,
+            teams: Vec::new(),
             answers: BTreeMap::new(),
             last_hold: None,
             map: String::new(),
@@ -227,6 +230,11 @@ impl Observer {
     /// The races of the round that runs or ended last.
     pub(crate) fn truth(&self) -> &RoundTruth {
         &self.truth
+    }
+
+    /// The teams the driver got.
+    pub(crate) fn teams(&self) -> &[DriverTeam] {
+        &self.teams
     }
 
     pub(crate) fn can_spawn(&self, account_id: &str) -> bool {
@@ -327,6 +335,7 @@ impl Observer {
                 return Ok(None);
             }
             DriverInput::Teams(teams) => {
+                self.teams.clone_from(teams);
                 let teams: Vec<String> = teams
                     .iter()
                     .map(|team| format!("{} {}", team.name, team.players.join(" ")))
