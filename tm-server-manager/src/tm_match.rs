@@ -6,6 +6,8 @@ use spacetimedb::{
 };
 use tm_server_types::config::ServerConfigV2;
 
+use crate::raw_server::driver::RawServerDriverRead;
+
 use crate::{
     authorization::Authorization,
     competition::{
@@ -860,13 +862,22 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
             ));
         }
 
+        let mode = config.driver_mode();
         let server_id = if let Some(server_id) =
             self.occupation_with_occupier(NodeHandle::MatchV1(match_id))
         {
+            if let Some(mode) = mode
+                && !self.raw_server_plays(server_id, mode)
+            {
+                return Err(format!(
+                    "The server assigned to the match does not play {}. Its bridge has to be updated to a version which does.",
+                    crate::raw_server::mode_name(mode)
+                ));
+            }
             tm_match.status = MatchStatus::Preparation;
             server_id
         } else if tm_match.auto_provision_server {
-            let server_id = self.raw_server_pool_assign(NodeHandle::MatchV1(match_id))?;
+            let server_id = self.raw_server_pool_assign(NodeHandle::MatchV1(match_id), mode)?;
 
             tm_match.status = MatchStatus::Preparation;
             server_id

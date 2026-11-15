@@ -6347,6 +6347,7 @@ dependencies = [
  "serde",
  "spacetimedb-sdk",
  "testcontainers",
+ "tm-mode-driver-builtin",
  "tm-server-controller",
  "tm-server-manager-api-rs",
  "tm-server-types",

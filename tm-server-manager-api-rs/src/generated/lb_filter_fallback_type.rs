@@ -9,6 +9,8 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(Copy, Eq, Hash)]
 pub enum LbFilterFallback {
     Worst,
+
+    WorstV1,
 }
 
 impl __sdk::InModule for LbFilterFallback {

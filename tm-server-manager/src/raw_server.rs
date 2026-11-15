@@ -8,7 +8,10 @@ use spacetimedb::{
     ViewContext, reducer, table, view,
 };
 
+use tm_server_types::config::{BuiltInMode, DriverMode};
+
 use crate::authorization::Authorization;
+use crate::raw_server::driver::RawServerDriverRead;
 use crate::competition::connection::start::NodeStartWrite;
 use crate::competition::node::{NodeHandle, NodeRead};
 use crate::competition::server_pool::TabCompetitionServerPoolRead;
@@ -20,6 +23,7 @@ use crate::user::UserRead;
 
 pub mod config;
 pub mod destination;
+pub mod driver;
 pub mod event;
 pub mod method;
 pub mod occupation;
@@ -205,6 +209,8 @@ pub fn login_as_server(
             }
             server.set_online(ctx.timestamp);
             ctx.db.tab_raw_server().id().update(server);
+            // The bridge which logs in may be another version, it reports its modes again.
+            driver::raw_server_driver_forget(ctx, server_id);
 
             let mut server_ident = ctx
                 .db
@@ -300,7 +306,12 @@ pub(crate) trait TabRawServerRead {
     fn raw_servers_of_user(&self, user_id: u32) -> Vec<RawServerV1>;
 }
 pub(crate) trait TabRawServerWrite: TabRawServerRead {
-    fn raw_server_pool_assign(&self, node_handle: NodeHandle) -> Result<u32, String>;
+    /// Takes a free server of the pool for the node, one whose bridge plays the mode if the node plays one of the driver.
+    fn raw_server_pool_assign(
+        &self,
+        node_handle: NodeHandle,
+        mode: Option<DriverMode>,
+    ) -> Result<u32, String>;
     fn raw_server_disconnected(&self, server_id: u32)
     where
         Self: spacetimedb::CtxWithTimestamp;
@@ -345,13 +356,27 @@ impl<Db: CtxDbRead> TabRawServerRead for Db {
 }
 
 impl<Db: CtxDbWrite> TabRawServerWrite for Db {
-    fn raw_server_pool_assign(&self, node_handle: NodeHandle) -> Result<u32, String> {
+    fn raw_server_pool_assign(
+        &self,
+        node_handle: NodeHandle,
+        mode: Option<DriverMode>,
+    ) -> Result<u32, String> {
         let available_servers = self.server_pool_available(self.node_get_parent(node_handle)?);
         if available_servers.is_empty() {
             return Err("No server is assigned to the match and there are no servers left to auto provision. Cannot start the match!".into());
         }
 
-        let server_id = available_servers[0].id;
+        let Some(server) = available_servers
+            .iter()
+            .find(|server| mode.is_none_or(|mode| self.raw_server_plays(server.id, mode)))
+        else {
+            return Err(format!(
+                "None of the {} free servers plays {}. Their bridges have to be updated to a version which does.",
+                available_servers.len(),
+                mode.map(mode_name).unwrap_or_default()
+            ));
+        };
+        let server_id = server.id;
 
         self.raw_server_occupation_add(node_handle, server_id)?;
 
@@ -378,5 +403,12 @@ impl<Db: CtxDbWrite> TabRawServerWrite for Db {
 
             self.match_recovery_enter(match_id, false);
         }
+    }
+}
+
+/// The name of a mode in messages, e.g. `rounds-v1`.
+pub(crate) fn mode_name(mode: DriverMode) -> String {
+    match mode {
+        DriverMode::BuiltIn(mode) => BuiltInMode::name(mode),
     }
 }
