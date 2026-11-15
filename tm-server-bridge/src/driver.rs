@@ -16,7 +16,7 @@ use tm_server_controller::method::ModeScriptMethodsXmlRpc;
 use tm_server_types::{
     base::PlayerInfo,
     config::{Driver as DriverConfig, DriverMode},
-    event::{DriverRecord, Event},
+    event::{DriverRecord, DriverTeam, Event},
     method::{DriverCommand, DriverLayer},
 };
 use tokio::sync::{Mutex, mpsc::UnboundedSender};
@@ -28,6 +28,7 @@ enum Message {
         config: DriverConfig,
         playlist: Vec<String>,
         players: Vec<PlayerInfo>,
+        teams: Vec<DriverTeam>,
     },
     Stop,
     Input(DriverInput),
@@ -107,6 +108,7 @@ pub(crate) async fn driver_config(config: Option<&DriverConfig>, playlist: Vec<S
         config: config.clone(),
         playlist,
         players,
+        teams: match_teams(),
     });
 }
 
@@ -165,6 +167,7 @@ fn run(messages: mpsc::Receiver<Message>, out: UnboundedSender<Out>) {
                 config,
                 playlist,
                 players,
+                teams,
             } => {
                 active = None;
                 let DriverMode::BuiltIn(mode) = config.mode;
@@ -184,10 +187,15 @@ fn run(messages: mpsc::Receiver<Message>, out: UnboundedSender<Out>) {
                 _ = out.send(Out::Session(session()));
                 let mut commands = DriverCommand::show_layers(&layers);
                 let mut records = Vec::new();
-                for input in [
+                let mut inputs = vec![
                     DriverInput::Playlist(playlist),
                     DriverInput::Players(players),
-                ] {
+                ];
+                // A match of players has no teams.
+                if !teams.is_empty() {
+                    inputs.push(DriverInput::Teams(teams));
+                }
+                for input in inputs {
                     match driver.apply(&input) {
                         Ok((mut more, reply)) => {
                             records.append(&mut more);
@@ -243,6 +251,23 @@ fn layers(names: &[String]) -> Vec<DriverLayer> {
                 tracing::error!("There is no manialink {name}.");
                 None
             }
+        })
+        .collect()
+}
+
+/// The teams of the match of the server, as the manager knows them.
+fn match_teams() -> Vec<DriverTeam> {
+    use spacetimedb_sdk::Table;
+    use tm_server_manager_api_rs::MyMatchTeamsTableAccess;
+    SPACETIME
+        .read()
+        .db
+        .my_match_teams()
+        .iter()
+        .filter_map(|team| {
+            // The generated type is the same one, so its encoding is as well.
+            let bytes = spacetimedb_lib::bsatn::to_vec(&team).ok()?;
+            spacetimedb_lib::bsatn::from_slice::<DriverTeam>(&bytes).ok()
         })
         .collect()
 }
