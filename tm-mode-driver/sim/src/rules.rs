@@ -10,8 +10,9 @@
 use std::cmp::Reverse;
 
 use serde::de::DeserializeOwned;
-pub use tm_server_types::method::{
-    DriverCommand, DriverEntry, DriverRound, DriverStandings, DriverStatus,
+pub use tm_server_types::{
+    event::DriverTeam,
+    method::{DriverCommand, DriverEntry, DriverRound, DriverStandings, DriverStatus},
 };
 
 pub use crate::observe::{RoundTruth, SeenRace};
@@ -67,6 +68,8 @@ pub struct RoundEnd<'a> {
     pub commands: &'a [DriverCommand],
     /// The races of the round as the driver saw them.
     pub truth: &'a RoundTruth,
+    /// The teams the driver got, empty for a match of players.
+    pub teams: &'a [DriverTeam],
 }
 
 /// The round that runs, as it stands.
@@ -76,6 +79,7 @@ pub struct LiveRound<'a> {
     pub round: &'a DriverRound,
     /// The races so far as the driver saw them.
     pub truth: &'a RoundTruth,
+    pub teams: &'a [DriverTeam],
 }
 
 /// A map that ends.
@@ -84,6 +88,7 @@ pub struct MapEnd<'a> {
     pub commands: &'a [DriverCommand],
     /// Maps in the playlist of the driver.
     pub playlist: u32,
+    pub teams: &'a [DriverTeam],
 }
 
 /// Which race of a player counts in a round.

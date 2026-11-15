@@ -520,6 +520,7 @@ pub fn without_published(commands: &[DriverCommand]) -> Vec<DriverCommand> {
                 DriverCommand::SetStandings(_)
                     | DriverCommand::SetRound(_)
                     | DriverCommand::SetUsers(_)
+                    | DriverCommand::SetTeams(_)
             )
         })
         .cloned()

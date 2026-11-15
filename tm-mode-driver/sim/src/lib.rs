@@ -145,6 +145,8 @@ pub struct Simulator {
     rules: fn(&str) -> Result<Box<dyn Rules>, String>,
     /// The settings that can change during a match.
     reloadable: Vec<String>,
+    /// The number and size of the teams of a mode of teams.
+    teams: Option<(u32, u32)>,
 }
 
 impl Simulator {
@@ -161,7 +163,15 @@ impl Simulator {
             settings: |_| "{}".into(),
             rules: |_| Ok(Box::new(NoRules)),
             reloadable,
+            teams: None,
         }
+    }
+
+    /// A mode of teams: every world has this many teams of this size, which are all
+    /// its players.
+    pub fn teams(mut self, count: u32, size: u32) -> Self {
+        self.teams = Some((count, size));
+        self
     }
 
     /// Random settings for the matches of random worlds, within the ranges the mode
@@ -180,16 +190,24 @@ impl Simulator {
 
     /// The random world of a seed.
     pub fn world(&self, seed: u64) -> World {
-        let mut world = World::random(seed, self.random_settings(seed));
+        let mut world = self.form_teams(seed, World::random(seed, self.random_settings(seed)));
         world.settings_changes = self.settings_changes(seed, &world.settings);
         world
     }
 
     /// The random world of a seed on a full server.
     pub fn full_server(&self, seed: u64) -> World {
-        let mut world = World::full_server(seed, self.random_settings(seed));
+        let world = World::full_server(seed, self.random_settings(seed));
+        let mut world = self.form_teams(seed, world);
         world.settings_changes = self.settings_changes(seed, &world.settings);
         world
+    }
+
+    fn form_teams(&self, seed: u64, world: World) -> World {
+        match self.teams {
+            Some((count, size)) => world.with_teams(seed, count, size),
+            None => world,
+        }
     }
 
     fn random_settings(&self, seed: u64) -> String {

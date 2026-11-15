@@ -227,6 +227,43 @@ impl Report {
         let standings = driver.standings();
         let entries: Vec<String> = standings.entries.iter().map(entry).collect();
         self.line(format!("  match  {}", or_none(&entries)));
+        // Matches of players have no teams to show.
+        if !observer.teams().is_empty() {
+            let name = |team_id: u32| {
+                observer
+                    .teams()
+                    .iter()
+                    .find(|team| team.team_id == team_id)
+                    .map_or_else(|| team_id.to_string(), |team| team.name.clone())
+            };
+            if reply.round_result.is_some() {
+                let round: Vec<String> = driver
+                    .round()
+                    .teams
+                    .iter()
+                    .map(|team| format!("{} {} {}", team.position, name(team.team_id), team.score))
+                    .collect();
+                self.line(format!("  teams  {}", or_none(&round)));
+            }
+            let teams: Vec<String> = standings
+                .teams
+                .iter()
+                .map(|team| {
+                    let mut text = format!(
+                        "{} {} {} · map {}",
+                        team.position,
+                        name(team.team_id),
+                        team.score,
+                        team.map_score
+                    );
+                    if !team.label.is_empty() {
+                        write!(text, " {}", team.label).unwrap();
+                    }
+                    text
+                })
+                .collect();
+            self.line(format!("  table  {}", or_none(&teams)));
+        }
         self.line(format!("  info   {}", standings.info));
         self.commands(&reply.commands);
     }
