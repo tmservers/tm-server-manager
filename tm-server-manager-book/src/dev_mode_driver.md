@@ -93,9 +93,10 @@ or skipped is invalid as well.
 While a round runs, the host also asks the mode for the round as it stands, with the races so far
 (`live-round`, see [Live rounds](#live-rounds)). That is no event: the mode changes nothing with it.
 
-### `Driver.Hold`, the only custom callback
+### `Driver.Hold`, the custom callback of the rules
 
-The standard callbacks are fire and forget, so the modescript would run into the next round before
+Besides it the modescript only sends `Driver.UiEvent`, what players do in manialinks, see
+[What players do](#what-players-do). The standard callbacks are fire and forget, so the modescript would run into the next round before
 the mode decided to end the map. `Driver.Hold` makes the script wait:
 
 ```json
@@ -323,6 +324,7 @@ The netvars are the interface of every manialink, so they are typed and small ra
 | Round (`Net_Driver_RoundSerial`) | `Net_Driver_RoundNumber` (`Integer`), `Net_Driver_RoundLive` (`Boolean`) and the entries of the round as it stands while it runs, otherwise of the last round that counted |
 | Teams (`Net_Driver_TeamsSerial`) | `Net_Driver_TeamNames`, `Net_Driver_TeamShortNames`, `Net_Driver_TeamLogoUrls`, `Net_Driver_TeamFlagUrls`: `Text[Integer]` by team id, `Net_Driver_UserTeams` (`Integer[Integer]`): the team of every player by index |
 | State of the mode (`Net_Driver_StateSerial`) | `Net_Driver_State` (`Text`), whatever a mode sends with `set-net-state` |
+| Values (`Net_Driver_DataSerial`) | `Net_Driver_Data` (`Text[Text]`): values for everyone by key, from the mode or the manager, see [What players do](#what-players-do) |
 
 The entries are columns with one value per entry, standings ordered by position (unranked players
 last), the round by place: `…Players` (the index), `…Positions`, `…Scores`, `…Times` (-1 without a
@@ -406,6 +408,8 @@ Until then the host numbers them, which is all the netvars of a server need.
     on the map or their label, the team of the local player highlighted.
   - `team-score-header`: the score of the first two teams at the top of the screen, maps won
     outside and points on the map inside, e.g. for TMWT. The teams keep their sides.
+  - `ready-check`: a button for the players to tell they are ready, with how many are, see
+    [What players do](#what-players-do).
 - The config selects them by an enum (`Driver.ui`, see [Layers](#layers)), so a typo does not
   reach a server. The runner still selects them by name, a name ending with `scores-table`
   makes a manialink the scores table there.
@@ -460,14 +464,69 @@ pub enum Audience { Everyone, Players, Spectators, Teams(Vec<u32>), Accounts(Vec
   `competition_manialinks` and `manialink_revisions`. Every revision is checked before it is
   saved (`tm_mode_driver_manialinks::check`): at most 256 KB, one well formed `<manialink>` (scripts
   stay in comments as usual) and every `Net_Driver_*` netvar it reads is one the modescript
-  writes, with its type and for `Teams[0]` or `UI`. A config may only show manialinks of its
+  writes, with its type and for `Teams[0]` or `UI`. A revision comes with its manifest, see
+  [What players do](#what-players-do), which declares every event it sends. A config may only show manialinks of its
   competition and of the ones above it, checked whenever a config is set. The bridge reads the
-  xml of the revisions its config shows from `my_server_manialinks`. Manialinks may load images
+  xml and the manifests of the revisions its config shows from `my_server_manialinks`. Manialinks may load images
   and open links of any host, the permission is the decision of trust. Templates copy configs
   without the manialinks of the template.
 - The bridge sends the layers and the modules when the config loads and whenever the modescript
   restarts. Tests check that the script knows every kind of layer, every audience, anchor, label
   and visibility, writes the netvars of a player and that every built-in manialink exists.
+
+### What players do
+
+Manialinks only send text: `SendCustomEvent(Type, Data)` gives the modescript an
+`OnLayerCustomEvent` with a name and a list of texts, clicks and input fields alike. So every
+manialink comes with a manifest (`UiManifest`) of the events it sends, with typed arguments, and
+the keys of the values it reads:
+
+```rust
+pub struct UiManifest { pub events: Vec<UiEventSpec>, pub data_keys: Vec<String> }
+pub struct UiEventSpec { pub name: String, pub route: UiRoute, pub args: Vec<UiArg> }
+pub enum UiRoute { Mode, Manager }
+pub enum UiArg { Int(UiIntRange), Bool, Text(u32), Choice(Vec<String>), User, Team }
+```
+
+- The modescript forwards the events of the layers of the driver as `Driver.UiEvent`
+  (`{"layer", "account_id", "name", "data"}`), at most 10 a second per player with at most 16
+  arguments. Who sent it is the UI the event came from, never what the manialink tells.
+- The bridge parses them with the manifest of the layer's manialink at the boundary: numbers within
+  their bounds, `1`/`0`/`True`/`False`, text of a length, one of the choices (by index), an account
+  the driver knows, a team of the match. What does not fit is dropped, nothing behind the bridge
+  sees text where a number belongs.
+- `Mode` events become an input of the driver (`DriverInput::UiAction`, recorded as
+  `DriverRecord::UiAction` with the number of the player, so the manager replays them). The mode
+  gets `Event::UiAction` with the account, the layer, the name and the parsed arguments, at any
+  time, also while a round runs. The built-in modes ignore them, scripts read them with
+  `event.kind == "ui_action"`, `event.layer`, `event.ui_event` and `event.args`.
+- `Manager` events go to the reducer `match_ui_event` by the index of the event in the manifest,
+  which checks them again against the manifest of the config the match shows. They never change
+  the scores. They are kept in the public event table `tab_match_ui_event`, by user, manialink,
+  index and arguments, for whoever subscribes, e.g. a website counting votes.
+- Values go the other way: `Command::SetUiData` of a mode (`ui_data`, `team_ui_data`,
+  `player_ui_data` in scripts) or values of the manager. A value is for everyone
+  (`Net_Driver_Data`, `for Teams[0]`), the players of a team or one player (`Net_Driver_MyData`
+  with `Net_Driver_MyDataSerial`, `Text[Text]`, `for UI`, the value of the player wins over the
+  one of the team). An empty value removes its key. The host remembers the values of the mode and
+  sends them again with `Resumed` and to a modescript that starts a new match.
+- The manager keeps its values in the public table `tab_match_ui_data` (match, scope, key, value)
+  with the keys by number in the public table `tab_ui_key`, players by user id. Clients with
+  `MATCH_UI_WRITE` set them with `match_ui_data_set`. The bridge reads them by name from
+  `my_match_ui_data` and sends what changed, everything again to a new modescript.
+- **Ready check.** A config whose layers show `ready-check` makes a match in preparation wait for
+  its players: they click, `ready` goes to the manager with `1` or `0`, which writes `ready` for
+  the player and `ready-count` (`"3/4"`) for everyone. Once every player of the match is ready it
+  starts the match like `match_try_start`. Starting removes both keys, also when the match is
+  started by hand, so a config used for the preparation and the match hides the check.
+  Only the players of the match count, and only a pre-match config with a driver mode shows the
+  layers of the driver.
+- A manifest is checked when a revision is saved: at most 64 events and data keys, names of at most
+  64 bytes, every name once, at most 16 arguments, choices between 1 and 64, numbers with bounds and
+  text of at most 1024 bytes, and every event the xml sends with a literal name
+  (`SendCustomEvent("vote", ...)`) is declared. A test checks the same for the defaults.
+- There is no custom in-game menu, the game keeps its own. A `Placement` for one can come later
+  without changing the rest.
 
 ### Styling
 
@@ -1114,14 +1173,16 @@ it runs.
   `crown_leaders`, `block_others`, the lists `entries`, `round`, `participants()`, `in_match()`,
   and `info`, `rounds_on_map`, `rounds_played`, `maps_played`. In `live_round` they are a copy.
 - **`event`** has its `kind` (`match_start`, `map_start`, `round_start`, `race_start`,
-  `round_end`, `map_end`, `match_end`, `settings_changed`), the `account_id` of a race start and
-  the `round` of a round end: `invalid`, `racers` (with their `races`: `checkpoints`, `finished`,
+  `round_end`, `map_end`, `match_end`, `settings_changed`, `ui_action`), the `account_id` of a
+  race start or a UI action, the `layer`, `ui_event` and `args` of a UI action and the `round` of
+  a round end: `invalid`, `racers` (with their `races`: `checkpoints`, `finished`,
   `laps`, `time`), `present`, `racer(account)`, `finishers(race)`, `taking_part(standings)`.
 - **`cx`** has the `settings`, `map_count`, `name(account)`, `user(account)`,
   `maps_per_match(setting)` and `log(text)`.
 - **Commands** are made with `single_attempt(timeout)`, `time_attack(ms)`, `warm_up(#{...})`,
   `race_rules(laps, give_up)`, `can_spawn(account, bool)`, `end_map()`, `end_match()`,
-  `next_map(index)`, `net_state(text)` and `chat(text)`.
+  `next_map(index)`, `net_state(text)`, `chat(text)` and the values for the manialinks
+  `ui_data(key, value)`, `team_ui_data(team, key, value)` and `player_ui_data(account, key, value)`.
 - **Ties** are broken by the driver: `rank`, `place_round`, `placed` and `race_order` use the one
   rule of [No ties](#no-ties). The race that counts is `"last"` or `"best"`.
 - A script keeps nothing between calls. Every call gets its budget, and what a script gets wrong,
@@ -1304,6 +1365,9 @@ script starts with `"lives": 3`.
      `manialinks live-standings scores-table`): `live-standings` shows it with the laps, the times
      and `Live`, and the round points of `standings` change while it runs. On the second map of a
      time attack match `live-standings` shows the column of the match points with a wider header.
+   - What players do in manialinks: `OnLayerCustomEvent` of a layer of the driver arrives in
+     `UIManager.PendingEvents` with `CustomEventLayer`, the ready check counts and starts the match,
+     `Net_Driver_MyData` reaches only its player and `Net_Driver_Data` everyone.
 2. **A bridge which restarts during a driver match** replays the log of the match from the manager
    and goes on with `Resumed` and `Players`. Until then it starts the driver over with the next
    config, which starts a new session and the scores of the match over.
