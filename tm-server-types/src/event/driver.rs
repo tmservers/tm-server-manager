@@ -29,6 +29,28 @@ impl DriverHold {
     pub const CALLBACK: &str = "Driver.Hold";
 }
 
+/// A player did something in a manialink of the driver: its script sent a custom event
+/// (`SendCustomEvent(Type, Data)`) or the player clicked a `scriptaction`.
+///
+/// The modescript sends these at most a few times a second per player. Who sent it
+/// is the UI of the player the event came from, never anything the manialink tells.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
+#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
+pub struct DriverUiEvent {
+    /// The name of the layer of the manialink.
+    pub layer: String,
+    pub account_id: String,
+    /// The `CustomEventType`.
+    pub name: String,
+    pub data: Vec<String>,
+}
+
+impl DriverUiEvent {
+    pub const CALLBACK: &str = "Driver.UiEvent";
+}
+
 /// Where in the match flow the modescript waits.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -97,6 +119,16 @@ impl<'a> From<&'a Event> for &'a DriverRoundResult {
     fn from(value: &'a Event) -> Self {
         match value {
             Event::DriverRoundResult(event) => event,
+            _ => unreachable!(),
+        }
+    }
+}
+
+impl<'a> From<&'a Event> for &'a DriverUiEvent {
+    #[inline]
+    fn from(value: &'a Event) -> Self {
+        match value {
+            Event::DriverUiEvent(event) => event,
             _ => unreachable!(),
         }
     }

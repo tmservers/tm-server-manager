@@ -132,6 +132,7 @@ pub enum Event {
     /// Results decided by the driver. Never sent by the server. Posting them from the
     /// bridge comes with the database integration of the manager.
     DriverRoundResult(DriverRoundResult),
+    DriverUiEvent(DriverUiEvent),
 }
 
 impl Event {
@@ -271,6 +272,9 @@ impl Event {
                 ),
 
                 DriverHold::CALLBACK => Event::DriverHold(
+                    json::from_str(&mut body).map_err(|e| (name.to_string(), e, body))?,
+                ),
+                DriverUiEvent::CALLBACK => Event::DriverUiEvent(
                     json::from_str(&mut body).map_err(|e| (name.to_string(), e, body))?,
                 ),
                 // The driver callbacks are ours so an unknown one means the modescript

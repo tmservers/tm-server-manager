@@ -63,6 +63,54 @@ pub enum Event {
     /// The mode took new settings during the match, e.g. to show them in the info
     /// and send the round format again. No round runs.
     SettingsChanged,
+    /// A player did something in a manialink of the config whose manifest sends the
+    /// event to the mode. It comes at any time, also while a round runs.
+    UiAction(UiAction),
+}
+
+/// What a player did in a manialink, its arguments parsed as its manifest declares.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UiAction {
+    pub account_id: String,
+    /// The layer of the manialink in the config.
+    pub layer: String,
+    /// The event of its manifest.
+    pub event: String,
+    pub args: Vec<UiValue>,
+}
+
+/// An argument of a [`UiAction`].
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum UiValue {
+    Int(i32),
+    Bool(bool),
+    Text(String),
+    /// The index of one of the choices of the manifest.
+    Choice(u32),
+    /// The account of a player of the match.
+    User(String),
+    /// A team of the match.
+    Team(u32),
+}
+
+/// Who a value for the manialinks is for.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum UiScope {
+    /// `netread Text[Text] Net_Driver_Data for Teams[0]`.
+    All,
+    /// The players of a team, `netread Text[Text] Net_Driver_MyData for UI`.
+    Team(u32),
+    /// One player, also `Net_Driver_MyData`. It wins over the value of the team.
+    Account(String),
+}
+
+/// A value for the manialinks, see [`Command::SetUiData`].
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UiData {
+    pub scope: UiScope,
+    pub key: String,
+    /// Empty removes the key.
+    pub value: String,
 }
 
 /// What the host knows about a player. Read only metadata, a mode asks for it
@@ -274,6 +322,8 @@ pub enum Command {
     SetNetState(String),
     /// A message for everyone in the chat.
     ChatMessage(String),
+    /// A value the manialinks read by its key, e.g. the answer to a [`UiAction`].
+    SetUiData(UiData),
 }
 
 /// What a mode returns for an event.

@@ -1,0 +1,78 @@
+<manialink name="Driver_ReadyCheck" version="3">
+<!--
+	Players tell they are ready, the match starts once every player of it is. The event
+	`ready` takes 1 or 0 and goes to the manager, which writes `ready` for the player
+	and `ready-count` for everyone, e.g. "3/4". Shown while `ready-count` is set.
+	Style: the classes below set fonts, text and backgrounds.
+-->
+<stylesheet>
+	<style class="title" textfont="GameFontBlack" textprefix="$i$t" textcolor="ffffff" textsize="3"/>
+	<style class="count" textfont="GameFontSemiBold" textcolor="ffffffcc" textsize="1.5"/>
+	<style class="button" textfont="GameFontBlack" textprefix="$t" textcolor="ffffff" textsize="2"/>
+	<style class="cell" bgcolor="000000" opacity="0.8"/>
+	<style class="accent" bgcolor="009b5f" opacity="1"/>
+</stylesheet>
+
+<frame id="Frame_ReadyCheck" pos="0 -50" hidden="1">
+	<quad class="cell" pos="-30 0" size="60 22"/>
+	<label class="title" pos="0 -4" size="56 5" halign="center" valign="center2" text="Ready?"/>
+	<label id="Label_Count" class="count" pos="0 -9" size="56 4" halign="center" valign="center2"/>
+	<quad id="Button_Ready" class="accent" pos="-20 -12" size="40 8" scriptevents="1"/>
+	<label id="Label_Button" class="button" pos="0 -16" size="38 6" halign="center" valign="center2"/>
+</frame>
+
+<script><!--
+/**
+ *	Sends `ready` with 1 or 0 when the player clicks, from the values the manager
+ *	writes for the player and for everyone. The netvars are
+ *	tm_server_types::method::DRIVER_NETVARS and DRIVER_PLAYER_NETVARS.
+ */
+
+Void SetText(Text _ControlId, Text _Value) {
+	declare CMlLabel Label <=> (Page.GetFirstChild(_ControlId) as CMlLabel);
+	if (Label != Null) Label.Value = _Value;
+}
+
+Boolean IsReady() {
+	declare netread Text[Text] Net_Driver_MyData for UI;
+	return Net_Driver_MyData.existskey("ready") && Net_Driver_MyData["ready"] == "1";
+}
+
+Void Update() {
+	declare netread Text[Text] Net_Driver_Data for Teams[0];
+	declare CMlFrame Frame <=> (Page.GetFirstChild("Frame_ReadyCheck") as CMlFrame);
+	Frame.Visible = Net_Driver_Data.existskey("ready-count");
+	if (!Frame.Visible) return;
+	SetText("Label_Count", Net_Driver_Data["ready-count"]);
+	if (IsReady()) {
+		SetText("Label_Button", "Not ready");
+	} else {
+		SetText("Label_Button", "Ready");
+	}
+}
+
+main() {
+	declare netread Integer Net_Driver_DataSerial for Teams[0];
+	declare netread Integer Net_Driver_MyDataSerial for UI;
+	declare Integer LastSerial = -1;
+	declare Integer LastMySerial = -1;
+
+	while (True) {
+		yield;
+		foreach (Event in PendingEvents) {
+			if (Event.Type == CMlScriptEvent::Type::MouseClick && Event.ControlId == "Button_Ready") {
+				if (IsReady()) {
+					SendCustomEvent("ready", ["0"]);
+				} else {
+					SendCustomEvent("ready", ["1"]);
+				}
+			}
+		}
+		if (LastSerial == Net_Driver_DataSerial && LastMySerial == Net_Driver_MyDataSerial) continue;
+		LastSerial = Net_Driver_DataSerial;
+		LastMySerial = Net_Driver_MyDataSerial;
+		Update();
+	}
+}
+--></script>
+</manialink>

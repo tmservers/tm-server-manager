@@ -117,7 +117,8 @@ fn clear(standings: &mut Standings, event: &Event) {
         | Event::RaceStart(_)
         | Event::RoundEnd(_)
         | Event::MatchEnd
-        | Event::SettingsChanged => {}
+        | Event::SettingsChanged
+        | Event::UiAction(_) => {}
     }
 }
 

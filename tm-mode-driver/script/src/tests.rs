@@ -1,6 +1,6 @@
 use tm_mode_driver_sdk::{
-    CanSpawn, Command, FinishTimeout, Race, Racer, RoundFormat, Status, Tone, WarmUp,
-    testing::TestHost,
+    CanSpawn, Command, FinishTimeout, Race, Racer, RoundFormat, Status, Tone, UiAction, UiData,
+    UiScope, UiValue, WarmUp, testing::TestHost,
 };
 
 use super::*;
@@ -376,5 +376,80 @@ fn the_live_round_of_a_script_cannot_change_the_match() {
     assert_eq!(
         plain.live_round(&TestHost::default(), &standings, &races),
         Ok(Vec::new())
+    );
+}
+
+#[test]
+fn a_script_answers_what_players_do_in_manialinks() {
+    let mut mode = start(
+        &stepping(
+            r#"
+            if event.kind != "ui_action" { return []; }
+            let args = event.args;
+            standings.join(event.account_id);
+            standings.award(event.account_id, args[0]);
+            [
+                ui_data(event.layer, event.ui_event),
+                team_ui_data(args[2], "ready", `${args[1]}`),
+                player_ui_data(args[3], "voted", args[4]),
+                ui_data("gone", ""),
+            ]
+            "#,
+        ),
+        "",
+    );
+    let action = UiAction {
+        account_id: "a".into(),
+        layer: "votes".into(),
+        event: "vote".into(),
+        args: vec![
+            UiValue::Int(4),
+            UiValue::Bool(true),
+            UiValue::Team(7),
+            UiValue::User("b".into()),
+            UiValue::Text("map".into()),
+        ],
+    };
+
+    let decision = step(
+        mode.as_mut(),
+        &Standings::default(),
+        Event::UiAction(action),
+    );
+
+    assert_eq!(
+        decision.standings.player("a").map(|entry| entry.score),
+        Some(4)
+    );
+    let data = |scope, key: &str, value: &str| {
+        Command::SetUiData(UiData {
+            scope,
+            key: key.into(),
+            value: value.into(),
+        })
+    };
+    assert_eq!(
+        decision.commands,
+        [
+            data(UiScope::All, "votes", "vote"),
+            data(UiScope::Team(7), "ready", "true"),
+            data(UiScope::Account("b".into()), "voted", "map"),
+            data(UiScope::All, "gone", ""),
+        ]
+    );
+}
+
+#[test]
+fn only_ui_actions_have_a_layer() {
+    let mut mode = start(&stepping("event.layer; []"), "");
+    let error = mode
+        .step(&TestHost::default(), &Standings::default(), Event::MapStart)
+        .unwrap_err();
+    assert!(
+        error
+            .0
+            .contains("A map_start event comes from no manialink."),
+        "{}",
+        error.0
     );
 }

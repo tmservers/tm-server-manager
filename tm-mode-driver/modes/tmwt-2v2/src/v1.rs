@@ -148,6 +148,8 @@ impl Mode for Tmwt2v2 {
             }
             Event::RoundEnd(round_end) => self.round_end(host, standings, round_end),
             Event::RoundStart | Event::MapEnd | Event::MatchEnd => Vec::new(),
+            // Its manialinks send nothing to the mode.
+            Event::UiAction(_) => Vec::new(),
         }
     }
 

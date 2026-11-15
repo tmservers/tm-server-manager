@@ -63,6 +63,7 @@
 #Const C_Driver_ResendInterval 5000
 
 #Const C_Callback_Hold "Driver.Hold"
+#Const C_Callback_UiEvent "Driver.UiEvent"
 #Const C_Section_MapStart "MapStart"
 #Const C_Section_RoundEnd "RoundEnd"
 #Const C_Section_MapEnd "MapEnd"
@@ -80,6 +81,7 @@
 #Const C_Method_SetTeams "Driver.SetTeams"
 #Const C_Method_SetWarmUp "Driver.SetWarmUp"
 #Const C_Method_SetRaceRules "Driver.SetRaceRules"
+#Const C_Method_SetUiData "Driver.SetUiData"
 
 #Const C_LayerKind_ScoresTable "scores_table"
 #Const C_LayerKind_ScreenIn3d "screen_in_3d"
@@ -93,6 +95,15 @@
 #Const C_Audience_Teams "teams"
 #Const C_Audience_Accounts "accounts"
 #Const C_AudienceSyncInterval 1000
+#Const C_UiData_All "all"
+#Const C_UiData_Team "team"
+#Const C_UiData_Account "account"
+/// A player sends at most this many events of the manialinks a second, with at most
+/// C_UiEventMaxArgs arguments each. The bridge checks them again.
+#Const C_UiEventsPerSecond 10
+#Const C_UiEventMaxArgs 16
+/// Events wait at most this many until they go out.
+#Const C_UiEventQueue 256
 #Const C_MarkerAnchor_Players "players"
 #Const C_MarkerAnchor_Position "position"
 #Const C_MarkerLabel_Name "name"
@@ -183,6 +194,23 @@
 	Integer[] player_teams;
 }
 
+/// What a player did in a manialink, tm_server_types::event::DriverUiEvent.
+#Struct K_Driver_UiEvent {
+	Text layer;
+	Text account_id;
+	Text name;
+	Text[] data;
+}
+
+/// Values for the manialinks, tm_server_types::method::DriverNetUiData.
+#Struct K_Driver_UiData {
+	Text scope;
+	Integer team;
+	Text account;
+	Text[] keys;
+	Text[] values;
+}
+
 #Struct K_Driver_Users {
 	Integer[] indices;
 	Text[] account_ids;
@@ -231,6 +259,11 @@ declare K_Driver_Marker[][Text] G_Driver_LayerMarkers;
 declare Integer G_Driver_AudiencesSynced;
 /// What the markers were last built from, they are only built again when it changes.
 declare Text G_Driver_MarkersBuiltFrom;
+/// The values for the manialinks of the players of a team and of one player, see
+/// Driver_SetUiData. Every change counts the serial up.
+declare Text[Text][Integer] G_Driver_TeamData;
+declare Text[Text][Text] G_Driver_AccountData;
+declare Integer G_Driver_PlayerDataSerial;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
 // Extends
@@ -262,7 +295,7 @@ XmlRpc::RegisterCallback(C_Callback_Hold, """
 	]
 	```
 """);
-foreach (Method in [C_Method_Continue, C_Method_SetRoundFormat, C_Method_SetCanSpawn, C_Method_EndMatch, C_Method_SetLayer, C_Method_RemoveLayer, C_Method_SetNetState, C_Method_SetStandings, C_Method_SetRound, C_Method_SetUsers, C_Method_SetTeams, C_Method_SetWarmUp, C_Method_SetRaceRules]) {
+foreach (Method in [C_Method_Continue, C_Method_SetRoundFormat, C_Method_SetCanSpawn, C_Method_EndMatch, C_Method_SetLayer, C_Method_RemoveLayer, C_Method_SetNetState, C_Method_SetStandings, C_Method_SetRound, C_Method_SetUsers, C_Method_SetTeams, C_Method_SetWarmUp, C_Method_SetRaceRules, C_Method_SetUiData]) {
 	XmlRpc::RegisterMethod(Method, """
 * Name: {{{Method}}}
 * Type: TriggerModeScriptEventArray
@@ -276,7 +309,7 @@ foreach (Method in [C_Method_Continue, C_Method_SetRoundFormat, C_Method_SetCanS
 StateMgr::Unload();
 
 XmlRpc::UnregisterCallback(C_Callback_Hold);
-foreach (Method in [C_Method_Continue, C_Method_SetRoundFormat, C_Method_SetCanSpawn, C_Method_EndMatch, C_Method_SetLayer, C_Method_RemoveLayer, C_Method_SetNetState, C_Method_SetStandings, C_Method_SetRound, C_Method_SetUsers, C_Method_SetTeams, C_Method_SetWarmUp, C_Method_SetRaceRules]) {
+foreach (Method in [C_Method_Continue, C_Method_SetRoundFormat, C_Method_SetCanSpawn, C_Method_EndMatch, C_Method_SetLayer, C_Method_RemoveLayer, C_Method_SetNetState, C_Method_SetStandings, C_Method_SetRound, C_Method_SetUsers, C_Method_SetTeams, C_Method_SetWarmUp, C_Method_SetRaceRules, C_Method_SetUiData]) {
 	XmlRpc::UnregisterMethod(Method);
 }
 ***
@@ -337,6 +370,38 @@ foreach (Event in XmlRpc.PendingEvents) {
 	}
 }
 
+// What players do in the manialinks, Driver_SendUiEvents sends it on. A player
+// sending too much in a second loses the rest.
+declare Ident[] Driver_PendingUiLayers for This = [];
+declare Text[][] Driver_PendingUiEvents for This = [];
+foreach (Event in UIManager.PendingEvents) {
+	if (Event.Type != CUIConfigEvent::EType::OnLayerCustomEvent) continue;
+	if (Event.UI == Null || Event.CustomEventLayer == Null) continue;
+	if (Event.CustomEventData.count > C_UiEventMaxArgs) continue;
+	if (Driver_PendingUiEvents.count >= C_UiEventQueue) continue;
+	declare Integer Driver_UiEventsSince for Event.UI = -1;
+	declare Integer Driver_UiEventsSent for Event.UI = 0;
+	if (Driver_UiEventsSince < 0 || Now >= Driver_UiEventsSince + 1000) {
+		Driver_UiEventsSince = Now;
+		Driver_UiEventsSent = 0;
+	}
+	if (Driver_UiEventsSent >= C_UiEventsPerSecond) continue;
+	declare Text Driver_AccountId = "";
+	foreach (Driver_Player in AllPlayers) {
+		if (Driver_Player.User != Null && UIManager.GetUI(Driver_Player) == Event.UI) {
+			Driver_AccountId = Driver_Player.User.WebServicesUserId;
+		}
+	}
+	if (Driver_AccountId == "") continue;
+	Driver_UiEventsSent += 1;
+	declare Text[] Driver_UiEvent = [Driver_AccountId, Event.CustomEventType];
+	foreach (Driver_Arg in Event.CustomEventData) {
+		Driver_UiEvent.add(Driver_Arg);
+	}
+	Driver_PendingUiLayers.add(Event.CustomEventLayer.Id);
+	Driver_PendingUiEvents.add(Driver_UiEvent);
+}
+
 StateMgr::Yield();
 ***
 
@@ -362,6 +427,9 @@ G_Driver_Session = ML::Rand(1, 2147483646);
 G_Driver_Seq = 0;
 G_Driver_PendingSeq = 0;
 G_Driver_FinishTimeout = "auto";
+G_Driver_TeamData = [];
+G_Driver_AccountData = [];
+G_Driver_PlayerDataSerial = 0;
 ***
 
 ***Match_StartMatch***
@@ -597,6 +665,29 @@ Void Driver_SendHold(K_Driver_Hold _Hold) {
 	XmlRpc::SendCallback(C_Callback_Hold, [_Hold.tojson()]);
 }
 
+/// Sends on what players did in the layers of the driver, Match_Yield queued it. Events
+/// of other layers are none of the driver's business.
+Void Driver_SendUiEvents() {
+	declare Ident[] Driver_PendingUiLayers for This = [];
+	declare Text[][] Driver_PendingUiEvents for This = [];
+	foreach (Index => Queued in Driver_PendingUiEvents) {
+		if (!Driver_PendingUiLayers.existskey(Index) || Queued.count < 2) continue;
+		declare K_Driver_UiEvent UiEvent;
+		foreach (Name => LayerId in G_Driver_Layers) {
+			if (LayerId == Driver_PendingUiLayers[Index]) UiEvent.layer = Name;
+		}
+		if (UiEvent.layer == "") continue;
+		UiEvent.account_id = Queued[0];
+		UiEvent.name = Queued[1];
+		foreach (Position => Arg in Queued) {
+			if (Position > 1) UiEvent.data.add(Arg);
+		}
+		XmlRpc::SendCallback(C_Callback_UiEvent, [UiEvent.tojson()]);
+	}
+	Driver_PendingUiLayers.clear();
+	Driver_PendingUiEvents.clear();
+}
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
 /// The index of a player in the netvars of the players, -1 for one the driver did not publish.
 Integer Driver_UserIndex(Text _AccountId) {
@@ -712,6 +803,25 @@ Void Driver_SyncMarkers() {
 	}
 }
 
+/// The values of the team of a player and their own, theirs win.
+Void Driver_SyncMyData(CUIConfig UI, Text _AccountId, Integer _Team) {
+	declare Text Driver_MyDataFrom for UI = "";
+	declare Text From = G_Driver_PlayerDataSerial^":"^_Team;
+	if (Driver_MyDataFrom == From) return;
+	Driver_MyDataFrom = From;
+	declare Text[Text] Data;
+	if (G_Driver_TeamData.existskey(_Team)) Data = G_Driver_TeamData[_Team];
+	if (G_Driver_AccountData.existskey(_AccountId)) {
+		foreach (Key => Value in G_Driver_AccountData[_AccountId]) {
+			Data[Key] = Value;
+		}
+	}
+	declare netwrite Integer Net_Driver_MyDataSerial for UI = 0;
+	declare netwrite Text[Text] Net_Driver_MyData for UI = [];
+	Net_Driver_MyData = Data;
+	Net_Driver_MyDataSerial += 1;
+}
+
 /** Brings the layers of every player up to date with their audiences, at most once a
  *	second: players join, leave, start spectating or play for a team. Every player also
  *	learns their index and team for the manialinks, `for UI`.
@@ -728,6 +838,7 @@ Void Driver_SyncAudiences() {
 		declare netwrite Integer Net_Driver_MyTeam for UI = -1;
 		Net_Driver_MyUser = Index;
 		Net_Driver_MyTeam = Driver_TeamOf(Index);
+		Driver_SyncMyData(UI, Player.User.WebServicesUserId, Net_Driver_MyTeam);
 
 		foreach (Name => LayerId in G_Driver_Layers) {
 			if (!UIManager.UILayers.existskey(LayerId) || !G_Driver_LayerAudiences.existskey(Name)) continue;
@@ -983,6 +1094,47 @@ Void Driver_SetUsers(Text _Json) {
 	Net_Driver_UsersSerial += 1;
 }
 
+/// The values with the keys replaced, an empty value removes its key.
+Text[Text] Driver_MergeData(Text[Text] _Data, K_Driver_UiData _Change) {
+	declare Text[Text] Data = _Data;
+	foreach (Index => Key in _Change.keys) {
+		if (_Change.values[Index] == "") {
+			declare Boolean Removed = Data.removekey(Key);
+		} else {
+			Data[Key] = _Change.values[Index];
+		}
+	}
+	return Data;
+}
+
+/// Writes values for the manialinks: for everyone into Net_Driver_Data, for a team or
+/// a player into Net_Driver_MyData of every player they concern.
+Void Driver_SetUiData(Text _Json) {
+	declare K_Driver_UiData Change;
+	if (!Change.fromjson(_Json) || Change.keys.count != Change.values.count) return;
+	if (Change.scope == C_UiData_All) {
+		declare netwrite Text[Text] Net_Driver_Data for Teams[0] = [];
+		declare netwrite Integer Net_Driver_DataSerial for Teams[0] = 0;
+		Net_Driver_Data = Driver_MergeData(Net_Driver_Data, Change);
+		Net_Driver_DataSerial += 1;
+		return;
+	}
+	if (Change.scope == C_UiData_Team) {
+		declare Text[Text] Data;
+		if (G_Driver_TeamData.existskey(Change.team)) Data = G_Driver_TeamData[Change.team];
+		G_Driver_TeamData[Change.team] = Driver_MergeData(Data, Change);
+	} else if (Change.scope == C_UiData_Account) {
+		declare Text[Text] Data;
+		if (G_Driver_AccountData.existskey(Change.account)) Data = G_Driver_AccountData[Change.account];
+		G_Driver_AccountData[Change.account] = Driver_MergeData(Data, Change);
+	} else {
+		return;
+	}
+	G_Driver_PlayerDataSerial += 1;
+	// The players get it right away.
+	G_Driver_AudiencesSynced = -1;
+}
+
 /// Writes the teams of the match into their netvars by team, and the team of every
 /// player by the index of the player.
 Void Driver_SetTeams(Text _Json) {
@@ -1088,6 +1240,8 @@ Void Driver_ApplyCommand(Text _Method, Text[] _Params) {
 		if (_Params.count >= 1) Driver_SetUsers(_Params[0]);
 	} else if (_Method == C_Method_SetTeams) {
 		if (_Params.count >= 1) Driver_SetTeams(_Params[0]);
+	} else if (_Method == C_Method_SetUiData) {
+		if (_Params.count >= 1) Driver_SetUiData(_Params[0]);
 	}
 }
 
@@ -1104,6 +1258,7 @@ Void Driver_ApplyCommands() {
 	Driver_PendingCommands.clear();
 	// Players come and go between the commands.
 	Driver_SyncAudiences();
+	Driver_SendUiEvents();
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //

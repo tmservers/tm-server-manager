@@ -98,6 +98,8 @@ impl Mode for Rounds {
                 Vec::new()
             }
             Event::MatchStart | Event::RoundStart | Event::MatchEnd => Vec::new(),
+            // Its manialinks send nothing to the mode.
+            Event::UiAction(_) => Vec::new(),
         }
     }
 

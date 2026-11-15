@@ -5,14 +5,15 @@ use tm_server_types::{
     method::{
         DriverCanSpawn, DriverCommand, DriverEntry, DriverFinishTimeout, DriverLabelTone,
         DriverLaps, DriverNetEntries, DriverNetRound, DriverNetStandings, DriverNetTeamEntries,
-        DriverNetTeams, DriverNetUsers, DriverRaceRules, DriverRound, DriverRoundFormat,
-        DriverStandings, DriverStatus, DriverTeamEntry, DriverUser, DriverUsers, DriverWarmUp,
+        DriverNetTeams, DriverNetUiData, DriverNetUsers, DriverRaceRules, DriverRound,
+        DriverRoundFormat, DriverStandings, DriverStatus, DriverTeamEntry, DriverUser, DriverUsers,
+        DriverWarmUp,
     },
 };
 
 use tm_mode_driver_sdk::{
     CanSpawn, Command, Entry, FinishTimeout, Label, Laps, RaceRules, RoundFormat, Standings,
-    Status, TeamEntry, Tone, User, WarmUp,
+    Status, TeamEntry, Tone, UiAction, UiData, UiScope, UiValue, User, WarmUp,
 };
 
 /// The commands of a mode for the server. Maps are given by their place in the playlist.
@@ -64,9 +65,49 @@ pub(crate) fn commands(commands: Vec<Command>, playlist: &[String]) -> Vec<Drive
                 },
                 Command::SetNetState(state) => DriverCommand::SetNetState(state),
                 Command::ChatMessage(message) => DriverCommand::ChatMessage(message),
+                Command::SetUiData(data) => {
+                    DriverCommand::SetUiData(crate::json(&net_ui_data(&data)))
+                }
             })
         })
         .collect()
+}
+
+/// A value of the mode for the manialinks as the modescript takes it.
+pub(crate) fn net_ui_data(data: &UiData) -> DriverNetUiData {
+    let (scope, team, account) = match &data.scope {
+        UiScope::All => ("all", 0, String::new()),
+        UiScope::Team(team) => ("team", *team, String::new()),
+        UiScope::Account(account) => ("account", 0, account.clone()),
+    };
+    DriverNetUiData {
+        scope: scope.into(),
+        team,
+        account,
+        keys: vec![data.key.clone()],
+        values: vec![data.value.clone()],
+    }
+}
+
+/// What a player did, for the mode.
+pub(crate) fn ui_action(action: &crate::DriverUiAction) -> UiAction {
+    UiAction {
+        account_id: action.account_id.clone(),
+        layer: action.layer.clone(),
+        event: action.event.clone(),
+        args: action
+            .args
+            .iter()
+            .map(|value| match value {
+                tm_server_types::config::UiValue::Int(n) => UiValue::Int(*n),
+                tm_server_types::config::UiValue::Bool(b) => UiValue::Bool(*b),
+                tm_server_types::config::UiValue::Text(t) => UiValue::Text(t.clone()),
+                tm_server_types::config::UiValue::Choice(c) => UiValue::Choice(*c),
+                tm_server_types::config::UiValue::User(u) => UiValue::User(u.clone()),
+                tm_server_types::config::UiValue::Team(t) => UiValue::Team(*t),
+            })
+            .collect(),
+    }
 }
 
 fn round_format(format: RoundFormat) -> DriverRoundFormat {
