@@ -505,3 +505,359 @@ fn my_match_driver(ctx: &ViewContext) -> Option<MatchDriver> {
     ctx.match_driver(match_id)
 }
 
+#[cfg(test)]
+mod tests {
+    use tm_mode_driver::DriverInput;
+    use tm_mode_driver_sim::events::{InputLog, Race, at, way_point_at};
+    use tm_server_types::{
+        config::BuiltInMode,
+        event::{DriverRecord, DriverRecordCheckpoint, Event, GiveUp, Respawn},
+    };
+
+    use super::*;
+    use crate::{test_world::*, tm_match::MatchStatus};
+
+    const ROUNDS: BuiltInMode = BuiltInMode::RoundsV1;
+    const SETTINGS: &str = r#"{"points_repartition": [10, 6, 4], "rounds_per_map": 5}"#;
+
+    fn players() -> (String, String, String) {
+        (player(1), player(2), player(3))
+    }
+
+    /// Two rounds of three players, the second one without c, after a round which
+    /// did not count.
+    fn two_rounds() -> InputLog {
+        let (a, b, c) = players();
+        let mut log = InputLog::new(SETTINGS);
+        log.players(&[&a, &b, &c]).match_start().map_start("m1");
+        log.forced_round(&[(&c, Race::finish(&[10_000, 20_000]))]);
+        log.round(&[
+            (&a, Race::finish(&[10_000, 30_000])),
+            (&b, Race::finish(&[10_000, 31_000])),
+            (&c, Race::dnf(&[11_000])),
+        ]);
+        log.round(&[
+            (&b, Race::finish(&[10_000, 29_000])),
+            (&a, Race::finish(&[10_000, 32_000])),
+        ]);
+        log
+    }
+
+    /// The stored standings by account, position and score.
+    fn stored(world: &World, match_id: u32) -> Vec<(String, u32, i32)> {
+        world
+            .test
+            .anonymous_view_context()
+            .match_driver_standings(match_id)
+            .into_iter()
+            .map(|s| (world.account(s.user_id), s.position, s.score))
+            .collect()
+    }
+
+    /// The standings of the driver of the bridge, the same way.
+    fn of_bridge(bridge: &Bridge) -> Vec<(String, u32, i32)> {
+        let mut entries: Vec<(String, u32, i32)> = bridge
+            .driver
+            .driver()
+            .standings()
+            .entries
+            .into_iter()
+            .map(|e| (e.account_id, e.position, e.score))
+            .collect();
+        entries.sort_by_key(|(account, position, _)| (*position == 0, *position, account.clone()));
+        entries
+    }
+
+    fn state(world: &World, match_id: u32) -> MatchDriverState {
+        world
+            .test
+            .anonymous_view_context()
+            .match_driver(match_id)
+            .expect("the match plays the driver")
+            .state
+    }
+
+    fn records(world: &World, match_id: u32) -> usize {
+        world
+            .test
+            .anonymous_view_context()
+            .db
+            .tab_match_driver_record()
+            .match_seq()
+            .filter(match_id)
+            .count()
+    }
+
+    #[test]
+    fn the_manager_keeps_the_scores_the_driver_of_the_bridge_computes() {
+        let world = World::new();
+        let server = world.server(1);
+        let match_id = world.live_driver_match(&server, ROUNDS, SETTINGS);
+        let mut bridge = Bridge::new(ROUNDS, SETTINGS, 1);
+
+        bridge.play(&world, &server, &two_rounds().inputs);
+
+        let (a, b, c) = players();
+        // b wins the tie with the better last round.
+        let expected = vec![(b.clone(), 1, 16), (a.clone(), 2, 16), (c.clone(), 3, 0)];
+        assert_eq!(stored(&world, match_id), expected);
+        assert_eq!(of_bridge(&bridge), expected);
+        assert_eq!(
+            world.rounds(match_id),
+            vec![
+                (1, a.clone(), 10, 1),
+                (1, b.clone(), 6, 2),
+                (1, c.clone(), 0, 3),
+                (2, a.clone(), 6, 2),
+                (2, b.clone(), 10, 1),
+            ]
+        );
+        // Leaderboards rank by the stored standings.
+        let ranked: Vec<(String, u16, i32)> = world
+            .standings(match_id)
+            .iter()
+            .map(|e| (world.account(e.user_id), e.position, e.score))
+            .collect();
+        assert_eq!(ranked, vec![(b, 1, 16), (a, 2, 16), (c, 3, 0)]);
+        assert_eq!(state(&world, match_id), MatchDriverState::Running);
+    }
+
+    #[test]
+    fn a_record_sent_again_changes_nothing_and_one_which_skips_records_is_refused() {
+        let world = World::new();
+        let server = world.server(1);
+        let match_id = world.live_driver_match(&server, ROUNDS, SETTINGS);
+        let mut bridge = Bridge::new(ROUNDS, SETTINGS, 1);
+        bridge.play(&world, &server, &two_rounds().inputs);
+        let before = stored(&world, match_id);
+        let count = records(&world, match_id);
+
+        // The bridge lost the answers and sends the last two rounds' records again.
+        for (index, record) in bridge.records.iter().enumerate().skip(10) {
+            server
+                .stream(&world, 1, index as u32 + 1, record.clone())
+                .expect("a record sent again is taken");
+        }
+        assert_eq!(records(&world, match_id), count);
+        assert_eq!(stored(&world, match_id), before);
+
+        let next = count as u32 + 2;
+        let skipped = server.stream(&world, 1, next, DriverRecord::Delivered);
+        assert!(skipped.is_err_and(|e| e.contains("skips records")));
+        assert_eq!(records(&world, match_id), count);
+    }
+
+    #[test]
+    fn the_match_is_replayed_from_its_log_when_its_replay_is_gone() {
+        let world = World::new();
+        let server = world.server(1);
+        let match_id = world.live_driver_match(&server, ROUNDS, SETTINGS);
+        let mut bridge = Bridge::new(ROUNDS, SETTINGS, 1);
+        let log = two_rounds();
+        let half = log.inputs.len() / 2;
+
+        bridge.play(&world, &server, &log.inputs[..half]);
+        // E.g. the module restarted.
+        EMULATIONS.with(|emulations| emulations.borrow_mut().clear());
+        bridge.play(&world, &server, &log.inputs[half..]);
+
+        assert_eq!(stored(&world, match_id), of_bridge(&bridge));
+        assert_eq!(world.rounds(match_id).len(), 5);
+        assert_eq!(state(&world, match_id), MatchDriverState::Running);
+    }
+
+    #[test]
+    fn other_standings_of_the_bridge_flag_the_match_and_keep_the_scores_of_the_manager() {
+        let world = World::new();
+        let server = world.server(1);
+        let match_id = world.live_driver_match(&server, ROUNDS, SETTINGS);
+        let mut bridge = Bridge::new(ROUNDS, SETTINGS, 1);
+        let mut records = bridge.record(&two_rounds().inputs);
+        // The bridge played another version of the mode in the first round.
+        let first = records
+            .iter_mut()
+            .find_map(|record| match record {
+                DriverRecord::Digest(digest) => Some(digest),
+                _ => None,
+            })
+            .expect("a round counted");
+        first.standings ^= 1;
+
+        for (index, record) in records.into_iter().enumerate() {
+            server
+                .stream(&world, 1, index as u32 + 1, record)
+                .expect("the record is taken");
+        }
+
+        assert_eq!(state(&world, match_id), MatchDriverState::Diverged(1));
+        assert_eq!(stored(&world, match_id), of_bridge(&bridge));
+    }
+
+    #[test]
+    fn races_are_kept_by_lap_with_their_respawns_and_give_ups() {
+        let world = World::new();
+        let server = world.server(1);
+        let match_id = world.live_driver_match(&server, ROUNDS, SETTINGS);
+        let mut bridge = Bridge::new(ROUNDS, SETTINGS, 1);
+        let (a, b, _) = players();
+        let mut log = InputLog::new(SETTINGS);
+        log.players(&[&a, &b])
+            .match_start()
+            .map_start("m1")
+            .round_start();
+        // Two laps of two checkpoints each.
+        log.races(&[(
+            &a,
+            Race::finish(&[10_000, 20_000, 30_000, 40_000]).in_laps(2),
+        )]);
+        let respawn = Event::Respawn(Respawn {
+            account_id: b.clone(),
+            time: 0,
+            number_respawns: 1,
+            racetime: 5_000,
+            laptime: 5_000,
+            checkpoint_in_race: 0,
+            checkpoint_in_lap: 0,
+            speed: 0.,
+        });
+        log.event(tm_mode_driver_sim::events::start_line(&b));
+        log.event(at(way_point_at(&b, &[12_000], false), 20_000));
+        log.event(respawn.clone()).event(respawn);
+        log.event(Event::GiveUp(GiveUp {
+            account_id: b.clone(),
+            time: 25_000,
+        }));
+        log.push(DriverInput::Event(tm_mode_driver_sim::events::hold(
+            3,
+            tm_server_types::event::DriverSection::RoundEnd,
+        )));
+
+        bridge.play(&world, &server, &log.inputs);
+
+        let mut laps: Vec<(String, u16, u16, u16, Vec<u32>, bool, u16, bool)> = world
+            .test
+            .anonymous_view_context()
+            .db
+            .tab_match_race_lap()
+            .match_id()
+            .filter(match_id)
+            .map(|l| {
+                (
+                    world.account(l.user_id),
+                    l.round,
+                    l.race,
+                    l.lap,
+                    l.checkpoints,
+                    l.finished,
+                    l.respawns,
+                    l.gave_up,
+                )
+            })
+            .collect();
+        laps.sort();
+        assert_eq!(
+            laps,
+            vec![
+                (a.clone(), 1, 0, 0, vec![10_000, 20_000], false, 0, false),
+                (a.clone(), 1, 0, 1, vec![30_000, 40_000], true, 0, false),
+                (b.clone(), 1, 0, 0, vec![12_000], false, 2, true),
+            ]
+        );
+    }
+
+    #[test]
+    fn a_new_run_of_the_driver_starts_the_scores_over() {
+        let world = World::new();
+        let server = world.server(1);
+        let match_id = world.live_driver_match(&server, ROUNDS, SETTINGS);
+        let mut first = Bridge::new(ROUNDS, SETTINGS, 1);
+        first.play(&world, &server, &two_rounds().inputs);
+
+        // A new run has to start at its first record.
+        let late = server.stream(&world, 2, 5, DriverRecord::Delivered);
+        assert!(late.is_err_and(|e| e.contains("starts with record 1")));
+        assert_eq!(stored(&world, match_id).len(), 3);
+
+        let (a, b, _) = players();
+        let mut log = InputLog::new(SETTINGS);
+        log.players(&[&a, &b]).match_start().map_start("m1");
+        log.round(&[(&a, Race::finish(&[30_000])), (&b, Race::finish(&[31_000]))]);
+        let mut second = Bridge::new(ROUNDS, SETTINGS, 2);
+        second.play(&world, &server, &log.inputs);
+
+        assert_eq!(
+            stored(&world, match_id),
+            vec![(a.clone(), 1, 10), (b.clone(), 2, 6)]
+        );
+        assert_eq!(world.rounds(match_id), vec![(1, a, 10, 1), (1, b, 6, 2)]);
+        assert_eq!(records(&world, match_id), second.records.len());
+    }
+
+    #[test]
+    fn records_only_count_while_the_match_runs() {
+        let world = World::new();
+        let server = world.server(1);
+        server.report_modes(&world, &["rounds-v1"]);
+        let match_id = world.configured_match_with("Final", driver_config_with(ROUNDS, SETTINGS));
+        world.as_owner(|ctx| crate::tm_match::match_set_preparation(ctx, match_id));
+
+        let early = server.stream(&world, 1, 1, DriverRecord::Delivered);
+
+        assert!(early.is_err_and(|e| e.contains("Preparation")));
+        assert_eq!(records(&world, match_id), 0);
+    }
+
+    #[test]
+    fn a_match_with_settings_its_mode_rejects_takes_no_server() {
+        let world = World::new();
+        let server = world.server(1);
+        server.report_modes(&world, &["rounds-v1"]);
+        let config = driver_config_with(ROUNDS, r#"{"rounds_per_map": "five"}"#);
+        let match_id = world.configured_match_with("Final", config);
+
+        let refused =
+            world.try_as_owner(|ctx| crate::tm_match::match_set_preparation(ctx, match_id));
+
+        let refused = refused.unwrap_err();
+        assert!(
+            refused.contains("Invalid settings") && refused.contains("five"),
+            "{refused}"
+        );
+        assert_eq!(world.match_status(match_id), MatchStatus::Configured);
+        assert_eq!(world.server_of(NodeHandle::MatchV1(match_id)), None);
+    }
+
+    #[test]
+    fn driver_matches_ignore_the_races_of_the_event_stream() {
+        let world = World::new();
+        let server = world.server(1);
+        let match_id = world.live_driver_match(&server, ROUNDS, SETTINGS);
+        let a = player(1);
+
+        server.post(
+            &world,
+            [
+                start_match(),
+                start_round(1),
+                start_line(&a),
+                finish(&a, 30_000),
+            ],
+        );
+
+        assert_eq!(world.rounds(match_id), vec![]);
+    }
+
+    /// Checkpoints are most of a match, the log of a long race stays small.
+    #[test]
+    fn a_checkpoint_is_eleven_bytes() {
+        let checkpoint = DriverRecord::Checkpoint(DriverRecordCheckpoint {
+            player: 3,
+            race_time: 61_234,
+            index: 17,
+        });
+        assert_eq!(
+            spacetimedb::sats::bsatn::to_vec(&checkpoint).unwrap().len(),
+            11
+        );
+    }
+}
