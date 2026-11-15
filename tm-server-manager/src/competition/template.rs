@@ -105,6 +105,9 @@ pub(super) fn competition_template_instantiate(
     let mut config_map = HashMap::new();
     for old_config in configs {
         let old_id = old_config.id;
+        old_config.config().check_instantiable().map_err(|error| {
+            format!("The config {} of the template cannot be used anymore: {error}", old_config.name())
+        })?;
         let new_config =
             ctx.raw_server_config_create(old_config.config(), new_comp.id, old_config.name())?;
         config_map.insert(old_id, new_config);

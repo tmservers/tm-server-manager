@@ -393,6 +393,7 @@ fn match_override_pre_config(
         ctx.auth_builder(tm_match.parent_id)
             .permission(CompetitionPermissionsV1::MATCH_CONFIGURE)
             .authorize()?;
+        config.check_instantiable()?;
 
         if ctx.raw_server_config_is_owned_inline(tm_match.pre_config) {
             ctx.raw_server_config_update(tm_match.pre_config, config)?;
@@ -426,6 +427,7 @@ pub(crate) fn match_override_config(
     if !tm_match.status.before_preparation() {
         return Err("Too late to set configuration".into());
     }
+    config.check_instantiable()?;
 
     if ctx.raw_server_config_is_owned_inline(tm_match.config) {
         ctx.raw_server_config_update(tm_match.config, config)?;
@@ -452,6 +454,7 @@ fn match_shared_pre_config(
             .authorize()?;
 
         if ctx.raw_server_config_exists(config_id) {
+            ctx.raw_server_config(config_id)?.check_instantiable()?;
             tm_match.pre_config = config_id;
             ctx.db.tab_match().id().update(tm_match);
 
@@ -479,6 +482,7 @@ fn match_shared_config(ctx: &ReducerContext, match_id: u32, config_id: u32) -> R
     }
 
     if ctx.raw_server_config_exists(config_id) {
+        ctx.raw_server_config(config_id)?.check_instantiable()?;
         tm_match.config = config_id;
         ctx.db.tab_match().id().update(tm_match);
 

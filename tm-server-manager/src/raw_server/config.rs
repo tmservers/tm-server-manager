@@ -283,6 +283,7 @@ fn raw_server_config_shared_new(
     ctx.auth_builder(competition_id)
         .permission(CompetitionPermissionsV1::SHARED_CONFIG)
         .authorize()?;
+    config.check_instantiable()?;
 
     ctx.raw_server_config_create(config, competition_id, name)?;
 
@@ -307,6 +308,8 @@ fn raw_server_config_shared_update(
     ctx.auth_builder(raw_config.competition_id)
         .permission(CompetitionPermissionsV1::SHARED_CONFIG)
         .authorize()?;
+    // Matches which have it keep playing a superseded mode, it only cannot be chosen again.
+    config.check_instantiable()?;
 
     // Finished matches keep the config they were played with.
     ctx.match_finished_configs_detach(config_id)?;
