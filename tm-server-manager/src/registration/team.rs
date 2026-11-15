@@ -400,6 +400,8 @@ fn team_invites(ctx: &ViewContext, team_id: u32) -> Vec<TeamInvite> {
 pub(crate) trait TeamRead {
     /// The users playing for the participant, everyone in the team for a team.
     fn participant_users(&self, participant: LbParticipant) -> Vec<u32>;
+    /// The name of a team, none for one which does not exist.
+    fn team_name(&self, team_id: u32) -> Option<String>;
     /// The teams of the registration with enough members as standings, the earliest first.
     fn registration_team_lb(
         &self,
@@ -408,6 +410,14 @@ pub(crate) trait TeamRead {
     ) -> Vec<LbEntry>;
 }
 impl<Db: CtxDbRead> TeamRead for Db {
+    fn team_name(&self, team_id: u32) -> Option<String> {
+        self.db_read_only()
+            .tab_team()
+            .id()
+            .find(team_id)
+            .map(|team| team.name)
+    }
+
     fn participant_users(&self, participant: LbParticipant) -> Vec<u32> {
         match participant {
             LbParticipant::Player(user_id) => vec![user_id],

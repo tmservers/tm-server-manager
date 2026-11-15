@@ -20,7 +20,7 @@ use spacetimedb::{
 };
 use tm_server_types::{
     config::DriverMode,
-    event::DriverRecord,
+    event::{DriverRecord, DriverTeam},
     method::{DriverEntry, DriverLabelTone, DriverStatus},
 };
 
@@ -28,12 +28,14 @@ use crate::{
     authorization::Authorization,
     competition::node::NodeHandle,
     raw_server::occupation::TabRawServerOccupationRead,
+    registration::team::TeamRead,
+    tm_match::entrant::MatchEntrantRead,
     tm_match::{
         MatchRead,
         leaderboard::{MatchLeaderboardWrite, MatchRoundPlayer},
         state::MatchStateRead,
     },
-    user::UserWrite,
+    user::{UserRead, UserWrite},
 };
 
 use emulation::{Effect, Emulation};
@@ -94,6 +96,24 @@ pub struct MatchStanding {
     /// E.g. the time of the best race, -1 without one.
     pub time: i32,
     pub status: DriverStatus,
+    pub label: String,
+    pub label_tone: DriverLabelTone,
+}
+
+/// A team in the standings of a driver match of teams, as its mode left them.
+#[table(accessor = tab_match_team_standing, vis_private)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MatchTeamStanding {
+    #[primary_key]
+    #[auto_inc]
+    id: u64,
+    #[index(hash)]
+    pub match_id: u32,
+    pub team_id: u32,
+    /// From 1, 0 if the mode did not rank the team.
+    pub position: u32,
+    pub score: i32,
+    pub map_score: i32,
     pub label: String,
     pub label_tone: DriverLabelTone,
 }
@@ -334,6 +354,25 @@ fn apply_effect(
                 ctx.match_round_player_insert(row)?;
             }
         }
+        Effect::TeamStandings(teams) => {
+            let standings = ctx.db.tab_match_team_standing();
+            let stored: Vec<MatchTeamStanding> = standings.match_id().filter(match_id).collect();
+            for old in stored {
+                standings.id().delete(old.id);
+            }
+            for team in teams {
+                standings.insert(MatchTeamStanding {
+                    id: 0,
+                    match_id,
+                    team_id: team.team_id,
+                    position: team.position,
+                    score: team.score,
+                    map_score: team.map_score,
+                    label: team.label,
+                    label_tone: team.label_tone,
+                });
+            }
+        }
         Effect::Diverged(theirs) => {
             if driver.state == MatchDriverState::Running {
                 log::error!(
@@ -390,6 +429,10 @@ pub(crate) trait MatchDriverRead {
     fn match_driver(&self, match_id: u32) -> Option<MatchDriver>;
     /// The standings of a driver match, by position and unranked players last.
     fn match_driver_standings(&self, match_id: u32) -> Vec<MatchStanding>;
+    /// The teams of a driver match of teams, by position and unranked teams last.
+    fn match_driver_team_standings(&self, match_id: u32) -> Vec<MatchTeamStanding>;
+    /// The teams among the entrants of a match, for its driver.
+    fn match_driver_teams(&self, match_id: u32) -> Vec<DriverTeam>;
 }
 
 impl<Db: CtxDbRead> MatchDriverRead for Db {
@@ -409,6 +452,36 @@ impl<Db: CtxDbRead> MatchDriverRead for Db {
             .collect();
         standings.sort_by_key(|s| (s.position == 0, s.position, s.user_id));
         standings
+    }
+
+    fn match_driver_team_standings(&self, match_id: u32) -> Vec<MatchTeamStanding> {
+        let mut standings: Vec<MatchTeamStanding> = self
+            .db_read_only()
+            .tab_match_team_standing()
+            .match_id()
+            .filter(match_id)
+            .collect();
+        standings.sort_by_key(|s| (s.position == 0, s.position, s.team_id));
+        standings
+    }
+
+    fn match_driver_teams(&self, match_id: u32) -> Vec<DriverTeam> {
+        self.match_entrants(match_id)
+            .into_iter()
+            .filter(|entrant| entrant.user_id == 0)
+            .map(|entrant| DriverTeam {
+                team_id: entrant.team_id,
+                name: self.team_name(entrant.team_id).unwrap_or_default(),
+                short_name: String::new(),
+                logo_url: String::new(),
+                flag_url: String::new(),
+                players: self
+                    .participant_users(entrant.participant())
+                    .into_iter()
+                    .map(|user_id| self.user_account_from_id(user_id).to_string())
+                    .collect(),
+            })
+            .collect()
     }
 }
 
@@ -453,6 +526,10 @@ impl<Db: CtxDbWrite> MatchDriverWrite for Db {
             self.db().tab_match_driver_record().id().delete(id);
         }
         self.db().tab_match_standing().match_id().delete(match_id);
+        self.db()
+            .tab_match_team_standing()
+            .match_id()
+            .delete(match_id);
         self.db().tab_match_race_lap().match_id().delete(match_id);
         self.match_rounds_delete(match_id);
     }
@@ -472,6 +549,34 @@ fn match_driver_standings(ctx: &ViewContext, match_id: u32) -> Vec<MatchStanding
         return Vec::new();
     }
     ctx.match_driver_standings(match_id)
+}
+
+/// The teams of a driver match of teams for the members of its competition and its viewers.
+#[view(accessor = match_driver_team_standings, public)]
+fn match_driver_team_standings(ctx: &ViewContext, match_id: u32) -> Vec<MatchTeamStanding> {
+    let Some(tm_match) = ctx.match_find(match_id) else {
+        return Vec::new();
+    };
+    if ctx
+        .auth_builder(tm_match.get_comp_id())
+        .authorize()
+        .is_err()
+    {
+        return Vec::new();
+    }
+    ctx.match_driver_team_standings(match_id)
+}
+
+/// The teams of the match of the server, for its bridge: the driver starts with them.
+#[view(accessor = my_match_teams, public)]
+fn my_match_teams(ctx: &ViewContext) -> Vec<DriverTeam> {
+    let Ok(server_id) = ctx.server_id() else {
+        return Vec::new();
+    };
+    let Some(NodeHandle::MatchV1(match_id)) = ctx.raw_server_occupation(server_id) else {
+        return Vec::new();
+    };
+    ctx.match_driver_teams(match_id)
 }
 
 /// The laps of every race of a driver match.
