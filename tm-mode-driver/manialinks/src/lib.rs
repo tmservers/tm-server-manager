@@ -20,7 +20,9 @@ pub struct Manialink {
 /// - `scores-table`: replaces the scores table of the game.
 /// - `live-standings`: the round instead of the match, live while it runs, e.g. for
 ///   the best times of a time attack map or an endurance race.
-pub const DEFAULTS: [Manialink; 4] = [
+/// - `team-standings`: the standings of the teams of a match of teams.
+/// - `team-score-header`: the score of two teams at the top of the screen, e.g. for TMWT.
+pub const DEFAULTS: [Manialink; 6] = [
     Manialink {
         name: "standings",
         manialink: include_str!("../manialinks/standings.xml"),
@@ -36,6 +38,14 @@ pub const DEFAULTS: [Manialink; 4] = [
     Manialink {
         name: "live-standings",
         manialink: include_str!("../manialinks/live-standings.xml"),
+    },
+    Manialink {
+        name: "team-standings",
+        manialink: include_str!("../manialinks/team-standings.xml"),
+    },
+    Manialink {
+        name: "team-score-header",
+        manialink: include_str!("../manialinks/team-score-header.xml"),
     },
 ];
 

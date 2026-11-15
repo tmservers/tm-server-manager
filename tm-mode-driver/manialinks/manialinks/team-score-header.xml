@@ -1,0 +1,101 @@
+<manialink name="Driver_TeamScoreHeader" version="3">
+<!--
+	The score of the first two teams of a match of teams at the top of the screen, e.g.
+	for TMWT: maps won on the outside, points on the map inside. The teams keep their
+	sides, in the order of the teams of the match.
+	Style: the classes below set fonts, text and backgrounds.
+-->
+<stylesheet>
+	<style class="name" textfont="GameFontBlack" textprefix="$i$t" textcolor="ffffff" textsize="2.5"/>
+	<style class="maps" textfont="GameFontBlack" textcolor="ffffff" textsize="5"/>
+	<style class="points" textfont="OswaldMono" textcolor="ffffff" textsize="3"/>
+	<style class="state" textfont="GameFontSemiBold" textprefix="$i$t" textcolor="ffffffcc" textsize="1.2"/>
+	<style class="cell" bgcolor="000000" opacity="0.8"/>
+	<style class="accent" bgcolor="009b5f" opacity="1"/>
+</stylesheet>
+
+<frame id="Frame_TeamScoreHeader" pos="0 88" hidden="1">
+	<quad class="cell" pos="-60 0" size="120 12"/>
+	<quad class="accent" pos="-60 -12" size="120 0.5"/>
+	<label id="Label_Team1" class="name" pos="-58 -6" size="36 6" halign="left" valign="center2"/>
+	<label id="Label_Maps1" class="maps" pos="-16 -6" size="8 8" halign="center" valign="center2"/>
+	<label id="Label_Points1" class="points" pos="-6 -6" size="10 6" halign="center" valign="center2"/>
+	<label id="Label_Points2" class="points" pos="6 -6" size="10 6" halign="center" valign="center2"/>
+	<label id="Label_Maps2" class="maps" pos="16 -6" size="8 8" halign="center" valign="center2"/>
+	<label id="Label_Team2" class="name" pos="58 -6" size="36 6" halign="right" valign="center2"/>
+	<label id="Label_State" class="state" pos="0 -15" size="60 4" halign="center" valign="center2"/>
+</frame>
+
+<script><!--
+/**
+ *	Shows the score of the first two teams, from the netvars of the teams and of the
+ *	standings the driver modescript writes. Hidden for a match of players. The netvars
+ *	are tm_server_types::method::DRIVER_NETVARS.
+ */
+#Include "TextLib" as TL
+
+Void SetText(Text _ControlId, Text _Value) {
+	declare CMlLabel Label <=> (Page.GetFirstChild(_ControlId) as CMlLabel);
+	if (Label != Null) Label.Value = _Value;
+}
+
+/// A short name when the team has one, the name otherwise.
+Text TeamName(Integer _Team) {
+	declare netread Text[Integer] Net_Driver_TeamNames for Teams[0];
+	declare netread Text[Integer] Net_Driver_TeamShortNames for Teams[0];
+	if (Net_Driver_TeamShortNames.existskey(_Team) && Net_Driver_TeamShortNames[_Team] != "") {
+		return Net_Driver_TeamShortNames[_Team];
+	}
+	if (Net_Driver_TeamNames.existskey(_Team)) return Net_Driver_TeamNames[_Team];
+	return "";
+}
+
+Void Update() {
+	declare netread Text[Integer] Net_Driver_TeamNames for Teams[0];
+	declare netread Integer[] Net_Driver_StandingsTeams for Teams[0];
+	declare netread Integer[] Net_Driver_StandingsTeamScores for Teams[0];
+	declare netread Integer[] Net_Driver_StandingsTeamMapScores for Teams[0];
+	declare netread Text[Integer] Net_Driver_StandingsTeamLabels for Teams[0];
+	declare CMlFrame Frame <=> (Page.GetFirstChild("Frame_TeamScoreHeader") as CMlFrame);
+
+	declare Integer[] Sides;
+	foreach (Team => Name in Net_Driver_TeamNames) {
+		if (Sides.count < 2) Sides.add(Team);
+	}
+	Frame.Visible = Sides.count == 2;
+	if (!Frame.Visible) return;
+
+	declare Text State = "";
+	foreach (Side => Team in Sides) {
+		declare Text Number = TL::ToText(Side + 1);
+		declare Integer Maps = 0;
+		declare Integer Points = 0;
+		foreach (Entry => Ranked in Net_Driver_StandingsTeams) {
+			if (Ranked != Team) continue;
+			Maps = Net_Driver_StandingsTeamScores[Entry];
+			Points = Net_Driver_StandingsTeamMapScores[Entry];
+		}
+		if (Net_Driver_StandingsTeamLabels.existskey(Team)) State = Net_Driver_StandingsTeamLabels[Team];
+		SetText("Label_Team"^Number, TeamName(Team));
+		SetText("Label_Maps"^Number, TL::ToText(Maps));
+		SetText("Label_Points"^Number, TL::ToText(Points));
+	}
+	SetText("Label_State", State);
+}
+
+main() {
+	declare netread Integer Net_Driver_StandingsSerial for Teams[0];
+	declare netread Integer Net_Driver_TeamsSerial for Teams[0];
+	declare Integer LastSerial = -1;
+	declare Integer LastTeamsSerial = -1;
+
+	while (True) {
+		yield;
+		if (LastSerial == Net_Driver_StandingsSerial && LastTeamsSerial == Net_Driver_TeamsSerial) continue;
+		LastSerial = Net_Driver_StandingsSerial;
+		LastTeamsSerial = Net_Driver_TeamsSerial;
+		Update();
+	}
+}
+--></script>
+</manialink>
