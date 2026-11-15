@@ -6,6 +6,9 @@
 //! tournament supplies, e.g. with a style of its own. A name ending with
 //! `scores-table` makes a manialink the scores table of the game.
 
+mod check;
+pub use check::{MAX_SIZE, check};
+
 /// A manialink by the name a config selects it with.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Manialink {
