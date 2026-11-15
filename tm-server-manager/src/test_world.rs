@@ -61,6 +61,11 @@ impl World {
         world
     }
 
+    /// The owner, e.g. to read views made for members.
+    pub(crate) fn owner_auth() -> TestAuth {
+        Self::owner()
+    }
+
     fn owner() -> TestAuth {
         TestAuth::from_jwt_payload(
             format!(
@@ -321,6 +326,11 @@ impl Server {
                 crate::raw_server::driver::raw_server_driver_modes(ctx, modes)
             })
             .expect("a logged in server reports its modes");
+    }
+
+    /// What the bridge of the server sees of the views made for it.
+    pub(crate) fn view(&self, world: &World) -> spacetimedb::ViewContext {
+        world.test.view_context(self.auth())
     }
 
     /// The bridge of the server streams a record of the driver of its match.
