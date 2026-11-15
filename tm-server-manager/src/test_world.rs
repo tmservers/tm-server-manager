@@ -142,6 +142,20 @@ impl World {
         match_id
     }
 
+    /// A driver match which is live on the server, whose bridge plays the mode.
+    pub(crate) fn live_driver_match(
+        &self,
+        server: &Server,
+        mode: BuiltInMode,
+        settings: &str,
+    ) -> u32 {
+        server.report_modes(self, &[&mode.name()]);
+        let match_id = self.configured_match_with("Final", driver_config_with(mode, settings));
+        self.as_owner(|ctx| crate::tm_match::match_set_preparation(ctx, match_id));
+        self.as_owner(|ctx| crate::tm_match::match_try_start(ctx, match_id));
+        match_id
+    }
+
     /// A match which is live on the server it took from the pool, with the players connected to it.
     pub(crate) fn live_match(&self, server: &Server, players: &[&str]) -> u32 {
         let match_id = self.configured_match("Final");
@@ -309,6 +323,20 @@ impl Server {
             .expect("a logged in server reports its modes");
     }
 
+    /// The bridge of the server streams a record of the driver of its match.
+    pub(crate) fn stream(
+        &self,
+        world: &World,
+        session: u32,
+        seq: u32,
+        record: tm_server_types::event::DriverRecord,
+    ) -> Result<(), String> {
+        world.test.clock.advance(TimeDuration::from_micros(1));
+        world.test.with_reducer_tx(self.auth(), |ctx| {
+            crate::tm_match::driver::match_driver_record(ctx, session, seq, record)
+        })
+    }
+
     /// The bridge of the server lost its connection to the database.
     pub(crate) fn disconnect(&self, world: &World) {
         world.test.clock.advance(TimeDuration::from_micros(1));
@@ -345,10 +373,71 @@ impl Server {
 
 /// A config which plays a mode of the driver.
 pub(crate) fn driver_config(mode: BuiltInMode) -> ServerConfigV2 {
+    driver_config_with(mode, "{}")
+}
+
+/// A config which plays a mode of the driver with these settings.
+pub(crate) fn driver_config_with(mode: BuiltInMode, settings: &str) -> ServerConfigV2 {
     ServerConfigV2::default().with_mode(ModeSettingsV2::Driver(Driver {
         mode: DriverMode::BuiltIn(mode),
+        settings: settings.into(),
         ..Default::default()
     }))
+}
+
+/// The driver of a bridge: it records the inputs of its driver and streams the records.
+pub(crate) struct Bridge {
+    pub(crate) driver: tm_mode_driver::RecordingDriver,
+    pub(crate) session: u32,
+    /// Every record so far, numbered from 1.
+    pub(crate) records: Vec<tm_server_types::event::DriverRecord>,
+}
+
+impl Bridge {
+    pub(crate) fn new(mode: BuiltInMode, settings: &str, session: u32) -> Bridge {
+        let source = tm_mode_driver_builtin::builtin(mode);
+        let driver = tm_mode_driver::RecordingDriver::start(
+            source.as_ref(),
+            settings,
+            tm_mode_driver::DriverLimits::default(),
+        )
+        .expect("the mode takes the settings");
+        Bridge {
+            driver,
+            session,
+            records: Vec::new(),
+        }
+    }
+
+    /// Applies the inputs and streams their records, every one has to be taken.
+    pub(crate) fn play(
+        &mut self,
+        world: &World,
+        server: &Server,
+        inputs: &[tm_mode_driver::DriverInput],
+    ) {
+        let before = self.records.len() as u32;
+        for (index, record) in self.record(inputs).into_iter().enumerate() {
+            let seq = before + index as u32 + 1;
+            server
+                .stream(world, self.session, seq, record)
+                .unwrap_or_else(|error| panic!("record {seq} was refused: {error}"));
+        }
+    }
+
+    /// Applies the inputs and keeps their records without streaming them.
+    pub(crate) fn record(
+        &mut self,
+        inputs: &[tm_mode_driver::DriverInput],
+    ) -> Vec<tm_server_types::event::DriverRecord> {
+        let mut recorded = Vec::new();
+        for input in inputs {
+            let (records, _) = self.driver.apply(input).expect("the mode plays");
+            self.records.extend(records.iter().cloned());
+            recorded.extend(records);
+        }
+        recorded
+    }
 }
 
 /// A config which plays the rounds mode.

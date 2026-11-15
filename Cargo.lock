@@ -6393,6 +6393,7 @@ dependencies = [
  "tm-mode-driver",
  "tm-mode-driver-builtin",
  "tm-mode-driver-sdk",
+ "tm-mode-driver-sim",
  "tm-server-types",
 ]
 
