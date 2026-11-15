@@ -18,6 +18,7 @@ use tm_server_manager_api_rs::event_raw_server_methodQueryTableAccess;
 use tm_server_manager_api_rs::event_raw_server_stateQueryTableAccess;
 use tm_server_manager_api_rs::login_as_server;
 use tm_server_manager_api_rs::my_match_driverQueryTableAccess;
+use tm_server_manager_api_rs::my_match_teamsQueryTableAccess;
 use tm_server_manager_api_rs::raw_server_driver_modes;
 use tm_server_manager_api_rs::raw_server_permitted_playersQueryTableAccess;
 use tm_server_manager_api_rs::raw_server_player_destinationQueryTableAccess;
@@ -130,6 +131,7 @@ impl MyDbConnection {
                     .r#where(|s| s.server_id.eq(server_id))
             })
             .add_query(|ctx| ctx.from.my_match_driver())
+            .add_query(|ctx| ctx.from.my_match_teams())
             .add_query(|ctx| ctx.from.raw_server_permitted_players())
             .add_query(|ctx| ctx.from.raw_server_player_destination())
             .subscribe();
