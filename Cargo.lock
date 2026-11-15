@@ -6390,6 +6390,9 @@ dependencies = [
  "serde",
  "simd-json",
  "spacetimedb",
+ "tm-mode-driver",
+ "tm-mode-driver-builtin",
+ "tm-mode-driver-sdk",
  "tm-server-types",
 ]
 

@@ -33,6 +33,20 @@ pub(crate) fn handle_match_event(
     mut state: MatchState,
     event: Event,
 ) -> Result<(), String> {
+    // A driver match gets its races and scores from the records of its driver.
+    if state.get_mode() == TmMode::Driver
+        && matches!(
+            event,
+            Event::StartLine(_)
+                | Event::WayPoint(_)
+                | Event::Respawn(_)
+                | Event::GiveUp(_)
+                | Event::KnockoutElimination(_)
+                | Event::Scores(_)
+        )
+    {
+        return Ok(());
+    }
     match &event {
         // We use this to always insert participating players of the round in the leaderboard.
         Event::StartLine(start_line) if state.live_round() => {
@@ -337,6 +351,7 @@ pub(crate) fn handle_match_event(
                         scores.sort_by_key(|k| if k.time <= 0 { i32::MAX } else { k.time })
                     }
                     TmMode::Unknown => unreachable!(), // Since this a match we always have a mode available.
+                    TmMode::Driver => unreachable!("Driver matches skip the scores"),
                 }
 
                 for (index, stand) in scores.iter_mut().enumerate() {

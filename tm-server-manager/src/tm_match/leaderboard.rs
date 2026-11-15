@@ -54,6 +54,13 @@ pub struct MatchRoundPlayer {
     round: u16,
     #[default(0)]
     position: u16,
+    /// The map of the round, for driver matches. Other matches find it in the history of their state.
+    #[default(0)]
+    map_id: u32,
+    /// The round of the races of the round, the laps of a driver match refer to it.
+    /// Rounds which did not count have a number too, so it can be ahead of `round`.
+    #[default(0)]
+    race_round: u16,
 }
 
 impl MatchRoundPlayer {
@@ -66,6 +73,33 @@ impl MatchRoundPlayer {
             points: 0,
             id: 0,
             position: 0,
+            map_id: 0,
+            race_round: 0,
+        }
+    }
+
+    /// A round of a driver match which counted, as its mode placed it.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn of_driver(
+        match_id: u32,
+        user_id: u32,
+        round: u16,
+        points: i32,
+        position: u16,
+        time: i32,
+        map_id: u32,
+        race_round: u16,
+    ) -> Self {
+        Self {
+            user_id,
+            match_id,
+            round,
+            time,
+            points,
+            id: 0,
+            position,
+            map_id,
+            race_round,
         }
     }
 

@@ -30,6 +30,10 @@ petgraph.workspace = true
 # Integers are i32 like the values of the entries, which also halves the size of every value on wasm32.
 rhai.workspace = true
 #mlua.workspace = true
+# Replays the driver of driver matches from the records their bridge streams, for the scores.
+tm-mode-driver.workspace = true
+tm-mode-driver-sdk.workspace = true
+tm-mode-driver-builtin.workspace = true
 
 [dev-dependencies]
 proptest.workspace = true

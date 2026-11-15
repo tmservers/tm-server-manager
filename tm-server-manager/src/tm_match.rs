@@ -4,7 +4,9 @@ use spacetimedb::{
     AnonymousViewContext, Query, ReducerContext, SpacetimeType, Table, TimeDuration, Timestamp,
     reducer, table, view,
 };
-use tm_server_types::config::ServerConfigV2;
+use tm_server_types::config::{ModeSettingsV2, ServerConfigV2};
+
+use crate::tm_match::driver::MatchDriverWrite;
 
 use crate::raw_server::driver::RawServerDriverRead;
 
@@ -34,6 +36,7 @@ use crate::{
 
 mod auto_recovery;
 pub mod chat;
+pub mod driver;
 pub mod entrant;
 pub mod event;
 //pub mod hook;
@@ -853,6 +856,14 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
         }
         // Everything which can fail is checked before anything changes, the graph keeps going when it fails.
         let config = self.raw_server_config(tm_match.config)?;
+        let driver = match config.get_mode() {
+            ModeSettingsV2::Driver(driver) => {
+                // The mode rejects settings it cannot play before a server is taken.
+                driver::check_settings(driver.mode, &driver.settings)?;
+                Some(driver.clone())
+            }
+            _ => None,
+        };
 
         // Its inputs and seeds must not change anymore once it is prepared.
         let pending = self.node_pending_origins(NodeHandle::MatchV1(match_id));
@@ -888,6 +899,9 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
         self.db().tab_match().id().update(tm_match);
 
         self.match_state_insert(MatchState::new(match_id, config.get_mode().get_mode()))?;
+        if let Some(driver) = driver {
+            self.match_driver_prepare(match_id, driver.mode, &driver.settings);
+        }
 
         // From now on the entrants keep their seeds, the destinations are claimed for them.
         self.match_entrants_freeze(match_id)?;
@@ -925,6 +939,8 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
         self.match_state_update(state);
 
         self.match_rounds_delete(match_id);
+        // The driver of the bridge starts over with the config, so do its records.
+        self.match_driver_clear(match_id);
 
         self.match_round_replays_delete(match_id);
 
