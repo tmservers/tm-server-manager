@@ -57,7 +57,7 @@ pub use events::InputLog;
 pub use rng::Rng;
 pub use rules::Rules;
 pub use tm_mode_driver::DriverStats;
-use tm_mode_driver::{Driver, DriverInput, DriverLimits, DriverReply};
+use tm_mode_driver::{Driver, DriverInput, DriverLimits, DriverReply, RecordingDriver};
 use tm_mode_driver_sdk::ModeSource;
 pub use world::{
     Action, Faults, MAX_PLAYERS, MapSpec, Moment, PlayerSpec, RacePlan, Races, SettingsChange,
@@ -510,7 +510,9 @@ impl Simulator {
     /// The driver of these inputs, rebuilt by replaying them like a bridge resumes,
     /// e.g. to measure what that costs.
     pub fn replay(&self, settings: &str, inputs: &[DriverInput]) -> Result<Driver, String> {
-        Driver::replay(self.mode.as_ref(), settings, limits(), inputs).map_err(|e| e.to_string())
+        RecordingDriver::replay(self.mode.as_ref(), settings, limits(), inputs)
+            .map(RecordingDriver::into_driver)
+            .map_err(|e| e.to_string())
     }
 
     /// The driver is the result of its inputs: replaying all of them gives the same
@@ -526,8 +528,9 @@ impl Simulator {
         let failure = |input, message: String| Failure { input, message };
         let last = inputs.len().saturating_sub(1);
 
-        let replayed = Driver::replay(self.mode.as_ref(), settings, limits(), inputs)
+        let replayed = RecordingDriver::replay(self.mode.as_ref(), settings, limits(), inputs)
             .map_err(|e| failure(last, format!("The replay failed: {e}")))?;
+        let replayed = replayed.driver();
         if replayed.standings() != driver.standings()
             || replayed.round() != driver.round()
             || replayed.users() != driver.users()
@@ -539,10 +542,11 @@ impl Simulator {
         }
 
         let cut = Rng::new(seed).fork("resume").below(inputs.len() as u32 + 1) as usize;
-        let mut resumed = Driver::replay(self.mode.as_ref(), settings, limits(), &inputs[..cut])
-            .map_err(|e| failure(cut, format!("Resuming failed: {e}")))?;
+        let mut resumed =
+            RecordingDriver::replay(self.mode.as_ref(), settings, limits(), &inputs[..cut])
+                .map_err(|e| failure(cut, format!("Resuming failed: {e}")))?;
         for (index, (input, reply)) in inputs.iter().zip(replies).enumerate().skip(cut) {
-            let again = resumed
+            let (_, again) = resumed
                 .apply(input)
                 .map_err(|e| failure(index, format!("The resumed driver failed: {e}")))?;
             if again != *reply {
@@ -560,7 +564,8 @@ impl Simulator {
 struct Run<'a> {
     simulator: &'a Simulator,
     settings: String,
-    driver: Driver,
+    /// Every input goes through its records, like on a bridge.
+    driver: RecordingDriver,
     observer: Observer,
     checker: Checker,
     report: Report,
@@ -580,7 +585,7 @@ impl<'a> Run<'a> {
         world: Option<&World>,
     ) -> Result<Self, Box<Outcome>> {
         let started = (simulator.rules)(settings).and_then(|rules| {
-            let driver = Driver::start(simulator.mode.as_ref(), settings, limits())
+            let driver = RecordingDriver::start(simulator.mode.as_ref(), settings, limits())
                 .map_err(|e| e.to_string())?;
             Ok((rules, driver))
         });
@@ -626,7 +631,7 @@ impl<'a> Run<'a> {
             self.inputs.push(input.clone());
             fail(message)
         })?;
-        let reply = self.driver.apply(input).map_err(|error| {
+        let (_, reply) = self.driver.apply(input).map_err(|error| {
             self.inputs.push(input.clone());
             fail(format!("The driver failed: {error}"))
         })?;
@@ -648,7 +653,7 @@ impl<'a> Run<'a> {
                 &input,
                 hold.as_ref(),
                 &reply,
-                &self.driver,
+                self.driver.driver(),
                 &self.observer,
                 &mut self.notes,
             );
@@ -657,7 +662,7 @@ impl<'a> Run<'a> {
                 hold.as_ref(),
                 &reply,
                 reached,
-                &self.driver,
+                self.driver.driver(),
                 &self.observer,
             )
         });
@@ -674,7 +679,7 @@ impl<'a> Run<'a> {
 
     /// The bridge restarts: the driver resumes by replaying its inputs.
     fn restart(&mut self) -> Result<(), Failure> {
-        self.driver = Driver::replay(
+        self.driver = RecordingDriver::replay(
             self.simulator.mode.as_ref(),
             &self.settings,
             limits(),
@@ -696,18 +701,20 @@ impl<'a> Run<'a> {
                     seed,
                     &self.inputs,
                     &self.replies,
-                    &self.driver,
+                    self.driver.driver(),
                 )
                 .err();
         }
         if failure.is_none() {
-            failure = check_cost(&self.driver).err().map(|message| Failure {
-                input: self.inputs.len().saturating_sub(1),
-                message,
-            });
+            failure = check_cost(self.driver.driver())
+                .err()
+                .map(|message| Failure {
+                    input: self.inputs.len().saturating_sub(1),
+                    message,
+                });
         }
         let report = self.report.finish(
-            &self.driver,
+            self.driver.driver(),
             &mut self.notes,
             stopped,
             self.inputs.len(),
@@ -718,7 +725,7 @@ impl<'a> Run<'a> {
             inputs: self.inputs,
             lost: self.lost,
             failure,
-            stats: self.driver.stats().clone(),
+            stats: self.driver.driver().stats().clone(),
         }
     }
 }
