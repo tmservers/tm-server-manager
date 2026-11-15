@@ -1,0 +1,110 @@
+---
+source: tm-mode-driver/modes/tmwt-2v2/tests/simulation_v1/main.rs
+expression: outcome.report
+---
+tmwt 2v2 · seed 1
+settings {"finish_timeout":"automatic","map_points_limit":7,"match_points_limit":3}
+maps m1 4 cp 0:32.773 · m2 4 cp 0:32.453
+players a Ant · b Bea · c Cid · d Dot
+chances ties 100‰ · repeated holds 100‰ · missed starts 20‰ · playlist changes 20‰
+! teams Red a b · Blue c d
+
+match 1
+map m1 · one try, automatic finish timeout · no warmup · laps of the map, no give up
+round 1
+  races  a 0:31.347 · d 0:35.612 · b 0:32.807 · c 0:35.846
+  live   7 updates
+  round  1 a 3 · 2 b 3 · 3 d 0 · 4 c 0
+  match  1 a 3 · 2 b 3 · 3 d 0 · 4 c 0
+  teams  1 Red 3 · 2 Blue 0
+  table  1 Red 0 · map 3 · 2 Blue 0 · map 0
+  info   Map 1, first to 7
+  chat   Ace for Red
+round 2
+  races  c 0:36.995 · a 0:31.861 · b 0:33.610 · d 0:36.740
+  live   6 updates
+  round  1 a 3 · 2 b 3 · 3 d 0 · 4 c 0
+  match  1 a 6 · 2 b 6 · 3 d 0 · 4 c 0
+  teams  1 Red 3 · 2 Blue 0
+  table  1 Red 0 · map 6 · 2 Blue 0 · map 0
+  info   Map 1, first to 7
+  chat   Ace for Red
+round 3
+  races  b 0:33.518 · d 0:39.149 · c 0:36.463 · a 0:33.044
+  live   7 updates
+  round  1 a 3 · 2 b 3 · 3 c 0 · 4 d 0
+  match  1 a 9 · 2 b 9 · 3 c 0 · 4 d 0
+  teams  1 Red 3 · 2 Blue 0
+  table  1 Red 1 · map 9 · 2 Blue 0 · map 0
+  info   Map 1, first to 7
+  chat   Ace for Red
+  end map
+map end
+map m2 · one try, automatic finish timeout · no warmup · laps of the map, no give up
+round 4
+  races  c 0:35.896 · a 0:29.912 · b 0:33.339 · d 0:34.777
+  live   8 updates
+  round  1 a 3 · 2 b 3 · 3 d 0 · 4 c 0
+  match  1 a 12 · 2 b 12 · 3 d 0 · 4 c 0
+  teams  1 Red 3 · 2 Blue 0
+  table  1 Red 1 · map 3 · 2 Blue 0 · map 0
+  info   Map 2, first to 7
+  chat   Ace for Red
+round 5
+  races  a 0:30.203 · c 0:35.741 · d 0:37.614 · b 0:32.948
+  live   7 updates
+  round  1 a 3 · 2 b 3 · 3 c 0 · 4 d 0
+  match  1 a 15 · 2 b 15 · 3 c 0 · 4 d 0
+  teams  1 Red 3 · 2 Blue 0
+  table  1 Red 1 · map 6 · 2 Blue 0 · map 0
+  info   Map 2, first to 7
+  chat   Ace for Red
+round 6
+  races  d 0:37.846 · c 0:35.426 · a 0:30.475 · b 0:32.583
+  live   7 updates
+  round  1 a 3 · 2 b 3 · 3 c 0 · 4 d 0
+  match  1 a 18 · 2 b 18 · 3 c 0 · 4 d 0
+  teams  1 Red 3 · 2 Blue 0
+  table  1 Red 2 · map 9 · 2 Blue 0 · map 0
+  info   Map 2, first to 7
+  chat   Ace for Red
+  end map
+map end
+map m1 · one try, automatic finish timeout · no warmup · laps of the map, no give up
+round 7
+  races  d 0:37.764 · b 0:36.243 · a 0:31.157 · c 0:36.546
+  live   9 updates
+  round  1 a 3 · 2 b 3 · 3 c 0 · 4 d 0
+  match  1 a 21 · 2 b 21 · 3 c 0 · 4 d 0
+  teams  1 Red 3 · 2 Blue 0
+  table  1 Red 2 · map 3 · 2 Blue 0 · map 0
+  info   Map 3, first to 7
+  chat   Ace for Red
+round 8
+  races  d 0:38.162 · b 0:33.902 · c 0:30.861 · a 0:30.861
+  live   5 updates
+  round  1 a 2 · 2 c 1 · 3 b 2 · 4 d 1
+  match  1 a 23 · 2 b 23 · 3 c 1 · 4 d 1
+  teams  1 Red 2 · 2 Blue 1
+  table  1 Red 2 · map 5 · 2 Blue 0 · map 1
+  info   Map 3, first to 7
+  chat   Victory for Red
+round 9
+  races  b 0:35.974 · d 0:38.306 · c 0:36.249 · a 0:29.393
+  live   5 updates
+  round  1 a 3 · 2 b 3 · 3 c 0 · 4 d 0
+  match  1 a 26 (Winner) · 2 b 26 · 3 c 1 · 4 d 1
+  teams  1 Red 3 · 2 Blue 0
+  table  1 Red 3 · map 8 Winner · 2 Blue 0 · map 1
+  info   Red won the match
+  chat   Ace for Red
+  end match
+map end
+match end
+
+end
+  1 a 26 (Winner)
+  2 b 26
+  3 c 1
+  4 d 1
+inputs 226
