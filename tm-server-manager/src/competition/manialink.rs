@@ -220,3 +220,164 @@ impl<Db: CtxDbRead> ManialinkRead for Db {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use tm_server_types::config::{
+        BuiltInMode, Driver, DriverMode, DriverUi, Manialink, ModeSettingsV2, UiLayer,
+    };
+
+    use super::*;
+    use crate::{competition::node::Vec2, test_world::*};
+
+    const XML: &str = r#"<manialink version="3"><label text="Hello"/></manialink>"#;
+
+    /// The revisions of the manialink of this name in the competition, the first one first.
+    fn revisions(world: &World, competition_id: u32, name: &str) -> Vec<ManialinkRevision> {
+        let cx = world.test.view_context(World::owner_auth());
+        let manialink = competition_manialinks(&cx, competition_id)
+            .into_iter()
+            .find(|m| m.name == name)
+            .expect("the manialink exists");
+        manialink_revisions(&cx, manialink.id)
+    }
+
+    fn create(world: &World, competition_id: u32, name: &str, xml: &str) -> u32 {
+        world.as_owner(|ctx| manialink_create(ctx, competition_id, name.into(), xml.into()));
+        revisions(world, competition_id, name)[0].id
+    }
+
+    /// A config which plays rounds with the driver and shows this revision.
+    fn showing(revision: u32) -> ServerConfigV2 {
+        let mut ui = DriverUi::default();
+        ui.layers.push(UiLayer::new(Manialink::Custom(revision)));
+        ServerConfigV2::default().with_mode(ModeSettingsV2::Driver(Driver {
+            mode: DriverMode::BuiltIn(BuiltInMode::RoundsV1),
+            ui,
+            ..Default::default()
+        }))
+    }
+
+    #[test]
+    fn a_new_revision_keeps_the_ones_before() {
+        let world = World::new();
+        let first = create(&world, COMPETITION, "Sponsors", XML);
+        let manialink = revisions(&world, COMPETITION, "Sponsors")[0].manialink_id;
+
+        let changed = XML.replace("Hello", "Hi");
+        world.as_owner(|ctx| manialink_revise(ctx, manialink, changed.clone()));
+
+        let revisions = revisions(&world, COMPETITION, "Sponsors");
+        let saved: Vec<(u32, &str)> = revisions.iter().map(|r| (r.id, r.xml.as_str())).collect();
+        assert_eq!(
+            saved,
+            vec![(first, XML), (revisions[1].id, changed.as_str())]
+        );
+        assert!(revisions[1].id > first);
+    }
+
+    #[test]
+    fn manialinks_are_checked_before_they_are_saved() {
+        let world = World::new();
+        let refused = world.try_as_owner(|ctx| {
+            manialink_create(
+                ctx,
+                COMPETITION,
+                "Broken".into(),
+                "<manialink><frame>".into(),
+            )
+        });
+        assert_eq!(refused.unwrap_err(), "<frame> is not closed.");
+
+        let first = create(&world, COMPETITION, "Fine", XML);
+        let manialink = revisions(&world, COMPETITION, "Fine")[0].manialink_id;
+        let wrong_type = "<manialink><script><!--\ndeclare netread Integer Net_Driver_StandingsScores for Teams[0];\n--></script></manialink>";
+        let refused = world.try_as_owner(|ctx| manialink_revise(ctx, manialink, wrong_type.into()));
+        assert!(refused.is_err_and(|e| e.contains("is Integer[], not Integer")));
+        assert_eq!(revisions(&world, COMPETITION, "Fine").len(), 1);
+        assert_eq!(revisions(&world, COMPETITION, "Fine")[0].id, first);
+    }
+
+    #[test]
+    fn configs_only_show_manialinks_of_their_competition_and_the_ones_above() {
+        let world = World::new();
+        world.as_owner(|ctx| {
+            crate::competition::competition_create(
+                ctx,
+                "Group A".into(),
+                COMPETITION,
+                Vec2::ZERO,
+                0,
+            )
+        });
+        let group = world
+            .test
+            .anonymous_view_context()
+            .competition_descendants(COMPETITION)
+            .into_iter()
+            .find(|c| c.id != COMPETITION)
+            .expect("the group exists")
+            .id;
+        let of_root = create(&world, COMPETITION, "Sponsors", XML);
+        let of_group = create(&world, group, "Bracket", XML);
+
+        // The root shows its own, the group the ones of the root too.
+        let root_match = world.configured_match_with("Root", showing(of_root));
+        world.as_owner(|ctx| {
+            crate::tm_match::match_override_config(ctx, root_match, showing(of_root))
+        });
+        let shared = world.try_as_owner(|ctx| {
+            crate::raw_server::config::raw_server_config_shared_new(
+                ctx,
+                "Group".into(),
+                group,
+                showing(of_root),
+            )
+        });
+        assert_eq!(shared, Ok(()));
+        // The root cannot share what only the group has.
+        let shared = world.try_as_owner(|ctx| {
+            crate::raw_server::config::raw_server_config_shared_new(
+                ctx,
+                "Root".into(),
+                COMPETITION,
+                showing(of_group),
+            )
+        });
+        assert!(shared.is_err_and(|e| e.contains("of another competition")));
+
+        let refused = world.try_as_owner(|ctx| {
+            crate::tm_match::match_override_config(ctx, root_match, showing(of_group))
+        });
+        assert_eq!(
+            refused.unwrap_err(),
+            format!("Revision {of_group} is a manialink of another competition.")
+        );
+        let missing = world.try_as_owner(|ctx| {
+            crate::tm_match::match_override_config(ctx, root_match, showing(of_group + 100))
+        });
+        assert!(missing.is_err_and(|e| e.contains("There is no revision")));
+    }
+
+    #[test]
+    fn the_bridge_gets_the_manialinks_its_match_shows() {
+        let world = World::new();
+        let server = world.server(1);
+        let revision = create(&world, COMPETITION, "Sponsors", XML);
+        server.report_modes(&world, &["rounds-v1"]);
+        let match_id = world.configured_match_with("Final", showing(revision));
+        world.as_owner(|ctx| crate::tm_match::match_set_preparation(ctx, match_id));
+
+        let shown = my_server_manialinks(&server.view(&world));
+
+        assert_eq!(
+            shown,
+            vec![ServerManialink {
+                revision,
+                xml: XML.into()
+            }]
+        );
+        // Other servers get nothing.
+        let other = world.server(2);
+        assert_eq!(my_server_manialinks(&other.view(&world)), vec![]);
+    }
+}
