@@ -35,6 +35,11 @@ pub fn metadata_update(_: &EventContext, new_metadata: &EventRawServerState) {
         tracing::info!("New configuration is loading.");
 
         get_maps(config.iter_maps()).await;
+        let driver = match config.get_mode() {
+            tm_server_controller::config::ModeSettingsV2::Driver(driver) => Some(driver.clone()),
+            _ => None,
+        };
+        let playlist = config.get_maps().maps();
         let config = config.into_xml();
 
         tracing::info!("New saved config is: {config}");
@@ -46,6 +51,8 @@ pub fn metadata_update(_: &EventContext, new_metadata: &EventRawServerState) {
         }
 
         load_new_config(&new_metadata).await;
+        // The mode starts with a fresh state for the match the config starts.
+        crate::driver::driver_config(driver.as_ref(), playlist).await;
 
         // We wait before checking to ensure the new allowlist is there.
         // This is not the cleanest solution but is fine for now.

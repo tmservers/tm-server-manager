@@ -11,11 +11,13 @@ use tm_server_manager_api_rs::DbConnection;
 use tm_server_manager_api_rs::ErrorContext;
 use tm_server_manager_api_rs::EventRawServerMethodTableAccess;
 use tm_server_manager_api_rs::EventRawServerStateTableAccess;
+use tm_server_manager_api_rs::MyMatchDriverTableAccess;
 use tm_server_manager_api_rs::RawServerPermittedPlayersTableAccess;
 use tm_server_manager_api_rs::RawServerPlayerDestinationTableAccess;
 use tm_server_manager_api_rs::event_raw_server_methodQueryTableAccess;
 use tm_server_manager_api_rs::event_raw_server_stateQueryTableAccess;
 use tm_server_manager_api_rs::login_as_server;
+use tm_server_manager_api_rs::my_match_driverQueryTableAccess;
 use tm_server_manager_api_rs::raw_server_driver_modes;
 use tm_server_manager_api_rs::raw_server_permitted_playersQueryTableAccess;
 use tm_server_manager_api_rs::raw_server_player_destinationQueryTableAccess;
@@ -100,6 +102,9 @@ impl MyDbConnection {
         };
 
         tracing::info!("Successfully connected to tmservers.live!");
+        if seamless {
+            crate::driver::driver_reconnected();
+        }
 
         // The manager only gives the server matches whose mode this bridge plays.
         if let Err(err) = spacetime
@@ -124,6 +129,7 @@ impl MyDbConnection {
                     .event_raw_server_state()
                     .r#where(|s| s.server_id.eq(server_id))
             })
+            .add_query(|ctx| ctx.from.my_match_driver())
             .add_query(|ctx| ctx.from.raw_server_permitted_players())
             .add_query(|ctx| ctx.from.raw_server_player_destination())
             .subscribe();
@@ -132,6 +138,12 @@ impl MyDbConnection {
             .db
             .event_raw_server_state()
             .on_insert(metadata_update);
+
+        // After the connection came back, the records the manager missed go again.
+        spacetime.db.my_match_driver().on_insert(|_, driver| {
+            let (session, last_seq) = (driver.session, driver.last_seq);
+            tokio::spawn(crate::driver::driver_resend(session, last_seq));
+        });
 
         spacetime
             .db
