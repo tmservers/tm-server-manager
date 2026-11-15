@@ -194,6 +194,7 @@ fn a_script_reads_its_settings_and_what_the_host_knows() {
             },
         )]
         .into(),
+        teams: Vec::new(),
     };
     let source = format!(
         "fn defaults() {{ #{{ greeting: \"hi\", maps_per_match: () }} }} {}",
