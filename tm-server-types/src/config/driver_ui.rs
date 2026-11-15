@@ -77,6 +77,8 @@ impl UiLayer {
 pub enum Manialink {
     /// One of the default manialinks of `tm-mode-driver-manialinks`.
     BuiltIn(BuiltInManialink),
+    /// A revision of a manialink of the competition, which never changes.
+    Custom(u32),
 }
 
 impl Manialink {
@@ -84,6 +86,7 @@ impl Manialink {
     pub fn name(&self) -> String {
         match self {
             Manialink::BuiltIn(manialink) => manialink.name().into(),
+            Manialink::Custom(revision) => format!("custom-{revision}"),
         }
     }
 }
@@ -169,6 +172,7 @@ impl Placement {
         match self {
             Placement::Default => match manialink {
                 Manialink::BuiltIn(manialink) => (manialink.default_kind(), ""),
+                Manialink::Custom(_) => (DriverLayerKind::Normal, ""),
             },
             Placement::Normal => (DriverLayerKind::Normal, ""),
             Placement::ScoresTable => (DriverLayerKind::ScoresTable, ""),

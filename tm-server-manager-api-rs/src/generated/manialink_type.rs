@@ -10,6 +10,8 @@ use super::built_in_manialink_type::BuiltInManialink;
 #[sats(crate = __lib)]
 pub enum Manialink {
     BuiltIn(BuiltInManialink),
+
+    Custom(u32),
 }
 
 impl __sdk::InModule for Manialink {

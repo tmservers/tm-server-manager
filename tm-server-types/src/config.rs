@@ -181,6 +181,22 @@ impl ServerConfigV2 {
         self
     }
 
+    /// The revisions of manialinks of competitions the config shows.
+    pub fn custom_manialinks(&self) -> Vec<u32> {
+        match &self.mode {
+            ModeSettingsV2::Driver(driver) => driver
+                .ui
+                .layers
+                .iter()
+                .filter_map(|layer| match layer.manialink {
+                    Manialink::Custom(revision) => Some(revision),
+                    Manialink::BuiltIn(_) => None,
+                })
+                .collect(),
+            _ => Vec::new(),
+        }
+    }
+
     /// The mode of the driver, none if the config plays a modescript of the game.
     pub fn driver_mode(&self) -> Option<DriverMode> {
         match &self.mode {
