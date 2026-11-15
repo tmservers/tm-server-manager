@@ -3,6 +3,7 @@
 
 #![allow(unused, clippy::all)]
 use super::server_manialink_type::ServerManialink;
+use super::ui_manifest_type::UiManifest;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 /// Table handle for the table `my_server_manialinks`.

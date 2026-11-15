@@ -10,6 +10,7 @@ use super::driver_record_lap_end_type::DriverRecordLapEnd;
 use super::driver_record_player_type::DriverRecordPlayer;
 use super::driver_record_resync_type::DriverRecordResync;
 use super::driver_record_start_type::DriverRecordStart;
+use super::driver_record_ui_action_type::DriverRecordUiAction;
 use super::driver_team_type::DriverTeam;
 use super::event_type::Event;
 use super::player_info_type::PlayerInfo;
@@ -50,6 +51,8 @@ pub enum DriverRecord {
     Digest(DriverRecordDigest),
 
     Teams(Vec<DriverTeam>),
+
+    UiAction(DriverRecordUiAction),
 }
 
 impl __sdk::InModule for DriverRecord {

@@ -78,6 +78,9 @@ impl CompetitionPermissionsV1 {
     /// Writing the manialinks of the competition, which run on the machines of the players.
     pub const MANIALINK_EDIT: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 48);
 
+    /// Writing values the manialinks of the matches show.
+    pub const MATCH_UI_WRITE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 49);
+
     pub(crate) fn has(self, perm: Self) -> bool {
         self.bypass() || (perm & !self) == CompetitionPermissionsV1::NONE
     }

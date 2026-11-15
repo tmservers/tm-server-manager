@@ -84,6 +84,25 @@ impl World {
         self.test.with_reducer_tx(World::owner(), reducer)
     }
 
+    /// Calls a reducer as the user of this account, who connected before.
+    pub(crate) fn try_as_user<T>(
+        &self,
+        account: &str,
+        reducer: impl FnOnce(&ReducerContext) -> Result<T, String>,
+    ) -> Result<T, String> {
+        let auth = || {
+            TestAuth::from_jwt_payload(
+                format!(
+                    r#"{{"iss":"https://auth.spacetimedb.com/oidc","sub":"{account}","login_method":"trackmania","provider_id":"{account}","preferred_username":"{account}"}}"#
+                ),
+                ConnectionId::from_u128(2),
+            )
+            .expect("the claims of a user are valid")
+        };
+        self.test.with_reducer_tx(auth(), crate::client_connected)?;
+        self.test.with_reducer_tx(auth(), reducer)
+    }
+
     /// Calls a reducer as the owner, it has to succeed.
     pub(crate) fn as_owner<T>(
         &self,
@@ -326,6 +345,16 @@ impl Server {
                 crate::raw_server::driver::raw_server_driver_modes(ctx, modes)
             })
             .expect("a logged in server reports its modes");
+    }
+
+    /// Calls a reducer as the bridge of the server, which may fail.
+    pub(crate) fn call<T>(
+        &self,
+        world: &World,
+        reducer: impl FnOnce(&ReducerContext) -> Result<T, String>,
+    ) -> Result<T, String> {
+        world.test.clock.advance(TimeDuration::from_micros(1));
+        world.test.with_reducer_tx(self.auth(), reducer)
     }
 
     /// What the bridge of the server sees of the views made for it.

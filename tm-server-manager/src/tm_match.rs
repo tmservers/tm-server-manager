@@ -6,7 +6,10 @@ use spacetimedb::{
 };
 use tm_server_types::config::{ModeSettingsV2, ServerConfigV2};
 
-use crate::{competition::manialink::ManialinkRead, tm_match::driver::MatchDriverWrite};
+use crate::{
+    competition::manialink::ManialinkRead,
+    tm_match::{driver::MatchDriverWrite, ui::MatchUiWrite},
+};
 
 use crate::raw_server::driver::RawServerDriverRead;
 
@@ -43,6 +46,7 @@ pub mod event;
 pub mod leaderboard;
 pub mod replay;
 pub mod state;
+pub mod ui;
 
 /// # Match
 /// Fullfills the role of providing configuration to the associated server and
@@ -828,6 +832,9 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
         state.set_live();
         self.match_state_update(state);
 
+        // A config used for the preparation and the match shows the check no more.
+        self.match_ready_check_close(match_id);
+
         self.emit_raw_server_config(server_id, false)?;
 
         Ok(())
@@ -913,6 +920,9 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
         self.match_entrants_freeze(match_id)?;
 
         self.destination_claim(NodeHandle::MatchV1(match_id))?;
+
+        // The players see who is ready before anyone is.
+        self.match_ready_check_open(match_id);
 
         self.emit_raw_server_config(server_id, false)?;
 

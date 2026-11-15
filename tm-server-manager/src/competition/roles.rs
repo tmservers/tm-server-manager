@@ -196,7 +196,11 @@ impl<Db: spacetimedb::CtxDbWrite> CompetitionMemberWrite for Db {
 }
 
 #[reducer]
-fn member_add(ctx: &ReducerContext, competition_id: u32, account_id: Uuid) -> Result<(), String> {
+pub(crate) fn member_add(
+    ctx: &ReducerContext,
+    competition_id: u32,
+    account_id: Uuid,
+) -> Result<(), String> {
     ctx.auth_builder(competition_id)
         .permission(CompetitionPermissionsV1::PERMISSION_MEMBER_ADD)
         .authorize()?;

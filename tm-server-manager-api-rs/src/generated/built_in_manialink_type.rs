@@ -19,6 +19,8 @@ pub enum BuiltInManialink {
     TeamStandings,
 
     TeamScoreHeader,
+
+    ReadyCheck,
 }
 
 impl __sdk::InModule for BuiltInManialink {

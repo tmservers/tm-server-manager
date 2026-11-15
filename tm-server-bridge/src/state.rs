@@ -23,6 +23,10 @@ pub async fn setup_state_synchronization() {
     // Sync all events to spacetimedb.
     server.on_event(|event| {
         crate::driver::driver_event(event);
+        // What players do in manialinks reaches the manager parsed, by the driver.
+        if let tm_server_controller::event::Event::DriverUiEvent(_) = event {
+            return;
+        }
         // A driver match streams its races as records of its driver.
         if crate::driver::driver_active()
             && matches!(

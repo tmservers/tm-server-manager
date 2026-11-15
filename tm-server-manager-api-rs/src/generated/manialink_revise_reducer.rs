@@ -4,11 +4,14 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
+use super::ui_manifest_type::UiManifest;
+
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct ManialinkReviseArgs {
     pub manialink_id: u32,
     pub xml: String,
+    pub manifest: UiManifest,
 }
 
 impl From<ManialinkReviseArgs> for super::Reducer {
@@ -16,6 +19,7 @@ impl From<ManialinkReviseArgs> for super::Reducer {
         Self::ManialinkRevise {
             manialink_id: args.manialink_id,
             xml: args.xml,
+            manifest: args.manifest,
         }
     }
 }
@@ -35,8 +39,13 @@ pub trait manialink_revise {
     /// The reducer will run asynchronously in the future,
     ///  and this method provides no way to listen for its completion status.
     /// /// Use [`manialink_revise:manialink_revise_then`] to run a callback after the reducer completes.
-    fn manialink_revise(&self, manialink_id: u32, xml: String) -> __sdk::Result<()> {
-        self.manialink_revise_then(manialink_id, xml, |_, _| {})
+    fn manialink_revise(
+        &self,
+        manialink_id: u32,
+        xml: String,
+        manifest: UiManifest,
+    ) -> __sdk::Result<()> {
+        self.manialink_revise_then(manialink_id, xml, manifest, |_, _| {})
     }
 
     /// Request that the remote module invoke the reducer `manialink_revise` to run as soon as possible,
@@ -49,6 +58,7 @@ pub trait manialink_revise {
         &self,
         manialink_id: u32,
         xml: String,
+        manifest: UiManifest,
 
         callback: impl FnOnce(
             &super::ReducerEventContext,
@@ -63,6 +73,7 @@ impl manialink_revise for super::RemoteReducers {
         &self,
         manialink_id: u32,
         xml: String,
+        manifest: UiManifest,
 
         callback: impl FnOnce(
             &super::ReducerEventContext,
@@ -70,7 +81,13 @@ impl manialink_revise for super::RemoteReducers {
         ) + Send
         + 'static,
     ) -> __sdk::Result<()> {
-        self.imp
-            .invoke_reducer_with_callback(ManialinkReviseArgs { manialink_id, xml }, callback)
+        self.imp.invoke_reducer_with_callback(
+            ManialinkReviseArgs {
+                manialink_id,
+                xml,
+                manifest,
+            },
+            callback,
+        )
     }
 }
