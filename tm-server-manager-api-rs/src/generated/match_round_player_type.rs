@@ -14,6 +14,8 @@ pub struct MatchRoundPlayer {
     pub points: i32,
     pub round: u16,
     pub position: u16,
+    pub map_id: u32,
+    pub race_round: u16,
 }
 
 impl __sdk::InModule for MatchRoundPlayer {
@@ -31,6 +33,8 @@ pub struct MatchRoundPlayerCols {
     pub points: __sdk::__query_builder::Col<MatchRoundPlayer, i32>,
     pub round: __sdk::__query_builder::Col<MatchRoundPlayer, u16>,
     pub position: __sdk::__query_builder::Col<MatchRoundPlayer, u16>,
+    pub map_id: __sdk::__query_builder::Col<MatchRoundPlayer, u32>,
+    pub race_round: __sdk::__query_builder::Col<MatchRoundPlayer, u16>,
 }
 
 impl __sdk::__query_builder::HasCols for MatchRoundPlayer {
@@ -44,6 +48,8 @@ impl __sdk::__query_builder::HasCols for MatchRoundPlayer {
             points: __sdk::__query_builder::Col::new(table_name, "points"),
             round: __sdk::__query_builder::Col::new(table_name, "round"),
             position: __sdk::__query_builder::Col::new(table_name, "position"),
+            map_id: __sdk::__query_builder::Col::new(table_name, "map_id"),
+            race_round: __sdk::__query_builder::Col::new(table_name, "race_round"),
         }
     }
 }

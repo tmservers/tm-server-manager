@@ -365,9 +365,7 @@ impl ModeSettingsV2 {
             Self::ReverseCup(_) => TmMode::ReverseCup,
             Self::TimeAttack(_) => TmMode::TimeAttack,
             Self::Knockout(_) => TmMode::Knockout,
-            // The manager does not know driver matches yet. Until its database integration
-            // it records them like Rounds, which leaves the points at zero.
-            Self::Driver(_) => TmMode::Rounds,
+            Self::Driver(_) => TmMode::Driver,
             //ModeSettings::ReverseCupV2(_) => TmMode::ReverseCup,
         }
     }
@@ -434,6 +432,8 @@ pub enum TmMode {
     TimeAttack,
     // This is used upstream in the server-manager module so its not super clean separation of types.
     Unknown,
+    /// A mode of the driver, its standings are what the driver computed.
+    Driver,
 }
 
 fn tm_bool(value: bool) -> &'static str {

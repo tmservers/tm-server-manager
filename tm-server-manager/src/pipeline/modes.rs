@@ -8,6 +8,7 @@ use crate::{
         LbEntry, LbEntryKind, LbParams, LbParticipant, combinators::LbRows, context::LbContext,
         error::LbError, shared_map, shared_team,
     },
+    tm_match::{driver::MatchDriverRead, entrant::MatchEntrantRead},
 };
 
 /// How the rounds of a match become its standings.
@@ -50,6 +51,7 @@ impl ModeRules for TmMode {
             TmMode::Knockout => knockout(rounds),
             TmMode::TimeAttack => time_attack(rounds),
             TmMode::Unknown => by_position(rounds),
+            TmMode::Driver => driver_standings(cx, node),
         })
     }
 }
@@ -121,6 +123,25 @@ fn round_standings(
         standing.kind = LbEntryKind::Standing;
     }
     Ok(standings)
+}
+
+/// A driver match has the standings its mode left, which the manager stored.
+fn driver_standings(cx: &LbContext, node: NodeHandle) -> Vec<LbEntry> {
+    let NodeHandle::MatchV1(match_id) = node else {
+        return Vec::new();
+    };
+    let teams = cx.match_user_teams(match_id);
+    cx.match_driver_standings(match_id)
+        .into_iter()
+        .map(|standing| {
+            let position = u16::try_from(standing.position).unwrap_or(u16::MAX);
+            let mut entry = LbEntry::new(standing.user_id, LbEntryKind::Standing, position, node)
+                .set_score(standing.score)
+                .set_time(standing.time);
+            entry.team_id = teams.get(&standing.user_id).copied().unwrap_or(0);
+            entry
+        })
+        .collect()
 }
 
 fn reverse_cup_starting_points(cx: &LbContext, node: NodeHandle) -> Result<i32, LbError> {
