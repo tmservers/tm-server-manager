@@ -1,27 +1,30 @@
-//! The modes built into the mode driver, by the name the config of a match selects
-//! them with (`Driver::mode`). Every other mode is a script of a competition.
+//! The modes built into the mode driver, by the version the config of a match selects
+//! them with (`Driver::mode`).
+//!
+//! A released version never changes how it plays. A change of rules is a new version next to it.
 
+pub use tm_server_types::config::BuiltInMode;
 use tm_mode_driver_sdk::{ModeSource, Native};
 
-/// The names of the built-in modes.
-pub const NAMES: [&str; 5] = [
-    "rounds",
-    "time-attack",
-    "reverse-cup",
-    "knockout",
-    "endurance",
-];
+/// The built-in mode of this version.
+pub fn builtin(mode: BuiltInMode) -> Box<dyn ModeSource + Send + Sync> {
+    match mode {
+        BuiltInMode::RoundsV1 => Box::new(Native::<tm_mode_rounds::v1::Rounds>::new()),
+        BuiltInMode::TimeAttackV1 => {
+            Box::new(Native::<tm_mode_time_attack::v1::TimeAttack>::new())
+        }
+        BuiltInMode::ReverseCupV1 => {
+            Box::new(Native::<tm_mode_reverse_cup::v1::ReverseCup>::new())
+        }
+        BuiltInMode::KnockoutV1 => Box::new(Native::<tm_mode_knockout::v1::Knockout>::new()),
+        BuiltInMode::EnduranceV1 => Box::new(Native::<tm_mode_endurance::v1::Endurance>::new()),
+    }
+}
 
-/// The built-in mode with this name, none for any other name.
-pub fn builtin(name: &str) -> Option<Box<dyn ModeSource + Send + Sync>> {
-    Some(match name {
-        "rounds" => Box::new(Native::<tm_mode_rounds::v1::Rounds>::new()),
-        "time-attack" => Box::new(Native::<tm_mode_time_attack::v1::TimeAttack>::new()),
-        "reverse-cup" => Box::new(Native::<tm_mode_reverse_cup::v1::ReverseCup>::new()),
-        "knockout" => Box::new(Native::<tm_mode_knockout::v1::Knockout>::new()),
-        "endurance" => Box::new(Native::<tm_mode_endurance::v1::Endurance>::new()),
-        _ => return None,
-    })
+/// The names of the modes this driver plays, e.g. `rounds-v1`, the ones superseded included.
+/// A bridge reports them, so the manager only gives it matches it can play.
+pub fn supported() -> Vec<String> {
+    BuiltInMode::ALL.iter().map(|mode| mode.name()).collect()
 }
 
 #[cfg(test)]
@@ -29,15 +32,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn every_name_starts_its_mode_with_default_settings() {
-        let shown: Vec<String> = NAMES
+    fn every_mode_starts_with_default_settings() {
+        let shown: Vec<String> = BuiltInMode::ALL
             .iter()
-            .map(|name| {
-                let mode = builtin(name).unwrap_or_else(|| panic!("{name} is not built in"));
-                let instance = mode
+            .map(|mode| {
+                let instance = builtin(*mode)
                     .start("{}")
                     .expect("starting does not fault")
-                    .unwrap_or_else(|error| panic!("{name} rejects its defaults: {error}"));
+                    .unwrap_or_else(|error| panic!("{mode:?} rejects its defaults: {error}"));
                 instance.name()
             })
             .collect();
@@ -55,8 +57,11 @@ mod tests {
     }
 
     #[test]
-    fn other_names_are_no_built_in_modes() {
-        assert!(builtin("Rounds").is_none());
-        assert!(builtin("").is_none());
+    fn the_names_bridges_report_parse_back() {
+        let supported = supported();
+        assert_eq!(supported.len(), BuiltInMode::ALL.len());
+        for (name, mode) in supported.iter().zip(BuiltInMode::ALL) {
+            assert_eq!(BuiltInMode::named(name), Some(*mode));
+        }
     }
 }

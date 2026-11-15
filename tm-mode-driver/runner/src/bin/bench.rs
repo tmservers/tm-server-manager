@@ -96,7 +96,10 @@ fn run(scenario: &Scenario) {
     let simulator = match scenario.mode {
         Some(name) => Simulator::new(
             scenario.name,
-            tm_mode_driver_builtin::builtin(name).expect("Every scenario names a built-in mode"),
+            tm_mode_driver_builtin::builtin(
+                tm_mode_driver_builtin::BuiltInMode::from_name(name)
+                    .expect("Every scenario names a built-in mode"),
+            ),
         ),
         None => Simulator::new(
             scenario.name,

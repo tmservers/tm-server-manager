@@ -6215,6 +6215,7 @@ dependencies = [
  "tm-mode-reverse-cup",
  "tm-mode-rounds",
  "tm-mode-time-attack",
+ "tm-server-types",
 ]
 
 [[package]]
