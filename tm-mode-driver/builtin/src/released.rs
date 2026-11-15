@@ -31,7 +31,10 @@ fn snapshots_of(mode: BuiltInMode) -> PathBuf {
 /// The report of a snapshot, without the header insta writes. The header names the
 /// test source, which may move without changing how the mode plays.
 fn report(snapshot: &str) -> &str {
-    match snapshot.strip_prefix("---\n").and_then(|s| s.split_once("\n---\n")) {
+    match snapshot
+        .strip_prefix("---\n")
+        .and_then(|s| s.split_once("\n---\n"))
+    {
         Some((_, report)) => report,
         None => snapshot,
     }
@@ -54,7 +57,11 @@ enum Problem {
     /// A listed snapshot is gone, which hides what the mode played.
     Missing { mode: String, file: String },
     /// A snapshot is not listed yet.
-    Unlisted { mode: String, file: String, hash: String },
+    Unlisted {
+        mode: String,
+        file: String,
+        hash: String,
+    },
     /// A mode has no snapshots at all, nothing holds its rules.
     Unchecked { mode: String },
     /// An entry names no built-in mode.
@@ -134,7 +141,10 @@ fn found(root: &Path) -> BTreeMap<String, Vec<(String, String)>> {
                 .map(|path| {
                     let snapshot = std::fs::read_to_string(&path).unwrap();
                     let file = dir.join(path.file_name().unwrap());
-                    (file.to_string_lossy().replace('\\', "/"), hash(report(&snapshot)))
+                    (
+                        file.to_string_lossy().replace('\\', "/"),
+                        hash(report(&snapshot)),
+                    )
                 })
                 .collect();
             files.sort();
@@ -209,9 +219,19 @@ mod tests {
 
     #[test]
     fn only_snapshots_as_listed_pass() {
-        let listed = entries(&[("a-v1", "s1", "11"), ("a-v1", "s2", "22"), ("b-v1", "s3", "33")]);
+        let listed = entries(&[
+            ("a-v1", "s1", "11"),
+            ("a-v1", "s2", "22"),
+            ("b-v1", "s3", "33"),
+        ]);
         assert_eq!(
-            check(&listed, &found(&[("a-v1", &[("s1", "11"), ("s2", "22")]), ("b-v1", &[("s3", "33")])])),
+            check(
+                &listed,
+                &found(&[
+                    ("a-v1", &[("s1", "11"), ("s2", "22")]),
+                    ("b-v1", &[("s3", "33")])
+                ])
+            ),
             []
         );
 
@@ -226,10 +246,22 @@ mod tests {
         assert_eq!(
             problems,
             [
-                Problem::Changed { mode: "a-v1".into(), file: "s1".into() },
-                Problem::Unlisted { mode: "a-v1".into(), file: "s4".into(), hash: "44".into() },
-                Problem::Missing { mode: "a-v1".into(), file: "s2".into() },
-                Problem::Unchecked { mode: "c-v1".into() },
+                Problem::Changed {
+                    mode: "a-v1".into(),
+                    file: "s1".into()
+                },
+                Problem::Unlisted {
+                    mode: "a-v1".into(),
+                    file: "s4".into(),
+                    hash: "44".into()
+                },
+                Problem::Missing {
+                    mode: "a-v1".into(),
+                    file: "s2".into()
+                },
+                Problem::Unchecked {
+                    mode: "c-v1".into()
+                },
             ]
         );
     }
@@ -237,7 +269,12 @@ mod tests {
     #[test]
     fn entries_of_modes_which_do_not_exist_fail() {
         let listed = entries(&[("gone-v1", "s1", "11")]);
-        assert_eq!(check(&listed, &found(&[])), [Problem::Unknown { mode: "gone-v1".into() }]);
+        assert_eq!(
+            check(&listed, &found(&[])),
+            [Problem::Unknown {
+                mode: "gone-v1".into()
+            }]
+        );
     }
 
     #[test]
@@ -245,7 +282,10 @@ mod tests {
         let snapshot = "---\nsource: a.rs\nexpression: report\n---\nrounds · seed 1\n";
         let moved = "---\nsource: b.rs\nexpression: outcome.report\n---\nrounds · seed 1\n";
         assert_eq!(hash(report(snapshot)), hash(report(moved)));
-        assert_ne!(hash(report(snapshot)), hash(report("---\nsource: a.rs\n---\nrounds · seed 2\n")));
+        assert_ne!(
+            hash(report(snapshot)),
+            hash(report("---\nsource: a.rs\n---\nrounds · seed 2\n"))
+        );
         assert_eq!(hash("a\r\nb"), hash("a\nb"));
         // The hash may never change, it is stored.
         assert_eq!(hash("rounds"), "6e99a8003d10ccb8");
