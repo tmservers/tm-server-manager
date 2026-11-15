@@ -70,3 +70,122 @@ pub(crate) fn raw_server_driver_forget(ctx: &impl CtxDbWrite, server_id: u32) {
     ctx.db().tab_raw_server_driver().server_id().delete(server_id);
 }
 
+#[cfg(test)]
+mod tests {
+    use tm_server_types::config::{BuiltInMode, DriverMode};
+
+    use super::RawServerDriverRead;
+    use crate::{competition::node::NodeHandle, test_world::*, tm_match::MatchStatus};
+
+    const ROUNDS: DriverMode = DriverMode::BuiltIn(BuiltInMode::RoundsV1);
+
+    fn plays(world: &World, server: &Server, mode: BuiltInMode) -> bool {
+        world
+            .test
+            .anonymous_view_context()
+            .raw_server_plays(server.id, DriverMode::BuiltIn(mode))
+    }
+
+    /// A driver match which waits for a finished leaderboard, so it starts right away if it can.
+    fn ready_driver_match(world: &World, mode: BuiltInMode) -> (u32, NodeHandle) {
+        let match_id = world.configured_match_with("Final", driver_config(mode));
+        let node = NodeHandle::MatchV1(match_id);
+        world.wait_for(node, world.finished_leaderboard("Seeding"));
+        (match_id, node)
+    }
+
+    #[test]
+    fn a_bridge_plays_the_modes_it_reports_and_no_names_it_does_not_know() {
+        let world = World::new();
+        let server = world.server(1);
+        assert!(!plays(&world, &server, BuiltInMode::RoundsV1));
+
+        // A newer bridge knows a version this manager does not, a family is no version.
+        server.report_modes(&world, &["rounds-v9", "knockout", "endurance-v1", "endurance-v1"]);
+
+        assert!(plays(&world, &server, BuiltInMode::EnduranceV1));
+        assert!(!plays(&world, &server, BuiltInMode::KnockoutV1));
+        assert!(!plays(&world, &server, BuiltInMode::RoundsV1));
+
+        // A report replaces the one before.
+        server.report_modes(&world, &["rounds-v1"]);
+        assert!(plays(&world, &server, BuiltInMode::RoundsV1));
+        assert!(!plays(&world, &server, BuiltInMode::EnduranceV1));
+    }
+
+    #[test]
+    fn a_driver_match_takes_a_server_whose_bridge_plays_its_mode() {
+        let world = World::new();
+        let old = world.server(1);
+        old.report_modes(&world, &["knockout-v1"]);
+        let new = world.server(2);
+        new.report_modes(&world, &["knockout-v1", "rounds-v1"]);
+
+        let (match_id, node) = ready_driver_match(&world, BuiltInMode::RoundsV1);
+
+        assert_eq!(world.match_status(match_id), MatchStatus::Preparation);
+        assert_eq!(world.server_of(node), Some(new.id));
+        assert_eq!(world.start_failures(), vec![]);
+    }
+
+    #[test]
+    fn a_driver_match_waits_until_a_bridge_plays_its_mode() {
+        let world = World::new();
+        let server = world.server(1);
+        // A bridge from before the driver reports nothing.
+        let (match_id, node) = ready_driver_match(&world, BuiltInMode::RoundsV1);
+
+        assert_eq!(world.match_status(match_id), MatchStatus::Configured);
+        let failures = world.start_failures();
+        assert_eq!(failures.len(), 1);
+        assert_eq!(failures[0].0, node);
+        assert!(failures[0].1.contains("plays rounds-v1"), "{}", failures[0].1);
+
+        // The bridge got updated.
+        server.report_modes(&world, &["rounds-v1"]);
+
+        assert_eq!(world.match_status(match_id), MatchStatus::Preparation);
+        assert_eq!(world.server_of(node), Some(server.id));
+        assert_eq!(world.start_failures(), vec![]);
+    }
+
+    #[test]
+    fn a_server_assigned_by_hand_has_to_play_the_mode_too() {
+        let world = World::new();
+        let server = world.server(1);
+        server.report_modes(&world, &["knockout-v1"]);
+        let match_id = world.configured_match_with("Final", driver_config(BuiltInMode::RoundsV1));
+        world.as_owner(|ctx| crate::tm_match::match_assign_server(ctx, match_id, server.id));
+
+        let refused =
+            world.try_as_owner(|ctx| crate::tm_match::match_set_preparation(ctx, match_id));
+
+        assert!(refused.is_err_and(|e| e.contains("does not play rounds-v1")));
+        assert_eq!(world.match_status(match_id), MatchStatus::Configured);
+    }
+
+    #[test]
+    fn a_bridge_which_logs_in_again_has_to_report_its_modes_again() {
+        let world = World::new();
+        let server = world.server(1);
+        server.report_modes(&world, &["rounds-v1"]);
+
+        // Another version of the bridge took over the server.
+        server.disconnect(&world);
+        server.reconnect(&world);
+
+        let cx = world.test.anonymous_view_context();
+        assert!(!cx.raw_server_plays(server.id, ROUNDS));
+    }
+
+    /// Matches which use a mode keep getting servers for it when a bridge stops playing others.
+    #[test]
+    fn a_match_which_does_not_play_a_driver_mode_takes_any_server() {
+        let world = World::new();
+        let server = world.server(1);
+        let match_id = world.configured_match("Final");
+        world.as_owner(|ctx| crate::tm_match::match_set_preparation(ctx, match_id));
+
+        assert_eq!(world.server_of(NodeHandle::MatchV1(match_id)), Some(server.id));
+    }
+}
