@@ -15,11 +15,11 @@ pub const NAMES: [&str; 5] = [
 /// The built-in mode with this name, none for any other name.
 pub fn builtin(name: &str) -> Option<Box<dyn ModeSource + Send + Sync>> {
     Some(match name {
-        "rounds" => Box::new(Native::<tm_mode_rounds::Rounds>::new()),
-        "time-attack" => Box::new(Native::<tm_mode_time_attack::TimeAttack>::new()),
-        "reverse-cup" => Box::new(Native::<tm_mode_reverse_cup::ReverseCup>::new()),
-        "knockout" => Box::new(Native::<tm_mode_knockout::Knockout>::new()),
-        "endurance" => Box::new(Native::<tm_mode_endurance::Endurance>::new()),
+        "rounds" => Box::new(Native::<tm_mode_rounds::v1::Rounds>::new()),
+        "time-attack" => Box::new(Native::<tm_mode_time_attack::v1::TimeAttack>::new()),
+        "reverse-cup" => Box::new(Native::<tm_mode_reverse_cup::v1::ReverseCup>::new()),
+        "knockout" => Box::new(Native::<tm_mode_knockout::v1::Knockout>::new()),
+        "endurance" => Box::new(Native::<tm_mode_endurance::v1::Endurance>::new()),
         _ => return None,
     })
 }

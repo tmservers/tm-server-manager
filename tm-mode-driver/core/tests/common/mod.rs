@@ -6,7 +6,7 @@
 use tm_mode_driver::{Driver, DriverError, DriverInput, DriverLimits};
 use tm_mode_driver_sdk::Native;
 pub use tm_mode_driver_sim::events::*;
-use tm_mode_rounds::Rounds;
+use tm_mode_rounds::v1::Rounds;
 
 /// Starts the rounds mode with these settings, which it may reject.
 pub fn start(settings: &str) -> Result<Driver, DriverError> {
