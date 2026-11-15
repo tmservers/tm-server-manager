@@ -57,6 +57,9 @@ pub use pause::Pause;
 mod driver;
 pub use driver::*;
 
+mod driver_record;
+pub use driver_record::*;
+
 use crate::base::PlayerInfo;
 
 /// Can hold every Event trasmitted trough the ModeScript or vanilla events.

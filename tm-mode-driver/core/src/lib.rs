@@ -44,8 +44,10 @@ use tm_server_types::{
 };
 mod convert;
 mod races;
+mod record;
 mod stats;
 
+pub use record::{RecordedDriver, Recorder, RecordingDriver, Replayer};
 pub use stats::{CallStats, DriverStats};
 
 use races::Races;
