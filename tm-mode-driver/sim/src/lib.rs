@@ -105,9 +105,10 @@ macro_rules! simulation_tests {
 
         #[test]
         fn saved_logs_pass() {
+            // Every version keeps its logs next to its simulation, e.g. `tests/simulation_v1/logs`.
             let logs = ::std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
                 .join("tests")
-                .join("simulation")
+                .join(env!("CARGO_CRATE_NAME"))
                 .join("logs");
             $simulator().check_logs(logs);
         }
