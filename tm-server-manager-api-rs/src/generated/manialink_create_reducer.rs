@@ -4,12 +4,15 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
+use super::ui_manifest_type::UiManifest;
+
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct ManialinkCreateArgs {
     pub competition_id: u32,
     pub name: String,
     pub xml: String,
+    pub manifest: UiManifest,
 }
 
 impl From<ManialinkCreateArgs> for super::Reducer {
@@ -18,6 +21,7 @@ impl From<ManialinkCreateArgs> for super::Reducer {
             competition_id: args.competition_id,
             name: args.name,
             xml: args.xml,
+            manifest: args.manifest,
         }
     }
 }
@@ -42,8 +46,9 @@ pub trait manialink_create {
         competition_id: u32,
         name: String,
         xml: String,
+        manifest: UiManifest,
     ) -> __sdk::Result<()> {
-        self.manialink_create_then(competition_id, name, xml, |_, _| {})
+        self.manialink_create_then(competition_id, name, xml, manifest, |_, _| {})
     }
 
     /// Request that the remote module invoke the reducer `manialink_create` to run as soon as possible,
@@ -57,6 +62,7 @@ pub trait manialink_create {
         competition_id: u32,
         name: String,
         xml: String,
+        manifest: UiManifest,
 
         callback: impl FnOnce(
             &super::ReducerEventContext,
@@ -72,6 +78,7 @@ impl manialink_create for super::RemoteReducers {
         competition_id: u32,
         name: String,
         xml: String,
+        manifest: UiManifest,
 
         callback: impl FnOnce(
             &super::ReducerEventContext,
@@ -84,6 +91,7 @@ impl manialink_create for super::RemoteReducers {
                 competition_id,
                 name,
                 xml,
+                manifest,
             },
             callback,
         )

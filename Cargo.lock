@@ -6345,6 +6345,7 @@ dependencies = [
  "nadeo-api",
  "openssl",
  "serde",
+ "serde_json",
  "spacetimedb-lib",
  "spacetimedb-sdk",
  "testcontainers",

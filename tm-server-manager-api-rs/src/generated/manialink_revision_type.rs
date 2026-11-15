@@ -4,12 +4,15 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
+use super::ui_manifest_type::UiManifest;
+
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct ManialinkRevision {
     pub id: u32,
     pub manialink_id: u32,
     pub xml: String,
+    pub manifest: UiManifest,
     pub created_at: __sdk::Timestamp,
 }
 
@@ -24,6 +27,7 @@ pub struct ManialinkRevisionCols {
     pub id: __sdk::__query_builder::Col<ManialinkRevision, u32>,
     pub manialink_id: __sdk::__query_builder::Col<ManialinkRevision, u32>,
     pub xml: __sdk::__query_builder::Col<ManialinkRevision, String>,
+    pub manifest: __sdk::__query_builder::Col<ManialinkRevision, UiManifest>,
     pub created_at: __sdk::__query_builder::Col<ManialinkRevision, __sdk::Timestamp>,
 }
 
@@ -34,6 +38,7 @@ impl __sdk::__query_builder::HasCols for ManialinkRevision {
             id: __sdk::__query_builder::Col::new(table_name, "id"),
             manialink_id: __sdk::__query_builder::Col::new(table_name, "manialink_id"),
             xml: __sdk::__query_builder::Col::new(table_name, "xml"),
+            manifest: __sdk::__query_builder::Col::new(table_name, "manifest"),
             created_at: __sdk::__query_builder::Col::new(table_name, "created_at"),
         }
     }

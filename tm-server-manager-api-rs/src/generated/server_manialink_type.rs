@@ -4,11 +4,14 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
+use super::ui_manifest_type::UiManifest;
+
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct ServerManialink {
     pub revision: u32,
     pub xml: String,
+    pub manifest: UiManifest,
 }
 
 impl __sdk::InModule for ServerManialink {
@@ -21,6 +24,7 @@ impl __sdk::InModule for ServerManialink {
 pub struct ServerManialinkCols {
     pub revision: __sdk::__query_builder::Col<ServerManialink, u32>,
     pub xml: __sdk::__query_builder::Col<ServerManialink, String>,
+    pub manifest: __sdk::__query_builder::Col<ServerManialink, UiManifest>,
 }
 
 impl __sdk::__query_builder::HasCols for ServerManialink {
@@ -29,6 +33,7 @@ impl __sdk::__query_builder::HasCols for ServerManialink {
         ServerManialinkCols {
             revision: __sdk::__query_builder::Col::new(table_name, "revision"),
             xml: __sdk::__query_builder::Col::new(table_name, "xml"),
+            manifest: __sdk::__query_builder::Col::new(table_name, "manifest"),
         }
     }
 }

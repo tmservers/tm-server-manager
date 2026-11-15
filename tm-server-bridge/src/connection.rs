@@ -12,6 +12,7 @@ use tm_server_manager_api_rs::ErrorContext;
 use tm_server_manager_api_rs::EventRawServerMethodTableAccess;
 use tm_server_manager_api_rs::EventRawServerStateTableAccess;
 use tm_server_manager_api_rs::MyMatchDriverTableAccess;
+use tm_server_manager_api_rs::MyMatchUiDataTableAccess;
 use tm_server_manager_api_rs::RawServerPermittedPlayersTableAccess;
 use tm_server_manager_api_rs::RawServerPlayerDestinationTableAccess;
 use tm_server_manager_api_rs::event_raw_server_methodQueryTableAccess;
@@ -19,6 +20,7 @@ use tm_server_manager_api_rs::event_raw_server_stateQueryTableAccess;
 use tm_server_manager_api_rs::login_as_server;
 use tm_server_manager_api_rs::my_match_driverQueryTableAccess;
 use tm_server_manager_api_rs::my_match_teamsQueryTableAccess;
+use tm_server_manager_api_rs::my_match_ui_dataQueryTableAccess;
 use tm_server_manager_api_rs::my_server_manialinksQueryTableAccess;
 use tm_server_manager_api_rs::raw_server_driver_modes;
 use tm_server_manager_api_rs::raw_server_permitted_playersQueryTableAccess;
@@ -134,6 +136,7 @@ impl MyDbConnection {
             .add_query(|ctx| ctx.from.my_match_driver())
             .add_query(|ctx| ctx.from.my_match_teams())
             .add_query(|ctx| ctx.from.my_server_manialinks())
+            .add_query(|ctx| ctx.from.my_match_ui_data())
             .add_query(|ctx| ctx.from.raw_server_permitted_players())
             .add_query(|ctx| ctx.from.raw_server_player_destination())
             .subscribe();
@@ -148,6 +151,16 @@ impl MyDbConnection {
             let (session, last_seq) = (driver.session, driver.last_seq);
             tokio::spawn(crate::driver::driver_resend(session, last_seq));
         });
+
+        // What the manialinks of the match show changed.
+        spacetime
+            .db
+            .my_match_ui_data()
+            .on_insert(|_, _| crate::driver::driver_ui_data_changed());
+        spacetime
+            .db
+            .my_match_ui_data()
+            .on_delete(|_, _| crate::driver::driver_ui_data_changed());
 
         spacetime
             .db

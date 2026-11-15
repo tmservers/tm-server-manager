@@ -8,7 +8,7 @@
 use spacetimedb::{
     CtxDbRead, ReducerContext, SpacetimeType, Table, Timestamp, ViewContext, reducer, table, view,
 };
-use tm_server_types::config::ServerConfigV2;
+use tm_server_types::config::{Manialink, ServerConfigV2, UiManifest};
 
 use crate::{
     authorization::Authorization,
@@ -38,6 +38,8 @@ pub struct ManialinkRevision {
     #[index(hash)]
     pub manialink_id: u32,
     pub xml: String,
+    /// What it sends and reads, checked against the xml.
+    pub manifest: UiManifest,
     pub created_at: Timestamp,
 }
 
@@ -46,6 +48,7 @@ pub struct ManialinkRevision {
 pub struct ServerManialink {
     pub revision: u32,
     pub xml: String,
+    pub manifest: UiManifest,
 }
 
 #[reducer]
@@ -54,12 +57,13 @@ pub(crate) fn manialink_create(
     competition_id: u32,
     name: String,
     xml: String,
+    manifest: UiManifest,
 ) -> Result<(), String> {
     ctx.competition_find(competition_id)?;
     ctx.auth_builder(competition_id)
         .permission(CompetitionPermissionsV1::MANIALINK_EDIT)
         .authorize()?;
-    tm_mode_driver_manialinks::check(&xml)?;
+    tm_mode_driver_manialinks::check_with_manifest(&xml, &manifest)?;
 
     let manialink = ctx.db.tab_manialink().insert(CompetitionManialink {
         id: 0,
@@ -70,6 +74,7 @@ pub(crate) fn manialink_create(
         id: 0,
         manialink_id: manialink.id,
         xml,
+        manifest,
         created_at: ctx.timestamp,
     });
     Ok(())
@@ -81,13 +86,15 @@ pub(crate) fn manialink_revise(
     ctx: &ReducerContext,
     manialink_id: u32,
     xml: String,
+    manifest: UiManifest,
 ) -> Result<(), String> {
     let manialink = editable(ctx, manialink_id)?;
-    tm_mode_driver_manialinks::check(&xml)?;
+    tm_mode_driver_manialinks::check_with_manifest(&xml, &manifest)?;
     ctx.db.tab_manialink_revision().insert(ManialinkRevision {
         id: 0,
         manialink_id: manialink.id,
         xml,
+        manifest,
         created_at: ctx.timestamp,
     });
     Ok(())
@@ -181,17 +188,32 @@ fn my_server_manialinks(ctx: &ViewContext) -> Vec<ServerManialink> {
         .map(|revision| ServerManialink {
             revision: revision.id,
             xml: revision.xml,
+            manifest: revision.manifest,
         })
         .collect()
 }
 
 pub(crate) trait ManialinkRead {
+    /// What a manialink sends and reads: the manifest of a default, the one of a revision.
+    fn manialink_manifest(&self, manialink: &Manialink) -> Option<UiManifest>;
     /// A config of the competition may only show manialinks of it and of the
     /// competitions above it.
     fn manialinks_check(&self, competition_id: u32, config: &ServerConfigV2) -> Result<(), String>;
 }
 
 impl<Db: CtxDbRead> ManialinkRead for Db {
+    fn manialink_manifest(&self, manialink: &Manialink) -> Option<UiManifest> {
+        match manialink {
+            Manialink::BuiltIn(manialink) => Some(manialink.manifest()),
+            Manialink::Custom(revision) => self
+                .db_read_only()
+                .tab_manialink_revision()
+                .id()
+                .find(*revision)
+                .map(|revision| revision.manifest),
+        }
+    }
+
     fn manialinks_check(&self, competition_id: u32, config: &ServerConfigV2) -> Result<(), String> {
         let allowed = self.competition_ancestors(competition_id);
         for revision in config.custom_manialinks() {
@@ -242,7 +264,15 @@ mod tests {
     }
 
     fn create(world: &World, competition_id: u32, name: &str, xml: &str) -> u32 {
-        world.as_owner(|ctx| manialink_create(ctx, competition_id, name.into(), xml.into()));
+        world.as_owner(|ctx| {
+            manialink_create(
+                ctx,
+                competition_id,
+                name.into(),
+                xml.into(),
+                UiManifest::default(),
+            )
+        });
         revisions(world, competition_id, name)[0].id
     }
 
@@ -264,7 +294,9 @@ mod tests {
         let manialink = revisions(&world, COMPETITION, "Sponsors")[0].manialink_id;
 
         let changed = XML.replace("Hello", "Hi");
-        world.as_owner(|ctx| manialink_revise(ctx, manialink, changed.clone()));
+        world.as_owner(|ctx| {
+            manialink_revise(ctx, manialink, changed.clone(), UiManifest::default())
+        });
 
         let revisions = revisions(&world, COMPETITION, "Sponsors");
         let saved: Vec<(u32, &str)> = revisions.iter().map(|r| (r.id, r.xml.as_str())).collect();
@@ -284,6 +316,7 @@ mod tests {
                 COMPETITION,
                 "Broken".into(),
                 "<manialink><frame>".into(),
+                UiManifest::default(),
             )
         });
         assert_eq!(refused.unwrap_err(), "<frame> is not closed.");
@@ -291,10 +324,66 @@ mod tests {
         let first = create(&world, COMPETITION, "Fine", XML);
         let manialink = revisions(&world, COMPETITION, "Fine")[0].manialink_id;
         let wrong_type = "<manialink><script><!--\ndeclare netread Integer Net_Driver_StandingsScores for Teams[0];\n--></script></manialink>";
-        let refused = world.try_as_owner(|ctx| manialink_revise(ctx, manialink, wrong_type.into()));
+        let refused = world.try_as_owner(|ctx| {
+            manialink_revise(ctx, manialink, wrong_type.into(), UiManifest::default())
+        });
         assert!(refused.is_err_and(|e| e.contains("is Integer[], not Integer")));
         assert_eq!(revisions(&world, COMPETITION, "Fine").len(), 1);
         assert_eq!(revisions(&world, COMPETITION, "Fine")[0].id, first);
+    }
+
+    #[test]
+    fn a_revision_keeps_the_manifest_of_what_it_sends() {
+        use tm_server_types::config::{UiArg, UiEventSpec, UiRoute};
+        let world = World::new();
+        let voting = r#"<manialink version="3"><script><!-- SendCustomEvent("vote", ["1"]); --></script></manialink>"#;
+        let refused = world.try_as_owner(|ctx| {
+            manialink_create(
+                ctx,
+                COMPETITION,
+                "Vote".into(),
+                voting.into(),
+                UiManifest::default(),
+            )
+        });
+        assert_eq!(
+            refused.unwrap_err(),
+            "The manialink sends vote, which its manifest does not declare."
+        );
+
+        let manifest = UiManifest {
+            events: vec![UiEventSpec {
+                name: "vote".into(),
+                route: UiRoute::Manager,
+                args: vec![UiArg::Bool],
+            }],
+            data_keys: vec!["votes".into()],
+        };
+        world.as_owner(|ctx| {
+            manialink_create(
+                ctx,
+                COMPETITION,
+                "Vote".into(),
+                voting.into(),
+                manifest.clone(),
+            )
+        });
+        let revision = &revisions(&world, COMPETITION, "Vote")[0];
+        assert_eq!(revision.manifest, manifest);
+        let read = world.test.anonymous_view_context();
+        assert_eq!(
+            read.manialink_manifest(&Manialink::Custom(revision.id)),
+            Some(manifest)
+        );
+        assert_eq!(
+            read.manialink_manifest(&Manialink::Custom(revision.id + 1)),
+            None
+        );
+        let ready = tm_server_types::config::BuiltInManialink::ReadyCheck;
+        assert_eq!(
+            read.manialink_manifest(&Manialink::BuiltIn(ready)),
+            Some(ready.manifest())
+        );
     }
 
     #[test]
@@ -373,7 +462,8 @@ mod tests {
             shown,
             vec![ServerManialink {
                 revision,
-                xml: XML.into()
+                xml: XML.into(),
+                manifest: UiManifest::default(),
             }]
         );
         // Other servers get nothing.

@@ -90,6 +90,16 @@ fn reseeded(entrants: &[MatchEntrant], order: &[u16]) -> Result<Vec<MatchEntrant
         .collect()
 }
 
+/// Lets a player into a match as if its inputs had given them.
+#[cfg(test)]
+pub(crate) fn match_entrant_insert(ctx: &ReducerContext, match_id: u32, user_id: u32, seed: u16) {
+    ctx.db.tab_match_entrant().insert(MatchEntrant::new(
+        match_id,
+        LbParticipant::Player(user_id),
+        seed,
+    ));
+}
+
 pub(crate) trait MatchEntrantRead {
     /// The entrants the match would get from its inputs right now.
     fn match_entrants_preview(&self, match_id: u32) -> Result<Vec<MatchEntrant>, LbError>;
