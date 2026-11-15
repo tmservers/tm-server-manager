@@ -1,6 +1,6 @@
 //! What the host tells a mode besides its events.
 
-use crate::User;
+use crate::{Team, User};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LogLevel {
@@ -23,6 +23,17 @@ pub trait Host {
 
     /// Maps in the playlist of the match, 0 without one.
     fn map_count(&self) -> u32;
+    /// The teams of a match of teams, empty for a match of players.
+    fn teams(&self) -> Vec<Team> {
+        Vec::new()
+    }
+    /// The team a player plays for.
+    fn team_of(&self, account_id: &str) -> Option<u32> {
+        self.teams()
+            .into_iter()
+            .find(|team| team.players.iter().any(|player| player == account_id))
+            .map(|team| team.team_id)
+    }
 
     /// The name of a player, e.g. for chat messages. The account id while the host
     /// does not know the name.

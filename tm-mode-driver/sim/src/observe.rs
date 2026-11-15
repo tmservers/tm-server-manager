@@ -12,8 +12,8 @@ use tm_mode_driver::{DriverInput, DriverReply};
 use tm_server_types::{
     event::{DriverHold, DriverSection, Event, WayPoint},
     method::{
-        DriverCommand, DriverFinishTimeout, DriverNetRound, DriverNetStandings, DriverNetUsers,
-        DriverRaceRules, DriverRoundFormat, DriverWarmUp,
+        DriverCommand, DriverFinishTimeout, DriverNetRound, DriverNetStandings, DriverNetTeams,
+        DriverNetUsers, DriverRaceRules, DriverRoundFormat, DriverWarmUp,
     },
 };
 
@@ -136,6 +136,7 @@ pub(crate) struct Published {
     pub standings: Option<DriverNetStandings>,
     pub round: Option<DriverNetRound>,
     pub users: Option<DriverNetUsers>,
+    pub teams: Option<DriverNetTeams>,
 }
 
 pub(crate) struct Observer {
@@ -323,6 +324,14 @@ impl Observer {
             DriverInput::Event(event) => event,
             DriverInput::Playlist(uids) => {
                 self.notes.push(format!("playlist {}", uids.join(" ")));
+                return Ok(None);
+            }
+            DriverInput::Teams(teams) => {
+                let teams: Vec<String> = teams
+                    .iter()
+                    .map(|team| format!("{} {}", team.name, team.players.join(" ")))
+                    .collect();
+                self.notes.push(format!("teams {}", teams.join(" · ")));
                 return Ok(None);
             }
             DriverInput::Players(players) => {
@@ -532,6 +541,7 @@ impl Observer {
                     self.published.round = Some(round);
                 }
                 DriverCommand::SetUsers(json) => self.published.users = Some(parse(json)?),
+                DriverCommand::SetTeams(json) => self.published.teams = Some(parse(json)?),
                 DriverCommand::Continue(_)
                 | DriverCommand::EndMap
                 | DriverCommand::SetLayer(_)

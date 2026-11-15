@@ -219,7 +219,8 @@ fn may_change(input: &DriverInput) -> bool {
         DriverInput::Playlist(_)
         | DriverInput::Players(_)
         | DriverInput::Resumed
-        | DriverInput::Settings(_) => true,
+        | DriverInput::Settings(_)
+        | DriverInput::Teams(_) => true,
         DriverInput::Delivered => false,
     }
 }

@@ -46,6 +46,10 @@ pub enum DriverCommand {
     /// [`DriverNetUsers`] as json for the netvars of the players. Sent by the driver
     /// host whenever it learns about a player and never produced by a mode itself.
     SetUsers(String),
+    /// [`DriverNetTeams`] as json for the netvars of the teams. Sent by the driver
+    /// host whenever the teams of the match or the players it knows change, never
+    /// produced by a mode itself.
+    SetTeams(String),
     /// A message for everyone in the chat.
     ChatMessage(String),
 }
@@ -82,11 +86,12 @@ impl DriverCommand {
     pub const SET_STANDINGS: &str = "Driver.SetStandings";
     pub const SET_ROUND: &str = "Driver.SetRound";
     pub const SET_USERS: &str = "Driver.SetUsers";
+    pub const SET_TEAMS: &str = "Driver.SetTeams";
     pub const SET_WARM_UP: &str = "Driver.SetWarmUp";
     pub const SET_RACE_RULES: &str = "Driver.SetRaceRules";
 
     /// Methods implemented by the driver modescript.
-    pub const MODESCRIPT_METHODS: [&str; 12] = [
+    pub const MODESCRIPT_METHODS: [&str; 13] = [
         Self::CONTINUE,
         Self::SET_ROUND_FORMAT,
         Self::SET_CAN_SPAWN,
@@ -97,6 +102,7 @@ impl DriverCommand {
         Self::SET_STANDINGS,
         Self::SET_ROUND,
         Self::SET_USERS,
+        Self::SET_TEAMS,
         Self::SET_WARM_UP,
         Self::SET_RACE_RULES,
     ];
@@ -179,6 +185,7 @@ impl DriverCommand {
             }
             DriverCommand::SetRound(round) => (Self::SET_ROUND, vec![round.clone()]),
             DriverCommand::SetUsers(users) => (Self::SET_USERS, vec![users.clone()]),
+            DriverCommand::SetTeams(teams) => (Self::SET_TEAMS, vec![teams.clone()]),
             DriverCommand::ChatMessage(message) => {
                 return DriverCall::ChatSendServerMessage(message.clone());
             }
@@ -377,6 +384,8 @@ pub struct DriverStandings {
     pub paused: bool,
     /// Ordered by position, unranked players last.
     pub entries: Vec<DriverEntry>,
+    /// The teams of a match of teams, ordered by position. Empty without teams.
+    pub teams: Vec<DriverTeamEntry>,
 }
 
 /// The round of a driver match as the driver host shows it ([`DriverNetRound`]): the
@@ -392,6 +401,26 @@ pub struct DriverRound {
     pub live: bool,
     /// Ordered by place.
     pub entries: Vec<DriverEntry>,
+    /// The teams of a match of teams in the round, ordered by place.
+    pub teams: Vec<DriverTeamEntry>,
+}
+
+/// A team in the standings of a driver match or of a round.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
+#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
+pub struct DriverTeamEntry {
+    pub team_id: u32,
+    /// Rank in the match or place in the round, from 1. 0 if the mode did not set it.
+    pub position: u32,
+    /// Points of the match or of the round, e.g. the maps won.
+    pub score: i32,
+    /// Points on the current map, e.g. of a match played over maps.
+    pub map_score: i32,
+    /// Empty without a label.
+    pub label: String,
+    pub label_tone: DriverLabelTone,
 }
 
 /// A player in the standings of a driver match or of a round.
@@ -519,9 +548,13 @@ impl DriverLabelTone {
 /// Statuses and tones are [`DriverStatus::code`] and [`DriverLabelTone::code`],
 /// times -1 without a time.
 ///
-/// Every group (players, standings, round, state of the mode) has a serial that
+/// The teams of a match of teams are maps by team id. Their standings and the ones of
+/// the round are columns like the ones of the players, ordered by position, written
+/// with the standings and the round. The team of every player is a map by player.
+///
+/// Every group (players, standings, round, teams, state of the mode) has a serial that
 /// increases once all its netvars changed together, which manialinks watch.
-pub const DRIVER_NETVARS: [(&str, &str); 32] = [
+pub const DRIVER_NETVARS: [(&str, &str); 50] = [
     ("Net_Driver_UsersSerial", "Integer"),
     ("Net_Driver_UserAccountIds", "Text[Integer]"),
     ("Net_Driver_UserNames", "Text[Integer]"),
@@ -542,6 +575,12 @@ pub const DRIVER_NETVARS: [(&str, &str); 32] = [
     ("Net_Driver_StandingsStatuses", "Integer[]"),
     ("Net_Driver_StandingsLabels", "Text[Integer]"),
     ("Net_Driver_StandingsLabelTones", "Integer[Integer]"),
+    ("Net_Driver_StandingsTeams", "Integer[]"),
+    ("Net_Driver_StandingsTeamPositions", "Integer[]"),
+    ("Net_Driver_StandingsTeamScores", "Integer[]"),
+    ("Net_Driver_StandingsTeamMapScores", "Integer[]"),
+    ("Net_Driver_StandingsTeamLabels", "Text[Integer]"),
+    ("Net_Driver_StandingsTeamLabelTones", "Integer[Integer]"),
     ("Net_Driver_RoundSerial", "Integer"),
     ("Net_Driver_RoundNumber", "Integer"),
     ("Net_Driver_RoundLive", "Boolean"),
@@ -552,6 +591,18 @@ pub const DRIVER_NETVARS: [(&str, &str); 32] = [
     ("Net_Driver_RoundStatuses", "Integer[]"),
     ("Net_Driver_RoundLabels", "Text[Integer]"),
     ("Net_Driver_RoundLabelTones", "Integer[Integer]"),
+    ("Net_Driver_RoundTeams", "Integer[]"),
+    ("Net_Driver_RoundTeamPositions", "Integer[]"),
+    ("Net_Driver_RoundTeamScores", "Integer[]"),
+    ("Net_Driver_RoundTeamMapScores", "Integer[]"),
+    ("Net_Driver_RoundTeamLabels", "Text[Integer]"),
+    ("Net_Driver_RoundTeamLabelTones", "Integer[Integer]"),
+    ("Net_Driver_TeamsSerial", "Integer"),
+    ("Net_Driver_TeamNames", "Text[Integer]"),
+    ("Net_Driver_TeamShortNames", "Text[Integer]"),
+    ("Net_Driver_TeamLogoUrls", "Text[Integer]"),
+    ("Net_Driver_TeamFlagUrls", "Text[Integer]"),
+    ("Net_Driver_UserTeams", "Integer[Integer]"),
     ("Net_Driver_StateSerial", "Integer"),
     ("Net_Driver_State", "Text"),
 ];
@@ -571,6 +622,7 @@ pub struct DriverNetStandings {
     pub rounds_on_map: u32,
     pub paused: bool,
     pub entries: DriverNetEntries,
+    pub teams: DriverNetTeamEntries,
 }
 
 /// The round the driver modescript writes into the netvars of the round, sent as
@@ -583,6 +635,40 @@ pub struct DriverNetRound {
     pub number: u32,
     pub live: bool,
     pub entries: DriverNetEntries,
+    pub teams: DriverNetTeamEntries,
+}
+
+/// Teams as columns, one value per team in the order of the standings.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
+#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
+pub struct DriverNetTeamEntries {
+    pub teams: Vec<u32>,
+    pub positions: Vec<u32>,
+    pub scores: Vec<i32>,
+    pub map_scores: Vec<i32>,
+    /// The teams with a label, their labels and the tones of these.
+    pub labeled: Vec<u32>,
+    pub labels: Vec<String>,
+    pub label_tones: Vec<i32>,
+}
+
+/// The teams of the match the driver modescript writes into the netvars of the teams
+/// by team id, sent as json with [`DriverCommand::SetTeams`].
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
+#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
+pub struct DriverNetTeams {
+    pub ids: Vec<u32>,
+    pub names: Vec<String>,
+    pub short_names: Vec<String>,
+    pub logo_urls: Vec<String>,
+    pub flag_urls: Vec<String>,
+    /// The players of the teams by their index ([`DriverUser::index`]) and their teams.
+    pub players: Vec<u32>,
+    pub player_teams: Vec<u32>,
 }
 
 /// Entries as columns, one value per entry in the order of the entries.

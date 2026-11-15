@@ -429,6 +429,7 @@ impl Server {
                 | DriverCommand::SetStandings(_)
                 | DriverCommand::SetRound(_)
                 | DriverCommand::SetUsers(_)
+                | DriverCommand::SetTeams(_)
                 | DriverCommand::ChatMessage(_) => {}
             }
         }

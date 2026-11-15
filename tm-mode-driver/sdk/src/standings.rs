@@ -16,6 +16,8 @@ impl Default for Standings {
             rounds_played: 0,
             maps_played: 0,
             info: String::new(),
+            teams: Vec::new(),
+            round_teams: Vec::new(),
         }
     }
 }

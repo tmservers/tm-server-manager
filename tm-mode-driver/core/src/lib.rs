@@ -36,10 +36,10 @@ use std::{
 use tm_mode_driver_sdk::{self as sdk, Host, LogLevel, ModeFault, ModeInstance, ModeSource};
 use tm_server_types::{
     base::{Map, PlayerInfo},
-    event::{DriverHold, DriverRoundResult, DriverSection, Event},
+    event::{DriverHold, DriverRoundResult, DriverSection, DriverTeam, Event},
     method::{
-        DriverCanSpawn, DriverCommand, DriverNetRound, DriverNetStandings, DriverNetUsers,
-        DriverRound, DriverStandings, DriverUsers,
+        DriverCanSpawn, DriverCommand, DriverNetRound, DriverNetStandings, DriverNetTeams,
+        DriverNetUsers, DriverRound, DriverStandings, DriverUsers,
     },
 };
 mod convert;
@@ -104,6 +104,8 @@ pub struct Driver {
     standings: sdk::Standings,
     /// The last round that counted, as the mode placed it.
     last_round: Vec<sdk::Entry>,
+    /// The teams of the last round that counted.
+    last_round_teams: Vec<sdk::TeamEntry>,
     /// The round that runs as the mode placed it last, None between rounds.
     live_round: Option<Vec<sdk::Entry>>,
     /// When the mode placed the round that runs last, in server time.
@@ -121,6 +123,8 @@ pub struct Driver {
     last_hold: Option<LastHold>,
     /// Uids of the maps the match plays in order.
     playlist: Vec<String>,
+    /// The teams of a match of teams.
+    teams: Vec<DriverTeam>,
     map: Option<Map>,
     /// The mode chose the next map since the current one started.
     next_map_chosen: bool,
@@ -151,6 +155,7 @@ struct Published {
     users: Option<DriverNetUsers>,
     standings: Option<DriverNetStandings>,
     round: Option<DriverNetRound>,
+    teams: Option<DriverNetTeams>,
 }
 
 /// What a driver gets: the callbacks of the server and what its caller knows
@@ -182,6 +187,10 @@ pub enum DriverInput {
     /// last inputs may have been lost. Everything the driver set on the server goes
     /// out again: the spawn permissions of the match and what the manialinks show.
     Resumed,
+    /// The teams of a match of teams and who plays for them, e.g. when the driver
+    /// starts. The mode reads them through the host, the manialinks get them with
+    /// their names and pictures.
+    Teams(Vec<DriverTeam>),
     /// New json settings for the match, e.g. another points repartition. The mode
     /// keeps its standings and takes them from the next round on: right away when
     /// no round runs, otherwise with the first input after the round ended. A mode
@@ -221,6 +230,7 @@ impl Driver {
                 log_budget: Cell::new(LOG_BUDGET),
                 users: BTreeMap::new(),
                 map_count: 0,
+                teams: Vec::new(),
             },
             live_round_interval: u32::try_from(limits.live_round_interval.as_millis())
                 .unwrap_or(u32::MAX),
@@ -231,6 +241,7 @@ impl Driver {
             mode,
             standings: convert::empty_standings(),
             last_round: Vec::new(),
+            last_round_teams: Vec::new(),
             live_round: None,
             live_round_asked: None,
             published: Published::default(),
@@ -240,6 +251,7 @@ impl Driver {
             session: None,
             last_hold: None,
             playlist: Vec::new(),
+            teams: Vec::new(),
             map: None,
             next_map_chosen: false,
             connected: BTreeSet::new(),
@@ -335,6 +347,19 @@ impl Driver {
                 DriverReply::default()
             }
             DriverInput::Settings(new) => self.new_settings(new)?,
+            DriverInput::Teams(teams) => {
+                self.teams.clone_from(teams);
+                self.host.teams = teams
+                    .iter()
+                    .map(|team| sdk::Team {
+                        team_id: team.team_id,
+                        name: team.name.clone(),
+                        short_name: team.short_name.clone(),
+                        players: team.players.clone(),
+                    })
+                    .collect();
+                self.published()
+            }
         };
         Ok(after_settings(settings, reply))
     }
@@ -445,6 +470,7 @@ impl Driver {
                 // Every match starts with the defaults of the modescript.
                 self.spawn_permissions.clear();
                 self.last_round.clear();
+                self.last_round_teams.clear();
                 self.live_round = None;
                 // Everything is published again, e.g. for a modescript that just started.
                 self.published = Published::default();
@@ -613,12 +639,19 @@ impl Driver {
     /// ordered by place.
     pub fn round(&self) -> DriverRound {
         match &self.live_round {
+            // Modes place only the players of a round that runs.
             Some(entries) => convert::round(
                 self.standings.rounds_played.saturating_add(1),
                 true,
                 entries,
+                &[],
             ),
-            None => convert::round(self.standings.rounds_played, false, &self.last_round),
+            None => convert::round(
+                self.standings.rounds_played,
+                false,
+                &self.last_round,
+                &self.last_round_teams,
+            ),
         }
     }
 
@@ -794,10 +827,15 @@ impl Driver {
     /// manager.
     fn take_round(&mut self, event: &sdk::Event) -> Option<DriverRoundResult> {
         let round = std::mem::take(&mut self.standings.round);
+        let round_teams = std::mem::take(&mut self.standings.round_teams);
         match event {
             sdk::Event::RoundEnd(round_end) if !round_end.invalid => {
                 self.last_round = round;
-                Some(convert::round_result(&self.last_round))
+                self.last_round_teams = round_teams;
+                Some(convert::round_result(
+                    &self.last_round,
+                    &self.last_round_teams,
+                ))
             }
             _ => None,
         }
@@ -877,6 +915,12 @@ impl Driver {
             self.index(&entry.account_id);
         }
 
+        // The players of the teams are known to the manialinks, also before they race.
+        let players: Vec<String> = self.teams.iter().flat_map(|t| t.players.clone()).collect();
+        for player in &players {
+            self.index(player);
+        }
+
         let mut commands = Vec::new();
         let users = convert::net_users(&self.users());
         if let Some(users) = changed(users, &mut self.published.users) {
@@ -889,6 +933,13 @@ impl Driver {
         let round = convert::net_round(&round, &self.indices);
         if let Some(round) = changed(round, &mut self.published.round) {
             commands.push(DriverCommand::SetRound(json(round)));
+        }
+        // A match of players never has teams to show.
+        let teams = convert::net_teams(&self.teams, &self.indices);
+        if (!teams.ids.is_empty() || self.published.teams.is_some())
+            && let Some(teams) = changed(teams, &mut self.published.teams)
+        {
+            commands.push(DriverCommand::SetTeams(json(teams)));
         }
         commands
     }
@@ -903,6 +954,7 @@ impl Driver {
 /// standings. The round is only output.
 fn clear(standings: &mut sdk::Standings, event: &sdk::Event) {
     standings.round.clear();
+    standings.round_teams.clear();
     match event {
         sdk::Event::MatchStart => *standings = convert::empty_standings(),
         sdk::Event::MapStart => standings.rounds_on_map = 0,
@@ -946,7 +998,10 @@ fn size(racers: &[sdk::Racer]) -> (u64, u64) {
 fn is_published(command: &DriverCommand) -> bool {
     matches!(
         command,
-        DriverCommand::SetStandings(_) | DriverCommand::SetRound(_) | DriverCommand::SetUsers(_)
+        DriverCommand::SetStandings(_)
+            | DriverCommand::SetRound(_)
+            | DriverCommand::SetUsers(_)
+            | DriverCommand::SetTeams(_)
     )
 }
 
@@ -978,6 +1033,7 @@ struct HostState {
     users: BTreeMap<String, sdk::User>,
     /// Maps of the playlist.
     map_count: u32,
+    teams: Vec<sdk::Team>,
 }
 
 impl Host for HostState {
@@ -1008,5 +1064,9 @@ impl Host for HostState {
 
     fn map_count(&self) -> u32 {
         self.map_count
+    }
+
+    fn teams(&self) -> Vec<sdk::Team> {
+        self.teams.clone()
     }
 }

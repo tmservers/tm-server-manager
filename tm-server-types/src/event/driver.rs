@@ -54,6 +54,19 @@ pub enum DriverSection {
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub struct DriverRoundResult {
     pub results: Vec<DriverPlayerResult>,
+    /// The teams of a match of teams as the mode placed them.
+    pub teams: Vec<DriverTeamResult>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
+#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
+pub struct DriverTeamResult {
+    pub team_id: u32,
+    pub points: i32,
+    /// Starts at 1.
+    pub position: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
