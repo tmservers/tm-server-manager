@@ -1,0 +1,20 @@
+# The snapshots of the simulations of every released built-in mode, see src/released.rs.
+# A released mode never changes how it plays, a change of rules is a new version of the mode.
+# <mode> <snapshot> <hash of its report>
+endurance-v1 modes/endurance/tests/simulation_v1/snapshots/simulation_v1__seed_1.snap 9fd1891e857ba1b9
+endurance-v1 modes/endurance/tests/simulation_v1/snapshots/simulation_v1__seed_2.snap 4f0b686fed5d466a
+endurance-v1 modes/endurance/tests/simulation_v1/snapshots/simulation_v1__seed_3.snap 15c79d0ee5ef58ad
+endurance-v1 modes/endurance/tests/simulation_v1/snapshots/simulation_v1__the_most_checkpoints_win.snap b275012b8614bd4a
+knockout-v1 modes/knockout/tests/simulation_v1/snapshots/simulation_v1__seed_1.snap bcf3e9cef3c4de00
+knockout-v1 modes/knockout/tests/simulation_v1/snapshots/simulation_v1__seed_2.snap d747d48932c16fb7
+knockout-v1 modes/knockout/tests/simulation_v1/snapshots/simulation_v1__seed_3.snap f67934d2474c0309
+reverse-cup-v1 modes/reverse-cup/tests/simulation_v1/snapshots/simulation_v1__seed_1.snap f91ead74e3f8c90c
+reverse-cup-v1 modes/reverse-cup/tests/simulation_v1/snapshots/simulation_v1__seed_2.snap dfa7a810229b659c
+reverse-cup-v1 modes/reverse-cup/tests/simulation_v1/snapshots/simulation_v1__seed_3.snap 7bbd07729525c3dd
+rounds-v1 modes/rounds/tests/simulation_v1/snapshots/simulation_v1__seed_1.snap 29b89e05d93a560a
+rounds-v1 modes/rounds/tests/simulation_v1/snapshots/simulation_v1__seed_2.snap 9fc2e5a503eb2e0b
+time-attack-v1 modes/time-attack/tests/simulation_v1/snapshots/simulation_v1__seed_1.snap a0dd222de041e12b
+time-attack-v1 modes/time-attack/tests/simulation_v1/snapshots/simulation_v1__seed_2.snap a715b8e167aef66a
+time-attack-v1 modes/time-attack/tests/simulation_v1/snapshots/simulation_v1__seed_3.snap b1025ae9f5dae99d
+time-attack-v1 modes/time-attack/tests/simulation_v1/snapshots/simulation_v1__the_best_race_counts.snap c01e8543c7fa6fc9
+rounds-v1 modes/rounds/tests/simulation_v1/snapshots/simulation_v1__seed_3.snap 4aff126df0833081

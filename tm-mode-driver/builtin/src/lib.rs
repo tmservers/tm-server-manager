@@ -1,10 +1,14 @@
 //! The modes built into the mode driver, by the version the config of a match selects
 //! them with (`Driver::mode`).
 //!
-//! A released version never changes how it plays. A change of rules is a new version next to it.
+//! A released version never changes how it plays, the snapshots of its simulations in
+//! `released.txt` hold it to that. A change of rules is a new version next to it.
 
 pub use tm_server_types::config::BuiltInMode;
 use tm_mode_driver_sdk::{ModeSource, Native};
+
+#[cfg(test)]
+mod released;
 
 /// The built-in mode of this version.
 pub fn builtin(mode: BuiltInMode) -> Box<dyn ModeSource + Send + Sync> {
