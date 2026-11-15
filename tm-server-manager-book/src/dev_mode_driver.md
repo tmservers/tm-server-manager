@@ -1,11 +1,12 @@
 # Mode Driver
 
 Status: the host, the SDK, the Rounds, TimeAttack, ReverseCup, Knockout and Endurance modes, modes
-written as scripts and the simulator are implemented. The bridge integration (phase 3) comes later,
-until then the runner in `tm-mode-driver/runner` drives a server with a mode.
-Everything except the modescript and the manialinks is covered by tests. The modescript and the
-runner still need a real server. The manager (and its database) stays untouched until the feature
-is fleshed out. See [Next steps](#next-steps).
+written as scripts and the simulator are implemented. The bridge runs the driver of driver matches
+and streams the records of its inputs to the manager, which replays them for the scores of the
+match (see [Records](#records)). The runner in `tm-mode-driver/runner` drives a server with a mode
+without the bridge and the manager.
+Everything except the modescript, the manialinks and the bridge is covered by tests. Those still
+need a real server. See [Next steps](#next-steps).
 
 The `wasm-driver/*` branches hold the first version, which ran every mode as a WASM module. They
 stay as an archive. The modes here are the same code and play its simulations move for move, see
@@ -28,7 +29,7 @@ The mode decides what happens and sends commands back.
 |---|---|
 | Where the logic runs | Inside the bridge (`tm-mode-driver`), every driver on one thread. Decisions are local and fast. |
 | Durability | No snapshots. Drivers only act on their settings and their inputs, so replaying the inputs of a match rebuilds the same driver (see [Resuming](#resuming)). |
-| Database | Untouched until the feature is fleshed out. The manager integration comes last. |
+| Database | The bridge decides, the manager replays the same driver from the records the bridge streams and stores its standings, the rounds that counted and the laps of the races (see [Records](#records)). |
 | Who writes modes | Built-in modes are Rust crates compiled into the driver. Competitions write their own as Rhai scripts, the language of the leaderboard scripts (see [Script modes](#script-modes)). |
 | Engines | One trait, `ModeInstance`, and plain Rust types every engine shares. The host does not know whether a mode is built in or a script (see [Engines](#engines)). |
 | Ties | Nobody ties, by one rule for every mode: the race time at the last checkpoint, then at the one before and so on, finally the account (see [No ties](#no-ties)). |
@@ -48,7 +49,9 @@ tm-server-controller   Event                 /  driver_commands(&[DriverCommand]
    ▼                                         │
 tm-mode-driver         one mode per match, standings, hold dedup, Continue, replay
    ▼                                         ▲
-tm-server-bridge ── post_event (standard callbacks, as before) ──▶ tm-server-manager
+tm-server-bridge ── post_event (the match flow) ─────────────────────────▶ tm-server-manager
+       │          ── match_driver_record(session, seq, DriverRecord) ──▶   replays the driver,
+       └── RecordingDriver: every input goes through its records           stores the scores
 ```
 
 ## What a mode gets told
@@ -477,9 +480,58 @@ its standings, the players it knows and the reply to the last hold.
 limits: a built-in mode of the same version of the driver, a script with the same source, which
 the manager is going to store with the match.
 
-`DriverInput` is serializable, so the database integration can store every input as it is
-applied. The manager already stores the standard callbacks, but no playlists and players, and
-holds only need to be stored once per seq although the script repeats them while it waits.
+`DriverInput` is serializable. The bridge does not store inputs but their records, see below.
+
+## Records
+
+The bridge runs the driver and decides without waiting for the database. Every input goes through
+its records first (`RecordingDriver`): a `Recorder` turns the input into `DriverRecord`s and the
+driver gets what a `Replayer` turns them back into. The manager replays the same records with a
+`RecordedDriver`, so both drivers get exactly the same inputs, also where the records leave out what
+a callback carried, and compute the same standings. The simulations run through the records as
+well, and their snapshots, which `released.txt` freezes, did not change: what a mode reads is in
+the records.
+
+**Compact races.** Starts and checkpoints are most of a match. A player is a number from 0, given
+by a `Player` record before its first use. A start carries the player and the server time. A
+checkpoint carries the player, its race time and its index, 11 bytes in the encoding of the
+database. A lap end and a finish add the length of a lap. The replay adds the checkpoints before
+and takes the server time from the start, so a two hour endurance race of 120 players is about
+1.6 MB of records. When that would not give the race the server sent, the recorder first sends what
+the race is: a `Resync` with its checkpoints after a lost waypoint or a race whose start got lost,
+a `Clock` with the start time when only that differs. Waypoints nothing compact tells, e.g. a race
+of more than 65535 checkpoints, go as they came. Respawns and give ups are records for the laps of
+the manager, they never reach the mode.
+
+**Streaming.** Records go one by one, without batching: one connection keeps them in order and a
+full server sends a few dozen a second. `match_driver_record(session, seq, record)` takes them
+while the match runs, the session names the run of the driver of the bridge and `seq` counts its
+records from 1. A record sent again changes nothing, one which skips records is refused. A new
+session starts the scores of the match over, e.g. when the match goes live or restarts. After a
+round counted, the bridge adds a `Digest` of its standings. When the manager computes other
+standings the match is flagged `Diverged` with the number of rounds, the manager keeps its own
+scores. A mode which fails flags the match `Faulted`.
+
+**The manager.** `tab_match_driver` holds the mode, the settings, the session and the last `seq`,
+`tab_match_driver_record` the log. The replay of every match stays in memory between records, keyed
+by session and `seq`. When it is not the one after the last stored record, e.g. after the module
+restarted or a transaction failed, the manager replays the log again. From the replay it stores:
+
+| Table | Rows |
+|---|---|
+| `tab_match_standing` | The standings as the mode left them, one row per player, only rows which changed are written. |
+| `tab_match_round_player` | Every round that counted as the mode placed it, with the map and the round of its races (`map_id`, `race_round`). |
+| `tab_match_race_lap` | Every lap of every race of every round, with respawns and give ups. A checkpoint only changes a small row, also in a long endurance race. |
+
+Leaderboards rank a driver match by its stored standings (`TmMode::Driver`). The events of the
+races of driver matches are no longer scored or stored, the rest of the match flow still comes
+through `post_event`. Preparing a driver match starts the mode once, so settings it rejects keep
+the match from taking a server. The views `match_driver_standings` and `match_race_laps` show the
+scores to the competition, `my_match_driver` tells a bridge how far the log of its match is: after
+it lost the connection, it sends the records after it again.
+
+The host measures its calls with the clock of `std`, which panics in a module. There the clock
+never moves and every time of the stats is zero.
 
 ## Pauses
 
@@ -976,7 +1028,7 @@ same matches, faults and checks as for the built-in modes.
 
 ## Configuration
 
-Until the bridge integrates the driver, the runner loads a mode by its name, a built-in one like
+Without the bridge, the runner loads a mode by its name, a built-in one like
 `rounds-v1` or `rounds` for its latest version, or by the path of a `.rhai` script, with settings as inline json or a json file (see
 [Next steps](#next-steps)).
 
@@ -1078,11 +1130,10 @@ script starts with `"lives": 3`.
 0. ✅ Typed boundary in `tm-server-types` and the controller.
 1. ✅ Generic modescript (not run on a server yet).
 2. ✅ `tm-mode-driver` host, SDK and the Rounds mode with tests.
-3. Bridge integration behind `ModeSettingsV2::Driver`, after testing with the runner, which stands
-   in for it until then.
-4. Database integration: store the inputs of the driver (holds once per seq) and resume by
-   replay, record round results, a `TmMode` for driver matches, store the scripts of competitions
-   and the source a match started with, team commands.
+3. ✅ Bridge integration behind `ModeSettingsV2::Driver`. Not run on a server yet.
+4. ✅ Database integration: the records of the driver, the replay for the scores, round results
+   and laps, a `TmMode` for driver matches. Later: a bridge which restarts replays the log of its
+   match, the scripts of competitions and the source a match started with, team commands.
 5. Port the remaining modes: ✅ TimeAttack, ✅ ReverseCup, ✅ Knockout, Cup. Check parity with
    recorded matches. New ones: ✅ Endurance.
 6. More manialinks on top of the standings (✅ live rounds, manialinks of the modes); remove the
@@ -1147,7 +1198,9 @@ script starts with `"lives": 3`.
      `manialinks live-standings scores-table`): `live-standings` shows it with the laps, the times
      and `Live`, and the round points of `standings` change while it runs. On the second map of a
      time attack match `live-standings` shows the column of the match points with a wider header.
-2. **Database integration (phase 4)** once the feature is fleshed out.
+2. **A bridge which restarts during a driver match** replays the log of the match from the manager
+   and goes on with `Resumed` and `Players`. Until then it starts the driver over with the next
+   config, which starts a new session and the scores of the match over.
 
 ## Risks
 
