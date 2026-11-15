@@ -122,6 +122,7 @@ impl Replayer {
             DriverRecord::Delivered => Some(DriverInput::Delivered),
             DriverRecord::Resumed => Some(DriverInput::Resumed),
             DriverRecord::Settings(settings) => Some(DriverInput::Settings(settings.clone())),
+            DriverRecord::Teams(teams) => Some(DriverInput::Teams(teams.clone())),
         }
     }
 
@@ -259,6 +260,7 @@ impl Recorder {
             DriverInput::Settings(settings) => {
                 records.push(DriverRecord::Settings(settings.clone()));
             }
+            DriverInput::Teams(teams) => records.push(DriverRecord::Teams(teams.clone())),
         }
         for record in &records {
             self.replay.input(record);

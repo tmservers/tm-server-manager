@@ -100,7 +100,7 @@ mod tests {
     #[cfg(feature = "serde")]
     #[test]
     fn script_parses_what_the_host_publishes() {
-        use crate::method::{DriverNetRound, DriverNetStandings, DriverNetUsers};
+        use crate::method::{DriverNetRound, DriverNetStandings, DriverNetTeams, DriverNetUsers};
 
         fn keys(json: &serde_json::Value, found: &mut Vec<String>) {
             if let serde_json::Value::Object(object) = json {
@@ -121,6 +121,10 @@ mod tests {
         );
         keys(
             &serde_json::to_value(DriverNetUsers::default()).unwrap(),
+            &mut found,
+        );
+        keys(
+            &serde_json::to_value(DriverNetTeams::default()).unwrap(),
             &mut found,
         );
         for key in found {

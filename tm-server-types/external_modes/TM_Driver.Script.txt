@@ -77,6 +77,7 @@
 #Const C_Method_SetStandings "Driver.SetStandings"
 #Const C_Method_SetRound "Driver.SetRound"
 #Const C_Method_SetUsers "Driver.SetUsers"
+#Const C_Method_SetTeams "Driver.SetTeams"
 #Const C_Method_SetWarmUp "Driver.SetWarmUp"
 #Const C_Method_SetRaceRules "Driver.SetRaceRules"
 
@@ -103,6 +104,16 @@
 	Integer[] label_tones;
 }
 
+#Struct K_Driver_TeamEntries {
+	Integer[] teams;
+	Integer[] positions;
+	Integer[] scores;
+	Integer[] map_scores;
+	Integer[] labeled;
+	Text[] labels;
+	Integer[] label_tones;
+}
+
 #Struct K_Driver_Standings {
 	Text title;
 	Text info;
@@ -112,12 +123,24 @@
 	Integer rounds_on_map;
 	Boolean paused;
 	K_Driver_Entries entries;
+	K_Driver_TeamEntries teams;
 }
 
 #Struct K_Driver_Round {
 	Integer number;
 	Boolean live;
 	K_Driver_Entries entries;
+	K_Driver_TeamEntries teams;
+}
+
+#Struct K_Driver_Teams {
+	Integer[] ids;
+	Text[] names;
+	Text[] short_names;
+	Text[] logo_urls;
+	Text[] flag_urls;
+	Integer[] players;
+	Integer[] player_teams;
 }
 
 #Struct K_Driver_Users {
@@ -192,7 +215,7 @@ XmlRpc::RegisterCallback(C_Callback_Hold, """
 	]
 	```
 """);
-foreach (Method in [C_Method_Continue, C_Method_SetRoundFormat, C_Method_SetCanSpawn, C_Method_EndMatch, C_Method_SetLayer, C_Method_RemoveLayer, C_Method_SetNetState, C_Method_SetStandings, C_Method_SetRound, C_Method_SetUsers, C_Method_SetWarmUp, C_Method_SetRaceRules]) {
+foreach (Method in [C_Method_Continue, C_Method_SetRoundFormat, C_Method_SetCanSpawn, C_Method_EndMatch, C_Method_SetLayer, C_Method_RemoveLayer, C_Method_SetNetState, C_Method_SetStandings, C_Method_SetRound, C_Method_SetUsers, C_Method_SetTeams, C_Method_SetWarmUp, C_Method_SetRaceRules]) {
 	XmlRpc::RegisterMethod(Method, """
 * Name: {{{Method}}}
 * Type: TriggerModeScriptEventArray
@@ -206,7 +229,7 @@ foreach (Method in [C_Method_Continue, C_Method_SetRoundFormat, C_Method_SetCanS
 StateMgr::Unload();
 
 XmlRpc::UnregisterCallback(C_Callback_Hold);
-foreach (Method in [C_Method_Continue, C_Method_SetRoundFormat, C_Method_SetCanSpawn, C_Method_EndMatch, C_Method_SetLayer, C_Method_RemoveLayer, C_Method_SetNetState, C_Method_SetStandings, C_Method_SetRound, C_Method_SetUsers, C_Method_SetWarmUp, C_Method_SetRaceRules]) {
+foreach (Method in [C_Method_Continue, C_Method_SetRoundFormat, C_Method_SetCanSpawn, C_Method_EndMatch, C_Method_SetLayer, C_Method_RemoveLayer, C_Method_SetNetState, C_Method_SetStandings, C_Method_SetRound, C_Method_SetUsers, C_Method_SetTeams, C_Method_SetWarmUp, C_Method_SetRaceRules]) {
 	XmlRpc::UnregisterMethod(Method);
 }
 ***
@@ -572,6 +595,34 @@ Boolean Driver_ValidEntries(K_Driver_Entries _Entries) {
 		&& _Entries.label_tones.count == _Entries.labeled.count;
 }
 
+/// Every column has a value for every team.
+Boolean Driver_ValidTeamEntries(K_Driver_TeamEntries _Teams) {
+	declare Integer Count = _Teams.teams.count;
+	return _Teams.positions.count == Count
+		&& _Teams.scores.count == Count
+		&& _Teams.map_scores.count == Count
+		&& _Teams.labels.count == _Teams.labeled.count
+		&& _Teams.label_tones.count == _Teams.labeled.count;
+}
+
+/// The labels of the teams by team.
+Text[Integer] Driver_TeamLabels(K_Driver_TeamEntries _Teams) {
+	declare Text[Integer] Labels;
+	foreach (Index => Team in _Teams.labeled) {
+		Labels[Team] = _Teams.labels[Index];
+	}
+	return Labels;
+}
+
+/// The tones of the labels of the teams by team.
+Integer[Integer] Driver_TeamLabelTones(K_Driver_TeamEntries _Teams) {
+	declare Integer[Integer] Tones;
+	foreach (Index => Team in _Teams.labeled) {
+		Tones[Team] = _Teams.label_tones[Index];
+	}
+	return Tones;
+}
+
 /// The labels of the entries by player.
 Text[Integer] Driver_Labels(K_Driver_Entries _Entries) {
 	declare Text[Integer] Labels;
@@ -594,6 +645,7 @@ Integer[Integer] Driver_LabelTones(K_Driver_Entries _Entries) {
 Void Driver_SetStandings(Text _Json) {
 	declare K_Driver_Standings Standings;
 	if (!Standings.fromjson(_Json) || !Driver_ValidEntries(Standings.entries)) return;
+	if (!Driver_ValidTeamEntries(Standings.teams)) return;
 	declare netwrite Text Net_Driver_Title for Teams[0] = "";
 	declare netwrite Text Net_Driver_Info for Teams[0] = "";
 	declare netwrite Text Net_Driver_MapName for Teams[0] = "";
@@ -608,6 +660,12 @@ Void Driver_SetStandings(Text _Json) {
 	declare netwrite Integer[] Net_Driver_StandingsStatuses for Teams[0] = [];
 	declare netwrite Text[Integer] Net_Driver_StandingsLabels for Teams[0] = [];
 	declare netwrite Integer[Integer] Net_Driver_StandingsLabelTones for Teams[0] = [];
+	declare netwrite Integer[] Net_Driver_StandingsTeams for Teams[0] = [];
+	declare netwrite Integer[] Net_Driver_StandingsTeamPositions for Teams[0] = [];
+	declare netwrite Integer[] Net_Driver_StandingsTeamScores for Teams[0] = [];
+	declare netwrite Integer[] Net_Driver_StandingsTeamMapScores for Teams[0] = [];
+	declare netwrite Text[Integer] Net_Driver_StandingsTeamLabels for Teams[0] = [];
+	declare netwrite Integer[Integer] Net_Driver_StandingsTeamLabelTones for Teams[0] = [];
 	declare netwrite Integer Net_Driver_StandingsSerial for Teams[0] = 0;
 	Net_Driver_Title = Standings.title;
 	Net_Driver_Info = Standings.info;
@@ -623,6 +681,12 @@ Void Driver_SetStandings(Text _Json) {
 	Net_Driver_StandingsStatuses = Standings.entries.statuses;
 	Net_Driver_StandingsLabels = Driver_Labels(Standings.entries);
 	Net_Driver_StandingsLabelTones = Driver_LabelTones(Standings.entries);
+	Net_Driver_StandingsTeams = Standings.teams.teams;
+	Net_Driver_StandingsTeamPositions = Standings.teams.positions;
+	Net_Driver_StandingsTeamScores = Standings.teams.scores;
+	Net_Driver_StandingsTeamMapScores = Standings.teams.map_scores;
+	Net_Driver_StandingsTeamLabels = Driver_TeamLabels(Standings.teams);
+	Net_Driver_StandingsTeamLabelTones = Driver_TeamLabelTones(Standings.teams);
 	Net_Driver_StandingsSerial += 1;
 }
 
@@ -630,6 +694,7 @@ Void Driver_SetStandings(Text _Json) {
 Void Driver_SetRound(Text _Json) {
 	declare K_Driver_Round Round;
 	if (!Round.fromjson(_Json) || !Driver_ValidEntries(Round.entries)) return;
+	if (!Driver_ValidTeamEntries(Round.teams)) return;
 	declare netwrite Integer Net_Driver_RoundNumber for Teams[0] = 0;
 	declare netwrite Boolean Net_Driver_RoundLive for Teams[0] = False;
 	declare netwrite Integer[] Net_Driver_RoundPlayers for Teams[0] = [];
@@ -639,6 +704,12 @@ Void Driver_SetRound(Text _Json) {
 	declare netwrite Integer[] Net_Driver_RoundStatuses for Teams[0] = [];
 	declare netwrite Text[Integer] Net_Driver_RoundLabels for Teams[0] = [];
 	declare netwrite Integer[Integer] Net_Driver_RoundLabelTones for Teams[0] = [];
+	declare netwrite Integer[] Net_Driver_RoundTeams for Teams[0] = [];
+	declare netwrite Integer[] Net_Driver_RoundTeamPositions for Teams[0] = [];
+	declare netwrite Integer[] Net_Driver_RoundTeamScores for Teams[0] = [];
+	declare netwrite Integer[] Net_Driver_RoundTeamMapScores for Teams[0] = [];
+	declare netwrite Text[Integer] Net_Driver_RoundTeamLabels for Teams[0] = [];
+	declare netwrite Integer[Integer] Net_Driver_RoundTeamLabelTones for Teams[0] = [];
 	declare netwrite Integer Net_Driver_RoundSerial for Teams[0] = 0;
 	Net_Driver_RoundNumber = Round.number;
 	Net_Driver_RoundLive = Round.live;
@@ -649,6 +720,12 @@ Void Driver_SetRound(Text _Json) {
 	Net_Driver_RoundStatuses = Round.entries.statuses;
 	Net_Driver_RoundLabels = Driver_Labels(Round.entries);
 	Net_Driver_RoundLabelTones = Driver_LabelTones(Round.entries);
+	Net_Driver_RoundTeams = Round.teams.teams;
+	Net_Driver_RoundTeamPositions = Round.teams.positions;
+	Net_Driver_RoundTeamScores = Round.teams.scores;
+	Net_Driver_RoundTeamMapScores = Round.teams.map_scores;
+	Net_Driver_RoundTeamLabels = Driver_TeamLabels(Round.teams);
+	Net_Driver_RoundTeamLabelTones = Driver_TeamLabelTones(Round.teams);
 	Net_Driver_RoundSerial += 1;
 }
 
@@ -679,6 +756,43 @@ Void Driver_SetUsers(Text _Json) {
 	Net_Driver_UserClubTags = ClubTags;
 	Net_Driver_UserZones = Zones;
 	Net_Driver_UsersSerial += 1;
+}
+
+/// Writes the teams of the match into their netvars by team, and the team of every
+/// player by the index of the player.
+Void Driver_SetTeams(Text _Json) {
+	declare K_Driver_Teams Published;
+	if (!Published.fromjson(_Json)) return;
+	declare Integer Count = Published.ids.count;
+	if (Published.names.count != Count || Published.short_names.count != Count) return;
+	if (Published.logo_urls.count != Count || Published.flag_urls.count != Count) return;
+	if (Published.player_teams.count != Published.players.count) return;
+	declare netwrite Text[Integer] Net_Driver_TeamNames for Teams[0] = [];
+	declare netwrite Text[Integer] Net_Driver_TeamShortNames for Teams[0] = [];
+	declare netwrite Text[Integer] Net_Driver_TeamLogoUrls for Teams[0] = [];
+	declare netwrite Text[Integer] Net_Driver_TeamFlagUrls for Teams[0] = [];
+	declare netwrite Integer[Integer] Net_Driver_UserTeams for Teams[0] = [];
+	declare netwrite Integer Net_Driver_TeamsSerial for Teams[0] = 0;
+	declare Text[Integer] Names;
+	declare Text[Integer] ShortNames;
+	declare Text[Integer] LogoUrls;
+	declare Text[Integer] FlagUrls;
+	declare Integer[Integer] UserTeams;
+	foreach (Index => Team in Published.ids) {
+		Names[Team] = Published.names[Index];
+		ShortNames[Team] = Published.short_names[Index];
+		LogoUrls[Team] = Published.logo_urls[Index];
+		FlagUrls[Team] = Published.flag_urls[Index];
+	}
+	foreach (Index => Player in Published.players) {
+		UserTeams[Player] = Published.player_teams[Index];
+	}
+	Net_Driver_TeamNames = Names;
+	Net_Driver_TeamShortNames = ShortNames;
+	Net_Driver_TeamLogoUrls = LogoUrls;
+	Net_Driver_TeamFlagUrls = FlagUrls;
+	Net_Driver_UserTeams = UserTeams;
+	Net_Driver_TeamsSerial += 1;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
@@ -745,6 +859,8 @@ Void Driver_ApplyCommand(Text _Method, Text[] _Params) {
 		if (_Params.count >= 1) Driver_SetRound(_Params[0]);
 	} else if (_Method == C_Method_SetUsers) {
 		if (_Params.count >= 1) Driver_SetUsers(_Params[0]);
+	} else if (_Method == C_Method_SetTeams) {
+		if (_Params.count >= 1) Driver_SetTeams(_Params[0]);
 	}
 }
 

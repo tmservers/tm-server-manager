@@ -52,6 +52,24 @@ pub enum DriverRecord {
     /// What the standings of the bridge are after a round counted, to find out
     /// whether the manager computes the same.
     Digest(DriverRecordDigest),
+    /// The teams of the match and who plays for them.
+    Teams(Vec<DriverTeam>),
+}
+
+/// A team of a match, as the manager knows it from the entrants of the match.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
+#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
+pub struct DriverTeam {
+    pub team_id: u32,
+    pub name: String,
+    /// E.g. a tag of a few letters. Empty while the manager has none.
+    pub short_name: String,
+    pub logo_url: String,
+    pub flag_url: String,
+    /// The accounts of the players.
+    pub players: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

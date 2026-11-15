@@ -1,18 +1,18 @@
 use std::collections::BTreeMap;
 
 use tm_server_types::{
-    event::{DriverPlayerResult, DriverRoundResult},
+    event::{DriverPlayerResult, DriverRoundResult, DriverTeam, DriverTeamResult},
     method::{
         DriverCanSpawn, DriverCommand, DriverEntry, DriverFinishTimeout, DriverLabelTone,
-        DriverLaps, DriverNetEntries, DriverNetRound, DriverNetStandings, DriverNetUsers,
-        DriverRaceRules, DriverRound, DriverRoundFormat, DriverStandings, DriverStatus, DriverUser,
-        DriverUsers, DriverWarmUp,
+        DriverLaps, DriverNetEntries, DriverNetRound, DriverNetStandings, DriverNetTeamEntries,
+        DriverNetTeams, DriverNetUsers, DriverRaceRules, DriverRound, DriverRoundFormat,
+        DriverStandings, DriverStatus, DriverTeamEntry, DriverUser, DriverUsers, DriverWarmUp,
     },
 };
 
 use tm_mode_driver_sdk::{
     CanSpawn, Command, Entry, FinishTimeout, Label, Laps, RaceRules, RoundFormat, Standings,
-    Status, Tone, User, WarmUp,
+    Status, TeamEntry, Tone, User, WarmUp,
 };
 
 /// The commands of a mode for the server. Maps are given by their place in the playlist.
@@ -89,6 +89,8 @@ pub(crate) fn empty_standings() -> Standings {
         rounds_played: 0,
         maps_played: 0,
         info: String::new(),
+        teams: Vec::new(),
+        round_teams: Vec::new(),
     }
 }
 
@@ -123,6 +125,52 @@ pub(crate) fn standings(
         map_count,
         paused,
         entries,
+        teams: team_entries(&standings.teams),
+    }
+}
+
+/// Teams ordered by position, unranked teams last by id.
+pub(crate) fn team_entries(teams: &[TeamEntry]) -> Vec<DriverTeamEntry> {
+    let mut entries: Vec<DriverTeamEntry> = teams
+        .iter()
+        .map(|team| {
+            let (label, label_tone) = label(&team.label);
+            DriverTeamEntry {
+                team_id: team.team_id,
+                position: team.position,
+                score: team.score,
+                map_score: team.map_score,
+                label,
+                label_tone,
+            }
+        })
+        .collect();
+    entries.sort_by_key(|team| (team.position == 0, team.position, team.team_id));
+    entries
+}
+
+/// The teams of the match as the netvars get them, their players by index.
+pub(crate) fn net_teams(teams: &[DriverTeam], indices: &BTreeMap<String, u32>) -> DriverNetTeams {
+    let column = |field: fn(&DriverTeam) -> &String| -> Vec<String> {
+        teams.iter().map(|team| field(team).clone()).collect()
+    };
+    let members: Vec<(u32, u32)> = teams
+        .iter()
+        .flat_map(|team| {
+            team.players
+                .iter()
+                .filter_map(|player| indices.get(player))
+                .map(move |&index| (index, team.team_id))
+        })
+        .collect();
+    DriverNetTeams {
+        ids: teams.iter().map(|team| team.team_id).collect(),
+        names: column(|team| &team.name),
+        short_names: column(|team| &team.short_name),
+        logo_urls: column(|team| &team.logo_url),
+        flag_urls: column(|team| &team.flag_url),
+        players: members.iter().map(|&(index, _)| index).collect(),
+        player_teams: members.iter().map(|&(_, team)| team).collect(),
     }
 }
 
@@ -136,11 +184,17 @@ fn name<'a>(users: &'a BTreeMap<String, User>, account_id: &'a str) -> &'a str {
 }
 
 /// The round as the manialinks get it.
-pub(crate) fn round(number: u32, live: bool, entries: &[Entry]) -> DriverRound {
+pub(crate) fn round(
+    number: u32,
+    live: bool,
+    entries: &[Entry],
+    teams: &[TeamEntry],
+) -> DriverRound {
     DriverRound {
         number,
         live,
         entries: ordered(entries),
+        teams: team_entries(teams),
     }
 }
 
@@ -202,6 +256,7 @@ pub(crate) fn net_standings(
         rounds_on_map: standings.rounds_on_map,
         paused: standings.paused,
         entries: net_entries(&standings.entries, indices),
+        teams: net_team_entries(&standings.teams),
     }
 }
 
@@ -211,6 +266,21 @@ pub(crate) fn net_round(round: &DriverRound, indices: &BTreeMap<String, u32>) ->
         number: round.number,
         live: round.live,
         entries: net_entries(&round.entries, indices),
+        teams: net_team_entries(&round.teams),
+    }
+}
+
+/// Teams as columns, by their id.
+fn net_team_entries(teams: &[DriverTeamEntry]) -> DriverNetTeamEntries {
+    let labeled: Vec<&DriverTeamEntry> = teams.iter().filter(|t| !t.label.is_empty()).collect();
+    DriverNetTeamEntries {
+        teams: teams.iter().map(|t| t.team_id).collect(),
+        positions: teams.iter().map(|t| t.position).collect(),
+        scores: teams.iter().map(|t| t.score).collect(),
+        map_scores: teams.iter().map(|t| t.map_score).collect(),
+        labeled: labeled.iter().map(|t| t.team_id).collect(),
+        labels: labeled.iter().map(|t| t.label.clone()).collect(),
+        label_tones: labeled.iter().map(|t| t.label_tone.code()).collect(),
     }
 }
 
@@ -232,7 +302,7 @@ fn net_entries(entries: &[DriverEntry], indices: &BTreeMap<String, u32>) -> Driv
 
 /// The round as the manager records it: the round points of everyone the mode
 /// placed in the round, in the order of their places.
-pub(crate) fn round_result(entries: &[Entry]) -> DriverRoundResult {
+pub(crate) fn round_result(entries: &[Entry], teams: &[TeamEntry]) -> DriverRoundResult {
     DriverRoundResult {
         results: ordered(entries)
             .into_iter()
@@ -242,6 +312,15 @@ pub(crate) fn round_result(entries: &[Entry]) -> DriverRoundResult {
                 points: entry.score,
                 position: entry.position,
                 time: entry.time,
+            })
+            .collect(),
+        teams: team_entries(teams)
+            .into_iter()
+            .filter(|team| team.position > 0)
+            .map(|team| DriverTeamResult {
+                team_id: team.team_id,
+                points: team.score,
+                position: team.position,
             })
             .collect(),
     }
@@ -254,9 +333,9 @@ fn ordered(entries: &[Entry]) -> Vec<DriverEntry> {
     entries
 }
 
-fn entry(entry: &Entry) -> DriverEntry {
-    // The netvars have no empty values, so missing ones have defaults.
-    let (label, label_tone) = match &entry.label {
+/// A label as the netvars have it, which have no empty values.
+fn label(label: &Option<Label>) -> (String, DriverLabelTone) {
+    match label {
         Some(Label { text, tone }) => (
             text.clone(),
             match tone {
@@ -266,7 +345,11 @@ fn entry(entry: &Entry) -> DriverEntry {
             },
         ),
         None => (String::new(), DriverLabelTone::Neutral),
-    };
+    }
+}
+
+fn entry(entry: &Entry) -> DriverEntry {
+    let (label, label_tone) = label(&entry.label);
 
     DriverEntry {
         account_id: entry.account_id.clone(),
@@ -390,6 +473,7 @@ mod tests {
         assert_eq!(
             serde_json::to_value(&standings).unwrap(),
             serde_json::json!({
+                "teams": [],
                 "title": "Rounds",
                 "info": "1 / 5 rounds",
                 "rounds_on_map": 1,
@@ -443,11 +527,11 @@ mod tests {
         ];
 
         assert_eq!(
-            positions(&round_result(&round)),
+            positions(&round_result(&round, &[])),
             [("first", -2, 1), ("second", -6, 2), ("third", 0, 3)]
         );
         assert_eq!(
-            super::round(4, false, &round).entries[0].account_id,
+            super::round(4, false, &round, &[]).entries[0].account_id,
             "first"
         );
     }
@@ -485,12 +569,21 @@ mod tests {
         });
         let mut first = player("first", 1, Status::Playing, 10);
         first.time = Some(30_000);
-        let round = super::round(3, true, &[out, first]);
+        let round = super::round(3, true, &[out, first], &[]);
         let indices = BTreeMap::from([("first".to_string(), 7), ("out".to_string(), 4)]);
 
         assert_eq!(
             serde_json::to_value(net_round(&round, &indices)).unwrap(),
             serde_json::json!({
+                "teams": {
+                    "teams": [],
+                    "positions": [],
+                    "scores": [],
+                    "map_scores": [],
+                    "labeled": [],
+                    "labels": [],
+                    "label_tones": [],
+                },
                 "number": 3,
                 "live": true,
                 "entries": {

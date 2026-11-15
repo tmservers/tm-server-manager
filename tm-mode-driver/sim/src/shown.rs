@@ -4,7 +4,8 @@
 
 use tm_server_types::method::{
     DriverEntry, DriverLabelTone, DriverNetEntries, DriverNetRound, DriverNetStandings,
-    DriverNetUsers, DriverRound, DriverStandings, DriverStatus, DriverUser, DriverUsers,
+    DriverNetTeamEntries, DriverNetUsers, DriverRound, DriverStandings, DriverStatus,
+    DriverTeamEntry, DriverUser, DriverUsers,
 };
 
 /// The players by index. Every index is a player of its own.
@@ -49,6 +50,7 @@ pub(crate) fn standings(
         map_count: standings.map_count,
         paused: standings.paused,
         entries: entries(&standings.entries, users, "standings")?,
+        teams: teams(&standings.teams, "standings")?,
     })
 }
 
@@ -57,7 +59,48 @@ pub(crate) fn round(round: &DriverNetRound, users: &DriverUsers) -> Result<Drive
         number: round.number,
         live: round.live,
         entries: entries(&round.entries, users, "round")?,
+        teams: teams(&round.teams, "round")?,
     })
+}
+
+/// The teams of the columns.
+fn teams(teams: &DriverNetTeamEntries, what: &str) -> Result<Vec<DriverTeamEntry>, String> {
+    let count = teams.teams.len();
+    if [
+        teams.positions.len(),
+        teams.scores.len(),
+        teams.map_scores.len(),
+    ]
+    .iter()
+    .any(|&length| length != count)
+        || teams.labels.len() != teams.labeled.len()
+        || teams.label_tones.len() != teams.labeled.len()
+    {
+        return Err(format!(
+            "The team columns of the published {what} differ in length"
+        ));
+    }
+    (0..count)
+        .map(|column| {
+            let team_id = teams.teams[column];
+            let (label, label_tone) = match teams.labeled.iter().position(|&t| t == team_id) {
+                Some(labeled) => (
+                    teams.labels[labeled].clone(),
+                    DriverLabelTone::from_code(teams.label_tones[labeled])
+                        .ok_or(format!("The published {what} have an unknown tone"))?,
+                ),
+                None => (String::new(), DriverLabelTone::Neutral),
+            };
+            Ok(DriverTeamEntry {
+                team_id,
+                position: teams.positions[column],
+                score: teams.scores[column],
+                map_score: teams.map_scores[column],
+                label,
+                label_tone,
+            })
+        })
+        .collect()
 }
 
 /// The entries of the columns. Every player has to be one of the published players.

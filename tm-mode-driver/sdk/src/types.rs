@@ -151,6 +151,37 @@ pub struct Standings {
     pub maps_played: u32,
     /// Progress of the match shown with the standings, e.g. `2 / 5 rounds`.
     pub info: String,
+    /// The teams of a match of teams, kept between events like the players. Empty
+    /// without teams. A mode ranks them, the host only shows them.
+    #[serde(default)]
+    pub teams: Vec<TeamEntry>,
+    /// The teams in the round that ended with this event, taken out by the host
+    /// like `round`.
+    #[serde(default)]
+    pub round_teams: Vec<TeamEntry>,
+}
+
+/// A team in the standings of the match or of a round.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TeamEntry {
+    pub team_id: u32,
+    /// Rank in the match or place in the round, from 1. 0 until the mode sets it.
+    pub position: u32,
+    /// Points of the match or of the round, e.g. the maps a team won.
+    pub score: i32,
+    /// Points on the current map, e.g. of a match played over maps.
+    pub map_score: i32,
+    pub label: Option<Label>,
+}
+
+/// A team of the match, as the host got it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Team {
+    pub team_id: u32,
+    pub name: String,
+    pub short_name: String,
+    /// The accounts of the players.
+    pub players: Vec<String>,
 }
 
 /// How long the remaining players have to finish once the first player finished.
