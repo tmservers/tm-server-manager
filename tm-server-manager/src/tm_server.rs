@@ -240,6 +240,7 @@ fn server_config_override(
         //TODO
         //.permission(CompetitionPermissionsV1::SERVER_ASSIGN)
         .authorize()?;
+    config.check_instantiable()?;
 
     if ctx.raw_server_config_is_owned_inline(tm_server.config) {
         ctx.raw_server_config_update(tm_server.config, config)?;
