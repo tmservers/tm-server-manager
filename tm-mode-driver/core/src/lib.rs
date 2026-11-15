@@ -30,7 +30,7 @@
 use std::{
     cell::Cell,
     collections::{BTreeMap, BTreeSet},
-    time::{Duration, Instant},
+    time::Duration,
 };
 
 use tm_mode_driver_sdk::{self as sdk, Host, LogLevel, ModeFault, ModeInstance, ModeSource};
@@ -49,7 +49,7 @@ mod stats;
 pub use stats::{CallStats, DriverStats};
 
 use races::Races;
-use stats::Measured;
+use stats::{Instant, Measured};
 
 /// Log messages a mode may write in one call. Further messages are dropped.
 const LOG_BUDGET: u32 = 64;

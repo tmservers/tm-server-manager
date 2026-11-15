@@ -8,6 +8,35 @@
 
 use std::{collections::BTreeMap, time::Duration};
 
+#[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+pub(crate) use NoClock as Instant;
+/// The wall clock the stats measure with. A module of SpacetimeDB has none, the clock
+/// of `std` panics there, so every time is zero.
+#[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
+pub(crate) use std::time::Instant;
+
+/// A clock which never moves.
+#[derive(Debug, Clone, Copy)]
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    allow(dead_code)
+)]
+pub(crate) struct NoClock;
+
+#[cfg_attr(
+    not(all(target_arch = "wasm32", target_os = "unknown")),
+    allow(dead_code)
+)]
+impl NoClock {
+    pub(crate) fn now() -> NoClock {
+        NoClock
+    }
+
+    pub(crate) fn elapsed(&self) -> Duration {
+        Duration::ZERO
+    }
+}
+
 /// The calls of a driver so far by kind, e.g. `round-end` or `live-round`.
 #[derive(Debug, Clone, Default)]
 pub struct DriverStats {
