@@ -6,8 +6,10 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
+pub mod audience_type;
 pub mod auto_inc_type;
 pub mod ban_args_type;
+pub mod built_in_manialink_type;
 pub mod built_in_mode_type;
 pub mod chat_send_server_message_to_user_args_type;
 pub mod chat_send_to_user_args_type;
@@ -79,6 +81,7 @@ pub mod driver_status_type;
 pub mod driver_team_result_type;
 pub mod driver_team_type;
 pub mod driver_type;
+pub mod driver_ui_type;
 pub mod end_map_end_type;
 pub mod end_map_start_type;
 pub mod end_match_type;
@@ -100,6 +103,7 @@ pub mod input_v_1_type;
 pub mod kick_args_type;
 pub mod knockout_elimination_type;
 pub mod knockout_type;
+pub mod landmark_kind_type;
 pub mod laps_number_type;
 pub mod last_chance_dnf_mode_type;
 pub mod lb_entry_kind_type;
@@ -138,9 +142,15 @@ pub mod leaderboard_v_3_type;
 pub mod loading_map_end_type;
 pub mod loading_map_start_type;
 pub mod login_as_server_procedure;
+pub mod manialink_type;
 pub mod map_pool_config_type;
+pub mod map_position_type;
 pub mod map_type;
 pub mod maps_per_match_type;
+pub mod marker_anchor_type;
+pub mod marker_binding_type;
+pub mod marker_label_type;
+pub mod marker_visibility_type;
 pub mod match_assign_server_reducer;
 pub mod match_by_id_table;
 pub mod match_chat_table;
@@ -218,6 +228,7 @@ pub mod output_create_reducer;
 pub mod output_v_1_type;
 pub mod pause_type;
 pub mod permitted_player_type;
+pub mod placement_type;
 pub mod play_loop_end_type;
 pub mod play_loop_start_type;
 pub mod player_action_checkpoint_type;
@@ -294,6 +305,7 @@ pub mod schedule_settings_update_reducer;
 pub mod schedule_status_type;
 pub mod schedule_v_1_type;
 pub mod scores_type;
+pub mod screen_target_type;
 pub mod server_assign_raw_server_reducer;
 pub mod server_config_override_reducer;
 pub mod server_config_type;
@@ -340,6 +352,9 @@ pub mod team_type;
 pub mod test_node_permitted_players_input_procedure;
 pub mod time_attack_type;
 pub mod tm_mode_type;
+pub mod ui_layer_type;
+pub mod ui_module_type;
+pub mod ui_module_visibility_type;
 pub mod unloading_map_end_type;
 pub mod unloading_map_start_type;
 pub mod unregister_player_reducer;
@@ -356,8 +371,10 @@ pub mod warmup_round_type;
 pub mod warmup_timeout_type;
 pub mod way_point_type;
 
+pub use audience_type::Audience;
 pub use auto_inc_type::AutoInc;
 pub use ban_args_type::BanArgs;
+pub use built_in_manialink_type::BuiltInManialink;
 pub use built_in_mode_type::BuiltInMode;
 pub use chat_send_server_message_to_user_args_type::ChatSendServerMessageToUserArgs;
 pub use chat_send_to_user_args_type::ChatSendToUserArgs;
@@ -429,6 +446,7 @@ pub use driver_status_type::DriverStatus;
 pub use driver_team_result_type::DriverTeamResult;
 pub use driver_team_type::DriverTeam;
 pub use driver_type::Driver;
+pub use driver_ui_type::DriverUi;
 pub use end_map_end_type::EndMapEnd;
 pub use end_map_start_type::EndMapStart;
 pub use end_match_type::EndMatch;
@@ -450,6 +468,7 @@ pub use input_v_1_type::InputV1;
 pub use kick_args_type::KickArgs;
 pub use knockout_elimination_type::KnockoutElimination;
 pub use knockout_type::Knockout;
+pub use landmark_kind_type::LandmarkKind;
 pub use laps_number_type::LapsNumber;
 pub use last_chance_dnf_mode_type::LastChanceDnfMode;
 pub use lb_entry_kind_type::LbEntryKind;
@@ -488,9 +507,15 @@ pub use leaderboard_v_3_type::LeaderboardV3;
 pub use loading_map_end_type::LoadingMapEnd;
 pub use loading_map_start_type::LoadingMapStart;
 pub use login_as_server_procedure::login_as_server;
+pub use manialink_type::Manialink;
 pub use map_pool_config_type::MapPoolConfig;
+pub use map_position_type::MapPosition;
 pub use map_type::Map;
 pub use maps_per_match_type::MapsPerMatch;
+pub use marker_anchor_type::MarkerAnchor;
+pub use marker_binding_type::MarkerBinding;
+pub use marker_label_type::MarkerLabel;
+pub use marker_visibility_type::MarkerVisibility;
 pub use match_assign_server_reducer::match_assign_server;
 pub use match_by_id_table::*;
 pub use match_chat_table::*;
@@ -568,6 +593,7 @@ pub use output_create_reducer::output_create;
 pub use output_v_1_type::OutputV1;
 pub use pause_type::Pause;
 pub use permitted_player_type::PermittedPlayer;
+pub use placement_type::Placement;
 pub use play_loop_end_type::PlayLoopEnd;
 pub use play_loop_start_type::PlayLoopStart;
 pub use player_action_checkpoint_type::PlayerActionCheckpoint;
@@ -644,6 +670,7 @@ pub use schedule_settings_update_reducer::schedule_settings_update;
 pub use schedule_status_type::ScheduleStatus;
 pub use schedule_v_1_type::ScheduleV1;
 pub use scores_type::Scores;
+pub use screen_target_type::ScreenTarget;
 pub use server_assign_raw_server_reducer::server_assign_raw_server;
 pub use server_config_override_reducer::server_config_override;
 pub use server_config_type::ServerConfig;
@@ -690,6 +717,9 @@ pub use team_type::Team;
 pub use test_node_permitted_players_input_procedure::test_node_permitted_players_input;
 pub use time_attack_type::TimeAttack;
 pub use tm_mode_type::TmMode;
+pub use ui_layer_type::UiLayer;
+pub use ui_module_type::UiModule;
+pub use ui_module_visibility_type::UiModuleVisibility;
 pub use unloading_map_end_type::UnloadingMapEnd;
 pub use unloading_map_start_type::UnloadingMapStart;
 pub use unregister_player_reducer::unregister_player;
@@ -732,12 +762,70 @@ pub enum Reducer {
         id: u32,
         settings: Vec<LbSettingsV3>,
     },
-    InputCreate {
+    ConnectionActionUpdate {
+        connection_id: u32,
+        action: ConnectionAction,
+    },
+    RegistrationCreate {
         name: String,
         parent_id: u32,
         position: Vec2,
         with_template: u32,
         as_template: bool,
+    },
+    RegistrationSettingsUpdate {
+        id: u32,
+        settings: RegistrationSettings,
+    },
+    RegistrationConfigured {
+        id: u32,
+    },
+    RegistrationStart {
+        id: u32,
+    },
+    RegistrationEnd {
+        id: u32,
+    },
+    RawServerPlayerAdd {
+        account_id: __sdk::Uuid,
+        spectator: bool,
+    },
+    CreateProject {
+        name: String,
+        description: String,
+        kind: ProjectKind,
+        starting_at: __sdk::Timestamp,
+        ending_at: __sdk::Timestamp,
+    },
+    ProjectEditName {
+        project_id: u32,
+        name: String,
+    },
+    ProjectEditDescription {
+        project_id: u32,
+        description: String,
+    },
+    ProjectEditDates {
+        project_id: u32,
+        starting_at: __sdk::Timestamp,
+        ending_at: __sdk::Timestamp,
+    },
+    ProjectUpdateStatus {
+        project_id: u32,
+    },
+    CompetitionCreate {
+        name: String,
+        parent_id: u32,
+        position: Vec2,
+        with_template: u32,
+    },
+    UnstableMatchChatMessage {
+        match_id: u32,
+        message: String,
+    },
+    MatchReseed {
+        match_id: u32,
+        order: Vec<u16>,
     },
     CompetitionNodePositionUpdate {
         node: NodeHandle,
@@ -745,43 +833,6 @@ pub enum Reducer {
     },
     CompetitionNodePositionsUpdate {
         positions: Vec<NodePositionUpdate>,
-    },
-    RegisterPlayer {
-        registration_id: u32,
-    },
-    UnregisterPlayer {
-        registration_id: u32,
-    },
-    UnstableManualRegisterOverridePlayers {
-        registration_id: u32,
-        players: Vec<String>,
-    },
-    RawServerConfigSharedNew {
-        name: String,
-        competition_id: u32,
-        config: ServerConfigV2,
-    },
-    RawServerConfigSharedUpdate {
-        config_id: u32,
-        config: ServerConfigV2,
-    },
-    UnstableRawServerConfigUpdateMaps {
-        config_id: u32,
-        maps: Vec<String>,
-    },
-    RawServerDriverModes {
-        modes: Vec<String>,
-    },
-    OutputCreate {
-        name: String,
-        parent_id: u32,
-        position: Vec2,
-        with_template: u32,
-        as_template: bool,
-    },
-    UnstableMatchChatMessage {
-        match_id: u32,
-        message: String,
     },
     MatchCreate {
         name: String,
@@ -835,6 +886,23 @@ pub enum Reducer {
         match_id: u32,
         open: bool,
     },
+    MigrationConnectionDataToV2,
+    CompetitionConnectionDataUpdate {
+        connection_id: u32,
+        settings: Vec<LbSettingsV3>,
+        slot: u16,
+    },
+    RawServerVerify {
+        server_id: u32,
+    },
+    ServerMethodCall {
+        server_login: String,
+        call: MethodCall,
+    },
+    ServerMethodResponse {
+        call_id: u32,
+        response: MethodResponse,
+    },
     MemberAdd {
         competition_id: u32,
         account_id: __sdk::Uuid,
@@ -865,6 +933,9 @@ pub enum Reducer {
         member_id: u32,
         new_permissions: u64,
     },
+    PostEvent {
+        event: Event,
+    },
     ServerCreate {
         name: String,
         parent_id: u32,
@@ -888,6 +959,16 @@ pub enum Reducer {
     ServerConfigOverride {
         to: u32,
         config: ServerConfigV2,
+    },
+    RegisterPlayer {
+        registration_id: u32,
+    },
+    UnregisterPlayer {
+        registration_id: u32,
+    },
+    UnstableManualRegisterOverridePlayers {
+        registration_id: u32,
+        players: Vec<String>,
     },
     TeamCreate {
         registration_id: u32,
@@ -922,25 +1003,32 @@ pub enum Reducer {
         user_id: u32,
         role: TeamRole,
     },
-    RegistrationCreate {
+    RawServerAdd {
+        server_id: u32,
+        competition_id: u32,
+    },
+    RawServerRemove {
+        server_id: u32,
+        competition_id: u32,
+    },
+    MatchRoundPlayerSetScoreManual {
+        match_id: u32,
+        user_id: u32,
+        round: u16,
+        score: i32,
+    },
+    MatchRoundPlayerSetPositionManual {
+        match_id: u32,
+        user_id: u32,
+        round: u16,
+        position: u16,
+    },
+    OutputCreate {
         name: String,
         parent_id: u32,
         position: Vec2,
         with_template: u32,
         as_template: bool,
-    },
-    RegistrationSettingsUpdate {
-        id: u32,
-        settings: RegistrationSettings,
-    },
-    RegistrationConfigured {
-        id: u32,
-    },
-    RegistrationStart {
-        id: u32,
-    },
-    RegistrationEnd {
-        id: u32,
     },
     ScheduleCreate {
         name: String,
@@ -959,66 +1047,16 @@ pub enum Reducer {
     ScheduleManualRun {
         id: u32,
     },
-    ConnectionActionUpdate {
-        connection_id: u32,
-        action: ConnectionAction,
-    },
-    MatchReseed {
-        match_id: u32,
-        order: Vec<u16>,
-    },
-    CompetitionCreate {
-        name: String,
-        parent_id: u32,
-        position: Vec2,
-        with_template: u32,
-    },
-    ServerMethodCall {
-        server_login: String,
-        call: MethodCall,
-    },
-    ServerMethodResponse {
-        call_id: u32,
-        response: MethodResponse,
-    },
-    CreateProject {
-        name: String,
-        description: String,
-        kind: ProjectKind,
-        starting_at: __sdk::Timestamp,
-        ending_at: __sdk::Timestamp,
-    },
-    ProjectEditName {
-        project_id: u32,
-        name: String,
-    },
-    ProjectEditDescription {
-        project_id: u32,
-        description: String,
-    },
-    ProjectEditDates {
-        project_id: u32,
-        starting_at: __sdk::Timestamp,
-        ending_at: __sdk::Timestamp,
-    },
-    ProjectUpdateStatus {
-        project_id: u32,
-    },
     SetEnvVar {
         key: String,
         value: String,
     },
-    MatchRoundPlayerSetScoreManual {
-        match_id: u32,
-        user_id: u32,
-        round: u16,
-        score: i32,
-    },
-    MatchRoundPlayerSetPositionManual {
-        match_id: u32,
-        user_id: u32,
-        round: u16,
-        position: u16,
+    InputCreate {
+        name: String,
+        parent_id: u32,
+        position: Vec2,
+        with_template: u32,
+        as_template: bool,
     },
     MatchDriverRecord {
         session: u32,
@@ -1032,26 +1070,21 @@ pub enum Reducer {
     NodeDelete {
         node: NodeHandle,
     },
-    MigrationConnectionDataToV2,
-    CompetitionConnectionDataUpdate {
-        connection_id: u32,
-        settings: Vec<LbSettingsV3>,
-        slot: u16,
-    },
-    PostEvent {
-        event: Event,
-    },
-    RawServerPlayerAdd {
-        account_id: __sdk::Uuid,
-        spectator: bool,
-    },
-    RawServerAdd {
-        server_id: u32,
+    RawServerConfigSharedNew {
+        name: String,
         competition_id: u32,
+        config: ServerConfigV2,
     },
-    RawServerRemove {
-        server_id: u32,
-        competition_id: u32,
+    RawServerConfigSharedUpdate {
+        config_id: u32,
+        config: ServerConfigV2,
+    },
+    UnstableRawServerConfigUpdateMaps {
+        config_id: u32,
+        maps: Vec<String>,
+    },
+    RawServerDriverModes {
+        modes: Vec<String>,
     },
     ConnectionConfigured {
         connection_id: u32,
@@ -1061,9 +1094,6 @@ pub enum Reducer {
     },
     ConnectionDelete {
         id: u32,
-    },
-    RawServerVerify {
-        server_id: u32,
     },
 }
 
@@ -1079,22 +1109,23 @@ impl __sdk::Reducer for Reducer {
             Reducer::LeaderboardConfigured { .. } => "leaderboard_configured",
             Reducer::LeaderboardUnconfigure { .. } => "leaderboard_unconfigure",
             Reducer::LeaderboardSettingsUpdate { .. } => "leaderboard_settings_update",
-            Reducer::InputCreate { .. } => "input_create",
+            Reducer::ConnectionActionUpdate { .. } => "connection_action_update",
+            Reducer::RegistrationCreate { .. } => "registration_create",
+            Reducer::RegistrationSettingsUpdate { .. } => "registration_settings_update",
+            Reducer::RegistrationConfigured { .. } => "registration_configured",
+            Reducer::RegistrationStart { .. } => "registration_start",
+            Reducer::RegistrationEnd { .. } => "registration_end",
+            Reducer::RawServerPlayerAdd { .. } => "raw_server_player_add",
+            Reducer::CreateProject { .. } => "create_project",
+            Reducer::ProjectEditName { .. } => "project_edit_name",
+            Reducer::ProjectEditDescription { .. } => "project_edit_description",
+            Reducer::ProjectEditDates { .. } => "project_edit_dates",
+            Reducer::ProjectUpdateStatus { .. } => "project_update_status",
+            Reducer::CompetitionCreate { .. } => "competition_create",
+            Reducer::UnstableMatchChatMessage { .. } => "unstable_match_chat_message",
+            Reducer::MatchReseed { .. } => "match_reseed",
             Reducer::CompetitionNodePositionUpdate { .. } => "competition_node_position_update",
             Reducer::CompetitionNodePositionsUpdate { .. } => "competition_node_positions_update",
-            Reducer::RegisterPlayer { .. } => "register_player",
-            Reducer::UnregisterPlayer { .. } => "unregister_player",
-            Reducer::UnstableManualRegisterOverridePlayers { .. } => {
-                "unstable_manual_register_override_players"
-            }
-            Reducer::RawServerConfigSharedNew { .. } => "raw_server_config_shared_new",
-            Reducer::RawServerConfigSharedUpdate { .. } => "raw_server_config_shared_update",
-            Reducer::UnstableRawServerConfigUpdateMaps { .. } => {
-                "unstable_raw_server_config_update_maps"
-            }
-            Reducer::RawServerDriverModes { .. } => "raw_server_driver_modes",
-            Reducer::OutputCreate { .. } => "output_create",
-            Reducer::UnstableMatchChatMessage { .. } => "unstable_match_chat_message",
             Reducer::MatchCreate { .. } => "match_create",
             Reducer::MatchAssignServer { .. } => "match_assign_server",
             Reducer::MatchServerRevoke { .. } => "match_server_revoke",
@@ -1109,6 +1140,11 @@ impl __sdk::Reducer for Reducer {
             Reducer::MatchRestart { .. } => "match_restart",
             Reducer::MatchEnd { .. } => "match_end",
             Reducer::MatchOpen { .. } => "match_open",
+            Reducer::MigrationConnectionDataToV2 => "migration_connection_data_to_v2",
+            Reducer::CompetitionConnectionDataUpdate { .. } => "competition_connection_data_update",
+            Reducer::RawServerVerify { .. } => "raw_server_verify",
+            Reducer::ServerMethodCall { .. } => "server_method_call",
+            Reducer::ServerMethodResponse { .. } => "server_method_response",
             Reducer::MemberAdd { .. } => "member_add",
             Reducer::MemberRemove { .. } => "member_remove",
             Reducer::RoleCreate { .. } => "role_create",
@@ -1117,12 +1153,18 @@ impl __sdk::Reducer for Reducer {
             Reducer::RoleMemberRemove { .. } => "role_member_remove",
             Reducer::RoleAssignPermission { .. } => "role_assign_permission",
             Reducer::MemberAssignPermission { .. } => "member_assign_permission",
+            Reducer::PostEvent { .. } => "post_event",
             Reducer::ServerCreate { .. } => "server_create",
             Reducer::ServerRemoveRawServer { .. } => "server_remove_raw_server",
             Reducer::ServerAssignRawServer { .. } => "server_assign_raw_server",
             Reducer::ServerConfigured { .. } => "server_configured",
             Reducer::ServerConfiguring { .. } => "server_configuring",
             Reducer::ServerConfigOverride { .. } => "server_config_override",
+            Reducer::RegisterPlayer { .. } => "register_player",
+            Reducer::UnregisterPlayer { .. } => "unregister_player",
+            Reducer::UnstableManualRegisterOverridePlayers { .. } => {
+                "unstable_manual_register_override_players"
+            }
             Reducer::TeamCreate { .. } => "team_create",
             Reducer::TeamDelete { .. } => "team_delete",
             Reducer::TeamInvite { .. } => "team_invite",
@@ -1132,43 +1174,31 @@ impl __sdk::Reducer for Reducer {
             Reducer::TeamLeave { .. } => "team_leave",
             Reducer::TeamMemberRemove { .. } => "team_member_remove",
             Reducer::TeamMemberRoleUpdate { .. } => "team_member_role_update",
-            Reducer::RegistrationCreate { .. } => "registration_create",
-            Reducer::RegistrationSettingsUpdate { .. } => "registration_settings_update",
-            Reducer::RegistrationConfigured { .. } => "registration_configured",
-            Reducer::RegistrationStart { .. } => "registration_start",
-            Reducer::RegistrationEnd { .. } => "registration_end",
-            Reducer::ScheduleCreate { .. } => "schedule_create",
-            Reducer::ScheduleConfigured { .. } => "schedule_configured",
-            Reducer::ScheduleSettingsUpdate { .. } => "schedule_settings_update",
-            Reducer::ScheduleManualRun { .. } => "schedule_manual_run",
-            Reducer::ConnectionActionUpdate { .. } => "connection_action_update",
-            Reducer::MatchReseed { .. } => "match_reseed",
-            Reducer::CompetitionCreate { .. } => "competition_create",
-            Reducer::ServerMethodCall { .. } => "server_method_call",
-            Reducer::ServerMethodResponse { .. } => "server_method_response",
-            Reducer::CreateProject { .. } => "create_project",
-            Reducer::ProjectEditName { .. } => "project_edit_name",
-            Reducer::ProjectEditDescription { .. } => "project_edit_description",
-            Reducer::ProjectEditDates { .. } => "project_edit_dates",
-            Reducer::ProjectUpdateStatus { .. } => "project_update_status",
-            Reducer::SetEnvVar { .. } => "set_env_var",
+            Reducer::RawServerAdd { .. } => "raw_server_add",
+            Reducer::RawServerRemove { .. } => "raw_server_remove",
             Reducer::MatchRoundPlayerSetScoreManual { .. } => "match_round_player_set_score_manual",
             Reducer::MatchRoundPlayerSetPositionManual { .. } => {
                 "match_round_player_set_position_manual"
             }
+            Reducer::OutputCreate { .. } => "output_create",
+            Reducer::ScheduleCreate { .. } => "schedule_create",
+            Reducer::ScheduleConfigured { .. } => "schedule_configured",
+            Reducer::ScheduleSettingsUpdate { .. } => "schedule_settings_update",
+            Reducer::ScheduleManualRun { .. } => "schedule_manual_run",
+            Reducer::SetEnvVar { .. } => "set_env_var",
+            Reducer::InputCreate { .. } => "input_create",
             Reducer::MatchDriverRecord { .. } => "match_driver_record",
             Reducer::NodeNameEdit { .. } => "node_name_edit",
             Reducer::NodeDelete { .. } => "node_delete",
-            Reducer::MigrationConnectionDataToV2 => "migration_connection_data_to_v2",
-            Reducer::CompetitionConnectionDataUpdate { .. } => "competition_connection_data_update",
-            Reducer::PostEvent { .. } => "post_event",
-            Reducer::RawServerPlayerAdd { .. } => "raw_server_player_add",
-            Reducer::RawServerAdd { .. } => "raw_server_add",
-            Reducer::RawServerRemove { .. } => "raw_server_remove",
+            Reducer::RawServerConfigSharedNew { .. } => "raw_server_config_shared_new",
+            Reducer::RawServerConfigSharedUpdate { .. } => "raw_server_config_shared_update",
+            Reducer::UnstableRawServerConfigUpdateMaps { .. } => {
+                "unstable_raw_server_config_update_maps"
+            }
+            Reducer::RawServerDriverModes { .. } => "raw_server_driver_modes",
             Reducer::ConnectionConfigured { .. } => "connection_configured",
             Reducer::ConnectionUnconfigure { .. } => "connection_unconfigure",
             Reducer::ConnectionDelete { .. } => "connection_delete",
-            Reducer::RawServerVerify { .. } => "raw_server_verify",
             _ => unreachable!(),
         }
     }
@@ -1207,18 +1237,120 @@ Reducer::LeaderboardCreate{
                 id: id.clone(),
                 settings: settings.clone(),
 }),
-            Reducer::InputCreate{
+            Reducer::ConnectionActionUpdate{
+                connection_id,
+                action,
+}             => __sats::bsatn::to_vec(&connection_action_update_reducer::ConnectionActionUpdateArgs {
+                connection_id: connection_id.clone(),
+                action: action.clone(),
+}),
+            Reducer::RegistrationCreate{
                 name,
                 parent_id,
                 position,
                 with_template,
                 as_template,
-}             => __sats::bsatn::to_vec(&input_create_reducer::InputCreateArgs {
+}             => __sats::bsatn::to_vec(&registration_create_reducer::RegistrationCreateArgs {
                 name: name.clone(),
                 parent_id: parent_id.clone(),
                 position: position.clone(),
                 with_template: with_template.clone(),
                 as_template: as_template.clone(),
+}),
+            Reducer::RegistrationSettingsUpdate{
+                id,
+                settings,
+}             => __sats::bsatn::to_vec(&registration_settings_update_reducer::RegistrationSettingsUpdateArgs {
+                id: id.clone(),
+                settings: settings.clone(),
+}),
+            Reducer::RegistrationConfigured{
+                id,
+}             => __sats::bsatn::to_vec(&registration_configured_reducer::RegistrationConfiguredArgs {
+                id: id.clone(),
+}),
+            Reducer::RegistrationStart{
+                id,
+}             => __sats::bsatn::to_vec(&registration_start_reducer::RegistrationStartArgs {
+                id: id.clone(),
+}),
+            Reducer::RegistrationEnd{
+                id,
+}             => __sats::bsatn::to_vec(&registration_end_reducer::RegistrationEndArgs {
+                id: id.clone(),
+}),
+            Reducer::RawServerPlayerAdd{
+                account_id,
+                spectator,
+}             => __sats::bsatn::to_vec(&raw_server_player_add_reducer::RawServerPlayerAddArgs {
+                account_id: account_id.clone(),
+                spectator: spectator.clone(),
+}),
+            Reducer::CreateProject{
+                name,
+                description,
+                kind,
+                starting_at,
+                ending_at,
+}             => __sats::bsatn::to_vec(&create_project_reducer::CreateProjectArgs {
+                name: name.clone(),
+                description: description.clone(),
+                kind: kind.clone(),
+                starting_at: starting_at.clone(),
+                ending_at: ending_at.clone(),
+}),
+            Reducer::ProjectEditName{
+                project_id,
+                name,
+}             => __sats::bsatn::to_vec(&project_edit_name_reducer::ProjectEditNameArgs {
+                project_id: project_id.clone(),
+                name: name.clone(),
+}),
+            Reducer::ProjectEditDescription{
+                project_id,
+                description,
+}             => __sats::bsatn::to_vec(&project_edit_description_reducer::ProjectEditDescriptionArgs {
+                project_id: project_id.clone(),
+                description: description.clone(),
+}),
+            Reducer::ProjectEditDates{
+                project_id,
+                starting_at,
+                ending_at,
+}             => __sats::bsatn::to_vec(&project_edit_dates_reducer::ProjectEditDatesArgs {
+                project_id: project_id.clone(),
+                starting_at: starting_at.clone(),
+                ending_at: ending_at.clone(),
+}),
+            Reducer::ProjectUpdateStatus{
+                project_id,
+}             => __sats::bsatn::to_vec(&project_update_status_reducer::ProjectUpdateStatusArgs {
+                project_id: project_id.clone(),
+}),
+            Reducer::CompetitionCreate{
+                name,
+                parent_id,
+                position,
+                with_template,
+}             => __sats::bsatn::to_vec(&competition_create_reducer::CompetitionCreateArgs {
+                name: name.clone(),
+                parent_id: parent_id.clone(),
+                position: position.clone(),
+                with_template: with_template.clone(),
+}),
+            Reducer::UnstableMatchChatMessage{
+                match_id,
+                message,
+}             => __sats::bsatn::to_vec(&unstable_match_chat_message_reducer::UnstableMatchChatMessageArgs {
+                match_id: match_id.clone(),
+                message: message.clone(),
+}),
+            Reducer::MatchReseed{
+                match_id,
+                order,
+}             => __sats::bsatn::to_vec(&match_reseed_reducer::MatchReseedArgs {
+                match_id: match_id.clone(),
+                order: order.clone(),
 }),
             Reducer::CompetitionNodePositionUpdate{
                 node,
@@ -1231,71 +1363,6 @@ Reducer::LeaderboardCreate{
                 positions,
 }             => __sats::bsatn::to_vec(&competition_node_positions_update_reducer::CompetitionNodePositionsUpdateArgs {
                 positions: positions.clone(),
-}),
-            Reducer::RegisterPlayer{
-                registration_id,
-}             => __sats::bsatn::to_vec(&register_player_reducer::RegisterPlayerArgs {
-                registration_id: registration_id.clone(),
-}),
-            Reducer::UnregisterPlayer{
-                registration_id,
-}             => __sats::bsatn::to_vec(&unregister_player_reducer::UnregisterPlayerArgs {
-                registration_id: registration_id.clone(),
-}),
-            Reducer::UnstableManualRegisterOverridePlayers{
-                registration_id,
-                players,
-}             => __sats::bsatn::to_vec(&unstable_manual_register_override_players_reducer::UnstableManualRegisterOverridePlayersArgs {
-                registration_id: registration_id.clone(),
-                players: players.clone(),
-}),
-            Reducer::RawServerConfigSharedNew{
-                name,
-                competition_id,
-                config,
-}             => __sats::bsatn::to_vec(&raw_server_config_shared_new_reducer::RawServerConfigSharedNewArgs {
-                name: name.clone(),
-                competition_id: competition_id.clone(),
-                config: config.clone(),
-}),
-            Reducer::RawServerConfigSharedUpdate{
-                config_id,
-                config,
-}             => __sats::bsatn::to_vec(&raw_server_config_shared_update_reducer::RawServerConfigSharedUpdateArgs {
-                config_id: config_id.clone(),
-                config: config.clone(),
-}),
-            Reducer::UnstableRawServerConfigUpdateMaps{
-                config_id,
-                maps,
-}             => __sats::bsatn::to_vec(&unstable_raw_server_config_update_maps_reducer::UnstableRawServerConfigUpdateMapsArgs {
-                config_id: config_id.clone(),
-                maps: maps.clone(),
-}),
-            Reducer::RawServerDriverModes{
-                modes,
-}             => __sats::bsatn::to_vec(&raw_server_driver_modes_reducer::RawServerDriverModesArgs {
-                modes: modes.clone(),
-}),
-            Reducer::OutputCreate{
-                name,
-                parent_id,
-                position,
-                with_template,
-                as_template,
-}             => __sats::bsatn::to_vec(&output_create_reducer::OutputCreateArgs {
-                name: name.clone(),
-                parent_id: parent_id.clone(),
-                position: position.clone(),
-                with_template: with_template.clone(),
-                as_template: as_template.clone(),
-}),
-            Reducer::UnstableMatchChatMessage{
-                match_id,
-                message,
-}             => __sats::bsatn::to_vec(&unstable_match_chat_message_reducer::UnstableMatchChatMessageArgs {
-                match_id: match_id.clone(),
-                message: message.clone(),
 }),
             Reducer::MatchCreate{
                 name,
@@ -1387,6 +1454,36 @@ Reducer::LeaderboardCreate{
                 match_id: match_id.clone(),
                 open: open.clone(),
 }),
+            Reducer::MigrationConnectionDataToV2 => __sats::bsatn::to_vec(&migration_connection_data_to_v_2_reducer::MigrationConnectionDataToV2Args {
+                }),
+Reducer::CompetitionConnectionDataUpdate{
+                connection_id,
+                settings,
+                slot,
+}             => __sats::bsatn::to_vec(&competition_connection_data_update_reducer::CompetitionConnectionDataUpdateArgs {
+                connection_id: connection_id.clone(),
+                settings: settings.clone(),
+                slot: slot.clone(),
+}),
+            Reducer::RawServerVerify{
+                server_id,
+}             => __sats::bsatn::to_vec(&raw_server_verify_reducer::RawServerVerifyArgs {
+                server_id: server_id.clone(),
+}),
+            Reducer::ServerMethodCall{
+                server_login,
+                call,
+}             => __sats::bsatn::to_vec(&server_method_call_reducer::ServerMethodCallArgs {
+                server_login: server_login.clone(),
+                call: call.clone(),
+}),
+            Reducer::ServerMethodResponse{
+                call_id,
+                response,
+}             => __sats::bsatn::to_vec(&server_method_response_reducer::ServerMethodResponseArgs {
+                call_id: call_id.clone(),
+                response: response.clone(),
+}),
             Reducer::MemberAdd{
                 competition_id,
                 account_id,
@@ -1439,6 +1536,11 @@ Reducer::LeaderboardCreate{
                 member_id: member_id.clone(),
                 new_permissions: new_permissions.clone(),
 }),
+            Reducer::PostEvent{
+                event,
+}             => __sats::bsatn::to_vec(&post_event_reducer::PostEventArgs {
+                event: event.clone(),
+}),
             Reducer::ServerCreate{
                 name,
                 parent_id,
@@ -1480,6 +1582,23 @@ Reducer::LeaderboardCreate{
 }             => __sats::bsatn::to_vec(&server_config_override_reducer::ServerConfigOverrideArgs {
                 to: to.clone(),
                 config: config.clone(),
+}),
+            Reducer::RegisterPlayer{
+                registration_id,
+}             => __sats::bsatn::to_vec(&register_player_reducer::RegisterPlayerArgs {
+                registration_id: registration_id.clone(),
+}),
+            Reducer::UnregisterPlayer{
+                registration_id,
+}             => __sats::bsatn::to_vec(&unregister_player_reducer::UnregisterPlayerArgs {
+                registration_id: registration_id.clone(),
+}),
+            Reducer::UnstableManualRegisterOverridePlayers{
+                registration_id,
+                players,
+}             => __sats::bsatn::to_vec(&unstable_manual_register_override_players_reducer::UnstableManualRegisterOverridePlayersArgs {
+                registration_id: registration_id.clone(),
+                players: players.clone(),
 }),
             Reducer::TeamCreate{
                 registration_id,
@@ -1538,40 +1657,54 @@ Reducer::LeaderboardCreate{
                 user_id: user_id.clone(),
                 role: role.clone(),
 }),
-            Reducer::RegistrationCreate{
+            Reducer::RawServerAdd{
+                server_id,
+                competition_id,
+}             => __sats::bsatn::to_vec(&raw_server_add_reducer::RawServerAddArgs {
+                server_id: server_id.clone(),
+                competition_id: competition_id.clone(),
+}),
+            Reducer::RawServerRemove{
+                server_id,
+                competition_id,
+}             => __sats::bsatn::to_vec(&raw_server_remove_reducer::RawServerRemoveArgs {
+                server_id: server_id.clone(),
+                competition_id: competition_id.clone(),
+}),
+            Reducer::MatchRoundPlayerSetScoreManual{
+                match_id,
+                user_id,
+                round,
+                score,
+}             => __sats::bsatn::to_vec(&match_round_player_set_score_manual_reducer::MatchRoundPlayerSetScoreManualArgs {
+                match_id: match_id.clone(),
+                user_id: user_id.clone(),
+                round: round.clone(),
+                score: score.clone(),
+}),
+            Reducer::MatchRoundPlayerSetPositionManual{
+                match_id,
+                user_id,
+                round,
+                position,
+}             => __sats::bsatn::to_vec(&match_round_player_set_position_manual_reducer::MatchRoundPlayerSetPositionManualArgs {
+                match_id: match_id.clone(),
+                user_id: user_id.clone(),
+                round: round.clone(),
+                position: position.clone(),
+}),
+            Reducer::OutputCreate{
                 name,
                 parent_id,
                 position,
                 with_template,
                 as_template,
-}             => __sats::bsatn::to_vec(&registration_create_reducer::RegistrationCreateArgs {
+}             => __sats::bsatn::to_vec(&output_create_reducer::OutputCreateArgs {
                 name: name.clone(),
                 parent_id: parent_id.clone(),
                 position: position.clone(),
                 with_template: with_template.clone(),
                 as_template: as_template.clone(),
-}),
-            Reducer::RegistrationSettingsUpdate{
-                id,
-                settings,
-}             => __sats::bsatn::to_vec(&registration_settings_update_reducer::RegistrationSettingsUpdateArgs {
-                id: id.clone(),
-                settings: settings.clone(),
-}),
-            Reducer::RegistrationConfigured{
-                id,
-}             => __sats::bsatn::to_vec(&registration_configured_reducer::RegistrationConfiguredArgs {
-                id: id.clone(),
-}),
-            Reducer::RegistrationStart{
-                id,
-}             => __sats::bsatn::to_vec(&registration_start_reducer::RegistrationStartArgs {
-                id: id.clone(),
-}),
-            Reducer::RegistrationEnd{
-                id,
-}             => __sats::bsatn::to_vec(&registration_end_reducer::RegistrationEndArgs {
-                id: id.clone(),
 }),
             Reducer::ScheduleCreate{
                 name,
@@ -1603,86 +1736,6 @@ Reducer::LeaderboardCreate{
 }             => __sats::bsatn::to_vec(&schedule_manual_run_reducer::ScheduleManualRunArgs {
                 id: id.clone(),
 }),
-            Reducer::ConnectionActionUpdate{
-                connection_id,
-                action,
-}             => __sats::bsatn::to_vec(&connection_action_update_reducer::ConnectionActionUpdateArgs {
-                connection_id: connection_id.clone(),
-                action: action.clone(),
-}),
-            Reducer::MatchReseed{
-                match_id,
-                order,
-}             => __sats::bsatn::to_vec(&match_reseed_reducer::MatchReseedArgs {
-                match_id: match_id.clone(),
-                order: order.clone(),
-}),
-            Reducer::CompetitionCreate{
-                name,
-                parent_id,
-                position,
-                with_template,
-}             => __sats::bsatn::to_vec(&competition_create_reducer::CompetitionCreateArgs {
-                name: name.clone(),
-                parent_id: parent_id.clone(),
-                position: position.clone(),
-                with_template: with_template.clone(),
-}),
-            Reducer::ServerMethodCall{
-                server_login,
-                call,
-}             => __sats::bsatn::to_vec(&server_method_call_reducer::ServerMethodCallArgs {
-                server_login: server_login.clone(),
-                call: call.clone(),
-}),
-            Reducer::ServerMethodResponse{
-                call_id,
-                response,
-}             => __sats::bsatn::to_vec(&server_method_response_reducer::ServerMethodResponseArgs {
-                call_id: call_id.clone(),
-                response: response.clone(),
-}),
-            Reducer::CreateProject{
-                name,
-                description,
-                kind,
-                starting_at,
-                ending_at,
-}             => __sats::bsatn::to_vec(&create_project_reducer::CreateProjectArgs {
-                name: name.clone(),
-                description: description.clone(),
-                kind: kind.clone(),
-                starting_at: starting_at.clone(),
-                ending_at: ending_at.clone(),
-}),
-            Reducer::ProjectEditName{
-                project_id,
-                name,
-}             => __sats::bsatn::to_vec(&project_edit_name_reducer::ProjectEditNameArgs {
-                project_id: project_id.clone(),
-                name: name.clone(),
-}),
-            Reducer::ProjectEditDescription{
-                project_id,
-                description,
-}             => __sats::bsatn::to_vec(&project_edit_description_reducer::ProjectEditDescriptionArgs {
-                project_id: project_id.clone(),
-                description: description.clone(),
-}),
-            Reducer::ProjectEditDates{
-                project_id,
-                starting_at,
-                ending_at,
-}             => __sats::bsatn::to_vec(&project_edit_dates_reducer::ProjectEditDatesArgs {
-                project_id: project_id.clone(),
-                starting_at: starting_at.clone(),
-                ending_at: ending_at.clone(),
-}),
-            Reducer::ProjectUpdateStatus{
-                project_id,
-}             => __sats::bsatn::to_vec(&project_update_status_reducer::ProjectUpdateStatusArgs {
-                project_id: project_id.clone(),
-}),
             Reducer::SetEnvVar{
                 key,
                 value,
@@ -1690,27 +1743,18 @@ Reducer::LeaderboardCreate{
                 key: key.clone(),
                 value: value.clone(),
 }),
-            Reducer::MatchRoundPlayerSetScoreManual{
-                match_id,
-                user_id,
-                round,
-                score,
-}             => __sats::bsatn::to_vec(&match_round_player_set_score_manual_reducer::MatchRoundPlayerSetScoreManualArgs {
-                match_id: match_id.clone(),
-                user_id: user_id.clone(),
-                round: round.clone(),
-                score: score.clone(),
-}),
-            Reducer::MatchRoundPlayerSetPositionManual{
-                match_id,
-                user_id,
-                round,
+            Reducer::InputCreate{
+                name,
+                parent_id,
                 position,
-}             => __sats::bsatn::to_vec(&match_round_player_set_position_manual_reducer::MatchRoundPlayerSetPositionManualArgs {
-                match_id: match_id.clone(),
-                user_id: user_id.clone(),
-                round: round.clone(),
+                with_template,
+                as_template,
+}             => __sats::bsatn::to_vec(&input_create_reducer::InputCreateArgs {
+                name: name.clone(),
+                parent_id: parent_id.clone(),
                 position: position.clone(),
+                with_template: with_template.clone(),
+                as_template: as_template.clone(),
 }),
             Reducer::MatchDriverRecord{
                 session,
@@ -1733,42 +1777,33 @@ Reducer::LeaderboardCreate{
 }             => __sats::bsatn::to_vec(&node_delete_reducer::NodeDeleteArgs {
                 node: node.clone(),
 }),
-            Reducer::MigrationConnectionDataToV2 => __sats::bsatn::to_vec(&migration_connection_data_to_v_2_reducer::MigrationConnectionDataToV2Args {
-                }),
-Reducer::CompetitionConnectionDataUpdate{
-                connection_id,
-                settings,
-                slot,
-}             => __sats::bsatn::to_vec(&competition_connection_data_update_reducer::CompetitionConnectionDataUpdateArgs {
-                connection_id: connection_id.clone(),
-                settings: settings.clone(),
-                slot: slot.clone(),
-}),
-            Reducer::PostEvent{
-                event,
-}             => __sats::bsatn::to_vec(&post_event_reducer::PostEventArgs {
-                event: event.clone(),
-}),
-            Reducer::RawServerPlayerAdd{
-                account_id,
-                spectator,
-}             => __sats::bsatn::to_vec(&raw_server_player_add_reducer::RawServerPlayerAddArgs {
-                account_id: account_id.clone(),
-                spectator: spectator.clone(),
-}),
-            Reducer::RawServerAdd{
-                server_id,
+            Reducer::RawServerConfigSharedNew{
+                name,
                 competition_id,
-}             => __sats::bsatn::to_vec(&raw_server_add_reducer::RawServerAddArgs {
-                server_id: server_id.clone(),
+                config,
+}             => __sats::bsatn::to_vec(&raw_server_config_shared_new_reducer::RawServerConfigSharedNewArgs {
+                name: name.clone(),
                 competition_id: competition_id.clone(),
+                config: config.clone(),
 }),
-            Reducer::RawServerRemove{
-                server_id,
-                competition_id,
-}             => __sats::bsatn::to_vec(&raw_server_remove_reducer::RawServerRemoveArgs {
-                server_id: server_id.clone(),
-                competition_id: competition_id.clone(),
+            Reducer::RawServerConfigSharedUpdate{
+                config_id,
+                config,
+}             => __sats::bsatn::to_vec(&raw_server_config_shared_update_reducer::RawServerConfigSharedUpdateArgs {
+                config_id: config_id.clone(),
+                config: config.clone(),
+}),
+            Reducer::UnstableRawServerConfigUpdateMaps{
+                config_id,
+                maps,
+}             => __sats::bsatn::to_vec(&unstable_raw_server_config_update_maps_reducer::UnstableRawServerConfigUpdateMapsArgs {
+                config_id: config_id.clone(),
+                maps: maps.clone(),
+}),
+            Reducer::RawServerDriverModes{
+                modes,
+}             => __sats::bsatn::to_vec(&raw_server_driver_modes_reducer::RawServerDriverModesArgs {
+                modes: modes.clone(),
 }),
             Reducer::ConnectionConfigured{
                 connection_id,
@@ -1784,11 +1819,6 @@ Reducer::CompetitionConnectionDataUpdate{
                 id,
 }             => __sats::bsatn::to_vec(&connection_delete_reducer::ConnectionDeleteArgs {
                 id: id.clone(),
-}),
-            Reducer::RawServerVerify{
-                server_id,
-}             => __sats::bsatn::to_vec(&raw_server_verify_reducer::RawServerVerifyArgs {
-                server_id: server_id.clone(),
 }),
             _ => unreachable!(),
 }

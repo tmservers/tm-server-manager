@@ -82,6 +82,27 @@
 #Const C_Method_SetRaceRules "Driver.SetRaceRules"
 
 #Const C_LayerKind_ScoresTable "scores_table"
+#Const C_LayerKind_ScreenIn3d "screen_in_3d"
+#Const C_LayerKind_Markers "markers"
+#Const C_LayerKind_AltMenu "alt_menu"
+#Const C_LayerKind_CutScene "cut_scene"
+#Const C_LayerKind_LoadingScreen "loading_screen"
+#Const C_Audience_Everyone "everyone"
+#Const C_Audience_Players "players"
+#Const C_Audience_Spectators "spectators"
+#Const C_Audience_Teams "teams"
+#Const C_Audience_Accounts "accounts"
+#Const C_AudienceSyncInterval 1000
+#Const C_MarkerAnchor_Players "players"
+#Const C_MarkerAnchor_Position "position"
+#Const C_MarkerLabel_Name "name"
+#Const C_MarkerLabel_ClubTag "club_tag"
+#Const C_MarkerLabel_Position "position"
+#Const C_MarkerLabel_Score "score"
+#Const C_MarkerLabel_TeamShortName "team_short_name"
+#Const C_MarkerVisibility_WhenInFrustum "when_in_frustum"
+#Const C_MarkerVisibility_WhenVisible "when_visible"
+#Const C_MarkerVisibility_WhenInMiddleOfScreen "when_in_middle_of_screen"
 
 /// The member names are the json keys expected by tm-server-types.
 #Struct K_Driver_Hold {
@@ -131,6 +152,25 @@
 	Boolean live;
 	K_Driver_Entries entries;
 	K_Driver_TeamEntries teams;
+}
+
+/// Who sees a layer, tm_server_types::method::DriverAudience.
+#Struct K_Driver_Audience {
+	Text kind;
+	Integer[] teams;
+	Text[] accounts;
+}
+
+/// A frame of a markers layer, tm_server_types::method::DriverMarker.
+#Struct K_Driver_Marker {
+	Text frame_id;
+	Text anchor;
+	K_Driver_Audience players;
+	Integer[] position;
+	Text label;
+	Boolean hide_on_self;
+	Integer max_distance;
+	Text visibility;
 }
 
 #Struct K_Driver_Teams {
@@ -184,6 +224,13 @@ declare Integer G_Driver_BaseLapCountOverride;
 declare CSmMode::EGiveUpBehaviour G_Driver_BaseGiveUpBehaviour;
 declare CSmMode::ERespawnBehaviour G_Driver_BaseRespawnBehaviour;
 declare Ident[Text] G_Driver_Layers;
+/// Who sees every layer of a name, and the markers of the markers layers.
+declare K_Driver_Audience[Text] G_Driver_LayerAudiences;
+declare K_Driver_Marker[][Text] G_Driver_LayerMarkers;
+/// When the layers of the players were last brought up to date.
+declare Integer G_Driver_AudiencesSynced;
+/// What the markers were last built from, they are only built again when it changes.
+declare Text G_Driver_MarkersBuiltFrom;
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
 // Extends
@@ -550,11 +597,160 @@ Void Driver_SendHold(K_Driver_Hold _Hold) {
 	XmlRpc::SendCallback(C_Callback_Hold, [_Hold.tojson()]);
 }
 
-/** Creates or replaces a layer for every player.
- *	Layers of the kind scores_table are the scores table: the game shows them while
- *	a player holds the scores table key and whenever ScoreTableVisibility forces it.
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
+/// The index of a player in the netvars of the players, -1 for one the driver did not publish.
+Integer Driver_UserIndex(Text _AccountId) {
+	declare netwrite Text[Integer] Net_Driver_UserAccountIds for Teams[0] = [];
+	foreach (Index => AccountId in Net_Driver_UserAccountIds) {
+		if (AccountId == _AccountId) return Index;
+	}
+	return -1;
+}
+
+/// The team of a player, -1 without one.
+Integer Driver_TeamOf(Integer _Index) {
+	declare netwrite Integer[Integer] Net_Driver_UserTeams for Teams[0] = [];
+	if (Net_Driver_UserTeams.existskey(_Index)) return Net_Driver_UserTeams[_Index];
+	return -1;
+}
+
+/// Whether a player is one of an audience.
+Boolean Driver_InAudience(CSmPlayer _Player, K_Driver_Audience _Audience) {
+	if (_Audience.kind == C_Audience_Everyone) return True;
+	if (_Player.User == Null) return False;
+	switch (_Audience.kind) {
+		case C_Audience_Players: return !_Player.RequestsSpectate;
+		case C_Audience_Spectators: return _Player.RequestsSpectate;
+		case C_Audience_Accounts: return _Audience.accounts.exists(_Player.User.WebServicesUserId);
+		case C_Audience_Teams: {
+			declare Integer Team = Driver_TeamOf(Driver_UserIndex(_Player.User.WebServicesUserId));
+			return Team >= 0 && _Audience.teams.exists(Team);
+		}
+	}
+	return False;
+}
+
+/// The text a marker on a player shows.
+Text Driver_MarkerLabel(Text _Label, Integer _Index) {
+	if (_Label == "" || _Index < 0) return "";
+	declare netwrite Text[Integer] Net_Driver_UserNames for Teams[0] = [];
+	declare netwrite Text[Integer] Net_Driver_UserClubTags for Teams[0] = [];
+	declare netwrite Text[Integer] Net_Driver_TeamShortNames for Teams[0] = [];
+	declare netwrite Integer[] Net_Driver_StandingsPlayers for Teams[0] = [];
+	declare netwrite Integer[] Net_Driver_StandingsPositions for Teams[0] = [];
+	declare netwrite Integer[] Net_Driver_StandingsScores for Teams[0] = [];
+	if (_Label == C_MarkerLabel_Name && Net_Driver_UserNames.existskey(_Index)) {
+		return Net_Driver_UserNames[_Index];
+	}
+	if (_Label == C_MarkerLabel_ClubTag && Net_Driver_UserClubTags.existskey(_Index)) {
+		return Net_Driver_UserClubTags[_Index];
+	}
+	if (_Label == C_MarkerLabel_TeamShortName) {
+		declare Integer Team = Driver_TeamOf(_Index);
+		if (Net_Driver_TeamShortNames.existskey(Team)) return Net_Driver_TeamShortNames[Team];
+		return "";
+	}
+	foreach (Entry => Player in Net_Driver_StandingsPlayers) {
+		if (Player != _Index) continue;
+		if (_Label == C_MarkerLabel_Score) return TL::ToText(Net_Driver_StandingsScores[Entry]);
+		if (_Label == C_MarkerLabel_Position && Net_Driver_StandingsPositions[Entry] > 0) {
+			return TL::ToText(Net_Driver_StandingsPositions[Entry]);
+		}
+	}
+	return "";
+}
+
+Void Driver_SetupMarker(CUIConfigMarker _Marker, K_Driver_Marker _Binding, Integer _Index) {
+	if (_Marker == Null) return;
+	_Marker.ManialinkFrameId = _Binding.frame_id;
+	_Marker.Label = Driver_MarkerLabel(_Binding.label, _Index);
+	_Marker.HideOnSelf = _Binding.hide_on_self;
+	if (_Binding.max_distance > 0) _Marker.DistMax = _Binding.max_distance * 1.;
+	switch (_Binding.visibility) {
+		case C_MarkerVisibility_WhenInFrustum: _Marker.HudVisibility = CUIConfigMarker::EHudVisibility::WhenInFrustum;
+		case C_MarkerVisibility_WhenVisible: _Marker.HudVisibility = CUIConfigMarker::EHudVisibility::WhenVisible;
+		case C_MarkerVisibility_WhenInMiddleOfScreen: _Marker.HudVisibility = CUIConfigMarker::EHudVisibility::WhenInMiddleOfScreen;
+		default: _Marker.HudVisibility = CUIConfigMarker::EHudVisibility::Always;
+	}
+}
+
+/** Builds the markers of every markers layer again once the players, their standings or
+ *	the layers changed. The driver owns the markers of UIAll.
  */
-Void Driver_SetLayer(Text _Name, Text _Manialink, Text _Kind) {
+Void Driver_SyncMarkers() {
+	declare netwrite Integer Net_Driver_StandingsSerial for Teams[0] = 0;
+	declare netwrite Integer Net_Driver_UsersSerial for Teams[0] = 0;
+	declare netwrite Integer Net_Driver_TeamsSerial for Teams[0] = 0;
+	declare Text From = TL::ToText(Net_Driver_StandingsSerial)^"/"^Net_Driver_UsersSerial^"/"^Net_Driver_TeamsSerial^"/"^Map.Id;
+	foreach (Player in AllPlayers) {
+		if (Player.User != Null) From ^= "/"^Player.User.WebServicesUserId^Player.RequestsSpectate;
+	}
+	if (From == G_Driver_MarkersBuiltFrom) return;
+	G_Driver_MarkersBuiltFrom = From;
+
+	UIManager.UIAll.ClearMarkers();
+	foreach (Name => Markers in G_Driver_LayerMarkers) {
+		foreach (Binding in Markers) {
+			if (Binding.anchor == C_MarkerAnchor_Players) {
+				foreach (Player in AllPlayers) {
+					if (Player.User == Null || !Driver_InAudience(Player, Binding.players)) continue;
+					declare Integer Index = Driver_UserIndex(Player.User.WebServicesUserId);
+					Driver_SetupMarker(UIManager.UIAll.AddMarker(Player), Binding, Index);
+				}
+			} else if (Binding.anchor == C_MarkerAnchor_Position) {
+				if (Binding.position.count != 3) continue;
+				declare Vec3 Position = <Binding.position[0] * 1., Binding.position[1] * 1., Binding.position[2] * 1.>;
+				Driver_SetupMarker(UIManager.UIAll.AddMarker(Position), Binding, -1);
+			} else {
+				foreach (Landmark in MapLandmarks) {
+					if (Landmark.Tag == Binding.anchor) {
+						Driver_SetupMarker(UIManager.UIAll.AddMarker(Landmark), Binding, -1);
+					}
+				}
+			}
+		}
+	}
+}
+
+/** Brings the layers of every player up to date with their audiences, at most once a
+ *	second: players join, leave, start spectating or play for a team. Every player also
+ *	learns their index and team for the manialinks, `for UI`.
+ */
+Void Driver_SyncAudiences() {
+	if (G_Driver_AudiencesSynced >= 0 && Now < G_Driver_AudiencesSynced + C_AudienceSyncInterval) return;
+	G_Driver_AudiencesSynced = Now;
+
+	foreach (Player in AllPlayers) {
+		declare CUIConfig UI <=> UIManager.GetUI(Player);
+		if (UI == Null || Player.User == Null) continue;
+		declare Integer Index = Driver_UserIndex(Player.User.WebServicesUserId);
+		declare netwrite Integer Net_Driver_MyUser for UI = -1;
+		declare netwrite Integer Net_Driver_MyTeam for UI = -1;
+		Net_Driver_MyUser = Index;
+		Net_Driver_MyTeam = Driver_TeamOf(Index);
+
+		foreach (Name => LayerId in G_Driver_Layers) {
+			if (!UIManager.UILayers.existskey(LayerId) || !G_Driver_LayerAudiences.existskey(Name)) continue;
+			declare K_Driver_Audience Audience = G_Driver_LayerAudiences[Name];
+			if (Audience.kind == C_Audience_Everyone) continue;
+			declare Boolean Has = UI.UILayers.existskey(LayerId);
+			declare Boolean Wants = Driver_InAudience(Player, Audience);
+			if (Wants && !Has) UI.UILayers.add(UIManager.UILayers[LayerId]);
+			if (!Wants && Has) {
+				declare Boolean Removed = UI.UILayers.removekey(LayerId);
+			}
+		}
+	}
+	Driver_SyncMarkers();
+}
+
+/** Creates or replaces a layer.
+ *	The kind says where the game shows it: scores_table is the scores table, which the
+ *	game shows while a player holds the scores table key and whenever
+ *	ScoreTableVisibility forces it. A layer for everyone is a layer of UIAll, any
+ *	other audience a layer of the UI of every player in it, see Driver_SyncAudiences.
+ */
+Void Driver_SetLayer(Text _Name, Text _Manialink, Text _Kind, Text _AttachId, Text _Audience, Text _Markers) {
 	declare CUILayer Layer <=> Null;
 	if (G_Driver_Layers.existskey(_Name) && UIManager.UILayers.existskey(G_Driver_Layers[_Name])) {
 		Layer <=> UIManager.UILayers[G_Driver_Layers[_Name]];
@@ -562,25 +758,54 @@ Void Driver_SetLayer(Text _Name, Text _Manialink, Text _Kind) {
 	declare Boolean IsNew = Layer == Null;
 	if (IsNew) Layer <=> UIManager.UILayerCreate();
 
-	if (_Kind == C_LayerKind_ScoresTable) {
-		Layer.Type = CUILayer::EUILayerType::ScoresTable;
-	} else {
-		Layer.Type = CUILayer::EUILayerType::Normal;
+	switch (_Kind) {
+		case C_LayerKind_ScoresTable: Layer.Type = CUILayer::EUILayerType::ScoresTable;
+		case C_LayerKind_ScreenIn3d: Layer.Type = CUILayer::EUILayerType::ScreenIn3d;
+		case C_LayerKind_Markers: Layer.Type = CUILayer::EUILayerType::Markers;
+		case C_LayerKind_AltMenu: Layer.Type = CUILayer::EUILayerType::AltMenu;
+		case C_LayerKind_CutScene: Layer.Type = CUILayer::EUILayerType::CutScene;
+		case C_LayerKind_LoadingScreen: Layer.Type = CUILayer::EUILayerType::LoadingScreen;
+		default: Layer.Type = CUILayer::EUILayerType::Normal;
 	}
+	Layer.AttachId = _AttachId;
 	Layer.ManialinkPage = _Manialink;
 
-	if (IsNew) {
-		G_Driver_Layers[_Name] = Layer.Id;
+	declare K_Driver_Audience Audience;
+	Audience.kind = C_Audience_Everyone;
+	if (_Audience != "" && !Audience.fromjson(_Audience)) Audience.kind = C_Audience_Everyone;
+	declare K_Driver_Marker[] Markers;
+	if (_Markers != "" && !Markers.fromjson(_Markers)) Markers = [];
+
+	if (IsNew) G_Driver_Layers[_Name] = Layer.Id;
+	declare Boolean Shared = UIManager.UIAll.UILayers.existskey(Layer.Id);
+	if (Audience.kind == C_Audience_Everyone && !Shared) {
 		UIManager.UIAll.UILayers.add(Layer);
+	} else if (Audience.kind != C_Audience_Everyone && Shared) {
+		declare Boolean Detached = UIManager.UIAll.UILayers.removekey(Layer.Id);
 	}
+	G_Driver_LayerAudiences[_Name] = Audience;
+	G_Driver_LayerMarkers[_Name] = Markers;
+	// The players get it right away.
+	G_Driver_AudiencesSynced = -1;
+	G_Driver_MarkersBuiltFrom = "";
+	Driver_SyncAudiences();
 }
 
 Void Driver_RemoveLayer(Text _Name) {
 	if (!G_Driver_Layers.existskey(_Name)) return;
 	declare Ident LayerId = G_Driver_Layers[_Name];
 	declare Boolean Forgotten = G_Driver_Layers.removekey(_Name);
+	declare Boolean NoAudience = G_Driver_LayerAudiences.removekey(_Name);
+	declare Boolean NoMarkers = G_Driver_LayerMarkers.removekey(_Name);
 	declare Boolean Detached = UIManager.UIAll.UILayers.removekey(LayerId);
+	foreach (Player in AllPlayers) {
+		declare CUIConfig UI <=> UIManager.GetUI(Player);
+		if (UI != Null && UI.UILayers.existskey(LayerId)) {
+			declare Boolean Removed = UI.UILayers.removekey(LayerId);
+		}
+	}
 	if (UIManager.UILayers.existskey(LayerId)) UIManager.UILayerDestroy(UIManager.UILayers[LayerId]);
+	G_Driver_MarkersBuiltFrom = "";
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
@@ -841,9 +1066,11 @@ Void Driver_ApplyCommand(Text _Method, Text[] _Params) {
 		G_Driver_EndMatch = True;
 	} else if (_Method == C_Method_SetLayer) {
 		if (_Params.count < 2) return;
-		declare Text Kind = "normal";
-		if (_Params.count >= 3) Kind = _Params[2];
-		Driver_SetLayer(_Params[0], _Params[1], Kind);
+		declare Text[] Rest = ["normal", "", "", ""];
+		for (Index, 2, 5) {
+			if (_Params.count > Index) Rest[Index - 2] = _Params[Index];
+		}
+		Driver_SetLayer(_Params[0], _Params[1], Rest[0], Rest[1], Rest[2], Rest[3]);
 	} else if (_Method == C_Method_RemoveLayer) {
 		if (_Params.count < 1) return;
 		Driver_RemoveLayer(_Params[0]);
@@ -875,6 +1102,8 @@ Void Driver_ApplyCommands() {
 		if (Command.count > 0) Driver_ApplyCommand(Command[0], Params);
 	}
 	Driver_PendingCommands.clear();
+	// Players come and go between the commands.
+	Driver_SyncAudiences();
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //

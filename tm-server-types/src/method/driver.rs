@@ -163,11 +163,10 @@ impl DriverCommand {
                 vec![
                     layer.name.clone(),
                     layer.manialink.clone(),
-                    match layer.kind {
-                        DriverLayerKind::Normal => "normal",
-                        DriverLayerKind::ScoresTable => "scores_table",
-                    }
-                    .to_string(),
+                    layer.kind.code().to_string(),
+                    layer.attach_id.clone(),
+                    json::to_string(&layer.audience).expect("Audiences are json"),
+                    json::to_string(&layer.markers).expect("Markers are json"),
                 ],
             ),
             DriverCommand::RemoveLayer(name) => (Self::REMOVE_LAYER, vec![name.clone()]),
@@ -307,6 +306,55 @@ pub struct DriverLayer {
     pub name: String,
     pub manialink: String,
     pub kind: DriverLayerKind,
+    /// The screen of the stadium a layer in 3d attaches to, empty otherwise.
+    pub attach_id: String,
+    pub audience: DriverAudience,
+    /// The markers of a markers layer.
+    pub markers: Vec<DriverMarker>,
+}
+
+/// Who sees a layer, as the modescript checks it whenever players change.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
+#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
+pub struct DriverAudience {
+    /// `everyone`, `players`, `spectators`, `teams` or `accounts`.
+    pub kind: String,
+    pub teams: Vec<u32>,
+    pub accounts: Vec<String>,
+}
+
+impl Default for DriverAudience {
+    fn default() -> Self {
+        Self {
+            kind: "everyone".into(),
+            teams: Vec::new(),
+            accounts: Vec::new(),
+        }
+    }
+}
+
+/// A frame of a markers layer and what it follows, see `CUIConfigMarker`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
+#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
+pub struct DriverMarker {
+    pub frame_id: String,
+    /// `players`, `position` or the tag of landmarks, e.g. `Checkpoint`.
+    pub anchor: String,
+    /// The players of a marker on players.
+    pub players: DriverAudience,
+    /// The place of a marker at a position, in meters.
+    pub position: Vec<i32>,
+    /// `name`, `club_tag`, `position`, `score`, `team_short_name` or empty.
+    pub label: String,
+    pub hide_on_self: bool,
+    /// 0 for no limit.
+    pub max_distance: u32,
+    /// `always`, `when_in_frustum`, `when_visible` or `when_in_middle_of_screen`.
+    pub visibility: String,
 }
 
 impl DriverLayer {
@@ -326,6 +374,9 @@ impl DriverLayer {
             name,
             manialink: manialink.into(),
             kind,
+            attach_id: String::new(),
+            audience: DriverAudience::default(),
+            markers: Vec::new(),
         }
     }
 }
@@ -342,6 +393,41 @@ pub enum DriverLayerKind {
     /// Shown while a player holds the scores table key and whenever the modescript
     /// forces the scores table, e.g. at the end of a round.
     ScoresTable,
+    /// On a screen of the stadium, [`DriverLayer::attach_id`].
+    ScreenIn3d,
+    /// Frames which follow players, landmarks or places, [`DriverLayer::markers`].
+    Markers,
+    /// While the alternative menu is open.
+    AltMenu,
+    /// During the intro and the podium.
+    CutScene,
+    /// While a map loads.
+    LoadingScreen,
+}
+
+impl DriverLayerKind {
+    /// How the modescript tells it.
+    pub const fn code(self) -> &'static str {
+        match self {
+            DriverLayerKind::Normal => "normal",
+            DriverLayerKind::ScoresTable => "scores_table",
+            DriverLayerKind::ScreenIn3d => "screen_in_3d",
+            DriverLayerKind::Markers => "markers",
+            DriverLayerKind::AltMenu => "alt_menu",
+            DriverLayerKind::CutScene => "cut_scene",
+            DriverLayerKind::LoadingScreen => "loading_screen",
+        }
+    }
+
+    pub const ALL: [DriverLayerKind; 7] = [
+        DriverLayerKind::Normal,
+        DriverLayerKind::ScoresTable,
+        DriverLayerKind::ScreenIn3d,
+        DriverLayerKind::Markers,
+        DriverLayerKind::AltMenu,
+        DriverLayerKind::CutScene,
+        DriverLayerKind::LoadingScreen,
+    ];
 }
 
 /// A UI module of the game, see `Common.UIModules.SetProperties`.
@@ -607,6 +693,14 @@ pub const DRIVER_NETVARS: [(&str, &str); 50] = [
     ("Net_Driver_State", "Text"),
 ];
 
+/// The netvars the driver modescript writes for every player into the UI of the
+/// player (`for UI`), e.g. `declare netread Integer Net_Driver_MyUser for UI;`:
+/// the index of the player in the netvars of the players and its team, -1 for none.
+pub const DRIVER_PLAYER_NETVARS: [(&str, &str); 2] = [
+    ("Net_Driver_MyUser", "Integer"),
+    ("Net_Driver_MyTeam", "Integer"),
+];
+
 /// The standings the driver modescript writes into the netvars of the standings,
 /// sent as json with [`DriverCommand::SetStandings`].
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -728,7 +822,14 @@ mod tests {
             ))),
             (
                 "Driver.SetLayer",
-                vec!["standings".into(), "<manialink/>".into(), "normal".into()]
+                vec![
+                    "standings".into(),
+                    "<manialink/>".into(),
+                    "normal".into(),
+                    String::new(),
+                    r#"{"kind":"everyone","teams":[],"accounts":[]}"#.into(),
+                    "[]".into()
+                ]
             )
         );
         assert_eq!(
