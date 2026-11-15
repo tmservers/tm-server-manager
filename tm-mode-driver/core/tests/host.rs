@@ -27,11 +27,12 @@ fn rounds(settings: &str) -> Driver {
 /// The settings of a match that ends once a player has more than 25 points.
 const POINTS_LIMIT: &str = r#"{"rounds_per_map": 0, "points_limit": 25}"#;
 
-fn result(account_id: &str, points: i32, position: u32) -> DriverPlayerResult {
+fn result(account_id: &str, points: i32, position: u32, time: i32) -> DriverPlayerResult {
     DriverPlayerResult {
         account_id: account_id.into(),
         points,
         position,
+        time,
     }
 }
 
@@ -79,7 +80,7 @@ fn plays_a_match() {
     assert_eq!(
         reply.round_result,
         Some(DriverRoundResult {
-            results: vec![result("a", 10, 1), result("b", 6, 2)]
+            results: vec![result("a", 10, 1, 30_000), result("b", 6, 2, 31_000)]
         })
     );
     assert_eq!(driver.round().number, 1);
@@ -677,7 +678,7 @@ fn new_settings_wait_for_the_round_to_end() {
     assert_eq!(
         end.round_result,
         Some(DriverRoundResult {
-            results: vec![result("a", 10, 1)]
+            results: vec![result("a", 10, 1, 30_000)]
         })
     );
     assert_eq!(
@@ -700,7 +701,7 @@ fn new_settings_wait_for_the_round_to_end() {
     assert_eq!(
         next.round_result,
         Some(DriverRoundResult {
-            results: vec![result("a", 3, 1)]
+            results: vec![result("a", 3, 1, 30_000)]
         })
     );
 }
@@ -722,7 +723,7 @@ fn new_settings_between_rounds_apply_at_once() {
     assert_eq!(
         end.round_result,
         Some(DriverRoundResult {
-            results: vec![result("a", 4, 1)]
+            results: vec![result("a", 4, 1, 30_000)]
         })
     );
 }

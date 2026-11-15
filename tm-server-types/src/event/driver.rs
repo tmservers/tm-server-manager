@@ -65,6 +65,8 @@ pub struct DriverPlayerResult {
     pub points: i32,
     /// Starts at 1.
     pub position: u32,
+    /// E.g. the race that counted in milliseconds, -1 without a time.
+    pub time: i32,
 }
 
 impl<'a> From<&'a Event> for &'a DriverHold {
