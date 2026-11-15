@@ -321,6 +321,7 @@ The netvars are the interface of every manialink, so they are typed and small ra
 | Players (`Net_Driver_UsersSerial`) | `Net_Driver_UserAccountIds`, `Net_Driver_UserNames`, `Net_Driver_UserClubTags`, `Net_Driver_UserZones`: `Text[Integer]` by index |
 | Standings (`Net_Driver_StandingsSerial`) | `Net_Driver_Title`, `Net_Driver_Info`, `Net_Driver_MapName` (`Text`), `Net_Driver_MapCount`, `Net_Driver_MapsPlayed`, `Net_Driver_RoundsOnMap` (`Integer`), `Net_Driver_Paused` (`Boolean`) and the entries of the match |
 | Round (`Net_Driver_RoundSerial`) | `Net_Driver_RoundNumber` (`Integer`), `Net_Driver_RoundLive` (`Boolean`) and the entries of the round as it stands while it runs, otherwise of the last round that counted |
+| Teams (`Net_Driver_TeamsSerial`) | `Net_Driver_TeamNames`, `Net_Driver_TeamShortNames`, `Net_Driver_TeamLogoUrls`, `Net_Driver_TeamFlagUrls`: `Text[Integer]` by team id, `Net_Driver_UserTeams` (`Integer[Integer]`): the team of every player by index |
 | State of the mode (`Net_Driver_StateSerial`) | `Net_Driver_State` (`Text`), whatever a mode sends with `set-net-state` |
 
 The entries are columns with one value per entry, standings ordered by position (unranked players
@@ -338,7 +339,26 @@ foreach (Entry => Player in Net_Driver_StandingsPlayers) {
 }
 ```
 
-- The host sends what changed as json (`DriverNetStandings`, `DriverNetRound`, `DriverNetUsers`)
+A match of teams has the standings of its teams next to the ones of the players, written with the
+standings and the round: `…Teams` (the team id), `…TeamPositions`, `…TeamScores` and
+`…TeamMapScores` are `Integer[]` ordered by position, e.g. `Net_Driver_StandingsTeamScores`, and
+`…TeamLabels` and `…TeamLabelTones` maps by team. A match of players sends no teams, its team
+columns stay empty.
+
+**Teams.** The manager knows the teams of a match from its entrants and gives them to the bridge
+(`my_match_teams`), which starts the driver with a `Teams` input. It is a record like every input,
+so the manager replays the same teams. A mode reads them through the host (`Host::teams`,
+`Host::team_of`) and keeps the standings of the teams in `Standings::teams`, the ones of the round
+that ended in `Standings::round_teams`, like the players. The host orders them by position,
+publishes them and reports the teams of a round with its result. The manager stores the team
+standings (`tab_match_team_standing`, view `match_driver_team_standings`), team leaderboards rank a
+driver match by them. The players of the teams get an index when the teams arrive, so the
+manialinks know them before they race. Ids are global but cost the same as small ones: a map only
+holds the teams and players of the match, and an `Integer` key is 32 bits whatever its value.
+Short names, logos and flags stay empty until the manager stores them for its teams.
+
+- The host sends what changed as json (`DriverNetStandings`, `DriverNetRound`, `DriverNetUsers`,
+  `DriverNetTeams`)
   over XML-RPC, the modescript parses it with `fromjson` and writes the netvars. That json stays
   between the host and the script, which change together, and never reaches a client. Tests check
   that the script writes every netvar with its type and parses every field.
