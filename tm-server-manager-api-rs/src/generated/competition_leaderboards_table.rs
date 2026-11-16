@@ -2,9 +2,9 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN YOUR MODULE SOURCE CODE INSTEAD.
 
 #![allow(unused, clippy::all)]
-use super::lb_settings_v_2_type::LbSettingsV2;
+use super::lb_settings_v_3_type::LbSettingsV3;
 use super::leaderboard_status_type::LeaderboardStatus;
-use super::leaderboard_v_2_type::LeaderboardV2;
+use super::leaderboard_v_3_type::LeaderboardV3;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 /// Table handle for the table `competition_leaderboards`.
@@ -16,7 +16,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 /// but to directly chain method calls,
 /// like `ctx.db.competition_leaderboards().on_insert(...)`.
 pub struct CompetitionLeaderboardsTableHandle<'ctx> {
-    imp: __sdk::TableHandle<LeaderboardV2>,
+    imp: __sdk::TableHandle<LeaderboardV3>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -24,7 +24,7 @@ pub struct CompetitionLeaderboardsTableHandle<'ctx> {
 pub struct CompetitionLeaderboardsTableAccessor;
 
 impl __sdk::TableAccessor<super::RemoteTables> for CompetitionLeaderboardsTableAccessor {
-    type Row = LeaderboardV2;
+    type Row = LeaderboardV3;
     type Handle<'db> = CompetitionLeaderboardsTableHandle<'db>;
 
     fn get<'db>(db: &'db super::RemoteTables) -> Self::Handle<'db> {
@@ -47,7 +47,7 @@ impl CompetitionLeaderboardsTableAccess for super::RemoteTables {
         CompetitionLeaderboardsTableHandle {
             imp: self
                 .imp
-                .get_table::<LeaderboardV2>("competition_leaderboards"),
+                .get_table::<LeaderboardV3>("competition_leaderboards"),
             ctx: std::marker::PhantomData,
         }
     }
@@ -57,25 +57,25 @@ pub struct CompetitionLeaderboardsInsertCallbackId(__sdk::CallbackId);
 pub struct CompetitionLeaderboardsDeleteCallbackId(__sdk::CallbackId);
 
 impl<'ctx> __sdk::TableLike for CompetitionLeaderboardsTableHandle<'ctx> {
-    type Row = LeaderboardV2;
+    type Row = LeaderboardV3;
     type EventContext = super::EventContext;
 
     fn count(&self) -> u64 {
         self.imp.count()
     }
-    fn iter(&self) -> impl Iterator<Item = LeaderboardV2> + '_ {
+    fn iter(&self) -> impl Iterator<Item = LeaderboardV3> + '_ {
         self.imp.iter()
     }
 }
 
 impl<'ctx> __sdk::Table for CompetitionLeaderboardsTableHandle<'ctx> {
-    type Row = LeaderboardV2;
+    type Row = LeaderboardV3;
     type EventContext = super::EventContext;
 
     fn count(&self) -> u64 {
         self.imp.count()
     }
-    fn iter(&self) -> impl Iterator<Item = LeaderboardV2> + '_ {
+    fn iter(&self) -> impl Iterator<Item = LeaderboardV3> + '_ {
         self.imp.iter()
     }
 
@@ -138,38 +138,38 @@ impl<'ctx> __sdk::WithDelete for CompetitionLeaderboardsTableHandle<'ctx> {
 
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
-    let _table = client_cache.get_or_make_table::<LeaderboardV2>("competition_leaderboards");
+    let _table = client_cache.get_or_make_table::<LeaderboardV3>("competition_leaderboards");
 }
 
 #[doc(hidden)]
 pub(super) fn parse_table_update(
     raw_updates: __ws::v2::TableUpdate,
-) -> __sdk::Result<__sdk::TableUpdate<LeaderboardV2>> {
+) -> __sdk::Result<__sdk::TableUpdate<LeaderboardV3>> {
     __sdk::TableUpdate::parse_table_update(raw_updates).map_err(|e| {
-        __sdk::InternalError::failed_parse("TableUpdate<LeaderboardV2>", "TableUpdate")
+        __sdk::InternalError::failed_parse("TableUpdate<LeaderboardV3>", "TableUpdate")
             .with_cause(e)
             .into()
     })
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for query builder access to the view `LeaderboardV2`.
+/// Extension trait for query builder access to the view `LeaderboardV3`.
 ///
 /// Implemented for [`__sdk::QueryTableAccessor`].
 pub trait competition_leaderboardsQueryTableAccess {
     #[allow(non_snake_case)]
-    /// Get a query for a call to the view `LeaderboardV2` with the given arguments.
+    /// Get a query for a call to the view `LeaderboardV3` with the given arguments.
     fn competition_leaderboards(
         &self,
         competition_id: u32,
-    ) -> __sdk::__query_builder::ViewCall<LeaderboardV2>;
+    ) -> __sdk::__query_builder::ViewCall<LeaderboardV3>;
 }
 
 impl competition_leaderboardsQueryTableAccess for __sdk::QueryTableAccessor {
     fn competition_leaderboards(
         &self,
         competition_id: u32,
-    ) -> __sdk::__query_builder::ViewCall<LeaderboardV2> {
+    ) -> __sdk::__query_builder::ViewCall<LeaderboardV3> {
         __sdk::__query_builder::ViewCall::new(
             "competition_leaderboards",
             [__sdk::__query_builder::SqlLiteral::to_sql_literal(

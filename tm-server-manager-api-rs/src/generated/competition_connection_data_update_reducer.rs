@@ -4,20 +4,22 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::connection_data_option_type::ConnectionDataOption;
+use super::lb_settings_v_3_type::LbSettingsV3;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct CompetitionConnectionDataUpdateArgs {
     pub connection_id: u32,
-    pub option: ConnectionDataOption,
+    pub settings: Vec<LbSettingsV3>,
+    pub slot: u16,
 }
 
 impl From<CompetitionConnectionDataUpdateArgs> for super::Reducer {
     fn from(args: CompetitionConnectionDataUpdateArgs) -> Self {
         Self::CompetitionConnectionDataUpdate {
             connection_id: args.connection_id,
-            option: args.option,
+            settings: args.settings,
+            slot: args.slot,
         }
     }
 }
@@ -40,9 +42,10 @@ pub trait competition_connection_data_update {
     fn competition_connection_data_update(
         &self,
         connection_id: u32,
-        option: ConnectionDataOption,
+        settings: Vec<LbSettingsV3>,
+        slot: u16,
     ) -> __sdk::Result<()> {
-        self.competition_connection_data_update_then(connection_id, option, |_, _| {})
+        self.competition_connection_data_update_then(connection_id, settings, slot, |_, _| {})
     }
 
     /// Request that the remote module invoke the reducer `competition_connection_data_update` to run as soon as possible,
@@ -54,11 +57,14 @@ pub trait competition_connection_data_update {
     fn competition_connection_data_update_then(
         &self,
         connection_id: u32,
-        option: ConnectionDataOption,
+        settings: Vec<LbSettingsV3>,
+        slot: u16,
 
-        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
-            + Send
-            + 'static,
+        callback: impl FnOnce(
+            &super::ReducerEventContext,
+            Result<Result<(), String>, __sdk::InternalError>,
+        ) + Send
+        + 'static,
     ) -> __sdk::Result<()>;
 }
 
@@ -66,16 +72,20 @@ impl competition_connection_data_update for super::RemoteReducers {
     fn competition_connection_data_update_then(
         &self,
         connection_id: u32,
-        option: ConnectionDataOption,
+        settings: Vec<LbSettingsV3>,
+        slot: u16,
 
-        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
-            + Send
-            + 'static,
+        callback: impl FnOnce(
+            &super::ReducerEventContext,
+            Result<Result<(), String>, __sdk::InternalError>,
+        ) + Send
+        + 'static,
     ) -> __sdk::Result<()> {
         self.imp.invoke_reducer_with_callback(
             CompetitionConnectionDataUpdateArgs {
                 connection_id,
-                option,
+                settings,
+                slot,
             },
             callback,
         )

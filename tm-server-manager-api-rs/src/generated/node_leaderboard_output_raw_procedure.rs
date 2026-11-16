@@ -31,10 +31,10 @@ pub trait node_leaderboard_output_raw {
         node: NodeHandle,
 
         __callback: impl FnOnce(
-                &super::ProcedureEventContext,
-                Result<Result<Vec<LbEntry>, String>, __sdk::InternalError>,
-            ) + Send
-            + 'static,
+            &super::ProcedureEventContext,
+            Result<Result<Vec<LbEntry>, String>, __sdk::InternalError>,
+        ) + Send
+        + 'static,
     );
 
     #[allow(async_fn_in_trait)]
@@ -50,10 +50,10 @@ impl node_leaderboard_output_raw for super::RemoteProcedures {
         node: NodeHandle,
 
         __callback: impl FnOnce(
-                &super::ProcedureEventContext,
-                Result<Result<Vec<LbEntry>, String>, __sdk::InternalError>,
-            ) + Send
-            + 'static,
+            &super::ProcedureEventContext,
+            Result<Result<Vec<LbEntry>, String>, __sdk::InternalError>,
+        ) + Send
+        + 'static,
     ) {
         self.imp
             .invoke_procedure_with_callback::<_, Result<Vec<LbEntry>, String>>(

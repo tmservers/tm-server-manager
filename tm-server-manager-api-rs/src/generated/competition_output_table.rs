@@ -156,7 +156,7 @@ pub trait competition_outputQueryTableAccess {
     #[allow(non_snake_case)]
     /// Get a query for a call to the view `OutputV1` with the given arguments.
     fn competition_output(&self, competition_id: u32)
-        -> __sdk::__query_builder::ViewCall<OutputV1>;
+    -> __sdk::__query_builder::ViewCall<OutputV1>;
 }
 
 impl competition_outputQueryTableAccess for __sdk::QueryTableAccessor {
