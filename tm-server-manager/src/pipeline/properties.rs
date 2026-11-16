@@ -9,7 +9,7 @@ use tm_server_types::config::TmMode;
 use crate::{
     competition::node::NodeHandle,
     pipeline::{
-        LbEntry, LbEntryKind, LbParticipant, LbSettingsV3,
+        LbEntry, LbEntryKind, LbParticipant, LbScopeKey, LbSettingsV3,
         context::LbContext,
         error::LbError,
         evaluate_steps,
@@ -273,6 +273,45 @@ proptest! {
         // Only who of the players with the same points ranks first can depend on the order.
         let again_by_place: Vec<i32> = again.iter().map(|e| e.score).collect();
         prop_assert_eq!(by_place, again_by_place);
+    }
+
+    #[test]
+    fn filtering_the_best_leaves_everyone_as_many_entries_as_the_others_in_their_group(
+        rounds in rounds_of(0..MATCHES.len()),
+        scope in scope(),
+        param in params(),
+        n in 1..=4u16,
+    ) {
+        let group_of = |e: &LbEntry| LbScopeKey::of(&scope, e);
+        let mut counts: HashMap<(LbScopeKey, LbParticipant), usize> = HashMap::new();
+        let mut best: HashMap<(LbScopeKey, LbParticipant), i64> = HashMap::new();
+        for e in &rounds {
+            let key = (group_of(e), e.participant());
+            *counts.entry(key).or_default() += 1;
+            let k = param.key(e);
+            best.entry(key).and_modify(|b| *b = (*b).min(k)).or_insert(k);
+        }
+        let mut most: HashMap<LbScopeKey, usize> = HashMap::new();
+        for (&(group, _), &count) in &counts {
+            let m = most.entry(group).or_default();
+            *m = (*m).max(count);
+        }
+
+        let filtered = evaluate(&[LbSettingsV3::Filter(LbFilterSettingsV2::best(scope.clone(), param, n))], rounds).unwrap();
+
+        let mut kept: HashMap<(LbScopeKey, LbParticipant), Vec<i64>> = HashMap::new();
+        for e in &filtered {
+            kept.entry((group_of(e), e.participant())).or_default().push(param.key(e));
+        }
+        prop_assert_eq!(
+            kept.keys().collect::<HashSet<_>>(),
+            counts.keys().collect::<HashSet<_>>(),
+            "everyone keeps entries in the groups they played in"
+        );
+        for (key, keys) in &kept {
+            prop_assert_eq!(keys.len(), (n as usize).min(most[&key.0]), "count of {:?}", key);
+            prop_assert_eq!(keys.iter().min(), Some(&best[key]), "the best entry of {:?} is kept", key);
+        }
     }
 
     #[test]
