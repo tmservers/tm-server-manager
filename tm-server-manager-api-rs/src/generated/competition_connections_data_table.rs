@@ -2,8 +2,8 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN YOUR MODULE SOURCE CODE INSTEAD.
 
 #![allow(unused, clippy::all)]
-use super::connection_data_option_type::ConnectionDataOption;
-use super::connection_data_type::ConnectionData;
+use super::connection_data_v_2_type::ConnectionDataV2;
+use super::lb_settings_v_3_type::LbSettingsV3;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 /// Table handle for the table `competition_connections_data`.
@@ -15,7 +15,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 /// but to directly chain method calls,
 /// like `ctx.db.competition_connections_data().on_insert(...)`.
 pub struct CompetitionConnectionsDataTableHandle<'ctx> {
-    imp: __sdk::TableHandle<ConnectionData>,
+    imp: __sdk::TableHandle<ConnectionDataV2>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -23,7 +23,7 @@ pub struct CompetitionConnectionsDataTableHandle<'ctx> {
 pub struct CompetitionConnectionsDataTableAccessor;
 
 impl __sdk::TableAccessor<super::RemoteTables> for CompetitionConnectionsDataTableAccessor {
-    type Row = ConnectionData;
+    type Row = ConnectionDataV2;
     type Handle<'db> = CompetitionConnectionsDataTableHandle<'db>;
 
     fn get<'db>(db: &'db super::RemoteTables) -> Self::Handle<'db> {
@@ -46,7 +46,7 @@ impl CompetitionConnectionsDataTableAccess for super::RemoteTables {
         CompetitionConnectionsDataTableHandle {
             imp: self
                 .imp
-                .get_table::<ConnectionData>("competition_connections_data"),
+                .get_table::<ConnectionDataV2>("competition_connections_data"),
             ctx: std::marker::PhantomData,
         }
     }
@@ -56,25 +56,25 @@ pub struct CompetitionConnectionsDataInsertCallbackId(__sdk::CallbackId);
 pub struct CompetitionConnectionsDataDeleteCallbackId(__sdk::CallbackId);
 
 impl<'ctx> __sdk::TableLike for CompetitionConnectionsDataTableHandle<'ctx> {
-    type Row = ConnectionData;
+    type Row = ConnectionDataV2;
     type EventContext = super::EventContext;
 
     fn count(&self) -> u64 {
         self.imp.count()
     }
-    fn iter(&self) -> impl Iterator<Item = ConnectionData> + '_ {
+    fn iter(&self) -> impl Iterator<Item = ConnectionDataV2> + '_ {
         self.imp.iter()
     }
 }
 
 impl<'ctx> __sdk::Table for CompetitionConnectionsDataTableHandle<'ctx> {
-    type Row = ConnectionData;
+    type Row = ConnectionDataV2;
     type EventContext = super::EventContext;
 
     fn count(&self) -> u64 {
         self.imp.count()
     }
-    fn iter(&self) -> impl Iterator<Item = ConnectionData> + '_ {
+    fn iter(&self) -> impl Iterator<Item = ConnectionDataV2> + '_ {
         self.imp.iter()
     }
 
@@ -137,38 +137,38 @@ impl<'ctx> __sdk::WithDelete for CompetitionConnectionsDataTableHandle<'ctx> {
 
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
-    let _table = client_cache.get_or_make_table::<ConnectionData>("competition_connections_data");
+    let _table = client_cache.get_or_make_table::<ConnectionDataV2>("competition_connections_data");
 }
 
 #[doc(hidden)]
 pub(super) fn parse_table_update(
     raw_updates: __ws::v2::TableUpdate,
-) -> __sdk::Result<__sdk::TableUpdate<ConnectionData>> {
+) -> __sdk::Result<__sdk::TableUpdate<ConnectionDataV2>> {
     __sdk::TableUpdate::parse_table_update(raw_updates).map_err(|e| {
-        __sdk::InternalError::failed_parse("TableUpdate<ConnectionData>", "TableUpdate")
+        __sdk::InternalError::failed_parse("TableUpdate<ConnectionDataV2>", "TableUpdate")
             .with_cause(e)
             .into()
     })
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for query builder access to the view `ConnectionData`.
+/// Extension trait for query builder access to the view `ConnectionDataV2`.
 ///
 /// Implemented for [`__sdk::QueryTableAccessor`].
 pub trait competition_connections_dataQueryTableAccess {
     #[allow(non_snake_case)]
-    /// Get a query for a call to the view `ConnectionData` with the given arguments.
+    /// Get a query for a call to the view `ConnectionDataV2` with the given arguments.
     fn competition_connections_data(
         &self,
         competition_id: u32,
-    ) -> __sdk::__query_builder::ViewCall<ConnectionData>;
+    ) -> __sdk::__query_builder::ViewCall<ConnectionDataV2>;
 }
 
 impl competition_connections_dataQueryTableAccess for __sdk::QueryTableAccessor {
     fn competition_connections_data(
         &self,
         competition_id: u32,
-    ) -> __sdk::__query_builder::ViewCall<ConnectionData> {
+    ) -> __sdk::__query_builder::ViewCall<ConnectionDataV2> {
         __sdk::__query_builder::ViewCall::new(
             "competition_connections_data",
             [__sdk::__query_builder::SqlLiteral::to_sql_literal(

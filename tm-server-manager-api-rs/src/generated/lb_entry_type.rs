@@ -4,12 +4,13 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::tm_mode_type::TmMode;
+use super::lb_entry_kind_type::LbEntryKind;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct LbEntry {
     pub user_id: u32,
+    pub team_id: u32,
     pub position: u16,
     pub round: u16,
     pub map_id: u32,
@@ -17,8 +18,7 @@ pub struct LbEntry {
     pub time: i32,
     pub node_id: u32,
     pub node_variant: u8,
-    pub mode: TmMode,
-    pub team_id: u32,
+    pub kind: LbEntryKind,
 }
 
 impl __sdk::InModule for LbEntry {

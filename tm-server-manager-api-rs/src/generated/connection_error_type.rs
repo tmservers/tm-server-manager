@@ -30,6 +30,8 @@ pub enum ConnectionError {
     InvalidOriginNode,
 
     InvalidKind,
+
+    Steps(String),
 }
 
 impl __sdk::InModule for ConnectionError {

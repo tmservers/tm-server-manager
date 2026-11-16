@@ -52,9 +52,11 @@ pub trait match_override_pre_config {
         id: u32,
         config: ServerConfigV2,
 
-        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
-            + Send
-            + 'static,
+        callback: impl FnOnce(
+            &super::ReducerEventContext,
+            Result<Result<(), String>, __sdk::InternalError>,
+        ) + Send
+        + 'static,
     ) -> __sdk::Result<()>;
 }
 
@@ -64,9 +66,11 @@ impl match_override_pre_config for super::RemoteReducers {
         id: u32,
         config: ServerConfigV2,
 
-        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
-            + Send
-            + 'static,
+        callback: impl FnOnce(
+            &super::ReducerEventContext,
+            Result<Result<(), String>, __sdk::InternalError>,
+        ) + Send
+        + 'static,
     ) -> __sdk::Result<()> {
         self.imp
             .invoke_reducer_with_callback(MatchOverridePreConfigArgs { id, config }, callback)
