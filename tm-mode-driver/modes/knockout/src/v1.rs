@@ -21,8 +21,7 @@
 use serde::{Deserialize, Serialize};
 use tm_mode_driver_sdk::{
     CanSpawn, Command, CountedRace, Entry, Event, Host, Label, Mode, RoundEnd, RoundFormat,
-    Standings, Status, Tone,
-    settings::{FinishTimeoutSetting, WarmUpSetting},
+    Standings, Status, Tone, settings::FinishTimeoutSetting,
 };
 
 /// Icons of the game font for a life left and a lost life.
@@ -42,8 +41,6 @@ pub struct Settings {
     /// Valid rounds played on every map. 0 means no limit.
     pub rounds_per_map: u32,
     pub finish_timeout: FinishTimeoutSetting,
-    /// The warmup before the first round of every map.
-    pub warmup: WarmUpSetting,
 }
 
 impl Default for Settings {
@@ -54,7 +51,6 @@ impl Default for Settings {
             extra_losses: ExtraLosses::AbovePlayersLeft(vec![4, 16, 16]),
             rounds_per_map: 0,
             finish_timeout: FinishTimeoutSetting::Milliseconds(5_000),
-            warmup: WarmUpSetting::default(),
         }
     }
 }
@@ -87,7 +83,6 @@ impl Mode for Knockout {
         "extra_losses",
         "rounds_per_map",
         "finish_timeout",
-        "warmup",
     ];
 
     type Settings = Settings;
@@ -121,12 +116,9 @@ impl Knockout {
             // A config change keeps the match of the modescript going, so the rules
             // of the previous mode might still be active. New settings send them
             // again, the round format applies from the next round on.
-            Event::MapStart | Event::SettingsChanged => vec![
-                Command::SetRoundFormat(RoundFormat::SingleAttempt(
-                    self.settings.finish_timeout.into(),
-                )),
-                Command::SetWarmUp(self.settings.warmup.into()),
-            ],
+            Event::MapStart | Event::SettingsChanged => vec![Command::SetRoundFormat(
+                RoundFormat::SingleAttempt(self.settings.finish_timeout.into()),
+            )],
             Event::RoundEnd(round_end) => self.round_end(host, standings, round_end),
             Event::MapEnd => {
                 if self.match_over(standings) {

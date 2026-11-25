@@ -9,7 +9,7 @@ players a Ant leaves during round 3 · b Bea
 chances ties 300‰
 
 match 1
-map m1 · time attack 1:30.000 · no warmup
+map m1 · time attack 1:30.000
 round 1
   races  b 1:19.953 0cp · a 1:18.218 0cp
   live   4 updates

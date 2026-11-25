@@ -11,7 +11,7 @@ chances ties 300‰ · idle 30‰
 ! playlist m1
 
 match 1
-map m1 · one try, finish timeout 0:08.000 · no warmup · next m1
+map m1 · one try, finish timeout 0:08.000 · next m1
 round 1
   races  c 0:36.567 · b 0:36.793 · a 0:36.962
   live   5 updates
@@ -26,7 +26,7 @@ round 2
   info   Map 1 / 2, 2 / 2 rounds
   end map
 map end · next m1
-map m1 · one try, finish timeout 0:08.000 · no warmup · next m1
+map m1 · one try, finish timeout 0:08.000 · next m1
 round 3
   races  a 0cp · b 0:37.931 · c 0:35.769
   live   6 updates
@@ -46,7 +46,7 @@ map end · next m1
 match end
 
 match 2
-map m1 · one try, finish timeout 0:08.000 · no warmup · next m1
+map m1 · one try, finish timeout 0:08.000 · next m1
 round 5
   ! e joins
   races  a 0:34.480 · d 0:34.167 · c 0:38.272 · b 0:37.896
@@ -62,7 +62,7 @@ round 6
   info   Map 1 / 2, 2 / 2 rounds
   end map
 map end · next m1
-map m1 · one try, finish timeout 0:08.000 · no warmup · next m1
+map m1 · one try, finish timeout 0:08.000 · next m1
 round 7
   races  c 0:35.695 · a 0:38.366 · e 0:33.008 · d 0:32.753 · b 3cp
   live   11 updates

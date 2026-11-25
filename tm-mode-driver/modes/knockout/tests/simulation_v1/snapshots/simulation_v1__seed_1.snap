@@ -9,7 +9,7 @@ players a Ant · b Bea · c Cid
 chances ties 100‰ · repeated holds 100‰ · missed starts 20‰ · playlist changes 20‰
 
 match 1
-map m1 · one try, no finish timeout · no warmup
+map m1 · one try, no finish timeout
 round 1
   races  b 0:32.807 · c 0:35.846 · a 0:31.347
   live   5 updates

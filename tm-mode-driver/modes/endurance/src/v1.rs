@@ -20,9 +20,8 @@ use std::cmp::Reverse;
 
 use serde::{Deserialize, Serialize};
 use tm_mode_driver_sdk::{
-    Command, Entry, Event, Host, Label, Laps, Mode, RaceRules, Racer, RoundEnd, RoundFormat,
-    Standings, Status, Tone,
-    settings::{FinishTimeoutSetting, WarmUpSetting},
+    Command, Entry, Event, Host, Label, Laps, Mode, RaceRules, Racer, Respawn, RoundEnd,
+    RoundFormat, Standings, Status, Tone, settings::FinishTimeoutSetting,
 };
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -34,8 +33,6 @@ pub struct Settings {
     pub time_limit_ms: u32,
     /// How long the others have to finish once the first player completed the laps.
     pub finish_timeout: FinishTimeoutSetting,
-    /// The warmup before the race.
-    pub warmup: WarmUpSetting,
 }
 
 impl Default for Settings {
@@ -44,7 +41,6 @@ impl Default for Settings {
             laps: None,
             time_limit_ms: 3_600_000,
             finish_timeout: FinishTimeoutSetting::Automatic,
-            warmup: WarmUpSetting::default(),
         }
     }
 }
@@ -57,8 +53,7 @@ pub struct Endurance {
 impl Mode for Endurance {
     const NAME: &'static str = "Endurance";
     /// Every setting, for the next race: a race that did not count or the next match.
-    const RELOADABLE: &'static [&'static str] =
-        &["laps", "time_limit_ms", "finish_timeout", "warmup"];
+    const RELOADABLE: &'static [&'static str] = &["laps", "time_limit_ms", "finish_timeout"];
 
     type Settings = Settings;
 
@@ -82,9 +77,8 @@ impl Mode for Endurance {
                     Command::SetRoundFormat(self.round_format()),
                     Command::SetRaceRules(RaceRules {
                         laps: self.settings.laps.map_or(Laps::Infinite, Laps::Count),
-                        give_up: false,
+                        respawn: Some(Respawn::NeverGiveUp),
                     }),
-                    Command::SetWarmUp(self.settings.warmup.into()),
                 ]
             }
             Event::RoundEnd(round_end) => self.round_end(standings, round_end),

@@ -6,7 +6,7 @@ endurance · the most checkpoints win
 settings {"time_limit_ms": 60000}
 
 match 1
-map m1 · time attack 1:00.000 · no warmup · infinite laps, no give up
+map m1 · time attack 1:00.000 · infinite laps, never give up
 round 1
   races  a 7cp · b 7cp · c 5cp
   live   19 updates

@@ -34,9 +34,6 @@ fn settings(rng: &mut Rng) -> String {
     if rng.chance(500) {
         settings["maps_per_match"] = json!(rng.between(1, 3));
     }
-    if let Some(warmup) = random::warmup(rng) {
-        settings["warmup"] = warmup;
-    }
     settings.to_string()
 }
 

@@ -25,8 +25,7 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 use tm_mode_driver_sdk::{
     CanSpawn, Command, CountedRace, Entry, Event, Host, Label, Mode, Racer, RoundEnd, RoundFormat,
-    Standings, Status, Tone,
-    settings::{FinishTimeoutSetting, WarmUpSetting},
+    Standings, Status, Tone, settings::FinishTimeoutSetting,
 };
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -54,8 +53,6 @@ pub struct Settings {
     /// Valid rounds played on every map. 0 means no limit.
     pub rounds_per_map: u32,
     pub finish_timeout: FinishTimeoutSetting,
-    /// The warmup before the first round of every map.
-    pub warmup: WarmUpSetting,
 }
 
 impl Default for Settings {
@@ -77,7 +74,6 @@ impl Default for Settings {
             number_of_winners: 1,
             rounds_per_map: 5,
             finish_timeout: FinishTimeoutSetting::Automatic,
-            warmup: WarmUpSetting::default(),
         }
     }
 }
@@ -114,7 +110,6 @@ impl Mode for ReverseCup {
         "number_of_winners",
         "rounds_per_map",
         "finish_timeout",
-        "warmup",
     ];
 
     type Settings = Settings;
@@ -192,12 +187,9 @@ impl ReverseCup {
             // again, the round format applies from the next round on.
             Event::MapStart | Event::SettingsChanged => {
                 standings.info = self.info(standings);
-                vec![
-                    Command::SetRoundFormat(RoundFormat::SingleAttempt(
-                        self.settings.finish_timeout.into(),
-                    )),
-                    Command::SetWarmUp(self.settings.warmup.into()),
-                ]
+                vec![Command::SetRoundFormat(RoundFormat::SingleAttempt(
+                    self.settings.finish_timeout.into(),
+                ))]
             }
             Event::RoundEnd(round_end) => self.round_end(host, standings, round_end),
             Event::MapEnd => {

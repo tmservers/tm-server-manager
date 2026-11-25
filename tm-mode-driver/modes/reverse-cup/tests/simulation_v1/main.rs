@@ -48,9 +48,6 @@ fn settings(rng: &mut Rng) -> String {
     } else if rng.chance(300) {
         settings["complex_points_repartition"] = json!({});
     }
-    if let Some(warmup) = random::warmup(rng) {
-        settings["warmup"] = warmup;
-    }
     settings.to_string()
 }
 

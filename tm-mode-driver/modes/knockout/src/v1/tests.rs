@@ -1,4 +1,4 @@
-use tm_mode_driver_sdk::{FinishTimeout, Race, Racer, User, WarmUp, testing::Harness};
+use tm_mode_driver_sdk::{FinishTimeout, Race, Racer, User, testing::Harness};
 
 use super::*;
 
@@ -144,20 +144,18 @@ fn blocked(commands: &[Command]) -> Vec<&str> {
 }
 
 #[test]
-fn sets_the_round_format_and_warmup_on_map_start() {
+fn sets_the_round_format_on_map_start() {
     let mut harness = Harness::<Knockout>::new("").unwrap();
     assert_eq!(
         harness.step(Event::MapStart),
-        [
-            Command::SetRoundFormat(RoundFormat::SingleAttempt(FinishTimeout::Milliseconds(
-                5_000
-            ))),
-            Command::SetWarmUp(WarmUp {
-                rounds: 0,
-                duration_ms: 0,
-                timeout_ms: None,
-            }),
-        ]
+        [Command::SetRoundFormat(RoundFormat::SingleAttempt(
+            FinishTimeout::Milliseconds(5_000)
+        )),]
+    );
+    // The warmup is the config's, every mode plays the one of the server.
+    assert!(
+        Harness::<Knockout>::new(r#"{"warmup": {"rounds": 1}}"#)
+            .is_err_and(|error| error.contains("warmup")),
     );
 }
 

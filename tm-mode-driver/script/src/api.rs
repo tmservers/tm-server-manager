@@ -9,7 +9,7 @@ use std::{cell::RefCell, collections::BTreeMap, rc::Rc};
 use rhai::{Array, Dynamic, Engine, EvalAltResult, INT, Map};
 use tm_mode_driver_sdk::{
     self as sdk, CanSpawn, Command, CountedRace, Entry, FinishTimeout, Label, Laps, LogLevel,
-    RaceRules, RoundFormat, Status, Tone, WarmUp, race_order,
+    RaceRules, Respawn, RoundFormat, Status, Tone, race_order,
 };
 
 pub(crate) type ScriptResult<T> = Result<T, Box<EvalAltResult>>;
@@ -572,30 +572,12 @@ fn register_commands(engine: &mut Engine) {
                 time_limit,
             )?)))
         })
-        // The warmup before the first round of the map: `#{ rounds, duration_ms, timeout_ms }`.
-        .register_fn("warm_up", |warm_up: Map| -> ScriptResult<Command> {
-            let number = |name: &str| -> ScriptResult<Option<u32>> {
-                match warm_up.get(name) {
-                    None => Ok(None),
-                    Some(value) if value.is_unit() => Ok(None),
-                    Some(value) => {
-                        let value = value.as_int().map_err(|kind| {
-                            format!("{name} of a warmup has to be a number, not a {kind}.")
-                        })?;
-                        Ok(Some(unsigned(name, value)?))
-                    }
-                }
-            };
-            Ok(Command::SetWarmUp(WarmUp {
-                rounds: number("rounds")?.unwrap_or(0),
-                duration_ms: number("duration_ms")?.unwrap_or(0),
-                timeout_ms: number("timeout_ms")?,
-            }))
-        })
-        // The laps of the races, "map", "infinite" or a number, and whether players can give up.
+        // The laps of the races, "map", "infinite" or a number, and what respawning and
+        // giving up do: "config", "normal", "do_nothing", "give_up_before_first_checkpoint",
+        // "always_give_up" or "never_give_up". "map" and "config" leave it to the config.
         .register_fn(
             "race_rules",
-            |laps: Dynamic, give_up: bool| -> ScriptResult<Command> {
+            |laps: Dynamic, respawn: &str| -> ScriptResult<Command> {
                 let laps = if let Ok(count) = laps.as_int() {
                     Laps::Count(unsigned("laps", count)?)
                 } else {
@@ -605,7 +587,21 @@ fn register_commands(engine: &mut Engine) {
                         _ => return Err("Laps are \"map\", \"infinite\" or a number.".into()),
                     }
                 };
-                Ok(Command::SetRaceRules(RaceRules { laps, give_up }))
+                let respawn = match respawn {
+                    "config" => None,
+                    "normal" => Some(Respawn::Normal),
+                    "do_nothing" => Some(Respawn::DoNothing),
+                    "give_up_before_first_checkpoint" => Some(Respawn::GiveUpBeforeFirstCheckpoint),
+                    "always_give_up" => Some(Respawn::AlwaysGiveUp),
+                    "never_give_up" => Some(Respawn::NeverGiveUp),
+                    other => {
+                        return Err(format!(
+                            "Respawns are \"config\", \"normal\", \"do_nothing\", \"give_up_before_first_checkpoint\", \"always_give_up\" or \"never_give_up\", not \"{other}\"."
+                        )
+                        .into());
+                    }
+                };
+                Ok(Command::SetRaceRules(RaceRules { laps, respawn }))
             },
         )
         .register_fn("can_spawn", |account_id: &str, can_spawn: bool| {

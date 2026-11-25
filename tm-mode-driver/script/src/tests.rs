@@ -1,6 +1,6 @@
 use tm_mode_driver_sdk::{
-    CanSpawn, Command, FinishTimeout, Race, Racer, RoundFormat, Status, Tone, UiAction, UiData,
-    UiScope, UiValue, WarmUp, testing::TestHost,
+    CanSpawn, Command, FinishTimeout, Laps, Race, RaceRules, Racer, Respawn, RoundFormat, Status,
+    Tone, UiAction, UiData, UiScope, UiValue, testing::TestHost,
 };
 
 use super::*;
@@ -84,7 +84,7 @@ fn a_script_changes_the_standings_it_gets_and_returns_commands() {
             standings.set_position("b", 1);
             standings.info = `${standings.entries.len()} players`;
             standings.rounds_on_map += 1;
-            [single_attempt(#{ milliseconds: 5000 }), warm_up(#{ rounds: 2 }), can_spawn("a", false), chat("gg"), end_map()]
+            [single_attempt(#{ milliseconds: 5000 }), race_rules(3, "never_give_up"), can_spawn("a", false), chat("gg"), end_map()]
             "#,
         ),
         "",
@@ -123,10 +123,9 @@ fn a_script_changes_the_standings_it_gets_and_returns_commands() {
             Command::SetRoundFormat(RoundFormat::SingleAttempt(FinishTimeout::Milliseconds(
                 5000
             ))),
-            Command::SetWarmUp(WarmUp {
-                rounds: 2,
-                duration_ms: 0,
-                timeout_ms: None
+            Command::SetRaceRules(RaceRules {
+                laps: Laps::Count(3),
+                respawn: Some(Respawn::NeverGiveUp)
             }),
             Command::SetCanSpawn(CanSpawn {
                 account_id: "a".into(),
@@ -452,4 +451,36 @@ fn only_ui_actions_have_a_layer() {
         "{}",
         error.0
     );
+}
+
+#[test]
+fn a_script_sets_the_respawns_by_name() {
+    let respawns = [
+        ("config", None),
+        ("normal", Some(Respawn::Normal)),
+        ("do_nothing", Some(Respawn::DoNothing)),
+        (
+            "give_up_before_first_checkpoint",
+            Some(Respawn::GiveUpBeforeFirstCheckpoint),
+        ),
+        ("always_give_up", Some(Respawn::AlwaysGiveUp)),
+        ("never_give_up", Some(Respawn::NeverGiveUp)),
+    ];
+    for (name, respawn) in respawns {
+        let mut mode = start(&stepping(&format!(r#"[race_rules("map", "{name}")]"#)), "");
+        let decision = step(mode.as_mut(), &Standings::default(), Event::MapStart);
+        assert_eq!(
+            decision.commands,
+            [Command::SetRaceRules(RaceRules {
+                laps: Laps::Map,
+                respawn
+            })],
+            "{name}"
+        );
+    }
+    let mut mode = start(&stepping(r#"[race_rules("map", "sometimes")]"#), "");
+    let error = mode
+        .step(&TestHost::default(), &Standings::default(), Event::MapStart)
+        .unwrap_err();
+    assert!(error.0.contains(r#"not "sometimes""#), "{}", error.0);
 }

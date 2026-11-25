@@ -1,4 +1,4 @@
-use tm_mode_driver_sdk::{FinishTimeout, Label, Race, Racer, WarmUp, testing::Harness};
+use tm_mode_driver_sdk::{FinishTimeout, Label, Race, Racer, testing::Harness};
 
 use super::*;
 
@@ -58,23 +58,19 @@ fn scores(harness: &Harness<Rounds>) -> Vec<(&str, u32, i32, i32)> {
 }
 
 #[test]
-fn sets_the_round_format_and_warmup_on_map_start() {
-    let mut harness = Harness::<Rounds>::new(
-        r#"{"finish_timeout": {"milliseconds": 7000}, "warmup": {"rounds": 1, "duration_ms": 60000}}"#,
-    )
-    .unwrap();
+fn sets_the_round_format_on_map_start() {
+    let mut harness =
+        Harness::<Rounds>::new(r#"{"finish_timeout": {"milliseconds": 7000}}"#).unwrap();
     assert_eq!(
         harness.step(Event::MapStart),
-        [
-            Command::SetRoundFormat(RoundFormat::SingleAttempt(FinishTimeout::Milliseconds(
-                7000
-            ))),
-            Command::SetWarmUp(WarmUp {
-                rounds: 1,
-                duration_ms: 60_000,
-                timeout_ms: None,
-            }),
-        ]
+        [Command::SetRoundFormat(RoundFormat::SingleAttempt(
+            FinishTimeout::Milliseconds(7000)
+        )),]
+    );
+    // The warmup is the config's, every mode plays the one of the server.
+    assert!(
+        Harness::<Rounds>::new(r#"{"warmup": {"rounds": 1}}"#)
+            .is_err_and(|error| error.contains("warmup")),
     );
 }
 
@@ -245,7 +241,7 @@ fn rejects_unknown_settings() {
 #[test]
 fn every_setting_can_change_during_a_match() {
     tm_mode_driver_sdk::testing::assert_reloadable_settings_exist::<Rounds>();
-    assert_eq!(Rounds::RELOADABLE.len(), 6);
+    assert_eq!(Rounds::RELOADABLE.len(), 5);
 }
 
 #[test]

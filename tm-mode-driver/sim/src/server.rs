@@ -23,13 +23,14 @@ use std::{
 use tm_mode_driver::{DriverInput, DriverReply};
 use tm_server_types::{
     base::{Map, PlayerInfo},
+    config::{LapsNumber, WarmupDuration, WarmupTimeout},
     event::{
         DriverHold, DriverSection, EndMatch, Event, Pause, PlayerConnect, PlayerDisconnect,
         StartLine, StartMap, StartMatch, StartRound, WayPoint,
     },
     method::{
-        DriverCommand, DriverFinishTimeout, DriverLaps, DriverRaceRules, DriverRoundFormat,
-        DriverWarmUp,
+        DriverCommand, DriverFinishTimeout, DriverLaps, DriverRaceRules, DriverRespawn,
+        DriverRoundFormat,
     },
 };
 
@@ -188,7 +189,6 @@ pub(crate) struct Server {
 
     // What the commands of the driver set, like the globals of the modescript.
     format: DriverRoundFormat,
-    warm_up: DriverWarmUp,
     race_rules: DriverRaceRules,
     can_spawn: BTreeMap<String, bool>,
     end_map: bool,
@@ -239,7 +239,6 @@ impl Server {
             seq: 0,
             hold: None,
             format: DriverRoundFormat::SingleAttempt(DriverFinishTimeout::Automatic),
-            warm_up: DriverWarmUp::default(),
             race_rules: DriverRaceRules::default(),
             can_spawn: BTreeMap::new(),
             end_map: false,
@@ -408,7 +407,6 @@ impl Server {
                     }
                 }
                 DriverCommand::SetRoundFormat(format) => self.format = *format,
-                DriverCommand::SetWarmUp(warm_up) => self.warm_up = *warm_up,
                 DriverCommand::SetRaceRules(rules) => self.race_rules = *rules,
                 DriverCommand::SetCanSpawn(can_spawn) => {
                     self.can_spawn
@@ -498,10 +496,10 @@ impl Server {
             DriverSection::MapStart => {
                 if self.end_map || self.end_match {
                     self.emit_hold(DriverSection::MapEnd, false);
-                } else if self.warm_up.rounds > 0 {
+                } else if self.world.server.warmup_number > 0 {
                     self.event(Event::WarmupStart);
                     self.plan_round(Kind::WarmUp {
-                        left: self.warm_up.rounds - 1,
+                        left: self.world.server.warmup_number - 1,
                     });
                 } else {
                     self.phase = Phase::StartRound;
@@ -554,7 +552,6 @@ impl Server {
         self.maps_in_match = 0;
         // Every match starts with the defaults of the modescript.
         self.format = DriverRoundFormat::SingleAttempt(DriverFinishTimeout::Automatic);
-        self.warm_up = DriverWarmUp::default();
         self.race_rules = DriverRaceRules::default();
         self.can_spawn.clear();
         self.end_map = false;
@@ -744,11 +741,11 @@ impl Server {
         // one racer more or less leaves the races of the others as they are.
         let mut rng = self.rng.fork(&key).fork("happenings");
 
-        // Warmups and pauses race the laps of the map like the modescript, whose race
-        // rules only apply to rounds.
+        // The modescript applies the race rules once the map start continues, so the
+        // warmup races by them too. Pauses race the laps of the map.
         let laps = match kind {
-            Kind::Round => self.laps(&map),
-            Kind::WarmUp { .. } | Kind::Pause => Some(map.laps),
+            Kind::Round | Kind::WarmUp { .. } => self.laps(&map),
+            Kind::Pause => Some(map.laps),
         };
         let (time_limit, finish_timeout) = match kind {
             Kind::Round => match self.format {
@@ -760,22 +757,26 @@ impl Server {
                     (None, timeout(finish_timeout, &map, laps))
                 }
             },
-            Kind::WarmUp { .. } => match self.warm_up.duration_ms {
-                0 => (
+            // `MB_WarmUp` gets the settings in milliseconds.
+            Kind::WarmUp { .. } => match self.world.server.warmup_duration {
+                WarmupDuration::OneTry => (
                     None,
-                    Some(
-                        self.warm_up
-                            .timeout_ms
-                            .unwrap_or_else(|| automatic_timeout(&map, laps)),
-                    ),
+                    Some(match self.world.server.warmup_timeout {
+                        WarmupTimeout::BasedOnMedal => automatic_timeout(&map, laps),
+                        WarmupTimeout::Seconds(seconds) => seconds * 1_000,
+                    }),
                 ),
-                duration => (Some(duration), None),
+                // 5 seconds, the author time of a lap and a sixth of it.
+                WarmupDuration::BasedOnMedal => {
+                    (Some(5_000 + map.lap_time() + map.lap_time() / 6), None)
+                }
+                WarmupDuration::Seconds(seconds) => (Some(seconds * 1_000), None),
             },
             Kind::Pause => (Some(rng.between(20, 60) * 1_000), None),
         };
         let course = Course {
             laps,
-            give_up: kind != Kind::Round || self.race_rules.give_up,
+            give_up: kind == Kind::Pause || self.respawn().can_give_up(),
             longest: time_limit.unwrap_or(map.lap_time() * ENDLESS_LAPS),
         };
 
@@ -898,9 +899,26 @@ impl Server {
     fn laps(&self, map: &MapSpec) -> Option<u32> {
         match self.race_rules.laps {
             _ if !map.has_laps() => Some(1),
-            DriverLaps::Map | DriverLaps::Count(0) => Some(map.laps),
+            // What the config says, like `Race::SetLapsSettings` with `S_ForceLapsNb`.
+            DriverLaps::Map | DriverLaps::Count(0) => match self.world.server.laps {
+                LapsNumber::Validation => Some(map.laps),
+                LapsNumber::Independent => None,
+                LapsNumber::Laps(laps) => Some(laps),
+            },
             DriverLaps::Count(laps) => Some(laps),
             DriverLaps::Infinite => None,
+        }
+    }
+
+    /// What respawning and giving up do: what the mode says, otherwise the config,
+    /// otherwise the normal behaviour, like `Driver_ApplyRaceRules`.
+    fn respawn(&self) -> DriverRespawn {
+        match self.race_rules.respawn {
+            DriverRespawn::Config => match DriverRespawn::from(self.world.server.respawn) {
+                DriverRespawn::Config => DriverRespawn::Normal,
+                respawn => respawn,
+            },
+            respawn => respawn,
         }
     }
 
@@ -1045,8 +1063,9 @@ impl Server {
     fn pass(&mut self, player: &str, race: usize, checkpoint: usize) {
         let now = self.clock;
         let map = self.current_map();
-        let infinite = self.race_rules.laps == DriverLaps::Infinite && map.has_laps();
         let run = self.round.as_mut().expect("A round runs");
+        // Races which never finish, also of independent laps the config forces.
+        let infinite = run.course.laps.is_none();
         let racer = &run.racers[player];
         if racer.gone {
             return;
@@ -1362,7 +1381,7 @@ fn server_player() -> PlayerInfo {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::world::{Faults, PlayerSpec, Races};
+    use crate::world::{Faults, PlayerSpec, Races, ServerSettings};
 
     fn player(account_id: &str) -> PlayerSpec {
         PlayerSpec {
@@ -1394,6 +1413,7 @@ mod tests {
             max_rounds: 1,
             settings_changes: Vec::new(),
             teams: Vec::new(),
+            server: ServerSettings::default(),
         };
         let mut server = Server::new(&world, 9);
         while server.phase != Phase::Racing {
@@ -1413,6 +1433,176 @@ mod tests {
             .iter()
             .map(|(account, racer)| (account.clone(), racer.races.clone()))
             .collect()
+    }
+
+    /// A world of two players on a map of three laps with these settings of the config.
+    fn world_with(server: ServerSettings) -> World {
+        World {
+            settings: "{}".into(),
+            maps: vec![MapSpec {
+                uid: "m1".into(),
+                sectors: vec![10_000, 10_000, 10_000],
+                laps: 3,
+            }],
+            playlist: Vec::new(),
+            players: ["a", "b"].iter().map(|account| player(account)).collect(),
+            races: Races { ties: 0, idle: 0 },
+            faults: Faults::default(),
+            matches: 1,
+            max_rounds: 1,
+            settings_changes: Vec::new(),
+            teams: Vec::new(),
+            server,
+        }
+    }
+
+    /// The server once the first race starts, the driver answering the map start with
+    /// these commands, and the callbacks it sent until then.
+    fn racing(world: &World, map_start: Vec<DriverCommand>) -> (Server, Vec<Event>) {
+        let mut server = Server::new(world, 9);
+        let mut events = Vec::new();
+        while server.phase != Phase::Racing {
+            let Some(Step::Input(input)) = server.next() else {
+                panic!("No race starts");
+            };
+            if let DriverInput::Event(event) = &input {
+                events.push(event.clone());
+            }
+            if let DriverInput::Event(Event::DriverHold(hold)) = &input {
+                let mut commands = match hold.section {
+                    DriverSection::MapStart => map_start.clone(),
+                    _ => Vec::new(),
+                };
+                commands.push(DriverCommand::Continue(hold.seq));
+                let reply = DriverReply {
+                    commands,
+                    ..DriverReply::default()
+                };
+                server.on_reply(&input, &reply);
+            }
+        }
+        (server, events)
+    }
+
+    #[test]
+    fn the_config_warms_up_before_the_first_round() {
+        let warm_up = |duration, timeout| ServerSettings {
+            warmup_number: 2,
+            warmup_duration: duration,
+            warmup_timeout: timeout,
+            ..ServerSettings::default()
+        };
+
+        // The warmup races by the rules, here the laps the config forces.
+        let forced = ServerSettings {
+            laps: LapsNumber::Laps(2),
+            ..warm_up(WarmupDuration::Seconds(30), WarmupTimeout::BasedOnMedal)
+        };
+        let (server, events) = racing(&world_with(forced), Vec::new());
+        assert!(events.iter().any(|e| matches!(e, Event::WarmupStart)));
+        let run = server.round.as_ref().unwrap();
+        assert_eq!(run.kind, Kind::WarmUp { left: 1 });
+        assert_eq!(run.course.laps, Some(2));
+        assert_eq!(run.end.map(|end| end - server.clock - SPAWN), Some(30_000));
+
+        // One try ends with the timeout once someone finished.
+        let (server, _) = racing(
+            &world_with(warm_up(WarmupDuration::OneTry, WarmupTimeout::Seconds(4))),
+            Vec::new(),
+        );
+        let run = server.round.as_ref().unwrap();
+        assert_eq!((run.end, run.finish_timeout), (None, Some(4_000)));
+
+        // From the author time of a lap: 5 seconds, the lap and a sixth of it.
+        let (server, _) = racing(
+            &world_with(warm_up(
+                WarmupDuration::BasedOnMedal,
+                WarmupTimeout::BasedOnMedal,
+            )),
+            Vec::new(),
+        );
+        let run = server.round.as_ref().unwrap();
+        assert_eq!(run.end.map(|end| end - server.clock - SPAWN), Some(40_000));
+
+        // Without warmup rounds the first round starts right away.
+        let (server, events) = racing(&world_with(ServerSettings::default()), Vec::new());
+        assert!(!events.iter().any(|e| matches!(e, Event::WarmupStart)));
+        assert_eq!(server.round.as_ref().unwrap().kind, Kind::Round);
+    }
+
+    #[test]
+    fn the_rules_of_the_mode_win_over_the_config() {
+        let config = ServerSettings {
+            respawn: tm_server_types::config::RespawnBehaviour::GiveUpNever,
+            laps: LapsNumber::Laps(2),
+            ..ServerSettings::default()
+        };
+        let course = |server: ServerSettings, map_start| {
+            let (server, _) = racing(&world_with(server), map_start);
+            server.round.as_ref().unwrap().course
+        };
+
+        // What the mode leaves open the config decides.
+        let course_of_config = course(config, Vec::new());
+        assert_eq!(
+            (course_of_config.laps, course_of_config.give_up),
+            (Some(2), false)
+        );
+        // Without the config the map and normal respawns.
+        let plain = course(ServerSettings::default(), Vec::new());
+        assert_eq!((plain.laps, plain.give_up), (Some(3), true));
+
+        let rules = |laps, respawn| {
+            vec![DriverCommand::SetRaceRules(DriverRaceRules {
+                laps,
+                respawn,
+            })]
+        };
+        let of_mode = course(config, rules(DriverLaps::Count(5), DriverRespawn::Normal));
+        assert_eq!((of_mode.laps, of_mode.give_up), (Some(5), true));
+        let endless = course(
+            ServerSettings::default(),
+            rules(DriverLaps::Infinite, DriverRespawn::DoNothing),
+        );
+        assert_eq!((endless.laps, endless.give_up), (None, false));
+        // Independent laps of the config never finish either.
+        let independent = ServerSettings {
+            laps: LapsNumber::Independent,
+            ..ServerSettings::default()
+        };
+        assert_eq!(course(independent, Vec::new()).laps, None);
+    }
+
+    /// The first waypoint of a round whose map start the driver answered with these commands.
+    fn first_way_point(server: ServerSettings, map_start: Vec<DriverCommand>) -> WayPoint {
+        let (mut server, _) = racing(&world_with(server), map_start);
+        loop {
+            match server.next() {
+                Some(Step::Input(DriverInput::Event(Event::WayPoint(way_point)))) => {
+                    return way_point;
+                }
+                Some(_) => {}
+                None => panic!("Nobody passed a checkpoint"),
+            }
+        }
+    }
+
+    #[test]
+    fn waypoints_tell_whether_the_laps_never_end() {
+        let rules = |laps| {
+            vec![DriverCommand::SetRaceRules(DriverRaceRules {
+                laps,
+                respawn: DriverRespawn::Config,
+            })]
+        };
+        let independent = ServerSettings {
+            laps: LapsNumber::Independent,
+            ..ServerSettings::default()
+        };
+        let endless = first_way_point(ServerSettings::default(), rules(DriverLaps::Infinite));
+        assert!(endless.is_infinite_laps);
+        assert!(first_way_point(independent, Vec::new()).is_infinite_laps);
+        assert!(!first_way_point(ServerSettings::default(), Vec::new()).is_infinite_laps);
     }
 
     #[test]

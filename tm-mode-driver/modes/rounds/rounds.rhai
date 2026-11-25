@@ -18,13 +18,11 @@ fn defaults() {
         points_limit: 0,
         // "automatic" without it, "disabled" or #{ milliseconds: 5000 }.
         finish_timeout: (),
-        // The warmup before the first round of every map.
-        warmup: #{ rounds: 0, duration_ms: 0, timeout_ms: () },
     }
 }
 
 fn reloadable() {
-    ["points_repartition", "rounds_per_map", "maps_per_match", "points_limit", "finish_timeout", "warmup"]
+    ["points_repartition", "rounds_per_map", "maps_per_match", "points_limit", "finish_timeout"]
 }
 
 fn validate(settings) {
@@ -40,9 +38,8 @@ fn validate(settings) {
     if maps != () && (type_of(maps) != "i32" || maps < 0) {
         throw "maps_per_match has to be a number of maps";
     }
-    // Both reject what they cannot use.
+    // It rejects what it cannot use.
     single_attempt(finish_timeout(settings));
-    warm_up(settings.warmup);
 }
 
 fn step(cx, standings, event) {
@@ -51,7 +48,7 @@ fn step(cx, standings, event) {
         // are set. New settings send them again.
         "map_start" | "settings_changed" => {
             standings.info = info(cx, standings);
-            [single_attempt(finish_timeout(cx.settings)), warm_up(cx.settings.warmup)]
+            [single_attempt(finish_timeout(cx.settings))]
         }
         "round_end" => round_end(cx, standings, event.round),
         "map_end" => {

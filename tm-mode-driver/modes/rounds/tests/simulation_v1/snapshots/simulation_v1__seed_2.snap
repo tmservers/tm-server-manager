@@ -3,13 +3,13 @@ source: tm-mode-driver/modes/rounds/tests/simulation_v1/main.rs
 expression: outcome.report
 ---
 rounds · seed 2
-settings {"finish_timeout":"automatic","maps_per_match":1,"points_limit":0,"points_repartition":[1,0],"rounds_per_map":3,"warmup":{"duration_ms":30000,"rounds":1,"timeout_ms":4000}}
+settings {"finish_timeout":"automatic","maps_per_match":1,"points_limit":0,"points_repartition":[1,0],"rounds_per_map":3}
 maps m1 2 cp × 4 laps 1:12.132
 players a Ant leaves during round 3 · b Bea
 chances ties 300‰
 
 match 1
-map m1 · one try, automatic finish timeout · warmup 1 × 0:30.000
+map m1 · one try, automatic finish timeout
 round 1
   races  b 1:19.953 · a 1:18.218
   live   4 updates
@@ -37,4 +37,4 @@ match end
 end
   1 b 2 (Winner)
   2 a 1
-inputs 73
+inputs 65

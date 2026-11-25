@@ -10,7 +10,7 @@ chances ties 100‰ · repeated holds 100‰ · missed starts 20‰ · playlist 
 ! teams Red a b · Blue c d
 
 match 1
-map m1 · one try, automatic finish timeout · no warmup · laps of the map, no give up
+map m1 · one try, automatic finish timeout · laps of the map, never give up
 round 1
   races  a 0:31.347 · d 0:35.612 · b 0:32.807 · c 0:35.846
   live   7 updates
@@ -40,7 +40,7 @@ round 3
   chat   Ace for Red
   end map
 map end
-map m2 · one try, automatic finish timeout · no warmup · laps of the map, no give up
+map m2 · one try, automatic finish timeout · laps of the map, never give up
 round 4
   races  c 0:35.896 · a 0:29.912 · b 0:33.339 · d 0:34.777
   live   8 updates
@@ -70,7 +70,7 @@ round 6
   chat   Ace for Red
   end map
 map end
-map m1 · one try, automatic finish timeout · no warmup · laps of the map, no give up
+map m1 · one try, automatic finish timeout · laps of the map, never give up
 round 7
   races  d 0:37.764 · b 0:36.243 · a 0:31.157 · c 0:36.546
   live   9 updates

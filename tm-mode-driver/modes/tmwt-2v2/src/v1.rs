@@ -22,8 +22,8 @@
 
 use serde::{Deserialize, Serialize};
 use tm_mode_driver_sdk::{
-    Command, CountedRace, Entry, Event, Host, Label, Laps, Mode, RaceRules, RoundEnd, RoundFormat,
-    Standings, TeamEntry, Tone, race_order, settings::FinishTimeoutSetting,
+    Command, CountedRace, Entry, Event, Host, Label, Laps, Mode, RaceRules, Respawn, RoundEnd,
+    RoundFormat, Standings, TeamEntry, Tone, race_order, settings::FinishTimeoutSetting,
 };
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -138,7 +138,7 @@ impl Mode for Tmwt2v2 {
                     // Nobody gives up, a player respawns at the last checkpoint.
                     Command::SetRaceRules(RaceRules {
                         laps: Laps::Map,
-                        give_up: false,
+                        respawn: Some(Respawn::NeverGiveUp),
                     }),
                 ]
             }

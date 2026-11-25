@@ -13,7 +13,7 @@ use tm_server_types::{
     event::{DriverHold, DriverSection, DriverTeam, Event, WayPoint},
     method::{
         DriverCommand, DriverFinishTimeout, DriverNetRound, DriverNetStandings, DriverNetTeams,
-        DriverNetUsers, DriverRaceRules, DriverRoundFormat, DriverWarmUp,
+        DriverNetUsers, DriverRaceRules, DriverRoundFormat,
     },
 };
 
@@ -178,7 +178,6 @@ pub(crate) struct Observer {
     // modescript and its netvars.
     can_spawn: BTreeMap<String, bool>,
     format: DriverRoundFormat,
-    warm_up: DriverWarmUp,
     race_rules: DriverRaceRules,
     next_map: Option<String>,
     match_ended: bool,
@@ -213,7 +212,6 @@ impl Observer {
             paused: false,
             can_spawn: BTreeMap::new(),
             format: default_format(),
-            warm_up: DriverWarmUp::default(),
             race_rules: DriverRaceRules::default(),
             next_map: None,
             match_ended: false,
@@ -251,10 +249,6 @@ impl Observer {
 
     pub(crate) fn format(&self) -> DriverRoundFormat {
         self.format
-    }
-
-    pub(crate) fn warm_up(&self) -> DriverWarmUp {
-        self.warm_up
     }
 
     pub(crate) fn race_rules(&self) -> DriverRaceRules {
@@ -386,7 +380,6 @@ impl Observer {
                 self.match_ended = false;
                 self.can_spawn.clear();
                 self.format = default_format();
-                self.warm_up = DriverWarmUp::default();
                 self.race_rules = DriverRaceRules::default();
                 self.live = false;
             }
@@ -544,7 +537,6 @@ impl Observer {
                         .insert(can_spawn.account_id.clone(), can_spawn.can_spawn);
                 }
                 DriverCommand::SetRoundFormat(format) => self.format = *format,
-                DriverCommand::SetWarmUp(warm_up) => self.warm_up = *warm_up,
                 DriverCommand::SetRaceRules(rules) => self.race_rules = *rules,
                 DriverCommand::SetNextMap(uid) => self.next_map = Some(uid.clone()),
                 DriverCommand::EndMatch => self.match_ended = true,

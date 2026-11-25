@@ -6,11 +6,11 @@ use std::cmp::Reverse;
 use crate::{Laps, Race, RaceRules, Racer, RoundEnd, Standings, Status};
 
 impl Default for RaceRules {
-    /// The laps of the map and give ups, the rules every match starts with.
+    /// What the config of the match says, the rules every match starts with.
     fn default() -> Self {
         Self {
             laps: Laps::Map,
-            give_up: true,
+            respawn: None,
         }
     }
 }

@@ -60,8 +60,8 @@ pub use tm_mode_driver::DriverStats;
 use tm_mode_driver::{Driver, DriverInput, DriverLimits, DriverReply, RecordingDriver};
 use tm_mode_driver_sdk::ModeSource;
 pub use world::{
-    Action, Faults, MAX_PLAYERS, MapSpec, Moment, PlayerSpec, RacePlan, Races, SettingsChange,
-    World,
+    Action, Faults, MAX_PLAYERS, MapSpec, Moment, PlayerSpec, RacePlan, Races, ServerSettings,
+    SettingsChange, World,
 };
 
 use crate::{

@@ -8,17 +8,18 @@ use std::fmt::Write;
 
 use tm_mode_driver::{Driver, DriverInput, DriverReply};
 use tm_server_types::{
+    config::{LapsNumber, WarmupDuration, WarmupTimeout},
     event::{DriverSection, Event},
     method::{
         DriverCommand, DriverEntry, DriverFinishTimeout, DriverLaps, DriverRaceRules,
-        DriverRoundFormat, DriverStatus, DriverWarmUp,
+        DriverRespawn, DriverRoundFormat, DriverStatus,
     },
 };
 
 use crate::{
     Failure,
     observe::{Observer, SeenHold},
-    world::{Races, World},
+    world::{Races, ServerSettings, World},
 };
 
 pub(crate) struct Report {
@@ -106,6 +107,9 @@ impl Report {
         if !chances.is_empty() {
             self.line(format!("chances {}", chances.join(" · ")));
         }
+        if world.server != ServerSettings::default() {
+            self.line(format!("server {}", server(world.server)));
+        }
     }
 
     fn line(&mut self, line: impl AsRef<str>) {
@@ -150,12 +154,8 @@ impl Report {
                 match hold.hold.section {
                     DriverSection::MapStart => {
                         self.notes(notes, "");
-                        let mut line = format!(
-                            "map {} · {} · {}",
-                            observer.map(),
-                            format(observer.format()),
-                            warm_up(observer.warm_up())
-                        );
+                        let mut line =
+                            format!("map {} · {}", observer.map(), format(observer.format()));
                         if observer.race_rules() != DriverRaceRules::default() {
                             write!(line, " · {}", race_rules(observer.race_rules())).unwrap();
                         }
@@ -418,17 +418,46 @@ fn race_rules(rules: DriverRaceRules) -> String {
         DriverLaps::Count(laps) => format!("{laps} laps"),
         DriverLaps::Infinite => "infinite laps".to_string(),
     };
-    if rules.give_up {
-        laps
-    } else {
-        format!("{laps}, no give up")
+    match rules.respawn {
+        DriverRespawn::Config => laps,
+        respawn => format!("{laps}, {}", respawn_name(respawn)),
     }
 }
 
-fn warm_up(warm_up: DriverWarmUp) -> String {
-    match (warm_up.rounds, warm_up.duration_ms) {
-        (0, _) => "no warmup".into(),
-        (rounds, 0) => format!("warmup {rounds} × one try"),
-        (rounds, duration) => format!("warmup {rounds} × {}", time(duration)),
+fn respawn_name(respawn: DriverRespawn) -> &'static str {
+    match respawn {
+        DriverRespawn::Config => "respawns of the config",
+        DriverRespawn::Normal => "normal respawns",
+        DriverRespawn::DoNothing => "respawns do nothing",
+        DriverRespawn::GiveUpBeforeFirstCheckpoint => "give up before the first checkpoint",
+        DriverRespawn::AlwaysGiveUp => "always give up",
+        DriverRespawn::NeverGiveUp => "never give up",
     }
+}
+
+/// The settings of the config every mode shares.
+fn server(settings: ServerSettings) -> String {
+    let mut parts = Vec::new();
+    if settings.warmup_number > 0 {
+        let duration = match settings.warmup_duration {
+            WarmupDuration::OneTry => "one try".to_string(),
+            WarmupDuration::BasedOnMedal => "author time".to_string(),
+            WarmupDuration::Seconds(seconds) => time(seconds * 1_000),
+        };
+        let mut warmup = format!("warmup {} × {duration}", settings.warmup_number);
+        if let WarmupTimeout::Seconds(seconds) = settings.warmup_timeout {
+            write!(warmup, ", timeout {}", time(seconds * 1_000)).unwrap();
+        }
+        parts.push(warmup);
+    }
+    let respawn = DriverRespawn::from(settings.respawn);
+    if respawn != DriverRespawn::Config {
+        parts.push(respawn_name(respawn).to_string());
+    }
+    match settings.laps {
+        LapsNumber::Validation => {}
+        LapsNumber::Independent => parts.push("independent laps".into()),
+        LapsNumber::Laps(laps) => parts.push(format!("{laps} laps")),
+    }
+    parts.join(" · ")
 }

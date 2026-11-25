@@ -35,9 +35,6 @@ fn settings(rng: &mut Rng) -> String {
             "finish_timeout": random::finish_timeout(rng),
         })
     };
-    if let Some(warmup) = random::warmup(rng) {
-        settings["warmup"] = warmup;
-    }
     settings.to_string()
 }
 

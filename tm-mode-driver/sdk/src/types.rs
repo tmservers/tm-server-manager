@@ -253,22 +253,11 @@ pub enum RoundFormat {
     TimeAttack(u32),
 }
 
-/// A warmup with the built-in warmup of the game.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub struct WarmUp {
-    /// Warmup rounds, 0 for none.
-    pub rounds: u32,
-    /// How long one warmup round lasts. 0 lets every player drive once.
-    pub duration_ms: u32,
-    /// Time to finish after the first player finished in rounds of one try.
-    /// None computes it from the author time like the finish timeout.
-    pub timeout_ms: Option<u32>,
-}
-
 /// How many laps a race has on maps with laps.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Laps {
-    /// The laps of the map. Every match starts with them.
+    /// The laps the config forces, otherwise the ones of the map. Every match
+    /// starts with them.
     Map,
     /// This many laps.
     Count(u32),
@@ -282,10 +271,24 @@ pub enum Laps {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RaceRules {
     pub laps: Laps,
-    /// Players can give up their race. Without, a race only ends at the finish or
-    /// with the round, respawning at a checkpoint is still possible. Every match
-    /// starts with give ups.
-    pub give_up: bool,
+    /// What respawning and giving up do, None for what the config of the match says.
+    /// Every match starts with None.
+    pub respawn: Option<Respawn>,
+}
+
+/// What respawning and giving up do, like `S_RespawnBehaviour` of the server.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Respawn {
+    /// Respawning goes back to the last checkpoint, giving up ends the race.
+    Normal,
+    /// Neither does anything.
+    DoNothing,
+    /// Respawning before the first checkpoint gives up.
+    GiveUpBeforeFirstCheckpoint,
+    /// Respawning gives up.
+    AlwaysGiveUp,
+    /// Giving up respawns, a race only ends at the finish or with the round.
+    NeverGiveUp,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -300,9 +303,6 @@ pub enum Command {
     /// Applies to the next round that starts. Send it in reply to the map start or
     /// a round end.
     SetRoundFormat(RoundFormat),
-    /// The warmup before the first round of the map. Send it in reply to the map
-    /// start, warmup races are no rounds and never reach the mode.
-    SetWarmUp(WarmUp),
     /// Applies to the next round that starts, like the round format.
     SetRaceRules(RaceRules),
     /// Players that cannot spawn are out of the race (e.g. eliminated).

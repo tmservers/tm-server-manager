@@ -4,9 +4,8 @@
 mod common;
 
 use common::{
-    SESSION, at, finish, forced_round_end, hold, match_start, no_warm_up, play, player,
-    player_info, publishes_standings, race, ranking, round_start, start_line, way_point,
-    without_published,
+    SESSION, at, finish, forced_round_end, hold, match_start, play, player, player_info,
+    publishes_standings, race, ranking, round_start, start_line, way_point, without_published,
 };
 use tm_mode_driver::{Driver, DriverError, DriverInput, DriverLimits, DriverReply};
 use tm_mode_driver_sdk::{
@@ -56,7 +55,6 @@ fn plays_a_match() {
             DriverCommand::SetRoundFormat(DriverRoundFormat::SingleAttempt(
                 DriverFinishTimeout::Automatic
             )),
-            no_warm_up(),
             DriverCommand::Continue(1)
         ]
     );
@@ -657,7 +655,6 @@ fn rounds_can_change_every_setting() {
             "maps_per_match",
             "points_limit",
             "finish_timeout",
-            "warmup",
         ]
     );
 }

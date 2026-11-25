@@ -10,7 +10,7 @@ chances ties 300‰
 ! teams Red a b · Blue c d
 
 match 1
-map m1 · one try, automatic finish timeout · no warmup · laps of the map, no give up
+map m1 · one try, automatic finish timeout · laps of the map, never give up
 round 1
   races  a 1:18.218 · b 1:19.953 · d 1:08.294
   live   5 updates
@@ -68,7 +68,7 @@ round 6
   chat   Victory for Blue
   end map
 map end
-map m1 · one try, automatic finish timeout · no warmup · laps of the map, no give up
+map m1 · one try, automatic finish timeout · laps of the map, never give up
 round 7
   races  d 1:10.175 · b 1:19.944
   live   4 updates
@@ -116,7 +116,7 @@ round 11
   chat   Victory for Blue
   end map
 map end
-map m1 · one try, automatic finish timeout · no warmup · laps of the map, no give up
+map m1 · one try, automatic finish timeout · laps of the map, never give up
 round 12
   races  d 1:07.981 · b 1:19.984
   live   4 updates

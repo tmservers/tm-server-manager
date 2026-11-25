@@ -3,13 +3,13 @@ source: tm-mode-driver/modes/reverse-cup/tests/simulation_v1/main.rs
 expression: outcome.report
 ---
 reverse-cup · seed 1
-settings {"allow_fast_forward_rounds":false,"complex_points_repartition":{},"disable_last_chance":false,"dnf_points_loss":10,"fast_forward_points_repartition":false,"finish_timeout":"disabled","last_chance_dnf_mode":"all_players","number_of_winners":1,"points_repartition":[5],"rounds_per_map":2,"starting_points":44,"warmup":{"duration_ms":21000,"rounds":1,"timeout_ms":10000}}
+settings {"allow_fast_forward_rounds":false,"complex_points_repartition":{},"disable_last_chance":false,"dnf_points_loss":10,"fast_forward_points_repartition":false,"finish_timeout":"disabled","last_chance_dnf_mode":"all_players","number_of_winners":1,"points_repartition":[5],"rounds_per_map":2,"starting_points":44}
 maps m1 4 cp 0:32.773 · m2 4 cp 0:32.453
 players a Ant · b Bea · c Cid
 chances ties 100‰ · repeated holds 100‰ · missed starts 20‰ · playlist changes 20‰
 
 match 1
-map m1 · one try, no finish timeout · warmup 1 × 0:21.000
+map m1 · one try, no finish timeout
 round 1
   races  b 0:32.807 · c 0:35.846 · a 0:31.347
   live   5 updates
@@ -24,7 +24,7 @@ round 2
   info   3 left, 2 / 2 rounds
   end map
 map end
-map m2 · one try, no finish timeout · warmup 1 × 0:21.000
+map m2 · one try, no finish timeout
 round 3
   races  b 0:33.193 · a 0:32.737 · c 0:36.107
   live   4 updates
@@ -39,7 +39,7 @@ round 4
   info   3 left, 2 / 2 rounds
   end map
 map end
-map m1 · one try, no finish timeout · warmup 1 × 0:21.000
+map m1 · one try, no finish timeout
 round 5
   races  b 0:33.273 · a 0:30.510 · c 0:36.097
   live   6 updates
@@ -54,7 +54,7 @@ round 6
   info   3 left, 2 / 2 rounds
   end map
 map end
-map m2 · one try, no finish timeout · warmup 1 × 0:21.000
+map m2 · one try, no finish timeout
 round 7
   races  c 0:36.190 · b 0:35.918 · a 0:30.850
   live   5 updates
@@ -69,7 +69,7 @@ round 8
   info   3 left, 2 / 2 rounds
   end map
 map end
-map m1 · one try, no finish timeout · warmup 1 × 0:21.000
+map m1 · one try, no finish timeout
 round 9
   races  c 0:36.249 · b 0:35.974 · a 0:29.393
   live   5 updates
@@ -95,4 +95,4 @@ end
   1 a 0 out
   2 b 0 out
   3 c 0 out
-inputs 263
+inputs 208

@@ -249,6 +249,25 @@ mod tests {
         }
     }
 
+    /// The script gives the mode the last word on respawns and laps, through Nadeo's race
+    /// library, and plays the warmup of the config.
+    #[test]
+    fn script_takes_the_race_rules_of_the_mode_then_the_config() {
+        assert!(Driver::SCRIPT.contains("MB_Settings_UseDefaultRespawnBehaviour = False;"));
+        assert!(Driver::SCRIPT.contains("Race::SetRespawnBehaviour(Respawn);"));
+        assert!(Driver::SCRIPT.contains("if (Respawn == 0) Respawn = S_RespawnBehaviour;"));
+        assert!(Driver::SCRIPT.contains("Race::SetLapsSettings(S_InfiniteLaps, S_ForceLapsNb);"));
+        assert!(Driver::SCRIPT.contains(&format!(
+            "_Params[1] != \"{}\"",
+            crate::method::DriverRespawn::Config.code()
+        )));
+        assert!(
+            Driver::SCRIPT.contains(
+                "MB_WarmUp(S_WarmUpNb, S_WarmUpDuration * 1000, S_WarmUpTimeout * 1000);"
+            )
+        );
+    }
+
     /// Everything else reaches the driver through the standard callbacks.
     #[test]
     fn script_only_sends_holds_and_ui_events() {

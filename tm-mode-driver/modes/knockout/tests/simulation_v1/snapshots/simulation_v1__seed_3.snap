@@ -11,7 +11,7 @@ chances ties 300‰ · idle 30‰
 ! playlist m1
 
 match 1
-map m1 · one try, automatic finish timeout · no warmup · next m1
+map m1 · one try, automatic finish timeout · next m1
 round 1
   races  c 0:36.567 · b 0:36.793 · a 0:36.962
   live   5 updates
@@ -26,7 +26,7 @@ round 2
   info   Round 3, 3 left, 1 loses a life
   end map
 map end · next m1
-map m1 · one try, automatic finish timeout · no warmup · next m1
+map m1 · one try, automatic finish timeout · next m1
 round 3
   races  a 0cp · b 0:37.931 · c 0:35.769
   live   6 updates
@@ -45,7 +45,7 @@ round 4
   end map
   block  d
 map end · next m1
-map m1 · one try, automatic finish timeout · no warmup · next m1
+map m1 · one try, automatic finish timeout · next m1
 round 5
   ! e joins
   races  b 0:37.896 · c 0:38.272
@@ -62,7 +62,7 @@ map end · next m1
 match end
 
 match 2
-map m1 · one try, automatic finish timeout · no warmup · next m1
+map m1 · one try, automatic finish timeout · next m1
 round 6
   races  c 2cp · a 0:40.589 · d 0cp · b 0:40.589 · e 0:31.199
   live   5 updates
@@ -77,7 +77,7 @@ round 7
   info   Round 3, 5 left, 1 loses a life
   end map
 map end · next m1
-map m1 · one try, automatic finish timeout · no warmup · next m1
+map m1 · one try, automatic finish timeout · next m1
 round 8
   races  e 0:33.298 · b 0cp · a 0:37.482 · c 0:36.833 · d 0:33.298
   live   8 updates
@@ -94,7 +94,7 @@ round 9
   info   Round 5, 4 left, 1 loses a life
   end map
 map end · next m1
-map m1 · one try, automatic finish timeout · no warmup · next m1
+map m1 · one try, automatic finish timeout · next m1
 round 10
   races  e 3cp · a 0:36.046 · d 0:35.148 · c 0:37.330
   live   8 updates
@@ -112,7 +112,7 @@ round 11
   end map
   block  c a
 map end · next m1
-map m1 · one try, automatic finish timeout · no warmup · next m1
+map m1 · one try, automatic finish timeout · next m1
 round 12
   races  e 0:32.716 · d 0:34.125
   live   4 updates

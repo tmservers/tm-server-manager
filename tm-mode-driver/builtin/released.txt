@@ -1,23 +1,23 @@
 # The snapshots of the simulations of every released built-in mode, see src/released.rs.
 # A released mode never changes how it plays, a change of rules is a new version of the mode.
 # <mode> <snapshot> <hash of its report>
-endurance-v1 modes/endurance/tests/simulation_v1/snapshots/simulation_v1__seed_1.snap 9fd1891e857ba1b9
-endurance-v1 modes/endurance/tests/simulation_v1/snapshots/simulation_v1__seed_2.snap 4f0b686fed5d466a
-endurance-v1 modes/endurance/tests/simulation_v1/snapshots/simulation_v1__seed_3.snap 15c79d0ee5ef58ad
-endurance-v1 modes/endurance/tests/simulation_v1/snapshots/simulation_v1__the_most_checkpoints_win.snap b275012b8614bd4a
-knockout-v1 modes/knockout/tests/simulation_v1/snapshots/simulation_v1__seed_1.snap bcf3e9cef3c4de00
-knockout-v1 modes/knockout/tests/simulation_v1/snapshots/simulation_v1__seed_2.snap d747d48932c16fb7
-knockout-v1 modes/knockout/tests/simulation_v1/snapshots/simulation_v1__seed_3.snap f67934d2474c0309
-reverse-cup-v1 modes/reverse-cup/tests/simulation_v1/snapshots/simulation_v1__seed_1.snap f91ead74e3f8c90c
-reverse-cup-v1 modes/reverse-cup/tests/simulation_v1/snapshots/simulation_v1__seed_2.snap dfa7a810229b659c
-reverse-cup-v1 modes/reverse-cup/tests/simulation_v1/snapshots/simulation_v1__seed_3.snap 7bbd07729525c3dd
-rounds-v1 modes/rounds/tests/simulation_v1/snapshots/simulation_v1__seed_1.snap 29b89e05d93a560a
-rounds-v1 modes/rounds/tests/simulation_v1/snapshots/simulation_v1__seed_2.snap 9fc2e5a503eb2e0b
-time-attack-v1 modes/time-attack/tests/simulation_v1/snapshots/simulation_v1__seed_1.snap a0dd222de041e12b
-time-attack-v1 modes/time-attack/tests/simulation_v1/snapshots/simulation_v1__seed_2.snap a715b8e167aef66a
-time-attack-v1 modes/time-attack/tests/simulation_v1/snapshots/simulation_v1__seed_3.snap b1025ae9f5dae99d
-time-attack-v1 modes/time-attack/tests/simulation_v1/snapshots/simulation_v1__the_best_race_counts.snap c01e8543c7fa6fc9
-rounds-v1 modes/rounds/tests/simulation_v1/snapshots/simulation_v1__seed_3.snap 4aff126df0833081
-tmwt-2v2-v1 modes/tmwt-2v2/tests/simulation_v1/snapshots/simulation_v1__seed_1.snap 0a90f1f790a3d739
-tmwt-2v2-v1 modes/tmwt-2v2/tests/simulation_v1/snapshots/simulation_v1__seed_2.snap ffd47c6a503ed6e7
-tmwt-2v2-v1 modes/tmwt-2v2/tests/simulation_v1/snapshots/simulation_v1__seed_3.snap 1e61c494b7cb7209
+endurance-v1 modes/endurance/tests/simulation_v1/snapshots/simulation_v1__seed_1.snap 59258deba484c1e4
+endurance-v1 modes/endurance/tests/simulation_v1/snapshots/simulation_v1__seed_2.snap 48cebaff8daab364
+endurance-v1 modes/endurance/tests/simulation_v1/snapshots/simulation_v1__seed_3.snap 8e9eeddfc926b431
+endurance-v1 modes/endurance/tests/simulation_v1/snapshots/simulation_v1__the_most_checkpoints_win.snap b87858d85f4602c1
+knockout-v1 modes/knockout/tests/simulation_v1/snapshots/simulation_v1__seed_1.snap af67b3680de8443e
+knockout-v1 modes/knockout/tests/simulation_v1/snapshots/simulation_v1__seed_2.snap bad7d97927f71ccb
+knockout-v1 modes/knockout/tests/simulation_v1/snapshots/simulation_v1__seed_3.snap d190493fcfaa6711
+reverse-cup-v1 modes/reverse-cup/tests/simulation_v1/snapshots/simulation_v1__seed_1.snap 4d42c19b3ff9f95b
+reverse-cup-v1 modes/reverse-cup/tests/simulation_v1/snapshots/simulation_v1__seed_2.snap 9b7fa5e8efb95286
+reverse-cup-v1 modes/reverse-cup/tests/simulation_v1/snapshots/simulation_v1__seed_3.snap a2676975beb22ced
+rounds-v1 modes/rounds/tests/simulation_v1/snapshots/simulation_v1__seed_1.snap 57c5bc4a8286b8f0
+rounds-v1 modes/rounds/tests/simulation_v1/snapshots/simulation_v1__seed_2.snap 4a3c1575be303be3
+rounds-v1 modes/rounds/tests/simulation_v1/snapshots/simulation_v1__seed_3.snap 6678d7cdc7eee66b
+time-attack-v1 modes/time-attack/tests/simulation_v1/snapshots/simulation_v1__seed_1.snap 1d548bb9339c39c3
+time-attack-v1 modes/time-attack/tests/simulation_v1/snapshots/simulation_v1__seed_2.snap 06495ab9a790f65a
+time-attack-v1 modes/time-attack/tests/simulation_v1/snapshots/simulation_v1__seed_3.snap 904237492ca5f6dd
+time-attack-v1 modes/time-attack/tests/simulation_v1/snapshots/simulation_v1__the_best_race_counts.snap 33c9a12bf51c2219
+tmwt-2v2-v1 modes/tmwt-2v2/tests/simulation_v1/snapshots/simulation_v1__seed_1.snap 983e0ae303eb1924
+tmwt-2v2-v1 modes/tmwt-2v2/tests/simulation_v1/snapshots/simulation_v1__seed_2.snap 77766d52e021478c
+tmwt-2v2-v1 modes/tmwt-2v2/tests/simulation_v1/snapshots/simulation_v1__seed_3.snap 4253732cbc1287a0

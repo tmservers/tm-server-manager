@@ -1,4 +1,4 @@
-use tm_mode_driver_sdk::{Label, Race, Racer, WarmUp, testing::Harness};
+use tm_mode_driver_sdk::{Label, Race, Racer, testing::Harness};
 
 use super::*;
 
@@ -70,23 +70,18 @@ fn map_points(harness: &Harness<TimeAttack>) -> Vec<(&str, u32, i32)> {
 }
 
 #[test]
-fn sets_the_round_format_and_warmup_on_map_start() {
-    let mut harness = Harness::<TimeAttack>::new(
-        r#"{"time_limit_ms": 60000, "warmup": {"rounds": 1, "timeout_ms": 5000}}"#,
-    )
-    .unwrap();
+fn sets_the_round_format_on_map_start() {
+    let mut harness = Harness::<TimeAttack>::new(r#"{"time_limit_ms": 60000}"#).unwrap();
     assert_eq!(
         harness.step(Event::MapStart),
-        [
-            Command::SetRoundFormat(RoundFormat::TimeAttack(60_000)),
-            Command::SetWarmUp(WarmUp {
-                rounds: 1,
-                duration_ms: 0,
-                timeout_ms: Some(5000),
-            }),
-        ]
+        [Command::SetRoundFormat(RoundFormat::TimeAttack(60_000)),]
     );
     assert_eq!(harness.standings.info, "Map 1 / 1");
+    // The warmup is the config's, every mode plays the one of the server.
+    assert!(
+        Harness::<TimeAttack>::new(r#"{"warmup": {"rounds": 1}}"#)
+            .is_err_and(|error| error.contains("warmup")),
+    );
 }
 
 #[test]

@@ -1,7 +1,10 @@
 //! What surrounds the driver in a simulation: the server with its maps and
 //! players, how they race and what goes wrong, all random from a seed.
 
-use tm_server_types::event::DriverTeam;
+use tm_server_types::{
+    config::{LapsNumber, RespawnBehaviour, WarmupDuration, WarmupTimeout},
+    event::DriverTeam,
+};
 
 use crate::Rng;
 
@@ -29,6 +32,69 @@ pub struct World {
     pub settings_changes: Vec<SettingsChange>,
     /// The teams of a match of teams, the driver gets them when it loads.
     pub teams: Vec<DriverTeam>,
+    /// What the config of the server sets for every mode.
+    pub server: ServerSettings,
+}
+
+/// The settings of the config every mode shares and the modescript reads itself:
+/// `S_WarmUpNb`, `S_WarmUpDuration`, `S_WarmUpTimeout`, `S_RespawnBehaviour` and
+/// `S_ForceLapsNb`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ServerSettings {
+    /// Warmup rounds before the first round of every map, 0 for none.
+    pub warmup_number: u32,
+    pub warmup_duration: WarmupDuration,
+    pub warmup_timeout: WarmupTimeout,
+    /// What respawning and giving up do unless the mode says otherwise.
+    pub respawn: RespawnBehaviour,
+    /// The laps of the races unless the mode says otherwise.
+    pub laps: LapsNumber,
+}
+
+impl Default for ServerSettings {
+    /// The settings of a new config: no warmup, the respawns of the mode and the laps
+    /// of the map.
+    fn default() -> Self {
+        ServerSettings {
+            warmup_number: 0,
+            warmup_duration: WarmupDuration::BasedOnMedal,
+            warmup_timeout: WarmupTimeout::BasedOnMedal,
+            respawn: RespawnBehaviour::Default,
+            laps: LapsNumber::Validation,
+        }
+    }
+}
+
+impl ServerSettings {
+    /// Mostly the defaults, now and then a warmup, other respawns or forced laps.
+    fn random(rng: &mut Rng) -> ServerSettings {
+        let mut settings = ServerSettings::default();
+        if rng.chance(300) {
+            settings.warmup_number = rng.between(1, 2);
+            let seconds = rng.between(10, 40);
+            settings.warmup_duration = *rng.pick(&[
+                WarmupDuration::OneTry,
+                WarmupDuration::BasedOnMedal,
+                WarmupDuration::Seconds(seconds),
+            ]);
+            if rng.chance(500) {
+                settings.warmup_timeout = WarmupTimeout::Seconds(rng.between(2, 10));
+            }
+        }
+        if rng.chance(150) {
+            settings.respawn = *rng.pick(&[
+                RespawnBehaviour::TimeAttack,
+                RespawnBehaviour::Ignore,
+                RespawnBehaviour::GiveUpAtStart,
+                RespawnBehaviour::GiveUpAlways,
+                RespawnBehaviour::GiveUpNever,
+            ]);
+        }
+        if rng.chance(100) {
+            settings.laps = LapsNumber::Laps(rng.between(1, 3));
+        }
+        settings
+    }
 }
 
 /// The names of the teams of a simulation, in order.
@@ -243,11 +309,13 @@ impl World {
             pauses: *rng.fork("pauses").pick(&[0, 0, 20, 60]),
             settings_changes: *rng.fork("settings changes").pick(&[0, 0, 30, 100]),
         };
+        let mut server = ServerSettings::random(&mut rng.fork("server settings"));
         // Plain matches show the rules of a mode without noise, and failures in them
         // are the easiest to read. A stream of its own leaves the rest of the world
         // as it is.
         if rng.fork("plain").chance(400) {
             faults = Faults::default();
+            server = ServerSettings::default();
         }
         World {
             settings,
@@ -262,6 +330,7 @@ impl World {
             // The simulator plans them, it knows the settings of the mode.
             settings_changes: Vec::new(),
             teams: Vec::new(),
+            server,
         }
     }
 

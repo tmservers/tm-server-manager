@@ -28,7 +28,7 @@ use tm_server_types::{
         DriverHold, DriverSection, EndMatch, Event, Pause, PlayerConnect, PlayerDisconnect,
         StartLine, StartMap, StartMatch, StartRound, WayPoint,
     },
-    method::{DriverCommand, DriverStatus, DriverWarmUp},
+    method::{DriverCommand, DriverStatus},
 };
 
 /// The session of the modescript in the holds this module builds.
@@ -503,11 +503,6 @@ pub fn inputs<'a>(events: impl IntoIterator<Item = &'a Event>) -> Vec<DriverInpu
         .cloned()
         .map(DriverInput::Event)
         .collect()
-}
-
-/// What modes send at map start without a warmup in their settings.
-pub fn no_warm_up() -> DriverCommand {
-    DriverCommand::SetWarmUp(DriverWarmUp::default())
 }
 
 /// The commands of a reply without what the host publishes for the manialinks.

@@ -13,7 +13,7 @@
 use serde::{Deserialize, Serialize};
 use tm_mode_driver_sdk::{
     Command, CountedRace, Entry, Event, Host, Mode, RoundEnd, RoundFormat, Standings,
-    settings::{WarmUpSetting, maps_per_match},
+    settings::maps_per_match,
 };
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -27,8 +27,6 @@ pub struct Settings {
     /// Points by rank at the end of every map. Ranks beyond the list get the last value.
     /// When empty the best of N finishers gets N points, the second N - 1 and so on.
     pub points_repartition: Vec<i32>,
-    /// The warmup before the time attack round of every map.
-    pub warmup: WarmUpSetting,
 }
 
 impl Default for Settings {
@@ -37,7 +35,6 @@ impl Default for Settings {
             time_limit_ms: 300_000,
             maps_per_match: None,
             points_repartition: Vec::new(),
-            warmup: WarmUpSetting::default(),
         }
     }
 }
@@ -49,13 +46,9 @@ pub struct TimeAttack {
 
 impl Mode for TimeAttack {
     const NAME: &'static str = "Time Attack";
-    /// The time limit and the warmup apply from the next map on.
-    const RELOADABLE: &'static [&'static str] = &[
-        "time_limit_ms",
-        "maps_per_match",
-        "points_repartition",
-        "warmup",
-    ];
+    /// The time limit applies from the next map on.
+    const RELOADABLE: &'static [&'static str] =
+        &["time_limit_ms", "maps_per_match", "points_repartition"];
 
     type Settings = Settings;
 
@@ -74,10 +67,9 @@ impl Mode for TimeAttack {
             // again, the round format applies from the next round on.
             Event::MapStart | Event::SettingsChanged => {
                 standings.info = self.info(host, standings);
-                vec![
-                    Command::SetRoundFormat(RoundFormat::TimeAttack(self.settings.time_limit_ms)),
-                    Command::SetWarmUp(self.settings.warmup.into()),
-                ]
+                vec![Command::SetRoundFormat(RoundFormat::TimeAttack(
+                    self.settings.time_limit_ms,
+                ))]
             }
             Event::RoundEnd(round_end) => self.round_end(host, standings, round_end),
             Event::MapEnd => {

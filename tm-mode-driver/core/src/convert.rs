@@ -5,15 +5,15 @@ use tm_server_types::{
     method::{
         DriverCanSpawn, DriverCommand, DriverEntry, DriverFinishTimeout, DriverLabelTone,
         DriverLaps, DriverNetEntries, DriverNetRound, DriverNetStandings, DriverNetTeamEntries,
-        DriverNetTeams, DriverNetUiData, DriverNetUsers, DriverRaceRules, DriverRound,
-        DriverRoundFormat, DriverStandings, DriverStatus, DriverTeamEntry, DriverUser, DriverUsers,
-        DriverWarmUp,
+        DriverNetTeams, DriverNetUiData, DriverNetUsers, DriverRaceRules, DriverRespawn,
+        DriverRound, DriverRoundFormat, DriverStandings, DriverStatus, DriverTeamEntry, DriverUser,
+        DriverUsers,
     },
 };
 
 use tm_mode_driver_sdk::{
-    CanSpawn, Command, Entry, FinishTimeout, Label, Laps, RaceRules, RoundFormat, Standings,
-    Status, TeamEntry, Tone, UiAction, UiData, UiScope, UiValue, User, WarmUp,
+    CanSpawn, Command, Entry, FinishTimeout, Label, Laps, RaceRules, Respawn, RoundFormat,
+    Standings, Status, TeamEntry, Tone, UiAction, UiData, UiScope, UiValue, User,
 };
 
 /// The commands of a mode for the server. Maps are given by their place in the playlist.
@@ -25,23 +25,23 @@ pub(crate) fn commands(commands: Vec<Command>, playlist: &[String]) -> Vec<Drive
                 Command::SetRoundFormat(format) => {
                     DriverCommand::SetRoundFormat(round_format(format))
                 }
-                Command::SetWarmUp(WarmUp {
-                    rounds,
-                    duration_ms,
-                    timeout_ms,
-                }) => DriverCommand::SetWarmUp(DriverWarmUp {
-                    rounds,
-                    duration_ms,
-                    timeout_ms,
-                }),
-                Command::SetRaceRules(RaceRules { laps, give_up }) => {
+                Command::SetRaceRules(RaceRules { laps, respawn }) => {
                     DriverCommand::SetRaceRules(DriverRaceRules {
                         laps: match laps {
                             Laps::Map => DriverLaps::Map,
                             Laps::Count(laps) => DriverLaps::Count(laps),
                             Laps::Infinite => DriverLaps::Infinite,
                         },
-                        give_up,
+                        respawn: match respawn {
+                            None => DriverRespawn::Config,
+                            Some(Respawn::Normal) => DriverRespawn::Normal,
+                            Some(Respawn::DoNothing) => DriverRespawn::DoNothing,
+                            Some(Respawn::GiveUpBeforeFirstCheckpoint) => {
+                                DriverRespawn::GiveUpBeforeFirstCheckpoint
+                            }
+                            Some(Respawn::AlwaysGiveUp) => DriverRespawn::AlwaysGiveUp,
+                            Some(Respawn::NeverGiveUp) => DriverRespawn::NeverGiveUp,
+                        },
                     })
                 }
                 Command::SetCanSpawn(CanSpawn {
@@ -476,19 +476,38 @@ mod tests {
 
     #[test]
     fn race_rules_keep_their_values() {
-        assert_eq!(
-            commands(
-                vec![Command::SetRaceRules(RaceRules {
-                    laps: Laps::Count(50),
-                    give_up: false,
-                })],
-                &[]
+        let respawns = [
+            (None, DriverRespawn::Config),
+            (Some(Respawn::Normal), DriverRespawn::Normal),
+            (Some(Respawn::DoNothing), DriverRespawn::DoNothing),
+            (
+                Some(Respawn::GiveUpBeforeFirstCheckpoint),
+                DriverRespawn::GiveUpBeforeFirstCheckpoint,
             ),
-            [DriverCommand::SetRaceRules(DriverRaceRules {
-                laps: DriverLaps::Count(50),
-                give_up: false,
-            })]
-        );
+            (Some(Respawn::AlwaysGiveUp), DriverRespawn::AlwaysGiveUp),
+            (Some(Respawn::NeverGiveUp), DriverRespawn::NeverGiveUp),
+        ];
+        for ((respawn, expected), laps) in respawns.into_iter().zip(
+            [Laps::Count(50), Laps::Map, Laps::Infinite]
+                .into_iter()
+                .cycle(),
+        ) {
+            let driver_laps = match laps {
+                Laps::Map => DriverLaps::Map,
+                Laps::Count(laps) => DriverLaps::Count(laps),
+                Laps::Infinite => DriverLaps::Infinite,
+            };
+            assert_eq!(
+                commands(
+                    vec![Command::SetRaceRules(RaceRules { laps, respawn })],
+                    &[]
+                ),
+                [DriverCommand::SetRaceRules(DriverRaceRules {
+                    laps: driver_laps,
+                    respawn: expected,
+                })]
+            );
+        }
     }
 
     #[test]

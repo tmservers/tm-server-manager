@@ -14,9 +14,7 @@ pub enum DriverCommand {
     Continue(u32),
     /// How the rounds starting from now on are played.
     SetRoundFormat(DriverRoundFormat),
-    /// The warmup of the built-in warmup before the first round of the map that starts.
-    SetWarmUp(DriverWarmUp),
-    /// Laps and give ups of the races in the rounds starting from now on.
+    /// Laps and respawn behaviour of the races in the rounds starting from now on.
     SetRaceRules(DriverRaceRules),
     /// Players that cannot spawn are out of the race (e.g. eliminated).
     SetCanSpawn(DriverCanSpawn),
@@ -92,11 +90,10 @@ impl DriverCommand {
     pub const SET_USERS: &str = "Driver.SetUsers";
     pub const SET_TEAMS: &str = "Driver.SetTeams";
     pub const SET_UI_DATA: &str = "Driver.SetUiData";
-    pub const SET_WARM_UP: &str = "Driver.SetWarmUp";
     pub const SET_RACE_RULES: &str = "Driver.SetRaceRules";
 
     /// Methods implemented by the driver modescript.
-    pub const MODESCRIPT_METHODS: [&str; 14] = [
+    pub const MODESCRIPT_METHODS: [&str; 13] = [
         Self::CONTINUE,
         Self::SET_ROUND_FORMAT,
         Self::SET_CAN_SPAWN,
@@ -109,7 +106,6 @@ impl DriverCommand {
         Self::SET_USERS,
         Self::SET_TEAMS,
         Self::SET_UI_DATA,
-        Self::SET_WARM_UP,
         Self::SET_RACE_RULES,
     ];
 
@@ -132,17 +128,6 @@ impl DriverCommand {
                     }
                 },
             ),
-            DriverCommand::SetWarmUp(warm_up) => (
-                Self::SET_WARM_UP,
-                vec![
-                    warm_up.rounds.to_string(),
-                    warm_up.duration_ms.to_string(),
-                    match warm_up.timeout_ms {
-                        Some(ms) => ms.to_string(),
-                        None => "auto".to_string(),
-                    },
-                ],
-            ),
             DriverCommand::SetRaceRules(rules) => (
                 Self::SET_RACE_RULES,
                 vec![
@@ -151,7 +136,7 @@ impl DriverCommand {
                         DriverLaps::Count(laps) => laps.to_string(),
                         DriverLaps::Infinite => "infinite".to_string(),
                     },
-                    if rules.give_up { "1" } else { "0" }.to_string(),
+                    rules.respawn.code().to_string(),
                 ],
             ),
             DriverCommand::SetCanSpawn(can_spawn) => (
@@ -245,39 +230,87 @@ pub enum DriverFinishTimeout {
     Milliseconds(u32),
 }
 
-/// A warmup with the built-in warmup of the game.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
-#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
-pub struct DriverWarmUp {
-    /// Warmup rounds, 0 for none.
-    pub rounds: u32,
-    /// How long one warmup round lasts. 0 lets every player drive once.
-    pub duration_ms: u32,
-    /// Time to finish after the first player finished in rounds of one try.
-    /// None computes it from the author time like the finish timeout.
-    pub timeout_ms: Option<u32>,
-}
-
-/// The rules of the races in a round. Every match starts with the default: the laps
-/// of the map and give ups.
+/// The rules of the races in a round. Every match starts with the default: what the
+/// config says, its laps or the ones of the map and its respawn behaviour.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
 #[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
 pub struct DriverRaceRules {
     pub laps: DriverLaps,
-    /// Players can give up their race. Without, a race only ends at the finish or
-    /// with the round.
-    pub give_up: bool,
+    pub respawn: DriverRespawn,
 }
 
 impl Default for DriverRaceRules {
     fn default() -> Self {
         Self {
             laps: DriverLaps::Map,
-            give_up: true,
+            respawn: DriverRespawn::Config,
+        }
+    }
+}
+
+/// What respawning and giving up do: the `C_RespawnBehaviour_*` of Nadeo's race
+/// library, which are also the values of `S_RespawnBehaviour`.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "spacetime", derive(spacetimedb_lib::SpacetimeType))]
+#[cfg_attr(feature = "spacetime", sats(crate = spacetimedb_lib))]
+pub enum DriverRespawn {
+    /// `S_RespawnBehaviour` of the config, `Normal` when the config leaves it to the mode.
+    #[default]
+    Config,
+    /// Respawning goes back to the last checkpoint, giving up ends the race.
+    Normal,
+    /// Neither does anything.
+    DoNothing,
+    /// Respawning before the first checkpoint gives up.
+    GiveUpBeforeFirstCheckpoint,
+    /// Respawning gives up.
+    AlwaysGiveUp,
+    /// Giving up respawns, a race only ends at the finish or with the round.
+    NeverGiveUp,
+}
+
+/// The respawn behaviour of a config, `Default` leaves it to the mode.
+impl From<crate::config::RespawnBehaviour> for DriverRespawn {
+    fn from(value: crate::config::RespawnBehaviour) -> Self {
+        use crate::config::RespawnBehaviour;
+        match value {
+            RespawnBehaviour::Default => DriverRespawn::Config,
+            RespawnBehaviour::TimeAttack => DriverRespawn::Normal,
+            RespawnBehaviour::Ignore => DriverRespawn::DoNothing,
+            RespawnBehaviour::GiveUpAtStart => DriverRespawn::GiveUpBeforeFirstCheckpoint,
+            RespawnBehaviour::GiveUpAlways => DriverRespawn::AlwaysGiveUp,
+            RespawnBehaviour::GiveUpNever => DriverRespawn::NeverGiveUp,
+        }
+    }
+}
+
+impl DriverRespawn {
+    pub const ALL: [DriverRespawn; 6] = [
+        DriverRespawn::Config,
+        DriverRespawn::Normal,
+        DriverRespawn::DoNothing,
+        DriverRespawn::GiveUpBeforeFirstCheckpoint,
+        DriverRespawn::AlwaysGiveUp,
+        DriverRespawn::NeverGiveUp,
+    ];
+
+    /// Whether a player can end their race before the finish.
+    pub fn can_give_up(self) -> bool {
+        !matches!(self, DriverRespawn::DoNothing | DriverRespawn::NeverGiveUp)
+    }
+
+    /// What the modescript gets: `config`, otherwise the constant of the race library.
+    pub fn code(self) -> &'static str {
+        match self {
+            DriverRespawn::Config => "config",
+            DriverRespawn::Normal => "1",
+            DriverRespawn::DoNothing => "2",
+            DriverRespawn::GiveUpBeforeFirstCheckpoint => "3",
+            DriverRespawn::AlwaysGiveUp => "4",
+            DriverRespawn::NeverGiveUp => "5",
         }
     }
 }
@@ -941,51 +974,53 @@ mod tests {
         );
     }
 
+    /// The modescript gets the values of `S_RespawnBehaviour`, which the config
+    /// sends as its respawn behaviour.
     #[test]
-    fn warm_ups() {
-        assert_eq!(
-            modescript(DriverCommand::SetWarmUp(DriverWarmUp {
-                rounds: 2,
-                duration_ms: 60_000,
-                timeout_ms: None,
-            })),
-            (
-                "Driver.SetWarmUp",
-                vec!["2".into(), "60000".into(), "auto".into()]
-            )
-        );
-        assert_eq!(
-            modescript(DriverCommand::SetWarmUp(DriverWarmUp {
-                rounds: 1,
-                duration_ms: 0,
-                timeout_ms: Some(5000),
-            }))
-            .1,
-            ["1", "0", "5000"]
-        );
+    fn respawns_are_the_values_of_the_setting() {
+        use crate::config::RespawnBehaviour;
+        let behaviours = [
+            RespawnBehaviour::Default,
+            RespawnBehaviour::TimeAttack,
+            RespawnBehaviour::Ignore,
+            RespawnBehaviour::GiveUpAtStart,
+            RespawnBehaviour::GiveUpAlways,
+            RespawnBehaviour::GiveUpNever,
+        ];
+        for (behaviour, respawn) in behaviours.into_iter().zip(DriverRespawn::ALL) {
+            assert_eq!(DriverRespawn::from(behaviour), respawn);
+            if respawn != DriverRespawn::Config {
+                assert_eq!(respawn.code(), i32::from(behaviour).to_string());
+            }
+        }
+        let ends: Vec<bool> = DriverRespawn::ALL
+            .into_iter()
+            .map(DriverRespawn::can_give_up)
+            .collect();
+        assert_eq!(ends, [true, true, false, true, true, false]);
     }
 
     #[test]
     fn race_rules() {
         assert_eq!(
             modescript(DriverCommand::SetRaceRules(DriverRaceRules::default())),
-            ("Driver.SetRaceRules", vec!["map".into(), "1".into()])
+            ("Driver.SetRaceRules", vec!["map".into(), "config".into()])
         );
         assert_eq!(
             modescript(DriverCommand::SetRaceRules(DriverRaceRules {
                 laps: DriverLaps::Count(50),
-                give_up: false,
+                respawn: DriverRespawn::NeverGiveUp,
             }))
             .1,
-            ["50", "0"]
+            ["50", "5"]
         );
         assert_eq!(
             modescript(DriverCommand::SetRaceRules(DriverRaceRules {
                 laps: DriverLaps::Infinite,
-                give_up: false,
+                respawn: DriverRespawn::GiveUpBeforeFirstCheckpoint,
             }))
             .1,
-            ["infinite", "0"]
+            ["infinite", "3"]
         );
     }
 

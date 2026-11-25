@@ -226,7 +226,7 @@ fn players_never_give_up() {
 
     assert!(commands.contains(&Command::SetRaceRules(RaceRules {
         laps: Laps::Map,
-        give_up: false,
+        respawn: Some(Respawn::NeverGiveUp),
     })));
 }
 

@@ -40,9 +40,6 @@ fn settings(rng: &mut Rng) -> String {
         "rounds_per_map": rng.between(0, 4),
         "finish_timeout": random::finish_timeout(rng),
     });
-    if let Some(warmup) = random::warmup(rng) {
-        settings["warmup"] = warmup;
-    }
     settings.to_string()
 }
 

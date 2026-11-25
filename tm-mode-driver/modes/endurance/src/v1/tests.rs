@@ -1,4 +1,4 @@
-use tm_mode_driver_sdk::{FinishTimeout, Race, WarmUp, testing::Harness};
+use tm_mode_driver_sdk::{FinishTimeout, Race, Respawn, testing::Harness};
 
 use super::*;
 
@@ -65,25 +65,23 @@ fn places(round: &[Entry]) -> Vec<(&str, u32, i32, Option<u32>, String)> {
 
 #[test]
 fn infinite_laps_race_until_the_time_limit() {
-    let mut harness =
-        Harness::<Endurance>::new(r#"{"time_limit_ms": 5400000, "warmup": {"rounds": 1}}"#)
-            .unwrap();
+    let mut harness = Harness::<Endurance>::new(r#"{"time_limit_ms": 5400000}"#).unwrap();
     assert_eq!(
         harness.step(Event::MapStart),
         [
             Command::SetRoundFormat(RoundFormat::TimeAttack(5_400_000)),
             Command::SetRaceRules(RaceRules {
                 laps: Laps::Infinite,
-                give_up: false,
-            }),
-            Command::SetWarmUp(WarmUp {
-                rounds: 1,
-                duration_ms: 0,
-                timeout_ms: None,
+                respawn: Some(Respawn::NeverGiveUp),
             }),
         ]
     );
     assert_eq!(harness.standings.info, "1:30:00");
+    // The warmup is the config's, every mode plays the one of the server.
+    assert!(
+        Harness::<Endurance>::new(r#"{"warmup": {"rounds": 1}}"#)
+            .is_err_and(|error| error.contains("warmup")),
+    );
 }
 
 #[test]
@@ -100,7 +98,7 @@ fn laps_race_until_everyone_finished() {
             ))),
             Command::SetRaceRules(RaceRules {
                 laps: Laps::Count(50),
-                give_up: false,
+                respawn: Some(Respawn::NeverGiveUp),
             }),
         ]
     );

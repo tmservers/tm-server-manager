@@ -79,7 +79,6 @@
 #Const C_Method_SetRound "Driver.SetRound"
 #Const C_Method_SetUsers "Driver.SetUsers"
 #Const C_Method_SetTeams "Driver.SetTeams"
-#Const C_Method_SetWarmUp "Driver.SetWarmUp"
 #Const C_Method_SetRaceRules "Driver.SetRaceRules"
 #Const C_Method_SetUiData "Driver.SetUiData"
 
@@ -234,23 +233,12 @@ declare Text G_Driver_FinishTimeout;
 /// Time limit of time attack rounds in milliseconds. 0 plays single attempt rounds.
 declare Integer G_Driver_TimeAttackLimit;
 declare Boolean G_Driver_EndMatch;
-/// The built-in warmup before the first round of every map: rounds, duration and timeout
-/// in milliseconds as MB_WarmUp takes them.
-declare Integer G_Driver_WarmUpNb;
-declare Integer G_Driver_WarmUpDuration;
-declare Integer G_Driver_WarmUpTimeout;
-/// The laps of the races, 0 for the laps of the map, and whether they never end.
+/// The laps of the races, 0 for what the config says, and whether they never end.
 declare Integer G_Driver_LapsNb;
 declare Boolean G_Driver_InfiniteLaps;
-/// Players can give up their race.
-declare Boolean G_Driver_GiveUp;
-/// The race behaviour of the engine changed for the driver. What the base script
-/// set before comes back once the driver wants the defaults again.
-declare Boolean G_Driver_RaceRulesSet;
-declare CSmMode::ECheckpointBehaviour G_Driver_BaseCheckpointBehaviour;
-declare Integer G_Driver_BaseLapCountOverride;
-declare CSmMode::EGiveUpBehaviour G_Driver_BaseGiveUpBehaviour;
-declare CSmMode::ERespawnBehaviour G_Driver_BaseRespawnBehaviour;
+/// What respawning and giving up do, a C_RespawnBehaviour_* of the race library, 0 for
+/// what the config says.
+declare Integer G_Driver_Respawn;
 declare Ident[Text] G_Driver_Layers;
 /// Who sees every layer of a name, and the markers of the markers layers.
 declare K_Driver_Audience[Text] G_Driver_LayerAudiences;
@@ -295,7 +283,7 @@ XmlRpc::RegisterCallback(C_Callback_Hold, """
 	]
 	```
 """);
-foreach (Method in [C_Method_Continue, C_Method_SetRoundFormat, C_Method_SetCanSpawn, C_Method_EndMatch, C_Method_SetLayer, C_Method_RemoveLayer, C_Method_SetNetState, C_Method_SetStandings, C_Method_SetRound, C_Method_SetUsers, C_Method_SetTeams, C_Method_SetWarmUp, C_Method_SetRaceRules, C_Method_SetUiData]) {
+foreach (Method in [C_Method_Continue, C_Method_SetRoundFormat, C_Method_SetCanSpawn, C_Method_EndMatch, C_Method_SetLayer, C_Method_RemoveLayer, C_Method_SetNetState, C_Method_SetStandings, C_Method_SetRound, C_Method_SetUsers, C_Method_SetTeams, C_Method_SetRaceRules, C_Method_SetUiData]) {
 	XmlRpc::RegisterMethod(Method, """
 * Name: {{{Method}}}
 * Type: TriggerModeScriptEventArray
@@ -309,7 +297,7 @@ foreach (Method in [C_Method_Continue, C_Method_SetRoundFormat, C_Method_SetCanS
 StateMgr::Unload();
 
 XmlRpc::UnregisterCallback(C_Callback_Hold);
-foreach (Method in [C_Method_Continue, C_Method_SetRoundFormat, C_Method_SetCanSpawn, C_Method_EndMatch, C_Method_SetLayer, C_Method_RemoveLayer, C_Method_SetNetState, C_Method_SetStandings, C_Method_SetRound, C_Method_SetUsers, C_Method_SetTeams, C_Method_SetWarmUp, C_Method_SetRaceRules, C_Method_SetUiData]) {
+foreach (Method in [C_Method_Continue, C_Method_SetRoundFormat, C_Method_SetCanSpawn, C_Method_EndMatch, C_Method_SetLayer, C_Method_RemoveLayer, C_Method_SetNetState, C_Method_SetStandings, C_Method_SetRound, C_Method_SetUsers, C_Method_SetTeams, C_Method_SetRaceRules, C_Method_SetUiData]) {
 	XmlRpc::UnregisterMethod(Method);
 }
 ***
@@ -317,6 +305,9 @@ foreach (Method in [C_Method_Continue, C_Method_SetRoundFormat, C_Method_SetCanS
 ***Match_Settings***
 ***
 MB_Settings_UseDefaultHud = (C_HudModulePath == "");
+// The base would let S_RespawnBehaviour win over the mode, Driver_ApplyRaceRules
+// gives the mode the last word instead.
+MB_Settings_UseDefaultRespawnBehaviour = False;
 ***
 
 ***Match_Rules***
@@ -440,12 +431,9 @@ declare Boolean[Text] Driver_SpawnPermissions for This = [];
 Driver_SpawnPermissions.clear();
 G_Driver_FinishTimeout = "auto";
 G_Driver_TimeAttackLimit = 0;
-G_Driver_WarmUpNb = S_WarmUpNb;
-G_Driver_WarmUpDuration = S_WarmUpDuration * 1000;
-G_Driver_WarmUpTimeout = S_WarmUpTimeout * 1000;
 G_Driver_LapsNb = 0;
 G_Driver_InfiniteLaps = False;
-G_Driver_GiveUp = True;
+G_Driver_Respawn = 0;
 ***
 
 ***Match_StartMap***
@@ -455,8 +443,9 @@ Users_SetNbFakeUsers(C_FakeUsersNb, 0);
 CarRank::Reset();
 
 Driver_Hold(C_Section_MapStart, False);
+Driver_ApplyRaceRules();
 
-// The warmup has its own spawn rules. Players who cannot spawn, e.g. eliminated
+// The warmup of the config, like the modes of Nadeo. It has its own spawn rules. Players who cannot spawn, e.g. eliminated
 // players, do not warm up either.
 declare Boolean[Text] Driver_SpawnPermissions for This = [];
 foreach (Score in Scores) {
@@ -464,7 +453,7 @@ foreach (Score in Scores) {
 	declare Text AccountId = Score.User.WebServicesUserId;
 	WarmUp::CanPlay(Score, !Driver_SpawnPermissions.existskey(AccountId) || Driver_SpawnPermissions[AccountId]);
 }
-MB_WarmUp(G_Driver_WarmUpNb, G_Driver_WarmUpDuration, G_Driver_WarmUpTimeout);
+MB_WarmUp(S_WarmUpNb, S_WarmUpDuration * 1000, S_WarmUpTimeout * 1000);
 ***
 
 ***Rounds_CheckCanSpawn***
@@ -620,36 +609,19 @@ Boolean Driver_CanSpawn(CSmPlayer _Player) {
  *	it, and all of it comes back once the driver wants the defaults again.
  */
 Void Driver_ApplyRaceRules() {
-	declare Boolean Changed = G_Driver_LapsNb > 0 || G_Driver_InfiniteLaps || !G_Driver_GiveUp;
-	if (!Changed && !G_Driver_RaceRulesSet) return;
-	if (!G_Driver_RaceRulesSet) {
-		G_Driver_BaseCheckpointBehaviour = CheckpointBehaviour;
-		G_Driver_BaseLapCountOverride = LapCountOverride;
-		G_Driver_BaseGiveUpBehaviour = GiveUpBehaviour;
-		G_Driver_BaseRespawnBehaviour = RespawnBehaviour;
-	}
-	G_Driver_RaceRulesSet = Changed;
-
-	CheckpointBehaviour = G_Driver_BaseCheckpointBehaviour;
-	LapCountOverride = G_Driver_BaseLapCountOverride;
-	GiveUpBehaviour = G_Driver_BaseGiveUpBehaviour;
-	RespawnBehaviour = G_Driver_BaseRespawnBehaviour;
+	// What the driver leaves open the config decides, as for the modes of Nadeo: its laps,
+	// otherwise the ones of the map, and its respawn behaviour, otherwise the normal one.
 	if (G_Driver_InfiniteLaps) {
-		CheckpointBehaviour = CSmMode::ECheckpointBehaviour::InfiniteLaps;
+		Race::SetLapsSettings(True, -1);
 	} else if (G_Driver_LapsNb > 0) {
-		LapCountOverride = G_Driver_LapsNb;
+		Race::SetLapsSettings(False, G_Driver_LapsNb);
+	} else {
+		Race::SetLapsSettings(S_InfiniteLaps, S_ForceLapsNb);
 	}
-	if (!G_Driver_GiveUp) {
-		// Respawning goes back to the last checkpoint, giving up does nothing.
-		GiveUpBehaviour = CSmMode::EGiveUpBehaviour::DoNothing;
-		RespawnBehaviour = CSmMode::ERespawnBehaviour::AlwaysRespawn;
-	}
-}
-
-/// The laps of the races, the ones the driver set or the ones of the base script.
-Integer Driver_LapsNb() {
-	if (G_Driver_LapsNb > 0) return G_Driver_LapsNb;
-	return Race::GetLapsNb();
+	declare Integer Respawn = G_Driver_Respawn;
+	if (Respawn == 0) Respawn = S_RespawnBehaviour;
+	if (Respawn == 0) Respawn = Race::C_RespawnBehaviour_Normal;
+	Race::SetRespawnBehaviour(Respawn);
 }
 
 /// Time attack rounds rank by the best race, everything else by the last race.
@@ -1191,25 +1163,19 @@ Void Driver_ApplyCommand(Text _Method, Text[] _Params) {
 			G_Driver_TimeAttackLimit = 0;
 			G_Driver_FinishTimeout = _Params[1];
 		}
-	} else if (_Method == C_Method_SetWarmUp) {
-		if (_Params.count < 3) return;
-		G_Driver_WarmUpNb = TL::ToInteger(_Params[0]);
-		G_Driver_WarmUpDuration = TL::ToInteger(_Params[1]);
-		if (_Params[2] == "auto") {
-			G_Driver_WarmUpTimeout = -1;
-		} else {
-			G_Driver_WarmUpTimeout = TL::ToInteger(_Params[2]);
-		}
 	} else if (_Method == C_Method_SetRaceRules) {
 		if (_Params.count < 2) return;
-		// map, infinite or a number of laps, 0 being the laps of the map like for the
-		// engine.
+		// map, infinite or a number of laps, then config or a C_RespawnBehaviour_* of
+		// the race library.
 		G_Driver_InfiniteLaps = _Params[0] == "infinite";
 		G_Driver_LapsNb = 0;
 		if (_Params[0] != "map" && !G_Driver_InfiniteLaps) {
 			G_Driver_LapsNb = ML::Max(TL::ToInteger(_Params[0]), 0);
 		}
-		G_Driver_GiveUp = _Params[1] == "1";
+		G_Driver_Respawn = 0;
+		if (_Params[1] != "config") {
+			G_Driver_Respawn = ML::Clamp(TL::ToInteger(_Params[1]), Race::C_RespawnBehaviour_Normal, Race::C_RespawnBehaviour_NeverGiveUp);
+		}
 	} else if (_Method == C_Method_SetCanSpawn) {
 		if (_Params.count < 2) return;
 		declare Boolean[Text] Driver_SpawnPermissions for This = [];
@@ -1305,8 +1271,8 @@ Integer Driver_FinishTimeout() {
 	if (G_Driver_FinishTimeout != "auto") return Now + TL::ToInteger(G_Driver_FinishTimeout);
 
 	declare Integer FinishTimeout = 5000;
-	if (Map.TMObjective_IsLapRace && Driver_LapsNb() > 0 && Map.TMObjective_NbLaps > 0) {
-		FinishTimeout += ((Map.TMObjective_AuthorTime / Map.TMObjective_NbLaps) * Driver_LapsNb()) / 6;
+	if (Map.TMObjective_IsLapRace && Race::GetLapsNb() > 0 && Map.TMObjective_NbLaps > 0) {
+		FinishTimeout += ((Map.TMObjective_AuthorTime / Map.TMObjective_NbLaps) * Race::GetLapsNb()) / 6;
 	} else {
 		FinishTimeout += Map.TMObjective_AuthorTime / 6;
 	}

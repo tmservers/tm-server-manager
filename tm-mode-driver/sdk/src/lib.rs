@@ -42,8 +42,8 @@ pub use instance::{ModeFault, ModeInstance, ModeSource, Native};
 pub use races::{CountedRace, race_order};
 pub use types::{
     CanSpawn, Command, Decision, Entry, Event, FinishTimeout, Label, Laps, Race, RaceRules, Racer,
-    RoundEnd, RoundFormat, Standings, Status, Team, TeamEntry, Tone, UiAction, UiData, UiScope,
-    UiValue, User, WarmUp,
+    Respawn, RoundEnd, RoundFormat, Standings, Status, Team, TeamEntry, Tone, UiAction, UiData,
+    UiScope, UiValue, User,
 };
 
 /// A game mode compiled into the driver. One instance lives for the whole match.

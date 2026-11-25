@@ -12,7 +12,7 @@
 use serde::{Deserialize, Serialize};
 use tm_mode_driver_sdk::{
     Command, CountedRace, Entry, Event, Host, Mode, RoundEnd, RoundFormat, Standings,
-    settings::{FinishTimeoutSetting, WarmUpSetting, maps_per_match},
+    settings::{FinishTimeoutSetting, maps_per_match},
 };
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -28,8 +28,6 @@ pub struct Settings {
     /// The match ends once a player reached this many points. 0 disables it.
     pub points_limit: i32,
     pub finish_timeout: FinishTimeoutSetting,
-    /// The warmup before the first round of every map.
-    pub warmup: WarmUpSetting,
 }
 
 impl Default for Settings {
@@ -40,7 +38,6 @@ impl Default for Settings {
             maps_per_match: None,
             points_limit: 0,
             finish_timeout: FinishTimeoutSetting::Automatic,
-            warmup: WarmUpSetting::default(),
         }
     }
 }
@@ -59,7 +56,6 @@ impl Mode for Rounds {
         "maps_per_match",
         "points_limit",
         "finish_timeout",
-        "warmup",
     ];
 
     type Settings = Settings;
@@ -76,12 +72,9 @@ impl Mode for Rounds {
             // again, the round format applies from the next round on.
             Event::MapStart | Event::SettingsChanged => {
                 standings.info = self.info(host, standings);
-                vec![
-                    Command::SetRoundFormat(RoundFormat::SingleAttempt(
-                        self.settings.finish_timeout.into(),
-                    )),
-                    Command::SetWarmUp(self.settings.warmup.into()),
-                ]
+                vec![Command::SetRoundFormat(RoundFormat::SingleAttempt(
+                    self.settings.finish_timeout.into(),
+                ))]
             }
             Event::RoundEnd(round_end) => self.round_end(host, standings, round_end),
             Event::MapEnd => {
