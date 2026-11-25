@@ -45,9 +45,9 @@ simulator.
 
 It follows `TM_Driver.Script.txt` at the level of the callbacks the driver handles:
 
-- A match plays maps. A map waits for the driver at its start (`MapStart` hold), plays the warmup the
-  driver set and then rounds until the driver ends it, waiting at the end of every round and map.
-- Commands change it like the globals of the script: the round format, the warmup, spawn
+- A match plays maps. A map waits for the driver at its start (`MapStart` hold), plays the warmup of the
+  config and then rounds until the driver ends it, waiting at the end of every round and map.
+- Commands change it like the globals of the script: the round format, the race rules, spawn
   permissions, `EndMap` and `EndMatch` once the hold continues, the next map. A hold the driver does
   not continue is asked again, like after `S_DriverDecisionTimeout`. Once the reply to a hold
   reached the server, the bridge tells the driver with `DriverInput::Delivered`.
@@ -55,11 +55,11 @@ It follows `TM_Driver.Script.txt` at the level of the callbacks the driver handl
   them over), join, leave or only watch. Only players who can spawn race.
 - Rounds of one try end once everyone finished or gave up, or when the finish timeout after the
   first finish ran out. Time attack rounds end with their time limit and players start again after
-  every race. Warmups with a duration work like time attack rounds, warmups without one like rounds
-  of one try. Players who do not move give up after 30 seconds, like idle players being kicked to
+  every race. Warmups with a duration, also the one of the author time, work like time attack rounds, warmups
+  of one try like rounds of one try. Players who do not move give up after 30 seconds, like idle players being kicked to
   spectators.
-- On maps with laps, races go over the laps of the map or the ones the race rules of the driver
-  set. Infinite laps never finish, in a round of one try a player stops after 20 laps. Without give
+- On maps with laps, races go over the laps the race rules of the driver set, otherwise the
+  ones the config forces, otherwise the laps of the map. Infinite laps never finish, in a round of one try a player stops after 20 laps. Without give
   ups nobody gives up and idle players stay until the round ends. Waypoints carry the checkpoint in
   the lap, the lap time and whether they end a lap, like the ones of the game.
 
@@ -77,6 +77,9 @@ callbacks, so holds are answered at once.
 A random world varies everything with its seed, like swarm testing:
 
 - The settings of the mode, from the random settings the mode hands to the simulator.
+- The settings of the config every mode shares (`ServerSettings`): mostly none, now and then a
+  warmup of one or two rounds, another respawn behaviour or forced laps. The report shows them
+  in a `server` line.
 - One to three maps with two to five checkpoints, a quarter of them with two to four laps, and a
   playlist of some of them or none.
 - Mostly up to sixteen players, sometimes a crowd of up to 120, the most a server holds. Every

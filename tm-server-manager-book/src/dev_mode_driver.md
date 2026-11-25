@@ -127,8 +127,7 @@ the only place that knows how each command reaches the server.
 |---|---|---|
 | `Continue` | `Driver.Continue [seq]` | Holds don't exist in the standard protocol. Only sent by the host. |
 | `SetRoundFormat` | `Driver.SetRoundFormat [single_attempt, auto\|off\|ms]` or `[time_attack, ms]` | Round shape and finish timeout. |
-| `SetWarmUp` | `Driver.SetWarmUp [rounds, duration_ms, auto\|timeout_ms]` | The built-in warmup only takes its settings from the script. |
-| `SetRaceRules` | `Driver.SetRaceRules [map\|infinite\|laps, 1\|0]` | Laps and give ups, which the script sets in the engine (see [Race rules](#race-rules)). |
+| `SetRaceRules` | `Driver.SetRaceRules [map\|infinite\|laps, config\|1-5]` | Laps and respawn behaviour, which the script sets with Nadeo's race library (see [Race rules](#race-rules)). |
 | `SetCanSpawn` | `Driver.SetCanSpawn [account_id, 1\|0]` | Eliminations without forcing spectators, which the allowlist sync manages. The host leaves out permissions it sent before in the match. |
 | `EndMap` | standard `NextMap` | – |
 | `SetNextMap` | standard `SetNextMapIdent [uid]` | – |
@@ -701,7 +700,7 @@ settings can replace the ones of a match while it runs, without losing anything:
   round end and new settings never come with the same input. Later settings replace ones that
   still wait.
 - The mode takes them with `change-settings` and gets `settings-changed`, e.g. to show them in its
-  info and send the round format and the warmup again. The standings stay as they are: the points
+  info and send the round format again. The standings stay as they are: the points
   of past rounds count as they were. Limits apply from the next round or map end on, e.g. a lower
   points limit ends the match after the next round.
 - A mode lists the settings that can change during a match (`reloadable-settings`), with the SDK
@@ -715,7 +714,7 @@ settings can replace the ones of a match while it runs, without losing anything:
 | Mode | Can change during a match | Cannot |
 |---|---|---|
 | Rounds | every setting | |
-| TimeAttack | every setting, the time limit and the warmup apply from the next map | |
+| TimeAttack | every setting, the time limit applies from the next map | |
 | ReverseCup | everything but the points players start with | `starting_points` |
 | Knockout | everything but the lives, which players already hold | `lives` |
 
@@ -750,12 +749,12 @@ map pool of the server config (`MapPoolConfig`) becomes the playlist of a match.
 - Extends `TrackmaniaRoundsBase`, so Nadeo still handles spawning, checkpoints, finishes, replays,
   records, warmup and the standard callbacks.
 - Waits with `Driver.Hold` at map start, round end and map end.
-- Runs the built-in warmup after the map start hold, see [Warmup](#warmup).
+- Runs the built-in warmup of the config after the map start hold, see [Warmup](#warmup).
 - Keeps race times in Nadeo's `Scores` library only for the scores table of the game. The host
   gets them from the waypoint callbacks.
-- Implements the twelve `Driver.*` methods above and nothing else, and writes what the host
+- Implements the thirteen `Driver.*` methods and nothing else, and writes what the host
   publishes into the typed netvars.
-- Applies the race rules when a round starts, see [Race rules](#race-rules).
+- Applies the race rules when a map and a round start, see [Race rules](#race-rules).
 
 ## Warmup
 
@@ -765,14 +764,14 @@ The driver uses the built-in warmup instead of emulating one. The base script al
 script, so warmup races are never scored. Emulating it with rounds that do not count would
 rebuild all of that for nothing.
 
-- Every mode has a `warmup` setting (`tm_mode_driver_sdk::settings::WarmUpSetting`) and sends it with
-  `set-warm-up` in reply to `map-start`, so it applies to every map, the first one included.
-  The script hands it to `MB_WarmUp` right after the hold. Without a driver command the script
-  uses its `S_WarmUpNb`, `S_WarmUpDuration` and `S_WarmUpTimeout` settings, which are reset when
-  a match starts.
-- `rounds` is the number of warmup rounds, 0 for none. `duration_ms` is how long one warmup
-  round lasts, 0 lets every player drive once. `timeout_ms` is the time to finish after the
-  first player finished in those rounds of one try, computed from the author time without it.
+- The warmup belongs to the config, not to the mode: the common settings `S_WarmUpNb`,
+  `S_WarmUpDuration` and `S_WarmUpTimeout` that every config sends. The script hands them to
+  `MB_WarmUp` right after the map start hold, in milliseconds like Nadeo's Rounds script, so every
+  mode warms up the same way and a mode cannot forget it. Modes have no `warmup` setting and no
+  command for it.
+- The number of rounds is 0 for none. A duration of 0 lasts the author time of a lap, a sixth of
+  it and 5 seconds, -1 gives every player one try. The timeout is the time to finish after the
+  first player finished in those rounds of one try, -1 computes it from the author time.
 - The warmup has its own spawn rules, so the script copies the spawn permissions into
   `WarmUp::CanPlay` before the warmup. Eliminated players and spectators of a reverse cup or a
   knockout do not warm up, like in the originals.
@@ -781,21 +780,27 @@ rebuild all of that for nothing.
 
 ## Race rules
 
-`SetRaceRules` sets the laps and the give ups of the races in the rounds that start, like the round
-format. Every match starts with the laps of the map and give ups.
+`SetRaceRules` sets the laps and the respawn behaviour of the races in the rounds that start,
+like the round format. Every match starts with what the config says. The config is the default and
+a mode has the last word, e.g. TMWT and endurance races where nobody gives up.
 
-- `laps` is `map`, `count(n)` or `infinite`. When a round starts, the script sets
-  `LapCountOverride` of the engine to a count and `CheckpointBehaviour` to `InfiniteLaps` for
-  infinite laps. On maps without laps the finish still ends the race. The automatic finish timeout
-  counts the laps of the race.
-- Without `give-up`, the script sets `GiveUpBehaviour` to `DoNothing` and `RespawnBehaviour` to
-  `AlwaysRespawn`: respawning goes back to the last checkpoint and nobody gives up.
-- The script only changes what the driver asked for. What the base script had set comes back once
-  the driver wants the defaults again.
-- The members come from the script API of the game (`doc.h` of Trackmania 3.3.0). Nadeo's modes take
-  the laps and the respawn behaviour from the settings `S_ForceLapsNb`, `S_InfiniteLaps` and
-  `S_RespawnBehaviour`, but settings outlive a match, while the script keeps its state per match
-  like the round format.
+- `laps` is `map`, `count(n)` or `infinite`. `map` is what the config forces with
+  `S_ForceLapsNb` and `S_InfiniteLaps`, otherwise the laps of the map. On maps without laps the
+  finish still ends the race. The automatic finish timeout counts the laps of the race.
+- `respawn` is `config` or one of the values of `S_RespawnBehaviour`: `normal` (respawning goes
+  back to the last checkpoint, giving up ends the race), `do_nothing`,
+  `give_up_before_first_checkpoint`, `always_give_up` and `never_give_up` (giving up respawns).
+  `config` takes `S_RespawnBehaviour`, normal when the config leaves it to the mode (0).
+- The script applies the rules after the map start hold, so the warmup follows them too, and
+  when a round starts. It calls Nadeo's race library, `Race::SetLapsSettings` and
+  `Race::SetRespawnBehaviour`, which set the members of the engine as Nadeo's modes do and keep
+  the race progression of the library in step.
+- The base script would give `S_RespawnBehaviour` the last word over the mode, so the script turns
+  that off (`MB_Settings_UseDefaultRespawnBehaviour = False`) and decides itself: the mode, then
+  the config, then normal.
+- The other common settings of the config reach the script as they are and never the mode or the
+  scores: `S_ChatTime`, `S_DelayBeforeNextMap`, the two synchronization settings,
+  `S_TrustClientSimu`, `S_UseCrudeExtrapolation` and the images of the decoration.
 
 ## TimeAttack
 
@@ -1179,8 +1184,8 @@ it runs.
   `laps`, `time`), `present`, `racer(account)`, `finishers(race)`, `taking_part(standings)`.
 - **`cx`** has the `settings`, `map_count`, `name(account)`, `user(account)`,
   `maps_per_match(setting)` and `log(text)`.
-- **Commands** are made with `single_attempt(timeout)`, `time_attack(ms)`, `warm_up(#{...})`,
-  `race_rules(laps, give_up)`, `can_spawn(account, bool)`, `end_map()`, `end_match()`,
+- **Commands** are made with `single_attempt(timeout)`, `time_attack(ms)`,
+  `race_rules(laps, respawn)`, `can_spawn(account, bool)`, `end_map()`, `end_match()`,
   `next_map(index)`, `net_state(text)`, `chat(text)` and the values for the manialinks
   `ui_data(key, value)`, `team_ui_data(team, key, value)` and `player_ui_data(account, key, value)`.
 - **Ties** are broken by the driver: `rank`, `place_round`, `placed` and `race_order` use the one
@@ -1217,8 +1222,7 @@ Settings of the rounds mode (every field is optional):
   "rounds_per_map": 5,
   "maps_per_match": null,
   "points_limit": 0,
-  "finish_timeout": "automatic",
-  "warmup": {"rounds": 0, "duration_ms": 0, "timeout_ms": null}
+  "finish_timeout": "automatic"
 }
 ```
 
@@ -1231,8 +1235,7 @@ Settings of the time attack mode (every field is optional):
 {
   "time_limit_ms": 300000,
   "maps_per_match": null,
-  "points_repartition": [],
-  "warmup": {"rounds": 0, "duration_ms": 0, "timeout_ms": null}
+  "points_repartition": []
 }
 ```
 
@@ -1250,8 +1253,7 @@ Settings of the reverse cup mode (every field is optional, these are the default
   "allow_fast_forward_rounds": true,
   "number_of_winners": 1,
   "rounds_per_map": 5,
-  "finish_timeout": "automatic",
-  "warmup": {"rounds": 0, "duration_ms": 0, "timeout_ms": null}
+  "finish_timeout": "automatic"
 }
 ```
 
@@ -1267,8 +1269,7 @@ Knockout):
   "rounds_without_elimination": 1,
   "extra_losses": {"above_players_left": [4, 16, 16]},
   "rounds_per_map": 0,
-  "finish_timeout": {"milliseconds": 5000},
-  "warmup": {"rounds": 0, "duration_ms": 0, "timeout_ms": null}
+  "finish_timeout": {"milliseconds": 5000}
 }
 ```
 
@@ -1278,8 +1279,7 @@ Settings of the endurance mode (every field is optional):
 {
   "laps": null,
   "time_limit_ms": 3600000,
-  "finish_timeout": "automatic",
-  "warmup": {"rounds": 0, "duration_ms": 0, "timeout_ms": null}
+  "finish_timeout": "automatic"
 }
 ```
 
@@ -1334,8 +1334,9 @@ script starts with `"lives": 3`.
      names.
    - `NextMap` sent during the round end hold ends the map once the hold continues.
    - Time attack rounds start players again after a finish or give up and stop at the time limit.
-   - A warmup set by a mode runs before the first round of every map with the warmup UI of the
-     game, `duration_ms: 0` gives every player one try, and eliminated players can not warm up.
+   - The warmup of the config runs before the first round of every map with the warmup UI of
+     the game, a duration of -1 gives every player one try, and eliminated players can not warm
+     up.
    - The script parses what the host publishes with `fromjson` and writes the typed netvars,
      including the maps by index (`Text[Integer]`, `Integer[Integer]`), the manialinks read them,
      `LocalUser.WebServicesUserId` matches the account ids and their positions do not cover
@@ -1356,9 +1357,11 @@ script starts with `"lives": 3`.
      the status of eliminated players.
    - The race times and hearts a knockout shows as labels fit into the status cells of the
      manialinks, and the hearts (icons of the game font) render in `GameFontBlack`.
-   - The race rules on a map with laps: `LapCountOverride` sets the laps of the race,
-     `InfiniteLaps` never finishes it, `GiveUpBehaviour` and `RespawnBehaviour` stop give ups but
-     keep respawns, and the base script does not set them back during the round. The waypoints
+   - The race rules on a map with laps: `Race::SetLapsSettings` sets the laps of the race, also
+     after the map loaded and between rounds, infinite laps never finish it, `S_ForceLapsNb` of
+     the config applies when the mode leaves the laps to it, `Race::SetRespawnBehaviour` with
+     never give up stops give ups but keeps respawns, a mode wins over `S_RespawnBehaviour`, and
+     the base script does not set them back during the round. The waypoints
      carry `isendlap` and `checkpointinlap`, so the laps count.
    - The live round reaches the manialinks about once a second, e.g. of an endurance race
      (`load endurance {"time_limit_ms": 600000}` on a map with laps, then
