@@ -286,7 +286,11 @@ impl<Db: spacetimedb::CtxDbRead> MatchLeadearboardRead for Db {
                 .set_score(f.points)
                 .set_time(f.time)
                 .set_round(f.round)
-                .set_map(maps.get(&f.round).copied().unwrap_or(0));
+                .set_map(match f.map_id {
+                    // The rounds of a driver match keep the map their records tell.
+                    0 => maps.get(&f.round).copied().unwrap_or(0),
+                    map_id => map_id,
+                });
                 entry.team_id = teams.get(&f.user_id).copied().unwrap_or(0);
                 entry
             })

@@ -27,6 +27,7 @@ use tm_server_types::{
 use crate::{
     authorization::Authorization,
     competition::node::NodeHandle,
+    maps::TmMapRead,
     raw_server::occupation::TabRawServerOccupationRead,
     registration::team::TeamRead,
     tm_match::entrant::MatchEntrantRead,
@@ -333,9 +334,15 @@ fn apply_effect(
         Effect::Round {
             number,
             round,
+            map,
             result,
         } => {
-            let map_id = ctx.match_state_find(match_id).map_or(0, |s| s.get_map());
+            // The map the records tell, the state may already be on the next one.
+            let map_id = map
+                .and_then(|uid| ctx.tm_map_find_uid(&uid))
+                .map(|map| map.id)
+                .or_else(|| ctx.match_state_find(match_id).map(|s| s.get_map()))
+                .unwrap_or(0);
             let round_number = u16::try_from(number).unwrap_or(u16::MAX);
             for player in result.results {
                 let Some(user_id) = account_user(ctx, &player.account_id)? else {
@@ -1042,4 +1049,5 @@ mod tests {
             11
         );
     }
+
 }
