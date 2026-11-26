@@ -39,9 +39,11 @@ pub trait login_as_server {
         user_account_id: __sdk::Uuid,
         seamless: bool,
 
-        __callback: impl FnOnce(&super::ProcedureEventContext, Result<Result<u32, String>, __sdk::InternalError>)
-            + Send
-            + 'static,
+        __callback: impl FnOnce(
+            &super::ProcedureEventContext,
+            Result<Result<u32, String>, __sdk::InternalError>,
+        ) + Send
+        + 'static,
     );
 
     #[allow(async_fn_in_trait)]
@@ -62,9 +64,11 @@ impl login_as_server for super::RemoteProcedures {
         user_account_id: __sdk::Uuid,
         seamless: bool,
 
-        __callback: impl FnOnce(&super::ProcedureEventContext, Result<Result<u32, String>, __sdk::InternalError>)
-            + Send
-            + 'static,
+        __callback: impl FnOnce(
+            &super::ProcedureEventContext,
+            Result<Result<u32, String>, __sdk::InternalError>,
+        ) + Send
+        + 'static,
     ) {
         self.imp
             .invoke_procedure_with_callback::<_, Result<u32, String>>(

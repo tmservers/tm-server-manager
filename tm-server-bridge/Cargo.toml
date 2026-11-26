@@ -12,32 +12,39 @@ repository.workspace = true
 
 [dependencies]
 tokio.workspace = true
+spacetimedb-lib.workspace = true
 
 spacetimedb-sdk.workspace = true
 tm-server-controller.workspace = true
-tm-server-types.workspace = true
+# The records of the driver go to the manager in its encoding.
+tm-server-types = { workspace = true, features = ["spacetime"] }
 tm-server-manager-api-rs.workspace = true
+# The modes the bridge plays with the mode driver, reported to the manager.
+tm-mode-driver-builtin.workspace = true
+tm-mode-driver.workspace = true
+tm-mode-driver-manialinks.workspace = true
 
 dotenvy.workspace = true
 
 #takumi.workspace = true
 
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing.workspace = true
+tracing-subscriber.workspace = true
 
 serde = { workspace = true, features = ['derive'] }
+serde_json.workspace = true
 
-nadeo-api = "*"
+nadeo-api.workspace = true
 
 # This is needed because openssl is an implicit dependency.
 # If we want to compile for docker musl we need to statically link
 # against it and otherwise it wont be found.
-openssl = { version = "0.10", features = ["vendored"], optional = true }
+openssl = { workspace = true, optional = true }
 
 
 [dev-dependencies]
-testcontainers = { version = "*", features = ["blocking"] }
-#insta = { version = "*" }
+testcontainers = { workspace = true, features = ["blocking"] }
+#insta.workspace = true
 
 [features]
 tracing = []

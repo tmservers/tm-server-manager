@@ -29,9 +29,11 @@ pub trait post_round_replay {
         ending_round_timestamp: u32,
         replay: Vec<u8>,
 
-        __callback: impl FnOnce(&super::ProcedureEventContext, Result<Result<(), String>, __sdk::InternalError>)
-            + Send
-            + 'static,
+        __callback: impl FnOnce(
+            &super::ProcedureEventContext,
+            Result<Result<(), String>, __sdk::InternalError>,
+        ) + Send
+        + 'static,
     );
 
     #[allow(async_fn_in_trait)]
@@ -48,9 +50,11 @@ impl post_round_replay for super::RemoteProcedures {
         ending_round_timestamp: u32,
         replay: Vec<u8>,
 
-        __callback: impl FnOnce(&super::ProcedureEventContext, Result<Result<(), String>, __sdk::InternalError>)
-            + Send
-            + 'static,
+        __callback: impl FnOnce(
+            &super::ProcedureEventContext,
+            Result<Result<(), String>, __sdk::InternalError>,
+        ) + Send
+        + 'static,
     ) {
         self.imp
             .invoke_procedure_with_callback::<_, Result<(), String>>(

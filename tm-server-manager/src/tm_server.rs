@@ -1,8 +1,11 @@
-use spacetimedb::{AnonymousViewContext, Query, ReducerContext, SpacetimeType, Table, reducer, table, view};
+use spacetimedb::{
+    AnonymousViewContext, Query, ReducerContext, SpacetimeType, Table, reducer, table, view,
+};
 use tm_server_types::config::ServerConfigV2;
 
 use crate::{
     authorization::Authorization,
+    competition::manialink::ManialinkRead,
     competition::{
         CompetitionPermissionsV1, CompetitionRead,
         node::{NodeHandle, NodeWrite, Vec2},
@@ -240,6 +243,8 @@ fn server_config_override(
         //TODO
         //.permission(CompetitionPermissionsV1::SERVER_ASSIGN)
         .authorize()?;
+    config.check_instantiable()?;
+    ctx.manialinks_check(tm_server.parent_id, &config)?;
 
     if ctx.raw_server_config_is_owned_inline(tm_server.config) {
         ctx.raw_server_config_update(tm_server.config, config)?;

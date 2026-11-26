@@ -11,19 +11,25 @@ use crate::{
         CompetitionPermissionsV1,
         connection::{
             action::{ConnectionActionWrite, try_exec_action},
-            data::{ConnectionData, ConnectionDataRead, ConnectionDataWrite},
+            data::{ConnectionDataRead, ConnectionDataV2, ConnectionDataWrite},
+            start::NodeStartWrite,
         },
         node::{NodeHandle, NodeRead},
     },
     input::InputRead,
-    leaderboard::{LbEntry, LeadearboardRead},
+    leaderboard::LeadearboardRead,
     output::OutputRead,
-    schedule::ScheduleWrite,
-    tm_match::MatchWrite,
+    pipeline::{LbEntry, context::LbContext, error::LbError, shape::LbShape},
 };
 
 pub(super) mod action;
-pub(super) mod data;
+pub(crate) mod data;
+pub(crate) mod start;
+
+#[cfg(test)]
+pub(crate) use data::{
+    legacy_connection_data_count, legacy_connection_data_insert, migrate_connection_data_for_test,
+};
 
 #[spacetimedb::table(accessor= tab_connection, vis_private,
     index(accessor=connection_exists,hash(columns=[origin_variant,target_variant,origin_id,target_id])),
@@ -80,6 +86,12 @@ impl TabConnection {
 
     pub(crate) fn is_wait(&self) -> bool {
         self.kind == ConnectionKind::Wait
+    }
+
+    /// A data connection passes its entries on once it is configured.
+    /// Like a leaderboard which gets configured it passes nothing on before, so unfinished steps never reach its target.
+    pub(crate) fn passes_data(&self) -> bool {
+        self.is_data() && self.status != ConnectionStatus::Configuring
     }
 
     pub(crate) fn is_action(&self) -> bool {
@@ -140,7 +152,7 @@ impl ConnectionKind {
 }
 
 #[derive(Debug, SpacetimeType)]
-enum ConnectionError {
+pub(crate) enum ConnectionError {
     NoParallel,
     SelfCycle,
     Cycle(NodeHandle),
@@ -154,11 +166,14 @@ enum ConnectionError {
     InvalidOriginNode,
 
     InvalidKind,
+
+    /// The steps after the target do not work with what it gets anymore.
+    Steps(String),
 }
 
 /// Since we need to check either way if the two thing have the same parent we can omit specifing the competition manually.
 #[procedure]
-fn connection_create(
+pub(crate) fn connection_create(
     ctx: &mut ProcedureContext,
     origin: NodeHandle,
     target: NodeHandle,
@@ -293,11 +308,12 @@ fn connection_create(
         match connection.kind {
             ConnectionKind::Wait => (),
             ConnectionKind::Data => {
-                ctx.connection_data_insert(ConnectionData::new(
+                ctx.connection_data_insert(ConnectionDataV2::new(
                     connection.id,
                     connection.parent_id,
                 ))
                 .map_err(|e| ConnectionError::InternalError(e.to_string()))?;
+                // It passes nothing on until it gets configured, which checks the target.
             }
             ConnectionKind::Action => {
                 todo!()
@@ -309,8 +325,11 @@ fn connection_create(
 }
 
 #[reducer]
-fn connection_configured(ctx: &ReducerContext, connection_id: u32) -> Result<(), String> {
-    let Some(mut connection) = ctx.db.tab_connection().id().find(connection_id) else {
+pub(crate) fn connection_configured(
+    ctx: &ReducerContext,
+    connection_id: u32,
+) -> Result<(), String> {
+    let Some(connection) = ctx.db.tab_connection().id().find(connection_id) else {
         return Err("Connection not found.".into());
     };
 
@@ -318,19 +337,35 @@ fn connection_configured(ctx: &ReducerContext, connection_id: u32) -> Result<(),
         .permission(CompetitionPermissionsV1::CONNECTION_CONFIGURED)
         .authorize()?;
 
+    connection_configure(ctx, connection)
+}
+
+/// Configures the connection once its steps work with what its origin outputs and its target with what it passes on.
+fn connection_configure(ctx: &ReducerContext, mut connection: TabConnection) -> Result<(), String> {
     if connection.status != ConnectionStatus::Configuring {
         return Err("Wrong status to configure".into());
     }
 
+    if connection.is_data() {
+        let Some(data) = ctx.connection_data_find(connection.id) else {
+            return Err("Connection data could not be found.".into());
+        };
+        let origin = connection.origin();
+        data.check(origin, ctx.node_output_shape(origin)?)?;
+    }
+
     connection.status = ConnectionStatus::Configured;
+    ctx.db.tab_connection().id().update(connection);
+
+    // From now on the target gets what it passes on, so the steps after it have to work with that.
+    // A failure rolls the transaction back, so the connection keeps getting configured.
+    ctx.node_check_target(connection.target())?;
 
     // The origin could have finished already, then nothing would resolve the connection anymore.
     if ctx.node_is_finished(connection.origin()) {
         connection.resolve();
         ctx.db.tab_connection().id().update(connection);
         advance(ctx, CompetitionConnection::from(connection));
-    } else {
-        ctx.db.tab_connection().id().update(connection);
     }
 
     Ok(())
@@ -356,6 +391,9 @@ fn connection_unconfigure(ctx: &ReducerContext, connection_id: u32) -> Result<()
 
     connection.status = ConnectionStatus::Configuring;
     ctx.db.tab_connection().id().update(connection);
+
+    // The target does not get what it passes on anymore.
+    ctx.node_check_target(connection.target())?;
 
     Ok(())
 }
@@ -453,7 +491,8 @@ fn advance(ctx: &ReducerContext, affected_connection: CompetitionConnection) {
         log::warn!("The node can be started now.");
 
         let result = match affected_connection.target {
-            NodeHandle::MatchV1(match_id) => ctx.match_set_preparation(match_id),
+            // A node which cannot start is kept and tried again once a server becomes available.
+            node @ NodeHandle::MatchV1(_) => ctx.node_start(node),
             NodeHandle::CompetitionV1(c) => {
                 let inputs = ctx.inputs_in_parent(c);
 
@@ -470,7 +509,7 @@ fn advance(ctx: &ReducerContext, affected_connection: CompetitionConnection) {
 
                 Ok(())
             }
-            NodeHandle::ScheduleV1(s) => ctx.schedule_start_relative(s, ctx.timestamp),
+            node @ NodeHandle::ScheduleV1(_) => ctx.node_start(node),
             NodeHandle::ServerV1(_) => unreachable!(),
             NodeHandle::RegistrationV1(_) => unreachable!(),
             NodeHandle::InputV1(n) => {
@@ -503,8 +542,6 @@ fn advance(ctx: &ReducerContext, affected_connection: CompetitionConnection) {
         };
 
         if let Err(error) = result {
-            //TODO maybe add a table for node problems?
-            // maybe there also should be a intended to progress state in the nodes.
             log::error!(
                 "Implicit Flow: Node should have been ready but action failed. Error: {error}"
             )
@@ -524,11 +561,12 @@ pub(crate) trait ConnectionRead {
 
     //fn connection_receive_leaderboard(&self, connection: TabConnection) -> Vec<PermittedPlayer>;
 
-    fn connection_resolve_leaderboard(
+    /// What the connection would pass on, its steps are checked against the input on the way.
+    fn connection_shape(
         &self,
         connection: TabConnection,
-        data: Vec<LbEntry>,
-    ) -> Vec<LbEntry>;
+        input: LbShape,
+    ) -> Result<LbShape, LbError>;
 
     /// The connections inside of a competition.
     fn connections_in_competition(
@@ -540,23 +578,41 @@ pub(crate) trait ConnectionRead {
     /// The connections which have the node as their origin.
     fn connection_targets_of(&self, node: NodeHandle) -> impl Iterator<Item = TabConnection>;
 }
+/// The steps of a data connection, any other connection has none.
+fn data_of(
+    ctx: &impl spacetimedb::CtxDbRead,
+    connection: &TabConnection,
+) -> Result<ConnectionDataV2, LbError> {
+    if !connection.is_data() {
+        return Err(LbError::new(format!(
+            "Connection {} is not a data connection.",
+            connection.id
+        )));
+    }
+    ctx.connection_data_find(connection.id).ok_or_else(|| {
+        LbError::new(format!(
+            "Data connection {} has no data, it might not be migrated yet.",
+            connection.id
+        ))
+    })
+}
+
+/// The entries the data connection passes on from `data`, the output of its origin.
+pub(crate) fn connection_resolve_leaderboard(
+    cx: &LbContext,
+    connection: TabConnection,
+    data: Vec<LbEntry>,
+) -> Result<Vec<LbEntry>, LbError> {
+    data_of(cx, &connection)?.evaluate(&cx.at(connection.origin()), data)
+}
+
 impl<Db: spacetimedb::CtxDbRead> ConnectionRead for Db {
-    fn connection_resolve_leaderboard(
+    fn connection_shape(
         &self,
         connection: TabConnection,
-        data: Vec<LbEntry>,
-    ) -> Vec<LbEntry> {
-        // Prevent the method from misuse because it is impossible to form a lb from a non data connection.
-        if !connection.is_data() {
-            log::error!("Wanted to filter a connection but it was not a data connection.");
-            return Vec::new();
-        }
-
-        let rules = self.connection_data_find(connection.id).unwrap();
-
-        //let players = self.node_resolve_input_data(connection.origin());
-
-        rules.apply_filter(data, self)
+        input: LbShape,
+    ) -> Result<LbShape, LbError> {
+        data_of(self, &connection)?.check(connection.origin(), input)
     }
 
     fn connections_in_competition(
@@ -739,15 +795,132 @@ fn connection_delete(ctx: &ReducerContext, id: u32) -> Result<(), String> {
     ctx.connection_delete(id)
 }
 
+/// Inserts a configured data connection with the slot, returns its id.
+#[cfg(test)]
+pub(crate) fn data_connection_for_test(
+    ctx: &ReducerContext,
+    origin: NodeHandle,
+    target: NodeHandle,
+    slot: u16,
+) -> Result<u32, String> {
+    let connection = ctx.connection_insert(TabConnection::for_test(
+        origin,
+        target,
+        ConnectionKind::Data,
+    ))?;
+    ctx.connection_data_insert(ConnectionDataV2::new(connection.id, 1).with_slot(slot))?;
+    Ok(connection.id)
+}
+
 #[cfg(test)]
 mod tests {
     use spacetimedb::test_utils::TestAuth;
 
     use super::*;
-    use crate::{competition::node::NodeRead, leaderboard::test_util::test_context};
+    use crate::{
+        competition::{
+            connection::data::{ConnectionDataV2, ConnectionDataWrite},
+            node::NodeRead,
+        },
+        leaderboard::test_util::configured_leaderboard,
+        pipeline::{
+            LbKey, LbSettingsV3,
+            shape::LbOrigins,
+            steps::select::{LbSelectPlaces, LbSelectSettings},
+            test_util::test_context,
+        },
+        tm_match::leaderboard::{MatchLeaderboardWrite, MatchRoundPlayer},
+    };
 
     fn connect(origin: NodeHandle, target: NodeHandle, kind: ConnectionKind) -> TabConnection {
         TabConnection::for_test(origin, target, kind)
+    }
+
+    #[test]
+    fn a_node_gets_the_entries_of_all_its_data_connections() {
+        let test = test_context(&[]);
+        let leaderboard = NodeHandle::LeaderboardV1(3);
+        test.with_reducer_tx(TestAuth::internal(), |ctx| {
+            for origin in [NodeHandle::MatchV1(1), NodeHandle::MatchV1(2)] {
+                let connection =
+                    ctx.connection_insert(connect(origin, leaderboard, ConnectionKind::Data))?;
+                ctx.connection_data_insert(ConnectionDataV2::new(connection.id, 1))?;
+            }
+            // Only data connections pass entries on.
+            ctx.connection_insert(connect(
+                NodeHandle::RegistrationV1(1),
+                leaderboard,
+                ConnectionKind::Wait,
+            ))?;
+            Ok::<_, String>(())
+        })
+        .unwrap();
+
+        let shape = test
+            .anonymous_view_context()
+            .node_input_shape(leaderboard)
+            .unwrap();
+
+        assert_eq!(shape.origins, LbOrigins::Many);
+        assert!(shape.rounds && !shape.standings);
+    }
+
+    /// Two matches go into leaderboard 1, which goes into leaderboard 2 selecting the first places.
+    fn configured_after_a_leaderboard(scope: Vec<LbKey>) -> spacetimedb::test_utils::TestContext {
+        let test = test_context(&[]);
+        test.with_reducer_tx(TestAuth::internal(), |ctx| {
+            configured_leaderboard(ctx, 1, Vec::new());
+            configured_leaderboard(
+                ctx,
+                2,
+                vec![
+                    LbSettingsV3::Match,
+                    LbSettingsV3::Select(LbSelectSettings {
+                        scope: scope.clone(),
+                        places: LbSelectPlaces::FirstN(1),
+                    }),
+                ],
+            );
+            for (origin, target) in [
+                (NodeHandle::MatchV1(1), NodeHandle::LeaderboardV1(1)),
+                (NodeHandle::MatchV1(2), NodeHandle::LeaderboardV1(1)),
+                (NodeHandle::LeaderboardV1(1), NodeHandle::LeaderboardV1(2)),
+            ] {
+                let connection =
+                    ctx.connection_insert(connect(origin, target, ConnectionKind::Data))?;
+                ctx.connection_data_insert(ConnectionDataV2::new(connection.id, 1))?;
+            }
+            Ok::<_, String>(())
+        })
+        .unwrap();
+        test
+    }
+
+    #[test]
+    fn steps_saved_while_a_leaderboard_before_them_got_configured_are_checked_again() {
+        // Leaderboard 2 was checked while leaderboard 1 still output nothing, now it gets the rounds of two matches.
+        let test = configured_after_a_leaderboard(Vec::new());
+
+        let error = test
+            .anonymous_view_context()
+            .node_check_dependents(NodeHandle::LeaderboardV1(1))
+            .unwrap_err();
+
+        assert_eq!(
+            error.to_string(),
+            "LeaderboardV1(2) step 2: Places only exist in a single leaderboard, merge the entries or select per origin."
+        );
+    }
+
+    #[test]
+    fn steps_which_still_work_with_what_they_get_now_pass_the_check_again() {
+        let test = configured_after_a_leaderboard(vec![LbKey::Origin]);
+
+        let checked = test
+            .anonymous_view_context()
+            .node_check_dependents(NodeHandle::LeaderboardV1(1));
+
+        assert!(checked.is_ok());
     }
 
     #[test]
@@ -821,5 +994,136 @@ mod tests {
         let dependents = test.anonymous_view_context().node_dependents(origin);
 
         assert_eq!(dependents, vec![NodeHandle::MatchV1(2)]);
+    }
+
+    fn select_first() -> LbSettingsV3 {
+        LbSettingsV3::Select(LbSelectSettings {
+            scope: Vec::new(),
+            places: LbSelectPlaces::FirstN(1),
+        })
+    }
+
+    /// Matches 1 and 2 go into leaderboard 1, which goes into leaderboard 2 through a connection still getting configured.
+    /// Its steps were saved while leaderboard 1 got configured and output nothing, returns its id.
+    fn half_configured(
+        connection_steps: Vec<LbSettingsV3>,
+        target_steps: Vec<LbSettingsV3>,
+    ) -> (spacetimedb::test_utils::TestContext, u32) {
+        let test = test_context(&[
+            (1, tm_server_types::config::TmMode::Rounds),
+            (2, tm_server_types::config::TmMode::Rounds),
+        ]);
+        let id = test
+            .with_reducer_tx(TestAuth::internal(), |ctx| {
+                configured_leaderboard(ctx, 1, Vec::new());
+                configured_leaderboard(ctx, 2, target_steps.clone());
+                for match_id in [1, 2] {
+                    ctx.match_round_player_insert(MatchRoundPlayer::for_test(
+                        match_id,
+                        match_id * 10,
+                        1,
+                        5,
+                    ))?;
+                    data_connection_for_test(
+                        ctx,
+                        NodeHandle::MatchV1(match_id),
+                        NodeHandle::LeaderboardV1(1),
+                        0,
+                    )?;
+                }
+                let mut connection = connect(
+                    NodeHandle::LeaderboardV1(1),
+                    NodeHandle::LeaderboardV1(2),
+                    ConnectionKind::Data,
+                );
+                connection.status = ConnectionStatus::Configuring;
+                let connection = ctx.connection_insert(connection)?;
+                ctx.connection_data_insert(
+                    ConnectionDataV2::new(connection.id, 1).with_settings(connection_steps.clone()),
+                )?;
+                Ok::<_, String>(connection.id)
+            })
+            .unwrap();
+        (test, id)
+    }
+
+    fn configure(test: &spacetimedb::test_utils::TestContext, id: u32) -> Result<(), String> {
+        test.with_reducer_tx(TestAuth::internal(), |ctx| {
+            let connection = ctx.db.tab_connection().id().find(id).unwrap();
+            connection_configure(ctx, connection)
+        })
+    }
+
+    fn status(test: &spacetimedb::test_utils::TestContext, id: u32) -> ConnectionStatus {
+        test.with_reducer_tx(TestAuth::internal(), |ctx| {
+            Ok::<_, String>(ctx.db.tab_connection().id().find(id).unwrap().status)
+        })
+        .unwrap()
+    }
+
+    #[test]
+    fn a_connection_still_getting_configured_does_not_block_the_nodes_around_it() {
+        // Places without a match step do not work with the rounds leaderboard 1 outputs now.
+        let (test, _) = half_configured(vec![select_first()], Vec::new());
+        let cx = test.anonymous_view_context();
+
+        // This is what configuring leaderboard 1 checks.
+        assert!(
+            cx.node_check_dependents(NodeHandle::LeaderboardV1(1))
+                .is_ok()
+        );
+        assert!(
+            cx.node_input_shape(NodeHandle::LeaderboardV1(2))
+                .unwrap()
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn configuring_a_connection_with_broken_steps_names_the_connection() {
+        let (test, id) = half_configured(vec![select_first()], Vec::new());
+
+        let error = configure(&test, id).unwrap_err();
+
+        assert_eq!(
+            error,
+            format!(
+                "Connection {id} step 1: Places only exist in standings, add a match or merge step first."
+            )
+        );
+        assert_eq!(status(&test, id), ConnectionStatus::Configuring);
+    }
+
+    #[test]
+    fn configuring_a_connection_checks_the_steps_after_it() {
+        // The connection passes the rounds of two matches on, leaderboard 2 selects places of a single one.
+        let (test, id) = half_configured(Vec::new(), vec![LbSettingsV3::Match, select_first()]);
+
+        let error = configure(&test, id).unwrap_err();
+
+        assert_eq!(
+            error,
+            "LeaderboardV1(2) step 2: Places only exist in a single leaderboard, merge the entries or select per origin."
+        );
+        assert_eq!(status(&test, id), ConnectionStatus::Configuring);
+    }
+
+    #[test]
+    fn the_target_gets_the_entries_once_the_connection_is_configured() {
+        let (test, id) = half_configured(Vec::new(), Vec::new());
+        let users = |test: &spacetimedb::test_utils::TestContext| -> Vec<u32> {
+            test.anonymous_view_context()
+                .node_resolve_output_data(NodeHandle::LeaderboardV1(2))
+                .unwrap()
+                .iter()
+                .map(|e| e.user_id)
+                .collect()
+        };
+
+        assert!(users(&test).is_empty());
+        configure(&test, id).unwrap();
+
+        assert_eq!(users(&test), vec![10, 20]);
+        assert_eq!(status(&test, id), ConnectionStatus::Configured);
     }
 }

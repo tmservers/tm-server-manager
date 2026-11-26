@@ -1,0 +1,36 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.99"
+          targets: wasm32-unknown-unknown
+
+      - name: Cache
+        uses: Swatinem/rust-cache@v2
+
+      # Run from the root so the wasm target of tm-server-manager/.cargo/config.toml does not apply.
+      # The controller test needs a real server through docker and master server credentials.
+      - name: Test
+        run: cargo test --workspace -- --skip server_connect_and_authenticate
+
+      # The build the publish workflow does, so a change that only compiles natively is caught.
+      - name: Build the module
+        run: cargo build --release -p tm-server-manager --features=production --target=wasm32-unknown-unknown

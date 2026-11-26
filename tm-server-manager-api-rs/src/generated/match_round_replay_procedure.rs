@@ -30,10 +30,10 @@ pub trait match_round_replay {
         round: u16,
 
         __callback: impl FnOnce(
-                &super::ProcedureEventContext,
-                Result<Result<Vec<u8>, String>, __sdk::InternalError>,
-            ) + Send
-            + 'static,
+            &super::ProcedureEventContext,
+            Result<Result<Vec<u8>, String>, __sdk::InternalError>,
+        ) + Send
+        + 'static,
     );
 
     #[allow(async_fn_in_trait)]
@@ -51,10 +51,10 @@ impl match_round_replay for super::RemoteProcedures {
         round: u16,
 
         __callback: impl FnOnce(
-                &super::ProcedureEventContext,
-                Result<Result<Vec<u8>, String>, __sdk::InternalError>,
-            ) + Send
-            + 'static,
+            &super::ProcedureEventContext,
+            Result<Result<Vec<u8>, String>, __sdk::InternalError>,
+        ) + Send
+        + 'static,
     ) {
         self.imp
             .invoke_procedure_with_callback::<_, Result<Vec<u8>, String>>(

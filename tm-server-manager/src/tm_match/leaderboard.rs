@@ -5,8 +5,8 @@ use spacetimedb::{
 use crate::{
     authorization::Authorization,
     competition::{CompetitionPermissionsV1, node::NodeHandle},
-    leaderboard::LbEntry,
-    tm_match::{state::MatchStateRead, tab_match},
+    pipeline::{LbEntry, LbEntryKind},
+    tm_match::{entrant::MatchEntrantRead, state::MatchStateRead, tab_match},
 };
 
 #[derive(Debug, SpacetimeType, Clone, Copy)]
@@ -54,6 +54,13 @@ pub struct MatchRoundPlayer {
     round: u16,
     #[default(0)]
     position: u16,
+    /// The map of the round, for driver matches. Other matches find it in the history of their state.
+    #[default(0)]
+    map_id: u32,
+    /// The round of the races of the round, the laps of a driver match refer to it.
+    /// Rounds which did not count have a number too, so it can be ahead of `round`.
+    #[default(0)]
+    race_round: u16,
 }
 
 impl MatchRoundPlayer {
@@ -66,7 +73,56 @@ impl MatchRoundPlayer {
             points: 0,
             id: 0,
             position: 0,
+            map_id: 0,
+            race_round: 0,
         }
+    }
+
+    /// A round of a driver match which counted, as its mode placed it.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn of_driver(
+        match_id: u32,
+        user_id: u32,
+        round: u16,
+        points: i32,
+        position: u16,
+        time: i32,
+        map_id: u32,
+        race_round: u16,
+    ) -> Self {
+        Self {
+            user_id,
+            match_id,
+            round,
+            time,
+            points,
+            id: 0,
+            position,
+            map_id,
+            race_round,
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn for_test_placed(
+        match_id: u32,
+        user_id: u32,
+        round: u16,
+        points: i32,
+        time: i32,
+        position: u16,
+    ) -> Self {
+        let mut player = MatchRoundPlayer::for_test(match_id, user_id, round, points);
+        player.time = time;
+        player.position = position;
+        player
+    }
+
+    #[cfg(test)]
+    pub(crate) fn for_test(match_id: u32, user_id: u32, round: u16, points: i32) -> Self {
+        let mut player = MatchRoundPlayer::new(match_id, user_id, round);
+        player.points = points;
+        player
     }
 
     pub(super) fn set_time(&mut self, points: i32) {
@@ -183,6 +239,9 @@ impl MatchRoundPlayerExt {
 
 pub(crate) trait MatchLeadearboardRead {
     //fn match_leaderboard(&self, match_id: u32, round: u16) -> Vec<MatchRoundPlayer>;
+    /// The rounds by their number and every round by its places, players without a place last.
+    /// Steps keep this order for entries they rank the same, so it must never depend on how the rows are stored.
+    /// E.g. players with the same points rank by the first round they played.
     fn match_rounds(&self, match_id: u32) -> Vec<LbEntry>;
     //fn match_leaderboard(&self, match_id: u32) -> Vec<LbEntry>;
     fn match_round_player_find(&self, id: u32) -> Option<MatchRoundPlayer>;
@@ -206,21 +265,30 @@ impl<Db: spacetimedb::CtxDbRead> MatchLeadearboardRead for Db {
             return Vec::new();
         };
         let maps = self.match_round_maps(&state);
-        self.db_read_only()
+        let teams = self.match_user_teams(match_id);
+        let mut rounds: Vec<MatchRoundPlayer> = self
+            .db_read_only()
             .tab_match_round_player()
             .match_id()
             .filter(match_id)
+            .collect();
+        // Ties were ranked in the order the rows were stored, which never was the same twice.
+        rounds.sort_by_key(|r| (r.round, r.position == 0, r.position, r.user_id));
+        rounds
+            .into_iter()
             .map(|f| {
-                LbEntry::new(
+                let mut entry = LbEntry::new(
                     f.user_id,
-                    state.get_mode(),
+                    LbEntryKind::Round,
                     f.position,
                     NodeHandle::MatchV1(match_id),
                 )
                 .set_score(f.points)
                 .set_time(f.time)
                 .set_round(f.round)
-                .set_map(maps.get(&f.round).copied().unwrap_or(0))
+                .set_map(maps.get(&f.round).copied().unwrap_or(0));
+                entry.team_id = teams.get(&f.user_id).copied().unwrap_or(0);
+                entry
             })
             .collect()
     }
@@ -394,7 +462,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        leaderboard::test_util::test_context,
+        pipeline::test_util::test_context,
         tm_match::state::{MatchState, MatchStateWrite},
     };
 
@@ -429,5 +497,95 @@ mod tests {
         let mut maps: Vec<(u16, u32)> = rounds.iter().map(|e| (e.round, e.map_id)).collect();
         maps.sort();
         assert_eq!(maps, vec![(1, 7), (2, 8)]);
+    }
+
+    fn placed(user_id: u32, round: u16, position: u16, points: i32) -> MatchRoundPlayer {
+        let mut player = MatchRoundPlayer::for_test(1, user_id, round, points);
+        player.set_position(position);
+        player
+    }
+
+    #[test]
+    fn the_rounds_of_a_match_come_by_round_and_place() {
+        let test = test_context(&[(1, TmMode::Rounds)]);
+        test.with_reducer_tx(TestAuth::internal(), |ctx| {
+            // In the order the players started, which is no order the rounds can be read in.
+            for player in [
+                placed(3, 2, 1, 0),
+                placed(2, 1, 0, 0),
+                placed(4, 1, 2, 0),
+                placed(1, 1, 1, 0),
+                placed(1, 2, 2, 0),
+            ] {
+                ctx.match_round_player_insert(player)?;
+            }
+            Ok::<_, String>(())
+        })
+        .unwrap();
+
+        let rounds: Vec<(u16, u32, u16)> = test
+            .anonymous_view_context()
+            .match_rounds(1)
+            .iter()
+            .map(|e| (e.round, e.user_id, e.position))
+            .collect();
+
+        // Players without a place, e.g. because they gave up, come last in their round.
+        assert_eq!(
+            rounds,
+            vec![(1, 1, 1), (1, 4, 2), (1, 2, 0), (2, 3, 1), (2, 1, 2)]
+        );
+    }
+
+    #[test]
+    fn players_with_the_same_points_rank_by_the_first_round_they_played() {
+        let test = test_context(&[(1, TmMode::Rounds)]);
+        test.with_reducer_tx(TestAuth::internal(), |ctx| {
+            // Player 2 is stored first in both rounds, player 1 wins the first one.
+            for player in [
+                placed(2, 1, 2, 6),
+                placed(1, 1, 1, 10),
+                placed(2, 2, 1, 10),
+                placed(1, 2, 2, 6),
+            ] {
+                ctx.match_round_player_insert(player)?;
+            }
+            Ok::<_, String>(())
+        })
+        .unwrap();
+        let cx = test.anonymous_view_context();
+
+        let standings = crate::pipeline::modes::match_standings(
+            &crate::pipeline::context::LbContext::new(&cx, NodeHandle::MatchV1(1)),
+            cx.match_rounds(1),
+        )
+        .unwrap();
+
+        let rows: Vec<(u32, u16, i32)> = standings
+            .iter()
+            .map(|e| (e.user_id, e.position, e.score))
+            .collect();
+        assert_eq!(rows, vec![(1, 1, 16), (2, 2, 16)]);
+    }
+
+    #[test]
+    fn players_with_the_same_points_rank_by_the_first_round_they_played_on_a_server() {
+        use crate::test_world::*;
+
+        let world = World::new();
+        let server = world.server(1);
+        let (a, b) = (player(1), player(2));
+        let match_id = world.live_match(&server, &[&b, &a]);
+        server.post(&world, [start_match()]);
+        // b is at the start first in both rounds, a wins the first one.
+        server.post(&world, round(1, &[(&b, 31_000, 6), (&a, 30_000, 10)]));
+        server.post(&world, round(2, &[(&b, 29_000, 10), (&a, 32_000, 6)]));
+
+        let standings: Vec<(String, u16, i32)> = world
+            .standings(match_id)
+            .iter()
+            .map(|e| (world.account(e.user_id), e.position, e.score))
+            .collect();
+        assert_eq!(standings, vec![(a, 1, 16), (b, 2, 16)]);
     }
 }

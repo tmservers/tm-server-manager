@@ -33,11 +33,26 @@ pub(crate) fn handle_match_event(
     mut state: MatchState,
     event: Event,
 ) -> Result<(), String> {
+    // A driver match gets its races and scores from the records of its driver.
+    if state.get_mode() == TmMode::Driver
+        && matches!(
+            event,
+            Event::StartLine(_)
+                | Event::WayPoint(_)
+                | Event::Respawn(_)
+                | Event::GiveUp(_)
+                | Event::KnockoutElimination(_)
+                | Event::Scores(_)
+        )
+    {
+        return Ok(());
+    }
     match &event {
         // We use this to always insert participating players of the round in the leaderboard.
         Event::StartLine(start_line) if state.live_round() => {
             let account_id = Uuid::parse_str(&start_line.account_id).unwrap();
-            let user_id = ctx.user_id_from_account(account_id);
+            // Players who joined while the bridge was gone never connected, they still race.
+            let user_id = ctx.user_id_or_insert(account_id)?;
 
             let round = state.get_round();
 
@@ -70,12 +85,13 @@ pub(crate) fn handle_match_event(
         }
         Event::WayPoint(way_point) if state.live_round() => {
             let account_id = Uuid::parse_str(&way_point.account_id).unwrap();
-            let user_id = ctx.user_id_from_account(account_id);
+            let user_id = ctx.user_id_of_account(account_id);
 
             let round = state.get_round();
 
-            if let Some(mut entry) =
-                ctx.match_round_player_ext_of_user(state.match_id, round, user_id)
+            if let Some(user_id) = user_id
+                && let Some(mut entry) =
+                    ctx.match_round_player_ext_of_user(state.match_id, round, user_id)
             {
                 if way_point.is_end_race {
                     let mut round_player = ctx.match_round_player_find(entry.id).unwrap();
@@ -100,18 +116,19 @@ pub(crate) fn handle_match_event(
                     "Checkpoint without StartLine... Match: {}, Round: {}, Player: {}",
                     state.match_id,
                     round,
-                    user_id
+                    account_id
                 );
             }
         }
         Event::Respawn(respawn) if state.live_round() => {
             let account_id = Uuid::parse_str(&respawn.account_id).unwrap();
-            let user_id = ctx.user_id_from_account(account_id);
+            let user_id = ctx.user_id_of_account(account_id);
 
             let round = state.get_round();
 
-            if let Some(mut entry) =
-                ctx.match_round_player_ext_of_user(state.match_id, round, user_id)
+            if let Some(user_id) = user_id
+                && let Some(mut entry) =
+                    ctx.match_round_player_ext_of_user(state.match_id, round, user_id)
             {
                 entry.add_respawn(respawn.speed, respawn.time);
 
@@ -121,18 +138,19 @@ pub(crate) fn handle_match_event(
                     "Respawn without StartLine... Match: {}, Round: {}, Player: {}",
                     state.match_id,
                     round,
-                    user_id
+                    account_id
                 );
             }
         }
         Event::GiveUp(give_up) if state.live_round() => {
             let account_id = Uuid::parse_str(&give_up.account_id).unwrap();
-            let user_id = ctx.user_id_from_account(account_id);
+            let user_id = ctx.user_id_of_account(account_id);
 
             let round = state.get_round();
 
-            if let Some(mut entry) =
-                ctx.match_round_player_ext_of_user(state.match_id, round, user_id)
+            if let Some(user_id) = user_id
+                && let Some(mut entry) =
+                    ctx.match_round_player_ext_of_user(state.match_id, round, user_id)
             {
                 entry.give_up(give_up.time);
 
@@ -142,7 +160,7 @@ pub(crate) fn handle_match_event(
                     "GiveUp without StartLine... Match: {}, Round: {}, Player: {}",
                     state.match_id,
                     round,
-                    user_id
+                    account_id
                 );
             }
         }
@@ -151,7 +169,8 @@ pub(crate) fn handle_match_event(
 
             for player in &knocked_players.account_ids {
                 let account_id = Uuid::parse_str(player).unwrap();
-                let user_id = ctx.user_id_from_account(account_id);
+                // A knocked out player counts even if it never connected while the bridge was up.
+                let user_id = ctx.user_id_or_insert(account_id)?;
 
                 let mut entry = ctx
                     .match_round_player_of_user(state.match_id, round, user_id)
@@ -221,6 +240,10 @@ pub(crate) fn handle_match_event(
 
             ctx.match_state_update(state);
         }
+        Event::EndRoundEnd(_) => {
+            state.end_round();
+            ctx.match_state_update(state);
+        }
         Event::StartMatchStart(_) => {
             state.set_live_commited();
             ctx.match_state_update(state);
@@ -265,9 +288,12 @@ pub(crate) fn handle_match_event(
             ctx.match_state_update(state);
         }
         Event::Pause(pause) => {
-            // If we just entered a pause we need to delete the current ongoing round.
-            if pause.active && !state.paused() {
-                ctx.match_round_delete(state.match_id, state.get_round());
+            // The round a pause interrupts does not count, it gets played again.
+            if pause.active
+                && !state.paused()
+                && let Some(round) = state.interrupt_round()
+            {
+                ctx.match_round_delete(state.match_id, round);
             }
 
             state.set_pause(pause.active);
@@ -291,8 +317,9 @@ pub(crate) fn handle_match_event(
                     .players
                     .iter()
                     .filter_map(|p| {
+                        // Players who never started are no part of the round.
                         let user_id =
-                            ctx.user_id_from_account(Uuid::parse_str(&p.account_id).unwrap());
+                            ctx.user_id_of_account(Uuid::parse_str(&p.account_id).unwrap())?;
 
                         if matches!(state.get_mode(), TmMode::ReverseCup) && p.match_points <= -2000
                         {
@@ -324,6 +351,7 @@ pub(crate) fn handle_match_event(
                         scores.sort_by_key(|k| if k.time <= 0 { i32::MAX } else { k.time })
                     }
                     TmMode::Unknown => unreachable!(), // Since this a match we always have a mode available.
+                    TmMode::Driver => unreachable!("Driver matches skip the scores"),
                 }
 
                 for (index, stand) in scores.iter_mut().enumerate() {
@@ -368,11 +396,12 @@ pub(crate) fn handle_match_event(
                 let scores = scores
                     .players
                     .iter()
-                    .map(|p| {
+                    .filter_map(|p| {
+                        // Players who never started are no part of the round.
                         let user_id =
-                            ctx.user_id_from_account(Uuid::parse_str(&p.account_id).unwrap());
+                            ctx.user_id_of_account(Uuid::parse_str(&p.account_id).unwrap())?;
 
-                        ScoresPlayer {
+                        Some(ScoresPlayer {
                             user_id,
                             position: 0,
                             round_points: p.round_points,
@@ -382,7 +411,7 @@ pub(crate) fn handle_match_event(
                             } else {
                                 -1
                             },
-                        }
+                        })
                     })
                     .collect::<Vec<_>>();
 
@@ -416,4 +445,200 @@ pub(crate) fn handle_match_event(
     })?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::test_world::*;
+
+    /// What stops a match in the middle of it, the round that runs gets played again afterwards.
+    #[derive(Debug, Clone, Copy)]
+    enum Interruption {
+        Pause,
+        Disconnect,
+    }
+
+    impl Interruption {
+        fn start(self, world: &World, server: &Server) {
+            match self {
+                Interruption::Pause => server.post(world, [pause(true)]),
+                Interruption::Disconnect => server.disconnect(world),
+            }
+        }
+
+        /// The bridge pauses the match when it loses the database, so it ends with the pause too.
+        fn end(self, world: &World, server: &Server) {
+            if let Interruption::Disconnect = self {
+                server.reconnect(world);
+            }
+            server.post(world, [pause(false)]);
+        }
+    }
+
+    const INTERRUPTIONS: [Interruption; 2] = [Interruption::Pause, Interruption::Disconnect];
+
+    /// A live match with two players who finished two rounds.
+    fn two_rounds_played() -> (World, Server, u32, String, String) {
+        let world = World::new();
+        let server = world.server(1);
+        let (a, b) = (player(1), player(2));
+        let match_id = world.live_match(&server, &[&a, &b]);
+        server.post(&world, [start_match()]);
+        server.post(&world, round(1, &[(&a, 30_000, 10), (&b, 31_000, 6)]));
+        server.post(&world, round(2, &[(&b, 29_000, 10), (&a, 32_000, 4)]));
+        (world, server, match_id, a, b)
+    }
+
+    /// The rounds of [two_rounds_played] as [World::rounds] has them.
+    fn two_rounds(a: &str, b: &str) -> Vec<(u16, String, i32, u16)> {
+        vec![
+            (1, a.into(), 10, 1),
+            (1, b.into(), 6, 2),
+            (2, a.into(), 4, 2),
+            (2, b.into(), 10, 1),
+        ]
+    }
+
+    #[test]
+    fn an_interrupted_round_is_dropped_and_played_again_with_its_number() {
+        for interruption in INTERRUPTIONS {
+            let (world, server, match_id, a, b) = two_rounds_played();
+            // Round 3 runs and the first player already finished it.
+            server.post(&world, [start_round(3), start_line(&a), start_line(&b)]);
+            server.post(&world, [finish(&a, 30_000)]);
+
+            interruption.start(&world, &server);
+
+            assert_eq!(
+                world.rounds(match_id),
+                two_rounds(&a, &b),
+                "{interruption:?} keeps the finished rounds and drops the one which ran"
+            );
+
+            interruption.end(&world, &server);
+            server.post(&world, round(3, &[(&b, 30_000, 10), (&a, 31_000, 6)]));
+
+            let mut rounds = two_rounds(&a, &b);
+            rounds.extend([(3, a.clone(), 6, 2), (3, b.clone(), 10, 1)]);
+            assert_eq!(
+                world.rounds(match_id),
+                rounds,
+                "the round played again after the {interruption:?} is round 3"
+            );
+        }
+    }
+
+    #[test]
+    fn an_interruption_between_rounds_keeps_every_round() {
+        for interruption in INTERRUPTIONS {
+            let (world, server, match_id, a, b) = two_rounds_played();
+
+            interruption.start(&world, &server);
+            assert_eq!(
+                world.rounds(match_id),
+                two_rounds(&a, &b),
+                "{interruption:?} after round 2 ended keeps it"
+            );
+
+            interruption.end(&world, &server);
+            server.post(&world, round(3, &[(&b, 30_000, 10), (&a, 31_000, 6)]));
+
+            let mut rounds = two_rounds(&a, &b);
+            rounds.extend([(3, a.clone(), 6, 2), (3, b.clone(), 10, 1)]);
+            assert_eq!(
+                world.rounds(match_id),
+                rounds,
+                "the round after the {interruption:?} is round 3"
+            );
+        }
+    }
+
+    #[test]
+    fn an_interruption_before_the_first_round_counts_from_round_one() {
+        for interruption in INTERRUPTIONS {
+            let world = World::new();
+            let server = world.server(1);
+            let (a, b) = (player(1), player(2));
+            let match_id = world.live_match(&server, &[&a, &b]);
+            server.post(&world, [start_match()]);
+
+            interruption.start(&world, &server);
+            interruption.end(&world, &server);
+            server.post(&world, round(1, &[(&a, 30_000, 10), (&b, 31_000, 6)]));
+
+            assert_eq!(
+                world.rounds(match_id),
+                vec![(1, a.clone(), 10, 1), (1, b.clone(), 6, 2)],
+                "the first round after the {interruption:?} is round 1"
+            );
+        }
+    }
+
+    #[test]
+    fn a_player_whose_connect_was_missed_still_races_and_scores() {
+        let world = World::new();
+        let server = world.server(1);
+        let (a, b, c) = (player(1), player(2), player(3));
+        // Only a connected while the bridge was up, b and c joined while it was gone.
+        let match_id = world.live_match(&server, &[&a]);
+        server.post(&world, [start_match(), start_round(1)]);
+        server.post(&world, [start_line(&a), start_line(&b)]);
+        server.post(&world, [finish(&a, 30_000), finish(&b, 31_000)]);
+        // c only watches, the scores still list everyone on the server.
+        server.post(
+            &world,
+            [
+                round_scores(&[(&a, 30_000, 10), (&b, 31_000, 6), (&c, 0, 0)]),
+                end_round(),
+            ],
+        );
+
+        assert_eq!(
+            world.rounds(match_id),
+            vec![(1, a, 10, 1), (1, b, 6, 2)],
+            "b raced so it is in the round, c only watched so it is not"
+        );
+    }
+
+    #[test]
+    fn a_player_knocked_out_without_being_seen_before_is_still_knocked_out() {
+        let world = World::new();
+        let server = world.server(1);
+        let (a, b) = (player(1), player(2));
+        let match_id = world.live_match(&server, &[&a]);
+        server.post(&world, [start_match(), start_round(1), start_line(&a)]);
+
+        server.post(&world, [knock_out(&[&b])]);
+
+        assert_eq!(world.rounds(match_id), vec![(1, a, 0, 0), (1, b, -1, 0)]);
+    }
+
+    #[test]
+    fn the_race_of_a_player_who_never_started_changes_nothing() {
+        use crate::user::UserRead;
+
+        let world = World::new();
+        let server = world.server(1);
+        let (a, b) = (player(1), player(2));
+        let match_id = world.live_match(&server, &[&a]);
+        server.post(&world, [start_match(), start_round(1), start_line(&a)]);
+
+        // The start line of b got lost, so its race cannot be told apart from noise.
+        server.post(&world, [respawn(&b), give_up(&b), finish(&b, 29_000)]);
+        server.post(
+            &world,
+            [
+                finish(&a, 30_000),
+                round_scores(&[(&a, 30_000, 10), (&b, 29_000, 0)]),
+                end_round(),
+            ],
+        );
+
+        assert_eq!(world.rounds(match_id), vec![(1, a, 10, 1)]);
+        let b = spacetimedb::Uuid::parse_str(&b).unwrap();
+        assert!(
+            !world.test.anonymous_view_context().has_user(b),
+            "a race without a start does not make b a user"
+        );
+    }
 }

@@ -13,6 +13,7 @@ use crate::{
 };
 
 pub(super) mod connection;
+pub mod manialink;
 pub(super) mod node;
 mod permissions;
 pub mod roles;
@@ -105,7 +106,7 @@ pub enum CompetitionStatus {
 
 /// Adds a new Competition to the specified project.
 #[reducer]
-fn competition_create(
+pub(crate) fn competition_create(
     ctx: &ReducerContext,
     name: String,
     parent_id: u32,

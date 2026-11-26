@@ -15,10 +15,10 @@ repository.workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
-log = "0.4"
+log.workspace = true
 spacetimedb = { workspace = true }
-tm-server-types = { path = "../tm-server-types", features = ["spacetime"] }
-gbx-header = "0"
+tm-server-types = { workspace = true, features = ["spacetime"] }
+gbx-header.workspace = true
 
 serde = { workspace = true, features = ["derive"] }
 json.workspace = true
@@ -26,9 +26,21 @@ json.workspace = true
 #gbx-rs.workspace = true
 base64.workspace = true
 petgraph.workspace = true
+# Scripts of leaderboard steps and modes, a module has no clock or imports to give it.
+# Integers are i32 like the values of the entries, which also halves the size of every value on wasm32.
+rhai.workspace = true
 #mlua.workspace = true
+# Replays the driver of driver matches from the records their bridge streams, for the scores.
+tm-mode-driver.workspace = true
+tm-mode-driver-sdk.workspace = true
+tm-mode-driver-builtin.workspace = true
+# Checks the manialinks competitions save.
+tm-mode-driver-manialinks.workspace = true
 
 [dev-dependencies]
+proptest.workspace = true
+# Inputs of the driver written down, which the bridge of a test records.
+tm-mode-driver-sim.workspace = true
 spacetimedb = { workspace = true, features = ["test-utils"] }
 # temporal_rs 0.1.2, which the test datastore pulls in through v8, does not compile against icu 2.2 and newer.
 icu_calendar = "~2.1"

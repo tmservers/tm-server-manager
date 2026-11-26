@@ -14,6 +14,7 @@ pub mod input;
 pub mod leaderboard;
 pub mod maps;
 pub mod output;
+pub mod pipeline;
 pub mod project;
 pub mod raw_server;
 pub mod record;
@@ -22,6 +23,9 @@ pub mod schedule;
 pub mod tm_match;
 pub mod tm_server;
 pub mod user;
+
+#[cfg(test)]
+pub(crate) mod test_world;
 
 // This is to avoid the enum variants to become camelCase
 #[spacetimedb::settings]

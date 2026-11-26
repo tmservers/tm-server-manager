@@ -14,6 +14,7 @@ use tokio::{signal, sync::Mutex};
 mod chat;
 mod config;
 mod connection;
+mod driver;
 mod methods;
 mod state;
 
@@ -141,6 +142,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         exit(1);
     };
 
+    driver::setup_driver();
     setup_state_synchronization().await;
     setup_chat().await;
 

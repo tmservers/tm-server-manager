@@ -1,10 +1,13 @@
 use tm_server_types::{
     base::{MapInfo, PlayerInfo, account_id_to_login},
     config::ServerConfigV2,
-    method::{MethodCall, MethodError, MethodResponse},
+    method::{DriverCall, DriverCommand, MethodCall, MethodError, MethodResponse},
 };
 
 use crate::{ClientError, TrackmaniaServer};
+
+/// Tags the answers of the modescript to the pause methods.
+const PAUSE_RESPONSE_ID: &str = "tm-server-controller";
 
 #[allow(async_fn_in_trait)]
 pub trait ModeScriptMethodsXmlRpc {
@@ -29,7 +32,17 @@ pub trait ModeScriptMethodsXmlRpc {
         match_points: u32,
     ) -> Result<bool, ClientError>;
 
+    /// Pauses the match or ends the pause, if the mode can pause. The modescript answers
+    /// with `Maniaplanet.Pause.Status`.
     async fn pause_set_active(&self, active: bool) -> Result<bool, ClientError>;
+
+    /// Asks the modescript for `Maniaplanet.Pause.Status`.
+    async fn pause_get_status(&self) -> Result<bool, ClientError>;
+
+    /// Sends commands of the mode driver in order.
+    /// Stops at the first command that fails so later commands (like the `Continue`)
+    /// are never applied without the ones before them.
+    async fn driver_commands(&self, commands: &[DriverCommand]) -> Result<(), ClientError>;
 }
 
 impl ModeScriptMethodsXmlRpc for TrackmaniaServer {
@@ -142,10 +155,35 @@ impl ModeScriptMethodsXmlRpc for TrackmaniaServer {
             "TriggerModeScriptEventArray",
             (
                 "Maniaplanet.Pause.SetActive",
-                [if active { "ture" } else { "false" }, "TODO Fix this"],
+                [if active { "true" } else { "false" }, PAUSE_RESPONSE_ID],
             ),
         )
         .await
+    }
+
+    async fn pause_get_status(&self) -> Result<bool, ClientError> {
+        self.call(
+            "TriggerModeScriptEventArray",
+            ("Maniaplanet.Pause.GetStatus", [PAUSE_RESPONSE_ID]),
+        )
+        .await
+    }
+
+    async fn driver_commands(&self, commands: &[DriverCommand]) -> Result<(), ClientError> {
+        for command in commands {
+            let _: bool = match command.call() {
+                DriverCall::ModeScript { method, params } => {
+                    self.call("TriggerModeScriptEventArray", (method, params))
+                        .await?
+                }
+                DriverCall::NextMap => self.next_map().await?,
+                DriverCall::ChatSendServerMessage(message) => {
+                    self.chat_send_server_massage(message).await?
+                }
+                DriverCall::SetNextMapIdent(uid) => self.call("SetNextMapIdent", uid).await?,
+            };
+        }
+        Ok(())
     }
 }
 
@@ -312,7 +350,7 @@ impl XmlRpcMethods for TrackmaniaServer {
     }
 
     async fn get_map_list(&self, max: i32, start: i32) -> Result<Vec<MapInfo>, ClientError> {
-        self.call("GetMapList", ()).await
+        self.call("GetMapList", (max, start)).await
     }
 
     async fn remove_map(&self, map_file: impl Into<String>) -> Result<bool, ClientError> {

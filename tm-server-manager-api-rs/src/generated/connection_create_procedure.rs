@@ -36,10 +36,10 @@ pub trait connection_create {
         kind: ConnectionKind,
 
         __callback: impl FnOnce(
-                &super::ProcedureEventContext,
-                Result<Result<(), ConnectionError>, __sdk::InternalError>,
-            ) + Send
-            + 'static,
+            &super::ProcedureEventContext,
+            Result<Result<(), ConnectionError>, __sdk::InternalError>,
+        ) + Send
+        + 'static,
     );
 
     #[allow(async_fn_in_trait)]
@@ -59,10 +59,10 @@ impl connection_create for super::RemoteProcedures {
         kind: ConnectionKind,
 
         __callback: impl FnOnce(
-                &super::ProcedureEventContext,
-                Result<Result<(), ConnectionError>, __sdk::InternalError>,
-            ) + Send
-            + 'static,
+            &super::ProcedureEventContext,
+            Result<Result<(), ConnectionError>, __sdk::InternalError>,
+        ) + Send
+        + 'static,
     ) {
         self.imp
             .invoke_procedure_with_callback::<_, Result<(), ConnectionError>>(

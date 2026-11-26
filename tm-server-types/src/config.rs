@@ -15,6 +15,18 @@ pub use time_attack::TimeAttack;
 mod knockout;
 pub use knockout::Knockout;
 
+mod driver;
+pub use driver::Driver;
+
+mod driver_mode;
+pub use driver_mode::{BuiltInMode, DriverMode};
+
+mod driver_ui;
+pub use driver_ui::*;
+
+mod driver_ui_events;
+pub use driver_ui_events::*;
+
 mod rounds_bot_online;
 pub use rounds_bot_online::RoundsBotOnline;
 
@@ -166,6 +178,44 @@ impl ServerConfigV2 {
         cfg.append(&mut self.mode.get_xml_map());
         dxr::Value::Struct(cfg)
     }
+
+    pub fn with_mode(mut self, mode: ModeSettingsV2) -> Self {
+        self.mode = mode;
+        self
+    }
+
+    /// The revisions of manialinks of competitions the config shows.
+    pub fn custom_manialinks(&self) -> Vec<u32> {
+        match &self.mode {
+            ModeSettingsV2::Driver(driver) => driver
+                .ui
+                .layers
+                .iter()
+                .filter_map(|layer| match layer.manialink {
+                    Manialink::Custom(revision) => Some(revision),
+                    Manialink::BuiltIn(_) => None,
+                })
+                .collect(),
+            _ => Vec::new(),
+        }
+    }
+
+    /// The mode of the driver, none if the config plays a modescript of the game.
+    pub fn driver_mode(&self) -> Option<DriverMode> {
+        match &self.mode {
+            ModeSettingsV2::Driver(driver) => Some(driver.mode),
+            _ => None,
+        }
+    }
+
+    /// Whether a new config may be like this. Configs which exist already keep working,
+    /// e.g. with a mode a newer version superseded.
+    pub fn check_instantiable(&self) -> Result<(), String> {
+        match self.driver_mode() {
+            Some(mode) => mode.check_instantiable(),
+            None => Ok(()),
+        }
+    }
 }
 
 impl Default for ServerConfigV2 {
@@ -276,6 +326,8 @@ pub enum ModeSettingsV2 {
     ReverseCup(ReverseCupV2),
     TimeAttack(TimeAttack),
     Knockout(Knockout),
+    /// Generic modescript controlled by the mode driver, which runs the rules of the mode.
+    Driver(Driver),
 }
 
 impl ModeSettingsV2 {
@@ -285,6 +337,7 @@ impl ModeSettingsV2 {
             ModeSettingsV2::ReverseCup(reverse_cup) => reverse_cup.into_xml(),
             ModeSettingsV2::TimeAttack(time_attack) => time_attack.into_xml(),
             ModeSettingsV2::Knockout(knockout) => knockout.into_xml(),
+            ModeSettingsV2::Driver(driver) => driver.into_xml(),
         }
     }
 
@@ -294,6 +347,7 @@ impl ModeSettingsV2 {
             ModeSettingsV2::ReverseCup(reverse_cup) => reverse_cup.get_xml_map(),
             ModeSettingsV2::TimeAttack(time_attack) => time_attack.get_xml_map(),
             ModeSettingsV2::Knockout(knockout) => knockout.get_xml_map(),
+            ModeSettingsV2::Driver(driver) => driver.get_xml_map(),
         }
     }
 
@@ -311,6 +365,9 @@ impl ModeSettingsV2 {
             ModeSettingsV2::Knockout(_) => {
                 "<script_name>Trackmania/TM_Knockout_Online</script_name>".into()
             }
+            ModeSettingsV2::Driver(_) => {
+                format!("<script_name>{}</script_name>", Driver::SCRIPT_NAME)
+            }
         }
     }
 
@@ -320,6 +377,7 @@ impl ModeSettingsV2 {
             Self::ReverseCup(_) => "Modes/Trackmania/ReverseCup",
             Self::TimeAttack(_) => "Trackmania/TM_TimeAttack_Online",
             Self::Knockout(_) => "Trackmania/TM_Kockout_Online",
+            Self::Driver(_) => Driver::SCRIPT_NAME,
         }
     }
 
@@ -329,6 +387,7 @@ impl ModeSettingsV2 {
             Self::ReverseCup(_) => TmMode::ReverseCup,
             Self::TimeAttack(_) => TmMode::TimeAttack,
             Self::Knockout(_) => TmMode::Knockout,
+            Self::Driver(_) => TmMode::Driver,
             //ModeSettings::ReverseCupV2(_) => TmMode::ReverseCup,
         }
     }
@@ -340,6 +399,7 @@ impl ModeSettingsV2 {
             Self::ReverseCup(_) => Some(include_str!("../external_modes/ReverseCup.Script.txt")),
             Self::TimeAttack(_) => None,
             Self::Knockout(_) => None,
+            Self::Driver(_) => Some(Driver::SCRIPT),
         }
     }
 }
@@ -394,6 +454,8 @@ pub enum TmMode {
     TimeAttack,
     // This is used upstream in the server-manager module so its not super clean separation of types.
     Unknown,
+    /// A mode of the driver, its standings are what the driver computed.
+    Driver,
 }
 
 fn tm_bool(value: bool) -> &'static str {

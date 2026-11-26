@@ -1,0 +1,117 @@
+<manialink name="Driver_TeamStandings" version="3">
+<!--
+	The standings of the teams of a match of teams: position, name, points of the match
+	and points on the map, and the label of a team, e.g. Overtime. The team of the local
+	player is highlighted.
+	Style: the classes below set fonts, text and backgrounds.
+-->
+<stylesheet>
+	<style class="rank" textfont="GameFontBlack" textprefix="$i" textcolor="ffffff" textsize="2"/>
+	<style class="name" textfont="GameFontSemiBold" textcolor="ffffff" textsize="1.8"/>
+	<style class="score" textfont="OswaldMono" textcolor="ffffff" textsize="1.8"/>
+	<style class="row" bgcolor="000000" opacity="0.6"/>
+	<style class="mine" bgcolor="009b5f" opacity="0.8"/>
+</stylesheet>
+
+<frame id="Frame_TeamStandings" pos="-158 60" hidden="1">
+	<frameinstance modelid="Row_Team" pos="0 0" id="Row_1"/>
+	<frameinstance modelid="Row_Team" pos="0 -6" id="Row_2"/>
+	<frameinstance modelid="Row_Team" pos="0 -12" id="Row_3"/>
+	<frameinstance modelid="Row_Team" pos="0 -18" id="Row_4"/>
+	<frameinstance modelid="Row_Team" pos="0 -24" id="Row_5"/>
+	<frameinstance modelid="Row_Team" pos="0 -30" id="Row_6"/>
+	<frameinstance modelid="Row_Team" pos="0 -36" id="Row_7"/>
+	<frameinstance modelid="Row_Team" pos="0 -42" id="Row_8"/>
+</frame>
+
+<framemodel id="Row_Team">
+	<quad id="Quad_Row" class="row" size="56 5.5"/>
+	<label id="Label_Rank" class="rank" pos="4 -2.75" size="7 5" halign="center" valign="center2"/>
+	<label id="Label_Name" class="name" pos="9 -2.75" size="28 5" valign="center2"/>
+	<label id="Label_Score" class="score" pos="44 -2.75" size="9 5" halign="right" valign="center2"/>
+	<label id="Label_MapScore" class="score" pos="54 -2.75" size="9 5" halign="right" valign="center2"/>
+</framemodel>
+
+<script><!--
+/**
+ *	Shows the standings of the teams, from the netvars of the teams and of the
+ *	standings the driver modescript writes. Hidden for a match of players. The netvars
+ *	are tm_server_types::method::DRIVER_NETVARS.
+ */
+#Include "TextLib" as TL
+#Include "ColorLib" as CL
+
+#Const C_Rows 8
+#Const C_Style_RowColor "000000"
+#Const C_Style_MineColor "009b5f"
+
+/// The team of the local player, -1 for none.
+Integer MyTeam() {
+	declare netread Text[Integer] Net_Driver_UserAccountIds for Teams[0];
+	declare netread Integer[Integer] Net_Driver_UserTeams for Teams[0];
+	if (LocalUser == Null) return -1;
+	foreach (Player => AccountId in Net_Driver_UserAccountIds) {
+		if (AccountId == LocalUser.WebServicesUserId && Net_Driver_UserTeams.existskey(Player)) {
+			return Net_Driver_UserTeams[Player];
+		}
+	}
+	return -1;
+}
+
+Void Update() {
+	declare netread Text[Integer] Net_Driver_TeamNames for Teams[0];
+	declare netread Integer[] Net_Driver_StandingsTeams for Teams[0];
+	declare netread Integer[] Net_Driver_StandingsTeamPositions for Teams[0];
+	declare netread Integer[] Net_Driver_StandingsTeamScores for Teams[0];
+	declare netread Integer[] Net_Driver_StandingsTeamMapScores for Teams[0];
+	declare netread Text[Integer] Net_Driver_StandingsTeamLabels for Teams[0];
+	declare CMlFrame Frame <=> (Page.GetFirstChild("Frame_TeamStandings") as CMlFrame);
+
+	Frame.Visible = Net_Driver_StandingsTeams.count > 0;
+	declare Integer Mine = MyTeam();
+	for (Row, 1, C_Rows) {
+		declare CMlFrame Line <=> (Frame.GetFirstChild("Row_"^Row) as CMlFrame);
+		if (Line == Null) continue;
+		declare Integer Entry = Row - 1;
+		Line.Visible = Entry < Net_Driver_StandingsTeams.count;
+		if (!Line.Visible) continue;
+		declare Integer Team = Net_Driver_StandingsTeams[Entry];
+		declare Text Name = "";
+		if (Net_Driver_TeamNames.existskey(Team)) Name = Net_Driver_TeamNames[Team];
+		declare Text Rank = "-";
+		if (Net_Driver_StandingsTeamPositions[Entry] > 0) Rank = TL::ToText(Net_Driver_StandingsTeamPositions[Entry]);
+		declare Text MapScore = TL::ToText(Net_Driver_StandingsTeamMapScores[Entry]);
+		if (Net_Driver_StandingsTeamLabels.existskey(Team)) MapScore = Net_Driver_StandingsTeamLabels[Team];
+		(Line.GetFirstChild("Label_Rank") as CMlLabel).Value = Rank;
+		(Line.GetFirstChild("Label_Name") as CMlLabel).Value = Name;
+		(Line.GetFirstChild("Label_Score") as CMlLabel).Value = TL::ToText(Net_Driver_StandingsTeamScores[Entry]);
+		(Line.GetFirstChild("Label_MapScore") as CMlLabel).Value = MapScore;
+		declare Text Color = C_Style_RowColor;
+		if (Team == Mine) Color = C_Style_MineColor;
+		(Line.GetFirstChild("Quad_Row") as CMlQuad).BgColor = CL::Hex6ToRgb(Color);
+	}
+}
+
+main() {
+	declare netread Integer Net_Driver_StandingsSerial for Teams[0];
+	declare netread Integer Net_Driver_TeamsSerial for Teams[0];
+	declare netread Integer Net_Driver_UsersSerial for Teams[0];
+	declare Integer LastSerial = -1;
+	declare Integer LastTeamsSerial = -1;
+	declare Integer LastUsersSerial = -1;
+
+	while (True) {
+		yield;
+		if (
+			LastSerial == Net_Driver_StandingsSerial &&
+			LastTeamsSerial == Net_Driver_TeamsSerial &&
+			LastUsersSerial == Net_Driver_UsersSerial
+		) continue;
+		LastSerial = Net_Driver_StandingsSerial;
+		LastTeamsSerial = Net_Driver_TeamsSerial;
+		LastUsersSerial = Net_Driver_UsersSerial;
+		Update();
+	}
+}
+--></script>
+</manialink>

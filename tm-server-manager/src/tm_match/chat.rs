@@ -61,7 +61,7 @@ fn unstable_match_chat_message(
 
     let user_name = ctx.user_name(user_id);
 
-    let ingame_message = "[".to_string() + &user_name + "] " + &message;
+    let ingame_message = "[".to_string() + user_name.as_str() + "] " + message.as_str();
 
     ctx.db.tab_match_chat().insert(MatchChat {
         message,
@@ -83,5 +83,31 @@ impl<Db: spacetimedb::CtxDbWrite> MatchChatWrite for Db {
     fn match_chat_insert(&self, message: MatchChat) -> Result<(), String> {
         self.db().tab_match_chat().try_insert(message)?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_world::*;
+
+    #[test]
+    fn the_chat_of_a_player_whose_connect_was_missed_is_kept() {
+        let world = World::new();
+        let server = world.server(1);
+        let (a, b) = (player(1), player(2));
+        let match_id = world.live_match(&server, &[&a]);
+
+        server.post(&world, [chat(&b, "gg")]);
+
+        let messages: Vec<(String, String)> = world
+            .test
+            .db
+            .tab_match_chat()
+            .match_id()
+            .filter(match_id)
+            .map(|chat| (world.account(chat.user_id), chat.message))
+            .collect();
+        assert_eq!(messages, vec![(b, "gg".to_string())]);
     }
 }

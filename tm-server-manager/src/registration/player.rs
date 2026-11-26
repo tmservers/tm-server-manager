@@ -2,12 +2,11 @@ use spacetimedb::{
     AnonymousViewContext, Query, RawQuery, ReducerContext, Table, TimeDuration, Timestamp, Uuid,
     reducer, table, view,
 };
-use tm_server_types::config::TmMode;
 
 use crate::{
     authorization::Authorization,
     competition::{CompetitionPermissionsV1, node::NodeHandle},
-    leaderboard::LbEntry,
+    pipeline::{LbEntry, LbEntryKind},
     registration::{RegistrationStatus, tab_registration},
     user::{UserRead, UserV1, UserWrite},
 };
@@ -25,7 +24,10 @@ pub struct RegisterationPlayer {
 }
 
 #[view(accessor=registration_players, public)]
-fn registration_players(ctx: &AnonymousViewContext, registration_id: u32) -> impl Query<RegisterationPlayer> {
+fn registration_players(
+    ctx: &AnonymousViewContext,
+    registration_id: u32,
+) -> impl Query<RegisterationPlayer> {
     ctx.from
         .tab_registeration_player()
         .filter(|r| r.registration_id.eq(registration_id))
@@ -121,7 +123,8 @@ impl<Db: spacetimedb::CtxDbRead> RegistrationPlayerRead for Db {
             .filter(registration_id)
             .collect::<Vec<_>>();
 
-        registered.sort_by_key(|f| f.registered_at);
+        // Players registered at the same time still need an order which never changes.
+        registered.sort_by_key(|f| (f.registered_at, f.user_id));
 
         registered
             .into_iter()
@@ -129,7 +132,7 @@ impl<Db: spacetimedb::CtxDbRead> RegistrationPlayerRead for Db {
             .map(|(index, e)| {
                 LbEntry::new(
                     e.user_id,
-                    TmMode::Unknown,
+                    LbEntryKind::Standing,
                     (index + 1) as u16,
                     NodeHandle::RegistrationV1(registration_id),
                 )
@@ -193,4 +196,41 @@ fn unstable_manual_register_override_players(
             })?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use spacetimedb::{TimeDuration, test_utils::TestAuth};
+
+    use super::*;
+    use crate::pipeline::test_util::test_context;
+
+    #[test]
+    fn players_registered_at_the_same_time_are_ordered_by_user() {
+        let test = test_context(&[]);
+        let at = Timestamp::UNIX_EPOCH;
+        let later = at.checked_add(TimeDuration::from_micros(1)).unwrap();
+        test.with_reducer_tx(TestAuth::internal(), |ctx| {
+            for (user_id, registered_at) in [(5, later), (3, later), (4, at)] {
+                ctx.db
+                    .tab_registeration_player()
+                    .insert(RegisterationPlayer {
+                        registered_at,
+                        registration_id: 1,
+                        user_id,
+                    });
+            }
+            Ok::<_, String>(())
+        })
+        .unwrap();
+
+        let registered: Vec<(u32, u16)> = test
+            .anonymous_view_context()
+            .registration_lb(1)
+            .iter()
+            .map(|e| (e.user_id, e.position))
+            .collect();
+
+        assert_eq!(registered, vec![(4, 1), (3, 2), (5, 3)]);
+    }
 }

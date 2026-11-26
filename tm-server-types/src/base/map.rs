@@ -74,10 +74,10 @@ impl dxr::TryFromValue for MapInfo {
         use dxr::Value;
         let map: HashMap<String, Value> = HashMap::try_from_value(value)?;
         Ok(MapInfo {
-            name: login_to_account_id(&<String as TryFromValue>::try_from_value(
+            name: <String as TryFromValue>::try_from_value(
                 map.get("Name")
                     .ok_or_else(|| dxr::Error::missing_field("MapInfo", "Name"))?,
-            )?),
+            )?,
             uid: <String as TryFromValue>::try_from_value(
                 map.get("Uid")
                     .ok_or_else(|| dxr::Error::missing_field("MapInfo", "Uid"))?,

@@ -17,6 +17,8 @@ pub enum TmMode {
     TimeAttack,
 
     Unknown,
+
+    Driver,
 }
 
 impl __sdk::InModule for TmMode {

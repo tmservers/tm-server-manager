@@ -2,8 +2,8 @@ use async_fn_traits::{AsyncFn0, AsyncFn1};
 use tm_server_types::{
     base::PlayerInfo,
     event::{
-        EndRoundEnd, EndRoundStart, PlayerChat, PlayerConnect, PlayerDisconnect, Scores, StartMap,
-        StartMatch, StartRound, StartServer, WayPoint,
+        DriverHold, EndRoundEnd, EndRoundStart, PlayerChat, PlayerConnect, PlayerDisconnect,
+        Scores, StartMap, StartMatch, StartRound, StartServer, WayPoint,
     },
 };
 
@@ -128,6 +128,14 @@ pub trait TypedCallbacks {
     fn on_start_map_end(
         &self,
         execute: impl for<'a> AsyncFn1<&'a StartMap, OutputFuture: Send, Output = ()>
+        + Send
+        + Sync
+        + 'static,
+    );
+    /// The driver modescript waits for the driver.
+    fn on_driver_hold(
+        &self,
+        execute: impl for<'a> AsyncFn1<&'a DriverHold, OutputFuture: Send, Output = ()>
         + Send
         + Sync
         + 'static,
@@ -293,5 +301,15 @@ impl TypedCallbacks for TrackmaniaServer {
         + 'static,
     ) {
         self.on("Maniaplanet.StartMap_End", execute);
+    }
+
+    fn on_driver_hold(
+        &self,
+        execute: impl for<'a> AsyncFn1<&'a DriverHold, OutputFuture: Send, Output = ()>
+        + Send
+        + Sync
+        + 'static,
+    ) {
+        self.on(DriverHold::CALLBACK, execute);
     }
 }

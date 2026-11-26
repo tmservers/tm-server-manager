@@ -31,10 +31,10 @@ pub trait test_node_permitted_players_input {
         node: NodeHandle,
 
         __callback: impl FnOnce(
-                &super::ProcedureEventContext,
-                Result<Result<Vec<PermittedPlayer>, String>, __sdk::InternalError>,
-            ) + Send
-            + 'static,
+            &super::ProcedureEventContext,
+            Result<Result<Vec<PermittedPlayer>, String>, __sdk::InternalError>,
+        ) + Send
+        + 'static,
     );
 
     #[allow(async_fn_in_trait)]
@@ -50,10 +50,10 @@ impl test_node_permitted_players_input for super::RemoteProcedures {
         node: NodeHandle,
 
         __callback: impl FnOnce(
-                &super::ProcedureEventContext,
-                Result<Result<Vec<PermittedPlayer>, String>, __sdk::InternalError>,
-            ) + Send
-            + 'static,
+            &super::ProcedureEventContext,
+            Result<Result<Vec<PermittedPlayer>, String>, __sdk::InternalError>,
+        ) + Send
+        + 'static,
     ) {
         self.imp
             .invoke_procedure_with_callback::<_, Result<Vec<PermittedPlayer>, String>>(

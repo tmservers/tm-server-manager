@@ -70,6 +70,17 @@ impl CompetitionPermissionsV1 {
 
     pub const SHARED_CONFIG: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 45);
 
+    pub const MATCH_RESEED: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 46);
+
+    /// Changing the scripts of leaderboard steps, on top of the permission to change the steps.
+    pub const SCRIPT_EDIT: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 47);
+
+    /// Writing the manialinks of the competition, which run on the machines of the players.
+    pub const MANIALINK_EDIT: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 48);
+
+    /// Writing values the manialinks of the matches show.
+    pub const MATCH_UI_WRITE: CompetitionPermissionsV1 = CompetitionPermissionsV1(1 << 49);
+
     pub(crate) fn has(self, perm: Self) -> bool {
         self.bypass() || (perm & !self) == CompetitionPermissionsV1::NONE
     }

@@ -6,6 +6,14 @@ members = [
     "tm-server-types",
     "tm-server-manager",
     "tm-server-manager-api-rs",
+    "tm-mode-driver/sdk",
+    "tm-mode-driver/core",
+    "tm-mode-driver/sim",
+    "tm-mode-driver/manialinks",
+    "tm-mode-driver/builtin",
+    "tm-mode-driver/script",
+    "tm-mode-driver/runner",
+    "tm-mode-driver/modes/*",
 ]
 resolver = "3"
 
@@ -35,13 +43,43 @@ base64 = { version = "*" }
 dxr = "0.8"
 json = { package = "simd-json", version = "0.17" }
 serde = { version = "1" }
+serde_json = "1.0.154"
 uuid = { version = "1.12", features = ["serde"] }
+thiserror = "2"
+bytes = "1"
+flate2 = "1.0"
+minilzo-rs = "0"
+gbx-header = "0"
+log = "0.4"
+tachyonix = "*"
+dashmap = "*"
+nadeo-api = "*"
+# Optional in the bridge, which needs it to link statically against it in docker builds.
+openssl = { version = "0.10", features = ["vendored"] }
 # This can be removed if we actualy have higher-ranked trait bounds for AsyncFnMuts Output type which is a supertrait of AsyncFn which is needed for event propagation in the trackmania server. 
 async_fn_traits = "*"
 petgraph = { version = "0.8.3", features = ['all'] }
+# Pinned because an update could change what the leaderboard scripts of existing competitions do.
+# One set of features for every crate, they are unified anyway and scripts have to mean the same everywhere.
+rhai = { version = "=1.27.0", default-features = false, features = [
+    "std",
+    "no_time",
+    "no_module",
+    "no_float",
+    "no_custom_syntax",
+    "no_optimize",
+    "only_i32",
+] }
 
 mlua = { version = "0.12", features = ["luau"] }
 #chumsky = { version = "1.0.0-alpha.8" }
+
+#========
+# Tracing
+#========
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+opentelemetry = "0.31"
 
 #============
 # SpacetimeDB
@@ -60,13 +98,25 @@ gbx-rs = { path = "./gbx-rs" }
 tm-server-manager-api-rs = { path = "./tm-server-manager-api-rs", version = "0.1.0-dev" }
 tm-server-types = { path = "./tm-server-types", version = "0.1.0-dev" }
 tm-server-controller = { path = "./tm-server-controller", version = "0.1.0-dev" }
+tm-mode-driver-sdk = { path = "./tm-mode-driver/sdk" }
+tm-mode-driver-manialinks = { path = "./tm-mode-driver/manialinks" }
+tm-mode-driver = { path = "./tm-mode-driver/core" }
+tm-mode-driver-sim = { path = "./tm-mode-driver/sim" }
+tm-mode-driver-script = { path = "./tm-mode-driver/script" }
+tm-mode-driver-builtin = { path = "./tm-mode-driver/builtin" }
+tm-mode-rounds = { path = "./tm-mode-driver/modes/rounds" }
+tm-mode-time-attack = { path = "./tm-mode-driver/modes/time-attack" }
+tm-mode-reverse-cup = { path = "./tm-mode-driver/modes/reverse-cup" }
+tm-mode-knockout = { path = "./tm-mode-driver/modes/knockout" }
+tm-mode-endurance = { path = "./tm-mode-driver/modes/endurance" }
+tm-mode-tmwt-2v2 = { path = "./tm-mode-driver/modes/tmwt-2v2" }
 
 
 #=======
 #Testing
 #=======
 
-testcontainers = { version = "0", default-features = false, features = [
-    "blocking",
-] }
+# The bridge adds the blocking feature for its sync runner.
+testcontainers = "0"
 insta = { version = "1", features = ["yaml"] }
+proptest = "1"

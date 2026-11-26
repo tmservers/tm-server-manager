@@ -5,6 +5,9 @@
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 use super::custom_type::Custom;
+use super::driver_hold_type::DriverHold;
+use super::driver_round_result_type::DriverRoundResult;
+use super::driver_ui_event_type::DriverUiEvent;
 use super::end_map_end_type::EndMapEnd;
 use super::end_map_start_type::EndMapStart;
 use super::end_match_type::EndMatch;
@@ -131,6 +134,12 @@ pub enum Event {
     KnockoutElimination(KnockoutElimination),
 
     SkipOutro(SkipOutro),
+
+    DriverHold(DriverHold),
+
+    DriverRoundResult(DriverRoundResult),
+
+    DriverUiEvent(DriverUiEvent),
 }
 
 impl __sdk::InModule for Event {

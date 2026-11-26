@@ -4,12 +4,20 @@ use spacetimedb::{
     AnonymousViewContext, Query, ReducerContext, SpacetimeType, Table, TimeDuration, Timestamp,
     reducer, table, view,
 };
-use tm_server_types::config::ServerConfigV2;
+use tm_server_types::config::{ModeSettingsV2, ServerConfigV2};
+
+use crate::{
+    competition::manialink::ManialinkRead,
+    tm_match::{driver::MatchDriverWrite, ui::MatchUiWrite},
+};
+
+use crate::raw_server::driver::RawServerDriverRead;
 
 use crate::{
     authorization::Authorization,
     competition::{
         CompetitionPermissionsV1, CompetitionRead,
+        connection::start::NodeStartWrite,
         node::{NodeHandle, NodeRead, NodeWrite, Vec2},
         server_pool::TabCompetitionServerPoolRead,
     },
@@ -22,6 +30,7 @@ use crate::{
     },
     tm_match::{
         auto_recovery::RecoveryWrite,
+        entrant::MatchEntrantWrite,
         leaderboard::MatchLeaderboardWrite,
         replay::MatchReplayWrite,
         state::{MatchState, MatchStateRead, MatchStateWrite},
@@ -30,11 +39,14 @@ use crate::{
 
 mod auto_recovery;
 pub mod chat;
+pub mod driver;
+pub mod entrant;
 pub mod event;
 //pub mod hook;
 pub mod leaderboard;
 pub mod replay;
 pub mod state;
+pub mod ui;
 
 /// # Match
 /// Fullfills the role of providing configuration to the associated server and
@@ -232,7 +244,7 @@ impl MatchStatus {
 }
 
 #[reducer]
-fn match_create(
+pub(crate) fn match_create(
     ctx: &ReducerContext,
     name: String,
     parent_id: u32,
@@ -267,7 +279,11 @@ fn match_create(
 /// the user has the permission to assign servers in the project
 /// and the server is lended to the project.
 #[reducer]
-fn match_assign_server(ctx: &ReducerContext, to: u32, server_id: u32) -> Result<(), String> {
+pub(crate) fn match_assign_server(
+    ctx: &ReducerContext,
+    to: u32,
+    server_id: u32,
+) -> Result<(), String> {
     let Some(tm_match) = ctx.db.tab_match().id().find(to) else {
         return Err("Supplied match was not found!".into());
     };
@@ -307,7 +323,7 @@ fn match_assign_server(ctx: &ReducerContext, to: u32, server_id: u32) -> Result<
 }
 
 #[reducer]
-fn match_server_revoke(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
+pub(crate) fn match_server_revoke(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
     let Some(tm_match) = ctx.db.tab_match().id().find(match_id) else {
         return Err("Supplied match was not found!".into());
     };
@@ -335,11 +351,14 @@ fn match_server_revoke(ctx: &ReducerContext, match_id: u32) -> Result<(), String
 
     ctx.raw_server_occupation_remove(NodeHandle::MatchV1(match_id))?;
 
+    // The server is free for the nodes which wait for one.
+    ctx.node_starts_retry();
+
     Ok(())
 }
 
 #[reducer]
-fn match_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> {
+pub(crate) fn match_configured(ctx: &ReducerContext, id: u32) -> Result<(), String> {
     let Some(mut tm_match) = ctx.db.tab_match().id().find(id) else {
         return Err("Match was mot found!".into());
     };
@@ -383,6 +402,8 @@ fn match_override_pre_config(
         ctx.auth_builder(tm_match.parent_id)
             .permission(CompetitionPermissionsV1::MATCH_CONFIGURE)
             .authorize()?;
+        config.check_instantiable()?;
+        ctx.manialinks_check(tm_match.parent_id, &config)?;
 
         if ctx.raw_server_config_is_owned_inline(tm_match.pre_config) {
             ctx.raw_server_config_update(tm_match.pre_config, config)?;
@@ -400,7 +421,7 @@ fn match_override_pre_config(
 }
 
 #[reducer]
-fn match_override_config(
+pub(crate) fn match_override_config(
     ctx: &ReducerContext,
     id: u32,
     config: ServerConfigV2,
@@ -416,6 +437,8 @@ fn match_override_config(
     if !tm_match.status.before_preparation() {
         return Err("Too late to set configuration".into());
     }
+    config.check_instantiable()?;
+    ctx.manialinks_check(tm_match.parent_id, &config)?;
 
     if ctx.raw_server_config_is_owned_inline(tm_match.config) {
         ctx.raw_server_config_update(tm_match.config, config)?;
@@ -442,6 +465,9 @@ fn match_shared_pre_config(
             .authorize()?;
 
         if ctx.raw_server_config_exists(config_id) {
+            let shared = ctx.raw_server_config(config_id)?;
+            shared.check_instantiable()?;
+            ctx.manialinks_check(tm_match.parent_id, &shared)?;
             tm_match.pre_config = config_id;
             ctx.db.tab_match().id().update(tm_match);
 
@@ -469,6 +495,9 @@ fn match_shared_config(ctx: &ReducerContext, match_id: u32, config_id: u32) -> R
     }
 
     if ctx.raw_server_config_exists(config_id) {
+        let shared = ctx.raw_server_config(config_id)?;
+        shared.check_instantiable()?;
+        ctx.manialinks_check(tm_match.parent_id, &shared)?;
         tm_match.config = config_id;
         ctx.db.tab_match().id().update(tm_match);
 
@@ -481,7 +510,7 @@ fn match_shared_config(ctx: &ReducerContext, match_id: u32, config_id: u32) -> R
 /// If the match is fully configured and ready start.
 /// This can also serve as a manual override for scheduled matches.
 #[reducer]
-fn match_set_preparation(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
+pub(crate) fn match_set_preparation(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
     let Some(tm_match) = ctx.db.tab_match().id().find(match_id) else {
         return Err("Match not found!".into());
     };
@@ -496,7 +525,7 @@ fn match_set_preparation(ctx: &ReducerContext, match_id: u32) -> Result<(), Stri
 /// If the match is fully configured and ready start.
 /// This can also serve as a manual override for scheduled matches.
 #[reducer]
-fn match_try_start(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
+pub(crate) fn match_try_start(ctx: &ReducerContext, match_id: u32) -> Result<(), String> {
     let Some(tm_match) = ctx.db.tab_match().id().find(match_id) else {
         return Err("Match not found!".into());
     };
@@ -688,10 +717,12 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
             //SAFETY: Match is live so have to have a state.
             let mut state = self.match_state_find(match_id).unwrap();
 
+            // The round the disconnect interrupts does not count, it gets played again.
+            if let Some(round) = state.interrupt_round() {
+                self.match_round_delete(match_id, round);
+            }
             state.set_pause(true);
             state.set_recovery();
-
-            self.match_round_delete(match_id, state.get_round());
 
             self.match_state_update(state);
 
@@ -801,6 +832,9 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
         state.set_live();
         self.match_state_update(state);
 
+        // A config used for the preparation and the match shows the check no more.
+        self.match_ready_check_close(match_id);
+
         self.emit_raw_server_config(server_id, false)?;
 
         Ok(())
@@ -821,11 +855,28 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
         if tm_match.status == MatchStatus::Configuring {
             return Err("Match is still getting configured.".into());
         }
+        // Preparing again would set back a match which already runs.
+        if tm_match.status != MatchStatus::Configured {
+            return Err(format!(
+                "Match is {:?}, only configured matches can be prepared.",
+                tm_match.status
+            ));
+        }
         if tm_match.config == 0 {
             return Err(
                 "Match needs a configuration in order to advance to the upcoming state.".into(),
             );
         }
+        // Everything which can fail is checked before anything changes, the graph keeps going when it fails.
+        let config = self.raw_server_config(tm_match.config)?;
+        let driver = match config.get_mode() {
+            ModeSettingsV2::Driver(driver) => {
+                // The mode rejects settings it cannot play before a server is taken.
+                driver::check_settings(driver.mode, &driver.settings)?;
+                Some(driver.clone())
+            }
+            _ => None,
+        };
 
         // Its inputs and seeds must not change anymore once it is prepared.
         let pending = self.node_pending_origins(NodeHandle::MatchV1(match_id));
@@ -835,13 +886,22 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
             ));
         }
 
+        let mode = config.driver_mode();
         let server_id = if let Some(server_id) =
             self.occupation_with_occupier(NodeHandle::MatchV1(match_id))
         {
+            if let Some(mode) = mode
+                && !self.raw_server_plays(server_id, mode)
+            {
+                return Err(format!(
+                    "The server assigned to the match does not play {}. Its bridge has to be updated to a version which does.",
+                    crate::raw_server::mode_name(mode)
+                ));
+            }
             tm_match.status = MatchStatus::Preparation;
             server_id
         } else if tm_match.auto_provision_server {
-            let server_id = self.raw_server_pool_assign(NodeHandle::MatchV1(match_id))?;
+            let server_id = self.raw_server_pool_assign(NodeHandle::MatchV1(match_id), mode)?;
 
             tm_match.status = MatchStatus::Preparation;
             server_id
@@ -849,12 +909,20 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
             return Err("Match has auto provisioning turned off and no server assigned! Cannot start the match!".into());
         };
 
-        let config = self.raw_server_config(tm_match.config)?;
         self.db().tab_match().id().update(tm_match);
 
         self.match_state_insert(MatchState::new(match_id, config.get_mode().get_mode()))?;
+        if let Some(driver) = driver {
+            self.match_driver_prepare(match_id, driver.mode, &driver.settings);
+        }
+
+        // From now on the entrants keep their seeds, the destinations are claimed for them.
+        self.match_entrants_freeze(match_id)?;
 
         self.destination_claim(NodeHandle::MatchV1(match_id))?;
+
+        // The players see who is ready before anyone is.
+        self.match_ready_check_open(match_id);
 
         self.emit_raw_server_config(server_id, false)?;
 
@@ -887,6 +955,8 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
         self.match_state_update(state);
 
         self.match_rounds_delete(match_id);
+        // The driver of the bridge starts over with the config, so do its records.
+        self.match_driver_clear(match_id);
 
         self.match_round_replays_delete(match_id);
 
@@ -919,6 +989,9 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
         };
 
         self.destination_free(NodeHandle::MatchV1(match_id));
+
+        // The server of the match is free for the nodes which wait for one.
+        self.node_starts_retry();
 
         log::info!("The match {} has successfully ended!", match_id);
 
@@ -1036,7 +1109,7 @@ mod tests {
     use spacetimedb::test_utils::TestAuth;
 
     use super::*;
-    use crate::leaderboard::test_util::test_context;
+    use crate::pipeline::test_util::test_context;
 
     fn tm_match(id: u32, status: MatchStatus, config: u32) -> MatchV1 {
         MatchV1 {
@@ -1080,5 +1153,28 @@ mod tests {
             Ok::<_, String>(())
         })
         .unwrap();
+    }
+
+    #[test]
+    fn a_match_which_already_runs_is_not_prepared_again() {
+        use crate::{competition::node::NodeHandle, test_world::*};
+
+        let world = World::new();
+        let server = world.server(1);
+        let match_id = world.live_match(&server, &[&player(1)]);
+        server.post(&world, [start_match()]);
+
+        // An input connected to the match later finishes, which lets the graph try to start it.
+        let leaderboard = world.finished_leaderboard("Seeding");
+        world.wait_for(NodeHandle::MatchV1(match_id), leaderboard);
+
+        assert_eq!(world.match_status(match_id), MatchStatus::Live);
+        let state = world
+            .test
+            .anonymous_view_context()
+            .match_state_find(match_id)
+            .unwrap();
+        assert_eq!(state.status(), MatchStatus::LiveComitted);
+        assert_eq!(world.start_failures(), vec![]);
     }
 }

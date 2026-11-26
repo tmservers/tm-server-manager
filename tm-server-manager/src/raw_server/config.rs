@@ -6,6 +6,7 @@ use tm_server_types::config::{ServerConfig, ServerConfigV2};
 use crate::{
     authorization::Authorization,
     auto_inc_manual::AutoIncWrite,
+    competition::manialink::ManialinkRead,
     competition::{CompetitionPermissionsV1, node::NodeHandle},
     raw_server::occupation::TabRawServerOccupationRead,
     tm_match::{MatchRead, MatchWrite},
@@ -274,7 +275,7 @@ impl<Db: spacetimedb::CtxDbWrite> RawServerContigWrite for Db {
 // How would we implement a conditional node????
 
 #[reducer]
-fn raw_server_config_shared_new(
+pub(crate) fn raw_server_config_shared_new(
     ctx: &ReducerContext,
     name: String,
     competition_id: u32,
@@ -283,6 +284,8 @@ fn raw_server_config_shared_new(
     ctx.auth_builder(competition_id)
         .permission(CompetitionPermissionsV1::SHARED_CONFIG)
         .authorize()?;
+    config.check_instantiable()?;
+    ctx.manialinks_check(competition_id, &config)?;
 
     ctx.raw_server_config_create(config, competition_id, name)?;
 
@@ -307,6 +310,9 @@ fn raw_server_config_shared_update(
     ctx.auth_builder(raw_config.competition_id)
         .permission(CompetitionPermissionsV1::SHARED_CONFIG)
         .authorize()?;
+    // Matches which have it keep playing a superseded mode, it only cannot be chosen again.
+    config.check_instantiable()?;
+    ctx.manialinks_check(raw_config.competition_id, &config)?;
 
     // Finished matches keep the config they were played with.
     ctx.match_finished_configs_detach(config_id)?;

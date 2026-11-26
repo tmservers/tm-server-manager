@@ -151,17 +151,28 @@ pub(super) fn parse_table_update(
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for query builder access to the table `RawServerV1`.
+/// Extension trait for query builder access to the view `RawServerV1`.
 ///
 /// Implemented for [`__sdk::QueryTableAccessor`].
 pub trait competition_available_server_poolQueryTableAccess {
     #[allow(non_snake_case)]
-    /// Get a query builder for the table `RawServerV1`.
-    fn competition_available_server_pool(&self) -> __sdk::__query_builder::Table<RawServerV1>;
+    /// Get a query for a call to the view `RawServerV1` with the given arguments.
+    fn competition_available_server_pool(
+        &self,
+        competition_id: u32,
+    ) -> __sdk::__query_builder::ViewCall<RawServerV1>;
 }
 
 impl competition_available_server_poolQueryTableAccess for __sdk::QueryTableAccessor {
-    fn competition_available_server_pool(&self) -> __sdk::__query_builder::Table<RawServerV1> {
-        __sdk::__query_builder::Table::new("competition_available_server_pool")
+    fn competition_available_server_pool(
+        &self,
+        competition_id: u32,
+    ) -> __sdk::__query_builder::ViewCall<RawServerV1> {
+        __sdk::__query_builder::ViewCall::new(
+            "competition_available_server_pool",
+            [__sdk::__query_builder::SqlLiteral::to_sql_literal(
+                competition_id,
+            )],
+        )
     }
 }
