@@ -25,6 +25,22 @@ enum LbMergeKind {
     Rounds,
 }
 
+impl LbMergeSettings {
+    /// The old setting summing or averaging the scores of every user.
+    #[cfg(test)]
+    pub(crate) fn scores_for_test(average: bool) -> Self {
+        LbMergeSettings {
+            kind: LbMergeKind::Rounds,
+            action: if average {
+                LbMergeAction::Average
+            } else {
+                LbMergeAction::Summate
+            },
+            param: LbParams::Score,
+        }
+    }
+}
+
 impl From<LbMergeSettings> for LbMergeSettingsV2 {
     fn from(settings: LbMergeSettings) -> Self {
         LbMergeSettingsV2 {

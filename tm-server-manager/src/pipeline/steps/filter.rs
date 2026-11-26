@@ -42,6 +42,21 @@ impl LbFilterSettings {
             LbFilterKind::Matches => vec![LbSettingsV3::Match, filter],
         }
     }
+
+    /// The old setting keeping the best scores of every user, of their rounds or their match standings.
+    #[cfg(test)]
+    pub(crate) fn best_scores_for_test(matches: bool, best: u16) -> Self {
+        LbFilterSettings {
+            kind: if matches {
+                LbFilterKind::Matches
+            } else {
+                LbFilterKind::Rounds
+            },
+            param: LbParams::Score,
+            filter: LbFilterIdent::Best(best),
+            fallback: LbFilterFallback::Worst,
+        }
+    }
 }
 
 /// Keeps the best entries of every user.

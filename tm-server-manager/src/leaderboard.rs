@@ -22,6 +22,8 @@ use crate::{
 };
 
 #[cfg(test)]
+mod migration_tests;
+#[cfg(test)]
 pub(crate) mod test_util;
 
 #[table(accessor= tab_leaderboard, vis_private)]

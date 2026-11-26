@@ -26,6 +26,11 @@ use crate::{
 pub(super) mod action;
 pub(super) mod data;
 
+#[cfg(test)]
+pub(crate) use data::{
+    legacy_connection_data_count, legacy_connection_data_insert, migrate_connection_data_for_test,
+};
+
 #[spacetimedb::table(accessor= tab_connection, vis_private,
     index(accessor=connection_exists,hash(columns=[origin_variant,target_variant,origin_id,target_id])),
     index(accessor=targets_of,hash(columns=[origin_variant,origin_id])),

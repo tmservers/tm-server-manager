@@ -13,6 +13,18 @@ pub(crate) struct LbRemapSettings {
     manipulation_value: i32,
 }
 
+impl LbRemapSettings {
+    #[cfg(test)]
+    pub(crate) fn add_to_score_for_test(value: i32) -> Self {
+        LbRemapSettings {
+            origin: LbParams::Score,
+            target: LbParams::Score,
+            manipulation: LbManipulationKind::Add,
+            manipulation_value: value,
+        }
+    }
+}
+
 /// Lhs and Rhs are thought from the origin
 #[derive(Debug, SpacetimeType, Clone, Copy)]
 enum LbManipulationKind {

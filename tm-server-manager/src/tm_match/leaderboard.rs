@@ -70,6 +70,21 @@ impl MatchRoundPlayer {
     }
 
     #[cfg(test)]
+    pub(crate) fn for_test_placed(
+        match_id: u32,
+        user_id: u32,
+        round: u16,
+        points: i32,
+        time: i32,
+        position: u16,
+    ) -> Self {
+        let mut player = MatchRoundPlayer::for_test(match_id, user_id, round, points);
+        player.time = time;
+        player.position = position;
+        player
+    }
+
+    #[cfg(test)]
     pub(crate) fn for_test(match_id: u32, user_id: u32, round: u16, points: i32) -> Self {
         let mut player = MatchRoundPlayer::new(match_id, user_id, round);
         player.points = points;

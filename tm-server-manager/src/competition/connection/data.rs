@@ -146,6 +146,40 @@ impl TryFrom<ConnectionData> for ConnectionDataV2 {
     }
 }
 
+/// Inserts old connection data: 0 is all, 1 the first n, 2 custom places and 3 the first n after an offset.
+#[cfg(test)]
+pub(crate) fn legacy_connection_data_insert(
+    ctx: &ReducerContext,
+    connection_id: u32,
+    option: u8,
+    values: Vec<u8>,
+) {
+    let options = match option {
+        0 => ConnectionDataOption::All,
+        1 => ConnectionDataOption::FirstN(values[0]),
+        2 => ConnectionDataOption::Custom(values),
+        _ => ConnectionDataOption::FirstOffsetN(ConnectionDataOptionFirstOffsetN {
+            offset: values[0],
+            take: values[1],
+        }),
+    };
+    ctx.db.tab_connection_data().insert(ConnectionData {
+        competition_id: 1,
+        connection_id,
+        options,
+    });
+}
+
+#[cfg(test)]
+pub(crate) fn migrate_connection_data_for_test(ctx: &ReducerContext) -> Result<(), String> {
+    migration_connection_data_to_v2(ctx)
+}
+
+#[cfg(test)]
+pub(crate) fn legacy_connection_data_count(ctx: &impl spacetimedb::CtxDbRead) -> u64 {
+    ctx.db_read_only().tab_connection_data().count()
+}
+
 /// Moves the connection data over to the v2 table, it is safe to call this multiple times.
 #[reducer]
 fn migration_connection_data_to_v2(ctx: &ReducerContext) -> Result<(), String> {
