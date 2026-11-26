@@ -342,17 +342,13 @@ pub(crate) fn match_server_revoke(ctx: &ReducerContext, match_id: u32) -> Result
         );
     }
 
-    if ctx
-        .occupation_with_occupier(NodeHandle::MatchV1(match_id))
-        .is_none()
-    {
+    let Some(server_id) = ctx.occupation_with_occupier(NodeHandle::MatchV1(match_id)) else {
         return Err("Server is not occupied! Cannot revoke!".into());
-    }
-
+    };
     ctx.raw_server_occupation_remove(NodeHandle::MatchV1(match_id))?;
 
     // The server is free for the nodes which wait for one.
-    ctx.node_starts_retry();
+    ctx.node_starts_retry(server_id);
 
     Ok(())
 }
@@ -1006,6 +1002,7 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
         }
         self.db().tab_match().id().update(tm_match);
 
+        let freed = self.occupation_with_occupier(NodeHandle::MatchV1(match_id));
         if let Err(error) = self.raw_server_occupation_remove(NodeHandle::MatchV1(match_id)) {
             log::error!("Occupation could not be removed. Error {error}")
         };
@@ -1013,7 +1010,9 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
         self.destination_free(NodeHandle::MatchV1(match_id));
 
         // The server of the match is free for the nodes which wait for one.
-        self.node_starts_retry();
+        if let Some(server_id) = freed {
+            self.node_starts_retry(server_id);
+        }
 
         log::info!("The match {} has successfully ended!", match_id);
 

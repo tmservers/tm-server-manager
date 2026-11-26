@@ -239,7 +239,7 @@ pub fn login_as_server(
             }
 
             // The server is online again for the nodes which wait for one.
-            ctx.node_starts_retry();
+            ctx.node_starts_retry(server_id);
 
             Ok(server_id)
         } else {
@@ -288,7 +288,7 @@ pub(crate) fn raw_server_verify(ctx: &ReducerContext, server_id: u32) -> Result<
             ctx.db.tab_raw_server().id().update(server);
 
             // The server can be used by the nodes which wait for one.
-            ctx.node_starts_retry();
+            ctx.node_starts_retry(server_id);
 
             Ok(())
         }

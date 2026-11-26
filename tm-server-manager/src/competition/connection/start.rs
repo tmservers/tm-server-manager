@@ -8,7 +8,11 @@ use spacetimedb::{
 
 use crate::{
     authorization::Authorization,
-    competition::node::{NodeHandle, NodeRead},
+    competition::{
+        CompetitionRead,
+        node::{NodeHandle, NodeRead},
+        server_pool::TabCompetitionServerPoolRead,
+    },
     schedule::{ScheduleRead, ScheduleWrite},
     tm_match::{MatchRead, MatchStatus, MatchWrite},
 };
@@ -77,9 +81,10 @@ pub(crate) trait NodeStartWrite {
     /// Starts a node whose inputs all finished, only matches and schedules start.
     /// If it cannot start the reason is kept, so it is tried again with [`NodeStartWrite::node_starts_retry`].
     fn node_start(&self, node: NodeHandle) -> Result<(), String>;
-    /// Tries the nodes which could not start again, e.g. because a server became available.
+    /// Tries the nodes which could use the server again, because it became available.
+    /// Only nodes of the competitions it is lent to and the ones below them can take it.
     /// The one which waits the longest goes first, so it gets the server.
-    fn node_starts_retry(&self);
+    fn node_starts_retry(&self, server_id: u32);
 }
 
 impl<Db: CtxDbWrite + CtxWithTimestamp> NodeStartWrite for Db {
@@ -105,9 +110,26 @@ impl<Db: CtxDbWrite + CtxWithTimestamp> NodeStartWrite for Db {
         result
     }
 
-    fn node_starts_retry(&self) {
-        let mut failures: Vec<NodeStartFailure> =
-            self.db().tab_node_start_failure().iter().collect();
+    fn node_starts_retry(&self, server_id: u32) {
+        let mut competitions: Vec<u32> = self
+            .server_lent_to(server_id)
+            .flat_map(|lent| {
+                std::iter::once(lent)
+                    .chain(self.competition_descendants(lent).into_iter().map(|c| c.id))
+            })
+            .collect();
+        competitions.sort_unstable();
+        competitions.dedup();
+
+        let mut failures: Vec<NodeStartFailure> = competitions
+            .into_iter()
+            .flat_map(|competition_id| {
+                self.db()
+                    .tab_node_start_failure()
+                    .competition_id()
+                    .filter(competition_id)
+            })
+            .collect();
         failures.sort_by_key(|f| (f.since, f.id));
 
         for failure in failures {

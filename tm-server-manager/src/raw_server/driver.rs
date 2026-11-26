@@ -39,7 +39,7 @@ pub(crate) fn raw_server_driver_modes(
     })?;
 
     // Nodes which waited for a server that plays their mode may start now.
-    ctx.node_starts_retry();
+    ctx.node_starts_retry(server_id);
 
     Ok(())
 }
