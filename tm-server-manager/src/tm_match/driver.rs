@@ -1113,4 +1113,44 @@ mod tests {
         assert_eq!(maps, vec![(1, map("m1")), (2, map("m2"))]);
     }
 
+    #[test]
+    fn the_members_see_when_the_manager_stopped_agreeing_with_the_bridge() {
+        let world = World::new();
+        let server = world.server(1);
+        let match_id = world.live_driver_match(&server, ROUNDS, SETTINGS);
+        let stranger = player(7);
+        world
+            .try_as_user(&stranger, |_| Ok(()))
+            .expect("the stranger connects");
+        let seen = |auth| {
+            match_driver_state(&world.test.view_context(auth), match_id).map(|status| status.state)
+        };
+        assert_eq!(seen(World::owner_auth()), Some(MatchDriverState::Running));
+
+        let mut bridge = Bridge::new(ROUNDS, SETTINGS, 1);
+        let mut records = bridge.record(&two_rounds().inputs);
+        let digest = records
+            .iter_mut()
+            .find_map(|record| match record {
+                DriverRecord::Digest(digest) => Some(digest),
+                _ => None,
+            })
+            .expect("a round counted");
+        digest.standings ^= 1;
+        for (index, record) in records.into_iter().enumerate() {
+            server
+                .stream(&world, 1, index as u32 + 1, record)
+                .expect("the record is taken");
+        }
+
+        assert_eq!(
+            seen(World::owner_auth()),
+            Some(MatchDriverState::Diverged(1))
+        );
+        assert_eq!(
+            seen(World::user_auth(&stranger)),
+            None,
+            "only members see it"
+        );
+    }
 }
