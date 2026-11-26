@@ -626,12 +626,24 @@ fn node_name_edit(ctx: &ReducerContext, node: NodeHandle, name: String) -> Resul
     ctx.node_name_edit(node, name)
 }
 
+/// What a node outputs and gets is part of its competition, only its members read it.
+/// Evaluating it runs the scripts of its steps, so nobody else gets to make it run either.
+fn member_of_node<Db: spacetimedb::CtxDbRead + spacetimedb::CtxWithSender>(
+    ctx: &Db,
+    node: NodeHandle,
+) -> Result<(), String> {
+    let parent = ctx.node_get_parent(node)?;
+    ctx.auth_builder(parent).authorize()?;
+    Ok(())
+}
+
 #[procedure]
-fn node_leaderboard_output(
+pub(crate) fn node_leaderboard_output(
     ctx: &mut ProcedureContext,
     node: NodeHandle,
 ) -> Result<Vec<LbEntry>, String> {
     ctx.try_with_tx(|ctx| {
+        member_of_node(ctx, node)?;
         let cx = LbContext::new(ctx, node);
         let output = resolve_output_data(&cx, node)?;
         Ok(match_standings(&cx, output)?)
@@ -639,28 +651,35 @@ fn node_leaderboard_output(
 }
 
 #[procedure]
-fn node_leaderboard_output_raw(
-    ctx: &mut ProcedureContext,
-    node: NodeHandle,
-) -> Result<Vec<LbEntry>, String> {
-    ctx.try_with_tx(|ctx| Ok(ctx.node_resolve_output_data(node)?))
-}
-
-#[procedure]
-fn node_leaderboard_input(
-    ctx: &mut ProcedureContext,
-    node: NodeHandle,
-) -> Result<Vec<LbEntry>, String> {
-    ctx.try_with_tx(|ctx| Ok(ctx.node_resolve_input_data(node)?))
-}
-
-// To test the destination
-#[procedure]
-fn node_leaderboard_input_finalize(
+pub(crate) fn node_leaderboard_output_raw(
     ctx: &mut ProcedureContext,
     node: NodeHandle,
 ) -> Result<Vec<LbEntry>, String> {
     ctx.try_with_tx(|ctx| {
+        member_of_node(ctx, node)?;
+        Ok(ctx.node_resolve_output_data(node)?)
+    })
+}
+
+#[procedure]
+pub(crate) fn node_leaderboard_input(
+    ctx: &mut ProcedureContext,
+    node: NodeHandle,
+) -> Result<Vec<LbEntry>, String> {
+    ctx.try_with_tx(|ctx| {
+        member_of_node(ctx, node)?;
+        Ok(ctx.node_resolve_input_data(node)?)
+    })
+}
+
+// To test the destination
+#[procedure]
+pub(crate) fn node_leaderboard_input_finalize(
+    ctx: &mut ProcedureContext,
+    node: NodeHandle,
+) -> Result<Vec<LbEntry>, String> {
+    ctx.try_with_tx(|ctx| {
+        member_of_node(ctx, node)?;
         let cx = LbContext::new(ctx, node);
         let input = resolve_input_data(&cx, node)?;
         Ok(match_standings(&cx, input)?)
@@ -669,9 +688,13 @@ fn node_leaderboard_input_finalize(
 
 // To test the destination
 #[procedure]
-fn test_node_permitted_players_input(
+pub(crate) fn test_node_permitted_players_input(
     ctx: &mut ProcedureContext,
     node: NodeHandle,
 ) -> Result<Vec<PermittedPlayer>, String> {
-    ctx.try_with_tx(|ctx| Ok(ctx.node_permitted_players_input(node)))
+    ctx.try_with_tx(|ctx| {
+        member_of_node(ctx, node)?;
+        Ok(ctx.node_permitted_players_input(node))
+    })
 }
+
