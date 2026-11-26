@@ -832,6 +832,7 @@ mod tests {
             steps::select::{LbSelectPlaces, LbSelectSettings},
             test_util::test_context,
         },
+        tm_match::leaderboard::{MatchLeaderboardWrite, MatchRoundPlayer},
     };
 
     fn connect(origin: NodeHandle, target: NodeHandle, kind: ConnectionKind) -> TabConnection {
@@ -996,5 +997,136 @@ mod tests {
         let dependents = test.anonymous_view_context().node_dependents(origin);
 
         assert_eq!(dependents, vec![NodeHandle::MatchV1(2)]);
+    }
+
+    fn select_first() -> LbSettingsV3 {
+        LbSettingsV3::Select(LbSelectSettings {
+            scope: Vec::new(),
+            places: LbSelectPlaces::FirstN(1),
+        })
+    }
+
+    /// Matches 1 and 2 go into leaderboard 1, which goes into leaderboard 2 through a connection still getting configured.
+    /// Its steps were saved while leaderboard 1 got configured and output nothing, returns its id.
+    fn half_configured(
+        connection_steps: Vec<LbSettingsV3>,
+        target_steps: Vec<LbSettingsV3>,
+    ) -> (spacetimedb::test_utils::TestContext, u32) {
+        let test = test_context(&[
+            (1, tm_server_types::config::TmMode::Rounds),
+            (2, tm_server_types::config::TmMode::Rounds),
+        ]);
+        let id = test
+            .with_reducer_tx(TestAuth::internal(), |ctx| {
+                configured_leaderboard(ctx, 1, Vec::new());
+                configured_leaderboard(ctx, 2, target_steps.clone());
+                for match_id in [1, 2] {
+                    ctx.match_round_player_insert(MatchRoundPlayer::for_test(
+                        match_id,
+                        match_id * 10,
+                        1,
+                        5,
+                    ))?;
+                    data_connection_for_test(
+                        ctx,
+                        NodeHandle::MatchV1(match_id),
+                        NodeHandle::LeaderboardV1(1),
+                        0,
+                    )?;
+                }
+                let mut connection = connect(
+                    NodeHandle::LeaderboardV1(1),
+                    NodeHandle::LeaderboardV1(2),
+                    ConnectionKind::Data,
+                );
+                connection.status = ConnectionStatus::Configuring;
+                let connection = ctx.connection_insert(connection)?;
+                ctx.connection_data_insert(
+                    ConnectionDataV2::new(connection.id, 1).with_settings(connection_steps.clone()),
+                )?;
+                Ok::<_, String>(connection.id)
+            })
+            .unwrap();
+        (test, id)
+    }
+
+    fn configure(test: &spacetimedb::test_utils::TestContext, id: u32) -> Result<(), String> {
+        test.with_reducer_tx(TestAuth::internal(), |ctx| {
+            let connection = ctx.db.tab_connection().id().find(id).unwrap();
+            connection_configure(ctx, connection)
+        })
+    }
+
+    fn status(test: &spacetimedb::test_utils::TestContext, id: u32) -> ConnectionStatus {
+        test.with_reducer_tx(TestAuth::internal(), |ctx| {
+            Ok::<_, String>(ctx.db.tab_connection().id().find(id).unwrap().status)
+        })
+        .unwrap()
+    }
+
+    #[test]
+    fn a_connection_still_getting_configured_does_not_block_the_nodes_around_it() {
+        // Places without a match step do not work with the rounds leaderboard 1 outputs now.
+        let (test, _) = half_configured(vec![select_first()], Vec::new());
+        let cx = test.anonymous_view_context();
+
+        // This is what configuring leaderboard 1 checks.
+        assert!(
+            cx.node_check_dependents(NodeHandle::LeaderboardV1(1))
+                .is_ok()
+        );
+        assert!(
+            cx.node_input_shape(NodeHandle::LeaderboardV1(2))
+                .unwrap()
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn configuring_a_connection_with_broken_steps_names_the_connection() {
+        let (test, id) = half_configured(vec![select_first()], Vec::new());
+
+        let error = configure(&test, id).unwrap_err();
+
+        assert_eq!(
+            error,
+            format!(
+                "Connection {id} step 1: Places only exist in standings, add a match or merge step first."
+            )
+        );
+        assert_eq!(status(&test, id), ConnectionStatus::Configuring);
+    }
+
+    #[test]
+    fn configuring_a_connection_checks_the_steps_after_it() {
+        // The connection passes the rounds of two matches on, leaderboard 2 selects places of a single one.
+        let (test, id) = half_configured(Vec::new(), vec![LbSettingsV3::Match, select_first()]);
+
+        let error = configure(&test, id).unwrap_err();
+
+        assert_eq!(
+            error,
+            "LeaderboardV1(2) step 2: Places only exist in a single leaderboard, merge the entries or select per origin."
+        );
+        assert_eq!(status(&test, id), ConnectionStatus::Configuring);
+    }
+
+    #[test]
+    fn the_target_gets_the_entries_once_the_connection_is_configured() {
+        let (test, id) = half_configured(Vec::new(), Vec::new());
+        let users = |test: &spacetimedb::test_utils::TestContext| -> Vec<u32> {
+            test.anonymous_view_context()
+                .node_resolve_output_data(NodeHandle::LeaderboardV1(2))
+                .unwrap()
+                .iter()
+                .map(|e| e.user_id)
+                .collect()
+        };
+
+        assert!(users(&test).is_empty());
+        configure(&test, id).unwrap();
+
+        assert_eq!(users(&test), vec![10, 20]);
+        assert_eq!(status(&test, id), ConnectionStatus::Configured);
     }
 }

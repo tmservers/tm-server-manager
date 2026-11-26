@@ -78,6 +78,12 @@ impl ConnectionDataV2 {
         self
     }
 
+    #[cfg(test)]
+    pub(crate) fn with_settings(mut self, settings: Vec<LbSettingsV3>) -> Self {
+        self.settings = settings;
+        self
+    }
+
     pub(crate) fn slot(&self) -> u16 {
         self.slot
     }
