@@ -88,6 +88,12 @@ impl TabConnection {
         self.kind == ConnectionKind::Wait
     }
 
+    /// A data connection passes its entries on once it is configured.
+    /// Like a leaderboard which gets configured it passes nothing on before, so unfinished steps never reach its target.
+    pub(crate) fn passes_data(&self) -> bool {
+        self.is_data() && self.status != ConnectionStatus::Configuring
+    }
+
     pub(crate) fn is_action(&self) -> bool {
         self.kind == ConnectionKind::Action
     }
@@ -102,10 +108,6 @@ impl TabConnection {
 
     pub(crate) fn is_resolved(&self) -> bool {
         self.status == ConnectionStatus::Resolved
-    }
-
-    pub(crate) fn is_configuring(&self) -> bool {
-        self.status == ConnectionStatus::Configuring
     }
 
     pub(crate) fn instantiate(mut self, parent_id: u32) -> Self {
@@ -311,9 +313,7 @@ fn connection_create(
                     connection.parent_id,
                 ))
                 .map_err(|e| ConnectionError::InternalError(e.to_string()))?;
-                // The target gets more than before, so the steps after it have to work with that.
-                ctx.node_check_target(target)
-                    .map_err(|e| ConnectionError::Steps(e.to_string()))?;
+                // It passes nothing on until it gets configured, which checks the target.
             }
             ConnectionKind::Action => {
                 todo!()
@@ -326,7 +326,7 @@ fn connection_create(
 
 #[reducer]
 fn connection_configured(ctx: &ReducerContext, connection_id: u32) -> Result<(), String> {
-    let Some(mut connection) = ctx.db.tab_connection().id().find(connection_id) else {
+    let Some(connection) = ctx.db.tab_connection().id().find(connection_id) else {
         return Err("Connection not found.".into());
     };
 
@@ -334,6 +334,11 @@ fn connection_configured(ctx: &ReducerContext, connection_id: u32) -> Result<(),
         .permission(CompetitionPermissionsV1::CONNECTION_CONFIGURED)
         .authorize()?;
 
+    connection_configure(ctx, connection)
+}
+
+/// Configures the connection once its steps work with what its origin outputs and its target with what it passes on.
+fn connection_configure(ctx: &ReducerContext, mut connection: TabConnection) -> Result<(), String> {
     if connection.status != ConnectionStatus::Configuring {
         return Err("Wrong status to configure".into());
     }
@@ -347,14 +352,17 @@ fn connection_configured(ctx: &ReducerContext, connection_id: u32) -> Result<(),
     }
 
     connection.status = ConnectionStatus::Configured;
+    ctx.db.tab_connection().id().update(connection);
+
+    // From now on the target gets what it passes on, so the steps after it have to work with that.
+    // A failure rolls the transaction back, so the connection keeps getting configured.
+    ctx.node_check_target(connection.target())?;
 
     // The origin could have finished already, then nothing would resolve the connection anymore.
     if ctx.node_is_finished(connection.origin()) {
         connection.resolve();
         ctx.db.tab_connection().id().update(connection);
         advance(ctx, CompetitionConnection::from(connection));
-    } else {
-        ctx.db.tab_connection().id().update(connection);
     }
 
     Ok(())
@@ -380,6 +388,9 @@ fn connection_unconfigure(ctx: &ReducerContext, connection_id: u32) -> Result<()
 
     connection.status = ConnectionStatus::Configuring;
     ctx.db.tab_connection().id().update(connection);
+
+    // The target does not get what it passes on anymore.
+    ctx.node_check_target(connection.target())?;
 
     Ok(())
 }

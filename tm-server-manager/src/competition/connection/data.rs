@@ -94,10 +94,12 @@ impl ConnectionDataV2 {
         leaderboard: Vec<LbEntry>,
     ) -> Result<Vec<LbEntry>, LbError> {
         evaluate_steps(cx, &self.settings, leaderboard)
+            .map_err(|error| error.in_connection(self.connection_id))
     }
 
     pub(super) fn check(&self, origin: NodeHandle, input: LbShape) -> Result<LbShape, LbError> {
         check_steps(origin, &self.settings, input)
+            .map_err(|error| error.in_connection(self.connection_id))
     }
 }
 
@@ -226,7 +228,8 @@ fn competition_connection_data_update(
         .authorize()?;
 
     let origin = connection.origin();
-    check_steps(origin, &settings, ctx.node_output_shape(origin)?)?;
+    check_steps(origin, &settings, ctx.node_output_shape(origin)?)
+        .map_err(|error| error.in_connection(connection_id))?;
 
     let Some(mut data) = ctx
         .db
@@ -247,10 +250,8 @@ fn competition_connection_data_update(
     data.settings = settings;
     data.slot = slot;
 
+    // The target gets nothing from it until it is configured, so only then the target is checked.
     ctx.db.tab_connection_data_v2().connection_id().update(data);
-
-    // The target already gets what the connection passes on, even while it gets configured.
-    ctx.node_check_target(connection.target())?;
 
     Ok(())
 }

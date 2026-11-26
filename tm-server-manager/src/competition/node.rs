@@ -184,16 +184,16 @@ pub(crate) trait NodeRead {
     fn node_permitted_players_input(&self, node: NodeHandle) -> Vec<PermittedPlayer>;
     fn node_get_parent(&self, node: NodeHandle) -> Result<u32, String>;
     fn node_resolve_input_data(&self, node: NodeHandle) -> Result<Vec<LbEntry>, LbError>;
-    /// The entries of every data connection into the node on their own, ordered by slot.
+    /// The entries of every configured data connection into the node on their own, ordered by slot.
     /// Inputs with slot 0 have no order, they come after the others.
     fn node_resolve_inputs(&self, node: NodeHandle) -> Result<Vec<Vec<LbEntry>>, LbError>;
     fn node_resolve_output_data(&self, node: NodeHandle) -> Result<Vec<LbEntry>, LbError>;
-    /// What the node would get as input, the steps on the way are checked.
+    /// What the node would get as input from its configured data connections, the steps on the way are checked.
     fn node_input_shape(&self, node: NodeHandle) -> Result<LbShape, LbError>;
     /// What the node would output, the steps on the way are checked.
     fn node_output_shape(&self, node: NodeHandle) -> Result<LbShape, LbError>;
     /// Checks the steps after the node again, they were checked against what it output back then.
-    /// Connections still getting configured are checked when they get configured.
+    /// Connections still getting configured pass nothing on, they are checked when they get configured.
     fn node_check_dependents(&self, node: NodeHandle) -> Result<(), LbError>;
     /// Checks the steps of the node again because what it gets changed, and everything after it.
     fn node_check_target(&self, node: NodeHandle) -> Result<(), LbError>;
@@ -300,7 +300,7 @@ impl<Db: spacetimedb::CtxDbRead> NodeRead for Db {
 
     fn node_input_shape(&self, node: NodeHandle) -> Result<LbShape, LbError> {
         self.connection_origins_of(node)
-            .filter(|c| c.is_data())
+            .filter(|c| c.passes_data())
             .try_fold(LbShape::default(), |shape, connection| {
                 let output = self.node_output_shape(connection.origin())?;
                 Ok(shape.combine(self.connection_shape(connection, output)?))
@@ -418,12 +418,10 @@ fn node_check_dependents_inner(
     let output = ctx.node_output_shape(node)?;
     let connections: Vec<_> = ctx
         .connection_targets_of(node)
-        .filter(|c| c.is_data())
+        .filter(|c| c.passes_data())
         .collect();
     for connection in connections {
-        if !connection.is_configuring() {
-            ctx.connection_shape(connection, output)?;
-        }
+        ctx.connection_shape(connection, output)?;
         node_check_target_inner(ctx, connection.target(), checked)?;
     }
     Ok(())
@@ -519,7 +517,7 @@ fn node_resolve_inputs_inner(
 ) -> Result<Vec<Vec<LbEntry>>, LbError> {
     let mut depending_connections: Vec<_> = ctx
         .connection_origins_of(node)
-        .filter(|c| c.is_data())
+        .filter(|c| c.passes_data())
         .collect();
     depending_connections.sort_by_cached_key(|c| {
         let slot = ctx.connection_data_find(c.id).map_or(0, |data| data.slot());

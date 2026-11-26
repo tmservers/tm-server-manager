@@ -7,6 +7,8 @@ use crate::competition::node::NodeHandle;
 pub(crate) struct LbError {
     /// The node whose steps failed.
     node: Option<NodeHandle>,
+    /// The data connection whose steps failed, its origin is in `node`.
+    connection: Option<u32>,
     /// The index of the step which failed.
     step: Option<usize>,
     message: String,
@@ -16,6 +18,7 @@ impl LbError {
     pub(crate) fn new(message: impl Into<String>) -> Self {
         LbError {
             node: None,
+            connection: None,
             step: None,
             message: message.into(),
         }
@@ -29,12 +32,30 @@ impl LbError {
         }
         self
     }
+
+    /// Marks that the steps of the data connection failed, they run with its origin.
+    pub(crate) fn in_connection(mut self, connection_id: u32) -> Self {
+        if self.connection.is_none() {
+            self.connection = Some(connection_id);
+        }
+        self
+    }
 }
 
 impl fmt::Display for LbError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match (self.node, self.step) {
-            (Some(node), Some(step)) => write!(f, "{node:?} step {}: {}", step + 1, self.message),
+        match (self.connection, self.node, self.step) {
+            (Some(connection), _, Some(step)) => {
+                write!(
+                    f,
+                    "Connection {connection} step {}: {}",
+                    step + 1,
+                    self.message
+                )
+            }
+            (None, Some(node), Some(step)) => {
+                write!(f, "{node:?} step {}: {}", step + 1, self.message)
+            }
             _ => f.write_str(&self.message),
         }
     }
