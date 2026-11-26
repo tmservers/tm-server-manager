@@ -886,6 +886,16 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
             ));
         }
 
+        // The server plays the pre config during the preparation, it has to exist too.
+        if tm_match.pre_config != 0 {
+            self.raw_server_config(tm_match.pre_config)?;
+        }
+        // The entrants come from the inputs, whose steps can still fail, e.g. a script.
+        let entrants = self.match_entrants_resolve(match_id)?;
+        if self.match_state_find(match_id).is_some() {
+            return Err(format!("Match {match_id} already has a state."));
+        }
+
         let mode = config.driver_mode();
         let server_id = if let Some(server_id) =
             self.occupation_with_occupier(NodeHandle::MatchV1(match_id))
@@ -917,7 +927,7 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
         }
 
         // From now on the entrants keep their seeds, the destinations are claimed for them.
-        self.match_entrants_freeze(match_id)?;
+        self.match_entrants_freeze_with(match_id, entrants)?;
 
         self.destination_claim(NodeHandle::MatchV1(match_id))?;
 
