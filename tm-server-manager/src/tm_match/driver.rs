@@ -727,6 +727,37 @@ mod tests {
         assert_eq!(state(&world, match_id), MatchDriverState::Running);
     }
 
+    /// The rounds belong to the driver, a pause or a lost bridge does not drop any of them.
+    #[test]
+    fn an_interruption_keeps_the_rounds_the_driver_counted() {
+        for disconnect in [false, true] {
+            let world = World::new();
+            let server = world.server(1);
+            let match_id = world.live_driver_match(&server, ROUNDS, SETTINGS);
+            let mut bridge = Bridge::new(ROUNDS, SETTINGS, 1);
+            bridge.play(&world, &server, &two_rounds().inputs);
+            let counted = world.rounds(match_id);
+            assert_eq!(counted.len(), 5);
+
+            // The server is in its second round while the records of the driver came in.
+            server.post(
+                &world,
+                [start_match(), start_round(1), end_round(), start_round(2)],
+            );
+            if disconnect {
+                server.disconnect(&world);
+            } else {
+                server.post(&world, [pause(true)]);
+            }
+
+            assert_eq!(
+                world.rounds(match_id),
+                counted,
+                "disconnect: {disconnect}, the counted rounds stay"
+            );
+        }
+    }
+
     #[test]
     fn a_record_sent_again_changes_nothing_and_one_which_skips_records_is_refused() {
         let world = World::new();
