@@ -574,6 +574,27 @@ fn match_driver_team_standings(ctx: &ViewContext, match_id: u32) -> Vec<MatchTea
     ctx.match_driver_team_standings(match_id)
 }
 
+/// Whether the manager still replays a driver match, for the members of its competition.
+/// A match whose driver diverged or faulted keeps playing on its server, an admin has to look at it.
+#[view(accessor = match_driver_state, public)]
+fn match_driver_state(ctx: &ViewContext, match_id: u32) -> Option<MatchDriverStatus> {
+    let tm_match = ctx.match_find(match_id)?;
+    ctx.auth_builder(tm_match.get_comp_id()).authorize().ok()?;
+    ctx.match_driver(match_id).map(|driver| MatchDriverStatus {
+        match_id,
+        mode: driver.mode,
+        state: driver.state,
+    })
+}
+
+/// How far the manager got with a driver match, as its members see it.
+#[derive(Debug, Clone, PartialEq, Eq, SpacetimeType)]
+pub struct MatchDriverStatus {
+    pub match_id: u32,
+    pub mode: DriverMode,
+    pub state: MatchDriverState,
+}
+
 /// The teams of the match of the server, for its bridge: the driver starts with them.
 #[view(accessor = my_match_teams, public)]
 fn my_match_teams(ctx: &ViewContext) -> Vec<DriverTeam> {
@@ -1091,4 +1112,5 @@ mod tests {
         maps.dedup();
         assert_eq!(maps, vec![(1, map("m1")), (2, map("m2"))]);
     }
+
 }
