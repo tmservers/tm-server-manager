@@ -698,3 +698,80 @@ pub(crate) fn test_node_permitted_players_input(
     })
 }
 
+#[cfg(test)]
+mod procedure_tests {
+    use spacetimedb::{ProcedureContext, test_utils::TestAuth};
+
+    use super::*;
+    use crate::test_world::*;
+
+    type Procedure = fn(&mut ProcedureContext, NodeHandle) -> Result<(), String>;
+
+    /// Every procedure which evaluates a node, without what it returns.
+    const PROCEDURES: [(&str, Procedure); 5] = [
+        ("output", |ctx, node| {
+            node_leaderboard_output(ctx, node).map(drop)
+        }),
+        ("output raw", |ctx, node| {
+            node_leaderboard_output_raw(ctx, node).map(drop)
+        }),
+        ("input", |ctx, node| {
+            node_leaderboard_input(ctx, node).map(drop)
+        }),
+        ("input finalize", |ctx, node| {
+            node_leaderboard_input_finalize(ctx, node).map(drop)
+        }),
+        ("permitted players", |ctx, node| {
+            test_node_permitted_players_input(ctx, node).map(drop)
+        }),
+    ];
+
+    fn call(
+        world: &World,
+        auth: TestAuth,
+        procedure: Procedure,
+        node: NodeHandle,
+    ) -> Result<(), String> {
+        procedure(&mut world.test.procedure_context(auth), node)
+    }
+
+    #[test]
+    fn only_members_of_the_competition_evaluate_its_nodes() {
+        let world = World::new();
+        let node = NodeHandle::MatchV1(world.configured_match("Final"));
+        let stranger = player(7);
+        world
+            .try_as_user(&stranger, |_| Ok(()))
+            .expect("the stranger connects");
+
+        for (name, procedure) in PROCEDURES {
+            assert_eq!(
+                call(&world, World::owner_auth(), procedure, node),
+                Ok(()),
+                "the owner evaluates the {name}"
+            );
+            assert_eq!(
+                call(&world, World::user_auth(&stranger), procedure, node),
+                Err("You are not a member of this competition.".into()),
+                "a stranger does not get the {name}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_node_which_does_not_exist_is_an_error_and_no_panic() {
+        let world = World::new();
+        for (name, procedure) in PROCEDURES {
+            assert!(
+                call(
+                    &world,
+                    World::owner_auth(),
+                    procedure,
+                    NodeHandle::MatchV1(99)
+                )
+                .is_err_and(|e| !e.is_empty()),
+                "{name}"
+            );
+        }
+    }
+}

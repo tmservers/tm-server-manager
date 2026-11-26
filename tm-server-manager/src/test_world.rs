@@ -84,23 +84,27 @@ impl World {
         self.test.with_reducer_tx(World::owner(), reducer)
     }
 
+    /// The user of this account, as the auth of a call.
+    pub(crate) fn user_auth(account: &str) -> TestAuth {
+        TestAuth::from_jwt_payload(
+            format!(
+                r#"{{"iss":"https://auth.spacetimedb.com/oidc","sub":"{account}","login_method":"trackmania","provider_id":"{account}","preferred_username":"{account}"}}"#
+            ),
+            ConnectionId::from_u128(2),
+        )
+        .expect("the claims of a user are valid")
+    }
+
     /// Calls a reducer as the user of this account, who connected before.
     pub(crate) fn try_as_user<T>(
         &self,
         account: &str,
         reducer: impl FnOnce(&ReducerContext) -> Result<T, String>,
     ) -> Result<T, String> {
-        let auth = || {
-            TestAuth::from_jwt_payload(
-                format!(
-                    r#"{{"iss":"https://auth.spacetimedb.com/oidc","sub":"{account}","login_method":"trackmania","provider_id":"{account}","preferred_username":"{account}"}}"#
-                ),
-                ConnectionId::from_u128(2),
-            )
-            .expect("the claims of a user are valid")
-        };
-        self.test.with_reducer_tx(auth(), crate::client_connected)?;
-        self.test.with_reducer_tx(auth(), reducer)
+        self.test
+            .with_reducer_tx(World::user_auth(account), crate::client_connected)?;
+        self.test
+            .with_reducer_tx(World::user_auth(account), reducer)
     }
 
     /// Calls a reducer as the owner, it has to succeed.
