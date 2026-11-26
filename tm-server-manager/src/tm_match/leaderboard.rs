@@ -446,4 +446,73 @@ mod tests {
         maps.sort();
         assert_eq!(maps, vec![(1, 7), (2, 8)]);
     }
+
+    fn placed(user_id: u32, round: u16, position: u16, points: i32) -> MatchRoundPlayer {
+        let mut player = MatchRoundPlayer::for_test(1, user_id, round, points);
+        player.set_position(position);
+        player
+    }
+
+    #[test]
+    fn the_rounds_of_a_match_come_by_round_and_place() {
+        let test = test_context(&[(1, TmMode::Rounds)]);
+        test.with_reducer_tx(TestAuth::internal(), |ctx| {
+            // In the order the players started, which is no order the rounds can be read in.
+            for player in [
+                placed(3, 2, 1, 0),
+                placed(2, 1, 0, 0),
+                placed(4, 1, 2, 0),
+                placed(1, 1, 1, 0),
+                placed(1, 2, 2, 0),
+            ] {
+                ctx.match_round_player_insert(player)?;
+            }
+            Ok::<_, String>(())
+        })
+        .unwrap();
+
+        let rounds: Vec<(u16, u32, u16)> = test
+            .anonymous_view_context()
+            .match_rounds(1)
+            .iter()
+            .map(|e| (e.round, e.user_id, e.position))
+            .collect();
+
+        // Players without a place, e.g. because they gave up, come last in their round.
+        assert_eq!(
+            rounds,
+            vec![(1, 1, 1), (1, 4, 2), (1, 2, 0), (2, 3, 1), (2, 1, 2)]
+        );
+    }
+
+    #[test]
+    fn players_with_the_same_points_rank_by_the_first_round_they_played() {
+        let test = test_context(&[(1, TmMode::Rounds)]);
+        test.with_reducer_tx(TestAuth::internal(), |ctx| {
+            // Player 2 is stored first in both rounds, player 1 wins the first one.
+            for player in [
+                placed(2, 1, 2, 6),
+                placed(1, 1, 1, 10),
+                placed(2, 2, 1, 10),
+                placed(1, 2, 2, 6),
+            ] {
+                ctx.match_round_player_insert(player)?;
+            }
+            Ok::<_, String>(())
+        })
+        .unwrap();
+        let cx = test.anonymous_view_context();
+
+        let standings = crate::pipeline::modes::match_standings(
+            &crate::pipeline::context::LbContext::new(&cx, NodeHandle::MatchV1(1)),
+            cx.match_rounds(1),
+        )
+        .unwrap();
+
+        let rows: Vec<(u32, u16, i32)> = standings
+            .iter()
+            .map(|e| (e.user_id, e.position, e.score))
+            .collect();
+        assert_eq!(rows, vec![(1, 1, 16), (2, 2, 16)]);
+    }
 }

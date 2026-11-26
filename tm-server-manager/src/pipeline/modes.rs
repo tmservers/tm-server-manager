@@ -225,7 +225,7 @@ mod tests {
             round(3, 2, 10, 0),
         ]);
 
-        // 2 and 3 are tied, the one which appeared first keeps the better place.
+        // 2 and 3 are tied, the one which comes first in the rounds keeps the better place.
         assert_eq!(ranking(&standings), vec![(2, 1), (3, 2), (1, 3)]);
         let scores: Vec<i32> = standings.iter().map(|s| s.score).collect();
         assert_eq!(scores, vec![15, 15, 10]);
