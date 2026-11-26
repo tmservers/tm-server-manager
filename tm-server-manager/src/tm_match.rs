@@ -17,7 +17,7 @@ use crate::{
     authorization::Authorization,
     competition::{
         CompetitionPermissionsV1, CompetitionRead,
-        connection::start::NodeStartWrite,
+        connection::{ConnectionRead, start::NodeStartWrite},
         node::{NodeHandle, NodeRead, NodeWrite, Vec2},
         server_pool::TabCompetitionServerPoolRead,
     },
@@ -373,6 +373,15 @@ pub(crate) fn match_configured(ctx: &ReducerContext, id: u32) -> Result<(), Stri
     tm_match.status = MatchStatus::Configured;
 
     ctx.db.tab_match().id().update(tm_match);
+
+    // Its inputs may have finished while it got configured, then nothing else starts it anymore.
+    let node = NodeHandle::MatchV1(id);
+    if ctx.connection_origins_of(node).any(|c| !c.is_action()) {
+        // A match which cannot start is kept and tried again, it got configured either way.
+        if let Err(error) = ctx.node_start(node) {
+            log::info!("{node:?} got configured but cannot start yet: {error}");
+        }
+    }
 
     Ok(())
 }
