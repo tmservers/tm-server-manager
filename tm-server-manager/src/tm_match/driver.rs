@@ -20,7 +20,7 @@ use spacetimedb::{
 };
 use tm_server_types::{
     config::DriverMode,
-    event::{DriverRecord, DriverTeam},
+    event::{DRIVER_RECORD_GAP, DriverRecord, DriverTeam},
     method::{DriverEntry, DriverLabelTone, DriverStatus},
 };
 
@@ -195,7 +195,7 @@ pub(crate) fn match_driver_record(
     }
     if seq != driver.last_seq + 1 {
         return Err(format!(
-            "Record {seq} skips records, the next one is {}.",
+            "Record {seq} {DRIVER_RECORD_GAP}, the next one is {}.",
             driver.last_seq + 1
         ));
     }

@@ -8,7 +8,7 @@
 use std::collections::{BTreeMap, HashMap};
 use std::sync::{
     OnceLock,
-    atomic::{AtomicBool, Ordering},
+    atomic::{AtomicBool, AtomicU32, Ordering},
     mpsc,
 };
 use std::time::{Duration, Instant};
@@ -20,7 +20,7 @@ use tm_server_types::{
     config::{
         Driver as DriverConfig, DriverMode, DriverUi, Manialink, UiManifest, UiRoute, UiValue,
     },
-    event::{DriverRecord, DriverTeam, DriverUiEvent, Event},
+    event::{DRIVER_RECORD_GAP, DriverRecord, DriverTeam, DriverUiEvent, Event},
     method::{DriverCommand, DriverLayer, DriverNetUiData, DriverUiModule},
 };
 use tokio::sync::{Mutex, mpsc::UnboundedSender};
@@ -67,6 +67,11 @@ static RECONNECTED: AtomicBool = AtomicBool::new(false);
 
 /// The records of the run of the driver, to send again what the manager missed.
 static SENT: Mutex<(u32, Vec<DriverRecord>)> = Mutex::const_new((0, Vec::new()));
+/// A resend is on its way, the records the manager refuses meanwhile all wait for it.
+static RESEND_PENDING: AtomicBool = AtomicBool::new(false);
+/// Resends in a row which did not fill the gap, so a record the manager keeps refusing
+/// is not sent again and again right away.
+static RESENDS: AtomicU32 = AtomicU32::new(0);
 
 /// Whether a driver match runs, its races reach the manager as records then.
 pub(crate) fn driver_active() -> bool {
@@ -176,21 +181,64 @@ pub(crate) async fn driver_resend(session: u32, last_seq: u32) {
     if !RECONNECTED.swap(false, Ordering::Relaxed) {
         return;
     }
-    let missing: Vec<(u32, DriverRecord)> = {
-        let sent = SENT.lock().await;
-        if sent.0 != session {
-            return;
-        }
-        sent.1
-            .iter()
-            .enumerate()
-            .skip(last_seq as usize)
-            .map(|(index, record)| (index as u32 + 1, record.clone()))
-            .collect()
-    };
+    resend_after(session, last_seq).await;
+}
+
+/// Sends the records of the run after `last_seq` again.
+async fn resend_after(session: u32, last_seq: u32) {
+    let missing = missing(&*SENT.lock().await, session, last_seq);
     for (seq, record) in missing {
         call(session, seq, record);
     }
+}
+
+/// The records of the run `sent` after `last_seq`, numbered, none of another run.
+fn missing(
+    sent: &(u32, Vec<DriverRecord>),
+    session: u32,
+    last_seq: u32,
+) -> Vec<(u32, DriverRecord)> {
+    if sent.0 != session {
+        return Vec::new();
+    }
+    sent.1
+        .iter()
+        .enumerate()
+        .skip(last_seq as usize)
+        .map(|(index, record)| (index as u32 + 1, record.clone()))
+        .collect()
+}
+
+/// How long to wait before the next resend, after this many which did not fill the gap.
+fn resend_delay(resends: u32) -> Duration {
+    const FIRST: Duration = Duration::from_millis(250);
+    const MOST: Duration = Duration::from_secs(30);
+    FIRST.saturating_mul(1 << resends.min(8)).min(MOST)
+}
+
+/// The manager refused a record because one before it is missing, e.g. it failed once.
+/// Everything after the last record it stored goes again, once for all refused records.
+fn resend_missing() {
+    if RESEND_PENDING.swap(true, Ordering::Relaxed) {
+        return;
+    }
+    let delay = resend_delay(RESENDS.fetch_add(1, Ordering::Relaxed));
+    tokio::spawn(async move {
+        use spacetimedb_sdk::Table;
+        use tm_server_manager_api_rs::MyMatchDriverTableAccess;
+        tokio::time::sleep(delay).await;
+        RESEND_PENDING.store(false, Ordering::Relaxed);
+        let stored = SPACETIME
+            .read()
+            .db
+            .my_match_driver()
+            .iter()
+            .next()
+            .map(|driver| (driver.session, driver.last_seq));
+        if let Some((session, last_seq)) = stored {
+            resend_after(session, last_seq).await;
+        }
+    });
 }
 
 fn input(input: DriverInput) {
@@ -598,11 +646,18 @@ fn call(session: u32, seq: u32, record: DriverRecord) {
         tracing::error!("Record {seq} of the driver does not fit the manager.");
         return;
     };
-    if let Err(error) = SPACETIME
-        .read()
-        .reducers
-        .match_driver_record(session, seq, record)
-    {
+    let sent = SPACETIME.read().reducers.match_driver_record_then(
+        session,
+        seq,
+        record,
+        move |_, result| match result {
+            Ok(Ok(())) => RESENDS.store(0, Ordering::Relaxed),
+            Ok(Err(error)) if error.contains(DRIVER_RECORD_GAP) => resend_missing(),
+            Ok(Err(error)) => tracing::error!("The manager refused record {seq}: {error}"),
+            Err(error) => tracing::error!("Record {seq} of the driver failed: {error}"),
+        },
+    );
+    if let Err(error) = sent {
         tracing::error!("Could not stream record {seq} of the driver: {error}");
     }
 }
@@ -626,6 +681,7 @@ mod tests {
     use tm_server_types::config::{BuiltInManialink, UiArg, UiEventSpec, UiIntRange, UiLayer};
 
     use super::*;
+
 
     fn ui(manialinks: &[Manialink]) -> DriverUi {
         let mut ui = DriverUi::default();
