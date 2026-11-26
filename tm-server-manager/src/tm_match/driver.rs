@@ -1050,4 +1050,45 @@ mod tests {
         );
     }
 
+    #[test]
+    fn a_round_keeps_the_map_its_records_were_played_on() {
+        use crate::{maps::TmMapRead, tm_match::leaderboard::MatchLeadearboardRead};
+
+        let world = World::new();
+        let server = world.server(1);
+        let settings = r#"{"points_repartition": [10, 6, 4], "rounds_per_map": 1}"#;
+        let match_id = world.live_driver_match(&server, ROUNDS, settings);
+        // The server already started both maps before the records arrive, its state is on the second one.
+        let started = |uid: &str| {
+            let mut event = tm_mode_driver_sim::events::map_start(uid);
+            if let Event::StartMapStart(start) = &mut event {
+                start.map.author_account_id = player(9);
+            }
+            event
+        };
+        server.post(&world, [started("m1"), started("m2")]);
+        let (a, b, _) = players();
+        let mut log = InputLog::new(settings);
+        log.players(&[&a, &b]).match_start().map_start("m1");
+        log.round(&[(&a, Race::finish(&[30_000])), (&b, Race::finish(&[31_000]))]);
+        log.map_end().map_start("m2");
+        log.round(&[(&b, Race::finish(&[30_000])), (&a, Race::finish(&[31_000]))]);
+        let mut bridge = Bridge::new(ROUNDS, settings, 1);
+
+        bridge.play(&world, &server, &log.inputs);
+
+        let cx = world.test.anonymous_view_context();
+        let map = |uid: &str| {
+            cx.tm_map_find_uid(&uid.to_string())
+                .expect("the map is known")
+                .id
+        };
+        let mut maps: Vec<(u16, u32)> = cx
+            .match_rounds(match_id)
+            .iter()
+            .map(|e| (e.round, e.map_id))
+            .collect();
+        maps.dedup();
+        assert_eq!(maps, vec![(1, map("m1")), (2, map("m2"))]);
+    }
 }
