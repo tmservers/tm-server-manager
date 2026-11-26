@@ -289,9 +289,11 @@ pub(crate) fn handle_match_event(
         }
         Event::Pause(pause) => {
             // The round a pause interrupts does not count, it gets played again.
+            // The rounds of a driver match are the ones its driver counted, it drops them itself.
             if pause.active
                 && !state.paused()
                 && let Some(round) = state.interrupt_round()
+                && state.get_mode() != TmMode::Driver
             {
                 ctx.match_round_delete(state.match_id, round);
             }

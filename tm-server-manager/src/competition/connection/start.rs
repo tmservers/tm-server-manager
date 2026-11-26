@@ -8,7 +8,11 @@ use spacetimedb::{
 
 use crate::{
     authorization::Authorization,
-    competition::node::{NodeHandle, NodeRead},
+    competition::{
+        CompetitionRead,
+        node::{NodeHandle, NodeRead},
+        server_pool::TabCompetitionServerPoolRead,
+    },
     schedule::{ScheduleRead, ScheduleWrite},
     tm_match::{MatchRead, MatchStatus, MatchWrite},
 };
@@ -77,9 +81,10 @@ pub(crate) trait NodeStartWrite {
     /// Starts a node whose inputs all finished, only matches and schedules start.
     /// If it cannot start the reason is kept, so it is tried again with [`NodeStartWrite::node_starts_retry`].
     fn node_start(&self, node: NodeHandle) -> Result<(), String>;
-    /// Tries the nodes which could not start again, e.g. because a server became available.
+    /// Tries the nodes which could use the server again, because it became available.
+    /// Only nodes of the competitions it is lent to and the ones below them can take it.
     /// The one which waits the longest goes first, so it gets the server.
-    fn node_starts_retry(&self);
+    fn node_starts_retry(&self, server_id: u32);
 }
 
 impl<Db: CtxDbWrite + CtxWithTimestamp> NodeStartWrite for Db {
@@ -105,9 +110,26 @@ impl<Db: CtxDbWrite + CtxWithTimestamp> NodeStartWrite for Db {
         result
     }
 
-    fn node_starts_retry(&self) {
-        let mut failures: Vec<NodeStartFailure> =
-            self.db().tab_node_start_failure().iter().collect();
+    fn node_starts_retry(&self, server_id: u32) {
+        let mut competitions: Vec<u32> = self
+            .server_lent_to(server_id)
+            .flat_map(|lent| {
+                std::iter::once(lent)
+                    .chain(self.competition_descendants(lent).into_iter().map(|c| c.id))
+            })
+            .collect();
+        competitions.sort_unstable();
+        competitions.dedup();
+
+        let mut failures: Vec<NodeStartFailure> = competitions
+            .into_iter()
+            .flat_map(|competition_id| {
+                self.db()
+                    .tab_node_start_failure()
+                    .competition_id()
+                    .filter(competition_id)
+            })
+            .collect();
         failures.sort_by_key(|f| (f.since, f.id));
 
         for failure in failures {
@@ -162,7 +184,11 @@ fn record(ctx: &(impl CtxDbWrite + CtxWithTimestamp), node: NodeHandle, error: &
 
 #[cfg(test)]
 mod tests {
-    use crate::{competition::node::NodeHandle, test_world::*, tm_match::MatchStatus};
+    use crate::{
+        competition::node::{NodeHandle, Vec2},
+        test_world::*,
+        tm_match::{MatchRead, MatchStatus},
+    };
 
     const NO_SERVER: &str = "no servers left";
 
@@ -293,6 +319,38 @@ mod tests {
     }
 
     #[test]
+    fn a_match_whose_entrants_fail_does_not_start_and_keeps_no_server() {
+        use crate::pipeline::{
+            LbSettingsV3,
+            steps::script::{LbScriptOutput, LbScriptSettings},
+        };
+
+        let world = World::new();
+        let server = world.server(1);
+        let match_id = world.configured_match("Final");
+        let node = NodeHandle::MatchV1(match_id);
+        let failing = LbSettingsV3::Script(LbScriptSettings {
+            source: r#"fn step(cx, entries) { throw "no entrants" }"#.into(),
+            output: LbScriptOutput::Standings,
+        });
+
+        // The seeding is finished, so the match tries to start right away.
+        world.feed(node, world.finished_leaderboard("Seeding"), vec![failing]);
+
+        assert_eq!(world.match_status(match_id), MatchStatus::Configured);
+        assert_eq!(world.server_of(node), None, "the server stays free");
+        let failures = world.start_failures();
+        assert_eq!(failures.len(), 1);
+        assert!(failures[0].1.contains("no entrants"), "{}", failures[0].1);
+
+        // A server logging in again retries the match, which does not take it either.
+        server.disconnect(&world);
+        server.reconnect(&world);
+        assert_eq!(world.server_of(node), None);
+        assert_eq!(world.match_status(match_id), MatchStatus::Configured);
+    }
+
+    #[test]
     fn a_deleted_match_does_not_wait_for_a_server_anymore() {
         let world = World::new();
         let (match_id, node) = ready_match(&world, "Final");
@@ -301,5 +359,80 @@ mod tests {
         world.as_owner(|ctx| crate::competition::node::node_delete(ctx, node));
 
         assert_eq!(world.start_failures(), vec![]);
+    }
+
+    #[test]
+    fn a_match_configured_after_its_inputs_finished_starts() {
+        let world = World::new();
+        let server = world.server(1);
+        world.as_owner(|ctx| {
+            crate::tm_match::match_create(ctx, "Final".into(), COMPETITION, Vec2::ZERO, 0, false)
+        });
+        let match_id = world
+            .test
+            .anonymous_view_context()
+            .matches_in_competition(COMPETITION)
+            .find(|m| m.get_name() == "Final")
+            .expect("the match was created")
+            .id;
+        let node = NodeHandle::MatchV1(match_id);
+        world
+            .as_owner(|ctx| crate::tm_match::match_override_config(ctx, match_id, rounds_config()));
+        // The seeding finished while the match still got configured.
+        world.wait_for(node, world.finished_leaderboard("Seeding"));
+        assert_eq!(world.match_status(match_id), MatchStatus::Configuring);
+
+        world.as_owner(|ctx| crate::tm_match::match_configured(ctx, match_id));
+
+        assert_eq!(world.match_status(match_id), MatchStatus::Preparation);
+        assert_eq!(world.server_of(node), Some(server.id));
+    }
+
+    #[test]
+    fn a_match_without_inputs_waits_to_be_started_by_hand() {
+        let world = World::new();
+        world.server(1);
+        let match_id = world.configured_match("Final");
+
+        assert_eq!(world.match_status(match_id), MatchStatus::Configured);
+        assert_eq!(world.start_failures(), vec![]);
+    }
+
+    #[test]
+    fn a_server_lent_below_does_not_retry_the_nodes_above_which_cannot_take_it() {
+        use crate::competition::CompetitionRead;
+
+        let world = World::new();
+        world.as_owner(|ctx| {
+            crate::competition::competition_create(ctx, "Group".into(), COMPETITION, Vec2::ZERO, 0)
+        });
+        let group = world
+            .test
+            .anonymous_view_context()
+            .competition_descendants(COMPETITION)
+            .into_iter()
+            .find(|c| c.get_name() == "Group")
+            .expect("the group was created")
+            .id;
+        let (match_id, _) = ready_match(&world, "Final");
+        assert_waits_for_a_server(&world, match_id);
+        // A retry now would fail for another reason, which would replace the one it keeps.
+        world.as_owner(|ctx| {
+            crate::tm_match::match_override_config(
+                ctx,
+                match_id,
+                driver_config_with(
+                    tm_server_types::config::BuiltInMode::RoundsV1,
+                    r#"{"rounds_per_map": "five"}"#,
+                ),
+            )
+        });
+
+        let server = world.logged_in_server(1);
+        world.verify(&server);
+        world
+            .as_owner(|ctx| crate::competition::server_pool::raw_server_add(ctx, server.id, group));
+
+        assert_waits_for_a_server(&world, match_id);
     }
 }

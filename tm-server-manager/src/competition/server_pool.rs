@@ -48,7 +48,7 @@ pub(crate) fn raw_server_add(ctx: &ReducerContext, server_id: u32, competition_i
         })?;
 
     // The server can be used by the nodes which wait for one.
-    ctx.node_starts_retry();
+    ctx.node_starts_retry(server_id);
 
     Ok(())
 }
@@ -148,6 +148,8 @@ fn competition_occupied_server_pool(
 
 pub(crate) trait TabCompetitionServerPoolRead {
     fn server_pool_available(&self, competition_id: u32) -> Vec<RawServerV1>;
+    /// The competitions the server is lent to.
+    fn server_lent_to(&self, server_id: u32) -> impl Iterator<Item = u32>;
 }
 
 impl<Db: spacetimedb::CtxDbRead> TabCompetitionServerPoolRead for Db {
@@ -176,5 +178,13 @@ impl<Db: spacetimedb::CtxDbRead> TabCompetitionServerPoolRead for Db {
         }
 
         servers
+    }
+
+    fn server_lent_to(&self, server_id: u32) -> impl Iterator<Item = u32> {
+        self.db_read_only()
+            .tab_competition_raw_server()
+            .server_id()
+            .filter(server_id)
+            .map(|lent| lent.competition_id)
     }
 }

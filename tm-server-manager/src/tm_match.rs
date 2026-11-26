@@ -4,7 +4,7 @@ use spacetimedb::{
     AnonymousViewContext, Query, ReducerContext, SpacetimeType, Table, TimeDuration, Timestamp,
     reducer, table, view,
 };
-use tm_server_types::config::{ModeSettingsV2, ServerConfigV2};
+use tm_server_types::config::{ModeSettingsV2, ServerConfigV2, TmMode};
 
 use crate::{
     competition::manialink::ManialinkRead,
@@ -17,7 +17,7 @@ use crate::{
     authorization::Authorization,
     competition::{
         CompetitionPermissionsV1, CompetitionRead,
-        connection::start::NodeStartWrite,
+        connection::{ConnectionRead, start::NodeStartWrite},
         node::{NodeHandle, NodeRead, NodeWrite, Vec2},
         server_pool::TabCompetitionServerPoolRead,
     },
@@ -342,17 +342,13 @@ pub(crate) fn match_server_revoke(ctx: &ReducerContext, match_id: u32) -> Result
         );
     }
 
-    if ctx
-        .occupation_with_occupier(NodeHandle::MatchV1(match_id))
-        .is_none()
-    {
+    let Some(server_id) = ctx.occupation_with_occupier(NodeHandle::MatchV1(match_id)) else {
         return Err("Server is not occupied! Cannot revoke!".into());
-    }
-
+    };
     ctx.raw_server_occupation_remove(NodeHandle::MatchV1(match_id))?;
 
     // The server is free for the nodes which wait for one.
-    ctx.node_starts_retry();
+    ctx.node_starts_retry(server_id);
 
     Ok(())
 }
@@ -373,6 +369,15 @@ pub(crate) fn match_configured(ctx: &ReducerContext, id: u32) -> Result<(), Stri
     tm_match.status = MatchStatus::Configured;
 
     ctx.db.tab_match().id().update(tm_match);
+
+    // Its inputs may have finished while it got configured, then nothing else starts it anymore.
+    let node = NodeHandle::MatchV1(id);
+    if ctx.connection_origins_of(node).any(|c| !c.is_action()) {
+        // A match which cannot start is kept and tried again, it got configured either way.
+        if let Err(error) = ctx.node_start(node) {
+            log::info!("{node:?} got configured but cannot start yet: {error}");
+        }
+    }
 
     Ok(())
 }
@@ -718,7 +723,10 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
             let mut state = self.match_state_find(match_id).unwrap();
 
             // The round the disconnect interrupts does not count, it gets played again.
-            if let Some(round) = state.interrupt_round() {
+            // The rounds of a driver match are the ones its driver counted, it drops them itself.
+            if let Some(round) = state.interrupt_round()
+                && state.get_mode() != TmMode::Driver
+            {
                 self.match_round_delete(match_id, round);
             }
             state.set_pause(true);
@@ -886,6 +894,16 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
             ));
         }
 
+        // The server plays the pre config during the preparation, it has to exist too.
+        if tm_match.pre_config != 0 {
+            self.raw_server_config(tm_match.pre_config)?;
+        }
+        // The entrants come from the inputs, whose steps can still fail, e.g. a script.
+        let entrants = self.match_entrants_resolve(match_id)?;
+        if self.match_state_find(match_id).is_some() {
+            return Err(format!("Match {match_id} already has a state."));
+        }
+
         let mode = config.driver_mode();
         let server_id = if let Some(server_id) =
             self.occupation_with_occupier(NodeHandle::MatchV1(match_id))
@@ -917,7 +935,7 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
         }
 
         // From now on the entrants keep their seeds, the destinations are claimed for them.
-        self.match_entrants_freeze(match_id)?;
+        self.match_entrants_freeze_with(match_id, entrants)?;
 
         self.destination_claim(NodeHandle::MatchV1(match_id))?;
 
@@ -984,6 +1002,7 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
         }
         self.db().tab_match().id().update(tm_match);
 
+        let freed = self.occupation_with_occupier(NodeHandle::MatchV1(match_id));
         if let Err(error) = self.raw_server_occupation_remove(NodeHandle::MatchV1(match_id)) {
             log::error!("Occupation could not be removed. Error {error}")
         };
@@ -991,7 +1010,9 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
         self.destination_free(NodeHandle::MatchV1(match_id));
 
         // The server of the match is free for the nodes which wait for one.
-        self.node_starts_retry();
+        if let Some(server_id) = freed {
+            self.node_starts_retry(server_id);
+        }
 
         log::info!("The match {} has successfully ended!", match_id);
 

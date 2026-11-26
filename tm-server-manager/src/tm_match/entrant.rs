@@ -160,16 +160,39 @@ impl<Db: CtxDbRead> MatchEntrantRead for Db {
 pub(crate) trait MatchEntrantWrite: MatchEntrantRead {
     /// Freezes the entrants the match gets from its inputs, entrants which already got frozen are kept.
     fn match_entrants_freeze(&self, match_id: u32) -> Result<(), String>;
+    /// The entrants [`MatchEntrantWrite::match_entrants_freeze_with`] freezes, none if they are frozen already.
+    /// Resolving them can fail, so callers do it before they change anything.
+    fn match_entrants_resolve(&self, match_id: u32) -> Result<Option<Vec<MatchEntrant>>, String>;
+    /// Freezes entrants resolved before with [`MatchEntrantWrite::match_entrants_resolve`].
+    fn match_entrants_freeze_with(
+        &self,
+        match_id: u32,
+        entrants: Option<Vec<MatchEntrant>>,
+    ) -> Result<(), String>;
     fn match_entrants_delete(&self, match_id: u32);
     /// Reorders the frozen entrants while the match gets prepared, see [`match_reseed`].
     fn match_entrants_reseed(&self, match_id: u32, order: &[u16]) -> Result<(), String>;
 }
 impl<Db: spacetimedb::CtxDbWrite> MatchEntrantWrite for Db {
     fn match_entrants_freeze(&self, match_id: u32) -> Result<(), String> {
+        let entrants = self.match_entrants_resolve(match_id)?;
+        self.match_entrants_freeze_with(match_id, entrants)
+    }
+
+    fn match_entrants_resolve(&self, match_id: u32) -> Result<Option<Vec<MatchEntrant>>, String> {
         if !self.match_entrants(match_id).is_empty() {
-            return Ok(());
+            return Ok(None);
         }
-        for entrant in self.match_entrants_preview(match_id)? {
+        Ok(Some(self.match_entrants_preview(match_id)?))
+    }
+
+    fn match_entrants_freeze_with(
+        &self,
+        match_id: u32,
+        entrants: Option<Vec<MatchEntrant>>,
+    ) -> Result<(), String> {
+        for entrant in entrants.into_iter().flatten() {
+            debug_assert_eq!(entrant.match_id, match_id);
             self.db().tab_match_entrant().try_insert(entrant)?;
         }
         Ok(())

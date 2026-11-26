@@ -84,23 +84,27 @@ impl World {
         self.test.with_reducer_tx(World::owner(), reducer)
     }
 
+    /// The user of this account, as the auth of a call.
+    pub(crate) fn user_auth(account: &str) -> TestAuth {
+        TestAuth::from_jwt_payload(
+            format!(
+                r#"{{"iss":"https://auth.spacetimedb.com/oidc","sub":"{account}","login_method":"trackmania","provider_id":"{account}","preferred_username":"{account}"}}"#
+            ),
+            ConnectionId::from_u128(2),
+        )
+        .expect("the claims of a user are valid")
+    }
+
     /// Calls a reducer as the user of this account, who connected before.
     pub(crate) fn try_as_user<T>(
         &self,
         account: &str,
         reducer: impl FnOnce(&ReducerContext) -> Result<T, String>,
     ) -> Result<T, String> {
-        let auth = || {
-            TestAuth::from_jwt_payload(
-                format!(
-                    r#"{{"iss":"https://auth.spacetimedb.com/oidc","sub":"{account}","login_method":"trackmania","provider_id":"{account}","preferred_username":"{account}"}}"#
-                ),
-                ConnectionId::from_u128(2),
-            )
-            .expect("the claims of a user are valid")
-        };
-        self.test.with_reducer_tx(auth(), crate::client_connected)?;
-        self.test.with_reducer_tx(auth(), reducer)
+        self.test
+            .with_reducer_tx(World::user_auth(account), crate::client_connected)?;
+        self.test
+            .with_reducer_tx(World::user_auth(account), reducer)
     }
 
     /// Calls a reducer as the owner, it has to succeed.
@@ -237,6 +241,31 @@ impl World {
             .find(|c| c.origin() == origin && c.target() == target)
             .expect("the connection was created")
             .id;
+        self.as_owner(|ctx| crate::competition::connection::connection_configured(ctx, id));
+    }
+
+    /// Lets the target take what the origin outputs through a configured data connection with the steps.
+    pub(crate) fn feed(&self, target: NodeHandle, origin: NodeHandle, steps: Vec<LbSettingsV3>) {
+        let mut procedure = self.test.procedure_context(World::owner());
+        crate::competition::connection::connection_create(
+            &mut procedure,
+            origin,
+            target,
+            ConnectionKind::Data,
+        )
+        .unwrap_or_else(|error| panic!("the connection could not be created: {error:?}"));
+        let id = self
+            .test
+            .anonymous_view_context()
+            .connections_in_competition(COMPETITION)
+            .find(|c| c.origin() == origin && c.target() == target)
+            .expect("the connection was created")
+            .id;
+        self.as_owner(|ctx| {
+            crate::competition::connection::data::competition_connection_data_update(
+                ctx, id, steps, 0,
+            )
+        });
         self.as_owner(|ctx| crate::competition::connection::connection_configured(ctx, id));
     }
 

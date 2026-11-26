@@ -54,6 +54,8 @@ pub(crate) enum Effect {
     Round {
         number: u32,
         round: u16,
+        /// The uid of the map the round was played on, none before the first map started.
+        map: Option<String>,
         result: DriverRoundResult,
     },
     /// The bridge computed other standings than the manager.
@@ -67,6 +69,8 @@ pub(crate) struct Emulation {
     in_round: bool,
     in_warm_up: bool,
     racers: BTreeMap<u32, Racer>,
+    /// The uid of the map that runs, from the records, so a round keeps its map however late it arrives.
+    map: Option<String>,
     /// The standings as stored, so only changes become effects.
     stored: Vec<DriverEntry>,
     stored_teams: Vec<DriverTeamEntry>,
@@ -88,6 +92,7 @@ impl Emulation {
             in_round: false,
             in_warm_up: false,
             racers: BTreeMap::new(),
+            map: None,
             stored: Vec::new(),
             stored_teams: Vec::new(),
         })
@@ -108,6 +113,7 @@ impl Emulation {
             effects.push(Effect::Round {
                 number: self.driver.driver().digest().rounds,
                 round: self.round,
+                map: self.map.clone(),
                 result,
             });
         }
@@ -141,6 +147,9 @@ impl Emulation {
                     self.round = self.round.saturating_add(1);
                 }
                 return;
+            }
+            DriverRecord::Event(Event::StartMapStart(start)) => {
+                self.map = Some(start.map.uid.clone());
             }
             DriverRecord::Event(Event::WarmupStart) => self.in_warm_up = true,
             DriverRecord::Event(Event::WarmupEnd) => self.in_warm_up = false,

@@ -1,6 +1,10 @@
-use std::{cell::OnceCell, rc::Rc};
+use std::{
+    cell::{OnceCell, RefCell},
+    collections::HashMap,
+    rc::Rc,
+};
 
-use rhai::Engine;
+use rhai::{AST, Engine};
 use spacetimedb::{CtxDbRead, LocalReadOnly};
 use tm_server_types::config::{ModeSettingsV2, TmMode};
 
@@ -24,6 +28,9 @@ pub(crate) struct LbContext {
     origin: NodeHandle,
     /// Built when the first script runs and shared by every node of the call.
     script_engine: Rc<OnceCell<Engine>>,
+    /// The scripts compiled during the call by their source, a script evaluated for several nodes compiles once.
+    /// Compiling only depends on the source, so nothing of the database is kept.
+    scripts: Rc<RefCell<HashMap<Box<str>, Rc<AST>>>>,
 }
 
 impl LbContext {
@@ -32,6 +39,7 @@ impl LbContext {
             db: ctx.db_read_only().clone(),
             origin,
             script_engine: Rc::default(),
+            scripts: Rc::default(),
         }
     }
 
@@ -45,6 +53,20 @@ impl LbContext {
 
     pub(crate) fn script_engine(&self) -> &Engine {
         self.script_engine.get_or_init(script::engine)
+    }
+
+    /// The script compiled with `compile`, once per call for every source.
+    pub(crate) fn script_ast<E>(
+        &self,
+        source: &str,
+        compile: impl FnOnce(&Engine, &str) -> Result<AST, E>,
+    ) -> Result<Rc<AST>, E> {
+        if let Some(ast) = self.scripts.borrow().get(source) {
+            return Ok(ast.clone());
+        }
+        let ast = Rc::new(compile(self.script_engine(), source)?);
+        self.scripts.borrow_mut().insert(source.into(), ast.clone());
+        Ok(ast)
     }
 
     /// The node the steps are evaluated for, entries created by a step belong to it.
@@ -113,5 +135,36 @@ mod tests {
 
         evaluate_steps(&cx, &[script], vec![round(1, 1, 10, 0)]).unwrap();
         assert!(cx.script_engine.get().is_some());
+    }
+
+    #[test]
+    fn a_script_evaluated_for_several_nodes_of_a_call_compiles_once() {
+        let test = test_context(&[]);
+        let cx = LbContext::new(&test.anonymous_view_context(), MATCH);
+        let other = cx.at(NodeHandle::LeaderboardV1(2));
+        let source = "fn step(cx, entries) { entries }";
+        let compiles = std::cell::Cell::new(0);
+        let compile = |engine: &Engine, source: &str| {
+            compiles.set(compiles.get() + 1);
+            engine.compile(source)
+        };
+
+        let first = cx.script_ast(source, compile).unwrap();
+        let again = other.script_ast(source, compile).unwrap();
+        let changed = other
+            .script_ast("fn step(cx, entries) { [] }", compile)
+            .unwrap();
+
+        assert_eq!(
+            compiles.get(),
+            2,
+            "the same source compiles once, another one too"
+        );
+        assert!(Rc::ptr_eq(&first, &again));
+        assert!(!Rc::ptr_eq(&first, &changed));
+        // Nothing is kept across calls.
+        let next = LbContext::new(&test.anonymous_view_context(), MATCH);
+        next.script_ast(source, compile).unwrap();
+        assert_eq!(compiles.get(), 3);
     }
 }

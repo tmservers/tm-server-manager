@@ -20,13 +20,14 @@ use spacetimedb::{
 };
 use tm_server_types::{
     config::DriverMode,
-    event::{DriverRecord, DriverTeam},
+    event::{DRIVER_RECORD_GAP, DriverRecord, DriverTeam},
     method::{DriverEntry, DriverLabelTone, DriverStatus},
 };
 
 use crate::{
     authorization::Authorization,
     competition::node::NodeHandle,
+    maps::TmMapRead,
     raw_server::occupation::TabRawServerOccupationRead,
     registration::team::TeamRead,
     tm_match::entrant::MatchEntrantRead,
@@ -194,7 +195,7 @@ pub(crate) fn match_driver_record(
     }
     if seq != driver.last_seq + 1 {
         return Err(format!(
-            "Record {seq} skips records, the next one is {}.",
+            "Record {seq} {DRIVER_RECORD_GAP}, the next one is {}.",
             driver.last_seq + 1
         ));
     }
@@ -333,9 +334,15 @@ fn apply_effect(
         Effect::Round {
             number,
             round,
+            map,
             result,
         } => {
-            let map_id = ctx.match_state_find(match_id).map_or(0, |s| s.get_map());
+            // The map the records tell, the state may already be on the next one.
+            let map_id = map
+                .and_then(|uid| ctx.tm_map_find_uid(&uid))
+                .map(|map| map.id)
+                .or_else(|| ctx.match_state_find(match_id).map(|s| s.get_map()))
+                .unwrap_or(0);
             let round_number = u16::try_from(number).unwrap_or(u16::MAX);
             for player in result.results {
                 let Some(user_id) = account_user(ctx, &player.account_id)? else {
@@ -567,6 +574,27 @@ fn match_driver_team_standings(ctx: &ViewContext, match_id: u32) -> Vec<MatchTea
     ctx.match_driver_team_standings(match_id)
 }
 
+/// Whether the manager still replays a driver match, for the members of its competition.
+/// A match whose driver diverged or faulted keeps playing on its server, an admin has to look at it.
+#[view(accessor = match_driver_state, public)]
+fn match_driver_state(ctx: &ViewContext, match_id: u32) -> Option<MatchDriverStatus> {
+    let tm_match = ctx.match_find(match_id)?;
+    ctx.auth_builder(tm_match.get_comp_id()).authorize().ok()?;
+    ctx.match_driver(match_id).map(|driver| MatchDriverStatus {
+        match_id,
+        mode: driver.mode,
+        state: driver.state,
+    })
+}
+
+/// How far the manager got with a driver match, as its members see it.
+#[derive(Debug, Clone, PartialEq, Eq, SpacetimeType)]
+pub struct MatchDriverStatus {
+    pub match_id: u32,
+    pub mode: DriverMode,
+    pub state: MatchDriverState,
+}
+
 /// The teams of the match of the server, for its bridge: the driver starts with them.
 #[view(accessor = my_match_teams, public)]
 fn my_match_teams(ctx: &ViewContext) -> Vec<DriverTeam> {
@@ -725,6 +753,37 @@ mod tests {
             .collect();
         assert_eq!(ranked, vec![(b, 1, 16), (a, 2, 16), (c, 3, 0)]);
         assert_eq!(state(&world, match_id), MatchDriverState::Running);
+    }
+
+    /// The rounds belong to the driver, a pause or a lost bridge does not drop any of them.
+    #[test]
+    fn an_interruption_keeps_the_rounds_the_driver_counted() {
+        for disconnect in [false, true] {
+            let world = World::new();
+            let server = world.server(1);
+            let match_id = world.live_driver_match(&server, ROUNDS, SETTINGS);
+            let mut bridge = Bridge::new(ROUNDS, SETTINGS, 1);
+            bridge.play(&world, &server, &two_rounds().inputs);
+            let counted = world.rounds(match_id);
+            assert_eq!(counted.len(), 5);
+
+            // The server is in its second round while the records of the driver came in.
+            server.post(
+                &world,
+                [start_match(), start_round(1), end_round(), start_round(2)],
+            );
+            if disconnect {
+                server.disconnect(&world);
+            } else {
+                server.post(&world, [pause(true)]);
+            }
+
+            assert_eq!(
+                world.rounds(match_id),
+                counted,
+                "disconnect: {disconnect}, the counted rounds stay"
+            );
+        }
     }
 
     #[test]
@@ -1009,6 +1068,89 @@ mod tests {
         assert_eq!(
             spacetimedb::sats::bsatn::to_vec(&checkpoint).unwrap().len(),
             11
+        );
+    }
+
+    #[test]
+    fn a_round_keeps_the_map_its_records_were_played_on() {
+        use crate::{maps::TmMapRead, tm_match::leaderboard::MatchLeadearboardRead};
+
+        let world = World::new();
+        let server = world.server(1);
+        let settings = r#"{"points_repartition": [10, 6, 4], "rounds_per_map": 1}"#;
+        let match_id = world.live_driver_match(&server, ROUNDS, settings);
+        // The server already started both maps before the records arrive, its state is on the second one.
+        let started = |uid: &str| {
+            let mut event = tm_mode_driver_sim::events::map_start(uid);
+            if let Event::StartMapStart(start) = &mut event {
+                start.map.author_account_id = player(9);
+            }
+            event
+        };
+        server.post(&world, [started("m1"), started("m2")]);
+        let (a, b, _) = players();
+        let mut log = InputLog::new(settings);
+        log.players(&[&a, &b]).match_start().map_start("m1");
+        log.round(&[(&a, Race::finish(&[30_000])), (&b, Race::finish(&[31_000]))]);
+        log.map_end().map_start("m2");
+        log.round(&[(&b, Race::finish(&[30_000])), (&a, Race::finish(&[31_000]))]);
+        let mut bridge = Bridge::new(ROUNDS, settings, 1);
+
+        bridge.play(&world, &server, &log.inputs);
+
+        let cx = world.test.anonymous_view_context();
+        let map = |uid: &str| {
+            cx.tm_map_find_uid(&uid.to_string())
+                .expect("the map is known")
+                .id
+        };
+        let mut maps: Vec<(u16, u32)> = cx
+            .match_rounds(match_id)
+            .iter()
+            .map(|e| (e.round, e.map_id))
+            .collect();
+        maps.dedup();
+        assert_eq!(maps, vec![(1, map("m1")), (2, map("m2"))]);
+    }
+
+    #[test]
+    fn the_members_see_when_the_manager_stopped_agreeing_with_the_bridge() {
+        let world = World::new();
+        let server = world.server(1);
+        let match_id = world.live_driver_match(&server, ROUNDS, SETTINGS);
+        let stranger = player(7);
+        world
+            .try_as_user(&stranger, |_| Ok(()))
+            .expect("the stranger connects");
+        let seen = |auth| {
+            match_driver_state(&world.test.view_context(auth), match_id).map(|status| status.state)
+        };
+        assert_eq!(seen(World::owner_auth()), Some(MatchDriverState::Running));
+
+        let mut bridge = Bridge::new(ROUNDS, SETTINGS, 1);
+        let mut records = bridge.record(&two_rounds().inputs);
+        let digest = records
+            .iter_mut()
+            .find_map(|record| match record {
+                DriverRecord::Digest(digest) => Some(digest),
+                _ => None,
+            })
+            .expect("a round counted");
+        digest.standings ^= 1;
+        for (index, record) in records.into_iter().enumerate() {
+            server
+                .stream(&world, 1, index as u32 + 1, record)
+                .expect("the record is taken");
+        }
+
+        assert_eq!(
+            seen(World::owner_auth()),
+            Some(MatchDriverState::Diverged(1))
+        );
+        assert_eq!(
+            seen(World::user_auth(&stranger)),
+            None,
+            "only members see it"
         );
     }
 }

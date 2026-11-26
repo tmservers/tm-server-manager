@@ -7,6 +7,10 @@
 
 use crate::{base::PlayerInfo, config::UiValue, event::Event};
 
+/// Part of the error the manager refuses a record with when records before it are
+/// missing, the bridge sends the missing ones again when it sees it.
+pub const DRIVER_RECORD_GAP: &str = "skips records";
+
 /// One input of the driver of a match, numbered in the order the driver got them.
 ///
 /// Variants are only ever appended, the manager stores them.
