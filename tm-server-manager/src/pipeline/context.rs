@@ -137,4 +137,34 @@ mod tests {
         assert!(cx.script_engine.get().is_some());
     }
 
+    #[test]
+    fn a_script_evaluated_for_several_nodes_of_a_call_compiles_once() {
+        let test = test_context(&[]);
+        let cx = LbContext::new(&test.anonymous_view_context(), MATCH);
+        let other = cx.at(NodeHandle::LeaderboardV1(2));
+        let source = "fn step(cx, entries) { entries }";
+        let compiles = std::cell::Cell::new(0);
+        let compile = |engine: &Engine, source: &str| {
+            compiles.set(compiles.get() + 1);
+            engine.compile(source)
+        };
+
+        let first = cx.script_ast(source, compile).unwrap();
+        let again = other.script_ast(source, compile).unwrap();
+        let changed = other
+            .script_ast("fn step(cx, entries) { [] }", compile)
+            .unwrap();
+
+        assert_eq!(
+            compiles.get(),
+            2,
+            "the same source compiles once, another one too"
+        );
+        assert!(Rc::ptr_eq(&first, &again));
+        assert!(!Rc::ptr_eq(&first, &changed));
+        // Nothing is kept across calls.
+        let next = LbContext::new(&test.anonymous_view_context(), MATCH);
+        next.script_ast(source, compile).unwrap();
+        assert_eq!(compiles.get(), 3);
+    }
 }
