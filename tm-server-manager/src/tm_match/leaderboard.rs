@@ -190,6 +190,9 @@ impl MatchRoundPlayerExt {
 
 pub(crate) trait MatchLeadearboardRead {
     //fn match_leaderboard(&self, match_id: u32, round: u16) -> Vec<MatchRoundPlayer>;
+    /// The rounds by their number and every round by its places, players without a place last.
+    /// Steps keep this order for entries they rank the same, so it must never depend on how the rows are stored.
+    /// E.g. players with the same points rank by the first round they played.
     fn match_rounds(&self, match_id: u32) -> Vec<LbEntry>;
     //fn match_leaderboard(&self, match_id: u32) -> Vec<LbEntry>;
     fn match_round_player_find(&self, id: u32) -> Option<MatchRoundPlayer>;
@@ -213,10 +216,16 @@ impl<Db: spacetimedb::CtxDbRead> MatchLeadearboardRead for Db {
             return Vec::new();
         };
         let maps = self.match_round_maps(&state);
-        self.db_read_only()
+        let mut rounds: Vec<MatchRoundPlayer> = self
+            .db_read_only()
             .tab_match_round_player()
             .match_id()
             .filter(match_id)
+            .collect();
+        // Ties were ranked in the order the rows were stored, which never was the same twice.
+        rounds.sort_by_key(|r| (r.round, r.position == 0, r.position, r.user_id));
+        rounds
+            .into_iter()
             .map(|f| {
                 LbEntry::new(
                     f.user_id,
