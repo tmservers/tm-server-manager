@@ -682,6 +682,47 @@ mod tests {
 
     use super::*;
 
+    #[test]
+    fn the_records_after_the_last_stored_one_go_again_only_for_the_same_run() {
+        let sent = (
+            7,
+            vec![
+                DriverRecord::Delivered,
+                DriverRecord::Resumed,
+                DriverRecord::Respawn(3),
+            ],
+        );
+
+        let seqs = |session, last_seq| -> Vec<u32> {
+            missing(&sent, session, last_seq)
+                .into_iter()
+                .map(|(seq, _)| seq)
+                .collect()
+        };
+
+        assert_eq!(seqs(7, 1), vec![2, 3]);
+        assert_eq!(seqs(7, 0), vec![1, 2, 3]);
+        assert_eq!(seqs(7, 3), Vec::<u32>::new());
+        // The manager is on another run, its numbers do not fit these records.
+        assert_eq!(seqs(8, 1), Vec::<u32>::new());
+    }
+
+    #[test]
+    fn resends_which_do_not_fill_the_gap_wait_longer_up_to_half_a_minute() {
+        assert_eq!(resend_delay(0), Duration::from_millis(250));
+        assert_eq!(resend_delay(1), Duration::from_millis(500));
+        assert_eq!(resend_delay(5), Duration::from_secs(8));
+        assert_eq!(resend_delay(7), Duration::from_secs(30));
+        assert_eq!(resend_delay(u32::MAX), Duration::from_secs(30));
+    }
+
+    #[test]
+    fn the_manager_names_a_gap_the_way_the_bridge_looks_for() {
+        // The bridge resends when a refusal contains it, the manager words it with the same constant.
+        assert!(
+            format!("Record 5 {DRIVER_RECORD_GAP}, the next one is 3.").contains("skips records")
+        );
+    }
 
     fn ui(manialinks: &[Manialink]) -> DriverUi {
         let mut ui = DriverUi::default();
