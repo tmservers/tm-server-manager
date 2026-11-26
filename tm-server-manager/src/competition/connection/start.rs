@@ -397,4 +397,42 @@ mod tests {
         assert_eq!(world.match_status(match_id), MatchStatus::Configured);
         assert_eq!(world.start_failures(), vec![]);
     }
+
+    #[test]
+    fn a_server_lent_below_does_not_retry_the_nodes_above_which_cannot_take_it() {
+        use crate::competition::CompetitionRead;
+
+        let world = World::new();
+        world.as_owner(|ctx| {
+            crate::competition::competition_create(ctx, "Group".into(), COMPETITION, Vec2::ZERO, 0)
+        });
+        let group = world
+            .test
+            .anonymous_view_context()
+            .competition_descendants(COMPETITION)
+            .into_iter()
+            .find(|c| c.get_name() == "Group")
+            .expect("the group was created")
+            .id;
+        let (match_id, _) = ready_match(&world, "Final");
+        assert_waits_for_a_server(&world, match_id);
+        // A retry now would fail for another reason, which would replace the one it keeps.
+        world.as_owner(|ctx| {
+            crate::tm_match::match_override_config(
+                ctx,
+                match_id,
+                driver_config_with(
+                    tm_server_types::config::BuiltInMode::RoundsV1,
+                    r#"{"rounds_per_map": "five"}"#,
+                ),
+            )
+        });
+
+        let server = world.logged_in_server(1);
+        world.verify(&server);
+        world
+            .as_owner(|ctx| crate::competition::server_pool::raw_server_add(ctx, server.id, group));
+
+        assert_waits_for_a_server(&world, match_id);
+    }
 }
