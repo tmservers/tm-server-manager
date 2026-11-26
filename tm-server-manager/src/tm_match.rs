@@ -4,7 +4,7 @@ use spacetimedb::{
     AnonymousViewContext, Query, ReducerContext, SpacetimeType, Table, TimeDuration, Timestamp,
     reducer, table, view,
 };
-use tm_server_types::config::{ModeSettingsV2, ServerConfigV2};
+use tm_server_types::config::{ModeSettingsV2, ServerConfigV2, TmMode};
 
 use crate::{
     competition::manialink::ManialinkRead,
@@ -718,7 +718,10 @@ impl<Db: spacetimedb::CtxDbWrite> MatchWrite for Db {
             let mut state = self.match_state_find(match_id).unwrap();
 
             // The round the disconnect interrupts does not count, it gets played again.
-            if let Some(round) = state.interrupt_round() {
+            // The rounds of a driver match are the ones its driver counted, it drops them itself.
+            if let Some(round) = state.interrupt_round()
+                && state.get_mode() != TmMode::Driver
+            {
                 self.match_round_delete(match_id, round);
             }
             state.set_pause(true);
