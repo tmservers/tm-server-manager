@@ -74,7 +74,7 @@ impl LbScriptOutput {
 impl LbStep for LbScriptSettings {
     fn apply(&self, cx: &LbContext, entries: Vec<LbEntry>) -> Result<Vec<LbEntry>, LbError> {
         let engine = cx.script_engine();
-        let ast = compile(engine, &self.source)?;
+        let ast = cx.script_ast(&self.source, compile)?;
         let entries: Array = entries.into_iter().map(Dynamic::from).collect();
 
         let returned = engine
@@ -82,7 +82,7 @@ impl LbStep for LbScriptSettings {
                 // Only the functions of the script are used.
                 CallFnOptions::new().eval_ast(false),
                 &mut Scope::new(),
-                &ast,
+                &*ast,
                 STEP_HOOK,
                 (cx.clone(), entries),
             )
