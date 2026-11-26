@@ -218,7 +218,7 @@ fn migration_connection_data_to_v2(ctx: &ReducerContext) -> Result<(), String> {
 }
 
 #[reducer]
-fn competition_connection_data_update(
+pub(crate) fn competition_connection_data_update(
     ctx: &ReducerContext,
     connection_id: u32,
     settings: Vec<LbSettingsV3>,

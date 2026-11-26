@@ -240,6 +240,31 @@ impl World {
         self.as_owner(|ctx| crate::competition::connection::connection_configured(ctx, id));
     }
 
+    /// Lets the target take what the origin outputs through a configured data connection with the steps.
+    pub(crate) fn feed(&self, target: NodeHandle, origin: NodeHandle, steps: Vec<LbSettingsV3>) {
+        let mut procedure = self.test.procedure_context(World::owner());
+        crate::competition::connection::connection_create(
+            &mut procedure,
+            origin,
+            target,
+            ConnectionKind::Data,
+        )
+        .unwrap_or_else(|error| panic!("the connection could not be created: {error:?}"));
+        let id = self
+            .test
+            .anonymous_view_context()
+            .connections_in_competition(COMPETITION)
+            .find(|c| c.origin() == origin && c.target() == target)
+            .expect("the connection was created")
+            .id;
+        self.as_owner(|ctx| {
+            crate::competition::connection::data::competition_connection_data_update(
+                ctx, id, steps, 0,
+            )
+        });
+        self.as_owner(|ctx| crate::competition::connection::connection_configured(ctx, id));
+    }
+
     /// The nodes which could not start with the reason, the one which waits the longest first.
     pub(crate) fn start_failures(&self) -> Vec<(NodeHandle, String)> {
         use crate::competition::connection::start::NodeStartRead;

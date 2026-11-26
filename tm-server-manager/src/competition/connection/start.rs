@@ -293,6 +293,38 @@ mod tests {
     }
 
     #[test]
+    fn a_match_whose_entrants_fail_does_not_start_and_keeps_no_server() {
+        use crate::pipeline::{
+            LbSettingsV3,
+            steps::script::{LbScriptOutput, LbScriptSettings},
+        };
+
+        let world = World::new();
+        let server = world.server(1);
+        let match_id = world.configured_match("Final");
+        let node = NodeHandle::MatchV1(match_id);
+        let failing = LbSettingsV3::Script(LbScriptSettings {
+            source: r#"fn step(cx, entries) { throw "no entrants" }"#.into(),
+            output: LbScriptOutput::Standings,
+        });
+
+        // The seeding is finished, so the match tries to start right away.
+        world.feed(node, world.finished_leaderboard("Seeding"), vec![failing]);
+
+        assert_eq!(world.match_status(match_id), MatchStatus::Configured);
+        assert_eq!(world.server_of(node), None, "the server stays free");
+        let failures = world.start_failures();
+        assert_eq!(failures.len(), 1);
+        assert!(failures[0].1.contains("no entrants"), "{}", failures[0].1);
+
+        // A server logging in again retries the match, which does not take it either.
+        server.disconnect(&world);
+        server.reconnect(&world);
+        assert_eq!(world.server_of(node), None);
+        assert_eq!(world.match_status(match_id), MatchStatus::Configured);
+    }
+
+    #[test]
     fn a_deleted_match_does_not_wait_for_a_server_anymore() {
         let world = World::new();
         let (match_id, node) = ready_match(&world, "Final");
