@@ -162,7 +162,11 @@ fn record(ctx: &(impl CtxDbWrite + CtxWithTimestamp), node: NodeHandle, error: &
 
 #[cfg(test)]
 mod tests {
-    use crate::{competition::node::NodeHandle, test_world::*, tm_match::MatchStatus};
+    use crate::{
+        competition::node::{NodeHandle, Vec2},
+        test_world::*,
+        tm_match::{MatchRead, MatchStatus},
+    };
 
     const NO_SERVER: &str = "no servers left";
 
@@ -332,6 +336,43 @@ mod tests {
 
         world.as_owner(|ctx| crate::competition::node::node_delete(ctx, node));
 
+        assert_eq!(world.start_failures(), vec![]);
+    }
+
+    #[test]
+    fn a_match_configured_after_its_inputs_finished_starts() {
+        let world = World::new();
+        let server = world.server(1);
+        world.as_owner(|ctx| {
+            crate::tm_match::match_create(ctx, "Final".into(), COMPETITION, Vec2::ZERO, 0, false)
+        });
+        let match_id = world
+            .test
+            .anonymous_view_context()
+            .matches_in_competition(COMPETITION)
+            .find(|m| m.get_name() == "Final")
+            .expect("the match was created")
+            .id;
+        let node = NodeHandle::MatchV1(match_id);
+        world
+            .as_owner(|ctx| crate::tm_match::match_override_config(ctx, match_id, rounds_config()));
+        // The seeding finished while the match still got configured.
+        world.wait_for(node, world.finished_leaderboard("Seeding"));
+        assert_eq!(world.match_status(match_id), MatchStatus::Configuring);
+
+        world.as_owner(|ctx| crate::tm_match::match_configured(ctx, match_id));
+
+        assert_eq!(world.match_status(match_id), MatchStatus::Preparation);
+        assert_eq!(world.server_of(node), Some(server.id));
+    }
+
+    #[test]
+    fn a_match_without_inputs_waits_to_be_started_by_hand() {
+        let world = World::new();
+        world.server(1);
+        let match_id = world.configured_match("Final");
+
+        assert_eq!(world.match_status(match_id), MatchStatus::Configured);
         assert_eq!(world.start_failures(), vec![]);
     }
 }
